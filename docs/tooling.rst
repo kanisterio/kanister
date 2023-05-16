@@ -40,6 +40,7 @@ kanctl create
   Available Commands:
     actionset   Create a new ActionSet or override a <parent> ActionSet
     profile     Create a new profile
+    repository-server   Create a new kopia repository server
 
   Flags:
         --dry-run           if set, resource YAML will be printed but not created
@@ -228,6 +229,35 @@ A new S3Compliant profile can be created using the s3compliant subcommand
                                       --namespace kanister
   secret 's3-secret-chst2' created
   profile 's3-profile-5mmkj' created
+
+
+Kopia Repository Server creation using ``kanctl create``
+
+.. code-block:: bash
+
+    $ kanctl create repository-server --help
+    Create a new RepositoryServer
+
+    Usage:
+      kanctl create repository-server [flags]
+
+    Flags:
+      -h, --help                                help for repository-server
+      -p, --prefix string                       prefix to be set in kopia repository
+      -a, --repoAdminUserSecret string          name of the secret for the repository server admin user details
+      -r, --repoPasswordSecret string           name of the secret containing password for the kopia repository
+      -z, --repoServerAdminUser string          kopia repository server admin user name
+      -u, --repoServerUser string               name of the user to be created for the kopia repository server
+      -k, --repoServerUserAccessSecret string   name of the secret having user access password and host
+      -c, --s3LocationCredsSecret string        name of the secret containing the credentials for s3
+      -l, --s3LocationSecret string             name of the secret containing the s3 location details
+      -t, --tls string                          name of the tls secret needed for secure client server communication
+
+    Global Flags:
+          --dry-run            if set, resource YAML will be printed but not created
+      -n, --namespace string   Override namespace obtained from kubectl context
+          --skip-validation    if set, resource is not validated before creation
+          --verbose            Display verbose output
 
 .. _kanctlvalidate:
 
