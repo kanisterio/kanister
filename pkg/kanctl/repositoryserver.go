@@ -30,7 +30,7 @@ import (
 const (
 	tlsSecretFlag                  = "tlsSecret"
 	repoServerUserAccessSecretFlag = "repositoryServerUserAccessSecret"
-	repoAdminUserSecretFlag        = "repositoryAdminUserSecret"
+	repoAdminUserSecretFlag        = "repositoryServerAdminUserAccessSecret"
 	repoPasswordSecretFlag         = "repositoryPasswordSecret"
 	repoServerUserFlag             = "repositoryServerUser"
 	repoServerAdminUserFlag        = "repositoryServerAdminUser"
