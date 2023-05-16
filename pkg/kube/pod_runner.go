@@ -50,26 +50,9 @@ func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
 func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	err := p.pc.StartPod(ctx)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create pod")
-	}
-
-	pod := p.pc.Pod()
-	ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
-	ctx = field.Context(ctx, consts.ContainerNameKey, pod.Spec.Containers[0].Name)
-	go func() {
-		<-ctx.Done()
-		err := p.pc.StopPod(context.Background(), PodControllerInfiniteStopTime, int64(0))
-		if err != nil {
-			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
-		}
-	}()
-	return fn(ctx, pod)
+	return p.RunEx(ctx, func(ctx2 context.Context, pc PodController) (PodOutputMap, error) {
+		return fn(ctx2, pc.Pod())
+	})
 }
 
 // RunEx will create a new Pod based on PodRunner contents and execute the given function
