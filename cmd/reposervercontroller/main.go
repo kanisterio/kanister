@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -32,6 +33,7 @@ import (
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/resource"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -64,7 +66,8 @@ func main() {
 	flag.Parse()
 	logger := zap.New(zap.UseFlagOptions(&opts))
 	ctrl.SetLogger(logger)
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	config := ctrl.GetConfigOrDie()
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
@@ -93,7 +96,9 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-
+	if err := resource.CreateRepoServerCustomResource(context.Background(), config); err != nil {
+		setupLog.Error(err, "problem creating repository server custom resource")
+	}
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")

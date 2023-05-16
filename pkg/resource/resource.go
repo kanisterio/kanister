@@ -58,3 +58,17 @@ func newOpKitContext(config *rest.Config) (*customresource.Context, error) {
 		Timeout:               60 * time.Second,
 	}, nil
 }
+
+// CreateRepoServerCustomResource creates the kopia repository server custom resource
+func CreateRepoServerCustomResource(ctx context.Context, config *rest.Config) error {
+	crCTX, err := newOpKitContext(config)
+	if err != nil {
+		return err
+	}
+
+	resources := []customresource.CustomResource{
+		crv1alpha1.RepositoryServerResource,
+	}
+
+	return customresource.CreateCustomResources(*crCTX, resources)
+}
