@@ -35,7 +35,7 @@ bpValidatingWebhook:
     secretName: '' # An already created Secret in kanister controller namespace having tls cert details
     caBundle: '' # A valid, CA bundle which is a PEM-encoded CA bundle for validating the webhook's server certificate
 repositoryServerController:
-  enabled: false
+  enabled: true
   # startTimeout is used to specify the time in seconds to wait for starting the kopia repository server
   # Default timeout is 600 seconds
   serverStartTimeout: 600
