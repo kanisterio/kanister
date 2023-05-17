@@ -98,7 +98,10 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	_, crCli, _, _ := initializeClients()
+	_, crCli, _, err := initializeClients()
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
 	rs, err := crCli.CrV1alpha1().RepositoryServers(defaultKanisterNamespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
 	if err != nil {
