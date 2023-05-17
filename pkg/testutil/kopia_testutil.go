@@ -47,7 +47,7 @@ const (
 	DefaultKopiaRepositoryServerAccessUser = "kanisterUser"
 	// DefaultKanisterNamespace is the default namespace for the kanister controller.
 	DefaultKanisterNamespace = "kanister"
-	// DefaultKopiaRepositoryServerAccessPassword is the default password for the kopia repository server.
+	// DefaultKopiaRepositoryServerAccessPassword is the default password for the user that client uses to connect to kopia repository server.
 	DefaultKopiaRepositoryServerAccessPassword = "test1234"
 	// DefaultKopiaRepositoryServerAdminPassword is the default password for the kopia repository server admin user.
 	DefaultKopiaRepositoryServerAdminPassword = "admin1234"
