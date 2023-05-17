@@ -16,6 +16,9 @@ package resource
 
 import (
 	"context"
+	"log"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,6 +29,11 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
+	"github.com/kanisterio/kanister/pkg/field"
+)
+
+const (
+	createOrUpdateCRDEnvVar = "CREATEORUPDATE_CRDS"
 )
 
 // CreateCustomResources creates the given custom resources and waits for them to initialize
@@ -71,4 +79,19 @@ func CreateRepoServerCustomResource(ctx context.Context, config *rest.Config) er
 	}
 
 	return customresource.CreateCustomResources(*crCTX, resources)
+}
+
+func CreateOrUpdateCRDs() bool {
+	createOrUpdateCRD := os.Getenv(createOrUpdateCRDEnvVar)
+	if createOrUpdateCRD == "" {
+		return true
+	}
+
+	c, err := strconv.ParseBool(createOrUpdateCRD)
+	if err != nil {
+		log.Print("environment variable", field.M{"CREATEORUPDATE_CRDS": createOrUpdateCRD})
+		return true
+	}
+
+	return c
 }

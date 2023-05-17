@@ -96,9 +96,15 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-	if err := resource.CreateRepoServerCustomResource(context.Background(), config); err != nil {
-		setupLog.Error(err, "problem creating repository server custom resource")
+
+	// CRDs should only be created/updated if the env var CREATEORUPDATE_CRDS is set to true
+	if resource.CreateOrUpdateCRDs() {
+		if err := resource.CreateRepoServerCustomResource(context.Background(), config); err != nil {
+			setupLog.Error(err, "Failed to create CustomResources.")
+			os.Exit(1)
+		}
 	}
+
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
