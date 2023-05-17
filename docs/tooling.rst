@@ -247,10 +247,10 @@ Kopia Repository Server creation using ``kanctl create``
       -l, --locationSecret string                          name of the secret containing kopia repository storage location details
       -p, --prefix string                                  prefix to be set in kopia repository
       -r, --repositoryPasswordSecret string                name of the secret containing password for the kopia repository
-      -z, --repositoryServerAdminUser string               kopia repository server admin user name
       -a, --repositoryServerAdminUserAccessSecret string   name of the secret having admin credentials to connect to connect to kopia repository server
       -u, --repositoryServerUser string                    name of the user to be created for the kopia repository server
       -k, --repositoryServerUserAccessSecret string        name of the secret having access credentials of the users that can connect to kopia repository server
+      -z, --repositoryUser string                          name of the user for accessing the kopia repository
       -t, --tlsSecret string                               name of the tls secret needed for secure kopia client and kopia repository server communication
 
     Global Flags:
