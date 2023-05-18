@@ -24,5 +24,5 @@ const (
 	ProfileResourceNamePlural   = "profiles"
 )
 
-const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
-const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.91.0"
+const LatestKanisterToolsImage = "gcr.io/kanisterio/kanister-tools:aaron_tag_k3"
+const KanisterToolsImage = "gcr.io/kanisterio/kanister-tools:aaron_tag_k3"
