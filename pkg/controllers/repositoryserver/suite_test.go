@@ -40,7 +40,7 @@ func Test(t *testing.T) { TestingT(t) }
 
 type RepoServerControllerSuite struct {
 	crCli                         crclientv1alpha1.CrV1alpha1Interface
-	cli                           kubernetes.Interface
+	kubeCli                       kubernetes.Interface
 	repoServerControllerNamespace string
 	repoServerSecrets             repositoryServerSecrets
 }
@@ -58,7 +58,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	// Make sure the CRD's exist.
 	_ = resource.CreateCustomResources(context.Background(), config)
 
-	s.cli = cli
+	s.kubeCli = cli
 	s.crCli = crCli
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -134,7 +134,7 @@ func (s *RepoServerControllerSuite) createSecret(name string, secrettype v1.Secr
 	return
 }
 
-func (s *RepoServerControllerSuite) TestRepositoryServerReady(c *C) {
+func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C) {
 	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
@@ -169,7 +169,7 @@ func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, rs *v1alph
 			return false, nil
 		}
 		if rs.Status.Progress == v1alpha1.ServerStopped {
-			return false, errors.New(fmt.Sprintf("Error creating repository server CR, server is in %s state, please check logs", rs.Status.Progress))
+			return false, errors.New(fmt.Sprintf(" There is failure in staring the repository server, server is in %s state, please check logs", rs.Status.Progress))
 		}
 		if rs.Status.Progress == v1alpha1.ServerReady {
 			return true, nil
