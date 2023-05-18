@@ -182,7 +182,7 @@ helm-test: build-dirs
 	@$(MAKE) run CMD='-c "./build/helm-test.sh $(SRC_DIRS)"'
 
 integration-test: build-dirs
-	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
+	@$(MAKE) run CMD='-c "./build/integration-test.sh kopia"'
 
 openshift-test:
 	@/bin/bash ./build/integration-test.sh openshift $(ocp_version)
