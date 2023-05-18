@@ -85,7 +85,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 		},
 	}
 	ctx := context.Background()
-	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	cns, err := s.kubeCli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.repoServerControllerNamespace = cns.Name
 	s.createRepositoryServerSecrets(c)
@@ -130,7 +130,7 @@ func (s *RepoServerControllerSuite) createSecret(name string, secrettype v1.Secr
 		secret.Type = secrettype
 	}
 
-	se, err = s.cli.CoreV1().Secrets(s.repoServerControllerNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	se, err = s.kubeCli.CoreV1().Secrets(s.repoServerControllerNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
 	return
 }
 
@@ -141,7 +141,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 	c.Assert(err, IsNil)
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated)
 	c.Assert(err, IsNil)
-	err = createKopiaRepository(s.cli, repoServerCRCreated, getDefaultS3StorageLocation())
+	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3StorageLocation())
 	c.Assert(err, IsNil)
 	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
 	c.Assert(err, IsNil)
@@ -182,7 +182,7 @@ func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, rs *v1alph
 
 func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
 	if s.repoServerControllerNamespace != "" {
-		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.repoServerControllerNamespace, metav1.DeleteOptions{})
+		err := s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.repoServerControllerNamespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
