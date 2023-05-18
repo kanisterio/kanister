@@ -145,6 +145,7 @@ kubectl create secret generic repo-pass -n kanister --from-literal=repo-password
 ```
 
 - Create Repository Server CR
+
 ```bash
 vi repo-server-cr.yaml 
 ```
