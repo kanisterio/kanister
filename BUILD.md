@@ -142,3 +142,11 @@ It is an on-demand workflow and needs to be run manually. This workflow expects
 
 The author updating the build image tag must raise a separate PR to update this
 value for it to be used in the build process. It should be set it [here](https://github.com/kanisterio/kanister/blob/master/Makefile#L61).
+
+## Build MongoDB Atlas tools image
+
+The MongoDB Atlas image [workflow](.github/workflows/atlas-image-build.yaml)
+is used to build and push a new Atlas tools image (`ghcr.io/kanisterio/mongodb-atlas`).
+It is an on-demand workflow and needs to be run manually when there are changes
+in [Atlas dockerfile](docker/mongodb-atlas/Dockerfile). This workflow expects
+`image tag` value as an input.
