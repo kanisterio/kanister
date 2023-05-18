@@ -46,7 +46,6 @@ func CreateCustomResources(ctx context.Context, config *rest.Config) error {
 		crv1alpha1.ActionSetResource,
 		crv1alpha1.BlueprintResource,
 		crv1alpha1.ProfileResource,
-		crv1alpha1.RepositoryServerResource,
 	}
 	return customresource.CreateCustomResources(*crCTX, resources)
 }
