@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -32,6 +33,7 @@ import (
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/resource"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -64,7 +66,8 @@ func main() {
 	flag.Parse()
 	logger := zap.New(zap.UseFlagOptions(&opts))
 	ctrl.SetLogger(logger)
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	config := ctrl.GetConfigOrDie()
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
@@ -92,6 +95,14 @@ func main() {
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
+	}
+
+	// CRDs should only be created/updated if the env var CREATEORUPDATE_CRDS is set to true
+	if resource.CreateOrUpdateCRDs() {
+		if err := resource.CreateRepoServerCustomResource(context.Background(), config); err != nil {
+			setupLog.Error(err, "Failed to create CustomResources.")
+			os.Exit(1)
+		}
 	}
 
 	setupLog.Info("starting manager")
