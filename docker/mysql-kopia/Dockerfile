@@ -43,7 +43,6 @@ FROM bitnami/mysql:8.0.33-debian-11-r7
 
 # Install kopia to take backups
 COPY --from=builder /kopia/kopia /usr/local/bin/kopia
-RUN setcap cap_chown,cap_fowner,cap_dac_override+iep /usr/local/bin/kopia
 
 # Install kando
 ADD kando /usr/local/bin/
