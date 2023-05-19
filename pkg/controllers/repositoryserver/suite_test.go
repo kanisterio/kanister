@@ -56,7 +56,10 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
-	_ = resource.CreateCustomResources(context.Background(), config)
+	err = resource.CreateCustomResources(context.Background(), config)
+	c.Assert(err, IsNil)
+	err = resource.CreateRepoServerCustomResource(context.Background(), config)
+	c.Assert(err, IsNil)
 
 	s.kubeCli = cli
 	s.crCli = crCli
@@ -139,7 +142,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
 	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3StorageLocation())
 	c.Assert(err, IsNil)
@@ -147,12 +150,48 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 	c.Assert(err, IsNil)
 }
 
-func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(rs *v1alpha1.RepositoryServer) error {
+func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerStopped(c *C) {
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3StorageLocation())
+	c.Assert(err, IsNil)
+	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
+	c.Assert(err, NotNil)
+	c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.ServerStopped)
+}
+
+func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
+	ctx := context.Background()
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	pod, err := s.kubeCli.CoreV1().Pods(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Status.ServerInfo.PodName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(len(pod.OwnerReferences), Equals, 1)
+	c.Assert(pod.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
+	service, err := s.kubeCli.CoreV1().Services(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Status.ServerInfo.ServiceName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(len(service.OwnerReferences), Equals, 1)
+	c.Assert(service.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
+
+}
+
+func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
 	ctxTimeout := 3 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		if rs.Status.ServerInfo.PodName == "" || rs.Status.ServerInfo.ServiceName == "" {
+		repoServerCR, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		if repoServerCR.Status.ServerInfo.PodName == "" || repoServerCR.Status.ServerInfo.ServiceName == "" {
 			return false, errors.New("Repository server CR server not set")
 		}
 		return true, nil

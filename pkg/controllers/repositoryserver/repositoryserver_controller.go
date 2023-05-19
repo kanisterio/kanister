@@ -90,9 +90,10 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'ServerStopped' since an error occurred in create/update event")
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerStopped
-		if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
 			return ctrl.Result{}, err
 		}
+		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
 		return ctrl.Result{}, err
 	}
 	logger.Info("Setting the CR status as 'ServerReady' after completing the create/update event\n\n\n\n")
