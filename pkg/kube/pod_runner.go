@@ -33,6 +33,11 @@ type PodRunnerFunc func(context.Context, PodController) (PodOutputMap, error)
 // PodRunner allows us to start / stop pod, write file to pod and execute command within it
 type PodRunner interface {
 	Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error)
+	// RunEx utilizes the PodController interface and forwards it to the functor, simplifying the manipulation with
+	// particular pod from the functor.
+	// TODO: Since significant number of functions are currently using PodRunner, we'll keep Run for now.
+	// However, once all these functions have been refactored to use PodController,
+	// Run should be removed and RunEx has to be renamed to Run.
 	RunEx(ctx context.Context, fn PodRunnerFunc) (PodOutputMap, error)
 }
 
