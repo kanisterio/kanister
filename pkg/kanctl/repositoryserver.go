@@ -28,14 +28,14 @@ import (
 )
 
 const (
-	tlsSecretFlag                       = "tlsSecret"
-	repoServerUserFlag                  = "repositoryServerUser"
-	repoServerUserAccessSecretFlag      = "repositoryServerUserAccessSecret"
-	repoServerAdminUserAccessSecretFlag = "repositoryServerAdminUserAccessSecret"
-	repoPasswordSecretFlag              = "repositoryPasswordSecret"
-	repoUserFlag                        = "repositoryUser"
-	locationCredsSecretFlag             = "locationCredsSecret"
-	locationSecretFlag                  = "locationSecret"
+	tlsSecretFlag                       = "tls-secret"
+	repoServerUserFlag                  = "repository-server-user"
+	repoServerUserAccessSecretFlag      = "repository-server-user-access-secret"
+	repoServerAdminUserAccessSecretFlag = "repository-server-admin-user-access-secret"
+	repoPasswordSecretFlag              = "repository-password-secret"
+	repoUserFlag                        = "repository-user"
+	locationCredsSecretFlag             = "location-creds-secret"
+	locationSecretFlag                  = "location-secret"
 	defaultKanisterNamespace            = "kanister"
 	defaultRepositoryServerHost         = "localhost"
 )
