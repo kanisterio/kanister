@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -28,6 +29,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
@@ -41,6 +43,8 @@ const (
 	locationSecretFlag                  = "location-secret"
 	defaultKanisterNamespace            = "kanister"
 	defaultRepositoryServerHost         = "localhost"
+	waitFlag                            = "wait"
+	contextWaitTimeout                  = 10 * time.Minute
 )
 
 type repositoryServerParams struct {
@@ -74,6 +78,7 @@ func newRepositoryServerCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(repoUserFlag, "z", "", "name of the user for accessing the kopia repository")
 	cmd.PersistentFlags().StringP(locationSecretFlag, "l", "", "name of the secret containing kopia repository storage location details")
 	cmd.PersistentFlags().StringP(locationCredsSecretFlag, "c", "", "name of the secret containing kopia repository storage credentials")
+	cmd.PersistentFlags().BoolP(waitFlag, "w", false, "wait for the kopia repository server CR to be in ready state after creation")
 
 	_ = cmd.MarkFlagRequired(tlsSecretFlag)
 	_ = cmd.MarkFlagRequired(repoServerUserFlag)
@@ -115,6 +120,15 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	rs, err := crCli.CrV1alpha1().RepositoryServers(defaultKanisterNamespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
 	if err != nil {
 		return err
+	}
+
+	waitFlag, _ := cmd.Flags().GetBool(waitFlag)
+	if waitFlag {
+		fmt.Print("Waiting for the kopia repository server CR to be in ready state...\n")
+		err = waitForRepositoryServerReady(ctx, crCli, rs)
+		if err != nil {
+			return err
+		}
 	}
 	fmt.Printf("repositoryservers.cr.kanister.io/%s created\n", rs.GetName())
 	return nil
@@ -250,4 +264,20 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 			},
 		},
 	}, nil
+}
+
+func waitForRepositoryServerReady(ctx context.Context, cli *versioned.Clientset, rs *v1alpha1.RepositoryServer) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
+	defer waitCancel()
+	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		repositoryServer, err := cli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
+		if repositoryServer.Status.Progress == v1alpha1.ServerReady && err == nil {
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
