@@ -50,8 +50,8 @@ func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
 func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
-	return p.RunEx(ctx, func(ctx2 context.Context, pc PodController) (PodOutputMap, error) {
-		return fn(ctx2, pc.Pod())
+	return p.RunEx(ctx, func(innerCtx context.Context, pc PodController) (PodOutputMap, error) {
+		return fn(innerCtx, pc.Pod())
 	})
 }
 
