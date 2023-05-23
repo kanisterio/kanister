@@ -18,26 +18,33 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
-	tlsSecretFlag                       = "tlsSecret"
-	repoServerUserFlag                  = "repositoryServerUser"
-	repoServerUserAccessSecretFlag      = "repositoryServerUserAccessSecret"
-	repoServerAdminUserAccessSecretFlag = "repositoryServerAdminUserAccessSecret"
-	repoPasswordSecretFlag              = "repositoryPasswordSecret"
-	repoUserFlag                        = "repositoryUser"
-	locationCredsSecretFlag             = "locationCredsSecret"
-	locationSecretFlag                  = "locationSecret"
+	tlsSecretFlag                       = "tls-secret"
+	repoServerUserFlag                  = "repository-server-user"
+	repoServerUserAccessSecretFlag      = "repository-server-user-access-secret"
+	repoServerAdminUserAccessSecretFlag = "repository-server-admin-user-access-secret"
+	repoPasswordSecretFlag              = "repository-password-secret"
+	repoUserFlag                        = "repository-user"
+	locationCredsSecretFlag             = "location-creds-secret"
+	locationSecretFlag                  = "location-secret"
 	defaultKanisterNamespace            = "kanister"
 	defaultRepositoryServerHost         = "localhost"
+	waitFlag                            = "wait"
+	contextWaitTimeout                  = 10 * time.Minute
 )
 
 type repositoryServerParams struct {
@@ -71,6 +78,7 @@ func newRepositoryServerCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(repoUserFlag, "z", "", "name of the user for accessing the kopia repository")
 	cmd.PersistentFlags().StringP(locationSecretFlag, "l", "", "name of the secret containing kopia repository storage location details")
 	cmd.PersistentFlags().StringP(locationCredsSecretFlag, "c", "", "name of the secret containing kopia repository storage credentials")
+	cmd.PersistentFlags().BoolP(waitFlag, "w", false, "wait for the kopia repository server CR to be in ready state after creation")
 
 	_ = cmd.MarkFlagRequired(tlsSecretFlag)
 	_ = cmd.MarkFlagRequired(repoServerUserFlag)
@@ -98,46 +106,68 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	_, crCli, _, err := initializeClients()
+
+	config, err := kube.LoadConfig()
 	if err != nil {
 		return err
 	}
+	crCli, err := versioned.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "could not get the CRD client")
+	}
 	ctx := context.Background()
+
 	rs, err := crCli.CrV1alpha1().RepositoryServers(defaultKanisterNamespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
-	fmt.Printf("repository-server '%s' created\n", rs.GetName())
+
+	waitFlag, _ := cmd.Flags().GetBool(waitFlag)
+	if waitFlag {
+		fmt.Print("Waiting for the kopia repository server CR to be in ready state...\n")
+		err = waitForRepositoryServerReady(ctx, crCli, rs)
+		if err != nil {
+			return err
+		}
+	}
+	fmt.Printf("repositoryservers.cr.kanister.io/%s created\n", rs.GetName())
 	return nil
 }
 
 func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams, error) {
 	// Fetch values of the flags
 	tlsSecret, _ := cmd.Flags().GetString(tlsSecretFlag)
-	repositoryServerUser, _ := cmd.Flags().GetString(repoServerUserFlag)
-	repositoryServerUserAccessSecret, _ := cmd.Flags().GetString(repoServerUserAccessSecretFlag)
-	repositoryServerAdminUserAccessSecret, _ := cmd.Flags().GetString(repoServerAdminUserAccessSecretFlag)
-	repositoryUser, _ := cmd.Flags().GetString(repoUserFlag)
-	repositoryPassword, _ := cmd.Flags().GetString(repoPasswordSecretFlag)
-	prefix, _ := cmd.Flags().GetString(prefixFlag)
-	location, _ := cmd.Flags().GetString(locationSecretFlag)
-	locationCreds, _ := cmd.Flags().GetString(locationCredsSecretFlag)
-
 	if strings.Contains(tlsSecret, "/") {
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", tlsSecret)
 	}
+
+	repositoryServerUser, _ := cmd.Flags().GetString(repoServerUserFlag)
+
+	repositoryServerUserAccessSecret, _ := cmd.Flags().GetString(repoServerUserAccessSecretFlag)
 	if strings.Contains(repositoryServerUserAccessSecret, "/") {
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerUserAccessSecret)
 	}
+
+	repositoryServerAdminUserAccessSecret, _ := cmd.Flags().GetString(repoServerAdminUserAccessSecretFlag)
 	if strings.Contains(repositoryServerAdminUserAccessSecret, "/") {
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerAdminUserAccessSecret)
 	}
+
+	repositoryUser, _ := cmd.Flags().GetString(repoUserFlag)
+
+	repositoryPassword, _ := cmd.Flags().GetString(repoPasswordSecretFlag)
 	if strings.Contains(repositoryPassword, "/") {
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryPassword)
 	}
+
+	prefix, _ := cmd.Flags().GetString(prefixFlag)
+
+	location, _ := cmd.Flags().GetString(locationSecretFlag)
 	if strings.Contains(location, "/") {
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", location)
 	}
+
+	locationCreds, _ := cmd.Flags().GetString(locationCredsSecretFlag)
 	if strings.Contains(locationCreds, "/") {
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", locationCreds)
 	}
@@ -158,9 +188,13 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParams) (*v1alpha1.RepositoryServer, error) {
 	// Fetch and Validate Secrets
 	ctx := context.Background()
-	cli, _, _, err := initializeClients()
+	config, err := kube.LoadConfig()
 	if err != nil {
 		return nil, err
+	}
+	cli, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get the kubernetes client")
 	}
 	tlsSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.tls, metav1.GetOptions{})
 	if err != nil {
@@ -230,4 +264,20 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 			},
 		},
 	}, nil
+}
+
+func waitForRepositoryServerReady(ctx context.Context, cli *versioned.Clientset, rs *v1alpha1.RepositoryServer) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
+	defer waitCancel()
+	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		repositoryServer, err := cli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
+		if repositoryServer.Status.Progress == v1alpha1.ServerReady && err == nil {
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

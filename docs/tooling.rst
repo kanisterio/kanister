@@ -242,16 +242,16 @@ Kopia Repository Server creation using ``kanctl create``
       kanctl create repository-server [flags]
 
     Flags:
-      -h, --help                                           help for repository-server
-      -c, --locationCredsSecret string                     name of the secret containing kopia repository storage credentials
-      -l, --locationSecret string                          name of the secret containing kopia repository storage location details
-      -p, --prefix string                                  prefix to be set in kopia repository
-      -r, --repositoryPasswordSecret string                name of the secret containing password for the kopia repository
-      -a, --repositoryServerAdminUserAccessSecret string   name of the secret having admin credentials to connect to connect to kopia repository server
-      -u, --repositoryServerUser string                    name of the user to be created for the kopia repository server
-      -k, --repositoryServerUserAccessSecret string        name of the secret having access credentials of the users that can connect to kopia repository server
-      -z, --repositoryUser string                          name of the user for accessing the kopia repository
-      -t, --tlsSecret string                               name of the tls secret needed for secure kopia client and kopia repository server communication
+      -h, --help                                                help for repository-server
+      -c, --location-creds-secret string                        name of the secret containing kopia repository storage credentials
+      -l, --location-secret string                              name of the secret containing kopia repository storage location details
+      -p, --prefix string                                       prefix to be set in kopia repository
+      -r, --repository-password-secret string                   name of the secret containing password for the kopia repository
+      -a, --repository-server-admin-user-access-secret string   name of the secret having admin credentials to connect to connect to kopia repository server
+      -u, --repository-server-user string                       name of the user to be created for the kopia repository server
+      -k, --repository-server-user-access-secret string         name of the secret having access credentials of the users that can connect to kopia repository server
+      -z, --repository-user string                              name of the user for accessing the kopia repository
+      -t, --tls-secret string                                   name of the tls secret needed for secure kopia client and kopia repository server communication
 
     Global Flags:
           --dry-run            if set, resource YAML will be printed but not created
