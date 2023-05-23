@@ -70,6 +70,15 @@ dockers:
 - ids:
   - kando
   image_templates:
+  - 'ghcr.io/kanisterio/mysql-kopia:{{ .Tag }}'
+  build_flag_templates:
+# Refers to https://github.com/kopia/kopia/commit/a1eeeeadb3759fb94184f5c83d0f54e4cbc91f72
+  - "build-arg=kopiaBuildCommit=a1eeeea"
+  - "--build-arg=kopiaRepoOrg=kopia"
+  dockerfile: 'docker/mysql-kopia/Dockerfile'
+- ids:
+  - kando
+  image_templates:
   - 'ghcr.io/kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
 - image_templates:
@@ -114,11 +123,6 @@ dockers:
   image_templates:
   - 'ghcr.io/kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
-- ids:
-  - kando
-  image_templates:
-  - 'ghcr.io/kanisterio/mysql-kopia:{{ .Tag }}'
-  dockerfile: 'docker/mysql/Dockerfile'
 - ids:
   - kando
   image_templates:

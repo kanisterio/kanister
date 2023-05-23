@@ -54,7 +54,7 @@ If you have deployed MySQL application with name other than `mysql-release` and 
 
 Create Kopia Repository Server CR if not created already
 
-- Create Kopia Repository
+- Create Kopia Repository using S3 as the location storage
 ```bash
 $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
 --log-dir=/tmp/kopia-cache repository create --no-check-for-updates \
@@ -138,13 +138,14 @@ $ kubectl create -f s3_location.yaml -n kanister
 kubectl create secret generic repository-server-user-access -n kanister --from-literal=localhost=<suitable_password_for_repository_server_user>
 
 # The following command creates secrets for kopia repository server admin access.
-kubectl create secret generic repository-admin-user -n kanister --from-literal=username=admin@mysql --from-literal=password=<suitable_password_for_repository_server_admin>
+kubectl create secret generic repository-admin-user -n kanister --from-literal=username=<suitable_admin_username_for_repository_server> --from-literal=password=<suitable_password_for_repository_server_admin>
 
 # The following command creates secrets for kopia repository access.
 kubectl create secret generic repo-pass -n kanister --from-literal=repo-password=<repository_password_set_while_creating_kopia_repository>
 ```
 
 - Create Repository Server CR
+
 ```bash
 vi repo-server-cr.yaml 
 ```
