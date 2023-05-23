@@ -16,7 +16,6 @@ package repositoryserver
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -33,8 +32,6 @@ import (
 
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
-
-const retryDelay = 30 * time.Second
 
 // RepositoryServerReconciler reconciles a RepositoryServer object
 type RepositoryServerReconciler struct {
@@ -97,7 +94,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, uerr
 		}
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
-		return ctrl.Result{RequeueAfter: retryDelay}, nil
+		return ctrl.Result{}, err
 	}
 	logger.Info("Setting the CR status as 'ServerReady' after completing the create/update event\n\n\n\n")
 	repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerReady
