@@ -83,8 +83,8 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	return pr.RunEx(ctx, podFunc)
 }
 
-func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint, targetPath, encryptionKey string) kube.PodRunnerFunc {
-	return func(ctx context.Context, pc kube.PodController) (kube.PodOutputMap, error) {
+func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint, targetPath, encryptionKey string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())

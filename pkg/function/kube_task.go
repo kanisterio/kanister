@@ -65,8 +65,8 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 	return pr.RunEx(ctx, podFunc)
 }
 
-func kubeTaskPodFunc() kube.PodRunnerFunc {
-	return func(ctx context.Context, pc kube.PodController) (kube.PodOutputMap, error) {
+func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
 		}
