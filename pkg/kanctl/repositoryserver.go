@@ -41,7 +41,6 @@ const (
 	repoUserFlag                        = "repository-user"
 	locationCredsSecretFlag             = "location-creds-secret"
 	locationSecretFlag                  = "location-secret"
-	defaultKanisterNamespace            = "kanister"
 	defaultRepositoryServerHost         = "localhost"
 	waitFlag                            = "wait"
 	contextWaitTimeout                  = 10 * time.Minute
@@ -57,6 +56,7 @@ type repositoryServerParams struct {
 	prefix                          string
 	location                        string
 	locationCreds                   string
+	namespace                       string
 }
 
 func newRepositoryServerCommand() *cobra.Command {
@@ -117,7 +117,7 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	}
 	ctx := context.Background()
 
-	rs, err := crCli.CrV1alpha1().RepositoryServers(defaultKanisterNamespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
+	rs, err := crCli.CrV1alpha1().RepositoryServers(rsParams.namespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -172,6 +172,11 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", locationCreds)
 	}
 
+	ns, err := resolveNamespace(cmd)
+	if err != nil {
+		return nil, err
+	}
+
 	return &repositoryServerParams{
 		tls:                             tlsSecret,
 		repositoryServerUser:            repositoryServerUser,
@@ -182,6 +187,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		prefix:                          prefix,
 		location:                        location,
 		locationCreds:                   locationCreds,
+		namespace:                       ns,
 	}, nil
 }
 
@@ -196,27 +202,27 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get the kubernetes client")
 	}
-	tlsSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.tls, metav1.GetOptions{})
+	tlsSecret, err := cli.CoreV1().Secrets(rsParams.namespace).Get(ctx, rsParams.tls, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repositoryServerUserAccessSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.repositoryServerUserAccess, metav1.GetOptions{})
+	repositoryServerUserAccessSecret, err := cli.CoreV1().Secrets(rsParams.namespace).Get(ctx, rsParams.repositoryServerUserAccess, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repositoryServerAdminUserAccessSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.repositoryServerAdminUserAccess, metav1.GetOptions{})
+	repositoryServerAdminUserAccessSecret, err := cli.CoreV1().Secrets(rsParams.namespace).Get(ctx, rsParams.repositoryServerAdminUserAccess, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repositoryPasswordSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.repositoryPassword, metav1.GetOptions{})
+	repositoryPasswordSecret, err := cli.CoreV1().Secrets(rsParams.namespace).Get(ctx, rsParams.repositoryPassword, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	locationSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.location, metav1.GetOptions{})
+	locationSecret, err := cli.CoreV1().Secrets(rsParams.namespace).Get(ctx, rsParams.location, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	locationCredsSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.locationCreds, metav1.GetOptions{})
+	locationCredsSecret, err := cli.CoreV1().Secrets(rsParams.namespace).Get(ctx, rsParams.locationCreds, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
