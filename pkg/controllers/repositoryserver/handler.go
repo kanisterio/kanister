@@ -17,12 +17,12 @@ package repositoryserver
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/jpillora/backoff"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -54,13 +54,23 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 	if err = h.getSecretsFromCR(ctx); err != nil {
 		return errors.Wrap(err, "Failed to get Kopia API server secrets")
 	}
-	pod, err := h.reconcilePod(ctx, svc)
+	envVars, pod, err := h.reconcilePod(ctx, svc)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile Kopia API server pod")
 	}
 	if err := h.waitForPodReady(ctx, pod); err != nil {
 		return errors.Wrap(err, "Kopia API server pod not in ready state")
 	}
+
+	// envVars are set only when credentials are of type AWS/Azure.
+	// If location credentials are GCP, write them to the pod
+	if envVars == nil {
+		err = h.writeGCPCredsToPod(ctx, pod)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err := h.connectToKopiaRepository(); err != nil {
 		return errors.Wrap(err, "Failed to connect to Kopia repository")
 	}
@@ -156,22 +166,24 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 	return &svc, err
 }
 
-func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Service) (*corev1.Pod, error) {
+func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
 	repoServerNamespace := h.RepositoryServer.Namespace
 	podName := h.RepositoryServer.Status.ServerInfo.PodName
 	pod := &corev1.Pod{}
 	h.Logger.Info("Check if the pod resource exists. If exists, reconcile with CR spec")
 	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: podName, Namespace: repoServerNamespace}, pod)
 	if err == nil {
-		return h.updatePod(ctx, pod, svc)
+		pod, err = h.updatePod(ctx, pod, svc)
+		return nil, pod, err
 	}
 	if !apierrors.IsNotFound(err) {
-		return nil, err
+		return nil, nil, err
 	}
 	h.Logger.Info("Pod resource not found. Creating new pod")
-	pod, err = h.createPod(ctx, repoServerNamespace, svc)
+	var envVars []corev1.EnvVar
+	pod, envVars, err = h.createPod(ctx, repoServerNamespace, svc)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	h.Logger.Info("Update pod name in RepositoryServer /status")
 	serverInfo := crv1alpha1.ServerInfo{
@@ -179,9 +191,10 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 		ServiceName: h.RepositoryServer.Status.ServerInfo.ServiceName,
 	}
 	if err := h.updateServerInfoInCRStatus(ctx, serverInfo); err != nil {
-		return nil, errors.Wrap(err, "Failed to update pod name in RepositoryServer /status")
+		return nil, nil, errors.Wrap(err, "Failed to update pod name in RepositoryServer /status")
 	}
-	return pod, nil
+
+	return envVars, pod, nil
 }
 
 func (h *RepoServerHandler) updatePod(ctx context.Context, pod *corev1.Pod, svc *corev1.Service) (*corev1.Pod, error) {
@@ -207,56 +220,57 @@ func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *c
 	return pod
 }
 
-func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, error) {
+func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, []corev1.EnvVar, error) {
 	podOverride, err := h.preparePodOverride(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	podOptions := getPodOptions(repoServerNamespace, podOverride, svc)
-	pod, err := h.setCredDataFromSecretInPod(ctx, podOptions)
+	pod, envVars, err := h.setCredDataFromSecretInPod(ctx, podOptions)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
 	h.Logger.Info("Set controller reference on the pod to allow reconciliation using this controller")
 	if err := controllerutil.SetControllerReference(h.RepositoryServer, pod, h.Reconciler.Scheme); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := h.Reconciler.Create(ctx, pod); err != nil {
-		return nil, errors.Wrap(err, "Failed to create RepositoryServer pod")
+		return nil, nil, errors.Wrap(err, "Failed to create RepositoryServer pod")
 	}
-	return pod, nil
+	return pod, envVars, err
 }
 
-func (h *RepoServerHandler) setCredDataFromSecretInPod(ctx context.Context, podOptions *kube.PodOptions) (*corev1.Pod, error) {
-	h.Logger.Info("Setting credentials data from secret as either env variables or files in pod")
-	namespace := h.RepositoryServer.Namespace
+func (h *RepoServerHandler) writeGCPCredsToPod(ctx context.Context, pod *corev1.Pod) error {
+	h.Logger.Info("Setting credentials data from secret as a file in pod")
+	storageCredSecret := h.RepositoryServerSecrets.storageCredentials
+
+	if val, ok := storageCredSecret.Data[googleCloudServiceAccFileName]; ok {
+		namespace := h.RepositoryServer.Namespace
+		pw := kube.NewPodWriter(h.KubeCli, consts.GoogleCloudCredsFilePath, bytes.NewBufferString(string(val)))
+		if err := pw.Write(ctx, namespace, pod.Name, repoServerPodContainerName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *RepoServerHandler) setCredDataFromSecretInPod(ctx context.Context, podOptions *kube.PodOptions) (*corev1.Pod, []corev1.EnvVar, error) {
 	storageCredSecret := h.RepositoryServerSecrets.storageCredentials
 	envVars, err := storage.GenerateEnvSpecFromCredentialSecret(storageCredSecret, time.Duration(time.Now().Second()))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var pod *corev1.Pod
 	if envVars != nil {
+		h.Logger.Info("Setting credentials data from secret as env variables")
 		podOptions.EnvironmentVariables = envVars
 	}
 	pod, err = kube.GetPodObjectFromPodOptions(h.KubeCli, podOptions)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if envVars == nil {
-		if val, ok := storageCredSecret.Data[googleCloudServiceAccFileName]; ok {
-			val, err = base64.StdEncoding.DecodeString(string(val))
-			if err != nil {
-				return nil, err
-			}
-			gcloudCredsFilePath := fmt.Sprintf("%s/%s", googleCloudCredsDirPath, googleCloudServiceAccFileName)
-			pw := kube.NewPodWriter(h.KubeCli, gcloudCredsFilePath, bytes.NewBufferString(string(val)))
-			if err := pw.Write(ctx, namespace, pod.Name, repoServerPodContainerName); err != nil {
-				return nil, err
-			}
-		}
-	}
-	return pod, nil
+	return pod, envVars, nil
 }
 
 func (h *RepoServerHandler) preparePodOverride(ctx context.Context) (map[string]interface{}, error) {
