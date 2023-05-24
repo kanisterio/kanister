@@ -17,7 +17,9 @@ package kube
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -100,7 +102,6 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
-	//simulatedError := errors.New("SimulatedError")
 	command := []string{"command", "arg1"}
 
 	cases := map[string]func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor){
@@ -174,19 +175,60 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 
 			c.Assert(err, IsNil)
 			c.Assert(prp.inExecWithOptionsCli, Equals, cli)
-			c.Assert(prp.inExecWithOptionsOpts, DeepEquals, &ExecOptions{
-				Command:       command,
-				Namespace:     podCommandExecutorNS,
-				PodName:       podCommandExecutorPodName,
-				ContainerName: podCommandExecutorContainerName,
-				Stdin:         &bStdin,
-				Stdout:        &bStdout,
-				Stderr:        &bStderr,
-			})
+			c.Assert(prp.inExecWithOptionsOpts.Command, DeepEquals, command)
+			c.Assert(prp.inExecWithOptionsOpts.Namespace, Equals, podCommandExecutorNS)
+			c.Assert(prp.inExecWithOptionsOpts.PodName, Equals, podCommandExecutorPodName)
+			c.Assert(prp.inExecWithOptionsOpts.ContainerName, Equals, podCommandExecutorContainerName)
+			c.Assert(prp.inExecWithOptionsOpts.Stdin, Equals, &bStdin)
+			c.Assert(prp.inExecWithOptionsOpts.Stdout, Not(IsNil))
+			c.Assert(prp.inExecWithOptionsOpts.Stderr, Not(IsNil))
 			c.Assert(bStdout.Len() > 0, Equals, true)
 			c.Assert(bStderr.Len() > 0, Equals, true)
 			c.Assert(bStdout.String(), Equals, expStdout)
 			c.Assert(bStderr.String(), Equals, expStderr)
+		},
+		"In case of failure, we have tail of logs": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
+			var errorLines []string
+			var outputLines []string
+			for i := 1; i <= 12; i++ {
+				errorLines = append(errorLines, fmt.Sprintf("error line %d", i))
+				outputLines = append(outputLines, fmt.Sprintf("output line %d", i))
+			}
+
+			var err error
+			prp.execWithOptionsStdout = strings.Join(outputLines, "\n")
+			prp.execWithOptionsStderr = strings.Join(errorLines, "\n")
+			prp.execWithOptionsErr = errors.New("SimulatedError")
+
+			expStdout := prp.execWithOptionsStdout
+			expStderr := prp.execWithOptionsStderr
+			expErrorStderr := strings.Join(errorLines[2:], "\r\n")
+			expErrorStdout := strings.Join(outputLines[2:], "\r\n")
+
+			var bStdin, bStdout, bStderr bytes.Buffer
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				err = pr.Exec(ctx, command, &bStdin, &bStdout, &bStderr)
+				wg.Done()
+			}()
+			prp.execWithOptionsSyncStart.Sync() // Ensure ExecWithOptions is called
+			wg.Wait()
+			prp.execWithOptionsSyncEnd.Sync() // Release execWithOptions
+
+			c.Assert(err, Not(IsNil))
+			c.Assert(prp.inExecWithOptionsOpts.Stdout, Not(IsNil))
+			c.Assert(prp.inExecWithOptionsOpts.Stderr, Not(IsNil))
+			c.Assert(bStdout.Len() > 0, Equals, true)
+			c.Assert(bStderr.Len() > 0, Equals, true)
+			c.Assert(bStdout.String(), Equals, expStdout)
+			c.Assert(bStderr.String(), Equals, expStderr)
+
+			var ee *ExecError
+			c.Assert(errors.As(err, &ee), Equals, true)
+			c.Assert(ee.Error(), Equals, "SimulatedError")
+			c.Assert(ee.Stderr(), Equals, expErrorStderr)
+			c.Assert(ee.Stdout(), Equals, expErrorStdout)
 		},
 	}
 

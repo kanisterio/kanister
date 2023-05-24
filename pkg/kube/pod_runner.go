@@ -48,7 +48,7 @@ func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err := p.pc.StartPod(ctx, PodControllerInfiniteStopTime)
+	err := p.pc.StartPod(ctx)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create pod")
@@ -59,7 +59,7 @@ func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 	ctx = field.Context(ctx, consts.ContainerNameKey, pod.Spec.Containers[0].Name)
 	go func() {
 		<-ctx.Done()
-		err := p.pc.StopPod(context.Background())
+		err := p.pc.StopPod(context.Background(), PodControllerInfiniteStopTime, int64(0))
 		if err != nil {
 			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
 		}

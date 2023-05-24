@@ -21,6 +21,24 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+type ExecError struct {
+	error
+	stdout LogTail
+	stderr LogTail
+}
+
+func (e *ExecError) Unwrap() error {
+	return e.error
+}
+
+func (e *ExecError) Stdout() string {
+	return e.stdout.ToString()
+}
+
+func (e *ExecError) Stderr() string {
+	return e.stderr.ToString()
+}
+
 // PodCommandExecutor allows us to execute command within the pod
 type PodCommandExecutor interface {
 	Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error
@@ -44,18 +62,28 @@ type podCommandExecutor struct {
 // Exec runs the command and logs stdout and stderr.
 func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	var (
-		opts = ExecOptions{
+		stderrTail = NewLogTail(logTailDefaultLength)
+		stdoutTail = NewLogTail(logTailDefaultLength)
+		opts       = ExecOptions{
 			Command:       command,
 			Namespace:     p.namespace,
 			PodName:       p.podName,
 			ContainerName: p.containerName,
 			Stdin:         stdin,
-			Stdout:        stdout,
-			Stderr:        stderr,
+			Stdout:        stdoutTail,
+			Stderr:        stderrTail,
 		}
+
 		cmdDone = make(chan struct{})
 		err     error
 	)
+
+	if stdout != nil {
+		opts.Stdout = io.MultiWriter(stdout, stdoutTail)
+	}
+	if stderr != nil {
+		opts.Stderr = io.MultiWriter(stderr, stderrTail)
+	}
 
 	go func() {
 		_, _, err = p.pcep.execWithOptions(p.cli, opts)
@@ -66,6 +94,13 @@ func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin i
 	case <-ctx.Done():
 		err = ctx.Err()
 	case <-cmdDone:
+		if err != nil {
+			err = &ExecError{
+				error:  err,
+				stdout: stdoutTail,
+				stderr: stderrTail,
+			}
+		}
 	}
 
 	return err
