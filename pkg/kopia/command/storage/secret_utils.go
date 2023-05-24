@@ -153,26 +153,6 @@ func GetMapForLocationValues(
 ) map[string][]byte {
 	m := map[string][]byte{}
 	if bucket != "" {
-<<<<<<< HEAD
-		m[secrets.BucketKey] = []byte(bucket)
-	}
-	if endpoint != "" {
-		m[secrets.EndpointKey] = []byte(endpoint)
-	}
-	if prefix != "" {
-		m[secrets.PrefixKey] = []byte(prefix)
-	}
-	if region != "" {
-		m[secrets.RegionKey] = []byte(region)
-	}
-	if skipSSLVerify != "" {
-		m[secrets.SkipSSLVerifyKey] = []byte(skipSSLVerify)
-	}
-	if locType != "" {
-		m[secrets.TypeKey] = []byte(locType)
-		if locType == secrets.LocType(v1alpha1.LocationTypeS3Compliant) {
-			m[secrets.TypeKey] = []byte(secrets.LocTypeS3)
-=======
 		m[repositoryserver.BucketKey] = []byte(bucket)
 	}
 	if endpoint != "" {
@@ -191,7 +171,6 @@ func GetMapForLocationValues(
 		m[repositoryserver.TypeKey] = []byte(locType)
 		if locType == repositoryserver.LocType(v1alpha1.LocationTypeS3Compliant) {
 			m[repositoryserver.TypeKey] = []byte(repositoryserver.LocTypeS3)
->>>>>>> refactoringKopiaConstants
 		}
 	}
 	return m
