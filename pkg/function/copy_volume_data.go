@@ -99,7 +99,9 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
 		}
 
-		defer remover.Remove(context.Background()) //nolint:errcheck
+		if remover != nil { // WriteCredsToPod might return nil when nothing was written
+			defer remover.Remove(context.Background()) //nolint:errcheck
+		}
 
 		pod := pc.Pod()
 		// Get restic repository
