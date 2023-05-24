@@ -102,13 +102,13 @@ func ValidateProfile(profile *param.Profile) error {
 type nopRemover struct {
 }
 
-var _ kube.PodFileRemover = (*nopRemover)(nil)
+var _ kube.PodFileRemover = nopRemover{}
 
-func (nr *nopRemover) Remove(ctx context.Context) error {
+func (nr nopRemover) Remove(ctx context.Context) error {
 	return nil
 }
 
-func (nr *nopRemover) Path() string {
+func (nr nopRemover) Path() string {
 	return ""
 }
 
@@ -122,7 +122,7 @@ func WriteCredsToPod(ctx context.Context, writer kube.PodFileWriter, profile *pa
 
 		return remover, nil
 	}
-	return &nopRemover{}, nil
+	return nopRemover{}, nil
 }
 
 // GetPodWriter creates a file with Google credentials if the given profile points to a GCS location
