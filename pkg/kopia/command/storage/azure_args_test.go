@@ -17,6 +17,7 @@ package storage
 import (
 	"fmt"
 
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"gopkg.in/check.v1"
 )
 
@@ -28,8 +29,8 @@ func (s *StorageUtilsSuite) TestAzureArgsUtil(c *check.C) {
 	}{
 		{
 			location: map[string][]byte{
-				bucketKey: []byte("test-bucket"),
-				prefixKey: []byte("test-prefix"),
+				repositoryserver.BucketKey: []byte("test-bucket"),
+				repositoryserver.PrefixKey: []byte("test-prefix"),
 			},
 			expectedCommand: fmt.Sprint(azureSubCommand,
 				fmt.Sprintf(" %s=%s ", azureContainerFlag, "test-bucket"),
