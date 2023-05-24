@@ -39,7 +39,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build mysql-kopia image
-FROM bitnami/mysql:8.0.33-debian-11-r7
+FROM bitnami/mysql:8.0.32-debian-11-r14
 
 # Install kopia to take backups
 COPY --from=builder /kopia/kopia /usr/local/bin/kopia
