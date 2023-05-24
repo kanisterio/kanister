@@ -28,14 +28,6 @@ import (
 )
 
 const (
-	// Location secret keys
-	bucketKey        = "bucket"
-	endpointKey      = "endpoint"
-	prefixKey        = "prefix"
-	regionKey        = "region"
-	skipSSLVerifyKey = "skipSSLVerify"
-	typeKey          = "type"
-
 	// Azure location related environment variables
 	azureStorageAccountEnv = "AZURE_STORAGE_ACCOUNT"
 	azureStorageKeyEnv     = "AZURE_STORAGE_KEY"
@@ -43,28 +35,28 @@ const (
 )
 
 func getBucketNameFromMap(m map[string][]byte) string {
-	return string(m[bucketKey])
+	return string(m[secrets.BucketKey])
 }
 
 func getEndpointFromMap(m map[string][]byte) string {
-	return string(m[endpointKey])
+	return string(m[secrets.EndpointKey])
 }
 
 func getPrefixFromMap(m map[string][]byte) string {
-	return string(m[prefixKey])
+	return string(m[secrets.PrefixKey])
 }
 
 func getRegionFromMap(m map[string][]byte) string {
-	return string(m[regionKey])
+	return string(m[secrets.RegionKey])
 }
 
 func checkSkipSSLVerifyFromMap(m map[string][]byte) bool {
-	v := string(m[skipSSLVerifyKey])
+	v := string(m[secrets.SkipSSLVerifyKey])
 	return v == "true"
 }
 
 func locationType(m map[string][]byte) secrets.LocType {
-	return secrets.LocType(m[typeKey])
+	return secrets.LocType(m[secrets.TypeKey])
 }
 
 // GenerateEnvSpecFromCredentialSecret parses the secret and returns
@@ -160,24 +152,24 @@ func GetMapForLocationValues(
 ) map[string][]byte {
 	m := map[string][]byte{}
 	if bucket != "" {
-		m[bucketKey] = []byte(bucket)
+		m[secrets.BucketKey] = []byte(bucket)
 	}
 	if endpoint != "" {
-		m[endpointKey] = []byte(endpoint)
+		m[secrets.EndpointKey] = []byte(endpoint)
 	}
 	if prefix != "" {
-		m[prefixKey] = []byte(prefix)
+		m[secrets.PrefixKey] = []byte(prefix)
 	}
 	if region != "" {
-		m[regionKey] = []byte(region)
+		m[secrets.RegionKey] = []byte(region)
 	}
 	if skipSSLVerify != "" {
-		m[skipSSLVerifyKey] = []byte(skipSSLVerify)
+		m[secrets.SkipSSLVerifyKey] = []byte(skipSSLVerify)
 	}
 	if locType != "" {
-		m[typeKey] = []byte(locType)
+		m[secrets.TypeKey] = []byte(locType)
 		if locType == secrets.LocType(v1alpha1.LocationTypeS3Compliant) {
-			m[typeKey] = []byte(secrets.LocTypeS3)
+			m[secrets.TypeKey] = []byte(secrets.LocTypeS3)
 		}
 	}
 	return m

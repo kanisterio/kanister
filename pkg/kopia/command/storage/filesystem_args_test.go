@@ -17,6 +17,7 @@ package storage
 import (
 	"fmt"
 
+	"github.com/kanisterio/kanister/pkg/secrets"
 	"gopkg.in/check.v1"
 )
 
@@ -38,7 +39,7 @@ func (s *StorageUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
 		},
 	} {
 		sec := map[string][]byte{
-			prefixKey: []byte(tc.prefix),
+			secrets.PrefixKey: []byte(tc.prefix),
 		}
 		args := filesystemArgs(sec, tc.repoPathPrefix)
 		expectedValue := fmt.Sprint(
