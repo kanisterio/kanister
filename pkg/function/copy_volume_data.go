@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	"go.uber.org/zap/buffer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -80,20 +80,28 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := copyVolumeDataPodFunc(cli, tp, namespace, mountPoint, targetPath, encryptionKey)
-	return pr.Run(ctx, podFunc)
+	return pr.RunEx(ctx, podFunc)
 }
 
-func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint, targetPath, encryptionKey string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint, targetPath, encryptionKey string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+		if err := pc.WaitForPodReady(ctx); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
 		}
-		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+		pw1, err := pc.GetFileWriter()
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
 		}
-		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+
+		remover, err := WriteCredsToPod(ctx, pw1, tp.Profile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
+		}
+
+		defer remover.Remove(context.Background()) //nolint:errcheck
+
+		pod := pc.Pod()
 		// Get restic repository
 		if err := restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
 			return nil, err
@@ -104,18 +112,24 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if err != nil {
 			return nil, err
 		}
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
+		ex, err := pc.GetCommandExecutor()
+		if err != nil {
+			return nil, err
+		}
+		var stdout buffer.Buffer
+		var stderr buffer.Buffer
+		err = ex.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create and upload backup")
 		}
 		// Get the snapshot ID from log
-		backupID := restic.SnapshotIDFromBackupLog(stdout)
+		backupID := restic.SnapshotIDFromBackupLog(stdout.String())
 		if backupID == "" {
-			return nil, errors.Errorf("Failed to parse the backup ID from logs, backup logs %s", stdout)
+			return nil, errors.Errorf("Failed to parse the backup ID from logs, backup logs %s", stdout.String())
 		}
-		fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout)
+		fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout.String())
 		if backupSize == "" {
 			log.Debug().Print("Could not parse backup stats from backup log")
 		}
