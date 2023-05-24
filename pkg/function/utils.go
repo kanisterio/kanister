@@ -99,6 +99,19 @@ func ValidateProfile(profile *param.Profile) error {
 	return nil
 }
 
+// WriteCredsToPod creates a file with Google credentials if the given profile points to a GCS location
+func WriteCredsToPod(ctx context.Context, writer kube.PodFileWriter, profile *param.Profile) (kube.PodFileRemover, error) {
+	if profile.Location.Type == crv1alpha1.LocationTypeGCS {
+		remover, err := writer.Write(ctx, consts.GoogleCloudCredsFilePath, bytes.NewBufferString(profile.Credential.KeyPair.Secret))
+		if err != nil {
+			return nil, errors.Wrapf(err, "Unable to write Google credentials to the pod.")
+		}
+
+		return remover, nil
+	}
+	return nil, nil
+}
+
 // GetPodWriter creates a file with Google credentials if the given profile points to a GCS location
 func GetPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (kube.PodWriter, error) {
 	if profile.Location.Type == crv1alpha1.LocationTypeGCS {
