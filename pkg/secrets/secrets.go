@@ -16,7 +16,7 @@ package secrets
 
 import (
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
@@ -24,7 +24,7 @@ import (
 // ValidateCredentials returns error if secret is failed at validation.
 // Currently supports following:
 // - AWS typed secret with required AWS secret fields.
-func ValidateCredentials(secret *v1.Secret) error {
+func ValidateCredentials(secret *corev1.Secret) error {
 	if secret == nil {
 		return errors.New("Nil secret")
 	}
@@ -40,7 +40,7 @@ func ValidateCredentials(secret *v1.Secret) error {
 	}
 }
 
-func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecret, error) {
+func getLocationType(secret *corev1.Secret) (repositoryserver.RepositoryServerSecret, error) {
 	var locationType []byte
 	var ok bool
 	if secret == nil {
@@ -63,7 +63,7 @@ func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecret
 	}
 }
 
-func ValidateRepositoryServerSecret(repositoryServerSecret *v1.Secret) error {
+func ValidateRepositoryServerSecret(repositoryServerSecret *corev1.Secret) error {
 	var secret repositoryserver.RepositoryServerSecret
 	var err error
 

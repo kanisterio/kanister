@@ -16,20 +16,22 @@ package repositoryserver
 
 import (
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
-type GCP struct {
-	storageLocation *v1.Secret
+var _ RepositoryServerSecret = &Azure{}
+
+type Azure struct {
+	storageLocation *corev1.Secret
 }
 
-func NewGCPLocation(secret *v1.Secret) *GCP {
-	return &GCP{
+func NewAzureLocation(secret *corev1.Secret) *Azure {
+	return &Azure{
 		storageLocation: secret,
 	}
 }
 
-func (l *GCP) Validate() error {
+func (l *Azure) Validate() error {
 	if _, ok := l.storageLocation.Data[BucketKey]; !ok {
 		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository storage location secret %s", BucketKey, l.storageLocation.Name)
 	}

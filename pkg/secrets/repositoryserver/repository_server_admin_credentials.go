@@ -16,7 +16,7 @@ package repositoryserver
 
 import (
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -24,11 +24,13 @@ const (
 	RepositoryServerAdminPasswordKey = "password"
 )
 
+var _ RepositoryServerSecret = &RepositoryServerAdminCredentials{}
+
 type RepositoryServerAdminCredentials struct {
-	credentials *v1.Secret
+	credentials *corev1.Secret
 }
 
-func NewRepositoryServerAdminCredentials(secret *v1.Secret) *RepositoryServerAdminCredentials {
+func NewRepositoryServerAdminCredentials(secret *corev1.Secret) *RepositoryServerAdminCredentials {
 	return &RepositoryServerAdminCredentials{
 		credentials: secret,
 	}

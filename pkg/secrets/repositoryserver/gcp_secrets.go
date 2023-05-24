@@ -16,20 +16,22 @@ package repositoryserver
 
 import (
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
-type AWS struct {
-	storageLocation *v1.Secret
+var _ RepositoryServerSecret = &GCP{}
+
+type GCP struct {
+	storageLocation *corev1.Secret
 }
 
-func NewAWSLocation(secret *v1.Secret) *AWS {
-	return &AWS{
+func NewGCPLocation(secret *corev1.Secret) *GCP {
+	return &GCP{
 		storageLocation: secret,
 	}
 }
 
-func (l *AWS) Validate() (err error) {
+func (l *GCP) Validate() error {
 	if _, ok := l.storageLocation.Data[BucketKey]; !ok {
 		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository storage location secret %s", BucketKey, l.storageLocation.Name)
 	}

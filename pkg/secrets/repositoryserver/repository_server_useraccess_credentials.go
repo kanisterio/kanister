@@ -15,19 +15,21 @@
 package repositoryserver
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
+var _ RepositoryServerSecret = &RepositoryServerUserAccessCredentials{}
+
 type RepositoryServerUserAccessCredentials struct {
-	credentials *v1.Secret
+	credentials *corev1.Secret
 }
 
-func NewRepositoryServerUserAccessCredentials(secret *v1.Secret) *RepositoryServerUserAccessCredentials {
+func NewRepositoryServerUserAccessCredentials(secret *corev1.Secret) *RepositoryServerUserAccessCredentials {
 	return &RepositoryServerUserAccessCredentials{
 		credentials: secret,
 	}
 }
 
-func (r *RepositoryServerUserAccessCredentials) ValidateSecret() error {
+func (r *RepositoryServerUserAccessCredentials) Validate() error {
 	return nil
 }

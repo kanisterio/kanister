@@ -20,7 +20,6 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
@@ -32,7 +31,7 @@ import (
 func performRepoServerSecretsValidation(p *validateParams) error {
 	ctx := context.Background()
 	var cli kubernetes.Interface
-	var secret *v1.Secret
+	var secret *corev1.Secret
 	config, err := kube.LoadConfig()
 	if err != nil {
 		return err
