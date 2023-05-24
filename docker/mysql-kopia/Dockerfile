@@ -41,7 +41,7 @@ USER kopia:kopia
 # Build mysql-kopia image
 FROM bitnami/mysql:8.0.32-debian-11-r14
 
-RUN apt-get install -y glibc-source
+RUN apt-get update && apt-get install -y glibc-source
 # Install kopia to take backups
 COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 
