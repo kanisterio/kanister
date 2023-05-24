@@ -51,7 +51,7 @@ func NewKopiaRepositoryServerMysqlDB(name string) HelmApp {
 			Values: map[string]string{
 				"auth.rootPassword": "mysecretpassword",
 				"image.pullPolicy":  "Always",
-				"image.tag":         "v69",
+				"image.tag":         "0.93.0",
 				"image.repository":  "r4rajat/mysql-kopia",
 			},
 		},
