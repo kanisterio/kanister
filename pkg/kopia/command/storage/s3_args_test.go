@@ -17,7 +17,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"gopkg.in/check.v1"
 )
 
@@ -29,10 +29,10 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 	}{
 		{
 			location: map[string][]byte{
-				secrets.BucketKey:        []byte("test-bucket"),
-				secrets.PrefixKey:        []byte("test-prefix"),
-				secrets.RegionKey:        []byte("test-region"),
-				secrets.SkipSSLVerifyKey: []byte("true"),
+				repositoryserver.BucketKey:        []byte("test-bucket"),
+				repositoryserver.PrefixKey:        []byte("test-prefix"),
+				repositoryserver.RegionKey:        []byte("test-region"),
+				repositoryserver.SkipSSLVerifyKey: []byte("true"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", bucketFlag, "test-bucket"),
@@ -43,9 +43,9 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 		},
 		{
 			location: map[string][]byte{
-				secrets.BucketKey:   []byte("test-bucket"),
-				secrets.PrefixKey:   []byte("test-prefix"),
-				secrets.EndpointKey: []byte("https://test.test:9000/"),
+				repositoryserver.BucketKey:   []byte("test-bucket"),
+				repositoryserver.PrefixKey:   []byte("test-prefix"),
+				repositoryserver.EndpointKey: []byte("https://test.test:9000/"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", bucketFlag, "test-bucket"),
@@ -54,9 +54,9 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 		},
 		{
 			location: map[string][]byte{
-				secrets.BucketKey:   []byte("test-bucket"),
-				secrets.PrefixKey:   []byte("test-prefix"),
-				secrets.EndpointKey: []byte("http://test.test:9000"),
+				repositoryserver.BucketKey:   []byte("test-bucket"),
+				repositoryserver.PrefixKey:   []byte("test-prefix"),
+				repositoryserver.EndpointKey: []byte("http://test.test:9000"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", bucketFlag, "test-bucket"),

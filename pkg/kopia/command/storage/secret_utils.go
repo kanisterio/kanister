@@ -25,6 +25,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 const (
@@ -35,28 +36,28 @@ const (
 )
 
 func getBucketNameFromMap(m map[string][]byte) string {
-	return string(m[secrets.BucketKey])
+	return string(m[repositoryserver.BucketKey])
 }
 
 func getEndpointFromMap(m map[string][]byte) string {
-	return string(m[secrets.EndpointKey])
+	return string(m[repositoryserver.EndpointKey])
 }
 
 func getPrefixFromMap(m map[string][]byte) string {
-	return string(m[secrets.PrefixKey])
+	return string(m[repositoryserver.PrefixKey])
 }
 
 func getRegionFromMap(m map[string][]byte) string {
-	return string(m[secrets.RegionKey])
+	return string(m[repositoryserver.RegionKey])
 }
 
 func checkSkipSSLVerifyFromMap(m map[string][]byte) bool {
-	v := string(m[secrets.SkipSSLVerifyKey])
+	v := string(m[repositoryserver.SkipSSLVerifyKey])
 	return v == "true"
 }
 
-func locationType(m map[string][]byte) secrets.LocType {
-	return secrets.LocType(m[secrets.TypeKey])
+func locationType(m map[string][]byte) repositoryserver.LocType {
+	return repositoryserver.LocType(m[repositoryserver.TypeKey])
 }
 
 // GenerateEnvSpecFromCredentialSecret parses the secret and returns
@@ -143,7 +144,7 @@ func getEnvVar(varName, value string) v1.EnvVar {
 // GetMapForLocationValues return a map with valid keys
 // for different location values
 func GetMapForLocationValues(
-	locType secrets.LocType,
+	locType repositoryserver.LocType,
 	prefix,
 	region,
 	bucket,
@@ -152,6 +153,7 @@ func GetMapForLocationValues(
 ) map[string][]byte {
 	m := map[string][]byte{}
 	if bucket != "" {
+<<<<<<< HEAD
 		m[secrets.BucketKey] = []byte(bucket)
 	}
 	if endpoint != "" {
@@ -170,6 +172,26 @@ func GetMapForLocationValues(
 		m[secrets.TypeKey] = []byte(locType)
 		if locType == secrets.LocType(v1alpha1.LocationTypeS3Compliant) {
 			m[secrets.TypeKey] = []byte(secrets.LocTypeS3)
+=======
+		m[repositoryserver.BucketKey] = []byte(bucket)
+	}
+	if endpoint != "" {
+		m[repositoryserver.EndpointKey] = []byte(endpoint)
+	}
+	if prefix != "" {
+		m[repositoryserver.PrefixKey] = []byte(prefix)
+	}
+	if region != "" {
+		m[repositoryserver.RegionKey] = []byte(region)
+	}
+	if skipSSLVerify != "" {
+		m[repositoryserver.SkipSSLVerifyKey] = []byte(skipSSLVerify)
+	}
+	if locType != "" {
+		m[repositoryserver.TypeKey] = []byte(locType)
+		if locType == repositoryserver.LocType(v1alpha1.LocationTypeS3Compliant) {
+			m[repositoryserver.TypeKey] = []byte(repositoryserver.LocTypeS3)
+>>>>>>> refactoringKopiaConstants
 		}
 	}
 	return m
