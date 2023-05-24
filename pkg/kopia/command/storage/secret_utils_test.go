@@ -35,11 +35,11 @@ var _ = check.Suite(&StorageUtilsSuite{})
 
 func (s *StorageUtilsSuite) TestLocationUtils(c *check.C) {
 	loc := map[string][]byte{
-		bucketKey:        []byte("test-key"),
-		endpointKey:      []byte("test-endpoint"),
-		prefixKey:        []byte("test-prefix"),
-		regionKey:        []byte("test-region"),
-		skipSSLVerifyKey: []byte("true"),
+		secrets.BucketKey:        []byte("test-key"),
+		secrets.EndpointKey:      []byte("test-endpoint"),
+		secrets.PrefixKey:        []byte("test-prefix"),
+		secrets.RegionKey:        []byte("test-region"),
+		secrets.SkipSSLVerifyKey: []byte("true"),
 	}
 	for _, tc := range []struct {
 		LocType                    string
@@ -66,12 +66,12 @@ func (s *StorageUtilsSuite) TestLocationUtils(c *check.C) {
 			expectedSkipSSLVerifyValue: true,
 		},
 	} {
-		loc[typeKey] = []byte(tc.LocType)
-		loc[skipSSLVerifyKey] = []byte(tc.skipSSLVerify)
-		c.Assert(getBucketNameFromMap(loc), check.Equals, string(loc[bucketKey]))
-		c.Assert(getEndpointFromMap(loc), check.Equals, string(loc[endpointKey]))
-		c.Assert(getPrefixFromMap(loc), check.Equals, string(loc[prefixKey]))
-		c.Assert(getRegionFromMap(loc), check.Equals, string(loc[regionKey]))
+		loc[secrets.TypeKey] = []byte(tc.LocType)
+		loc[secrets.SkipSSLVerifyKey] = []byte(tc.skipSSLVerify)
+		c.Assert(getBucketNameFromMap(loc), check.Equals, string(loc[secrets.BucketKey]))
+		c.Assert(getEndpointFromMap(loc), check.Equals, string(loc[secrets.EndpointKey]))
+		c.Assert(getPrefixFromMap(loc), check.Equals, string(loc[secrets.PrefixKey]))
+		c.Assert(getRegionFromMap(loc), check.Equals, string(loc[secrets.RegionKey]))
 		c.Assert(checkSkipSSLVerifyFromMap(loc), check.Equals, tc.expectedSkipSSLVerifyValue)
 		c.Assert(locationType(loc), check.Equals, tc.expectedLocType)
 	}
@@ -206,15 +206,15 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 		{
 			locType: secrets.LocTypeS3,
 			expectedOutput: map[string][]byte{
-				typeKey: []byte(secrets.LocTypeS3),
+				secrets.TypeKey: []byte(secrets.LocTypeS3),
 			},
 		},
 		{
 			locType: secrets.LocTypeS3,
 			prefix:  prefixValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(secrets.LocTypeS3),
-				prefixKey: []byte(prefixValue),
+				secrets.TypeKey:   []byte(secrets.LocTypeS3),
+				secrets.PrefixKey: []byte(prefixValue),
 			},
 		},
 		{
@@ -222,9 +222,9 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 			prefix:  prefixValue,
 			region:  regionValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(secrets.LocTypeS3),
-				prefixKey: []byte(prefixValue),
-				regionKey: []byte(regionValue),
+				secrets.TypeKey:   []byte(secrets.LocTypeS3),
+				secrets.PrefixKey: []byte(prefixValue),
+				secrets.RegionKey: []byte(regionValue),
 			},
 		},
 		{
@@ -233,10 +233,10 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 			region:  regionValue,
 			bucket:  bucketValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(secrets.LocTypeS3),
-				prefixKey: []byte(prefixValue),
-				regionKey: []byte(regionValue),
-				bucketKey: []byte(bucketValue),
+				secrets.TypeKey:   []byte(secrets.LocTypeS3),
+				secrets.PrefixKey: []byte(prefixValue),
+				secrets.RegionKey: []byte(regionValue),
+				secrets.BucketKey: []byte(bucketValue),
 			},
 		},
 		{
@@ -246,11 +246,11 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 			bucket:   bucketValue,
 			endpoint: endpointValue,
 			expectedOutput: map[string][]byte{
-				typeKey:     []byte(secrets.LocTypeS3),
-				prefixKey:   []byte(prefixValue),
-				regionKey:   []byte(regionValue),
-				bucketKey:   []byte(bucketValue),
-				endpointKey: []byte(endpointValue),
+				secrets.TypeKey:     []byte(secrets.LocTypeS3),
+				secrets.PrefixKey:   []byte(prefixValue),
+				secrets.RegionKey:   []byte(regionValue),
+				secrets.BucketKey:   []byte(bucketValue),
+				secrets.EndpointKey: []byte(endpointValue),
 			},
 		},
 		{
@@ -261,12 +261,12 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 			endpoint:      endpointValue,
 			skipSSLVerify: skipSSLVerifyValue,
 			expectedOutput: map[string][]byte{
-				typeKey:          []byte(secrets.LocTypeS3),
-				prefixKey:        []byte(prefixValue),
-				regionKey:        []byte(regionValue),
-				bucketKey:        []byte(bucketValue),
-				endpointKey:      []byte(endpointValue),
-				skipSSLVerifyKey: []byte(skipSSLVerifyValue),
+				secrets.TypeKey:          []byte(secrets.LocTypeS3),
+				secrets.PrefixKey:        []byte(prefixValue),
+				secrets.RegionKey:        []byte(regionValue),
+				secrets.BucketKey:        []byte(bucketValue),
+				secrets.EndpointKey:      []byte(endpointValue),
+				secrets.SkipSSLVerifyKey: []byte(skipSSLVerifyValue),
 			},
 		},
 		{
@@ -277,12 +277,12 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 			endpoint:      endpointValue,
 			skipSSLVerify: skipSSLVerifyValue,
 			expectedOutput: map[string][]byte{
-				typeKey:          []byte(secrets.LocTypeS3),
-				prefixKey:        []byte(prefixValue),
-				regionKey:        []byte(regionValue),
-				bucketKey:        []byte(bucketValue),
-				endpointKey:      []byte(endpointValue),
-				skipSSLVerifyKey: []byte(skipSSLVerifyValue),
+				secrets.TypeKey:          []byte(secrets.LocTypeS3),
+				secrets.PrefixKey:        []byte(prefixValue),
+				secrets.RegionKey:        []byte(regionValue),
+				secrets.BucketKey:        []byte(bucketValue),
+				secrets.EndpointKey:      []byte(endpointValue),
+				secrets.SkipSSLVerifyKey: []byte(skipSSLVerifyValue),
 			},
 		},
 	} {

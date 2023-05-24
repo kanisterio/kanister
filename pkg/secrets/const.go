@@ -35,3 +35,13 @@ const (
 	// the kopia repository server location secret
 	LocationTypeKey string = "type"
 )
+
+const (
+	// Location secret keys
+	BucketKey        = "bucket"
+	EndpointKey      = "endpoint"
+	PrefixKey        = "prefix"
+	RegionKey        = "region"
+	SkipSSLVerifyKey = "skipSSLVerify"
+	TypeKey          = "type"
+)
