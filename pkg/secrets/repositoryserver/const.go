@@ -14,12 +14,6 @@
 
 package repositoryserver
 
-<<<<<<< HEAD
-const (
-	BucketKey       string = "bucket"
-	RegionKey       string = "region"
-	RepoPasswordKey        = "repo-password"
-=======
 import (
 	corev1 "k8s.io/api/core/v1"
 )
@@ -35,12 +29,9 @@ const (
 	// LocationSecretType represents the storage location secret type for kopia repository server
 	Location corev1.SecretType = "secrets.kanister.io/storage-location"
 	// RepositoryPasswordSecretType represents the kopia repository passowrd secret type
-	RepositoryPassword corev1.SecretType = "secrets.kanister.io/kopia-repository/password"
+	RepositoryPasswordSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/password"
 	// RepositoryServerAdminCredentialsSecretType represents the kopia server admin credentials secret type
-	RepositoryServerAdminCredentials corev1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
-	// LocationTypeKey represents the key used to define the location type in
-	// the kopia repository server location secret
-	LocationTypeKey string = "type"
+	RepositoryServerAdminCredentialsSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
 )
 
 const (
@@ -51,7 +42,8 @@ const (
 	RegionKey        = "region"
 	SkipSSLVerifyKey = "skipSSLVerify"
 	TypeKey          = "type"
-	// Kopia Repository password secret key
-	RepoPasswordKey = "repo-password"
->>>>>>> refactoringKopiaConstants
+	// Kopia Repository Server secret keys
+	RepoPasswordKey                  = "repo-password"
+	RepositoryServerAdminUsernameKey = "username"
+	RepositoryServerAdminPasswordKey = "password"
 )

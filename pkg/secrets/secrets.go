@@ -47,16 +47,16 @@ func getLocationType(secret *corev1.Secret) (repositoryserver.RepositoryServerSe
 		return nil, errors.New("Secret is Nil")
 	}
 
-	if locationType, ok = (secret.Data[LocationTypeKey]); !ok {
-		return nil, errors.Errorf("secret '%s:%s' does not have required field %s", secret.Namespace, secret.Name, LocationTypeKey)
+	if locationType, ok = (secret.Data[repositoryserver.TypeKey]); !ok {
+		return nil, errors.Errorf("secret '%s:%s' does not have required field %s", secret.Namespace, secret.Name, repositoryserver.TypeKey)
 	}
 
-	switch LocType(string(locationType)) {
-	case LocTypeS3:
+	switch repositoryserver.LocType(string(locationType)) {
+	case repositoryserver.LocTypeS3:
 		return repositoryserver.NewAWSLocation(secret), nil
-	case LocTypeAzure:
+	case repositoryserver.LocTypeAzure:
 		return repositoryserver.NewAzureLocation(secret), nil
-	case LocTypeGCS:
+	case repositoryserver.LocTypeGCS:
 		return repositoryserver.NewGCPLocation(secret), nil
 	default:
 		return nil, errors.Errorf("Unsupported location type '%s' for secret '%s:%s'", locationType, secret.Namespace, secret.Name)
@@ -68,14 +68,14 @@ func ValidateRepositoryServerSecret(repositoryServerSecret *corev1.Secret) error
 	var err error
 
 	switch repositoryServerSecret.Type {
-	case Location:
+	case repositoryserver.Location:
 		secret, err = getLocationType(repositoryServerSecret)
 		if err != nil {
 			return err
 		}
-	case RepositoryPassword:
+	case repositoryserver.RepositoryPasswordSecret:
 		secret = repositoryserver.NewRepoPassword(repositoryServerSecret)
-	case RepositoryServerAdminCredentials:
+	case repositoryserver.RepositoryServerAdminCredentialsSecret:
 		secret = repositoryserver.NewRepositoryServerAdminCredentials(repositoryServerSecret)
 	default:
 		return ValidateCredentials(repositoryServerSecret)

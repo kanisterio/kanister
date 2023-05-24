@@ -19,11 +19,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const (
-	RepositoryServerAdminUsernameKey = "username"
-	RepositoryServerAdminPasswordKey = "password"
-)
-
 var _ RepositoryServerSecret = &RepositoryServerAdminCredentials{}
 
 type RepositoryServerAdminCredentials struct {
