@@ -179,7 +179,6 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(service.OwnerReferences), Equals, 1)
 	c.Assert(service.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
-
 }
 
 func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
