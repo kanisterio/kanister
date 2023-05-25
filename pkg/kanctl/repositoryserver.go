@@ -122,7 +122,8 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Printf("repositoryservers.cr.kanister.io/%s created\n", rs.GetName())
+	
 	waitFlag, _ := cmd.Flags().GetBool(waitFlag)
 	if waitFlag {
 		fmt.Print("Waiting for the kopia repository server CR to be in ready state...\n")
@@ -130,8 +131,9 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		fmt.Printf("repositoryservers.cr.kanister.io/%s is ready.\n", rs.GetName())
 	}
-	fmt.Printf("repositoryservers.cr.kanister.io/%s created\n", rs.GetName())
+
 	return nil
 }
 
