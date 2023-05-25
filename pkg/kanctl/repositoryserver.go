@@ -282,7 +282,7 @@ func waitForRepositoryServerReady(ctx context.Context, cli *versioned.Clientset,
 		if repositoryServer.Status.Progress == v1alpha1.ServerReady && err == nil {
 			return true, nil
 		}
-		return false, nil
+		return false, err
 	})
 	return err
 }
