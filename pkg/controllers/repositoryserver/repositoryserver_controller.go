@@ -91,7 +91,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Setting the CR status as 'ServerStopped' since an error occurred in create/update event")
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerStopped
 		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{}, uerr
 		}
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
 		return ctrl.Result{}, err
