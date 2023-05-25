@@ -78,7 +78,7 @@ func newRepositoryServerCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(repoUserFlag, "z", "", "name of the user for accessing the kopia repository")
 	cmd.PersistentFlags().StringP(locationSecretFlag, "l", "", "name of the secret containing kopia repository storage location details")
 	cmd.PersistentFlags().StringP(locationCredsSecretFlag, "c", "", "name of the secret containing kopia repository storage credentials")
-	cmd.PersistentFlags().BoolP(waitFlag, "w", false, "wait for the kopia repository server CR to be in ready state after creation")
+	cmd.PersistentFlags().BoolP(waitFlag, "w", false, "wait for the kopia repository server to be in ready state after creation")
 
 	_ = cmd.MarkFlagRequired(tlsSecretFlag)
 	_ = cmd.MarkFlagRequired(repoServerUserFlag)
