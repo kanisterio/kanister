@@ -13,10 +13,13 @@ WORKDIR /
 RUN git clone https://github.com/${kopia_repo_org}/kopia.git
 RUN git clone https://github.com/${kanister_repo_org}/kanister.git
 
+ENV GITHUB_REPOSITORY=https://github.com/${kanister_repo_org}/kanister
+
 WORKDIR /kanister
 
 RUN git checkout ${kanister_build_commit}
-RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kando ./pkg/kando
+RUN go build -o kando cmd/kando/main.go
+RUN chmod a+x ./kando
 
 ENV GITHUB_REPOSITORY=https://github.com/${kopia_repo_org}/kopia
 
@@ -34,7 +37,6 @@ USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-
 FROM debian:bullseye
 
 WORKDIR /kopia
@@ -43,7 +45,8 @@ WORKDIR /kopia
 RUN apt-get update && apt-get -y install ca-certificates && \
   rm -rf /var/cache/apk/* && \
   adduser kopia && addgroup kopia kopia && \
-  chown kopia /kopia
+  chown kopia /kopia && \
+  chown kopia /kanister
 
 USER kopia:kopia
 
