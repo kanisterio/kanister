@@ -111,19 +111,18 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	
 	crCli, err := versioned.NewForConfig(config)
 	if err != nil {
 		return errors.Wrap(err, "could not get the CRD client")
 	}
-	
+
 	ctx := context.Background()
 	rs, err := crCli.CrV1alpha1().RepositoryServers(rsParams.namespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 	fmt.Printf("repositoryservers.cr.kanister.io/%s created\n", rs.GetName())
-	
+
 	waitFlag, _ := cmd.Flags().GetBool(waitFlag)
 	if waitFlag {
 		fmt.Print("Waiting for the kopia repository server CR to be in ready state...\n")
@@ -285,8 +284,5 @@ func waitForRepositoryServerReady(ctx context.Context, cli *versioned.Clientset,
 		}
 		return false, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
