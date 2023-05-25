@@ -231,7 +231,7 @@ A new S3Compliant profile can be created using the s3compliant subcommand
   profile 's3-profile-5mmkj' created
 
 
-Kopia Repository Server creation using ``kanctl create``
+Kopia Repository Server resource creation using ``kanctl create``
 
 .. code-block:: bash
 
@@ -252,6 +252,7 @@ Kopia Repository Server creation using ``kanctl create``
       -k, --repository-server-user-access-secret string         name of the secret having access credentials of the users that can connect to kopia repository server
       -z, --repository-user string                              name of the user for accessing the kopia repository
       -t, --tls-secret string                                   name of the tls secret needed for secure kopia client and kopia repository server communication
+      -w, --wait                                                wait for the kopia repository server CR to be in ready state after creation
 
     Global Flags:
           --dry-run            if set, resource YAML will be printed but not created
