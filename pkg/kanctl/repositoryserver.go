@@ -111,12 +111,13 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	
 	crCli, err := versioned.NewForConfig(config)
 	if err != nil {
 		return errors.Wrap(err, "could not get the CRD client")
 	}
+	
 	ctx := context.Background()
-
 	rs, err := crCli.CrV1alpha1().RepositoryServers(rsParams.namespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
 	if err != nil {
 		return err
