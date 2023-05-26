@@ -38,7 +38,7 @@ const (
 	repoServerUserAccessSecretFlag      = "user-access-secret"
 	repoServerAdminUserAccessSecretFlag = "admin-user-access-secret"
 	repoPasswordSecretFlag              = "repository-password-secret"
-	repoUserFlag                        = "repository-user"
+	kopiaRepoUserFlag                   = "kopia-repository-user"
 	locationCredsSecretFlag             = "location-creds-secret"
 	locationSecretFlag                  = "location-secret"
 	defaultRepositoryServerHost         = "localhost"
@@ -75,7 +75,7 @@ func newRepositoryServerCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(repoServerAdminUserAccessSecretFlag, "a", "", "name of the secret having admin credentials to connect to connect to kopia repository server")
 	cmd.PersistentFlags().StringP(repoPasswordSecretFlag, "r", "", "name of the secret containing password for the kopia repository")
 	cmd.PersistentFlags().StringP(prefixFlag, "p", "", "prefix to be set in kopia repository")
-	cmd.PersistentFlags().StringP(repoUserFlag, "k", "", "name of the user for accessing the kopia repository")
+	cmd.PersistentFlags().StringP(kopiaRepoUserFlag, "k", "", "name of the user for accessing the kopia repository")
 	cmd.PersistentFlags().StringP(locationSecretFlag, "l", "", "name of the secret containing kopia repository storage location details")
 	cmd.PersistentFlags().StringP(locationCredsSecretFlag, "c", "", "name of the secret containing kopia repository storage credentials")
 	cmd.PersistentFlags().BoolP(waitFlag, "w", false, "wait for the kopia repository server to be in ready state after creation")
@@ -158,7 +158,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerAdminUserAccessSecret)
 	}
 
-	repositoryUser, _ := cmd.Flags().GetString(repoUserFlag)
+	repositoryUser, _ := cmd.Flags().GetString(kopiaRepoUserFlag)
 
 	repositoryPassword, _ := cmd.Flags().GetString(repoPasswordSecretFlag)
 	if strings.Contains(repositoryPassword, "/") {
