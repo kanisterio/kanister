@@ -104,6 +104,20 @@ like below:
     --set bpValidatingWebhook.tls.secretName=tls-secret
 
 
+Deploying Kopia Repository server controller
+============================================
+
+Kopia Repository server controller s not enabled by default. It can be deployed by setting the
+`repositoryServerController.enabled` value as shown below
+
+.. substitution-code-block:: bash
+
+  helm upgrade --install kanister kanister/kanister-operator --namespace kanister --create-namespace \
+  --set repositoryServerController.enabled=true
+
+This will create another container in the kanister pod for kopia repository server controller.
+
+
 Building and Deploying from Source
 ==================================
 
