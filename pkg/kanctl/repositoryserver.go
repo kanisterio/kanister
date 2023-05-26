@@ -289,6 +289,10 @@ func waitForRepositoryServerReady(ctx context.Context, cli *kubernetes.Clientset
 	})
 	if pollErr != nil {
 		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return errors.Wrapf(err, "Error Getting repository server %s", repositoryServer.GetName())
+		}
+
 		opts := metav1.ListOptions{
 			FieldSelector: fmt.Sprintf("involvedObject.name=%s", repositoryServer.GetName()),
 		}
@@ -296,6 +300,7 @@ func waitForRepositoryServerReady(ctx context.Context, cli *kubernetes.Clientset
 		if err != nil {
 			return err
 		}
+
 		return errors.Wrapf(pollErr, "Repository Server is not ready.\nCurrent Status: %s\nReason: %s\n", repositoryServer.Status.Progress, events.Items[0].Message)
 	}
 	return nil
