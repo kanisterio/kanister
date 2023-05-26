@@ -27,6 +27,7 @@ TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
 # Temporary disable ES test. Issue to track https://github.com/kanisterio/kanister/issues/1920
 SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|Maria|^MSSQL$"
+KOPIA_REPOSITORY_SERVER_APPS="^KopiaRepositoryServerMySQL$"
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
@@ -73,6 +74,11 @@ case "${1}" in
     short)
         # Run only part of apps
         TEST_APPS=${SHORT_APPS}
+        ;;
+    kopia)
+        # Run only kopia repository server enabled apps
+        TEST_APPS=${KOPIA_REPOSITORY_SERVER_APPS}
+        export KOPIA_INTEGRATION_TEST=true
         ;;
     openshift)
         # TODO:// make sure the argument is named ocp_version
