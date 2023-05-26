@@ -76,6 +76,14 @@ type Repository struct {
 	Hostname string `json:"hostname"`
 	// PasswordSecretRef has the password required to connect to kopia repository
 	PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef"`
+	CacheSizeSettings CacheSizeSettings      `json:"cacheSizeSettings,omitempty"`
+}
+
+// CacheSettings are the metadata/content cache size details
+// that can be used while establishing connection to the kopia repository
+type CacheSizeSettings struct {
+	Metadata string `json:"metadata"`
+	Content  string `json:"content"`
 }
 
 // Server details required for starting the repository proxy server and initializing the repository client users
