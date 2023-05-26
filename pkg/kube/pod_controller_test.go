@@ -42,8 +42,13 @@ func (s *PodControllerTestSuite) SetUpSuite(c *C) {
 }
 
 type fakePodControllerProcessor struct {
-	inWaitForPodReadyPodName string
-	waitForPodReadyErr       error
+	inWaitForPodReadyNamespace string
+	inWaitForPodReadyPodName   string
+	waitForPodReadyErr         error
+
+	inWaitForPodCompletionNamespace string
+	inWaitForPodCompletionPodName   string
+	waitForPodCompletionErr         error
 
 	inDeletePodNamespace string
 	inDeletePodPodName   string
@@ -62,8 +67,15 @@ func (f *fakePodControllerProcessor) createPod(_ context.Context, cli kubernetes
 	return f.createPodRet, f.createPodErr
 }
 
-func (f *fakePodControllerProcessor) waitForPodReady(_ context.Context, podName string) error {
+func (f *fakePodControllerProcessor) waitForPodCompletion(ctx context.Context, namespace, podName string) error {
+	f.inWaitForPodCompletionNamespace = namespace
+	f.inWaitForPodCompletionPodName = podName
+	return f.waitForPodCompletionErr
+}
+
+func (f *fakePodControllerProcessor) waitForPodReady(ctx context.Context, namespace, podName string) error {
 	f.inWaitForPodReadyPodName = podName
+	f.inWaitForPodReadyNamespace = namespace
 	return f.waitForPodReadyErr
 }
 
@@ -158,7 +170,8 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 		"Waiting failed due to timeout": func(pcp *fakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: podControllerPodName,
+					Name:      podControllerPodName,
+					Namespace: podControllerNS,
 				},
 			}
 			err := pc.StartPod(ctx)
@@ -168,6 +181,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			err = pc.WaitForPodReady(ctx)
 			c.Assert(err, Not(IsNil))
 			c.Assert(pcp.inWaitForPodReadyPodName, Equals, podControllerPodName)
+			c.Assert(pcp.inWaitForPodReadyNamespace, Equals, podControllerNS)
 			c.Assert(errors.Is(err, pcp.waitForPodReadyErr), Equals, true)
 			c.Assert(err.Error(), Equals, fmt.Sprintf("Pod failed to become ready in time: %s", simulatedError.Error()))
 			// Check that POD deletion was also invoked with expected arguments
@@ -303,6 +317,11 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "some-test-pod"},
+					},
 				},
 			}
 			err := pc.StartPod(ctx)
