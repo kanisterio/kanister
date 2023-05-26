@@ -244,11 +244,11 @@ Kopia Repository Server resource creation using ``kanctl create``
     Flags:
       -a, --admin-user-access-secret string     name of the secret having admin credentials to connect to connect to kopia repository server
       -h, --help                                help for repository-server
+      -k, --kopia-repository-user string        name of the user for accessing the kopia repository
       -c, --location-creds-secret string        name of the secret containing kopia repository storage credentials
       -l, --location-secret string              name of the secret containing kopia repository storage location details
       -p, --prefix string                       prefix to be set in kopia repository
       -r, --repository-password-secret string   name of the secret containing password for the kopia repository
-      -k, --repository-user string              name of the user for accessing the kopia repository
       -t, --tls-secret string                   name of the tls secret needed for secure kopia client and kopia repository server communication
       -u, --user string                         name of the user to be created for the kopia repository server
       -s, --user-access-secret string           name of the secret having access credentials of the users that can connect to kopia repository server
