@@ -17,11 +17,8 @@ package kando
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -32,41 +29,15 @@ func newLocationDeleteCommand() *cobra.Command {
 		Short: "Delete artifacts from s3-compliant object storage",
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			return runLocationDelete(c)
+			if err := validateCommandArgs(c); err != nil {
+				return err
+			}
+			dataMover := NewDataMover(checkDataMover(c), "", kopiaSnapshotFlag(c))
+			return dataMover.Delete(pathFlag(c))
 		},
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
 	return cmd
-}
-
-func runLocationDelete(cmd *cobra.Command) error {
-	p, err := unmarshalProfileFlag(cmd)
-	if err != nil {
-		return err
-	}
-	cmd.SilenceUsage = true
-	s := pathFlag(cmd)
-	ctx := context.Background()
-	if p.Location.Type == crv1alpha1.LocationTypeKopia {
-		snapJSON := kopiaSnapshotFlag(cmd)
-		if snapJSON == "" {
-			return errors.New("kopia snapshot information is required to delete data using kopia")
-		}
-		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(snapJSON)
-		if err != nil {
-			return err
-		}
-		if err = connectToKopiaServer(ctx, p); err != nil {
-			return err
-		}
-		return kopiaLocationDelete(ctx, kopiaSnap.ID, s, p.Credential.KopiaServerSecret.Password)
-	}
-	return locationDelete(ctx, p, s)
-}
-
-// kopiaLocationDelete deletes the kopia snapshot with given backupID
-func kopiaLocationDelete(ctx context.Context, backupID, path, password string) error {
-	return snapshot.Delete(ctx, backupID, path, password)
 }
 
 func locationDelete(ctx context.Context, p *param.Profile, path string) error {
