@@ -111,6 +111,10 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	cli, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "could not get the kubernetes client")
+	}
 	crCli, err := versioned.NewForConfig(config)
 	if err != nil {
 		return errors.Wrap(err, "could not get the CRD client")
@@ -126,13 +130,12 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	waitFlag, _ := cmd.Flags().GetBool(waitFlag)
 	if waitFlag {
 		fmt.Print("Waiting for the kopia repository server CR to be in ready state...\n")
-		err = waitForRepositoryServerReady(ctx, crCli, rs)
+		err = waitForRepositoryServerReady(ctx, cli, crCli, rs)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("repositoryservers.cr.kanister.io/%s is ready.\n", rs.GetName())
 	}
-
 	return nil
 }
 
@@ -274,15 +277,26 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 	}, nil
 }
 
-func waitForRepositoryServerReady(ctx context.Context, cli *versioned.Clientset, rs *v1alpha1.RepositoryServer) error {
+func waitForRepositoryServerReady(ctx context.Context, cli *kubernetes.Clientset, crCli *versioned.Clientset, rs *v1alpha1.RepositoryServer) error {
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
 	defer waitCancel()
-	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
-		repositoryServer, err := cli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
+	pollErr := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
 		if repositoryServer.Status.Progress == v1alpha1.ServerReady && err == nil {
 			return true, nil
 		}
 		return false, err
 	})
-	return err
+	if pollErr != nil {
+		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
+		opts := metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("involvedObject.name=%s", repositoryServer.GetName()),
+		}
+		events, err := cli.CoreV1().Events(repositoryServer.GetNamespace()).List(ctx, opts)
+		if err != nil {
+			return err
+		}
+		return errors.Wrapf(pollErr, "Repository Server is not ready.\nCurrent Status: %s\nReason: %s\n", repositoryServer.Status.Progress, events.Items[0].Message)
+	}
+	return nil
 }
