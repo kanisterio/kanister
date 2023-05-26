@@ -34,9 +34,9 @@ import (
 
 const (
 	tlsSecretFlag                       = "tls-secret"
-	repoServerUserFlag                  = "repository-server-user"
-	repoServerUserAccessSecretFlag      = "repository-server-user-access-secret"
-	repoServerAdminUserAccessSecretFlag = "repository-server-admin-user-access-secret"
+	repoServerUserFlag                  = "user"
+	repoServerUserAccessSecretFlag      = "user-access-secret"
+	repoServerAdminUserAccessSecretFlag = "admin-user-access-secret"
 	repoPasswordSecretFlag              = "repository-password-secret"
 	repoUserFlag                        = "repository-user"
 	locationCredsSecretFlag             = "location-creds-secret"
@@ -71,11 +71,11 @@ func newRepositoryServerCommand() *cobra.Command {
 
 	cmd.PersistentFlags().StringP(tlsSecretFlag, "t", "", "name of the tls secret needed for secure kopia client and kopia repository server communication")
 	cmd.PersistentFlags().StringP(repoServerUserFlag, "u", "", "name of the user to be created for the kopia repository server")
-	cmd.PersistentFlags().StringP(repoServerUserAccessSecretFlag, "k", "", "name of the secret having access credentials of the users that can connect to kopia repository server")
+	cmd.PersistentFlags().StringP(repoServerUserAccessSecretFlag, "s", "", "name of the secret having access credentials of the users that can connect to kopia repository server")
 	cmd.PersistentFlags().StringP(repoServerAdminUserAccessSecretFlag, "a", "", "name of the secret having admin credentials to connect to connect to kopia repository server")
 	cmd.PersistentFlags().StringP(repoPasswordSecretFlag, "r", "", "name of the secret containing password for the kopia repository")
 	cmd.PersistentFlags().StringP(prefixFlag, "p", "", "prefix to be set in kopia repository")
-	cmd.PersistentFlags().StringP(repoUserFlag, "z", "", "name of the user for accessing the kopia repository")
+	cmd.PersistentFlags().StringP(repoUserFlag, "k", "", "name of the user for accessing the kopia repository")
 	cmd.PersistentFlags().StringP(locationSecretFlag, "l", "", "name of the secret containing kopia repository storage location details")
 	cmd.PersistentFlags().StringP(locationCredsSecretFlag, "c", "", "name of the secret containing kopia repository storage credentials")
 	cmd.PersistentFlags().BoolP(waitFlag, "w", false, "wait for the kopia repository server to be in ready state after creation")
