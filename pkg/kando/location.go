@@ -84,7 +84,7 @@ func validateCommandArgs(cmd *cobra.Command) error {
 		return errors.New("Either Provide --profile or --repository-server")
 	}
 	if profileFlag == "" && repositoryServerFlag == "" {
-		return errors.New("Please Provide either --profile or --repository-server as per the datamover you want to use")
+		return errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 	}
 	return nil
 }
