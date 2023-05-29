@@ -39,7 +39,11 @@ func newLocationPushCommand() *cobra.Command {
 			if err := validateCommandArgs(c); err != nil {
 				return err
 			}
-			dataMover := NewDataMover(checkDataMover(c), outputNameFlag(c), "")
+			dm, err := dataMoverFromCMD(c)
+			if err != nil {
+				return err
+			}
+			dataMover := NewDataMover(dm, outputNameFlag(c), "")
 			return dataMover.Push(args[0], pathFlag(c))
 		},
 	}

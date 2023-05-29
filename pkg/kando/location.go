@@ -30,7 +30,7 @@ const (
 	repositoryServerFlagName = "repository-server"
 )
 
-type DataMoverVal struct {
+type DataMoverArgs struct {
 	Type             string
 	Profile          *param.Profile
 	RepositoryServer *param.RepositoryServer
@@ -52,7 +52,7 @@ func newLocationCommand() *cobra.Command {
 
 // NewDataMover creates an instance of DataMover Interface and returns
 // the preferred DataMover as per the arguments passed in kando command
-func NewDataMover(dm *DataMoverVal, outputName, snapJson string) datamover.DataMover {
+func NewDataMover(dm *DataMoverArgs, outputName, snapJson string) datamover.DataMover {
 	switch dm.Type {
 	case profileFlagName:
 		return &datamover.Profile{
@@ -89,30 +89,30 @@ func validateCommandArgs(cmd *cobra.Command) error {
 	return nil
 }
 
-func checkDataMover(cmd *cobra.Command) *DataMoverVal {
+func dataMoverFromCMD(cmd *cobra.Command) (*DataMoverArgs, error) {
 	profile := cmd.Flags().Lookup(profileFlagName).Value.String()
 	if profile != "" {
 		profileRef, err := unmarshalProfileFlag(cmd)
 		if err != nil {
-			return &DataMoverVal{}
+			return &DataMoverArgs{}, err
 		}
-		return &DataMoverVal{
+		return &DataMoverArgs{
 			Type:    profileFlagName,
 			Profile: profileRef,
-		}
+		}, nil
 	}
 	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
 	if repositoryServer != "" {
 		repositoryServerRef, err := unmarshalRepositoryServerFlag(cmd)
 		if err != nil {
-			return &DataMoverVal{}
+			return &DataMoverArgs{}, err
 		}
-		return &DataMoverVal{
+		return &DataMoverArgs{
 			Type:             repositoryServerFlagName,
 			RepositoryServer: repositoryServerRef,
-		}
+		}, nil
 	}
-	return &DataMoverVal{}
+	return &DataMoverArgs{}, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 }
 
 func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {

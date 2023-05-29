@@ -32,7 +32,11 @@ func newLocationDeleteCommand() *cobra.Command {
 			if err := validateCommandArgs(c); err != nil {
 				return err
 			}
-			dataMover := NewDataMover(checkDataMover(c), "", kopiaSnapshotFlag(c))
+			dm, err := dataMoverFromCMD(c)
+			if err != nil {
+				return err
+			}
+			dataMover := NewDataMover(dm, "", kopiaSnapshotFlag(c))
 			return dataMover.Delete(pathFlag(c))
 		},
 	}
