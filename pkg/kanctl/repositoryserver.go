@@ -37,8 +37,8 @@ const (
 	repoServerUserFlag                  = "user"
 	repoServerUserAccessSecretFlag      = "user-access-secret"
 	repoServerAdminUserAccessSecretFlag = "admin-user-access-secret"
-	repoPasswordSecretFlag              = "repository-password-secret"
-	repoUserFlag                        = "repository-user"
+	kopiaRepoPasswordSecretFlag         = "kopia-repository-password-secret"
+	kopiaRepoUserFlag                   = "kopia-repository-user"
 	locationCredsSecretFlag             = "location-creds-secret"
 	locationSecretFlag                  = "location-secret"
 	defaultRepositoryServerHost         = "localhost"
@@ -73,9 +73,9 @@ func newRepositoryServerCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(repoServerUserFlag, "u", "", "name of the user to be created for the kopia repository server")
 	cmd.PersistentFlags().StringP(repoServerUserAccessSecretFlag, "s", "", "name of the secret having access credentials of the users that can connect to kopia repository server")
 	cmd.PersistentFlags().StringP(repoServerAdminUserAccessSecretFlag, "a", "", "name of the secret having admin credentials to connect to connect to kopia repository server")
-	cmd.PersistentFlags().StringP(repoPasswordSecretFlag, "r", "", "name of the secret containing password for the kopia repository")
+	cmd.PersistentFlags().StringP(kopiaRepoPasswordSecretFlag, "r", "", "name of the secret containing password for the kopia repository")
 	cmd.PersistentFlags().StringP(prefixFlag, "p", "", "prefix to be set in kopia repository")
-	cmd.PersistentFlags().StringP(repoUserFlag, "k", "", "name of the user for accessing the kopia repository")
+	cmd.PersistentFlags().StringP(kopiaRepoUserFlag, "k", "", "name of the user for accessing the kopia repository")
 	cmd.PersistentFlags().StringP(locationSecretFlag, "l", "", "name of the secret containing kopia repository storage location details")
 	cmd.PersistentFlags().StringP(locationCredsSecretFlag, "c", "", "name of the secret containing kopia repository storage credentials")
 	cmd.PersistentFlags().BoolP(waitFlag, "w", false, "wait for the kopia repository server to be in ready state after creation")
@@ -84,7 +84,7 @@ func newRepositoryServerCommand() *cobra.Command {
 	_ = cmd.MarkFlagRequired(repoServerUserFlag)
 	_ = cmd.MarkFlagRequired(repoServerUserAccessSecretFlag)
 	_ = cmd.MarkFlagRequired(repoServerAdminUserAccessSecretFlag)
-	_ = cmd.MarkFlagRequired(repoPasswordSecretFlag)
+	_ = cmd.MarkFlagRequired(kopiaRepoPasswordSecretFlag)
 	_ = cmd.MarkFlagRequired(prefixFlag)
 	_ = cmd.MarkFlagRequired(locationSecretFlag)
 	_ = cmd.MarkFlagRequired(locationCredsSecretFlag)
@@ -158,9 +158,9 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerAdminUserAccessSecret)
 	}
 
-	repositoryUser, _ := cmd.Flags().GetString(repoUserFlag)
+	repositoryUser, _ := cmd.Flags().GetString(kopiaRepoUserFlag)
 
-	repositoryPassword, _ := cmd.Flags().GetString(repoPasswordSecretFlag)
+	repositoryPassword, _ := cmd.Flags().GetString(kopiaRepoPasswordSecretFlag)
 	if strings.Contains(repositoryPassword, "/") {
 		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryPassword)
 	}
