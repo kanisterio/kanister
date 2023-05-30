@@ -37,6 +37,18 @@ spec:
                 description: Repository has the details required by the repository
                   server to connect to kopia repository
                 properties:
+                  cacheSizeSettings:
+                    description: CacheSettings are the metadata/content cache size
+                      details that can be used for establishing connection to the kopia repository
+                    properties:
+                      content:
+                        type: string
+                      metadata:
+                        type: string
+                    required:
+                    - content
+                    - metadata
+                    type: object
                   hostname:
                     description: If specified, these values will be used by the controller
                       to override default hostname when connecting to the repository
