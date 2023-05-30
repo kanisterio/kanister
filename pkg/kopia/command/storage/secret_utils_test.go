@@ -25,6 +25,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func Test(t *testing.T) { check.TestingT(t) }
@@ -35,43 +36,43 @@ var _ = check.Suite(&StorageUtilsSuite{})
 
 func (s *StorageUtilsSuite) TestLocationUtils(c *check.C) {
 	loc := map[string][]byte{
-		bucketKey:        []byte("test-key"),
-		endpointKey:      []byte("test-endpoint"),
-		prefixKey:        []byte("test-prefix"),
-		regionKey:        []byte("test-region"),
-		skipSSLVerifyKey: []byte("true"),
+		repositoryserver.BucketKey:        []byte("test-key"),
+		repositoryserver.EndpointKey:      []byte("test-endpoint"),
+		repositoryserver.PrefixKey:        []byte("test-prefix"),
+		repositoryserver.RegionKey:        []byte("test-region"),
+		repositoryserver.SkipSSLVerifyKey: []byte("true"),
 	}
 	for _, tc := range []struct {
 		LocType                    string
-		expectedLocType            LocType
+		expectedLocType            repositoryserver.LocType
 		skipSSLVerify              string
 		expectedSkipSSLVerifyValue bool
 	}{
 		{
 			LocType:                    "s3",
-			expectedLocType:            LocTypeS3,
+			expectedLocType:            repositoryserver.LocTypeS3,
 			skipSSLVerify:              "true",
 			expectedSkipSSLVerifyValue: true,
 		},
 		{
 			LocType:                    "gcs",
-			expectedLocType:            LocTypeGCS,
+			expectedLocType:            repositoryserver.LocTypeGCS,
 			skipSSLVerify:              "false",
 			expectedSkipSSLVerifyValue: false,
 		},
 		{
 			LocType:                    "azure",
-			expectedLocType:            LocTypeAzure,
+			expectedLocType:            repositoryserver.LocTypeAzure,
 			skipSSLVerify:              "true",
 			expectedSkipSSLVerifyValue: true,
 		},
 	} {
-		loc[typeKey] = []byte(tc.LocType)
-		loc[skipSSLVerifyKey] = []byte(tc.skipSSLVerify)
-		c.Assert(getBucketNameFromMap(loc), check.Equals, string(loc[bucketKey]))
-		c.Assert(getEndpointFromMap(loc), check.Equals, string(loc[endpointKey]))
-		c.Assert(getPrefixFromMap(loc), check.Equals, string(loc[prefixKey]))
-		c.Assert(getRegionFromMap(loc), check.Equals, string(loc[regionKey]))
+		loc[repositoryserver.TypeKey] = []byte(tc.LocType)
+		loc[repositoryserver.SkipSSLVerifyKey] = []byte(tc.skipSSLVerify)
+		c.Assert(getBucketNameFromMap(loc), check.Equals, string(loc[repositoryserver.BucketKey]))
+		c.Assert(getEndpointFromMap(loc), check.Equals, string(loc[repositoryserver.EndpointKey]))
+		c.Assert(getPrefixFromMap(loc), check.Equals, string(loc[repositoryserver.PrefixKey]))
+		c.Assert(getRegionFromMap(loc), check.Equals, string(loc[repositoryserver.RegionKey]))
 		c.Assert(checkSkipSSLVerifyFromMap(loc), check.Equals, tc.expectedSkipSSLVerifyValue)
 		c.Assert(locationType(loc), check.Equals, tc.expectedLocType)
 	}
@@ -195,7 +196,7 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 	endpointValue := "test-endpoint"
 	skipSSLVerifyValue := "true"
 	for _, tc := range []struct {
-		locType        LocType
+		locType        repositoryserver.LocType
 		prefix         string
 		region         string
 		bucket         string
@@ -204,85 +205,85 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 		expectedOutput map[string][]byte
 	}{
 		{
-			locType: LocTypeS3,
+			locType: repositoryserver.LocTypeS3,
 			expectedOutput: map[string][]byte{
-				typeKey: []byte(LocTypeS3),
+				repositoryserver.TypeKey: []byte(repositoryserver.LocTypeS3),
 			},
 		},
 		{
-			locType: LocTypeS3,
+			locType: repositoryserver.LocTypeS3,
 			prefix:  prefixValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(LocTypeS3),
-				prefixKey: []byte(prefixValue),
+				repositoryserver.TypeKey:   []byte(repositoryserver.LocTypeS3),
+				repositoryserver.PrefixKey: []byte(prefixValue),
 			},
 		},
 		{
-			locType: LocTypeS3,
+			locType: repositoryserver.LocTypeS3,
 			prefix:  prefixValue,
 			region:  regionValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(LocTypeS3),
-				prefixKey: []byte(prefixValue),
-				regionKey: []byte(regionValue),
+				repositoryserver.TypeKey:   []byte(repositoryserver.LocTypeS3),
+				repositoryserver.PrefixKey: []byte(prefixValue),
+				repositoryserver.RegionKey: []byte(regionValue),
 			},
 		},
 		{
-			locType: LocTypeS3,
+			locType: repositoryserver.LocTypeS3,
 			prefix:  prefixValue,
 			region:  regionValue,
 			bucket:  bucketValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(LocTypeS3),
-				prefixKey: []byte(prefixValue),
-				regionKey: []byte(regionValue),
-				bucketKey: []byte(bucketValue),
+				repositoryserver.TypeKey:   []byte(repositoryserver.LocTypeS3),
+				repositoryserver.PrefixKey: []byte(prefixValue),
+				repositoryserver.RegionKey: []byte(regionValue),
+				repositoryserver.BucketKey: []byte(bucketValue),
 			},
 		},
 		{
-			locType:  LocTypeS3,
+			locType:  repositoryserver.LocTypeS3,
 			prefix:   prefixValue,
 			region:   regionValue,
 			bucket:   bucketValue,
 			endpoint: endpointValue,
 			expectedOutput: map[string][]byte{
-				typeKey:     []byte(LocTypeS3),
-				prefixKey:   []byte(prefixValue),
-				regionKey:   []byte(regionValue),
-				bucketKey:   []byte(bucketValue),
-				endpointKey: []byte(endpointValue),
+				repositoryserver.TypeKey:     []byte(repositoryserver.LocTypeS3),
+				repositoryserver.PrefixKey:   []byte(prefixValue),
+				repositoryserver.RegionKey:   []byte(regionValue),
+				repositoryserver.BucketKey:   []byte(bucketValue),
+				repositoryserver.EndpointKey: []byte(endpointValue),
 			},
 		},
 		{
-			locType:       LocTypeS3,
+			locType:       repositoryserver.LocTypeS3,
 			prefix:        prefixValue,
 			region:        regionValue,
 			bucket:        bucketValue,
 			endpoint:      endpointValue,
 			skipSSLVerify: skipSSLVerifyValue,
 			expectedOutput: map[string][]byte{
-				typeKey:          []byte(LocTypeS3),
-				prefixKey:        []byte(prefixValue),
-				regionKey:        []byte(regionValue),
-				bucketKey:        []byte(bucketValue),
-				endpointKey:      []byte(endpointValue),
-				skipSSLVerifyKey: []byte(skipSSLVerifyValue),
+				repositoryserver.TypeKey:          []byte(repositoryserver.LocTypeS3),
+				repositoryserver.PrefixKey:        []byte(prefixValue),
+				repositoryserver.RegionKey:        []byte(regionValue),
+				repositoryserver.BucketKey:        []byte(bucketValue),
+				repositoryserver.EndpointKey:      []byte(endpointValue),
+				repositoryserver.SkipSSLVerifyKey: []byte(skipSSLVerifyValue),
 			},
 		},
 		{
-			locType:       LocType(v1alpha1.LocationTypeS3Compliant),
+			locType:       repositoryserver.LocType(v1alpha1.LocationTypeS3Compliant),
 			prefix:        prefixValue,
 			region:        regionValue,
 			bucket:        bucketValue,
 			endpoint:      endpointValue,
 			skipSSLVerify: skipSSLVerifyValue,
 			expectedOutput: map[string][]byte{
-				typeKey:          []byte(LocTypeS3),
-				prefixKey:        []byte(prefixValue),
-				regionKey:        []byte(regionValue),
-				bucketKey:        []byte(bucketValue),
-				endpointKey:      []byte(endpointValue),
-				skipSSLVerifyKey: []byte(skipSSLVerifyValue),
+				repositoryserver.TypeKey:          []byte(repositoryserver.LocTypeS3),
+				repositoryserver.PrefixKey:        []byte(prefixValue),
+				repositoryserver.RegionKey:        []byte(regionValue),
+				repositoryserver.BucketKey:        []byte(bucketValue),
+				repositoryserver.EndpointKey:      []byte(endpointValue),
+				repositoryserver.SkipSSLVerifyKey: []byte(skipSSLVerifyValue),
 			},
 		},
 	} {
