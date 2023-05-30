@@ -15,14 +15,23 @@ spec:
 {{ include "kanister-operator.helmLabels" . | indent 8}}
     spec:
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
-{{- if .Values.bpValidatingWebhook.enabled }}
       volumes:
+{{- if .Values.bpValidatingWebhook.enabled }}
         - name: webhook-certs
           secret:
             {{- if eq (.Values.bpValidatingWebhook.tls.mode) "custom" }}
             secretName: {{ .Values.bpValidatingWebhook.tls.secretName | required "Missing required TLS secretName containing cert details, Make sure to set `bpValidatingWebhook.tls.secretName`" }}
             {{- else if eq (.Values.bpValidatingWebhook.tls.mode) "auto" }}
             secretName: kanister-webhook-certs
+            {{- end }}
+{{- end }}
+{{- if .Values.repositoryServerController.validatingWebhook.enabled }}
+        - name: webhook-certs-repositoryservers
+          secret:
+            {{- if eq (.Values.repositoryServerController.validatingWebhook.tls.mode) "custom" }}
+            secretName: {{ .Values.repositoryServerController.validatingWebhook.tls.secretName | required "Missing required TLS secretName containing cert details, Make sure to set `repositoryServerController.validatingWebhook.tls.secretName`" }}
+            {{- else if eq (.Values.repositoryServerController.validatingWebhook.tls.mode) "auto" }}
+            secretName: kanister-webhook-certs-repositoryservers
             {{- end }}
 {{- end }}
       containers:
@@ -49,6 +58,11 @@ spec:
       - name: {{ template "repository-server-controller.name" . }}
         image: {{ .Values.repositoryServerControllerImage.registry }}/{{ .Values.repositoryServerControllerImage.name }}:{{ .Values.repositoryServerControllerImage.tag }}
         imagePullPolicy: {{ .Values.repositoryServerControllerImage.pullPolicy }}
+{{- if .Values.repositoryServerController.validatingWebhook.enabled }}
+        volumeMounts:
+          - name: webhook-certs-repositoryservers
+            mountPath: /var/run/webhook/serving-cert
+{{- end }}
         env:
         - name: KOPIA_SERVER_START_TIMEOUT
           value: {{ .Values.repositoryServerController.serverStartTimeout | quote }}

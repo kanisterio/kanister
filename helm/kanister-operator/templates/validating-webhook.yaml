@@ -77,7 +77,7 @@ webhooks:
       service:
         namespace: {{ .Release.Namespace }}
         name: {{ template "kanister-operator.fullname" . }}
-        path: "/validate/v1alpha1/blueprint"
+        path: "/validate/v1alpha1/repositoryserver"
         port: {{ .Values.controller.service.port }}
       {{- if eq (.Values.repositoryServerController.validatingWebhook.tls.mode) "custom" }}
       caBundle: {{ .Values.repositoryServerController.validatingWebhook.tls.caBundle | required "Missing required caBundle, bpValidatingWebhook.tls.caBundle" }}
