@@ -363,6 +363,151 @@ As a reference, below is an example of a Profile and the corresponding secret.
     example_key_id: <access key>
     example_secret_access_key: <access secret>
 
+RepositoryServers
+-----------------
+
+RepositoryServer CR is required by kanister controller to start
+a kopia repository server. The CR has list of parameters to configure
+kopia repository server.
+
+.. note::
+    Secrets referenced in the CR should be created in the format referenced
+    in the :ref:`Repository Server Secrets<repositoryserversecrets>` section
+
+
+The definition of ``Repository Server`` is:
+
+.. code-block:: go
+  :linenos:
+
+  // RepositoryServer manages the lifecycle of Kopia Repository Server within a Pod
+  type RepositoryServer struct {
+	  metav1.TypeMeta   `json:",inline"`
+	  metav1.ObjectMeta `json:"metadata,omitempty"`
+	  Spec RepositoryServerSpec `json:"spec"`
+	  Status RepositoryServerStatus `json:"status"`
+  }
+
+  Repository Server ``Spec`` field is defined as follows:
+
+.. code-block:: go
+  :linenos:
+
+  type RepositoryServerSpec struct {
+	  Storage Storage `json:"storage"`
+	  Repository Repository `json:"repository"`
+	  Server Server `json:"server"`
+  }
+
+- ``Storage`` field in the ``RepositoryServerSpec`` contains the location
+  details where the kopia repository is created
+
+.. code-block:: go
+  :linenos:
+
+  type Storage struct {
+  	SecretRef corev1.SecretReference `json:"secretRef"`
+  	CredentialSecretRef corev1.SecretReference `json:"credentialSecretRef"`
+  }
+
+^ ``SecretRef`` and ``CredentialSecretRef`` are the references to location
+  secrets
+  
+- ``Repository`` field in CR ``spec`` has details to connect to kopia repository created 
+  in the above location storage
+
+.. code-block:: go
+  :linenos:
+
+  type Repository struct {
+	  RootPath string `json:"rootPath"`
+	  Username string `json:"username"`
+	  Hostname string `json:"hostname"`
+	  PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef"`
+  }
+
+Kopia identifies users by ``username@hostname`` and uses the values
+specified when establishing connection to the repository to identify
+backups created in the session.
+
+^ ``RootPath`` is the path for the kopia repository. It is the subpath within
+the path prefix specified in storage location
+^ ``Username`` is an optional field used to override the default username while
+connecting to kopia repository
+^ ``Hostname`` is an optional field used to override the default hostname while
+connecting to kopia repository
+^ ``PasswordSecretRef`` is the reference to the secret containing password to
+connect to kopia repository
+
+
+- ``Server`` field in the CR spec has references to all the secrets
+  required to start the kopia repository server
+
+.. code-block:: go
+  :linenos:
+
+  type Server struct {
+	  UserAccess UserAccess `json:"userAccess"`
+	  AdminSecretRef corev1.SecretReference `json:"adminSecretRef"`
+	  TLSSecretRef corev1.SecretReference `json:"tlsSecretRef"`
+  }
+
+^ ``AdminSecretRef`` is a secret reference containing admin credentials
+  required to start the kopia repository server
+^ ``TLSSecretRef`` is a TLS secret reference for kopia client and server communication
+^ ``UserAccess`` contains username and password secret reference required
+  for creating kopia respository server users.
+  
+.. code-block:: go
+  :linenos:
+
+  type UserAccess struct {
+	  UserAccessSecretRef corev1.SecretReference `json:"userAccessSecretRef"`
+	  Username string `json:"username"`
+  }
+
+
+- ``Status`` field in ``RepositoryServer`` CR is used by kanister controller
+  to propogate server's status to the client. It is defined as:
+
+.. code-block:: go
+  :linenos:
+
+  type RepositoryServerStatus struct {
+	  Conditions []Condition              `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	  ServerInfo ServerInfo               `json:"serverInfo,omitempty"`
+	  Progress   RepositoryServerProgress `json:"progress"`
+  }
+- ``Progress`` is populated by controller with 3 values
+
+  ^ ``ServerReady`` represents the ready state of the repository server and
+  the pod which runs the proxy server
+	^ ``ServerStopped`` represents that the controller got an error while
+  starting the repository server
+	^ ``ServerPending`` represents that repository server is yet to be started completely
+
+- ``ServerInfo`` is populated by the kanister controller with
+the server details that client requires to connect to the server.
+
+.. code-block:: go
+  :linenos:
+
+  type ServerInfo struct {
+	  PodName     string `json:"podName,omitempty"`
+	  ServiceName string `json:"serviceName,omitempty"`
+  }
+
+^ ``PodName`` is the name of pod created by controller for kopia repository server
+^ ``ServiceName`` is the name of the kubernetes service created by the controller
+which contains the connection details for repository server
+
+
+RepositoryServerSecrets
+=========================
+
+Kanister controller needs the following secrets to be created for starting the kopia
+repository server successfully. The secrets are referenced in the ``RepositoryServer``
+CR as described in  :ref:`RepositoryServer<repositoryservers>`
 
 Controller
 ==========
