@@ -54,7 +54,7 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 			CommandArgs: &command.CommandArgs{
 				RepoPassword:   "",
 				ConfigFilePath: command.DefaultConfigFilePath,
-				LogDirectory:   command.DefaultCacheDirectory,
+				LogDirectory:   command.DefaultLogDirectory,
 			},
 			ServerAddress:    repoServerAddress,
 			TLSCertFile:      tlsCertPath,
