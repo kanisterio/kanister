@@ -502,6 +502,44 @@ the server details that client requires to connect to the server.
 which contains the connection details for repository server
 
 
+As a reference, below is an example of a Repository Server
+
+.. code-block:: yaml
+  :linenos:
+
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: RepositoryServer
+  metadata:
+    name: kopia-repo-server-monitoring
+    namespace: <kanister-namespace>
+  spec:
+    storage:
+      secretRef:
+        name: <location-secret>
+        namespace: <kanister-namespace>
+      credentialSecretRef:
+        name: <credentials-secret>
+        namespace: <kanister-namespace>
+    repository:
+      rootPath: /repo/monitoring
+      passwordSecretRef:
+        name: <repo-pass-secret>
+        namespace: <kanister-namespace>
+      username: <username-to-connect-repository>
+      hostname: <hostname-to-connect-repository>
+    server:
+      adminSecretRef:
+        name: <server-admin-username-secret>
+        namespace: kanister
+      tlsSecretRef:
+        name: <server-tls-cert-secret>
+        namespace: kanister
+      userAccess:
+        userAccessSecretRef:
+          name: <server-user-password-secret>
+          namespace: kanister
+        username: <server-user>
+
 RepositoryServerSecrets
 =========================
 
