@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,7 +54,7 @@ func (s *PodSuite) SetUpSuite(c *C) {
 	var err error
 	s.cli, err = NewClient()
 	c.Assert(err, IsNil)
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "podtest-",
 		},
@@ -108,14 +108,14 @@ func (s *PodSuite) TestPod(c *C) {
 			Image:              consts.LatestKanisterToolsImage,
 			Command:            []string{"sh", "-c", "tail -f /dev/null"},
 			ServiceAccountName: testSAName,
-			RestartPolicy:      v1.RestartPolicyAlways,
+			RestartPolicy:      corev1.RestartPolicyAlways,
 		},
 		{
 			Namespace:     cns,
 			GenerateName:  "test-",
 			Image:         consts.LatestKanisterToolsImage,
 			Command:       []string{"sh", "-c", "tail -f /dev/null"},
-			RestartPolicy: v1.RestartPolicyOnFailure,
+			RestartPolicy: corev1.RestartPolicyOnFailure,
 		},
 		{
 			Namespace:          cns,
@@ -123,7 +123,7 @@ func (s *PodSuite) TestPod(c *C) {
 			Image:              consts.LatestKanisterToolsImage,
 			Command:            []string{"sh", "-c", "tail -f /dev/null"},
 			ServiceAccountName: testSAName,
-			RestartPolicy:      v1.RestartPolicyNever,
+			RestartPolicy:      corev1.RestartPolicyNever,
 		},
 		{
 			Namespace:    s.namespace,
@@ -148,12 +148,12 @@ func (s *PodSuite) TestPod(c *C) {
 			GenerateName: "test-",
 			Image:        consts.LatestKanisterToolsImage,
 			Command:      []string{"sh", "-c", "tail -f /dev/null"},
-			Resources: v1.ResourceRequirements{
-				Limits: v1.ResourceList{
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
 					"memory": resource.MustParse("100Mi"),
 					"cpu":    resource.MustParse("100m"),
 				},
-				Requests: v1.ResourceList{
+				Requests: corev1.ResourceList{
 					"memory": resource.MustParse("100Mi"),
 					"cpu":    resource.MustParse("100m"),
 				},
@@ -185,7 +185,7 @@ func (s *PodSuite) TestPod(c *C) {
 			GenerateName: "test-",
 			Image:        consts.LatestKanisterToolsImage,
 			Command:      []string{"sh", "-c", "tail -f /dev/null"},
-			EnvironmentVariables: []v1.EnvVar{
+			EnvironmentVariables: []corev1.EnvVar{
 				{
 					Name:  "test-env",
 					Value: "test-value",
@@ -244,7 +244,7 @@ func (s *PodSuite) TestPod(c *C) {
 
 		switch {
 		case po.RestartPolicy == "":
-			c.Assert(pod.Spec.RestartPolicy, Equals, v1.RestartPolicyNever)
+			c.Assert(pod.Spec.RestartPolicy, Equals, corev1.RestartPolicyNever)
 		default:
 			c.Assert(pod.Spec.RestartPolicy, Equals, po.RestartPolicy)
 		}
@@ -259,8 +259,8 @@ func (s *PodSuite) TestPod(c *C) {
 	}
 }
 
-func (s *PodSuite) createTestSecret(c *C) *v1.Secret {
-	testSecret := &v1.Secret{
+func (s *PodSuite) createTestSecret(c *C) *corev1.Secret {
+	testSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-secret-",
 		},
@@ -274,7 +274,7 @@ func (s *PodSuite) createTestSecret(c *C) *v1.Secret {
 }
 
 func (s *PodSuite) createServiceAccount(name, ns string) error {
-	sa := v1.ServiceAccount{
+	sa := corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: ns,
@@ -289,15 +289,15 @@ func (s *PodSuite) createServiceAccount(name, ns string) error {
 func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
 	pvcName := "prometheus-ibm-monitoring-prometheus-db-prometheus-ibm-monitoring-prometheus-0"
-	pvc := &v1.PersistentVolumeClaim{
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvcName,
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("1Gi"),
 				},
 			},
 		},
@@ -306,18 +306,18 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 	c.Assert(err, IsNil)
 	vols := map[string]string{pvc.Name: "/mnt/data1"}
 	ctx := context.Background()
-	var p *v1.Pod
+	var p *corev1.Pod
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 		fmt.Println("found pod")
 		ca := action.(testing.CreateAction)
-		p = ca.GetObject().(*v1.Pod)
+		p = ca.GetObject().(*corev1.Pod)
 		if len(p.Spec.Volumes[0].Name) > 63 {
 			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
 		}
 		return false, nil, nil
 	})
 	cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		p.Status.Phase = v1.PodRunning
+		p.Status.Phase = corev1.PodRunning
 		return true, p, nil
 	})
 	pod, err := CreatePod(ctx, cli, &PodOptions{
@@ -338,17 +338,17 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 func (s *PodSuite) TestPodWithBlockModeVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
 	pvcName := "block-mode-volume"
-	blockMode := v1.PersistentVolumeBlock
-	pvc := &v1.PersistentVolumeClaim{
+	blockMode := corev1.PersistentVolumeBlock
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvcName,
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			VolumeMode:  &blockMode,
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("1Gi"),
 				},
 			},
 		},
@@ -357,18 +357,18 @@ func (s *PodSuite) TestPodWithBlockModeVolumes(c *C) {
 	c.Assert(err, IsNil)
 	vols := map[string]string{pvc.Name: "/mnt/data1"}
 	ctx := context.Background()
-	var p *v1.Pod
+	var p *corev1.Pod
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 		fmt.Println("found pod")
 		ca := action.(testing.CreateAction)
-		p = ca.GetObject().(*v1.Pod)
+		p = ca.GetObject().(*corev1.Pod)
 		if len(p.Spec.Volumes[0].Name) > 63 {
 			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
 		}
 		return false, nil, nil
 	})
 	cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		p.Status.Phase = v1.PodRunning
+		p.Status.Phase = corev1.PodRunning
 		return true, p, nil
 	})
 	pod, err := CreatePod(ctx, cli, &PodOptions{
@@ -394,24 +394,31 @@ func (s *PodSuite) TestGetPodLogs(c *C) {
 		GenerateName: "test-",
 		Image:        consts.LatestKanisterToolsImage,
 		Command:      []string{"sh", "-c", "echo hello"},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []corev1.Container{{
+				Name:    "sidecar",
+				Image:   consts.LatestKanisterToolsImage,
+				Command: []string{"sh", "-c", "echo sidecar"},
+			}},
+		},
 	})
 	c.Assert(err, IsNil)
 	c.Assert(WaitForPodCompletion(ctx, s.cli, s.namespace, pod.Name), IsNil)
-	logs, err := GetPodLogs(ctx, s.cli, s.namespace, pod.Name)
+	logs, err := GetPodLogs(ctx, s.cli, s.namespace, pod.Name, pod.Spec.Containers[0].Name)
 	c.Assert(err, IsNil)
 	c.Assert(strings.Contains(logs, "hello"), Equals, true)
 	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
 }
 
 func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
-	defaultSpecs := v1.PodSpec{
-		Containers: []v1.Container{
+	defaultSpecs := corev1.PodSpec{
+		Containers: []corev1.Container{
 			{
 				Name:            "container",
-				Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+				Image:           "ghcr.io/kanisterio/kanister-tools:0.91.0",
 				Command:         []string{"sh", "-c", "echo in default specs"},
-				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
-				VolumeMounts: []v1.VolumeMount{
+				ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
+				VolumeMounts: []corev1.VolumeMount{
 					{
 						Name:      "data",
 						MountPath: "/var/lib/data",
@@ -419,12 +426,12 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				},
 			},
 		},
-		RestartPolicy: v1.RestartPolicyOnFailure,
-		Volumes: []v1.Volume{
+		RestartPolicy: corev1.RestartPolicyOnFailure,
+		Volumes: []corev1.Volume{
 			{
 				Name: "data",
-				VolumeSource: v1.VolumeSource{
-					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 						ClaimName: "default-pvc",
 					},
 				},
@@ -435,7 +442,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 	tests := []struct {
 		BlueprintPodSpecs crv1alpha1.JSONMap
 		ActionsetPodSpecs crv1alpha1.JSONMap
-		Expected          v1.PodSpec
+		Expected          corev1.PodSpec
 	}{
 		// Blueprint and Actionset PodOverride specs are nil
 		{
@@ -450,14 +457,14 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 			ActionsetPodSpecs: crv1alpha1.JSONMap{
 				"restartPolicy": "Always",
 			},
-			Expected: v1.PodSpec{
-				Containers: []v1.Container{
+			Expected: corev1.PodSpec{
+				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.91.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
-						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
-						VolumeMounts: []v1.VolumeMount{
+						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
+						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "data",
 								MountPath: "/var/lib/data",
@@ -465,12 +472,12 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 						},
 					},
 				},
-				RestartPolicy: v1.RestartPolicyAlways,
-				Volumes: []v1.Volume{
+				RestartPolicy: corev1.RestartPolicyAlways,
+				Volumes: []corev1.Volume{
 					{
 						Name: "data",
-						VolumeSource: v1.VolumeSource{
-							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "default-pvc",
 							},
 						},
@@ -490,14 +497,14 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				},
 			},
 			ActionsetPodSpecs: nil,
-			Expected: v1.PodSpec{
-				Containers: []v1.Container{
+			Expected: corev1.PodSpec{
+				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.91.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
-						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
-						VolumeMounts: []v1.VolumeMount{
+						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
+						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "data",
 								MountPath: "/var/lib/data",
@@ -505,12 +512,12 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 						},
 					},
 				},
-				RestartPolicy: v1.RestartPolicyOnFailure,
-				Volumes: []v1.Volume{
+				RestartPolicy: corev1.RestartPolicyOnFailure,
+				Volumes: []corev1.Volume{
 					{
 						Name: "data",
-						VolumeSource: v1.VolumeSource{
-							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "default-pvc",
 							},
 						},
@@ -544,14 +551,14 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 					},
 				},
 			},
-			Expected: v1.PodSpec{
-				Containers: []v1.Container{
+			Expected: corev1.PodSpec{
+				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.91.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
-						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
-						VolumeMounts: []v1.VolumeMount{
+						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
+						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "data",
 								MountPath: "/var/lib/other",
@@ -563,12 +570,12 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 						},
 					},
 				},
-				RestartPolicy: v1.RestartPolicyOnFailure,
-				Volumes: []v1.Volume{
+				RestartPolicy: corev1.RestartPolicyOnFailure,
+				Volumes: []corev1.Volume{
 					{
 						Name: "data",
-						VolumeSource: v1.VolumeSource{
-							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "other-claim",
 							},
 						},
@@ -594,25 +601,25 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 					},
 				},
 			},
-			Expected: v1.PodSpec{
+			Expected: corev1.PodSpec{
 				NodeSelector: map[string]string{
 					"selector-key": "selector-value",
 				},
-				Tolerations: []v1.Toleration{
+				Tolerations: []corev1.Toleration{
 					{
 						Key:      "taint-key",
-						Operator: v1.TolerationOpEqual,
+						Operator: corev1.TolerationOpEqual,
 						Value:    "taint-value",
-						Effect:   v1.TaintEffectNoSchedule,
+						Effect:   corev1.TaintEffectNoSchedule,
 					},
 				},
-				Containers: []v1.Container{
+				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.91.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
-						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
-						VolumeMounts: []v1.VolumeMount{
+						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
+						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "data",
 								MountPath: "/var/lib/data",
@@ -620,12 +627,12 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 						},
 					},
 				},
-				RestartPolicy: v1.RestartPolicyOnFailure,
-				Volumes: []v1.Volume{
+				RestartPolicy: corev1.RestartPolicyOnFailure,
+				Volumes: []corev1.Volume{
 					{
 						Name: "data",
-						VolumeSource: v1.VolumeSource{
-							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "default-pvc",
 							},
 						},
@@ -657,25 +664,25 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 					},
 				},
 			},
-			Expected: v1.PodSpec{
+			Expected: corev1.PodSpec{
 				NodeSelector: map[string]string{
 					"selector-key": "selector-value",
 				},
-				Tolerations: []v1.Toleration{
+				Tolerations: []corev1.Toleration{
 					{
 						Key:      "taint-key",
-						Operator: v1.TolerationOpEqual,
+						Operator: corev1.TolerationOpEqual,
 						Value:    "taint-value",
-						Effect:   v1.TaintEffectNoSchedule,
+						Effect:   corev1.TaintEffectNoSchedule,
 					},
 				},
-				Containers: []v1.Container{
+				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.91.0",
 						Command:         []string{"echo", "override command"},
-						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
-						VolumeMounts: []v1.VolumeMount{
+						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
+						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "data",
 								MountPath: "/var/lib/data",
@@ -683,12 +690,12 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 						},
 					},
 				},
-				RestartPolicy: v1.RestartPolicyOnFailure,
-				Volumes: []v1.Volume{
+				RestartPolicy: corev1.RestartPolicyOnFailure,
+				Volumes: []corev1.Volume{
 					{
 						Name: "data",
-						VolumeSource: v1.VolumeSource{
-							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "default-pvc",
 							},
 						},
@@ -708,14 +715,14 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				},
 			},
 			ActionsetPodSpecs: nil,
-			Expected: v1.PodSpec{
-				Containers: []v1.Container{
+			Expected: corev1.PodSpec{
+				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.91.0",
 						Command:         []string{"echo", "override command"},
-						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
-						VolumeMounts: []v1.VolumeMount{
+						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
+						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "data",
 								MountPath: "/var/lib/data",
@@ -723,12 +730,12 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 						},
 					},
 				},
-				RestartPolicy: v1.RestartPolicyOnFailure,
-				Volumes: []v1.Volume{
+				RestartPolicy: corev1.RestartPolicyOnFailure,
+				Volumes: []corev1.Volume{
 					{
 						Name: "data",
-						VolumeSource: v1.VolumeSource{
-							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "default-pvc",
 							},
 						},
@@ -751,14 +758,14 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 			ActionsetPodSpecs: crv1alpha1.JSONMap{
 				"dnsPolicy": "ClusterFirst",
 			},
-			Expected: v1.PodSpec{
-				Containers: []v1.Container{
+			Expected: corev1.PodSpec{
+				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.91.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
-						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
-						VolumeMounts: []v1.VolumeMount{
+						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
+						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "data",
 								MountPath: "/var/lib/data",
@@ -766,18 +773,18 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 						},
 					},
 				},
-				RestartPolicy: v1.RestartPolicyOnFailure,
-				Volumes: []v1.Volume{
+				RestartPolicy: corev1.RestartPolicyOnFailure,
+				Volumes: []corev1.Volume{
 					{
 						Name: "data",
-						VolumeSource: v1.VolumeSource{
-							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "default-pvc",
 							},
 						},
 					},
 				},
-				DNSPolicy: v1.DNSClusterFirst,
+				DNSPolicy: corev1.DNSClusterFirst,
 			},
 		},
 	}
@@ -808,7 +815,7 @@ func (s *PodSuite) TestSetPodSecurityContext(c *C) {
 		GenerateName: "test-",
 		Image:        consts.LatestKanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		PodSecurityContext: &v1.PodSecurityContext{
+		PodSecurityContext: &corev1.PodSecurityContext{
 			RunAsUser:    &[]int64{1000}[0],
 			RunAsGroup:   &[]int64{1000}[0],
 			RunAsNonRoot: &[]bool{true}[0],
@@ -830,7 +837,7 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 		GenerateName: "test-",
 		Image:        consts.LatestKanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		PodSecurityContext: &v1.PodSecurityContext{
+		PodSecurityContext: &corev1.PodSecurityContext{
 			RunAsUser:    &[]int64{1000}[0],
 			RunAsGroup:   &[]int64{1000}[0],
 			RunAsNonRoot: &[]bool{true}[0],
@@ -851,4 +858,26 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 	var uidAndGidExpected int64 = 1000
 	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
 	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+}
+
+func (s *PodSuite) TestSetLifecycleHook(c *C) {
+	lch := &corev1.Lifecycle{
+		PostStart: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{
+				Command: []string{"/bin/bash", "-c", "echo 1"},
+			},
+		},
+	}
+
+	po := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		Lifecycle:    lch,
+	}
+
+	pod, err := CreatePod(context.Background(), s.cli, po)
+	c.Assert(err, IsNil)
+	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
 }

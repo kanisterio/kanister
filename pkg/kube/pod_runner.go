@@ -26,39 +26,55 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
+// PodRunner allows us to start / stop pod, write file to pod and execute command within it
+type PodRunner interface {
+	Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error)
+	// RunEx utilizes the PodController interface and forwards it to the functor, simplifying the manipulation with
+	// particular pod from the functor.
+	// TODO: Since significant number of functions are currently using PodRunner, we'll keep Run for now.
+	// However, once all these functions have been refactored to use PodController,
+	// Run should be removed and RunEx has to be renamed to Run.
+	RunEx(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error)
+}
+
 // PodRunner specifies Kubernetes Client and PodOptions needed for creating Pod
-type PodRunner struct {
-	cli        kubernetes.Interface
-	podOptions *PodOptions
+type podRunner struct {
+	pc PodController
 }
 
 // NewPodRunner returns a new PodRunner given Kubernetes Client and PodOptions
-func NewPodRunner(cli kubernetes.Interface, options *PodOptions) *PodRunner {
-	return &PodRunner{
-		cli:        cli,
-		podOptions: options,
+func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
+	return &podRunner{
+		pc: NewPodController(cli, options),
 	}
 }
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
-func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
+func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
+	return p.RunEx(ctx, func(innerCtx context.Context, pc PodController) (map[string]interface{}, error) {
+		return fn(innerCtx, pc.Pod())
+	})
+}
+
+// RunEx will create a new Pod based on PodRunner contents and execute the given function
+func (p *podRunner) RunEx(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	if p.cli == nil || p.podOptions == nil {
-		return nil, errors.New("Pod Runner not initialized")
-	}
-	pod, err := CreatePod(ctx, p.cli, p.podOptions)
+
+	err := p.pc.StartPod(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod")
+		return nil, errors.Wrap(err, "Failed to create pod")
 	}
+
+	pod := p.pc.Pod()
 	ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
 	ctx = field.Context(ctx, consts.ContainerNameKey, pod.Spec.Containers[0].Name)
 	go func() {
 		<-ctx.Done()
-		err := DeletePod(context.Background(), p.cli, pod)
+		err := p.pc.StopPod(context.Background(), PodControllerInfiniteStopTime, int64(0))
 		if err != nil {
 			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
 		}
 	}()
-	return fn(ctx, pod)
+	return fn(ctx, p.pc)
 }

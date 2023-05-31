@@ -24,4 +24,9 @@ const (
 	ProfileResourceNamePlural   = "profiles"
 )
 
+// These consts are used to query Repository server API objects
+const RepositoryServerResourceName = "repositoryserver"
+const RepositoryServerResourceNamePlural = "repositoryservers"
+
 const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
+const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.91.0"

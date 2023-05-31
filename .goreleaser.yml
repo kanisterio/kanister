@@ -37,6 +37,13 @@ builds:
   env: *env
   goos: *goos
   goarch: *goarch
+- id: repo-server-controller
+  binary: repo-server-controller
+  main: cmd/reposervercontroller/main.go
+  ldflags: *ldflags
+  env: *env
+  goos: *goos
+  goarch: *goarch
 dockers:
 - ids:
   - controller
@@ -44,14 +51,19 @@ dockers:
   - 'ghcr.io/kanisterio/controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
 - ids:
+  - repo-server-controller
+  image_templates:
+  - 'ghcr.io/kanisterio/repo-server-controller:{{ .Tag }}'
+  dockerfile: 'docker/repo-server-controller/Dockerfile'
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
-# Refers to https://github.com/kopia/kopia/commit/f8be8f6a5698edba055291b138c117ec6eaae125
-  - "--build-arg=kopiaBuildCommit=f8be8f6"
+# Refers to https://github.com/kopia/kopia/commit/a1eeeeadb3759fb94184f5c83d0f54e4cbc91f72
+  - "--build-arg=kopiaBuildCommit=a1eeeea"
   - "--build-arg=kopiaRepoOrg=kopia"
   extra_files:
   - 'LICENSE'

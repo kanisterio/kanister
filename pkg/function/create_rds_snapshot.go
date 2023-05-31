@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"sigs.k8s.io/yaml"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
@@ -51,6 +51,8 @@ const (
 	CreateRDSSnapshotSecurityGroupID = "securityGroupID"
 	// Allocated Storage Amount
 	CreateRDSSnapshotAllocatedStorage = "allocatedStorage"
+	// DB Subnet Group Name
+	CreateRDSSnapshotDBSubnetGroup = "dbSubnetGroup"
 	// DBEngineAurora has db engine aurora for MySQL 5.6-compatible
 	DBEngineAurora RDSDBEngine = "aurora"
 	// DBEngineAuroraMySQL has db engine for MySQL 5.7-compatible Aurora
@@ -131,11 +133,23 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", instanceID)
 	}
 
+	var dbSubnetGroup *string
+	switch {
+	case isAuroraCluster(string(dbEngine)):
+		dbSubnetGroup, e = GetRDSAuroraDBSubnetGroup(ctx, rdsCli, instanceID)
+	default:
+		dbSubnetGroup, e = GetRDSDBSubnetGroup(ctx, rdsCli, instanceID)
+	}
+	if e != nil {
+		return nil, errors.Wrapf(e, "Failed to get dbSubnetGroup ids. InstanceID=%s", instanceID)
+	}
+
 	output := map[string]interface{}{
 		CreateRDSSnapshotSnapshotID:       snapshotID,
 		CreateRDSSnapshotInstanceIDArg:    instanceID,
 		CreateRDSSnapshotSecurityGroupID:  string(sgIDYaml),
 		CreateRDSSnapshotAllocatedStorage: strconv.FormatInt(allocatedStorage, 10) + "GiB",
+		CreateRDSSnapshotDBSubnetGroup:    &dbSubnetGroup,
 	}
 	return output, nil
 }

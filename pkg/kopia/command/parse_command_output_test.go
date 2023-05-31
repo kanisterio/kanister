@@ -16,8 +16,6 @@ package command
 
 import (
 	"encoding/json"
-	"reflect"
-
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
 	. "gopkg.in/check.v1"
@@ -364,11 +362,73 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *C
 				ProgressPercent: 100,
 			},
 		},
+		{
+			name: "Progress 100% and still not ready - set 99%",
+			args: args{
+				snapCreateOutput:  "| 0 hashing, 123 hashed (1234.5 MB), 123 cached (1234 B), uploaded 1234.5 KB, estimated 941.2 KB (100.0%) 0s left",
+				matchOnlyFinished: false,
+			},
+			wantStats: &SnapshotCreateStats{
+				FilesHashed:     123,
+				SizeHashedB:     1234500000,
+				FilesCached:     123,
+				SizeCachedB:     1234,
+				SizeUploadedB:   1234500,
+				SizeEstimatedB:  941200,
+				ProgressPercent: 99,
+			},
+		},
+		{
+			name: "Progress is over 100% and still not ready - set 99%",
+			args: args{
+				snapCreateOutput:  "| 0 hashing, 20 hashed (95.1 MB), 20730 cached (4.4 GB), uploaded 21.5 MB, estimated 1.3 GB (340.0%) 0s left",
+				matchOnlyFinished: false,
+			},
+			wantStats: &SnapshotCreateStats{
+				FilesHashed:     20,
+				SizeHashedB:     95100000,
+				FilesCached:     20730,
+				SizeCachedB:     4400000000,
+				SizeUploadedB:   21500000,
+				SizeEstimatedB:  1300000000,
+				ProgressPercent: 99,
+			},
+		},
+		{
+			name: "Progress is over 100% and finished - set 100%",
+			args: args{
+				snapCreateOutput:  " * 0 hashing, 20 hashed (95.1 MB), 20730 cached (4.4 GB), uploaded 21.5 MB, estimated 1.3 GB (340.0%) 0s left",
+				matchOnlyFinished: false,
+			},
+			wantStats: &SnapshotCreateStats{
+				FilesHashed:     20,
+				SizeHashedB:     95100000,
+				FilesCached:     20730,
+				SizeCachedB:     4400000000,
+				SizeUploadedB:   21500000,
+				SizeEstimatedB:  1300000000,
+				ProgressPercent: 100,
+			},
+		},
+		{
+			name: "Progress is less 100% and finished - set 100%",
+			args: args{
+				snapCreateOutput: " * 0 hashing, 283 hashed (219.5 MB), 0 cached (0 B), uploaded 10.5 MB, estimated 6.01 MB (91.7%) 1s left",
+			},
+			wantStats: &SnapshotCreateStats{
+				FilesHashed:     283,
+				SizeHashedB:     219500000,
+				FilesCached:     0,
+				SizeCachedB:     0,
+				SizeUploadedB:   10500000,
+				SizeEstimatedB:  6010000,
+				ProgressPercent: 100,
+			},
+		},
 	}
 	for _, tt := range tests {
-		if gotStats := SnapshotStatsFromSnapshotCreate(tt.args.snapCreateOutput, tt.args.matchOnlyFinished); !reflect.DeepEqual(gotStats, tt.wantStats) {
-			c.Errorf("SnapshotStatsFromSnapshotCreate() = %v, want %v", gotStats, tt.wantStats)
-		}
+		stats := SnapshotStatsFromSnapshotCreate(tt.args.snapCreateOutput, tt.args.matchOnlyFinished)
+		c.Check(stats, DeepEquals, tt.wantStats, Commentf("Failed for %s", tt.name))
 	}
 }
 
@@ -560,6 +620,34 @@ func (kParse *KopiaParseUtilsTestSuite) TestIsEqualSnapshotCreateStats(c *C) {
 	} {
 		result := IsEqualSnapshotCreateStats(tc.a, tc.b)
 		c.Check(result, Equals, tc.expResult)
+	}
+}
+
+func (kParse *KopiaParseUtilsTestSuite) TestErrorsFromOutput(c *C) {
+	for caseIdx, tc := range []struct {
+		log            string
+		expectedErrors []string
+	}{
+		// Some real error case
+		{"ERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/"}},
+		// The same as previous but with coloured ERROR word
+		{string([]byte{27, 91, 51, 49, 109, 69, 82, 82, 79, 82, 27, 91, 48, 109, 32, 111, 112, 101, 110, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 58, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 32, 105, 115, 32, 110, 111, 116, 32, 99, 111, 110, 110, 101, 99, 116, 101, 100, 46}), []string{"open repository: repository is not connected."}},
+		// Multiple error lines (seems not possible in real life, but just to cover this possibility)
+		{"ERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/\r\nERROR another error", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/", "another error"}},
+		// Error surrounded by other output
+		{"some text\r\nERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/\r\nanother text line", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/"}},
+		// No error in output
+		{"some text\r\nanother text line", []string{}},
+		{"  2009-11-10 23:00:00 UTC <ERROR> some error\n", []string{"some error"}},
+		{"error setting attributes: could not change owner/group", []string{"setting attributes: could not change owner/group"}},
+		{"error restoring: restore error: error copying: copy file: error creating file:", []string{"restoring: restore error: error copying: copy file: error creating file:"}},
+	} {
+		errs := ErrorsFromOutput(tc.log)
+		fc := Commentf("Failed for case #%v. Log: %s", caseIdx, tc.log)
+		c.Check(len(errs), Equals, len(tc.expectedErrors), fc)
+		for i, e := range errs {
+			c.Check(e.Error(), Equals, tc.expectedErrors[i], fc)
+		}
 	}
 }
 

@@ -40,6 +40,7 @@ observability
 outputArtifact
 param
 params
+PEM
 PersistentVolumeClaim
 pluggable
 pre
@@ -53,8 +54,11 @@ schemas
 stateful
 stdout
 subcommand
+Subnet
 templating
 Walkthrough
 walkthrough
 Workflow
 webhook
+Kopia
+kopia

@@ -103,11 +103,15 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.ss = ss
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, s.namespace, s.ss.Name)
+	c.Assert(err, IsNil)
 
 	d := testutil.NewTestDeployment(1)
 	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(ctx, d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.deployment = d
+	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, s.deployment.Name)
+	c.Assert(err, IsNil)
 
 	cm := testutil.NewTestConfigMap()
 	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(ctx, cm, metav1.CreateOptions{})
@@ -199,7 +203,7 @@ func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, 
 }
 
 //nolint:unparam
-func (s *ControllerSuite) waitOnActionSetCompleteWithRunningPhases(as *crv1alpha1.ActionSet, rp *sets.String) error {
+func (s *ControllerSuite) waitOnActionSetCompleteWithRunningPhases(as *crv1alpha1.ActionSet, rp *sets.Set[string]) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
@@ -972,7 +976,7 @@ func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
 
-	runningPhases := sets.NewString()
+	runningPhases := sets.Set[string]{}
 	runningPhases.Insert("backupPhaseOne").Insert("backupPhaseTwo").Insert("deferPhase")
 
 	err = s.waitOnActionSetCompleteWithRunningPhases(as, &runningPhases)

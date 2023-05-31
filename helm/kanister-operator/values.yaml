@@ -3,7 +3,12 @@
 # Declare variables to be passed into your templates.
 image:
   repository: ghcr.io/kanisterio/controller
-  tag: 0.87.0
+  tag: 0.91.0
+  pullPolicy: IfNotPresent
+repositoryServerControllerImage:
+  registry: ghcr.io/kanisterio
+  name: repo-server-controller
+  tag: 0.91.0
   pullPolicy: IfNotPresent
 rbac:
   create: true
@@ -22,8 +27,21 @@ controller:
   # false : CRDs would be created by helm
   # true : CRDs would be created by kanister controller
   updateCRDs: true
+  parallelism: 8
 bpValidatingWebhook:
   enabled: true
+  tls:
+    mode: auto # If set to `custom` then secretName and caBundle should be provided
+    secretName: '' # An already created Secret in kanister controller namespace having tls cert details
+    caBundle: '' # A valid, CA bundle which is a PEM-encoded CA bundle for validating the webhook's server certificate
+repositoryServerController:
+  enabled: false
+  # startTimeout is used to specify the time in seconds to wait for starting the kopia repository server
+  # Default timeout is 600 seconds
+  serverStartTimeout: 600
+  logLevel: 'info'
+  container:
+    name: 'repository-server-controller'
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little

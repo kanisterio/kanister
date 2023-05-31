@@ -286,9 +286,9 @@ func parseKopiaProgressLine(line string, matchOnlyFinished bool) (stats *Snapsho
 
 	var estimatedSizeBytes uint64
 	var progressPercent float64
-	stillEstimating := len(groups["estimatedSize"]) == 0 && len(groups["estimatedProgress"]) == 0
+	estimationCompleted := len(groups["estimatedSize"]) != 0 || len(groups["estimatedProgress"]) != 0
 
-	if !stillEstimating { // Estimation completed
+	if estimationCompleted {
 		estimatedSizeBytes, err = humanize.ParseBytes(groups["estimatedSize"])
 		if err != nil {
 			log.WithError(err).Print("Skipping entry due to inability to parse estimated size string", field.M{"estimatedSize": groups["estimatedSize"]})
@@ -300,8 +300,15 @@ func parseKopiaProgressLine(line string, matchOnlyFinished bool) (stats *Snapsho
 			log.WithError(err).Print("Skipping entry due to inability to parse progress percent string", field.M{"estimatedProgress": groups["estimatedProgress"]})
 			return nil
 		}
-	} else if isFinalResult { // It may happen that kopia will complete its job before estimation will be done
+	}
+
+	if isFinalResult {
 		progressPercent = 100
+	} else if progressPercent >= 100 {
+		// It may happen that kopia reports progress of 100 or higher without actual completing the task.
+		// This can occur due to inaccurate estimation.
+		// In such case, we will return the progress as 99% to avoid confusion.
+		progressPercent = 99
 	}
 
 	return &SnapshotCreateStats{
@@ -381,4 +388,27 @@ func IsEqualSnapshotCreateStats(a, b *SnapshotCreateStats) bool {
 		a.SizeUploadedB == b.SizeUploadedB &&
 		a.SizeEstimatedB == b.SizeEstimatedB &&
 		a.ProgressPercent == b.ProgressPercent
+}
+
+var ANSIEscapeCode = regexp.MustCompile(`\x1b[^m]*?m`)
+var kopiaErrorPattern = regexp.MustCompile(`(?:ERROR\s+|.*\<ERROR\>\s*|error\s+)(.*)`)
+
+// ErrorFromOutput parses the output of a kopia and returns an error, if found
+func ErrorsFromOutput(output string) []error {
+	if output == "" {
+		return nil
+	}
+
+	var err []error
+
+	lines := regexp.MustCompile("[\r\n]").Split(output, -1)
+	for _, l := range lines {
+		clean := ANSIEscapeCode.ReplaceAllString(l, "") // Strip all ANSI escape codes from line
+		match := kopiaErrorPattern.FindAllStringSubmatch(clean, 1)
+		if len(match) > 0 {
+			err = append(err, errors.New(match[0][1]))
+		}
+	}
+
+	return err
 }

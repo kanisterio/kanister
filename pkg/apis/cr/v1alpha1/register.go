@@ -66,6 +66,16 @@ var ProfileResource = customresource.CustomResource{
 	Kind:    reflect.TypeOf(Profile{}).Name(),
 }
 
+// RepositoryServerResource is a CRD for blueprints.
+var RepositoryServerResource = customresource.CustomResource{
+	Name:    consts.RepositoryServerResourceName,
+	Plural:  consts.RepositoryServerResourceNamePlural,
+	Group:   ResourceGroup,
+	Version: SchemeVersion,
+	Scope:   apiextensionsv1.NamespaceScoped,
+	Kind:    reflect.TypeOf(RepositoryServer{}).Name(),
+}
+
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
 func Kind(kind string) schema.GroupKind {
 	return SchemeGroupVersion.WithKind(kind).GroupKind()
@@ -85,6 +95,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&BlueprintList{},
 		&Profile{},
 		&ProfileList{},
+		&RepositoryServer{},
+		&RepositoryServerList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
