@@ -511,41 +511,226 @@ As a reference, below is an example of a Repository Server
   kind: RepositoryServer
   metadata:
     name: kopia-repo-server-monitoring
-    namespace: <kanister-namespace>
+    namespace: <controller-namespace>
   spec:
     storage:
       secretRef:
         name: <location-secret>
-        namespace: <kanister-namespace>
+        namespace: <controller-namespace>
       credentialSecretRef:
         name: <credentials-secret>
-        namespace: <kanister-namespace>
+        namespace: <controller-namespace>
     repository:
       rootPath: /repo/monitoring
       passwordSecretRef:
         name: <repo-pass-secret>
-        namespace: <kanister-namespace>
+        namespace: <controller-namespace>
       username: <username-to-connect-repository>
       hostname: <hostname-to-connect-repository>
     server:
       adminSecretRef:
         name: <server-admin-username-secret>
-        namespace: kanister
+        namespace: <controller-namespace>
       tlsSecretRef:
         name: <server-tls-cert-secret>
-        namespace: kanister
+        namespace: <controller-namespace>
       userAccess:
         userAccessSecretRef:
           name: <server-user-password-secret>
-          namespace: kanister
+          namespace: <controller-namespace>
         username: <server-user>
 
-RepositoryServerSecrets
+Repository Server Secrets
 =========================
 
 Kanister controller needs the following secrets to be created for starting the kopia
 repository server successfully. The secrets are referenced in the ``RepositoryServer``
 CR as described in  :ref:`RepositoryServer<repositoryservers>`
+
+Location Storage Secret
+-----------------------
+
+This secret stores the sensitive details of the location where the kopia
+repository is created. This secret is referenced by ``spec.storage.secretRef``
+field in repository server CR
+
+The ``data.type`` field can have following values ``s3``, ``gcs`` , ``azure``, ``file-store``
+
+.. code-block:: yaml
+  :linenos:
+
+  apiVersion: v1
+  kind: Secret
+  metadata:
+     name: location
+     namespace: <controller-namespace>
+  type: secrets.kanister.io/storage-location
+  data:
+     # required: specify the type of the store
+     # supported values are s3, gcs, azure, and file-store
+     type: <base-64-encoded-value>
+     # required
+     bucket: <base-64-encoded-value>
+     # optional: specified in case of S3-compatible stores
+     endpoint: <base-64-encoded-value>
+     # optional: used as a sub path in the bucket for all backups
+     path: <base-64-encoded-value>
+     # required, if supported by the provider
+     region: <base-64-encoded-value>
+     # required: if type is `file-store`
+     # optional, otherwise
+     claimName: <base-64-encoded-value>
+
+Location Credentials Secret
+------------------
+
+Following is the secret to be used for Azure, AWS and GCS storage credentials.
+This secret is referenced by ``spec.storage.credentialSecretRef`` in repository server
+CR 
+
+- ``AWS S3``
+
+.. code-block:: yaml
+  :linenos:
+
+  apiVersion: v1
+  kind: Secret
+  metadata:
+     name: s3-loc-creds
+     namespace: <controller-namespace>
+  type: secrets.kanister.io/aws
+  data:
+     # required: base64 encoded value for key with proper permissions for the bucket
+     access-key: <redacted>
+     # required: base64 encoded value for the secret corresponding to the key above
+     secret-acccess-key: <redacted>
+     # optional: base64 encoded value for AWS IAM role
+     role: <redacted>
+
+- ``Azure``
+
+.. code-block:: yaml
+  :linenos:
+
+  apiVersion: v1
+  kind: Secret
+  metadata:
+     name: az-loc-creds
+     namespace: <controller-namespace>
+  type: secrets.kanister.io/azure
+  data:
+     # required: base64 encoded value for account with proper permissions for the bucket
+     azure_storage_account_id: <redacted>
+     # required: base64 encoded value for the key corresponding to the account above
+     azure_storage_key: <redacted>
+     # optional: base64 encoded value for the storage enevironment.
+     # Acceptable values are AzureCloud, AzureChinaCloud, AzureUSGovernment, AzureGermanCloud
+     azure_storage_environment: <redacted>
+
+  - ``GCS``
+
+  .. code-block:: yaml
+  :linenos:
+
+  apiVersion: v1
+  kind: Secret
+  metadata:
+     name: gcs-loc-creds
+     namespace: <controller-namespace>
+  type: secrets.kanister.io/gcp
+  data:
+     # required: base64 encoded value for project with proper permissions for the bucket
+     project-id: <redacted>
+     # required: base64 encoded value for the SA with proper permissions for the bucket.
+     # This value is base64 encoding of the service account json file when
+     # creating a new service account
+     service-account.json: <base64 encoded SA json file>
+
+
+Repository Password Secret
+--------------------------
+This is the password secret used by controller to connect to kopia repository. It
+is referenced by ``spec.repository.passwordSecretRef`` in repository server CR
+
+.. code-block:: yaml
+  :linenos:
+  apiVersion: v1
+  kind: Secret
+  metadata:
+     name: repository-password
+     namespace: <controller-namespace>
+  type: secrets.kanister.io/kopia-repository/password
+  data:
+     repo-password: <redacted>
+
+Repository Server Admin User Secret
+-----------------------------------
+This secret is used for storing admin credentials used by the controller
+to start the kopia repository server. It is referenced by ``spec.server.accessSecretRef``
+in repository server CR
+
+.. code-block:: yaml
+  :linenos:
+
+  apiVersion: v1
+  kind: Secret
+  metadata:
+     name: repository-server-admin
+     namespace: <controller-namespace>
+  type: secrets.kanister.io/kopia-repository/serveradmin
+  data:
+     username: <redacted>
+     password: <redacted>
+
+
+TLS Secret
+----------
+
+This secret store TLS sensitive data used for kopia client server communication.
+It is in standard ``kubernetes.io/tls`` format. It is referenced by ``spec.server.tlsSecretRef`` in
+repository server CR
+
+.. code-block:: yaml
+  :linenos:
+
+  apiVersion: v1
+  kind: Secret
+  metadata:
+   name: repository-server-tls
+   namespace: <controller-namespace>
+  type: kubernetes.io/tls
+  data:
+   tls.crt: |
+      <redacted>
+   tls.key: |
+      <redacted>
+
+
+Repository Server User Access Password Secret
+---------------------------------------------
+The Kopia repository client needs an access username and password for authentication to 
+connect to kopia repository server
+
+Kopia client needs user in the format ``<username>@<hostname>`` . The username is same
+for all the clients which is specified in ``spec.server.UserAccess.username`` of 
+the ``RepositoryServer`` CR. The password and hostname is provided in the form of
+a secret as shown below
+
+.. code-block:: yaml
+  :linenos:
+
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: repository-server-user-access
+     namespace: kanister
+     labels:
+       repo.kanister.io/target-namespace: monitoring
+   type: Opaque
+   data:
+     <hostname1>: <redacted-password>
+     <hostname2>: <redacted-password>
+
 
 Controller
 ==========
