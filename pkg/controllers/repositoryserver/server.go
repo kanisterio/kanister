@@ -54,7 +54,7 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 			CommandArgs: &command.CommandArgs{
 				RepoPassword:   "",
 				ConfigFilePath: command.DefaultConfigFilePath,
-				LogDirectory:   command.DefaultCacheDirectory,
+				LogDirectory:   command.DefaultLogDirectory,
 			},
 			ServerAddress:    repoServerAddress,
 			TLSCertFile:      tlsCertPath,
@@ -72,7 +72,7 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 		return errors.Wrap(err, "Failed to start Kopia API server")
 	}
 
-	err = h.checkServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
+	err = h.waitForServerReady(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
 	if err != nil {
 		return errors.Wrap(err, "Failed to check Kopia API server status")
 	}
@@ -97,23 +97,21 @@ func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, strin
 }
 
 func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress, username, password string) error {
-	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
+	cmd, err := h.getServerStatusCommand(ctx, serverAddress, username, password)
 	if err != nil {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
 	}
-	cmd := command.ServerStatus(
-		command.ServerStatusCommandArgs{
-			CommandArgs: &command.CommandArgs{
-				RepoPassword:   "",
-				ConfigFilePath: command.DefaultConfigFilePath,
-				LogDirectory:   command.DefaultLogDirectory,
-			},
-			ServerAddress:  serverAddress,
-			ServerUsername: username,
-			ServerPassword: password,
-			Fingerprint:    fingerprint,
-		})
+	stdout, stderr, exErr := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
+	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
+	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
+	return exErr
+}
 
+func (h *RepoServerHandler) waitForServerReady(ctx context.Context, serverAddress, username, password string) error {
+	cmd, err := h.getServerStatusCommand(ctx, serverAddress, username, password)
+	if err != nil {
+		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
+	}
 	serverStartTimeOut := h.getRepositoryServerStartTimeout()
 	ctx, cancel := context.WithTimeout(ctx, serverStartTimeOut)
 	defer cancel()
@@ -244,4 +242,24 @@ func (h *RepoServerHandler) getRepositoryServerStartTimeout() time.Duration {
 		return serverStartTimeout * time.Second
 	}
 	return DefaultServerStartTimeout
+}
+
+func (h *RepoServerHandler) getServerStatusCommand(ctx context.Context, serverAddress, username, password string) ([]string, error) {
+	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
+	}
+	cmd := command.ServerStatus(
+		command.ServerStatusCommandArgs{
+			CommandArgs: &command.CommandArgs{
+				RepoPassword:   "",
+				ConfigFilePath: command.DefaultConfigFilePath,
+				LogDirectory:   command.DefaultLogDirectory,
+			},
+			ServerAddress:  serverAddress,
+			ServerUsername: username,
+			ServerPassword: password,
+			Fingerprint:    fingerprint,
+		})
+	return cmd, nil
 }

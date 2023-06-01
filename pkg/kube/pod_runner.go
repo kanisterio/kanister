@@ -29,6 +29,12 @@ import (
 // PodRunner allows us to start / stop pod, write file to pod and execute command within it
 type PodRunner interface {
 	Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error)
+	// RunEx utilizes the PodController interface and forwards it to the functor, simplifying the manipulation with
+	// particular pod from the functor.
+	// TODO: Since significant number of functions are currently using PodRunner, we'll keep Run for now.
+	// However, once all these functions have been refactored to use PodController,
+	// Run should be removed and RunEx has to be renamed to Run.
+	RunEx(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error)
 }
 
 // PodRunner specifies Kubernetes Client and PodOptions needed for creating Pod
@@ -45,11 +51,17 @@ func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
 func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
+	return p.RunEx(ctx, func(innerCtx context.Context, pc PodController) (map[string]interface{}, error) {
+		return fn(innerCtx, pc.Pod())
+	})
+}
+
+// RunEx will create a new Pod based on PodRunner contents and execute the given function
+func (p *podRunner) RunEx(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err := p.pc.StartPod(ctx, PodControllerInfiniteStopTime)
-
+	err := p.pc.StartPod(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create pod")
 	}
@@ -59,10 +71,10 @@ func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 	ctx = field.Context(ctx, consts.ContainerNameKey, pod.Spec.Containers[0].Name)
 	go func() {
 		<-ctx.Done()
-		err := p.pc.StopPod(context.Background())
+		err := p.pc.StopPod(context.Background(), PodControllerInfiniteStopTime, int64(0))
 		if err != nil {
 			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
 		}
 	}()
-	return fn(ctx, pod)
+	return fn(ctx, p.pc)
 }
