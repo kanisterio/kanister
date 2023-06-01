@@ -1,5 +1,3 @@
-.. _tutorial:
-
 Tutorial
 ********
 

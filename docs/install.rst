@@ -107,7 +107,7 @@ like below:
 Deploying Kopia Repository server controller
 ============================================
 
-Kopia Repository server controller s not enabled by default. It can be deployed by setting the
+Kopia Repository server controller is not enabled by default. It can be deployed by setting the
 `repositoryServerController.enabled` value as shown below
 
 .. substitution-code-block:: bash

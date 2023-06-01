@@ -6,6 +6,17 @@ Architecture
 .. contents:: Architecture
   :local:
 
+
+Kopia Repository Server Controller
+==================================
+
+
+Kopia Repository Server
+-----------------------
+
+Kopia Repository
+----------------
+
 The design of Kanister follows the operator pattern. This means
 Kanister defines its own resources and interacts with those resources
 through a controller. `This blog post
@@ -18,6 +29,7 @@ diagram below illustrates their relationship and how they fit
 together:
 
    .. image:: ./_static/kanister_workflow.png
+
 
 Kanister Workflow
 =================
@@ -46,7 +58,8 @@ objects can be managed entirely through kubectl. Kanister uses Kubernetes' code
 generation tools to create go client libraries for its CRs.
 
 The schemas of the Kanister CRDs can be found in `types.go
-<https://github.com/kanisterio/kanister/tree/master/pkg/apis/cr/v1alpha1/types.go>`_
+<https://github.com/kanisterio/kanister/tree/master/pkg/apis/cr/v1alpha1/types.go>`_ and
+`repositoryserver_types.go <https://github.com/kanisterio/kanister/tree/master/pkg/apis/cr/v1alpha1/repositoryserver_types.go>`_
 
 Blueprints
 ----------
@@ -510,7 +523,7 @@ As a reference, below is an example of a Repository Server
   apiVersion: cr.kanister.io/v1alpha1
   kind: RepositoryServer
   metadata:
-    name: kopia-repo-server-monitoring
+    name: kopia-repo-server
     namespace: <controller-namespace>
   spec:
     storage:
@@ -724,9 +737,7 @@ a secret as shown below
    metadata:
      name: repository-server-user-access
      namespace: kanister
-     labels:
-       repo.kanister.io/target-namespace: monitoring
-   type: Opaque
+   type: secrets.kanister.io/kopia-repository/serveruser
    data:
      <hostname1>: <redacted-password>
      <hostname2>: <redacted-password>
