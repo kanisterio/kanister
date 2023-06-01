@@ -6,7 +6,7 @@ During restore, topic messages are purged before the restore operation is perfor
 ## Prerequisites
 
 * Kubernetes 1.9+
-* Kanister controller version 0.91.0 installed in the cluster in a namespace <kanister-operator-namespace>. This example uses `kanister` namespace
+* Kanister controller version 0.92.0 installed in the cluster in a namespace <kanister-operator-namespace>. This example uses `kanister` namespace
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Assumption
@@ -42,7 +42,7 @@ $ kubectl wait kafka-test/my-cluster --for=condition=Ready --timeout=300s -n kaf
 $ kubectl create -f kafdrop.yaml -n kafka-test
 
 # by default kafdrop run on port 9000, we can view it by
-kubectl port-forward kafdrop 7000.91.0 -n kafka-test
+kubectl port-forward kafdrop 7000.92.0 -n kafka-test
 ```
 
 ## Validate producer and consumer
