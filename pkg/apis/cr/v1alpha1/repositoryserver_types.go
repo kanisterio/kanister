@@ -51,9 +51,12 @@ type RepositoryServerSpec struct {
 
 // Storage references the backend store where a repository already exists
 // and the credential necessary to connect to the backend store
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.secretRef) || has(self.secretRef)",message="secretRef is required once set"
 type Storage struct {
 	// SecretRef has the details of the object storage (location)
 	// where the kopia would backup the data
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
 	SecretRef corev1.SecretReference `json:"secretRef"`
 	// CredentialSecretRef stores the credentials required
 	// to connect to the object storage specified in `SecretRef` field
@@ -61,10 +64,13 @@ type Storage struct {
 }
 
 // Repository has the details required by the repository server to connect to kopia repository
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.rootPath) || has(self.rootPath)",message="rootPath is required once set"
 type Repository struct {
-	// Path for the repository,it will be relative sub path
+	// Path for the repository, it will be a relative sub path
 	// within the path prefix specified in the location
 	// More info: https://kopia.io/docs/reference/command-line/common/#commands-to-manipulate-repository
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
 	RootPath string `json:"rootPath"`
 	// If specified, these values will be used by the controller to
 	// override default username when connecting to the
@@ -79,7 +85,7 @@ type Repository struct {
 	CacheSizeSettings CacheSizeSettings      `json:"cacheSizeSettings,omitempty"`
 }
 
-// CacheSettings are the metadata/content cache size details
+// CacheSizeSettings are the metadata/content cache size details
 // that can be used while establishing connection to the kopia repository
 type CacheSizeSettings struct {
 	Metadata string `json:"metadata"`
@@ -87,13 +93,19 @@ type CacheSizeSettings struct {
 }
 
 // Server details required for starting the repository proxy server and initializing the repository client users
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.adminSecretRef) || has(self.adminSecretRef)",message="adminSecretRef is required once set"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.tlsSecretRef) || has(self.tlsSecretRef)",message="tlsSecretRef is required once set"
 type Server struct {
 	UserAccess UserAccess `json:"userAccess"`
 	// AdminSecretRef has the username and password required to start the
 	// kopia repository server
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
 	AdminSecretRef corev1.SecretReference `json:"adminSecretRef"`
 	// TLSSecretRef has the certificates required for kopia repository
 	// client server connection
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
 	TLSSecretRef corev1.SecretReference `json:"tlsSecretRef"`
 }
 
