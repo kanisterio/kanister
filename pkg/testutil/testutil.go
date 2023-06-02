@@ -101,10 +101,11 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name:    "test-container",
-					Image:   consts.LatestKanisterToolsImage,
-					Command: []string{"tail"},
-					Args:    []string{"-f", "/dev/null"},
+					Name:            "test-container",
+					Image:           consts.LatestKanisterToolsImage,
+					Command:         []string{"tail"},
+					Args:            []string{"-f", "/dev/null"},
+					ImagePullPolicy: v1.PullAlways,
 				},
 			},
 		},
