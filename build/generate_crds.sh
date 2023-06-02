@@ -27,5 +27,5 @@ CONTROLLER_GEN=${LOCALBIN}/controller-gen
 ## Tool Versions
 CONTROLLER_TOOLS_VERSION=${1}
 
-test -s ${CONTROLLER_GEN} || GOBIN=${LOCALBIN} go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+test -s ${CONTROLLER_GEN} || GOBIN=${LOCALBIN} go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_VERSION}
 ${CONTROLLER_GEN} crd webhook paths="github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1" output:crd:artifacts:config=pkg/customresource
