@@ -87,7 +87,7 @@ spec:
                     - rootPath
                   type: object
                   x-kubernetes-validations:
-                    - message: rootPath is required once set
+                    - message: rootPath field must not be allowed to be removed
                       rule: '!has(oldSelf.rootPath) || has(self.rootPath)'
                 server:
                   description: Server has the details of all the secrets required to
@@ -160,9 +160,9 @@ spec:
                     - userAccess
                   type: object
                   x-kubernetes-validations:
-                    - message: adminSecretRef is required once set
+                    - message: adminSecretRef field must not be allowed to be removed
                       rule: '!has(oldSelf.adminSecretRef) || has(self.adminSecretRef)'
-                    - message: tlsSecretRef is required once set
+                    - message: tlsSecretRef field must not be allowed to be removed
                       rule: '!has(oldSelf.tlsSecretRef) || has(self.tlsSecretRef)'
                 storage:
                   description: Storage references the backend store where a repository
@@ -205,7 +205,7 @@ spec:
                     - secretRef
                   type: object
                   x-kubernetes-validations:
-                    - message: secretRef is required once set
+                    - message: secretRef field must not be allowed to be removed
                       rule: '!has(oldSelf.secretRef) || has(self.secretRef)'
               required:
                 - repository

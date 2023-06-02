@@ -51,7 +51,7 @@ type RepositoryServerSpec struct {
 
 // Storage references the backend store where a repository already exists
 // and the credential necessary to connect to the backend store
-// +kubebuilder:validation:XValidation:rule="!has(oldSelf.secretRef) || has(self.secretRef)",message="secretRef is required once set"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.secretRef) || has(self.secretRef)",message="secretRef field must not be allowed to be removed"
 type Storage struct {
 	// SecretRef has the details of the object storage (location)
 	// where the kopia would backup the data
@@ -64,7 +64,7 @@ type Storage struct {
 }
 
 // Repository has the details required by the repository server to connect to kopia repository
-// +kubebuilder:validation:XValidation:rule="!has(oldSelf.rootPath) || has(self.rootPath)",message="rootPath is required once set"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.rootPath) || has(self.rootPath)",message="rootPath field must not be allowed to be removed"
 type Repository struct {
 	// Path for the repository, it will be a relative sub path
 	// within the path prefix specified in the location
@@ -93,8 +93,8 @@ type CacheSizeSettings struct {
 }
 
 // Server details required for starting the repository proxy server and initializing the repository client users
-// +kubebuilder:validation:XValidation:rule="!has(oldSelf.adminSecretRef) || has(self.adminSecretRef)",message="adminSecretRef is required once set"
-// +kubebuilder:validation:XValidation:rule="!has(oldSelf.tlsSecretRef) || has(self.tlsSecretRef)",message="tlsSecretRef is required once set"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.adminSecretRef) || has(self.adminSecretRef)",message="adminSecretRef field must not be allowed to be removed"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.tlsSecretRef) || has(self.tlsSecretRef)",message="tlsSecretRef field must not be allowed to be removed"
 type Server struct {
 	UserAccess UserAccess `json:"userAccess"`
 	// AdminSecretRef has the username and password required to start the
