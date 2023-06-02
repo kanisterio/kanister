@@ -15,58 +15,212 @@
 package repositoryserver
 
 import (
-	"path/filepath"
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	ctrl "sigs.k8s.io/controller-runtime"
 
-	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/poll"
+	"github.com/kanisterio/kanister/pkg/resource"
+	"github.com/pkg/errors"
 )
 
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
-type ControllerSuite struct {
-	testEnv *envtest.Environment
+type RepoServerControllerSuite struct {
+	crCli                         crclientv1alpha1.CrV1alpha1Interface
+	kubeCli                       kubernetes.Interface
+	repoServerControllerNamespace string
+	repoServerSecrets             repositoryServerSecrets
 }
 
-var _ = Suite(&ControllerSuite{})
+var _ = Suite(&RepoServerControllerSuite{})
 
-func (s *ControllerSuite) SetUpSuite(c *C) {
-	c.Log("Bootstrapping test environment with Kanister CRDs")
-	useExistingCluster := true
-	s.testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "customresource")},
-		ErrorIfCRDPathMissing: true,
-		UseExistingCluster:    &useExistingCluster,
+func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
+	config, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+	cli, err := kubernetes.NewForConfig(config)
+	c.Assert(err, IsNil)
+	crCli, err := crclientv1alpha1.NewForConfig(config)
+	c.Assert(err, IsNil)
+
+	// Make sure the CRD's exist.
+	err = resource.CreateCustomResources(context.Background(), config)
+	c.Assert(err, IsNil)
+	err = resource.CreateRepoServerCustomResource(context.Background(), config)
+	c.Assert(err, IsNil)
+
+	s.kubeCli = cli
+	s.crCli = crCli
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:             scheme.Scheme,
+		Port:               9443,
+		MetricsBindAddress: "0",
+	})
+	c.Assert(err, IsNil)
+
+	err = (&RepositoryServerReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr)
+	c.Assert(err, IsNil)
+
+	go func() {
+		err = mgr.Start(ctrl.SetupSignalHandler())
+		c.Assert(err, IsNil)
+	}()
+
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "repositoryservercontrollertest-",
+		},
+	}
+	ctx := context.Background()
+	cns, err := s.kubeCli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	s.repoServerControllerNamespace = cns.Name
+	s.createRepositoryServerSecrets(c)
+}
+
+func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
+	repoServerUserAccessSecretData := map[string][]byte{
+		"localhost": []byte(DefaultKopiaRepositoryServerAccessPassword),
+	}
+	repoServerAdminSecretData := map[string][]byte{
+		"username": []byte(DefaulKopiaRepositoryServerAdminUser),
+		"password": []byte(DefaultKopiaRepositoryServerAdminPassword),
+	}
+	repoPasswordSecretData := map[string][]byte{
+		repoPasswordKey: []byte(DefaultKopiaRepositoryPassword),
+	}
+	kopiaTLSSecretData, err := getKopiaTLSSecret()
+	c.Assert(err, IsNil)
+	s.repoServerSecrets = repositoryServerSecrets{}
+	s.repoServerSecrets.serverUserAccess, err = s.createSecret("test-repository-server-user-access-", "", repoServerUserAccessSecretData)
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.serverAdmin, err = s.createSecret("test-repository-server-admin-", "", repoServerAdminSecretData)
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.repositoryPassword, err = s.createSecret("test-repository-password-", "", repoPasswordSecretData)
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.serverTLS, err = s.createSecret("test-tls-", v1.SecretTypeTLS, kopiaTLSSecretData)
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.storage, err = s.createSecret("test-repository-server-storage-", "", getDefaultS3StorageLocation())
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.storageCredentials, err = s.createSecret("test-repository-server-storage-Creds-", "secrets.kanister.io/aws", getDefaultS3StorageCreds())
+	c.Assert(err, IsNil)
+}
+
+func (s *RepoServerControllerSuite) createSecret(name string, secrettype v1.SecretType, data map[string][]byte) (se *v1.Secret, err error) {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: name,
+		},
+		Data: data,
+	}
+	if secrettype != "" {
+		secret.Type = secrettype
 	}
 
-	cfg, err := s.testEnv.Start()
-	c.Assert(err, IsNil)
-	c.Assert(cfg, NotNil)
-
-	err = crkanisteriov1alpha1.AddToScheme(scheme.Scheme)
-	c.Assert(err, IsNil)
-
-	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	c.Assert(err, IsNil)
-	c.Assert(k8sClient, NotNil)
+	se, err = s.kubeCli.CoreV1().Secrets(s.repoServerControllerNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	return
 }
 
-func (s *ControllerSuite) TearDownSuite(c *C) {
-	if s.testEnv != nil {
-		c.Log("Tearing down the test environment")
-		err := s.testEnv.Stop()
+func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C) {
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3StorageLocation())
+	c.Assert(err, IsNil)
+	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
+	c.Assert(err, IsNil)
+}
+
+func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerStopped(c *C) {
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3StorageLocation())
+	c.Assert(err, IsNil)
+	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
+	c.Assert(err, NotNil)
+	c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.ServerStopped)
+}
+
+func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
+	ctx := context.Background()
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	pod, err := s.kubeCli.CoreV1().Pods(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Status.ServerInfo.PodName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(len(pod.OwnerReferences), Equals, 1)
+	c.Assert(pod.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
+	service, err := s.kubeCli.CoreV1().Services(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Status.ServerInfo.ServiceName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(len(service.OwnerReferences), Equals, 1)
+	c.Assert(service.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
+}
+
+func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
+	ctxTimeout := 3 * time.Minute
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		repoServerCR, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		if repoServerCR.Status.ServerInfo.PodName == "" || repoServerCR.Status.ServerInfo.ServiceName == "" {
+			return false, errors.New("Repository server CR server not set")
+		}
+		return true, nil
+	})
+	return err
+}
+
+func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, rs *v1alpha1.RepositoryServer) error {
+	ctxTimeout := 10 * time.Minute
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		if rs.Status.Progress == v1alpha1.ServerPending {
+			return false, nil
+		}
+		if rs.Status.Progress == v1alpha1.ServerStopped {
+			return false, errors.New(fmt.Sprintf(" There is failure in staring the repository server, server is in %s state, please check logs", rs.Status.Progress))
+		}
+		if rs.Status.Progress == v1alpha1.ServerReady {
+			return true, nil
+		}
+		return false, errors.New(fmt.Sprintf("Unexpected Repository server state: %s", rs.Status.Progress))
+	})
+
+	return err
+}
+
+func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
+	if s.repoServerControllerNamespace != "" {
+		err := s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.repoServerControllerNamespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
-}
-
-func (s *ControllerSuite) TestWatch(c *C) {
-	// We give it a few seconds complete it's scan. This isn't required for the
-	// test, but is a more realistic startup scenario.
-	time.Sleep(5 * time.Second)
 }
