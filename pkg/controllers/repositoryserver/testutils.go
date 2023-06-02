@@ -34,6 +34,8 @@ const (
 	DefaultKopiaRepositoryServerAccessPassword = "test1234"
 	DefaultKanisterNamespace                   = "kanister"
 	DefaultKopiaRepositoryServerContainer      = "repo-server-container"
+	defaultRepoConfigFilePath                  = "/tmp/kopia-repo-config"
+	defaultRepoLogDirectory                    = "/tmp/kopia-repo-log"
 )
 
 func getKopiaTLSSecret() (map[string][]byte, error) {

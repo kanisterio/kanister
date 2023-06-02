@@ -137,6 +137,22 @@ func (s *RepoServerControllerSuite) createSecret(name string, secrettype v1.Secr
 	return
 }
 
+func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
+	// Create a repository server CR.
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	// Update the repository server CR's Immutable field.
+	repoServerCRCreated.Spec.Repository.RootPath = "/updated-test-path/"
+	_, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Update(context.Background(), repoServerCRCreated, metav1.UpdateOptions{})
+	// Expect an error.
+	c.Assert(err, NotNil)
+	// Delete the repository server CR.
+	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+}
+
 func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C) {
 	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
