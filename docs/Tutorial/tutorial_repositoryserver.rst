@@ -86,7 +86,7 @@ You can create it as shown below
     --access-key=<ACCESS_KEY> 
     --secret-access-key=<SECRET_ACCESS_KEY>
 
-You can check `kopia documentation
+To know more about how to create repository refer `kopia documentation
 <https://kopia.io/docs/reference/command-line/>`_ to understand more about kopia repository.
 
 
@@ -131,6 +131,8 @@ Please see :ref:`architecture` to know the secrets that needs to be created for 
      type: Z2Nz
      # required
      bucket: <base-64-encoded-value>
+     # optional: used as a sub path in the bucket for all backups
+     path: <base-64-encoded-value>
      # optional: specified in case of S3-compatible stores
      endpoint: <base-64-encoded-value>
      # required, if supported by the provider
@@ -154,8 +156,6 @@ Please see :ref:`architecture` to know the secrets that needs to be created for 
      secret-acccess-key: <redacted>
   EOF
 
-
-
 Creating Repository Server custom resource
 ------------------------------------------
 
@@ -163,13 +163,22 @@ Once the secrets are created, we need to create a repository Server CR having re
 to above created secrets. More details of the repository server CR 
 can be found at :ref:`architecture`
 
-We have to make sure that we use the same values for field ``spec.repository.RootPath``, 
+We have to make sure that we use the same values for field, 
 ``spec.repository.username`` , ``spec.repository.hostname`` in the CR that we used while
 creating the repository in section :ref:`Creating a Kopia Repository<Creating a Kopia Repository>`
 
-.. code-block:: yaml
-  :linenos:
+``--prefix`` field's value is a combination of prefix specified in `spec.data.path` field of
+location secret and sub-path provided in ``spec.repository.RootPath`` field of Reposiotry
+server CR
 
+``spec.data.path`` field of location storage secret ``s3-location`` appended with ``spec.repository.RootPath``
+in the repository Server CR combined together should match the``--prefix`` field of the
+command used to create repository as specified in section :ref:`Creating a Kopia Repository<Creating a Kopia Repository>`
+ 
+
+.. code-block:: yaml
+
+  $ cat <<EOF | kubectl create -f -
   apiVersion: cr.kanister.io/v1alpha1
   kind: RepositoryServer
   metadata:
@@ -202,7 +211,20 @@ creating the repository in section :ref:`Creating a Kopia Repository<Creating a 
           name: repository-server-user-access
           namespace: kanister
         username: kanisterUser
+  EOF
 
+
+Once the Repository Server is created, you will see a repository server pod and a service created
+in kanister namespace. 
+
+########
+(TODO: List pods and services)
+
+To see if the server started successfully, you can check the status of
+the server using following command
+
+#########
+(TODO: Please describe repository server resource)
 
 Invoking Kanister Actions
 =========================
@@ -219,10 +241,100 @@ into the specified Function.
 
 For more on CustomResources in Kanister, see :ref:`architecture`.
 
+ The Blueprint we'll create has a two actions called ``backup`` 
+and ``restore``. The action ``backup`` has a single phase named ``backupToS3``. ``backupToS3`` invokes the
+Kanister function ``BackupDataUsingKopiaServer`` that uses kopia repository server to copy backup
+data to s3 storage. The action ``restore`` uses two kanister functions ``ScaleWorkload`` and
+``RestoreDataUsingKopiaServer``. ``ScaleWorkload`` function scales down the timelog application
+before restoring the data. ``RestoreDataUsingKopiaServer`` restores data using kopia repository server
+form s3 storage
 
-The Blueprint we'll create has a single action called ``backup``.  The action
-``backup`` has a single phase named ``backupToS3``. ``backupToS3`` invokes the
-Kanister function ``KubeExec``, which is similar to invoking ``kubectl exec ...``.
-At this stage, we'll use ``KubeExec`` to echo our time log's name and
-:doc:`Kanister's parameter templating </functions>` to specify the container
-with our log.
+For more information of kanister function refer :doc:`Kanister's parameter templating </functions>`.
+
+Blueprint
+---------
+
+.. code-block:: yaml
+
+  $ cat <<EOF | kubectl create -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: Blueprint
+  metadata:
+    name: time-log-bp
+    namespace: kanister
+  actions:
+    backup:
+      outputArtifacts:
+        timeLog:
+          keyValue:
+            path: '/repo-controller/time-logger/'
+        backupIdentifier:
+          keyValue:
+            id: "{{ .Phases.backupToS3.Output.backupID }}"
+      phases:
+      - func: BackupDataUsingKopiaServer
+        name: backupToS3
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: test-container
+          includePath: /var/log
+  
+    restore:
+      inputArtifactNames:
+      - timeLog
+      - backupIdentifier
+      phases:
+      - func: ScaleWorkload
+        name: shutdownPod
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          name: "{{ .Deployment.Name }}"
+          kind: Deployment
+          replicas: 0
+      - func: RestoreDataUsingKopiaServer
+        name: restoreFromS3
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          image: ghcr.io/kanisterio/kanister-tools:0.89.0
+          backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+          restorePath: /var/log
+      - func: ScaleWorkload
+        name: bringupPod
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          name: "{{ .Deployment.Name }}"
+          kind: Deployment
+          replicas: 1
+
+  EOF
+
+
+Once we create a Blueprint, we can see its events by using the following command:
+
+.. code-block:: yaml
+
+  $ kubectl --namespace kanister describe Blueprint time-log-bp
+  Events:
+    Type     Reason    Age   From                 Message
+    ----     ------    ----  ----                 -------
+    Normal   Added      4m   Kanister Controller  Added blueprint time-log-bp
+
+The next CustomResource we'll deploy is an ActionSet. An ActionSet is created
+each time you want to execute any Kanister actions. The ActionSet contains all
+the runtime information the controller needs during execution. It may contain
+multiple actions, each acting on a different Kubernetes object. The ActionSet
+we're about to create in this tutorial specifies the ``time-logger`` Deployment we
+created earlier and selects the ``backup`` action inside our Blueprint. 
+
+ActionSet
+---------------
+
+.. code-block:: bash
+  # Create action set using the blueprint created in above step
+  $ kanctl create actionset --action backup --namespace kanister --blueprint time-log-bp --deployment time-logger/time-logger --repository-server=kopia-repo-server
+
+``--repository-server`` flag is used to provide the reference to the repository server CR that we created
+in step :ref:`Creating Repository Server custom resource`. The CR is made available to the kanister
+functions using template parameters.

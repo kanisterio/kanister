@@ -12,7 +12,7 @@ replace (
 // Direct and indirect dependencies are grouped together
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.28
+	github.com/Azure/go-autorest/autorest v0.11.29
 	github.com/Azure/go-autorest/autorest/adal v0.9.23
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
 	github.com/Azure/go-autorest/autorest/to v0.4.0
@@ -41,8 +41,8 @@ require (
 	github.com/openshift/api v0.0.0-20230406152840-ce21e3fe5da2
 	github.com/openshift/client-go v0.0.0-20230324103026-3f1513df25e0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.15.0
-	github.com/sirupsen/logrus v1.9.0
+	github.com/prometheus/client_golang v1.15.1
+	github.com/sirupsen/logrus v1.9.2
 	github.com/spf13/cobra v1.7.0
 	github.com/vmware/govmomi v0.30.4
 	go.uber.org/zap v1.24.0

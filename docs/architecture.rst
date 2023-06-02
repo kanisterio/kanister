@@ -437,11 +437,10 @@ The definition of ``Repository Server`` is:
 	  Username string `json:"username"`
 	  Hostname string `json:"hostname"`
 	  PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef"`
+    CacheSizeSettings CacheSizeSettings      `json:"cacheSizeSettings,omitempty"`
   }
 
-Kopia identifies users by ``username@hostname`` and uses the values
-specified when establishing connection to the repository to identify
-backups created in the session.
+
 
 ^ ``RootPath`` is the path for the kopia repository. It is the subpath within
 the path prefix specified in storage location
@@ -449,9 +448,27 @@ the path prefix specified in storage location
 connecting to kopia repository
 ^ ``Hostname`` is an optional field used to override the default hostname while
 connecting to kopia repository
+
+Kopia identifies users by ``username@hostname`` and uses the values
+specified when establishing connection to the repository to identify
+backups created in the session.
+
+
 ^ ``PasswordSecretRef`` is the reference to the secret containing password to
 connect to kopia repository
+^ ``CacheSizeSettings`` is an optional field used to specify size of the different
+caches for the kopia repository. If not specified, default cache settings are used
+by repository server controller
 
+To know more about the kopia caches, refer to the `kopia caching documentation <https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/>`_`
+
+.. code-block:: go
+  :linenos:
+  
+  type CacheSizeSettings struct {
+  	Metadata string `json:"metadata"`
+  	Content  string `json:"content"`
+  }
 
 - ``Server`` field in the CR spec has references to all the secrets
   required to start the kopia repository server
@@ -534,7 +551,7 @@ As a reference, below is an example of a Repository Server
         name: <credentials-secret>
         namespace: <controller-namespace>
     repository:
-      rootPath: /repo/monitoring
+      rootPath: <repo-path>
       passwordSecretRef:
         name: <repo-pass-secret>
         namespace: <controller-namespace>
