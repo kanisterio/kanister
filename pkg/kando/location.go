@@ -20,13 +20,21 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/datamover"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
 const (
-	pathFlagName    = "path"
-	profileFlagName = "profile"
+	pathFlagName             = "path"
+	profileFlagName          = "profile"
+	repositoryServerFlagName = "repository-server"
 )
+
+type DataMoverArgs struct {
+	Type             string
+	Profile          *param.Profile
+	RepositoryServer *param.RepositoryServer
+}
 
 func newLocationCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -38,12 +46,73 @@ func newLocationCommand() *cobra.Command {
 	cmd.AddCommand(newLocationDeleteCommand())
 	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
-	_ = cmd.MarkFlagRequired(profileFlagName)
+	cmd.PersistentFlags().StringP(repositoryServerFlagName, "r", "", "Pass a Repository Server CR as a JSON string (required for kopia based blueprints)")
 	return cmd
+}
+
+// NewDataMover creates an instance of DataMover Interface and returns
+// the preferred DataMover as per the arguments passed in kando command
+func NewDataMover(dm *DataMoverArgs, outputName, snapJson string) datamover.DataMover {
+	switch dm.Type {
+	case profileFlagName:
+		return &datamover.Profile{
+			OutputName: outputName,
+			Profile:    dm.Profile,
+			SnapJSON:   snapJson,
+		}
+	case repositoryServerFlagName:
+		return &datamover.RepositoryServer{
+			OutputName:       outputName,
+			RepositoryServer: dm.RepositoryServer,
+			SnapJSON:         snapJson,
+		}
+	default:
+		return nil
+	}
 }
 
 func pathFlag(cmd *cobra.Command) string {
 	return cmd.Flag(pathFlagName).Value.String()
+}
+
+// validateCommandArgs makes sure that we are getting exactly
+// one of --profile or --repository-server flags
+func validateCommandArgs(cmd *cobra.Command) error {
+	profileFlag := cmd.Flags().Lookup(profileFlagName).Value.String()
+	repositoryServerFlag := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
+	if profileFlag != "" && repositoryServerFlag != "" {
+		return errors.New("Either --profile or --repository-server can be provided")
+	}
+	if profileFlag == "" && repositoryServerFlag == "" {
+		return errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
+	}
+	return nil
+}
+
+func dataMoverFromCMD(cmd *cobra.Command) (*DataMoverArgs, error) {
+	profile := cmd.Flags().Lookup(profileFlagName).Value.String()
+	if profile != "" {
+		profileRef, err := unmarshalProfileFlag(cmd)
+		if err != nil {
+			return &DataMoverArgs{}, err
+		}
+		return &DataMoverArgs{
+			Type:    profileFlagName,
+			Profile: profileRef,
+		}, nil
+	}
+	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
+	if repositoryServer != "" {
+		repositoryServerRef, err := unmarshalRepositoryServerFlag(cmd)
+		if err != nil {
+			return &DataMoverArgs{}, err
+		}
+		return &DataMoverArgs{
+			Type:             repositoryServerFlagName,
+			RepositoryServer: repositoryServerRef,
+		}, nil
+	}
+	return &DataMoverArgs{}, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 }
 
 func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
@@ -51,4 +120,11 @@ func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
 	p := &param.Profile{}
 	err := json.Unmarshal([]byte(profileJSON), p)
 	return p, errors.Wrap(err, "failed to unmarshal profile")
+}
+
+func unmarshalRepositoryServerFlag(cmd *cobra.Command) (*param.RepositoryServer, error) {
+	repositoryServerJSON := cmd.Flag(repositoryServerFlagName).Value.String()
+	rs := &param.RepositoryServer{}
+	err := json.Unmarshal([]byte(repositoryServerJSON), rs)
+	return rs, errors.Wrap(err, "failed to unmarshal kopia repository server CR")
 }
