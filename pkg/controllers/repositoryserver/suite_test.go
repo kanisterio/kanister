@@ -118,7 +118,7 @@ func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
 	c.Assert(err, IsNil)
 	s.repoServerSecrets.storage, err = s.createSecret("test-repository-server-storage-", "", getDefaultS3StorageLocation())
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storageCredentials, err = s.createSecret("test-repository-server-storage-Creds-", "secrets.kanister.io/aws", getDefaultS3StorageCreds())
+	s.repoServerSecrets.storageCredentials, err = s.createSecret("test-repository-server-storage-creds-", "secrets.kanister.io/aws", getDefaultS3StorageCreds())
 	c.Assert(err, IsNil)
 }
 
