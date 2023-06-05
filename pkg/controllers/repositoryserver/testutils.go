@@ -34,8 +34,6 @@ const (
 	DefaultKopiaRepositoryServerAccessPassword = "test1234"
 	DefaultKanisterNamespace                   = "kanister"
 	DefaultKopiaRepositoryServerContainer      = "repo-server-container"
-	defaultRepoConfigFilePath                  = "/tmp/kopia-repo-config"
-	defaultRepoLogDirectory                    = "/tmp/kopia-repo-log"
 )
 
 func getKopiaTLSSecret() (map[string][]byte, error) {
@@ -181,8 +179,8 @@ func createKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.RepositoryServ
 	commandArgs := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
 			RepoPassword:   DefaultKopiaRepositoryPassword,
-			ConfigFilePath: defaultRepoConfigFilePath,
-			LogDirectory:   defaultRepoLogDirectory,
+			ConfigFilePath: command.DefaultConfigFilePath,
+			LogDirectory:   command.DefaultLogDirectory,
 		},
 		CacheDirectory:  command.DefaultCacheDirectory,
 		Hostname:        DefaultKopiaRepositoryServerHost,
