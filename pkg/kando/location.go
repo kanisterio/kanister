@@ -50,27 +50,6 @@ func newLocationCommand() *cobra.Command {
 	return cmd
 }
 
-// NewDataMover creates an instance of DataMover Interface and returns
-// the preferred DataMover as per the arguments passed in kando command
-func NewDataMover(dm *DataMoverArgs, outputName, snapJson string) datamover.DataMover {
-	switch dm.Type {
-	case profileFlagName:
-		return &datamover.Profile{
-			OutputName: outputName,
-			Profile:    dm.Profile,
-			SnapJSON:   snapJson,
-		}
-	case repositoryServerFlagName:
-		return &datamover.RepositoryServer{
-			OutputName:       outputName,
-			RepositoryServer: dm.RepositoryServer,
-			SnapJSON:         snapJson,
-		}
-	default:
-		return nil
-	}
-}
-
 func pathFlag(cmd *cobra.Command) string {
 	return cmd.Flag(pathFlagName).Value.String()
 }
@@ -117,13 +96,13 @@ func dataMoverFromCMD(cmd *cobra.Command) (datamover.DataMover, error) {
 	switch dm.Type {
 	case profileFlagName:
 		return &datamover.Profile{
-			OutputName: pathFlag(cmd),
+			OutputName: outputNameFlag(cmd),
 			Profile:    dm.Profile,
 			SnapJSON:   kopiaSnapshotFlag(cmd),
 		}, nil
 	case repositoryServerFlagName:
 		return &datamover.RepositoryServer{
-			OutputName:       pathFlag(cmd),
+			OutputName:       outputNameFlag(cmd),
 			RepositoryServer: dm.RepositoryServer,
 			SnapJSON:         kopiaSnapshotFlag(cmd),
 		}, nil
