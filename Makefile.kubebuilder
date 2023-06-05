@@ -43,5 +43,5 @@ repo-server-help: ## Display the help regarding building and deloying kopia repo
 repo-server-build:  ## Build repository server binary.
 	@$(MAKE) run CMD='-c " \
 	goreleaser build --id $(REPOSERVER_BIN) --rm-dist --debug --snapshot \
-	&& cp dist/$(REPOSERVER_BIN)_linux_$(ARCH)/$(REPOSERVER_BIN) bin/$(ARCH)/$(REPOSERVER_BIN) \
+	&& cp dist/$(REPOSERVER_BIN)_linux_$(ARCH)_*/$(REPOSERVER_BIN) bin/$(ARCH)/$(REPOSERVER_BIN) \
 	"'

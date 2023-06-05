@@ -49,7 +49,7 @@ LABEL name="kanister-tools" \
     maintainer="Tom Manville<tom@kasten.io>" \
     description="Kanister tools for application-specific data management"
 
-COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
+COPY --from=restic/restic:0.15.2 /usr/bin/restic /usr/local/bin/restic
 COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 
