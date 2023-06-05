@@ -39,12 +39,28 @@ application is installed in the ``default`` namespace.
 .. code-block:: yaml
 
   $ cat <<EOF | kubectl create -f -
+  apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: time-log-pvc
+    labels:
+      app: time-logger
+  spec:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  ---
   apiVersion: apps/v1
   kind: Deployment
   metadata:
     name: time-logger
   spec:
     replicas: 1
+    selector:
+      matchLabels:
+        app: time-logger
     template:
       metadata:
         labels:
@@ -52,9 +68,16 @@ application is installed in the ``default`` namespace.
       spec:
         containers:
         - name: test-container
-          image: containerlabs/aws-sdk
+          image: ghcr.io/kanisterio/kanister-tools:0.92.0
           command: ["sh", "-c"]
           args: ["while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"]
+          volumeMounts:
+          - name: data
+            mountPath: /var/log
+        volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: time-log-pvc  
   EOF
 
 Starting Kopia Repository Server
@@ -210,21 +233,77 @@ command used to create repository as specified in section :ref:`Creating a Kopia
         userAccessSecretRef:
           name: repository-server-user-access
           namespace: kanister
-        username: kanisterUser
+        username: kanisteruser
   EOF
 
 
-Once the Repository Server is created, you will see a repository server pod and a service created
-in kanister namespace. 
+Once the Repository Server is created, you will see a repository server pod and a service exposing the
+the kopia repository server created in kanister namespace. 
 
-########
-(TODO: List pods and services)
+.. code-block:: bash
+
+   $ kubectl get pods,svc -n kanister 
+   NAME                                              READY   STATUS    RESTARTS   AGE
+   pod/kanister-kanister-operator-5b7dfbf97b-5j5p5   2/2     Running   0          33m
+   pod/repo-server-pod-4tjcw                         1/1     Running   0          2m13s
+   
+   NAME                                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)     AGE
+   service/kanister-kanister-operator   ClusterIP   10.96.197.93    <none>        443/TCP     33m
+   service/repo-server-service-rq2pq    ClusterIP   10.96.127.153   <none>        51515/TCP   2m13s
 
 To see if the server started successfully, you can check the status of
 the server using following command
 
-#########
-(TODO: Please describe repository server resource)
+.. code-block:: bash
+   
+   $ kubectl get repositoryservers.cr.kanister.io kopia-repo-server -n kanister -oyaml
+   apiVersion: cr.kanister.io/v1alpha1
+   kind: RepositoryServer
+   metadata:
+     annotations:
+       kubectl.kubernetes.io/last-applied-configuration: |
+         {"apiVersion":"cr.kanister.io/v1alpha1","kind":"RepositoryServer","metadata":{"annotations":{},"name":"kopia-repo-server","namespace":"kanister"},"spec":{"repository":{"hostname":"timelog.app","passwordSecretRef":{"name":"repository-pass","namespace":"kanister"},"rootPath":"/test/repo-controller","username":"kansiterAdmin"},"server":{"adminSecretRef":{"name":"repository-server-admin","namespace":"kanister"},"tlsSecretRef":{"name":"repository-server-tls-cert","namespace":"kanister"},"userAccess":{"userAccessSecretRef":{"name":"repository-server-user-access","namespace":"kanister"},"username":"kanisteruser"}},"storage":{"credentialSecretRef":{"name":"s3-loc-creds","namespace":"kanister"},"secretRef":{"name":"s3-location","namespace":"kanister"}}}}
+     creationTimestamp: "2023-06-05T05:45:49Z"
+     generation: 1
+     name: kopia-repo-server
+     namespace: kanister
+     resourceVersion: "41529"
+     uid: b4458c4f-b2d5-4dcd-99de-a0a4d32ed216
+   spec:
+     repository:
+       hostname: timelog.app
+       passwordSecretRef:
+         name: repository-pass
+         namespace: kanister
+       rootPath: /test/repo-controller
+       username: kansiterAdmin
+     server:
+       adminSecretRef:
+         name: repository-server-admin
+         namespace: kanister
+       tlsSecretRef:
+         name: repository-server-tls-cert
+         namespace: kanister
+       userAccess:
+         userAccessSecretRef:
+           name: repository-server-user-access
+           namespace: kanister
+         username: kanisteruser
+     storage:
+       credentialSecretRef:
+         name: s3-loc-creds
+         namespace: kanister
+       secretRef:
+         name: s3-location
+         namespace: kanister
+   status:
+     progress: ServerReady
+     serverInfo:
+       podName: repo-server-pod-4tjcw
+       serviceName: repo-server-service-rq2pq
+
+``pod/repo-server-pod-4tjcw`` and ``service/repo-server-service-rq2pq`` populated in
+``status.serverInfo`` field  should be used by the client to connect to the server
 
 Invoking Kanister Actions
 =========================
@@ -247,9 +326,13 @@ Kanister function ``BackupDataUsingKopiaServer`` that uses kopia repository serv
 data to s3 storage. The action ``restore`` uses two kanister functions ``ScaleWorkload`` and
 ``RestoreDataUsingKopiaServer``. ``ScaleWorkload`` function scales down the timelog application
 before restoring the data. ``RestoreDataUsingKopiaServer`` restores data using kopia repository server
-form s3 storage
+form s3 storage.
 
 For more information of kanister function refer :doc:`Kanister's parameter templating </functions>`.
+
+We are using output artifacts here to store the path of our data in s3 and snapshot ID that
+that will be used as ``backupIdentifier`` while performing restore. To know more about
+artifacts you can refer :ref:`tutorial`.
 
 Blueprint
 ---------
@@ -279,7 +362,6 @@ Blueprint
           pod: "{{ index .Deployment.Pods 0 }}"
           container: test-container
           includePath: /var/log
-  
     restore:
       inputArtifactNames:
       - timeLog
@@ -297,7 +379,7 @@ Blueprint
         args:
           namespace: "{{ .Deployment.Namespace }}"
           pod: "{{ index .Deployment.Pods 0 }}"
-          image: ghcr.io/kanisterio/kanister-tools:0.89.0
+          image: ghcr.io/kanisterio/kanister-tools:0.92.0
           backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
           restorePath: /var/log
       - func: ScaleWorkload
@@ -307,9 +389,7 @@ Blueprint
           name: "{{ .Deployment.Name }}"
           kind: Deployment
           replicas: 1
-
   EOF
-
 
 Once we create a Blueprint, we can see its events by using the following command:
 
@@ -328,13 +408,90 @@ multiple actions, each acting on a different Kubernetes object. The ActionSet
 we're about to create in this tutorial specifies the ``time-logger`` Deployment we
 created earlier and selects the ``backup`` action inside our Blueprint. 
 
+
+Add some data in the time logger app
+.. code-block:: bash
+   kubectl exec -it time-logger-6d89687cbb-bmdj8 -n default -it sh
+   sh-5.1# cd /var/log/
+   sh-5.1# ls
+   time.log
+   sh-5.1# echo "hello world" >> test.log 
+   sh-5.1# cat test.log 
+   hello world
+
 ActionSet
----------------
+---------
 
 .. code-block:: bash
   # Create action set using the blueprint created in above step
-  $ kanctl create actionset --action backup --namespace kanister --blueprint time-log-bp --deployment time-logger/time-logger --repository-server=kopia-repo-server
+  $ kanctl create actionset --action backup --namespace kanister --blueprint time-log-bp --deployment default/time-logger --repository-server kanister/kopia-repo-server
+  actionset actionset backup-rlcnp created
 
 ``--repository-server`` flag is used to provide the reference to the repository server CR that we created
-in step :ref:`Creating Repository Server custom resource`. The CR is made available to the kanister
-functions using template parameters.
+in step :ref:`Creating Repository Server custom resource`. Since the details related to kopia repository server and
+the secrets are present in the CR, the blueprint will be able to read these details using
+template parameters and will perform backup using kopia repository server
+
+
+.. code-block:: bash
+
+  Events:
+  Type    Reason           Age   From                 Message
+  ----    ------           ----  ----                 -------
+  Normal  Started Action   14s   Kanister Controller  Executing action backup
+  Normal  Started Phase    14s   Kanister Controller  Executing phase backupToS3
+  Normal  Ended Phase      9s    Kanister Controller  Completed phase backupToS3
+  Normal  Update Complete  9s    Kanister Controller  Updated ActionSet 'backup-rlcnp' Status->complete
+
+
+Lets delete the date from ``timelogger`` app.
+
+.. code-block:: bash
+   kubectl exec -it time-logger-6d89687cbb-bmdj8 -n default -it sh    
+   sh-5.1# cd /var/log/
+   sh-5.1# ls -lrt
+   total 12
+   -rw-r--r-- 1 root root   12 Jun  5 06:22 test.log
+   -rw-r--r-- 1 root root 7308 Jun  5 06:26 time.log
+   sh-5.1# rm -rf test.log 
+   sh-5.1# ls -lrt
+   total 8
+   -rw-r--r-- 1 root root 7482 Jun  5 06:26 time.log
+
+
+Lets perform restore now, by using ``restore`` action from the ``time-log-bp`` blueprint
+
+.. code-block:: bash
+   kanctl --namespace kanister create actionset --action restore --from "backup-rlcnp" --repository-server kanister/kopia-repo-server
+   actionset restore-backup-rlcnp-g5h65 create
+
+We can see if the restore is successful by describing the actionset
+
+.. code-block:: bash
+  $kubectl describe actionsets.cr.kanister.io restore-backup-rlcnp-g5h65 -n kanister
+  
+  Events:
+    Type    Reason           Age   From                 Message
+    ----    ------           ----  ----                 -------
+    Normal  Started Action   20s   Kanister Controller  Executing action restore
+    Normal  Started Phase    20s   Kanister Controller  Executing phase shutdownPod
+    Normal  Ended Phase      8s    Kanister Controller  Completed phase shutdownPod
+    Normal  Started Phase    8s    Kanister Controller  Executing phase restoreFromS3
+    Normal  Ended Phase      4s    Kanister Controller  Completed phase restoreFromS3
+    Normal  Started Phase    4s    Kanister Controller  Executing phase bringupPod
+    Normal  Ended Phase      3s    Kanister Controller  Completed phase bringupPod
+    Normal  Update Complete  2s    Kanister Controller  Updated ActionSet 'restore-backup-rlcnp-g5h65' Status->complete
+
+Lets check if the data was restored successfully. We should see the ``time.log`` file that was removed
+before performing restore
+
+.. code-block:: bash
+   kubectl exec -it time-logger-6d89687cbb-pv5x6 -n default -it sh
+   sh-5.1# ls -lrt /var/log
+   total 16
+   -rw-r--r-- 1 root root   12 Jun  5 06:22 test.log
+   -rw-r--r-- 1 root root 9715 Jun  5 06:32 time.log
+   sh-5.1# cat /var/log/test.log
+   hello world
+
+

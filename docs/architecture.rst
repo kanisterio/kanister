@@ -7,15 +7,41 @@ Architecture
   :local:
 
 
-Kopia Repository Server Controller
-==================================
+Kopia Repository Server Workflow
+=======================
 
+Introducting Kopia
+------------------
+
+Kopia is a powerful, cross-platform tool for managing encrypted backups in the cloud.
+It provides fast and secure backups, using compression, data deduplication, and client-side end-to-end encryption.
+It supports a variety of backup storage targets, including object stores, which allows users to choose the storage provider that better addresses their needs.
+In Kopia, these storage locations are called repositories. It is a lock-free system that allows concurrent multi-client operations including garbage collection.
+To explore other features of Kopia, see its `documentation<https://kopia.io/docs/features/>`_
 
 Kopia Repository Server
 -----------------------
 
+A Kopia Repository Server allows Kopia clients proxy access to the backend storage location through it.
+Kopia Repository. At any time, a repository server can only connect to a single repository. Due to this a separate instance of the server will be used for each repository.
+
+In Kanister, the server will comprise a Kubernetes Pod, Service. The pod runs the kopia repository
+server process that will be used by kopia clients to perform backup and restore. Kopia clients would
+only need a username/password and service name to connect to server without the need to know
+the backend storage location. This provides enhanced security since only authorized users will be allowed
+to access the kopia repository server. These authorized users need to be added to the server 
+before starting the server
+
 Kopia Repository
 ----------------
+
+The backup storage location is called a "Repository" in Kopia.
+Only a single repository can exist at a particular path in the backend storage location. Users opting to use separate repositories are recommended to use unique path prefixes for each repository. 
+For example, a repository for a namespace called monitoring on S3 storage bucket called test-bucket could be created at the location ``s3://test-bucket/<UUID of monitoring namespace>/repo/``
+Accessing the repository requires the storage location and credential information similar to a Kanister Profile CR and a unique password used by Kopia during encryption, along with a unique
+path prefix mentioned above.
+
+To know more about the design of kopia repository server controller refer its `design documentation<https://github.com/kanisterio/kanister/blob/master/design/kanister-kopia-integration.md>
 
 The design of Kanister follows the operator pattern. This means
 Kanister defines its own resources and interacts with those resources
