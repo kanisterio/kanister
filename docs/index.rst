@@ -21,7 +21,7 @@ and easy to install, operate and scale.
 
    overview
    install
-   tutorial
+   kanister_tutorial
    architecture
    tasks
    tooling

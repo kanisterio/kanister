@@ -1,9 +1,9 @@
 Using Kopia Repository Server as Data Mover in Blueprint
 ********************************************************
 
-This tutorial will demonstrate the use of Kopia to copy/restore backups 
-to a kopia repository. We will be using kanister functions 
-that use Kopia repository Server as datamover in the blueprint. For more documentation
+This tutorial will demonstrate the use of Kopia to copy/restore backups
+to a kopia repository. We will be using kanister functions
+that use Kopia repository Server as data mover in the blueprint. For more documentation
 on kanister functions and blueprints see :ref:`architecture` ,
 :ref:`kanister functions<functions>` respectively
 
@@ -24,7 +24,8 @@ Prerequisites
 * docker
 
 * Kopia repository server controller should be deployed along with Kanister controller
-See :ref:`Deploying Kopia Repository server controller`
+  Refer
+  :ref:`Deploying Kopia Repository server controller <deploying_repo_server_controller>`
 
 * Access to s3 bucket and credentials
 
@@ -78,19 +79,21 @@ application is installed in the ``default`` namespace.
         volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: time-log-pvc  
+            claimName: time-log-pvc
   EOF
 
 Starting Kopia Repository Server
 ================================
 
-Since we will be using kopia data mover to copy/restore the backups to the location storage,
-we need to start the Kopia repository Server. To know more about kopia repository server,
-see :ref:`Kopia Repository Server Controller<Kopia Repository Server Controller>`
+Since we will be using kopia data mover to copy/restore the backups to the location
+storage, we need to start the Kopia repository Server. To know more about kopia
+repository server, refer :ref:`architecture <architecture>`
 
-The repository server controller requires Repository Server custom resource to be created to
-start the server. To understand more about this custom resource, see :ref:`architecture`.
+The repository server controller requires Repository Server custom resource to
+be created to start the server. To understand more about this custom resource,
+see :ref:`architecture`.
 
+.. _creating_kopia_repository:
 
 Creating a Kopia Repository
 ---------------------------
@@ -100,14 +103,15 @@ The kopia repository needs to be created before we start the repository server.
 You can create it as shown below
 
 .. code-block:: bash
-  $ kopia --log-level=error --config-file=/tmp/kopia-repository.config 
-    --log-dir=/tmp/kopia-cache repository create --no-check-for-updates 
-    --cache-directory=/tmp/cache.dir --content-cache-size-mb=0 --metadata-cache-size-mb=500 
-    --override-hostname=timelog.app --override-username=kanisterAdmin s3 
-    --bucket=test-bucket 
+
+  $ kopia --log-level=error --config-file=/tmp/kopia-repository.config
+    --log-dir=/tmp/kopia-cache repository create --no-check-for-updates
+    --cache-directory=/tmp/cache.dir --content-cache-size-mb=0 --metadata-cache-size-mb=500
+    --override-hostname=timelog.app --override-username=kanisterAdmin s3
+    --bucket=test-bucket
     --prefix=/test/repo-controller
-    --region=us-east-1 
-    --access-key=<ACCESS_KEY> 
+    --region=us-east-1
+    --access-key=<ACCESS_KEY>
     --secret-access-key=<SECRET_ACCESS_KEY>
 
 To know more about how to create repository refer `kopia documentation
@@ -117,26 +121,35 @@ To know more about how to create repository refer `kopia documentation
 Creating Secrets
 ----------------
 
-Please see :ref:`architecture` to know the secrets that needs to be created for repository server
+Please see :ref:`architecture` to know the secrets that needs to be created for
+repository server
 
 - ``Creating TLS secret``
+
 .. code-block:: bash
+
   $ kubectl create secret tls repository-server-tls-cert --cert=/path/to/certificate.pem --key=/path/to/key.pem -n kanister
-  
+
 - ``Creating Repository Server User Access Secret``
 
 .. code-block:: bash
+
   $ kubectl create secret generic repository-server-user-access --type='secrets.kanister.io/kopia-repository/serveruser' -n kanister
 
 - ``Creating Repository Server Admin Secret``
+
 .. code-block:: bash
+
   $ kubectl create secret generic repository-server-admin --type='secrets.kanister.io/kopia-repository/serveradmin' -n kanister --from-literal=username=admin@testpod1 --from-literal=password=test1234
 
 - ``Creating Repository Password Secret``
+
 .. code-block:: bash
+
   $ kubectl create secret generic repository-pass --type='secrets.kanister.io/kopia-repository/password' -n kanister --from-literal=repo-password=test1234
 
 - ``Creating Storage Location Secret``
+
    The secret should have same values for ``bucket``, ``endpoint``, ``region`` fields that
    we have used while creating kopia repository
 
@@ -160,10 +173,11 @@ Please see :ref:`architecture` to know the secrets that needs to be created for 
      # optional: specified in case of S3-compatible stores
      endpoint: <base-64-encoded-value>
      # required, if supported by the provider
-     region: <base-64-encoded-value> 
+     region: <base-64-encoded-value>
   EOF
 
 - ``Creating Storage Location Credentials Secret``
+
 .. code-block:: yaml
 
   $ cat <<EOF | kubectl create -f -
@@ -180,25 +194,28 @@ Please see :ref:`architecture` to know the secrets that needs to be created for 
      secret-acccess-key: <redacted>
   EOF
 
+.. _creating_repo_server_CR:
+
 Creating Repository Server custom resource
 ------------------------------------------
 
 Once the secrets are created, we need to create a repository Server CR having references
-to above created secrets. More details of the repository server CR 
+to above created secrets. More details of the repository server CR
 can be found at :ref:`architecture`
 
-We have to make sure that we use the same values for field, 
+We have to make sure that we use the same values for field,
 ``spec.repository.username`` , ``spec.repository.hostname`` in the CR that we used while
-creating the repository in section :ref:`Creating a Kopia Repository<Creating a Kopia Repository>`
+creating the repository in section :ref:`Creating a Kopia Repository <creating_kopia_repository>`
 
-``--prefix`` field's value is a combination of prefix specified in `spec.data.path` field of
-location secret and sub-path provided in ``spec.repository.RootPath`` field of Reposiotry
-server CR
+``--prefix`` field's value is a combination of prefix specified in `spec.data.path`
+field of location secret and sub-path provided in ``spec.repository.RootPath``
+field of Repository server CR.
 
-``spec.data.path`` field of location storage secret ``s3-location`` appended with ``spec.repository.RootPath``
-in the repository Server CR combined together should match the``--prefix`` field of the
-command used to create repository as specified in section :ref:`Creating a Kopia Repository<Creating a Kopia Repository>`
- 
+``spec.data.path`` field of location storage secret ``s3-location`` appended
+with ``spec.repository.RootPath`` in the repository Server CR combined together
+should match the``--prefix`` field of the command used to create repository as
+specified in section :ref:`Creating a Kopia Repository <creating_kopia_repository>`
+
 
 .. code-block:: yaml
 
@@ -238,16 +255,16 @@ command used to create repository as specified in section :ref:`Creating a Kopia
   EOF
 
 
-Once the Repository Server is created, you will see a repository server pod and a service exposing the
-the kopia repository server created in kanister namespace. 
+Once the Repository Server is created, you will see a repository server pod and
+a service exposing the kopia repository server created in ``kanister`` namespace.
 
 .. code-block:: bash
 
-   $ kubectl get pods,svc -n kanister 
+   $ kubectl get pods,svc -n kanister
    NAME                                              READY   STATUS    RESTARTS   AGE
    pod/kanister-kanister-operator-5b7dfbf97b-5j5p5   2/2     Running   0          33m
    pod/repo-server-pod-4tjcw                         1/1     Running   0          2m13s
-   
+
    NAME                                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)     AGE
    service/kanister-kanister-operator   ClusterIP   10.96.197.93    <none>        443/TCP     33m
    service/repo-server-service-rq2pq    ClusterIP   10.96.127.153   <none>        51515/TCP   2m13s
@@ -256,7 +273,7 @@ To see if the server started successfully, you can check the status of
 the server using following command
 
 .. code-block:: bash
-   
+
    $ kubectl get repositoryservers.cr.kanister.io kopia-repo-server -n kanister -oyaml
    apiVersion: cr.kanister.io/v1alpha1
    kind: RepositoryServer
@@ -321,19 +338,22 @@ into the specified Function.
 
 For more on CustomResources in Kanister, see :ref:`architecture`.
 
- The Blueprint we'll create has a two actions called ``backup`` 
-and ``restore``. The action ``backup`` has a single phase named ``backupToS3``. ``backupToS3`` invokes the
-Kanister function ``BackupDataUsingKopiaServer`` that uses kopia repository server to copy backup
-data to s3 storage. The action ``restore`` uses two kanister functions ``ScaleWorkload`` and
-``RestoreDataUsingKopiaServer``. ``ScaleWorkload`` function scales down the timelog application
-before restoring the data. ``RestoreDataUsingKopiaServer`` restores data using kopia repository server
-form s3 storage.
+The Blueprint we'll create has a two actions called ``backup``
+and ``restore``. The action ``backup`` has a single phase named ``backupToS3``.
 
-For more information of kanister function refer :doc:`Kanister's parameter templating </functions>`.
+``backupToS3`` invokes the Kanister function ``BackupDataUsingKopiaServer``
+that uses kopia repository server to copy backup data to s3 storage. The action
+``restore`` uses two kanister functions ``ScaleWorkload`` and ``RestoreDataUsingKopiaServer``.
+``ScaleWorkload`` function scales down the ``timelog`` application before restoring the data.
+``RestoreDataUsingKopiaServer`` restores data using kopia repository server form
+s3 storage.
 
-We are using output artifacts here to store the path of our data in s3 and snapshot ID that
-that will be used as ``backupIdentifier`` while performing restore. To know more about
-artifacts you can refer :ref:`tutorial`.
+For more information of kanister function refer
+:doc:`Kanister's parameter templating </functions>`.
+
+We are using output artifacts here to store the path of our data in s3 and
+snapshot ID that that will be used as ``backupIdentifier`` while performing restore.
+To know more about artifacts you can refer :ref:`tutorials`.
 
 Blueprint
 ---------
@@ -407,31 +427,35 @@ each time you want to execute any Kanister actions. The ActionSet contains all
 the runtime information the controller needs during execution. It may contain
 multiple actions, each acting on a different Kubernetes object. The ActionSet
 we're about to create in this tutorial specifies the ``time-logger`` Deployment we
-created earlier and selects the ``backup`` action inside our Blueprint. 
+created earlier and selects the ``backup`` action inside our Blueprint.
 
 
-Add some data in the time logger app
+Add some data in the time logger app.
+
 .. code-block:: bash
+
    kubectl exec -it time-logger-6d89687cbb-bmdj8 -n default -it sh
    sh-5.1# cd /var/log/
    sh-5.1# ls
    time.log
-   sh-5.1# echo "hello world" >> test.log 
-   sh-5.1# cat test.log 
+   sh-5.1# echo "hello world" >> test.log
+   sh-5.1# cat test.log
    hello world
 
 ActionSet
 ---------
 
 .. code-block:: bash
+
   # Create action set using the blueprint created in above step
   $ kanctl create actionset --action backup --namespace kanister --blueprint time-log-bp --deployment default/time-logger --repository-server kanister/kopia-repo-server
   actionset actionset backup-rlcnp created
 
-``--repository-server`` flag is used to provide the reference to the repository server CR that we created
-in step :ref:`Creating Repository Server custom resource`. Since the details related to kopia repository server and
-the secrets are present in the CR, the blueprint will be able to read these details using
-template parameters and will perform backup using kopia repository server
+``--repository-server`` flag is used to provide the reference to the repository server
+CR that we created in step :ref:`Creating Repository Server custom resource <creating_repo_server_CR>`. Since
+the details related to kopia repository server and the secrets are present in the CR,
+the blueprint will be able to read these details using template parameters and will
+perform backup using kopia repository server.
 
 
 .. code-block:: bash
@@ -448,13 +472,14 @@ template parameters and will perform backup using kopia repository server
 Lets delete the date from ``timelogger`` app.
 
 .. code-block:: bash
-   kubectl exec -it time-logger-6d89687cbb-bmdj8 -n default -it sh    
+
+   $ kubectl exec -it time-logger-6d89687cbb-bmdj8 -n default -it sh
    sh-5.1# cd /var/log/
    sh-5.1# ls -lrt
    total 12
    -rw-r--r-- 1 root root   12 Jun  5 06:22 test.log
    -rw-r--r-- 1 root root 7308 Jun  5 06:26 time.log
-   sh-5.1# rm -rf test.log 
+   sh-5.1# rm -rf test.log
    sh-5.1# ls -lrt
    total 8
    -rw-r--r-- 1 root root 7482 Jun  5 06:26 time.log
@@ -463,14 +488,16 @@ Lets delete the date from ``timelogger`` app.
 Lets perform restore now, by using ``restore`` action from the ``time-log-bp`` blueprint
 
 .. code-block:: bash
-   kanctl --namespace kanister create actionset --action restore --from "backup-rlcnp" --repository-server kanister/kopia-repo-server
+
+   $ kanctl --namespace kanister create actionset --action restore --from "backup-rlcnp" --repository-server kanister/kopia-repo-server
    actionset restore-backup-rlcnp-g5h65 create
 
 We can see if the restore is successful by describing the actionset
 
 .. code-block:: bash
-  $kubectl describe actionsets.cr.kanister.io restore-backup-rlcnp-g5h65 -n kanister
-  
+
+  $ kubectl describe actionsets.cr.kanister.io restore-backup-rlcnp-g5h65 -n kanister
+
   Events:
     Type    Reason           Age   From                 Message
     ----    ------           ----  ----                 -------
@@ -483,11 +510,12 @@ We can see if the restore is successful by describing the actionset
     Normal  Ended Phase      3s    Kanister Controller  Completed phase bringupPod
     Normal  Update Complete  2s    Kanister Controller  Updated ActionSet 'restore-backup-rlcnp-g5h65' Status->complete
 
-Lets check if the data was restored successfully. We should see the ``time.log`` file that was removed
-before performing restore
+Lets check if the data was restored successfully. We should see the ``time.log``
+file that was removed before performing restore
 
 .. code-block:: bash
-   kubectl exec -it time-logger-6d89687cbb-pv5x6 -n default -it sh
+
+   $ kubectl exec -it time-logger-6d89687cbb-pv5x6 -n default -it sh
    sh-5.1# ls -lrt /var/log
    total 16
    -rw-r--r-- 1 root root   12 Jun  5 06:22 test.log
