@@ -54,7 +54,7 @@ func (rs *RepositoryServer) Push(ctx context.Context, sourcePath, destinationPat
 
 func (rs *RepositoryServer) Delete(ctx context.Context, destinationPath string) error {
 	if rs.SnapJSON == "" {
-		return errors.New("kopia snapshot information is required to pull data using kopia")
+		return errors.New("kopia snapshot information is required to delete data using kopia")
 	}
 	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.SnapJSON)
 	if err != nil {
