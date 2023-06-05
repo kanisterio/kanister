@@ -94,7 +94,7 @@ func dataMoverFromCMD(cmd *cobra.Command) (*DataMoverArgs, error) {
 	if profile != "" {
 		profileRef, err := unmarshalProfileFlag(cmd)
 		if err != nil {
-			return &DataMoverArgs{}, err
+			return nil, err
 		}
 		return &DataMoverArgs{
 			Type:    profileFlagName,
@@ -105,14 +105,14 @@ func dataMoverFromCMD(cmd *cobra.Command) (*DataMoverArgs, error) {
 	if repositoryServer != "" {
 		repositoryServerRef, err := unmarshalRepositoryServerFlag(cmd)
 		if err != nil {
-			return &DataMoverArgs{}, err
+			return nil, err
 		}
 		return &DataMoverArgs{
 			Type:             repositoryServerFlagName,
 			RepositoryServer: repositoryServerRef,
 		}, nil
 	}
-	return &DataMoverArgs{}, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
+	return nil, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 }
 
 func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {

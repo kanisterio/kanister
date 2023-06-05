@@ -23,13 +23,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
-	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -136,20 +134,12 @@ func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, passwo
 	switch sourcePath {
 	case usePipeParam:
 		snapInfo, err = snapshot.Write(ctx, os.Stdin, path, password)
-		log.Print("---- PipeParam ----", field.M{
-			"Source Path":      os.Stdin,
-			"Destination Path": path,
-		})
 	default:
 		snapInfo, err = snapshot.WriteFile(ctx, path, sourcePath, password)
 	}
 	if err != nil {
 		return errors.Wrap(err, "Failed to push data using kopia")
 	}
-	log.Print("---- Paths ----", field.M{
-		"Source Path":      sourcePath,
-		"Destination Path": path,
-	})
 	snapInfoJSON, err := snapshot.MarshalKopiaSnapshot(snapInfo)
 	if err != nil {
 		return err

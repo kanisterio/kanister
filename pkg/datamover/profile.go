@@ -68,7 +68,7 @@ func (p *Profile) Push(ctx context.Context, sourcePath, destinationPath string) 
 func (p *Profile) Delete(ctx context.Context, destinationPath string) error {
 	if p.Profile.Location.Type == crv1alpha1.LocationTypeKopia {
 		if p.SnapJSON == "" {
-			return errors.New("kopia snapshot information is required to pull data using kopia")
+			return errors.New("kopia snapshot information is required to delete data using kopia")
 		}
 		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.SnapJSON)
 		if err != nil {
