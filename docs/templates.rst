@@ -22,6 +22,7 @@ The TemplateParam struct is defined as:
     Secrets          map[string]v1.Secret
     Time             string
     Profile          *Profile
+    RepositoryServer *RepositoryServer
     Options          map[string]string
     Object           map[string]interface{}
     Phases           map[string]*Phase
@@ -544,6 +545,52 @@ The currently supported Profile template is based on the following definitions
     IDField     string
     SecretField string
     Secret      ObjectReference
+  }
+
+RepositoryServers
+-----------------
+
+RepositoryServers are a Kanister CustomResource that contains information about storage,
+repository and server details which are required for running a kopia repository server
+instance. Which could be further used for data operation artifacts.
+
+Unlike Secrets and ConfigMaps, only a single repository server can optionally be
+referenced by an ActionSet. As a result, it is not necessary to
+name the RepositoryServer in the Blueprint.
+
+The following examples should be helpful.
+
+.. code-block:: yaml
+
+  # Access the RepositoryServer name
+  "{{ .RepositoryServer.Name }}"
+
+  # Access the RepositoryServer service name
+  "{{ .RepositoryServer.ServerInfo.ServiceName }}"
+
+The currently supported RepositoryServer template is based on the following definitions
+
+.. code-block:: go
+  :linenos:
+
+  // RepositoryServer contains fields from Repository server CR that will be used to resolve go templates for repository server in blueprint
+  type RepositoryServer struct {
+    Name        string
+    Namespace   string
+    ServerInfo  crv1alpha1.ServerInfo
+    Username    string
+    Credentials RepositoryServerCredentials
+    Address     string
+  }
+
+  type RepositoryServerCredentials struct {
+    ServerTLS        v1.Secret
+    ServerUserAccess v1.Secret
+  }
+
+  type ServerInfo struct {
+    PodName     string `json:"podName,omitempty"`
+    ServiceName string `json:"serviceName,omitempty"`
   }
 
 Options
