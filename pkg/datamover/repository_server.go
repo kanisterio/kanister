@@ -29,8 +29,7 @@ type RepositoryServer struct {
 	SnapJSON         string
 }
 
-func (rs *RepositoryServer) Pull(sourcePath, destinationPath string) error {
-	ctx := context.Background()
+func (rs *RepositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
 	if rs.SnapJSON == "" {
 		return errors.New("kopia snapshot information is required to pull data using kopia")
 	}
@@ -45,8 +44,7 @@ func (rs *RepositoryServer) Pull(sourcePath, destinationPath string) error {
 	return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, password)
 }
 
-func (rs *RepositoryServer) Push(sourcePath, destinationPath string) error {
-	ctx := context.Background()
+func (rs *RepositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
 	password, err := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
 	if err != nil {
 		return err
@@ -54,8 +52,7 @@ func (rs *RepositoryServer) Push(sourcePath, destinationPath string) error {
 	return kopiaLocationPush(ctx, destinationPath, rs.OutputName, sourcePath, password)
 }
 
-func (rs *RepositoryServer) Delete(destinationPath string) error {
-	ctx := context.Background()
+func (rs *RepositoryServer) Delete(ctx context.Context, destinationPath string) error {
 	if rs.SnapJSON == "" {
 		return errors.New("kopia snapshot information is required to pull data using kopia")
 	}

@@ -30,8 +30,7 @@ type Profile struct {
 	SnapJSON   string
 }
 
-func (p *Profile) Pull(sourcePath, destinationPath string) error {
-	ctx := context.Background()
+func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.Profile.Location.Type == crv1alpha1.LocationTypeKopia {
 		if p.SnapJSON == "" {
 			return errors.New("kopia snapshot information is required to pull data using kopia")
@@ -52,8 +51,7 @@ func (p *Profile) Pull(sourcePath, destinationPath string) error {
 	return locationPull(ctx, p.Profile, destinationPath, target)
 }
 
-func (p *Profile) Push(sourcePath, destinationPath string) error {
-	ctx := context.Background()
+func (p *Profile) Push(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.Profile.Location.Type == crv1alpha1.LocationTypeKopia {
 		if err := connectToKopiaServer(ctx, p.Profile); err != nil {
 			return err
@@ -67,8 +65,7 @@ func (p *Profile) Push(sourcePath, destinationPath string) error {
 	return locationPush(ctx, p.Profile, destinationPath, source)
 }
 
-func (p *Profile) Delete(destinationPath string) error {
-	ctx := context.Background()
+func (p *Profile) Delete(ctx context.Context, destinationPath string) error {
 	if p.Profile.Location.Type == crv1alpha1.LocationTypeKopia {
 		if p.SnapJSON == "" {
 			return errors.New("kopia snapshot information is required to pull data using kopia")
