@@ -1,13 +1,14 @@
-.. _tutorial:
-
-Blueprint using kopia repository server as Data Mover
-=====================================================
+Using Kopia Repository Server as Data Mover in Blueprint
+********************************************************
 
 This tutorial will demonstrate the use of Kopia to copy/restore backups 
 to a kopia repository. We will be using kanister functions 
 that use Kopia repository Server as datamover in the blueprint. For more documentation
 on kanister functions and blueprints see :ref:`architecture` ,
 :ref:`kanister functions<functions>` respectively
+
+.. contents:: Tutorial Overview
+  :local:
 
 Prerequisites
 =============
