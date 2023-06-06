@@ -380,14 +380,6 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 		}
 	}
 
-	go func() {
-		// progress update is computed on a best-effort basis.
-		// if it exits with error, we will just log it.
-		if err := progress.TrackActionsProgress(ctx, c.crClient, as.GetName(), as.GetNamespace()); err != nil {
-			log.Error().WithError(err)
-		}
-	}()
-
 	for i, a := range as.Status.Actions {
 		var bp *crv1alpha1.Blueprint
 		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, v1.GetOptions{}); err != nil {
@@ -471,10 +463,21 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			var msg string
 			if err == nil {
 				c.updateActionSetRunningPhase(ctx, as, p.Name())
+				progressTrackCtx, doneProgressTrack := context.WithCancel(ctx)
+				defer doneProgressTrack()
+				go func() {
+					// progress update is computed on a best-effort basis.
+					// if it exits with error, we will just log it.
+					if err := progress.UpdateActionSetsProgress(progressTrackCtx, c.crClient, as.GetName(), as.GetNamespace(), p); err != nil {
+						log.Error().WithError(err)
+					}
+				}()
 				output, err = p.Exec(ctx, *bp, action.Name, *tp)
+				doneProgressTrack()
 			} else {
 				msg = fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
 			}
+
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
 				coreErr = err
@@ -491,8 +494,17 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 				coreErr = nil
 				rf = func(ras *crv1alpha1.ActionSet) error {
 					ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateComplete
+					pp, err := p.Progress()
+					if err != nil {
+						log.Error().WithError(err)
+						return nil
+					}
+					ras.Status.Actions[aIDX].Phases[i].Progress = pp
 					// this updates the phase output in the actionset status
 					ras.Status.Actions[aIDX].Phases[i].Output = output
+					if err := progress.SetActionSetPercentCompleted(ras); err != nil {
+						log.Error().WithError(err)
+					}
 					return nil
 				}
 			}
@@ -528,6 +540,11 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 func (c *Controller) updateActionSetRunningPhase(ctx context.Context, as *crv1alpha1.ActionSet, phase string) {
 	err := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), as.Namespace, as.Name, func(as *crv1alpha1.ActionSet) error {
 		as.Status.Progress.RunningPhase = phase
+		for i := 0; i < len(as.Status.Actions[0].Phases); i++ {
+			if as.Status.Actions[0].Phases[i].Name == phase {
+				as.Status.Actions[0].Phases[i].State = crv1alpha1.StateRunning
+			}
+		}
 		return nil
 	})
 	if err != nil {
