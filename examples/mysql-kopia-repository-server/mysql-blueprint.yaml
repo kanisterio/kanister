@@ -1,29 +1,24 @@
 apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
-  name: mysql-blueprint
+  name: mysql-blueprint-2
 actions:
   backup:
     outputArtifacts:
-      backupIdentifier:
+      mysqlCloudDump:
         keyValue:
-          id: "{{ .Phases.backupToS3.Output.backupID }}"
-          dataDir: "{{ .Phases.checkDataDir.Output.dataDir }}"
-      params:
-        keyValue:
-          replicaCount: "{{ .Phases.checkDataDir.Output.replicaCount }}"
+          s3path: "{{ .Phases.dumpToObjectStore.Output.s3path }}"
     phases:
-      - func: KubeExec
-        name: checkDataDir
+      - func: KubeTask
+        name: dumpToObjectStore
         objects:
           mysqlSecret:
             kind: Secret
             name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
             namespace: '{{ .StatefulSet.Namespace }}'
         args:
+          image: ghcr.io/kanisterio/mysql-sidecar:0.93.0
           namespace: "{{ .StatefulSet.Namespace }}"
-          pod: "{{ index .StatefulSet.Pods 0 }}"
-          container: mysql
           command:
             - bash
             - -o
@@ -32,54 +27,51 @@ actions:
             - pipefail
             - -c
             - |
-              root_password="{{ index .Phases.checkDataDir.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-              cmd="SELECT @@datadir;"
-              datadir="$(mysql -uroot -p"${root_password}" -e "${cmd}" | grep /)"
-              kando output dataDir "${datadir}"
-              kando output replicaCount {{ len .StatefulSet.Pods }}
-      - func: BackupDataUsingKopiaServer
-        name: backupToS3
-        args:
-          namespace: "{{ .StatefulSet.Namespace }}"
-          pod: "{{ index .StatefulSet.Pods 0 }}"
-          container: mysql
-          includePath: "{{ .Phases.checkDataDir.Output.dataDir }}"
-
+              s3_path="/mysql-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
+              root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+              mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases | gzip - | kando location push --repository-server '{{ toJson .RepositoryServer }}' -
+              kando output s3path ${s3_path}
   restore:
     inputArtifactNames:
-      - backupIdentifier
-      - params
+      - mysqlCloudDump
     phases:
-      - func: ScaleWorkload
-        name: shutdownPod
+      - func: KubeTask
+        name: restoreFromBlobStore
+        objects:
+          mysqlSecret:
+            kind: Secret
+            name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
+            namespace: '{{ .StatefulSet.Namespace }}'
         args:
+          image: ghcr.io/kanisterio/mysql-sidecar:0.93.0
           namespace: "{{ .StatefulSet.Namespace }}"
-          name: "{{ .StatefulSet.Name }}"
-          kind: StatefulSet
-          replicas: 0
-      - func: RestoreDataUsingKopiaServer
-        name: restoreFromS3
-        args:
-          namespace: "{{ .StatefulSet.Namespace }}"
-          pod: "{{ index .StatefulSet.Pods 0 }}"
-          image: ghcr.io/kanisterio/kanister-tools:0.90.0
-          backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
-          restorePath: "{{ .ArtifactsIn.backupIdentifier.KeyValue.dataDir }}"
-      - func: ScaleWorkload
-        name: bringupPod
-        args:
-          namespace: "{{ .StatefulSet.Namespace }}"
-          name: "{{ .StatefulSet.Name }}"
-          kind: StatefulSet
-          replicas: "{{ .ArtifactsIn.params.KeyValue.replicaCount }}"
-
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
+              root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+              kando location pull --repository-server '{{ toJson .RepositoryServer }}' - | gunzip | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
   delete:
     inputArtifactNames:
-      - backupIdentifier
+      - mysqlCloudDump
     phases:
-      - func: DeleteDataUsingKopiaServer
-        name: deleteFromS3
+      - func: KubeTask
+        name: deleteFromBlobStore
         args:
-          namespace: "{{ .StatefulSet.Namespace }}"
-          image: ghcr.io/kanisterio/kanister-tools:0.90.0
-          backupID: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+          image: ghcr.io/kanisterio/mysql-sidecar:0.93.0
+          namespace: "{{ .Namespace.Name }}"
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
+              kando location delete --repository-server '{{ toJson .RepositoryServer }}'
