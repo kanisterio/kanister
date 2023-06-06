@@ -31,10 +31,12 @@ on you cluster.
 ### Build docker image
 - Execute below commands to build and push `foundationdb` docker image to a registry.
 ```bash
-# On your local kanister git repo
-$ cd ~/kanister/docker/foundationdb
-$ docker build -t <registry>/<account_name>/foundationdb:<tag_name> .
-$ docker push <registry>/<account_name>/foundationdb:<tag_name>
+# Clone Kanister Github repo locally
+$ git clone https://github.com/kanisterio/kanister.git <path_to_kanister>
+
+# Build FoundationDB docker image
+$ docker build -t <registry>/<repository>/foundationdb:<tag_name> <path_to_kanister>/docker/foundationdb
+$ docker push <registry>/<repository>/foundationdb:<tag_name>
 ```
 
 # Installation
