@@ -39,10 +39,11 @@ func newLocationPullCommand() *cobra.Command {
 			if err := validateCommandArgs(c); err != nil {
 				return err
 			}
-			dataMover, err := dataMoverFromCMD(c)
+			dm, err := dataMoverFromCMD(c)
 			if err != nil {
 				return err
 			}
+			dataMover := NewDataMover(dm, "", kopiaSnapshotFlag(c))
 			ctx := context.Background()
 			return dataMover.Pull(ctx, args[0], pathFlag(c))
 		},
