@@ -101,14 +101,14 @@ func secretsFromRepositoryServerCR(rs *param.RepositoryServer) (string, string, 
 	if err != nil {
 		return "", "", "", errors.Wrap(err, "Error Unmarshalling Certificate")
 	}
-	hostname, userPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(string(userCredJSON))
+	hostname, userPassphrase, err := hostnameAndUserPassphraseFromRepoServer(string(userCredJSON))
 	if err != nil {
 		return "", "", "", errors.Wrap(err, "Error Getting Hostname/User Passphrase from User credentials")
 	}
 	return hostname, userPassphrase, string(certJSON), err
 }
 
-func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
+func hostnameAndUserPassphraseFromRepoServer(userCreds string) (string, string, error) {
 	var userAccessMap map[string]string
 	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
 		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
