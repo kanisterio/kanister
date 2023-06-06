@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
@@ -75,7 +74,6 @@ func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 
 // connectToKopiaRepositoryServer connects to the kopia server with given repository server CR
 func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) (string, error) {
-	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
 	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs)
 	if err != nil {
 		return "", errors.Wrap(err, "Error Retrieving Connection Data from Repository Server")
@@ -87,8 +85,8 @@ func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositorySer
 		hostname,
 		rs.Address,
 		rs.Username,
-		contentCacheMB,
-		metadataCacheMB,
+		rs.ContentCacheMB,
+		rs.MetadataCacheMB,
 	)
 }
 
