@@ -267,6 +267,20 @@ spec:
                             type: object
                           state:
                             type: string
+                          progress:
+                            properties:
+                              progressPercent:
+                                type: string
+                              sizeUploadedB:
+                                type: integer
+                              estimatedTimeSeconds:
+                                type: integer
+                              estimatedUploadSizeB:
+                                type: integer
+                              lastTransitionTime:
+                                type: string
+                                format: date-time
+                            type: object
                         type: object
                       phases:
                         description: Phases are sub-actions an are executed sequentially.
@@ -279,6 +293,20 @@ spec:
                               type: object
                             state:
                               type: string
+                            progress:
+                              properties:
+                                progressPercent:
+                                  type: string
+                                sizeUploadedB:
+                                  type: integer
+                                estimatedTimeSeconds:
+                                  type: integer
+                                estimatedUploadSizeB:
+                                  type: integer
+                                lastTransitionTime:
+                                  type: string
+                                  format: date-time
+                              type: object
                           type: object
                         type: array
                     type: object

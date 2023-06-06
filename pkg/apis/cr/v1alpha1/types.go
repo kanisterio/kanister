@@ -148,6 +148,7 @@ type ActionStatus struct {
 }
 
 // ActionProgress provides information on the progress of an action.
+// Combined progress of all the phases.
 type ActionProgress struct {
 	// RunningPhase represents which phase of the action is being run
 	RunningPhase string `json:"runningPhase,omitempty"`
@@ -187,6 +188,27 @@ type Phase struct {
 	State State `json:"state"`
 	// Output is the map of output artifacts produced by the Blueprint phase.
 	Output map[string]interface{} `json:"output,omitempty"`
+	// Progress represents the phase execution progress.
+	Progress PhaseProgress `json:"progress,omitempty"`
+}
+
+// PhaseProgress represents the execution state of the phase.
+type PhaseProgress struct {
+	// ProgressPercent represents the execution progress in percentage.
+	ProgressPercent string `json:"progressPercent,omitempty"`
+	// SizeUploadedB represents the size of data uploaded in Bytes till now as a part of phase execution.
+	// This field will be empty for phases which do not involve data movement.
+	SizeUploadedB int64 `json:"sizeUploadedB,omitempty"`
+	// EstimatedUploadSizeB represents the total estimated size of data in Bytes
+	// that will be uploaded during the phase execution.
+	EstimatedUploadSizeB int64 `json:"estinatedUploadSizeB,omitempty"`
+	// EstimatedTimeSeconds is the estimated time required in second to upload the
+	// remaining data estimated with EstimatedUploadSizeB.
+	// This field will be empty for phases which do not involve data movement.
+	EstimatedTimeSeconds int64 `json:"estinatedTimeSeconds,omitempty"`
+	// LastTransitionTime represents the last date time when the progress status
+	// was received.
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
 }
 
 // k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
