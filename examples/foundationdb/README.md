@@ -25,6 +25,17 @@ on you cluster.
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
 * Kanister version 0.92.0 with `profiles.cr.kanister.io` CRD installed.
+* Docker CLI installed
+* A docker image containing the required tools to back up FoundationDB. The Dockerfile for the image can be found [here](https://raw.githubusercontent.com/kanisterio/kanister/master/docker/foundationdb/Dockerfile). To build and push the docker image to your docker registry, execute [these](#build-docker-image) steps.
+
+### Build docker image
+- Execute below commands to build and push `foundationdb` docker image to a registry.
+```bash
+# On your local kanister git repo
+$ cd ~/kanister/docker/foundationdb
+$ docker build -t <registry>/<account_name>/foundationdb:<tag_name> .
+$ docker push <registry>/<account_name>/foundationdb:<tag_name>
+```
 
 # Installation
 
@@ -57,6 +68,10 @@ can go ahead with creating the CR for the already created CRD that will spin up 
 cluster.
 
 Please follow below command to create the CR, please make sure to use the local_cluster.yaml file from this repo.
+
+**NOTE:**
+
+Replace `<registry>`, `<account_name>` and `<tag_name>` for the `imageName` value in `./local_cluster.yaml` before running following command.
 
 ```bash
 $ kubectl create -f local_cluster.yaml
