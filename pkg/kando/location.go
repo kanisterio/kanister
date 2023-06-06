@@ -16,6 +16,7 @@ package kando
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -92,15 +93,18 @@ func dataMoverFromCMD(cmd *cobra.Command) (datamover.DataMover, error) {
 			RepositoryServer: repositoryServerRef,
 		}
 	}
+	fmt.Printf("Using datamover: %v\n", dm)
 
 	switch dm.Type {
 	case profileFlagName:
+		fmt.Printf("Using profile: %v\n", dm.Profile)
 		return &datamover.Profile{
 			OutputName: outputNameFlag(cmd),
 			Profile:    dm.Profile,
 			SnapJSON:   kopiaSnapshotFlag(cmd),
 		}, nil
 	case repositoryServerFlagName:
+		fmt.Printf("Using repository server: %v\n", dm.RepositoryServer)
 		return &datamover.RepositoryServer{
 			OutputName:       outputNameFlag(cmd),
 			RepositoryServer: dm.RepositoryServer,

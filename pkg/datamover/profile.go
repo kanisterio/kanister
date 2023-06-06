@@ -16,6 +16,7 @@ package datamover
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -52,16 +53,20 @@ func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) 
 }
 
 func (p *Profile) Push(ctx context.Context, sourcePath, destinationPath string) error {
+	fmt.Printf("Pushing %s to %s\n", sourcePath, destinationPath)
 	if p.Profile.Location.Type == crv1alpha1.LocationTypeKopia {
 		if err := connectToKopiaServer(ctx, p.Profile); err != nil {
 			return err
 		}
 		return kopiaLocationPush(ctx, destinationPath, p.OutputName, sourcePath, p.Profile.Credential.KopiaServerSecret.Password)
 	}
+	fmt.Printf("Reading from %s\n", sourcePath)
 	source, err := sourceReader(sourcePath)
 	if err != nil {
+		fmt.Printf("Error reading from %s: %s\n", sourcePath, err.Error())
 		return err
 	}
+	fmt.Printf("Pushing to %s\n", destinationPath)
 	return locationPush(ctx, p.Profile, destinationPath, source)
 }
 
