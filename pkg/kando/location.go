@@ -119,9 +119,9 @@ func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, err
 		return NewDataMover(dm, "", kopiaSnapshotFlag(cmd)), nil
 	case outputNameFlagName:
 		return NewDataMover(dm, outputNameFlag(cmd), ""), nil
+	default:
+		return nil, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 	}
-
-	return nil, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 }
 
 func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
