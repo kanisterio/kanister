@@ -25,13 +25,17 @@ import (
 )
 
 const (
-	pathFlagName             = "path"
-	profileFlagName          = "profile"
-	repositoryServerFlagName = "repository-server"
+	pathFlagName                                = "path"
+	profileFlagName                             = "profile"
+	repositoryServerFlagName                    = "repository-server"
+	DataMoverTypeProfile          DataMoverType = "profile"
+	DataMoverTypeRepositoryServer DataMoverType = "repository-server"
 )
 
+type DataMoverType string
+
 type DataMoverArgs struct {
-	Type             string
+	Type             DataMoverType
 	Profile          *param.Profile
 	RepositoryServer *param.RepositoryServer
 }
@@ -54,13 +58,13 @@ func newLocationCommand() *cobra.Command {
 // the preferred DataMover as per the arguments passed in kando command
 func NewDataMover(dm *DataMoverArgs, outputName, snapJson string) datamover.DataMover {
 	switch dm.Type {
-	case profileFlagName:
+	case DataMoverTypeProfile:
 		return &datamover.Profile{
 			OutputName: outputName,
 			Profile:    dm.Profile,
 			SnapJSON:   snapJson,
 		}
-	case repositoryServerFlagName:
+	case DataMoverTypeRepositoryServer:
 		return &datamover.RepositoryServer{
 			OutputName:       outputName,
 			RepositoryServer: dm.RepositoryServer,
@@ -98,7 +102,7 @@ func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, err
 			return nil, err
 		}
 		dm = &DataMoverArgs{
-			Type:    profileFlagName,
+			Type:    DataMoverTypeProfile,
 			Profile: profileRef,
 		}
 	}
@@ -109,7 +113,7 @@ func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, err
 			return nil, err
 		}
 		dm = &DataMoverArgs{
-			Type:             repositoryServerFlagName,
+			Type:             DataMoverTypeRepositoryServer,
 			RepositoryServer: repositoryServerRef,
 		}
 	}
