@@ -354,7 +354,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Delete snapshots
 	s.createActionset(ctx, c, pas, "delete", nil)
-
 }
 
 func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
