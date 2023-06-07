@@ -99,6 +99,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
 		}
 
+		// Parent context could already be dead, so removing file within new context
 		defer remover.Remove(context.Background()) //nolint:errcheck
 
 		pod := pc.Pod()

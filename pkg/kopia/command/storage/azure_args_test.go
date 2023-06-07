@@ -17,8 +17,9 @@ package storage
 import (
 	"fmt"
 
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func (s *StorageUtilsSuite) TestAzureArgsUtil(c *check.C) {
