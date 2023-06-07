@@ -15,6 +15,7 @@
 package repositoryserver
 
 import (
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -31,5 +32,9 @@ func NewRepositoryServerUserAccessCredentials(secret *corev1.Secret) *Repository
 }
 
 func (r *RepositoryServerUserAccessCredentials) Validate() error {
+	if len(r.credentials.Data) == 0 {
+		return errors.Wrapf(ErrValidate, "the secret data is empty, it should have atleast one user access credential")
+
+	}
 	return nil
 }

@@ -18,15 +18,20 @@ const (
 	GCPSecretType string = "secrets.kanister.io/gcp"
 )
 
+// ValidateGCPCredentials function is to verify the schema of GCP secrets
+// that need to be provided for kopia commands
+// Required fields:
+// - GCPProjectID
+// - GCPServiceAccountJsonKey
 func ValidateGCPCredentials(secret *v1.Secret) error {
 	if string(secret.Type) != GCPSecretType {
-		return errors.New("Secret is not GCP secret")
+		return errors.Errorf("The type of the secret is incorrect,it is not a GCP compatible secret, the type of the secret should be %s", GCPSecretType)
 	}
 	if _, ok := secret.Data[GCPProjectID]; !ok {
-		return errors.Wrapf(repositoryserver.ErrValidate, "%s field is required in the kopia repository storage location secret %s", GCPProjectID, secret.Name)
+		return errors.Wrapf(repositoryserver.ErrValidate, "%s field is required in the kopia repository storage credentials secret %s", GCPProjectID, secret.Name)
 	}
 	if _, ok := secret.Data[GCPServiceAccountJsonKey]; !ok {
-		return errors.Wrapf(repositoryserver.ErrValidate, "%s field is required in the kopia repository storage location secret %s", GCPServiceAccountJsonKey, secret.Name)
+		return errors.Wrapf(repositoryserver.ErrValidate, "%s field is required in the kopia repository storage credentials secret %s", GCPServiceAccountJsonKey, secret.Name)
 	}
 	return nil
 }

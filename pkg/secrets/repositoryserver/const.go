@@ -42,6 +42,7 @@ const (
 	RegionKey        = "region"
 	SkipSSLVerifyKey = "skipSSLVerify"
 	TypeKey          = "type"
+
 	// Kopia Repository Server secret keys
 	RepoPasswordKey                  = "repo-password"
 	RepositoryServerAdminUsernameKey = "username"
