@@ -35,6 +35,8 @@ func ValidateCredentials(secret *corev1.Secret) error {
 		return ValidateAzureCredentials(secret)
 	case GCPSecretType:
 		return ValidateGCPCredentials(secret)
+	case FilestoreSecretType:
+		return ValidateFileStoreCredentials(secret)
 	default:
 		return errors.Errorf("Unsupported type '%s' for secret '%s:%s'", string(secret.Type), secret.Namespace, secret.Name)
 	}
@@ -58,6 +60,8 @@ func getLocationType(secret *corev1.Secret) (repositoryserver.RepositoryServerSe
 		return repositoryserver.NewAzureLocation(secret), nil
 	case repositoryserver.LocTypeGCS:
 		return repositoryserver.NewGCPLocation(secret), nil
+	case repositoryserver.LocTypeFilestore:
+		return repositoryserver.NewFileStoreLocation(secret), nil
 	default:
 		return nil, errors.Errorf("Unsupported location type '%s' for secret '%s:%s'", locationType, secret.Namespace, secret.Name)
 	}
