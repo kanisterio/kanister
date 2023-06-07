@@ -1,16 +1,18 @@
 apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
-  name: mysql-blueprint-2
+  name: mysql-blueprint
 actions:
   backup:
     outputArtifacts:
-      mysqlCloudDump:
-        keyValue:
-          s3path: "{{ .Phases.dumpToObjectStore.Output.s3path }}"
+      mysqlBackup:
+        # Capture the kopia snapshot information for subsequent actions
+        # The information includes the kopia snapshot ID which is essential for restore and delete to succeed
+        # `kopiaOutput` is the name provided to kando using `--output-name` flag
+        kopiaSnapshot: "{{ .Phases.dumpToStore.Output.kopiaOutput }}"
     phases:
       - func: KubeTask
-        name: dumpToObjectStore
+        name: dumpToStore
         objects:
           mysqlSecret:
             kind: Secret
@@ -27,16 +29,18 @@ actions:
             - pipefail
             - -c
             - |
-              s3_path="/mysql-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
-              root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-              mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases | gzip - | kando location push --repository-server '{{ toJson .RepositoryServer }}' -
-              kando output s3path ${s3_path}
+              backup_file_path="dump.sql"
+              root_password="{{ index .Phases.dumpToStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+              dump_cmd="mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases"
+              ${dump_cmd} | kando location push --repository-server '{{ toJson .RepositoryServer }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
     inputArtifactNames:
-      - mysqlCloudDump
+      # The kopia snapshot info created in backup phase can be used here
+      # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`
+      - mysqlBackup
     phases:
       - func: KubeTask
-        name: restoreFromBlobStore
+        name: restoreFromStore
         objects:
           mysqlSecret:
             kind: Secret
@@ -53,15 +57,19 @@ actions:
             - pipefail
             - -c
             - |
-              s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
-              root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-              kando location pull --repository-server '{{ toJson .RepositoryServer }}' - | gunzip | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
+              backup_file_path="dump.sql"
+              kopia_snap='{{ .ArtifactsIn.mysqlBackup.KopiaSnapshot }}'
+              root_password="{{ index .Phases.restoreFromStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+              restore_cmd="mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}"
+              kando location pull --repository-server '{{ toJson .RepositoryServer }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | ${restore_cmd}
   delete:
     inputArtifactNames:
-      - mysqlCloudDump
+      # The kopia snapshot info created in backup phase can be used here
+      # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`
+      - mysqlBackup
     phases:
       - func: KubeTask
-        name: deleteFromBlobStore
+        name: deleteFromStore
         args:
           image: ghcr.io/kanisterio/mysql-sidecar:0.93.0
           namespace: "{{ .Namespace.Name }}"
@@ -73,5 +81,6 @@ actions:
             - pipefail
             - -c
             - |
-              s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
-              kando location delete --repository-server '{{ toJson .RepositoryServer }}'
+              backup_file_path="dump.sql"
+              kopia_snap='{{ .ArtifactsIn.mysqlBackup.KopiaSnapshot }}'
+              kando location delete --repository-server '{{ toJson .RepositoryServer }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"
