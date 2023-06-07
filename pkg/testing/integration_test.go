@@ -352,7 +352,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		c.Assert(count, Equals, testEntries)
 	}
 
-	// Delete snapshots for profile based blueprints
+	// Delete snapshots
 	s.createActionset(ctx, c, pas, "delete", nil)
 
 }
