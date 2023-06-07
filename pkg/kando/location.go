@@ -59,17 +59,9 @@ func newLocationCommand() *cobra.Command {
 func NewDataMover(dm *DataMoverArgs, outputName, snapJson string) datamover.DataMover {
 	switch dm.Type {
 	case DataMoverTypeProfile:
-		return &datamover.Profile{
-			OutputName: outputName,
-			Profile:    dm.Profile,
-			SnapJSON:   snapJson,
-		}
+		return datamover.NewProfileDataMover(dm.Profile, outputName, snapJson)
 	case DataMoverTypeRepositoryServer:
-		return &datamover.RepositoryServer{
-			OutputName:       outputName,
-			RepositoryServer: dm.RepositoryServer,
-			SnapJSON:         snapJson,
-		}
+		return datamover.NewRepositoryServerDataMover(dm.RepositoryServer, outputName, snapJson)
 	default:
 		return nil
 	}
