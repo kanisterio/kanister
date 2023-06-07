@@ -26,10 +26,13 @@ on you cluster.
 * PV support on the underlying infrastructure.
 * Kanister version 0.92.0 with `profiles.cr.kanister.io` CRD installed.
 * Docker CLI installed
-* A docker image containing the required tools to back up FoundationDB. The Dockerfile for the image can be found [here](https://raw.githubusercontent.com/kanisterio/kanister/master/docker/foundationdb/Dockerfile). To build and push the docker image to your docker registry, execute [these](#build-docker-image) steps.
+* A docker image containing the required tools to back up FoundationDB.
+The Dockerfile for the image can be found [here](https://raw.githubusercontent.com/kanisterio/kanister/master/docker/foundationdb/Dockerfile).
+To build and push the docker image to your registry, execute [these](#build-docker-image) steps.
 
 ### Build docker image
-- Execute below commands to build and push `foundationdb` docker image to a registry.
+
+Execute the commands below to build and push the `foundationdb` docker image to a registry.
 ```bash
 # Clone Kanister Github repo locally
 $ git clone https://github.com/kanisterio/kanister.git <path_to_kanister>
