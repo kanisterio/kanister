@@ -25,59 +25,67 @@ import (
 )
 
 type Profile struct {
-	OutputName string
-	Profile    *param.Profile
-	SnapJSON   string
+	outputName string
+	profile    *param.Profile
+	snapJSON   string
 }
 
 func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) error {
-	if p.Profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		if p.SnapJSON == "" {
+	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
+		if p.snapJSON == "" {
 			return errors.New("kopia snapshot information is required to pull data using kopia")
 		}
-		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.SnapJSON)
+		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.snapJSON)
 		if err != nil {
 			return err
 		}
-		if err = connectToKopiaServer(ctx, p.Profile); err != nil {
+		if err = connectToKopiaServer(ctx, p.profile); err != nil {
 			return err
 		}
-		return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, p.Profile.Credential.KopiaServerSecret.Password)
+		return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
 	}
 	target, err := targetWriter(sourcePath)
 	if err != nil {
 		return err
 	}
-	return locationPull(ctx, p.Profile, destinationPath, target)
+	return locationPull(ctx, p.profile, destinationPath, target)
 }
 
 func (p *Profile) Push(ctx context.Context, sourcePath, destinationPath string) error {
-	if p.Profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		if err := connectToKopiaServer(ctx, p.Profile); err != nil {
+	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
+		if err := connectToKopiaServer(ctx, p.profile); err != nil {
 			return err
 		}
-		return kopiaLocationPush(ctx, destinationPath, p.OutputName, sourcePath, p.Profile.Credential.KopiaServerSecret.Password)
+		return kopiaLocationPush(ctx, destinationPath, p.outputName, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
 	}
 	source, err := sourceReader(sourcePath)
 	if err != nil {
 		return err
 	}
-	return locationPush(ctx, p.Profile, destinationPath, source)
+	return locationPush(ctx, p.profile, destinationPath, source)
 }
 
 func (p *Profile) Delete(ctx context.Context, destinationPath string) error {
-	if p.Profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		if p.SnapJSON == "" {
+	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
+		if p.snapJSON == "" {
 			return errors.New("kopia snapshot information is required to delete data using kopia")
 		}
-		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.SnapJSON)
+		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.snapJSON)
 		if err != nil {
 			return err
 		}
-		if err = connectToKopiaServer(ctx, p.Profile); err != nil {
+		if err = connectToKopiaServer(ctx, p.profile); err != nil {
 			return err
 		}
-		return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, p.Profile.Credential.KopiaServerSecret.Password)
+		return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, p.profile.Credential.KopiaServerSecret.Password)
 	}
-	return locationDelete(ctx, p.Profile, destinationPath)
+	return locationDelete(ctx, p.profile, destinationPath)
+}
+
+func NewProfileDataMover(profile *param.Profile, outputName, snapJson string) *Profile {
+	return &Profile{
+		outputName: outputName,
+		profile:    profile,
+		snapJSON:   snapJson,
+	}
 }

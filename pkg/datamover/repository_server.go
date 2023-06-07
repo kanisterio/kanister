@@ -16,7 +16,6 @@ package datamover
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
@@ -24,20 +23,20 @@ import (
 )
 
 type RepositoryServer struct {
-	OutputName       string
-	RepositoryServer *param.RepositoryServer
-	SnapJSON         string
+	outputName       string
+	repositoryServer *param.RepositoryServer
+	snapJSON         string
 }
 
 func (rs *RepositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
-	if rs.SnapJSON == "" {
+	if rs.snapJSON == "" {
 		return errors.New("kopia snapshot information is required to pull data using kopia")
 	}
-	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.SnapJSON)
+	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.snapJSON)
 	if err != nil {
 		return err
 	}
-	password, err := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
+	password, err := connectToKopiaRepositoryServer(ctx, rs.repositoryServer)
 	if err != nil {
 		return err
 	}
@@ -45,24 +44,32 @@ func (rs *RepositoryServer) Pull(ctx context.Context, sourcePath, destinationPat
 }
 
 func (rs *RepositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
-	password, err := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
+	password, err := connectToKopiaRepositoryServer(ctx, rs.repositoryServer)
 	if err != nil {
 		return err
 	}
-	return kopiaLocationPush(ctx, destinationPath, rs.OutputName, sourcePath, password)
+	return kopiaLocationPush(ctx, destinationPath, rs.outputName, sourcePath, password)
 }
 
 func (rs *RepositoryServer) Delete(ctx context.Context, destinationPath string) error {
-	if rs.SnapJSON == "" {
+	if rs.snapJSON == "" {
 		return errors.New("kopia snapshot information is required to delete data using kopia")
 	}
-	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.SnapJSON)
+	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.snapJSON)
 	if err != nil {
 		return err
 	}
-	password, err := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
+	password, err := connectToKopiaRepositoryServer(ctx, rs.repositoryServer)
 	if err != nil {
 		return err
 	}
 	return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, password)
+}
+
+func NewRepositoryServerDataMover(repositoryServer *param.RepositoryServer, outputName, snapJson string) *RepositoryServer {
+	return &RepositoryServer{
+		outputName:       outputName,
+		repositoryServer: repositoryServer,
+		snapJSON:         snapJson,
+	}
 }
