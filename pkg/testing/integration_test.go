@@ -352,13 +352,9 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		c.Assert(count, Equals, testEntries)
 	}
 
-	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
-		// Delete snapshots for repository server based blueprints
-		s.createDeleteActionsetForRepositoryServer(ctx, c, pas, "delete", nil)
-	} else {
-		// Delete snapshots for profile based blueprints
-		s.createActionset(ctx, c, pas, "delete", nil)
-	}
+	// Delete snapshots for profile based blueprints
+	s.createActionset(ctx, c, pas, "delete", nil)
+
 }
 
 func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
@@ -570,38 +566,6 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 				Namespace:  "",
 			}
 		}
-		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
-	default:
-		c.Errorf("Invalid action %s while creating ActionSet", action)
-	}
-
-	// Wait for the ActionSet to complete.
-	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		as, err = s.crCli.ActionSets(kontroller.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
-		switch {
-		case err != nil, as.Status == nil:
-			return false, err
-		case as.Status.State == crv1alpha1.StateFailed:
-			return true, errors.Errorf("Actionset failed: %#v", as.Status)
-		case as.Status.State == crv1alpha1.StateComplete:
-			return true, nil
-		}
-		return false, nil
-	})
-	c.Assert(err, IsNil)
-	return as.GetName()
-}
-
-// createDeleteActionsetForRepositoryServer creates delete actionset and wait for actionset to complete
-func (s *IntegrationSuite) createDeleteActionsetForRepositoryServer(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
-	var err error
-	switch action {
-	case "delete":
-		// object of delete is statefulset of actionset for RepositoryServer based functions.
-		as, err = restoreActionSetSpecs(as, action)
-		c.Assert(err, IsNil)
-		as.Spec.Actions[0].Options = options
 		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 	default:
