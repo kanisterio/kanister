@@ -22,6 +22,7 @@ deployment "time-logger" created
 Create Kopia Repository Server CR if not created already
 
 - Create Kopia Repository using S3 as the location storage
+
 ```bash
 $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
 --log-dir=/tmp/kopia-cache repository create --no-check-for-updates \
