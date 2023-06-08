@@ -23,8 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -54,40 +52,6 @@ func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password
 	default:
 		return snapshot.ReadFile(ctx, backupID, targetPath, password)
 	}
-}
-
-// connectToKopiaServer connects to the kopia server with given creds
-func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
-	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	return repository.ConnectToAPIServer(
-		ctx,
-		kp.Credential.KopiaServerSecret.Cert,
-		kp.Credential.KopiaServerSecret.Password,
-		kp.Credential.KopiaServerSecret.Hostname,
-		kp.Location.Endpoint,
-		kp.Credential.KopiaServerSecret.Username,
-		contentCacheSize,
-		metadataCacheSize,
-	)
-}
-
-// connectToKopiaRepositoryServer connects to the kopia server with given repository server CR
-func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) (string, error) {
-	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs)
-	if err != nil {
-		return "", errors.Wrap(err, "Error Retrieving Connection Data from Repository Server")
-	}
-	return userPassphrase, repository.ConnectToAPIServer(
-		ctx,
-		certData,
-		userPassphrase,
-		hostname,
-		rs.Address,
-		rs.Username,
-		rs.ContentCacheMB,
-		rs.MetadataCacheMB,
-	)
 }
 
 func secretsFromRepositoryServerCR(rs *param.RepositoryServer) (string, string, string, error) {
