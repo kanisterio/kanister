@@ -29,46 +29,46 @@ type RepositoryServer struct {
 	snapJSON         string
 }
 
-func (repoServer *RepositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
-	if repoServer.snapJSON == "" {
+func (rs *RepositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
+	if rs.snapJSON == "" {
 		return errors.New("kopia snapshot information is required to pull data using kopia")
 	}
-	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(repoServer.snapJSON)
+	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.snapJSON)
 	if err != nil {
 		return err
 	}
-	password, err := repoServer.connectToKopiaRepositoryServer(ctx, repoServer.repositoryServer)
+	password, err := rs.connectToKopiaRepositoryServer(ctx)
 	if err != nil {
 		return err
 	}
 	return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, password)
 }
 
-func (repoServer *RepositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
-	password, err := repoServer.connectToKopiaRepositoryServer(ctx, repoServer.repositoryServer)
+func (rs *RepositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
+	password, err := rs.connectToKopiaRepositoryServer(ctx)
 	if err != nil {
 		return err
 	}
-	return kopiaLocationPush(ctx, destinationPath, repoServer.outputName, sourcePath, password)
+	return kopiaLocationPush(ctx, destinationPath, rs.outputName, sourcePath, password)
 }
 
-func (repoServer *RepositoryServer) Delete(ctx context.Context, destinationPath string) error {
-	if repoServer.snapJSON == "" {
+func (rs *RepositoryServer) Delete(ctx context.Context, destinationPath string) error {
+	if rs.snapJSON == "" {
 		return errors.New("kopia snapshot information is required to delete data using kopia")
 	}
-	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(repoServer.snapJSON)
+	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.snapJSON)
 	if err != nil {
 		return err
 	}
-	password, err := repoServer.connectToKopiaRepositoryServer(ctx, repoServer.repositoryServer)
+	password, err := rs.connectToKopiaRepositoryServer(ctx)
 	if err != nil {
 		return err
 	}
 	return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, password)
 }
 
-func (repoServer *RepositoryServer) connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) (string, error) {
-	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs)
+func (rs *RepositoryServer) connectToKopiaRepositoryServer(ctx context.Context) (string, error) {
+	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs.repositoryServer)
 	if err != nil {
 		return "", errors.Wrap(err, "Error Retrieving Connection Data from Repository Server")
 	}
@@ -77,10 +77,10 @@ func (repoServer *RepositoryServer) connectToKopiaRepositoryServer(ctx context.C
 		certData,
 		userPassphrase,
 		hostname,
-		rs.Address,
-		rs.Username,
-		rs.ContentCacheMB,
-		rs.MetadataCacheMB,
+		rs.repositoryServer.Address,
+		rs.repositoryServer.Username,
+		rs.repositoryServer.ContentCacheMB,
+		rs.repositoryServer.MetadataCacheMB,
 	)
 }
 

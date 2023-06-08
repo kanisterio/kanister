@@ -19,7 +19,7 @@ actions:
             name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
             namespace: '{{ .StatefulSet.Namespace }}'
         args:
-          image: r4rajat/mysql-sidecar:v13
+          image: r4rajat/mysql-sidecar:v15
           namespace: "{{ .StatefulSet.Namespace }}"
           command:
             - bash
@@ -47,7 +47,7 @@ actions:
             name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
             namespace: '{{ .StatefulSet.Namespace }}'
         args:
-          image: r4rajat/mysql-sidecar:v13
+          image: r4rajat/mysql-sidecar:v15
           namespace: "{{ .StatefulSet.Namespace }}"
           command:
             - bash
@@ -71,7 +71,7 @@ actions:
       - func: KubeTask
         name: deleteFromStore
         args:
-          image: r4rajat/mysql-sidecar:v13
+          image: r4rajat/mysql-sidecar:v15
           namespace: "{{ .Namespace.Name }}"
           command:
             - bash

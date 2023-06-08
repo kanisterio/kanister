@@ -41,7 +41,7 @@ func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) 
 		if err != nil {
 			return err
 		}
-		if err = p.connectToKopiaRepositoryServer(ctx, p.profile); err != nil {
+		if err = p.connectToKopiaRepositoryServer(ctx); err != nil {
 			return err
 		}
 		return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
@@ -55,7 +55,7 @@ func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) 
 
 func (p *Profile) Push(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		if err := p.connectToKopiaRepositoryServer(ctx, p.profile); err != nil {
+		if err := p.connectToKopiaRepositoryServer(ctx); err != nil {
 			return err
 		}
 		return kopiaLocationPush(ctx, destinationPath, p.outputName, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
@@ -76,7 +76,7 @@ func (p *Profile) Delete(ctx context.Context, destinationPath string) error {
 		if err != nil {
 			return err
 		}
-		if err = p.connectToKopiaRepositoryServer(ctx, p.profile); err != nil {
+		if err = p.connectToKopiaRepositoryServer(ctx); err != nil {
 			return err
 		}
 		return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, p.profile.Credential.KopiaServerSecret.Password)
@@ -84,16 +84,16 @@ func (p *Profile) Delete(ctx context.Context, destinationPath string) error {
 	return locationDelete(ctx, p.profile, destinationPath)
 }
 
-func (p *Profile) connectToKopiaRepositoryServer(ctx context.Context, kp *param.Profile) error {
-	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
+func (p *Profile) connectToKopiaRepositoryServer(ctx context.Context) error {
+	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(p.profile.Credential.KopiaServerSecret.ConnectOptions)
+	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(p.profile.Credential.KopiaServerSecret.ConnectOptions)
 	return repository.ConnectToAPIServer(
 		ctx,
-		kp.Credential.KopiaServerSecret.Cert,
-		kp.Credential.KopiaServerSecret.Password,
-		kp.Credential.KopiaServerSecret.Hostname,
-		kp.Location.Endpoint,
-		kp.Credential.KopiaServerSecret.Username,
+		p.profile.Credential.KopiaServerSecret.Cert,
+		p.profile.Credential.KopiaServerSecret.Password,
+		p.profile.Credential.KopiaServerSecret.Hostname,
+		p.profile.Location.Endpoint,
+		p.profile.Credential.KopiaServerSecret.Username,
 		contentCacheSize,
 		metadataCacheSize,
 	)
