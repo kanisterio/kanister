@@ -1,4 +1,4 @@
-# Walkthrough of Time Log
+# Protecting TimeLog application
 
 This is an example of using Kanister to protect a simple application called Time Log. This application is contrived but useful for demonstrating Kanister's features. Every second it appends the current time to a log file.
 
