@@ -43,8 +43,7 @@ func newLocationPullCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ctx := context.Background()
-			return dataMover.Pull(ctx, args[0], pathFlag(c))
+			return dataMover.Pull(context.Background(), args[0], pathFlag(c))
 		},
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")

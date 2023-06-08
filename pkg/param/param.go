@@ -271,6 +271,8 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 	}, nil
 }
 
+const ClusterLocalDomain = "svc.cluster.local"
+
 func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*RepositoryServer, error) {
 	if ref == nil {
 		log.Debug().Print("Executing the action without a repository-server")
@@ -296,7 +298,7 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Fetching Repository Server Service")
 	}
-	repositoryServerAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", repositoryServerService.Name, repositoryServerService.Namespace, repositoryServerService.Spec.Ports[0].Port)
+	repositoryServerAddress := fmt.Sprintf("https://%s.%s.%s:%d", repositoryServerService.Name, repositoryServerService.Namespace, ClusterLocalDomain, repositoryServerService.Spec.Ports[0].Port)
 	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
 	if r.Spec.Repository.CacheSizeSettings.Content != "" {
 		contentCacheMB, err = strconv.Atoi(r.Spec.Repository.CacheSizeSettings.Content)
