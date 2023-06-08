@@ -76,7 +76,7 @@ Please follow below command to create the CR, please make sure to use the local_
 
 **NOTE:**
 
-Replace `<registry>`, `<account_name>` and `<tag_name>` for the `imageName` value in `./local_cluster.yaml` before running following command.
+Replace `<registry>`, `<repository>` and `<tag_name>` for the `imageName` value in `./local_cluster.yaml` before running the following command.
 
 ```bash
 $ kubectl create -f local_cluster.yaml
