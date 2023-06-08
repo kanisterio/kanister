@@ -2,6 +2,7 @@
 
 // Package v1alpha1 is the v1alpha1 version of the API.
 // +groupName=cr.kanister.io
+// +versionName=v1alpha1
 package v1alpha1
 
 // While generating client files, we need code-generator package to be installed
