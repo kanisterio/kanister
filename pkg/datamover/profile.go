@@ -16,6 +16,8 @@ package datamover
 
 import (
 	"context"
+	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 
 	"github.com/pkg/errors"
 
@@ -39,7 +41,7 @@ func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) 
 		if err != nil {
 			return err
 		}
-		if err = connectToKopiaServer(ctx, p.profile); err != nil {
+		if err = p.connectToKopiaRepositoryServer(ctx, p.profile); err != nil {
 			return err
 		}
 		return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
@@ -53,7 +55,7 @@ func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) 
 
 func (p *Profile) Push(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		if err := connectToKopiaServer(ctx, p.profile); err != nil {
+		if err := p.connectToKopiaRepositoryServer(ctx, p.profile); err != nil {
 			return err
 		}
 		return kopiaLocationPush(ctx, destinationPath, p.outputName, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
@@ -74,12 +76,27 @@ func (p *Profile) Delete(ctx context.Context, destinationPath string) error {
 		if err != nil {
 			return err
 		}
-		if err = connectToKopiaServer(ctx, p.profile); err != nil {
+		if err = p.connectToKopiaRepositoryServer(ctx, p.profile); err != nil {
 			return err
 		}
 		return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, p.profile.Credential.KopiaServerSecret.Password)
 	}
 	return locationDelete(ctx, p.profile, destinationPath)
+}
+
+func (p *Profile) connectToKopiaRepositoryServer(ctx context.Context, kp *param.Profile) error {
+	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
+	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
+	return repository.ConnectToAPIServer(
+		ctx,
+		kp.Credential.KopiaServerSecret.Cert,
+		kp.Credential.KopiaServerSecret.Password,
+		kp.Credential.KopiaServerSecret.Hostname,
+		kp.Location.Endpoint,
+		kp.Credential.KopiaServerSecret.Username,
+		contentCacheSize,
+		metadataCacheSize,
+	)
 }
 
 func NewProfileDataMover(profile *param.Profile, outputName, snapJson string) *Profile {
