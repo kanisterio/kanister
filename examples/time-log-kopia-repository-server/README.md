@@ -10,13 +10,10 @@ The following command deploys the example Time Log application in `time-log` nam
 
 ```bash
 $ kubectl create namespace time-log
-```
 
-```bash
-# Create a deployment whose log we'll ship to s3 using kopia repository server
+# Create a deployment whose log we'll ship to s3 using Kanister functions (that would eventually use Kopia repository server)
 $ kubectl apply -f ./examples/time-log/time-logger-deployment.yaml -n time-log
 deployment "time-logger" created
-```
 
 ### 2. Protect the Application
 
