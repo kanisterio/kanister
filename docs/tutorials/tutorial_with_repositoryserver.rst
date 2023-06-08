@@ -461,6 +461,8 @@ perform backup using kopia repository server.
 
 .. code-block:: bash
 
+  $ kubectl describe actionsets.cr.kanister.io backup-rlcnp -n kanister
+
   Events:
   Type    Reason           Age   From                 Message
   ----    ------           ----  ----                 -------
