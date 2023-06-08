@@ -3,12 +3,12 @@
 # Declare variables to be passed into your templates.
 image:
   repository: ghcr.io/kanisterio/controller
-  tag: 0.91.0
+  tag: 0.92.0
   pullPolicy: IfNotPresent
 repositoryServerControllerImage:
   registry: ghcr.io/kanisterio
   name: repo-server-controller
-  tag: 0.91.0
+  tag: 0.92.0
   pullPolicy: IfNotPresent
 rbac:
   create: true
