@@ -14,6 +14,7 @@ $ kubectl create namespace time-log
 # Create a deployment whose log we'll ship to s3 using Kanister functions (that would eventually use Kopia repository server)
 $ kubectl apply -f ./examples/time-log/time-logger-deployment.yaml -n time-log
 deployment "time-logger" created
+```
 
 ### 2. Protect the Application
 
@@ -52,8 +53,6 @@ kind: Secret
 metadata:
    name: s3-creds
    namespace: kanister
-   labels:
-      repo.kanister.io/target-namespace: monitoring
 type: secrets.kanister.io/aws
 data:
    # required: base64 encoded value for key with proper permissions for the bucket
@@ -75,8 +74,6 @@ kind: Secret
 metadata:
    name: s3-location
    namespace: kanister
-   labels:
-      repo.kanister.io/target-namespace: monitoring
 type: Opaque
 data:
    # required: specify the type of the store
@@ -87,12 +84,6 @@ data:
    path: <base_64_encoded_prefix_provided_when_creating_kopia_repository>
    # required, if supported by the provider
    region: <base64_encoded_s3_bucket_region>
-   # optional: if set to true, do not verify SSL cert.
-   # Default, when omitted, is false
-   #skipSSLVerify: false
-   # required: if type is `file-store`
-   # optional, otherwise
-   #claimName: store-pvc
 ```
 
 ```
@@ -121,12 +112,6 @@ vi repo-server-cr.yaml
 apiVersion: cr.kanister.io/v1alpha1
 kind: RepositoryServer
 metadata:
-  labels:
-    app.kubernetes.io/name: repositoryserver
-    app.kubernetes.io/instance: repositoryserver-sample
-    app.kubernetes.io/part-of: kanister
-    app.kuberentes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: kanister
   name: kopia-repo-server-1
   namespace: kanister
 spec:
@@ -161,19 +146,21 @@ spec:
 ```bash
 $ kubectl create -f repo-server-cr.yaml -n kanister
 ```
-**NOTE:**
-
-Make Sure the Repository Server is in ServerReady State before creating actionsets.
-You could check the status of the Repository Server CR by running following command
-```bash
-$ kubectl get repositoryservers.cr.kanister.io kopia-repo-server-1 -n kanister -o yaml
-```
 
 **NOTE:**
 
 The above command will configure a kopia repository server, which manages artifacts resulting from Kanister
 data operations such as backup.
 This is stored as a `repositoryservers.cr.kanister.io` *CustomResource (CR)* which is then referenced in Kanister ActionSets.
+
+**NOTE:**
+
+Make Sure the Repository Server is in ServerReady State before creating actionsets.
+You could check the status of the Repository Server CR by running following command
+
+```bash
+$ kubectl get repositoryservers.cr.kanister.io kopia-repo-server-1 -n kanister -o yaml
+```
 
 #### Create Blueprint
 
