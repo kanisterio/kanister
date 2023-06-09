@@ -25,10 +25,13 @@ import (
 )
 
 const (
-	pathFlagName                                = "path"
-	profileFlagName                             = "profile"
-	repositoryServerFlagName                    = "repository-server"
-	DataMoverTypeProfile          DataMoverType = "profile"
+	pathFlagName             = "path"
+	profileFlagName          = "profile"
+	repositoryServerFlagName = "repository-server"
+
+	// DataMoverTypeProfile is used to specify that the DataMover is of type Profile
+	DataMoverTypeProfile DataMoverType = "profile"
+	// DataMoverTypeRepositoryServer is used to specify that the DataMover is of type RepositoryServer
 	DataMoverTypeRepositoryServer DataMoverType = "repository-server"
 )
 
