@@ -23,6 +23,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
+// Check that RepositoryServer implements DataMover interface
+var _ DataMover = (*RepositoryServer)(nil)
+
 type RepositoryServer struct {
 	outputName       string
 	repositoryServer *param.RepositoryServer

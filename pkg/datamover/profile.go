@@ -26,6 +26,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
+// Check that Profile implements DataMover interface
+var _ DataMover = (*Profile)(nil)
+
 type Profile struct {
 	outputName string
 	profile    *param.Profile
