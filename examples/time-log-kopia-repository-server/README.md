@@ -226,6 +226,7 @@ $ kubectl --namespace kanister get actionset delete-s3backup-f4c4q-2jj9n -oyaml
 ### Troubleshooting
 
 If you run into any issues with the above commands, you can check the logs of the controller using:
+
 ```bash
 $ kubectl --namespace kanister logs -l app=kanister-operator
 ```
