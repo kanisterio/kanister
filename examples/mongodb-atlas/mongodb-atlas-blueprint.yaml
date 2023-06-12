@@ -1,0 +1,204 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mongodb-atlas-blueprint
+actions:
+  backup:
+    outputArtifacts:
+      backupOutput:
+        keyValue:
+          snapshotId: "{{ .Phases.mongoBackup.Output.snapshotId }}"
+          appNamespace: "{{ .Object.metadata.namespace }}"
+          secretName: "{{ .Object.metadata.name }}"
+    phases:
+    - func: KubeTask
+      name: mongoBackup
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            cat >/root/.config/atlascli/config.toml <<EOL
+            [default]
+            org_id = '{{ .Object.data.orgid | toString | b64dec }}'
+            output = 'json'
+            private_api_key = '{{ .Object.data.privatekey | toString | b64dec }}'
+            project_id = '{{ .Object.data.projectid | toString | b64dec }}'
+            public_api_key = '{{ .Object.data.publickey | toString | b64dec }}'
+            service = 'cloud'
+            EOL
+            atlas backups snapshots create {{ .Object.data.clustername | toString | b64dec }} \
+            --desc "MongoDB Atlas snapshot" -o json > output.json
+            snapshotId=$(jq -r ".id" output.json)
+            kando output snapshotId ${snapshotId}
+
+    - func: KubeTask
+      name: waitForBackupToComplete
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            cat >/root/.config/atlascli/config.toml <<EOL
+            [default]
+            org_id = '{{ .Object.data.orgid | toString | b64dec }}'
+            output = 'json'
+            private_api_key = '{{ .Object.data.privatekey | toString | b64dec }}'
+            project_id = '{{ .Object.data.projectid | toString | b64dec }}'
+            public_api_key = '{{ .Object.data.publickey | toString | b64dec }}'
+            service = 'cloud'
+            EOL
+            isCreated=false
+            isFailed=false
+            counter=0
+            while [[ $isCreated != true && $isFailed == false ]];
+            do
+              atlas backups snapshots describe {{ .Phases.mongoBackup.Output.snapshotId }} \
+              --clusterName {{ .Object.data.clustername | toString | b64dec }} -o json > output.json
+              isCompleted=$(jq -r ".status" output.json)
+              if [ $isCompleted == "failed" ]; then
+                exit 1
+              fi
+              if [ $isCompleted == "completed" ]; then
+                exit 0
+              fi
+              sleep 30
+              if [[ $counter -ge 40 ]]; then
+                echo "Timed out waiting for backup completion."
+                exit 1
+              fi
+              counter=$((counter+1))
+            done
+
+  restore:
+    inputArtifactNames:
+      - backupOutput
+    phases:
+    - func: KubeTask
+      name: mongoRestore
+      objects:
+        mongoAtlasSecret:
+          kind: Secret
+          name: '{{ .ArtifactsIn.backupOutput.KeyValue.secretName }}'
+          namespace: '{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}'
+      args:
+        namespace: "{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}"
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            cat >/root/.config/atlascli/config.toml <<EOL
+            [default]
+            org_id = '{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "orgid" | toString }}'
+            output = 'json'
+            private_api_key = '{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "privatekey" | toString }}'
+            project_id = '{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "projectid" | toString }}'
+            public_api_key = '{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "publickey" | toString }}'
+            service = 'cloud'
+            EOL
+            snapshot_id={{ .ArtifactsIn.backupOutput.KeyValue.snapshotId }}
+            cluster_name='{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "clustername" | toString }}'
+            target_cluster_name=${cluster_name}
+            target_project_id='{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "projectid" | toString }}'
+            atlas backup restore start automated --clusterName ${cluster_name} \
+            --snapshotId ${snapshot_id} --targetClusterName ${target_cluster_name} \
+            --targetProjectId ${target_project_id} -o json > output.json
+            restore_id=$(jq -r ".id" output.json)
+            kando output restoreId ${restore_id}
+
+    - func: KubeTask
+      name: waitForRestoreToComplete
+      args:
+        namespace: "{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}"
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            cat >/root/.config/atlascli/config.toml <<EOL
+            [default]
+            org_id = '{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "orgid" | toString }}'
+            output = 'json'
+            private_api_key = '{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "privatekey" | toString }}'
+            project_id = '{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "projectid" | toString }}'
+            public_api_key = '{{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "publickey" | toString }}'
+            service = 'cloud'
+            EOL
+            isCreated=false
+            isFailed=false
+            counter=0
+            while [[ $isCreated != true && $isFailed == false ]];
+            do
+              atlas backups restores describe {{ .Phases.mongoRestore.Output.restoreId }}\
+              --clusterName {{ index .Phases.mongoRestore.Secrets.mongoAtlasSecret.Data "clustername" | toString }}\
+              -o json > output.json
+              isFinished=$(jq -r ".finishedAt" output.json)
+              isRestoreFailed=$(jq -r ".failed" output.json)
+              if [ $isRestoreFailed == "true" ]; then
+                exit 1
+              fi
+              if [ $isRestoreFailed == "false" ] && [ $isFinished != "null" ]; then
+                exit 0
+              fi
+              sleep 30
+              if [[ $counter -ge 40 ]]; then
+                echo "Timed out waiting for restore completion."
+                exit 1
+              fi
+              counter=$((counter+1))
+            done
+
+  delete:
+    inputArtifactNames:
+      - backupOutput
+    phases:
+    - func: KubeTask
+      name: deleteMongoBackup
+      objects:
+        mongoAtlasSecret:
+          kind: Secret
+          name: '{{ .ArtifactsIn.backupOutput.KeyValue.secretName }}'
+          namespace: '{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}'
+      args:
+        namespace: "{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}"
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            cat >/root/.config/atlascli/config.toml <<EOL
+            [default]
+            org_id = '{{ index .Phases.deleteMongoBackup.Secrets.mongoAtlasSecret.Data "orgid" | toString }}'
+            output = 'json'
+            private_api_key = '{{ index .Phases.deleteMongoBackup.Secrets.mongoAtlasSecret.Data "privatekey" | toString }}'
+            project_id = '{{ index .Phases.deleteMongoBackup.Secrets.mongoAtlasSecret.Data "projectid" | toString }}'
+            public_api_key = '{{ index .Phases.deleteMongoBackup.Secrets.mongoAtlasSecret.Data "publickey" | toString }}'
+            service = 'cloud'
+            EOL
+            atlas backups snapshots delete {{ .ArtifactsIn.backupOutput.KeyValue.snapshotId }} \
+            --clusterName {{ index .Phases.deleteMongoBackup.Secrets.mongoAtlasSecret.Data "clustername" | toString }} --force

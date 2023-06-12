@@ -18,6 +18,8 @@ import (
 	"fmt"
 
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
@@ -29,11 +31,11 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		{
 			params: &StorageCommandParams{
 				Location: map[string][]byte{
-					bucketKey:        []byte("test-bucket"),
-					prefixKey:        []byte("test-prefix"),
-					regionKey:        []byte("test-region"),
-					skipSSLVerifyKey: []byte("true"),
-					typeKey:          []byte("s3"),
+					repositoryserver.BucketKey:        []byte("test-bucket"),
+					repositoryserver.PrefixKey:        []byte("test-prefix"),
+					repositoryserver.RegionKey:        []byte("test-region"),
+					repositoryserver.SkipSSLVerifyKey: []byte("true"),
+					repositoryserver.TypeKey:          []byte("s3"),
 				},
 				RepoPathPrefix: "dir/subdir/",
 			},
@@ -48,8 +50,8 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		{
 			params: &StorageCommandParams{
 				Location: map[string][]byte{
-					prefixKey: []byte("test-prefix"),
-					typeKey:   []byte("filestore"),
+					repositoryserver.PrefixKey: []byte("test-prefix"),
+					repositoryserver.TypeKey:   []byte("filestore"),
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
@@ -62,9 +64,9 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		{
 			params: &StorageCommandParams{
 				Location: map[string][]byte{
-					prefixKey: []byte("test-prefix"),
-					bucketKey: []byte("test-bucket"),
-					typeKey:   []byte("gcs"),
+					repositoryserver.PrefixKey: []byte("test-prefix"),
+					repositoryserver.BucketKey: []byte("test-bucket"),
+					repositoryserver.TypeKey:   []byte("gcs"),
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
@@ -79,9 +81,9 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		{
 			params: &StorageCommandParams{
 				Location: map[string][]byte{
-					bucketKey: []byte("test-bucket"),
-					prefixKey: []byte("test-prefix"),
-					typeKey:   []byte("azure"),
+					repositoryserver.BucketKey: []byte("test-bucket"),
+					repositoryserver.PrefixKey: []byte("test-prefix"),
+					repositoryserver.TypeKey:   []byte("azure"),
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
@@ -95,7 +97,7 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		{
 			params: &StorageCommandParams{
 				Location: map[string][]byte{
-					typeKey: []byte("random-type"),
+					repositoryserver.TypeKey: []byte("random-type"),
 				},
 			},
 			Checker: check.NotNil,

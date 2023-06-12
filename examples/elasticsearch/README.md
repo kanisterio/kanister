@@ -20,7 +20,7 @@ moving on to Elasticsearch 6.0.
 
 * Kubernetes 1.20+
 * PV provisioner support in the underlying infrastructure
-* Kanister controller version 0.90.0 installed in your cluster
+* Kanister controller version 0.92.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## StatefulSets Details
@@ -74,7 +74,7 @@ Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
 $ helm install kanister --namespace kanister --create-namespace \
-  kanister/kanister-operator --set image.tag=0.90.0
+  kanister/kanister-operator --set image.tag=0.92.0
 ```
 
 ### Create Profile
