@@ -89,7 +89,7 @@ func validateCommandArgs(cmd *cobra.Command) error {
 }
 
 func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, error) {
-	dm := &DataMoverArgs{}
+	var dm *DataMoverArgs
 	var err error
 
 	dataMoverType, err := dataMoverTypeFromCMD(cmd)
