@@ -1761,14 +1761,15 @@ BackupDataAllUsingKopiaServer
 -----------------------------
 
 This function concurrently backs up data from one or more pods into an any
-object store supported by Kanister using kopia repository server as a data mover.
+object store supported by Kanister using Kopia Repository Server as a data mover.
 
 .. note::
    It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
    tools that capture path on a volume and store it on the object store.
 
-   Additionally, in order to use this function, a RepositoryServer CR is required
+   Additionally, in order to use this function, a RepositoryServer CR is needed
+   while creating the :ref:`actionsets`
 
 Arguments:
 
@@ -1778,7 +1779,7 @@ Arguments:
    :widths: 5,5,5,15
 
    `namespace`, Yes, `string`, namespace of the container that you want to backup the data of
-   `pods`, No, `string`, pods in which to execute backup (by default runs on all the pods)
+   `pods`, No, `string`, pods in which you want to backup the data of (by default runs on all the pods)
    `container`, Yes, `string`, name of the kanister sidecar container
    `includePath`, Yes, `string`, path of the data to be backed up
 
