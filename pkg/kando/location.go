@@ -90,27 +90,26 @@ func validateCommandArgs(cmd *cobra.Command) error {
 
 func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, error) {
 	dm := &DataMoverArgs{}
-	profile := cmd.Flags().Lookup(profileFlagName).Value.String()
-	if profile != "" {
-		profileRef, err := unmarshalProfileFlag(cmd)
-		if err != nil {
-			return nil, err
-		}
-		dm = &DataMoverArgs{
-			Type:    DataMoverTypeProfile,
-			Profile: profileRef,
-		}
+	var err error
+
+	dataMoverType, err := dataMoverTypeFromCMD(cmd)
+	if err != nil {
+		return nil, err
 	}
-	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
-	if repositoryServer != "" {
-		repositoryServerRef, err := unmarshalRepositoryServerFlag(cmd)
+
+	switch dataMoverType {
+	case DataMoverTypeProfile:
+		dm, err = dataMoverArgsForProfile(cmd)
 		if err != nil {
 			return nil, err
 		}
-		dm = &DataMoverArgs{
-			Type:             DataMoverTypeRepositoryServer,
-			RepositoryServer: repositoryServerRef,
+	case DataMoverTypeRepositoryServer:
+		dm, err = dataMoverArgsForRepositoryServer(cmd)
+		if err != nil {
+			return nil, err
 		}
+	default:
+		return nil, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 	}
 
 	switch flag {
@@ -135,4 +134,38 @@ func unmarshalRepositoryServerFlag(cmd *cobra.Command) (*param.RepositoryServer,
 	rs := &param.RepositoryServer{}
 	err := json.Unmarshal([]byte(repositoryServerJSON), rs)
 	return rs, errors.Wrap(err, "failed to unmarshal kopia repository server CR")
+}
+
+func dataMoverTypeFromCMD(c *cobra.Command) (DataMoverType, error) {
+	profile := c.Flags().Lookup(profileFlagName).Value.String()
+	if profile != "" {
+		return DataMoverTypeProfile, nil
+	}
+	repositoryServer := c.Flags().Lookup(repositoryServerFlagName).Value.String()
+	if repositoryServer != "" {
+		return DataMoverTypeRepositoryServer, nil
+	}
+	return "", errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
+}
+
+func dataMoverArgsForProfile(cmd *cobra.Command) (*DataMoverArgs, error) {
+	profileRef, err := unmarshalProfileFlag(cmd)
+	if err != nil {
+		return nil, err
+	}
+	return &DataMoverArgs{
+		Type:    DataMoverTypeProfile,
+		Profile: profileRef,
+	}, nil
+}
+
+func dataMoverArgsForRepositoryServer(cmd *cobra.Command) (*DataMoverArgs, error) {
+	repositoryServerRef, err := unmarshalRepositoryServerFlag(cmd)
+	if err != nil {
+		return nil, err
+	}
+	return &DataMoverArgs{
+		Type:             DataMoverTypeRepositoryServer,
+		RepositoryServer: repositoryServerRef,
+	}, nil
 }
