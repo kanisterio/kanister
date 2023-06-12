@@ -37,14 +37,8 @@ type Profile struct {
 
 func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		if p.snapJSON == "" {
-			return errors.New("kopia snapshot information is required to pull data using kopia")
-		}
-		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.snapJSON)
+		kopiaSnap, err := p.kopiaSnapshotAndKopiaRepositoryServerConnection(ctx)
 		if err != nil {
-			return err
-		}
-		if err = p.connectToKopiaRepositoryServer(ctx); err != nil {
 			return err
 		}
 		return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
@@ -72,14 +66,8 @@ func (p *Profile) Push(ctx context.Context, sourcePath, destinationPath string) 
 
 func (p *Profile) Delete(ctx context.Context, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		if p.snapJSON == "" {
-			return errors.New("kopia snapshot information is required to delete data using kopia")
-		}
-		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.snapJSON)
+		kopiaSnap, err := p.kopiaSnapshotAndKopiaRepositoryServerConnection(ctx)
 		if err != nil {
-			return err
-		}
-		if err = p.connectToKopiaRepositoryServer(ctx); err != nil {
 			return err
 		}
 		return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, p.profile.Credential.KopiaServerSecret.Password)
@@ -100,6 +88,20 @@ func (p *Profile) connectToKopiaRepositoryServer(ctx context.Context) error {
 		contentCacheSize,
 		metadataCacheSize,
 	)
+}
+
+func (p *Profile) kopiaSnapshotAndKopiaRepositoryServerConnection(ctx context.Context) (*snapshot.SnapshotInfo, error) {
+	if p.snapJSON == "" {
+		return nil, errors.New("kopia snapshot information is required to delete data using kopia")
+	}
+	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.snapJSON)
+	if err != nil {
+		return nil, err
+	}
+	if err = p.connectToKopiaRepositoryServer(ctx); err != nil {
+		return nil, err
+	}
+	return &kopiaSnap, nil
 }
 
 func NewProfileDataMover(profile *param.Profile, outputName, snapJson string) *Profile {
