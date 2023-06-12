@@ -11,7 +11,7 @@ actions:
        timeout: 240s
        conditions:
           anyOf:
-          - condition: '{{ if { $.status.containerStatuses[].ready } }}true{{ else }}false{{ end }}'
+          - condition: '{{ if "$.status.containerStatuses[].ready"}}true{{ else }}false{{ end }}'
             objectReference:
               apiVersion: v1
               resource: pods
@@ -26,7 +26,7 @@ actions:
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
         namespace: '{{ .StatefulSet.Namespace }}'
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.69.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.92.0
         command:
         - bash
         - -o
@@ -36,7 +36,7 @@ actions:
         - -c
         - |
           export PGHOST='{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local'
-          export PGPASSWORD='{{ index .Phases.PgUpdate.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          export PGPASSWORD='{{ index .Phases.PgUpdate.Secrets.pgSecret.Data "password" | toString }}'
           export PGREPL='{{ index .Phases.PgUpdate.Secrets.pgSecret.Data "repmgr-password" | toString }}'
           postgresMaster=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='primary'")
           postgresStandby=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='standby'")
