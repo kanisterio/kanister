@@ -575,12 +575,14 @@ The currently supported RepositoryServer template is based on the following defi
 
   // RepositoryServer contains fields from Repository server CR that will be used to resolve go templates for repository server in blueprint
   type RepositoryServer struct {
-    Name        string
-    Namespace   string
-    ServerInfo  crv1alpha1.ServerInfo
-    Username    string
-    Credentials RepositoryServerCredentials
-    Address     string
+    Name            string
+    Namespace       string
+    ServerInfo      crv1alpha1.ServerInfo
+    Username        string
+    Credentials     RepositoryServerCredentials
+    Address         string
+    ContentCacheMB  int
+    MetadataCacheMB int
   }
 
   type RepositoryServerCredentials struct {
