@@ -2,7 +2,7 @@
 
 This is an example of using Kanister to protect a simple TimeLog application. This application is contrived but useful for demonstrating Kanister's features. Every second it appends the current time to a log file.
 
-Note: This application is used in the Kanister tutorial, for a detailed walkthrough click [here](https://docs.kanister.io/tutorial.html#tutorial).
+Note: For a detailed walkthrough of the Timelog application this [turotial](https://docs.kanister.io/tutorial.html#tutorial) can be followed.
 
 ### 1. Deploy the Application
 
