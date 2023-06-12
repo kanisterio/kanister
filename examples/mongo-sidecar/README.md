@@ -2,7 +2,31 @@
 
 This is an example of using Kanister to backup and restore MongoDB. In this example, we will deploy MongoDB with a sidecar container. This sidecar container will include the necessary tools to store protected data from MongoDB into an S3 bucket in AWS. Note that a sidecar container is not required to use Kanister, but rather is just one of several ways to access tools needed to protect the application. See other examples in the examples folder for alternative ways.
 
-### 1. Deploy the Application
+
+### Prerequisites
+
+- Kubernetes 1.20+
+- PV provisioner support in the underlying infrastructure
+- Kanister controller version 0.92.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
+
+
+### 1. Build and push mongo-sidecar docker image
+
+The MongoDB application needs to be instrumented with required tooling in order to use it with Kanister for protecting the data. Follow the steps below to build a `mongo-sidecar` docker image which contains all the necessary tools installed.
+
+```bash
+# Clone Kanister Github repo locally
+$ git clone https://github.com/kanisterio/kanister.git <path_to_kanister>
+
+# Build mongo-sidecar docker image
+$ docker build -t <registry>/<repository>/mongo-sidecar:<tag_name> <path_to_kanister>/docker/kanister-mongodb-replicaset/image/
+$ docker push <registry>/<repository>/mongo-sidecar:<tag_name>
+```
+
+### 2. Deploy the Application
+
+Replace `<registry>`, `<repository>` and `<tag_name>` placeholders with actual values in `mongo-cluster.yaml`.
 
 The following command deploys the example MongoDB application in `default` namespace:
 ```bash
@@ -26,7 +50,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 { "_id" : ObjectId("5a1dd0719dcbfd513fecf87c"), "name" : "Roys", "cuisine" : "Hawaiian", "id" : "8675309" }
 ```
 
-### 2. Protect the Application
+### 3. Protect the Application
 
 Next create a Blueprint which describes how backup and restore actions can be executed on this application. The Blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the Blueprint references the S3 location specified in the ConfigMap in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update `secrets.yaml` to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in `secrets.yaml`. These are encoded using base64. The following commands will create a ConfigMap, Secrets and a Blueprint in controller's namespace:
 
@@ -57,7 +81,7 @@ NAME                KIND
 mongo-backup-12046   ActionSet.v1alpha1.cr.kanister.io
 ```
 
-### 3. Disaster strikes!
+### 4. Disaster strikes!
 
 Let's say someone with fat fingers accidentally deleted the restaurants collection using the following command:
 ```bash
@@ -72,7 +96,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 # No entries should be found in the restaurants collection
 ```
 
-### 4. Restore the Application
+### 5. Restore the Application
 
 To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
@@ -90,7 +114,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 { "_id" : ObjectId("5a1dd0719dcbfd513fecf87c"), "name" : "Roys", "cuisine" : "Hawaiian", "id" : "8675309" }
 ```
 
-### 5. Delete the Artifacts
+### 6. Delete the Artifacts
 
 The artifacts created by the backup action can be cleaned up using the following command:
 
