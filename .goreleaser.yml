@@ -97,16 +97,6 @@ dockers:
 - ids:
   - kando
   image_templates:
-  - 'ghcr.io/kanisterio/mongo-sidecar:{{ .Tag }}'
-  dockerfile: 'docker/kanister-mongodb-replicaset/image/Dockerfile'
-  extra_files:
-  - 'docker/kanister-mongodb-replicaset/image/install.sh'
-  - 'docker/kanister-mongodb-replicaset/image/90forceyes'
-  - 'docker/kanister-mongodb-replicaset/image/config'
-  - 'docker/kanister-mongodb-replicaset/image/gbl_env.sh'
-- ids:
-  - kando
-  image_templates:
   - 'ghcr.io/kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
 - ids:
