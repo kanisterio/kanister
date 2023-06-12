@@ -13,7 +13,7 @@ This is an example of using Kanister to backup and restore MongoDB. In this exam
 
 ### 1. Build and push mongo-sidecar docker image
 
-The MongoDB application needs to be instrumented with required tooling in order to use it with Kanister for protecting the data. Follow the steps below to build a `mongo-sidecar` docker image which contains all the necessary tools installed.
+The MongoDB application needs to be instrumented with the required tooling in order to use it with Kanister for protecting the data. Follow the steps below to build a `mongo-sidecar` docker image which contains all the necessary tools installed.
 
 ```bash
 # Clone Kanister Github repo locally
