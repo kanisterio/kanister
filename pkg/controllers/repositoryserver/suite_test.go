@@ -95,24 +95,14 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 }
 
 func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
-	repoServerUserAccessSecretData := map[string][]byte{
-		"localhost": []byte(DefaultKopiaRepositoryServerAccessPassword),
-	}
-	repoServerAdminSecretData := map[string][]byte{
-		"username": []byte(DefaulKopiaRepositoryServerAdminUser),
-		"password": []byte(DefaultKopiaRepositoryServerAdminPassword),
-	}
-	repoPasswordSecretData := map[string][]byte{
-		repoPasswordKey: []byte(DefaultKopiaRepositoryPassword),
-	}
 	kopiaTLSSecretData, err := getKopiaTLSSecret()
 	c.Assert(err, IsNil)
 	s.repoServerSecrets = repositoryServerSecrets{}
-	s.repoServerSecrets.serverUserAccess, err = s.createSecret("test-repository-server-user-access-", "", repoServerUserAccessSecretData)
+	s.repoServerSecrets.serverUserAccess, err = s.createSecret("test-repository-server-user-access-", "", getRepoServerUserAccessSecretData("localhost",DefaultKopiaRepositoryServerAccessPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.serverAdmin, err = s.createSecret("test-repository-server-admin-", "", repoServerAdminSecretData)
+	s.repoServerSecrets.serverAdmin, err = s.createSecret("test-repository-server-admin-", "", getRepoServerAdminSecretData(DefaulKopiaRepositoryServerAdminUser,DefaultKopiaRepositoryServerAdminPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.repositoryPassword, err = s.createSecret("test-repository-password-", "", repoPasswordSecretData)
+	s.repoServerSecrets.repositoryPassword, err = s.createSecret("test-repository-password-", "", getRepoPasswordSecretData(DefaultKopiaRepositoryPassword))
 	c.Assert(err, IsNil)
 	s.repoServerSecrets.serverTLS, err = s.createSecret("test-tls-", v1.SecretTypeTLS, kopiaTLSSecretData)
 	c.Assert(err, IsNil)
@@ -121,6 +111,7 @@ func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
 	s.repoServerSecrets.storageCredentials, err = s.createSecret("test-repository-server-storage-creds-", "secrets.kanister.io/aws", getDefaultS3StorageCreds())
 	c.Assert(err, IsNil)
 }
+
 
 func (s *RepoServerControllerSuite) createSecret(name string, secrettype v1.SecretType, data map[string][]byte) (se *v1.Secret, err error) {
 	secret := &v1.Secret{
@@ -195,6 +186,21 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(service.OwnerReferences), Equals, 1)
 	c.Assert(service.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
+}
+
+func (s *RepoServerControllerSuite) TestRepositoryConnectFailures(c *C) {
+	ctx := context.Background()
+	originalrepoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	
+	InvalidrepositoryPassword, err = s.createSecret("test-repository-password-invalid-", "", repoPasswordSecretData)
+	c.Assert(err, IsNil)
+
+	repoServerInvalidPassword:=originalrepoServerCR.Spec.Repository.
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, originalrepoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+
 }
 
 func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {

@@ -173,6 +173,25 @@ func setRepositoryServerSecretsInCR(secrets *repositoryServerSecrets, repoServer
 	}
 }
 
+func getRepoPasswordSecretData(password string) map[string][]byte {
+	return map[string][]byte{
+		repoPasswordKey: []byte(password),
+	}
+}
+
+func getRepoServerAdminSecretData(username, password string) map[string][]byte {
+	return map[string][]byte{
+		"username": []byte(username),
+		"password": []byte(password),
+	}
+}
+
+func getRepoServerUserAccessSecretData(hostname, password string) map[string][]byte {
+	return map[string][]byte{
+		hostname: []byte(password),
+	}
+}
+
 func createKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.RepositoryServer, storageLocation map[string][]byte) error {
 	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
 
