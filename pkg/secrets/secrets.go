@@ -43,7 +43,7 @@ func ValidateCredentials(secret *corev1.Secret) error {
 	}
 }
 
-func getLocationSecret(secret *corev1.Secret) (reposerver.RepositoryServerSecret, error) {
+func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
 	var locationType []byte
 	var ok bool
 	if secret == nil {
@@ -69,7 +69,7 @@ func getLocationSecret(secret *corev1.Secret) (reposerver.RepositoryServerSecret
 }
 
 func ValidateRepositoryServerSecret(repositoryServerSecret *corev1.Secret) error {
-	var secret repositoryserver.RepositoryServerSecret
+	var secret repositoryserver.Secret
 	var err error
 
 	switch repositoryServerSecret.Type {

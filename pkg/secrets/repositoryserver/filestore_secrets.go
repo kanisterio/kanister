@@ -18,7 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ RepositoryServerSecret = &fileStore{}
+var _ Secret = &fileStore{}
 
 type fileStore struct {
 	storageLocation *corev1.Secret

@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ RepositoryServerSecret = &azure{}
+var _ Secret = &azure{}
 
 type azure struct {
 	storageLocation *corev1.Secret

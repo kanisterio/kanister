@@ -14,6 +14,6 @@
 
 package repositoryserver
 
-type RepositoryServerSecret interface {
+type Secret interface {
 	Validate() error
 }

@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ RepositoryServerSecret = &aws{}
+var _ Secret = &aws{}
 
 type aws struct {
 	storageLocation *corev1.Secret

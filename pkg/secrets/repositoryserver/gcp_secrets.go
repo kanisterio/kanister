@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ RepositoryServerSecret = &gcp{}
+var _ Secret = &gcp{}
 
 type gcp struct {
 	storageLocation *corev1.Secret

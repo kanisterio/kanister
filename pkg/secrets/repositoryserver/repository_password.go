@@ -23,7 +23,7 @@ import (
 
 var ErrValidate = fmt.Errorf("validation Failed")
 
-var _ RepositoryServerSecret = &repositoryPassword{}
+var _ Secret = &repositoryPassword{}
 
 type repositoryPassword struct {
 	password *corev1.Secret
