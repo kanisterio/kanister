@@ -4,11 +4,27 @@
 
 ## Prerequisites
 
-* Kubernetes 1.9+
+* Kubernetes 1.20+
 * PV support on the underlying infrastructure
 * Kanister controller version 0.22.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 * Couchbase application needs at least 4G of memory and 4 cpus to run. Make sure that your cluster nodes has required resources.
+* Docker CLI installed
+
+### Build and push couchbase-tools docker image
+
+Kanister actions are specified in the Blueprint CR. The example Blueprint for the Couchbase application uses `couchbase-tools` docker image to perform required actions. Follow the steps below to build the docker image with all the necessary tools.
+
+```bash
+# Clone Kanister Github repo locally
+$ git clone https://github.com/kanisterio/kanister.git <path_to_kanister>
+
+# Build couchbase-tools docker image
+$ docker build -t <registry>/<repository>/couchbase-tools:<tag_name> <path_to_kanister>/docker/couchbase-tools/
+$ docker push <registry>/<repository>/couchbase-tools:<tag_name>
+```
+
+Replace `<registry>`, `<repository>` and `<tag_name>` placeholders with actual values in `couchbase-blueprint.yaml`.
 
 ## Chart Details
 
