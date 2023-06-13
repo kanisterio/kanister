@@ -86,10 +86,10 @@ func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, strin
 	}
 	var serverAdminUsername, serverAdminPassword []byte
 	var ok bool
-	if serverAdminUsername, ok = h.RepositoryServerSecrets.serverAdmin.Data[reposerver.RepositoryServerAdminUsernameKey]; !ok {
+	if serverAdminUsername, ok = h.RepositoryServerSecrets.serverAdmin.Data[reposerver.AdminUsernameKey]; !ok {
 		return "", "", "", errors.New("Server admin username is not specified")
 	}
-	if serverAdminPassword, ok = h.RepositoryServerSecrets.serverAdmin.Data[reposerver.RepositoryServerAdminPasswordKey]; !ok {
+	if serverAdminPassword, ok = h.RepositoryServerSecrets.serverAdmin.Data[reposerver.AdminPasswordKey]; !ok {
 		return "", "", "", errors.New("Server admin password is not specified")
 	}
 	return repoServerAddress, string(serverAdminUsername), string(serverAdminPassword), nil
