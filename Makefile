@@ -320,7 +320,7 @@ stop-kind:
 check:
 	@./build/check.sh
 
-gomodtidy:
+go-mod-tidy:
 	@$(MAKE) run CMD='-c "./build/gomodtidy.sh"'
 
 
