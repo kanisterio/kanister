@@ -1,3 +1,22 @@
+// Copyright 2023 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// Copyright 2023 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package repositoryserver
 
 import (
@@ -21,21 +40,23 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 const (
-	DefaultKopiaRepositoryPath                 = "kopia-repo-controller-test"
-	DefaulKopiaRepositoryServerAdminUser       = "admin@test"
-	DefaultKopiaRepositoryServerAdminPassword  = "admin1234"
-	DefaultKopiaRepositoryServerHost           = "localhost"
-	DefaultKopiaRepositoryPassword             = "test1234"
-	DefaultKopiaRepositoryUser                 = "repository-user"
-	DefaultKopiaRepositoryServerAccessUser     = "kanister-user"
-	DefaultKopiaRepositoryServerAccessPassword = "test1234"
-	DefaultKanisterNamespace                   = "kanister"
-	DefaultKopiaRepositoryServerContainer      = "repo-server-container"
+	defaultKopiaRepositoryPath                 = "kopia-repo-controller-test"
+	defaulKopiaRepositoryServerAdminUser       = "admin@test"
+	defaultKopiaRepositoryServerAdminPassword  = "admin1234"
+	defaultKopiaRepositoryServerHost           = "localhost"
+	defaultKopiaRepositoryPassword             = "test1234"
+	defaultKopiaRepositoryUser                 = "repository-user"
+	defaultKopiaRepositoryServerAccessUser     = "kanister-user"
+	defaultKopiaRepositoryServerAccessPassword = "test1234"
+	defaultKanisterNamespace                   = "kanister"
+	defaultKopiaRepositoryServerContainer      = "repo-server-container"
+	pathKey                                    = "path"
 )
 
 func getKopiaTLSSecret() (map[string][]byte, error) {
@@ -105,9 +126,9 @@ func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryS
 				},
 			},
 			Repository: crv1alpha1.Repository{
-				RootPath: DefaultKopiaRepositoryPath,
-				Username: DefaultKopiaRepositoryUser,
-				Hostname: DefaultKopiaRepositoryServerHost,
+				RootPath: defaultKopiaRepositoryPath,
+				Username: defaultKopiaRepositoryUser,
+				Hostname: defaultKopiaRepositoryServerHost,
 				PasswordSecretRef: v1.SecretReference{
 					Namespace: namespace,
 				},
@@ -117,7 +138,7 @@ func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryS
 					UserAccessSecretRef: v1.SecretReference{
 						Namespace: namespace,
 					},
-					Username: DefaultKopiaRepositoryServerAccessUser,
+					Username: defaultKopiaRepositoryServerAccessUser,
 				},
 				AdminSecretRef: v1.SecretReference{
 					Namespace: namespace,
@@ -136,18 +157,18 @@ func getDefaultS3StorageCreds() map[string][]byte {
 	val := os.Getenv(awsconfig.SecretAccessKey)
 
 	return map[string][]byte{
-		"aws_access_key_id":     []byte(key),
-		"aws_secret_access_key": []byte(val),
+		secrets.AWSAccessKeyID:     []byte(key),
+		secrets.AWSSecretAccessKey: []byte(val),
 	}
 }
 
 func getDefaultS3CompliantStorageLocation() map[string][]byte {
 	return map[string][]byte{
-		"type":     []byte(crv1alpha1.LocationTypeS3Compliant),
-		"bucket":   []byte(testutil.TestS3BucketName),
-		"path":     []byte(DefaultKopiaRepositoryPath),
-		"region":   []byte(testutil.TestS3Region),
-		"endpoint": []byte(os.Getenv("LOCATION_ENDPOINT")),
+		repositoryserver.LocationTypeKey: []byte(crv1alpha1.LocationTypeS3Compliant),
+		repositoryserver.BucketKey:       []byte(testutil.TestS3BucketName),
+		pathKey:                          []byte(defaultKopiaRepositoryPath),
+		repositoryserver.RegionKey:       []byte(testutil.TestS3Region),
+		repositoryserver.EndpointKey:     []byte(os.Getenv("LOCATION_ENDPOINT")),
 	}
 }
 
@@ -183,8 +204,8 @@ func getRepoPasswordSecretData(password string) map[string][]byte {
 
 func getRepoServerAdminSecretData(username, password string) map[string][]byte {
 	return map[string][]byte{
-		"username": []byte(username),
-		"password": []byte(password),
+		serverAdminUserNameKey: []byte(username),
+		serverAdminPasswordKey: []byte(password),
 	}
 }
 
@@ -199,23 +220,23 @@ func createKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.RepositoryServ
 
 	commandArgs := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
-			RepoPassword:   DefaultKopiaRepositoryPassword,
+			RepoPassword:   defaultKopiaRepositoryPassword,
 			ConfigFilePath: command.DefaultConfigFilePath,
 			LogDirectory:   command.DefaultLogDirectory,
 		},
 		CacheDirectory:  command.DefaultCacheDirectory,
-		Hostname:        DefaultKopiaRepositoryServerHost,
+		Hostname:        defaultKopiaRepositoryServerHost,
 		ContentCacheMB:  contentCacheMB,
 		MetadataCacheMB: metadataCacheMB,
-		Username:        DefaultKopiaRepositoryUser,
-		RepoPathPrefix:  DefaultKopiaRepositoryPath,
+		Username:        defaultKopiaRepositoryUser,
+		RepoPathPrefix:  defaultKopiaRepositoryPath,
 		Location:        storageLocation,
 	}
 	return repository.CreateKopiaRepository(
 		cli,
-		DefaultKanisterNamespace,
+		defaultKanisterNamespace,
 		rs.Status.ServerInfo.PodName,
-		DefaultKopiaRepositoryServerContainer,
+		defaultKopiaRepositoryServerContainer,
 		commandArgs,
 	)
 }
@@ -249,17 +270,17 @@ func createRepositoryPassword(cli kubernetes.Interface, namespace string, data m
 	return createSecret(cli, "test-repository-password-", namespace, repositoryserver.RepositoryPassword, data)
 }
 
-func CreateKopiaTLSSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
+func createKopiaTLSSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
 	return createSecret(cli, "test-repository-password-", namespace, v1.SecretTypeTLS, data)
 
 }
 
-func CreateStorageLocationSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
+func createStorageLocationSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
 	return createSecret(cli, "test-repository-server-storage-", namespace, repositoryserver.Location, data)
 
 }
 
-func CreateStorageLocationCredentialsSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
-	return createSecret(cli, "test-repository-server-storage-", namespace, repositoryserver.Location, data)
+func createStorageLocationCredentialsSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
+	return createSecret(cli, "test-repository-server-storage-creds", namespace, repositoryserver.Location, data)
 
 }
