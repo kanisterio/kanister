@@ -40,6 +40,9 @@ func (r *repositoryPassword) Validate() error {
 	if r.password == nil {
 		return errors.Wrapf(ErrValidate, NilSecretErrorMessage)
 	}
+	if len(r.password.Data) == 0 {
+		return errors.Wrapf(ErrValidate, EmptySecretErrorMessage, r.password.Namespace, r.password.Name)
+	}
 	// kopia repository must have exactly 1 field
 	if len(r.password.Data) != 1 {
 		return errors.Wrapf(ErrValidate, UnknownFieldErrorMsg, r.password.Namespace, r.password.Name)
