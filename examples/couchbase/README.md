@@ -13,7 +13,7 @@
 
 ### Build and push couchbase-tools docker image
 
-Kanister actions are specified in the Blueprint CR. The example Blueprint for the Couchbase application uses `couchbase-tools` docker image to perform required actions. Follow the steps below to build the docker image with all the necessary tools.
+Kanister actions are specified in the Blueprint CR. The example Blueprint for the Couchbase application uses the `couchbase-tools` docker image to perform required actions. Follow the steps below to build the docker image with all the necessary tools.
 
 ```bash
 # Clone Kanister Github repo locally
