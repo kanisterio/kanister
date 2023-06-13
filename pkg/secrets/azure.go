@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	// AzureSecretType represents the secret type for Azure credentials.
 	AzureSecretType string = "secrets.kanister.io/azure"
 
 	// AzureStorageAccountID is the config map key for Azure storage account id data

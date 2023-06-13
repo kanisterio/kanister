@@ -29,6 +29,7 @@ const (
 	// GCPServerAccountJsonKey is the key for gcp service account json
 	GCPServiceAccountJsonKey string = "service-account.json"
 
+	// GCPSecretType represents the secret type for GCP credentials.
 	GCPSecretType string = "secrets.kanister.io/gcp"
 )
 
