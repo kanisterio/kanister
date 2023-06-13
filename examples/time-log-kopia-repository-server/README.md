@@ -2,7 +2,7 @@
 
 This is an example of using Kanister to protect a simple TimeLog application. This application is contrived but useful for demonstrating Kanister's features. Every second it appends the current time to a log file.
 
-Note: This application is used in the Kanister tutorial, for a detailed walkthrough click [here](https://docs.kanister.io/tutorial.html#tutorial).
+Note: For a detailed walkthrough of the Timelog application this [turotial](https://docs.kanister.io/tutorial.html#tutorial) can be followed.
 
 ### 1. Deploy the Application
 
@@ -149,8 +149,7 @@ $ kubectl create -f repo-server-cr.yaml -n kanister
 
 **NOTE:**
 
-The above command will configure a kopia repository server, which manages artifacts resulting from Kanister
-data operations such as backup.
+The above command will configure a kopia repository server, which manages artifacts resulting from Kanister data operations such as backup and restore.
 This is stored as a `repositoryservers.cr.kanister.io` *CustomResource (CR)* which is then referenced in Kanister ActionSets.
 
 **NOTE:**
@@ -171,6 +170,7 @@ $ kubectl create -f ./examples/time-log/time-log-blueprint.yaml -n kanister
 ```
 
 You can now take a backup of ``timelog`` application's data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+
 ```
 # Create the actionset that causes the controller to kick off the backup
 $ kanctl create actionset --action backup --namespace kanister --blueprint time-log --deployment time-log/time-logger --repository-server kanister/kopia-repo-server-1
@@ -213,6 +213,7 @@ $ kubectl --namespace kanister get actionset delete-s3backup-f4c4q-2jj9n -oyaml
 ### Troubleshooting
 
 If you run into any issues with the above commands, you can check the logs of the controller using:
+
 ```bash
 $ kubectl --namespace kanister logs -l app=kanister-operator
 ```
