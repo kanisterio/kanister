@@ -30,8 +30,6 @@ func NewFileStoreLocation(secret *corev1.Secret) *fileStore {
 	}
 }
 
-// Optional field:
-// - path
 func (l *fileStore) Validate() error {
 	// Currently empty since all the fields are optional
 	return nil
