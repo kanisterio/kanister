@@ -258,7 +258,6 @@ func createRepositoryServerAdminSecret(cli kubernetes.Interface, namespace strin
 
 func createRepositoryServerUserAccessSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
 	return createSecret(cli, "test-repository-server-user-access-", namespace, "", data)
-
 }
 
 func createRepositoryPassword(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
@@ -267,12 +266,10 @@ func createRepositoryPassword(cli kubernetes.Interface, namespace string, data m
 
 func createKopiaTLSSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
 	return createSecret(cli, "test-repository-password-", namespace, v1.SecretTypeTLS, data)
-
 }
 
 func createStorageLocationSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
 	return createSecret(cli, "test-repository-server-storage-", namespace, repositoryserver.Location, data)
-
 }
 
 func createStorageLocationCredentialsSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
