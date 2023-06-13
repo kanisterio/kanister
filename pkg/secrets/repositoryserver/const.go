@@ -26,11 +26,11 @@ const (
 	LocTypeAzure     LocType = "azure"
 	LocTypeFilestore LocType = "filestore"
 
-	// LocationSecretType represents the storage location secret type for kopia repository server
+	// Location represents the storage location secret type for kopia repository server
 	Location corev1.SecretType = "secrets.kanister.io/storage-location"
-	// RepositoryPasswordSecretType represents the kopia repository passowrd secret type
+	// RepositoryPasswordSecret represents the kopia repository passowrd secret type
 	RepositoryPasswordSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/password"
-	// RepositoryServerAdminCredentialsSecretType represents the kopia server admin credentials secret type
+	// RepositoryServerAdminCredentialsSecret represents the kopia server admin credentials secret type
 	RepositoryServerAdminCredentialsSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
 )
 

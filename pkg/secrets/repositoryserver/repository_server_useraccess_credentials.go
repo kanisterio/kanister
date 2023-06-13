@@ -19,19 +19,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ RepositoryServerSecret = &RepositoryServerUserAccessCredentials{}
+var _ RepositoryServerSecret = &repositoryServerUserAccessCredentials{}
 
-type RepositoryServerUserAccessCredentials struct {
+type repositoryServerUserAccessCredentials struct {
 	credentials *corev1.Secret
 }
 
-func NewRepositoryServerUserAccessCredentials(secret *corev1.Secret) *RepositoryServerUserAccessCredentials {
-	return &RepositoryServerUserAccessCredentials{
+func NewRepositoryServerUserAccessCredentials(secret *corev1.Secret) *repositoryServerUserAccessCredentials {
+	return &repositoryServerUserAccessCredentials{
 		credentials: secret,
 	}
 }
 
-func (r *RepositoryServerUserAccessCredentials) Validate() error {
+func (r *repositoryServerUserAccessCredentials) Validate() error {
 	if len(r.credentials.Data) == 0 {
 		return errors.Wrapf(ErrValidate, "the secret data is empty, it should have atleast one user access credential")
 	}

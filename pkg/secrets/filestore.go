@@ -7,7 +7,7 @@ import (
 const FilestoreSecretType string = "secrets.kanister.io/filestore"
 
 // ValidateFileStoreCredentials validates secret has all necessary information
-// for Azure Filestore Credentials
+// for Filestore Credentials
 func ValidateFileStoreCredentials(secret *v1.Secret) error {
 	// Currently we dont need credentials for filestore hence
 	// keeping the validation empty

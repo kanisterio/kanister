@@ -19,19 +19,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ RepositoryServerSecret = &GCP{}
+var _ RepositoryServerSecret = &gcp{}
 
-type GCP struct {
+type gcp struct {
 	storageLocation *corev1.Secret
 }
 
-func NewGCPLocation(secret *corev1.Secret) *GCP {
-	return &GCP{
+func NewGCPLocation(secret *corev1.Secret) *gcp {
+	return &gcp{
 		storageLocation: secret,
 	}
 }
 
-func (l *GCP) Validate() error {
+func (l *gcp) Validate() error {
 	if _, ok := l.storageLocation.Data[BucketKey]; !ok {
 		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository storage location secret %s", BucketKey, l.storageLocation.Name)
 	}

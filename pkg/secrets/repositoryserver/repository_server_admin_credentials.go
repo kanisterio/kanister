@@ -19,19 +19,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ RepositoryServerSecret = &RepositoryServerAdminCredentials{}
+var _ RepositoryServerSecret = &repositoryServerAdminCredentials{}
 
-type RepositoryServerAdminCredentials struct {
+type repositoryServerAdminCredentials struct {
 	credentials *corev1.Secret
 }
 
-func NewRepositoryServerAdminCredentials(secret *corev1.Secret) *RepositoryServerAdminCredentials {
-	return &RepositoryServerAdminCredentials{
+func NewRepositoryServerAdminCredentials(secret *corev1.Secret) *repositoryServerAdminCredentials {
+	return &repositoryServerAdminCredentials{
 		credentials: secret,
 	}
 }
 
-func (r *RepositoryServerAdminCredentials) Validate() error {
+func (r *repositoryServerAdminCredentials) Validate() error {
 	var count int
 	if _, ok := r.credentials.Data[RepositoryServerAdminUsernameKey]; !ok {
 		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository server admin credentials secret %s", RepositoryServerAdminUsernameKey, r.credentials.Name)

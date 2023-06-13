@@ -19,19 +19,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ RepositoryServerSecret = &AWS{}
+var _ RepositoryServerSecret = &aws{}
 
-type AWS struct {
+type aws struct {
 	storageLocation *corev1.Secret
 }
 
-func NewAWSLocation(secret *corev1.Secret) *AWS {
-	return &AWS{
+func NewAWSLocation(secret *corev1.Secret) *aws {
+	return &aws{
 		storageLocation: secret,
 	}
 }
 
-func (l *AWS) Validate() (err error) {
+func (l *aws) Validate() (err error) {
 	if _, ok := l.storageLocation.Data[BucketKey]; !ok {
 		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository storage location secret %s", BucketKey, l.storageLocation.Name)
 	}

@@ -23,20 +23,20 @@ import (
 
 var ErrValidate = fmt.Errorf("validation Failed")
 
-var _ RepositoryServerSecret = &RepositoryPassword{}
+var _ RepositoryServerSecret = &repositoryPassword{}
 
-type RepositoryPassword struct {
+type repositoryPassword struct {
 	password *corev1.Secret
 }
 
-func NewRepoPassword(secret *corev1.Secret) *RepositoryPassword {
-	return &RepositoryPassword{
+func NewRepoPassword(secret *corev1.Secret) *repositoryPassword {
+	return &repositoryPassword{
 		password: secret,
 	}
 }
 
 // ValidateSecret validates the kopia repository password for required fields as well as unknown fields
-func (r *RepositoryPassword) Validate() error {
+func (r *repositoryPassword) Validate() error {
 	var count int
 	if _, ok := r.password.Data[RepoPasswordKey]; !ok {
 		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository password secret %s", RepoPasswordKey, r.password.Name)
