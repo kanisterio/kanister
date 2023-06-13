@@ -98,34 +98,18 @@ func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
 	kopiaTLSSecretData, err := getKopiaTLSSecret()
 	c.Assert(err, IsNil)
 	s.repoServerSecrets = repositoryServerSecrets{}
-	s.repoServerSecrets.serverUserAccess, err = s.createSecret("test-repository-server-user-access-", "", getRepoServerUserAccessSecretData("localhost",DefaultKopiaRepositoryServerAccessPassword))
+	s.repoServerSecrets.serverUserAccess, err = createRepositoryServerUserAccessSecret(s.kubeCli, s.repoServerControllerNamespace, getRepoServerUserAccessSecretData("localhost", DefaultKopiaRepositoryServerAccessPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.serverAdmin, err = s.createSecret("test-repository-server-admin-", "", getRepoServerAdminSecretData(DefaulKopiaRepositoryServerAdminUser,DefaultKopiaRepositoryServerAdminPassword))
+	s.repoServerSecrets.serverAdmin, err = createRepositoryServerAdminSecret(s.kubeCli, s.repoServerControllerNamespace, getRepoServerAdminSecretData(DefaulKopiaRepositoryServerAdminUser, DefaultKopiaRepositoryServerAdminPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.repositoryPassword, err = s.createSecret("test-repository-password-", "", getRepoPasswordSecretData(DefaultKopiaRepositoryPassword))
+	s.repoServerSecrets.repositoryPassword, err = createRepositoryPassword(s.kubeCli, s.repoServerControllerNamespace, getRepoPasswordSecretData(DefaultKopiaRepositoryPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.serverTLS, err = s.createSecret("test-tls-", v1.SecretTypeTLS, kopiaTLSSecretData)
+	s.repoServerSecrets.serverTLS, err = CreateKopiaTLSSecret(s.kubeCli, s.repoServerControllerNamespace, kopiaTLSSecretData)
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storage, err = s.createSecret("test-repository-server-storage-", "", getDefaultS3StorageLocation())
+	s.repoServerSecrets.storage, err = CreateStorageLocationSecret(s.kubeCli, s.repoServerControllerNamespace, getDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storageCredentials, err = s.createSecret("test-repository-server-storage-creds-", "secrets.kanister.io/aws", getDefaultS3StorageCreds())
+	s.repoServerSecrets.storageCredentials, err = createSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, "secrets.kanister.io/aws", getDefaultS3StorageCreds())
 	c.Assert(err, IsNil)
-}
-
-
-func (s *RepoServerControllerSuite) createSecret(name string, secrettype v1.SecretType, data map[string][]byte) (se *v1.Secret, err error) {
-	secret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
-		},
-		Data: data,
-	}
-	if secrettype != "" {
-		secret.Type = secrettype
-	}
-
-	se, err = s.kubeCli.CoreV1().Secrets(s.repoServerControllerNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
-	return
 }
 
 func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
@@ -151,7 +135,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 	c.Assert(err, IsNil)
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
-	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3StorageLocation())
+	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
 	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
 	c.Assert(err, IsNil)
@@ -163,7 +147,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerStopped(c 
 	c.Assert(err, IsNil)
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
-	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3StorageLocation())
+	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
 	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
 	c.Assert(err, NotNil)
@@ -186,21 +170,6 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(service.OwnerReferences), Equals, 1)
 	c.Assert(service.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
-}
-
-func (s *RepoServerControllerSuite) TestRepositoryConnectFailures(c *C) {
-	ctx := context.Background()
-	originalrepoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
-	
-	InvalidrepositoryPassword, err = s.createSecret("test-repository-password-invalid-", "", repoPasswordSecretData)
-	c.Assert(err, IsNil)
-
-	repoServerInvalidPassword:=originalrepoServerCR.Spec.Repository.
-	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, originalrepoServerCR, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
-	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
-
 }
 
 func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
