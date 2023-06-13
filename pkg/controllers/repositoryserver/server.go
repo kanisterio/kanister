@@ -26,7 +26,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/maintenance"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kustomize/kyaml/sets"
 )
@@ -86,10 +86,10 @@ func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, strin
 	}
 	var serverAdminUsername, serverAdminPassword []byte
 	var ok bool
-	if serverAdminUsername, ok = h.RepositoryServerSecrets.serverAdmin.Data[repositoryserver.RepositoryServerAdminUsernameKey]; !ok {
+	if serverAdminUsername, ok = h.RepositoryServerSecrets.serverAdmin.Data[reposerver.RepositoryServerAdminUsernameKey]; !ok {
 		return "", "", "", errors.New("Server admin username is not specified")
 	}
-	if serverAdminPassword, ok = h.RepositoryServerSecrets.serverAdmin.Data[repositoryserver.RepositoryServerAdminPasswordKey]; !ok {
+	if serverAdminPassword, ok = h.RepositoryServerSecrets.serverAdmin.Data[reposerver.RepositoryServerAdminPasswordKey]; !ok {
 		return "", "", "", errors.New("Server admin password is not specified")
 	}
 	return repoServerAddress, string(serverAdminUsername), string(serverAdminPassword), nil
@@ -118,7 +118,7 @@ func (h *RepoServerHandler) waitForServerReady(ctx context.Context, serverAddres
 }
 
 func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error {
-	repoPassword := string(h.RepositoryServerSecrets.repositoryPassword.Data[repositoryserver.RepoPasswordKey])
+	repoPassword := string(h.RepositoryServerSecrets.repositoryPassword.Data[reposerver.RepoPasswordKey])
 
 	cmd := command.ServerListUser(
 		command.ServerListUserCommmandArgs{
@@ -203,7 +203,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 }
 
 func (h *RepoServerHandler) refreshServer(ctx context.Context, serverAddress, username, password string) error {
-	repoPassword := string(h.RepositoryServerSecrets.repositoryPassword.Data[repositoryserver.RepoPasswordKey])
+	repoPassword := string(h.RepositoryServerSecrets.repositoryPassword.Data[reposerver.RepoPasswordKey])
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")

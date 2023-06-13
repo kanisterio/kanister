@@ -19,7 +19,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
@@ -29,7 +29,7 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 	}
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
-			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[repositoryserver.RepoPasswordKey]),
+			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[reposerver.RepoPasswordKey]),
 			ConfigFilePath: command.DefaultConfigFilePath,
 			LogDirectory:   command.DefaultLogDirectory,
 		},
