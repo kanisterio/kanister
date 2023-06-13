@@ -30,8 +30,8 @@ const (
 	Location corev1.SecretType = "secrets.kanister.io/storage-location"
 	// RepositoryPasswordSecret represents the kopia repository passowrd secret type
 	RepositoryPasswordSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/password"
-	// RepositoryServerAdminCredentialsSecret represents the kopia server admin credentials secret type
-	RepositoryServerAdminCredentialsSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
+	// AdminCredentialsSecret represents the kopia server admin credentials secret type
+	AdminCredentialsSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
 )
 
 const (
@@ -44,9 +44,9 @@ const (
 	TypeKey          = "type"
 
 	// Kopia Repository Server secret keys
-	RepoPasswordKey                  = "repo-password"
-	RepositoryServerAdminUsernameKey = "username"
-	RepositoryServerAdminPasswordKey = "password"
+	RepoPasswordKey  = "repo-password"
+	AdminUsernameKey = "username"
+	AdminPasswordKey = "password"
 
 	// Error msg for missing required field in the secret
 	MissingRequiredFieldErrorMsg = "Missing required field %s in the secret '%s:%s'"

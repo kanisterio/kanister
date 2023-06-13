@@ -33,13 +33,13 @@ func NewRepositoryServerAdminCredentials(secret *corev1.Secret) *repositoryServe
 
 func (r *repositoryServerAdminCredentials) Validate() error {
 	var count int
-	if _, ok := r.credentials.Data[RepositoryServerAdminUsernameKey]; !ok {
-		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, RepositoryServerAdminUsernameKey, r.credentials.Namespace, r.credentials.Name)
+	if _, ok := r.credentials.Data[AdminUsernameKey]; !ok {
+		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, AdminUsernameKey, r.credentials.Namespace, r.credentials.Name)
 	}
 	count++
 
-	if _, ok := r.credentials.Data[RepositoryServerAdminPasswordKey]; !ok {
-		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, RepositoryServerAdminPasswordKey, r.credentials.Namespace, r.credentials.Name)
+	if _, ok := r.credentials.Data[AdminPasswordKey]; !ok {
+		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, AdminPasswordKey, r.credentials.Namespace, r.credentials.Name)
 	}
 	count++
 
