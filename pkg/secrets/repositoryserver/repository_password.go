@@ -37,14 +37,11 @@ func NewRepoPassword(secret *corev1.Secret) *repositoryPassword {
 
 // Validate the kopia repository password for required fields as well as unknown fields
 func (r *repositoryPassword) Validate() error {
-	var count int
+	if len(r.password.Data) != 1 {
+		return errors.Wrapf(ErrValidate, UnknownFieldErrorMsg, r.password.Namespace, r.password.Name)
+	}
 	if _, ok := r.password.Data[RepoPasswordKey]; !ok {
 		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, RepoPasswordKey, r.password.Namespace, r.password.Name)
-	}
-	count++
-
-	if len(r.password.Data) > count {
-		return errors.Wrapf(ErrValidate, UnknownFieldErrorMsg, r.password.Namespace, r.password.Name)
 	}
 	return nil
 }

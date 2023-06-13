@@ -33,7 +33,7 @@ func NewAzureLocation(secret *corev1.Secret) *azure {
 
 func (l *azure) Validate() error {
 	if _, ok := l.storageLocation.Data[BucketKey]; !ok {
-		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository storage location secret %s", BucketKey, l.storageLocation.Name)
+		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, BucketKey, l.storageLocation.Namespace, l.storageLocation.Name)
 	}
 	return nil
 }

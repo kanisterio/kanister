@@ -32,19 +32,15 @@ func NewRepositoryServerAdminCredentials(secret *corev1.Secret) *repositoryServe
 }
 
 func (r *repositoryServerAdminCredentials) Validate() error {
-	var count int
+	// kopia repository server admin credentials secret must have exactly 2 fields
+	if len(r.credentials.Data) != 2 {
+		return errors.Wrapf(ErrValidate, UnknownFieldErrorMsg, r.credentials.Namespace, r.credentials.Name)
+	}
 	if _, ok := r.credentials.Data[AdminUsernameKey]; !ok {
 		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, AdminUsernameKey, r.credentials.Namespace, r.credentials.Name)
 	}
-	count++
-
 	if _, ok := r.credentials.Data[AdminPasswordKey]; !ok {
 		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, AdminPasswordKey, r.credentials.Namespace, r.credentials.Name)
-	}
-	count++
-
-	if len(r.credentials.Data) > count {
-		return errors.Wrapf(ErrValidate, UnknownFieldErrorMsg, r.credentials.Namespace, r.credentials.Name)
 	}
 	return nil
 }
