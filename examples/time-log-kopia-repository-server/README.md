@@ -20,8 +20,6 @@ deployment "time-logger" created
 
 #### Create Repository Server CR
 
-Create Kopia Repository Server CR if not created already
-
 - Create Kopia Repository using S3 as the location storage
 
 ```bash
