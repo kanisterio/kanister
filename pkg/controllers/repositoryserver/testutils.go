@@ -27,17 +27,17 @@ import (
 )
 
 const (
-	DefaultKopiaRepositoryPath                 = "kopia-repo-controller-test"
-	DefaulKopiaRepositoryServerAdminUser       = "admin@test"
-	DefaultKopiaRepositoryServerAdminPassword  = "admin1234"
-	DefaultKopiaRepositoryServerHost           = "localhost"
-	DefaultKopiaRepositoryPassword             = "test1234"
-	DefaultKopiaRepositoryUser                 = "repository-user"
-	DefaultKopiaRepositoryServerAccessUser     = "kanister-user"
-	DefaultKopiaRepositoryServerAccessPassword = "test1234"
-	DefaultKanisterNamespace                   = "kanister"
-	DefaultKopiaRepositoryServerContainer      = "repo-server-container"
-	PathKey                                    = "path"
+	defaultKopiaRepositoryPath                 = "kopia-repo-controller-test"
+	defaulKopiaRepositoryServerAdminUser       = "admin@test"
+	defaultKopiaRepositoryServerAdminPassword  = "admin1234"
+	defaultKopiaRepositoryServerHost           = "localhost"
+	defaultKopiaRepositoryPassword             = "test1234"
+	defaultKopiaRepositoryUser                 = "repository-user"
+	defaultKopiaRepositoryServerAccessUser     = "kanister-user"
+	defaultKopiaRepositoryServerAccessPassword = "test1234"
+	defaultKanisterNamespace                   = "kanister"
+	defaultKopiaRepositoryServerContainer      = "repo-server-container"
+	pathKey                                    = "path"
 )
 
 func getKopiaTLSSecret() (map[string][]byte, error) {
@@ -107,9 +107,9 @@ func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryS
 				},
 			},
 			Repository: crv1alpha1.Repository{
-				RootPath: DefaultKopiaRepositoryPath,
-				Username: DefaultKopiaRepositoryUser,
-				Hostname: DefaultKopiaRepositoryServerHost,
+				RootPath: defaultKopiaRepositoryPath,
+				Username: defaultKopiaRepositoryUser,
+				Hostname: defaultKopiaRepositoryServerHost,
 				PasswordSecretRef: v1.SecretReference{
 					Namespace: namespace,
 				},
@@ -119,7 +119,7 @@ func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryS
 					UserAccessSecretRef: v1.SecretReference{
 						Namespace: namespace,
 					},
-					Username: DefaultKopiaRepositoryServerAccessUser,
+					Username: defaultKopiaRepositoryServerAccessUser,
 				},
 				AdminSecretRef: v1.SecretReference{
 					Namespace: namespace,
@@ -147,7 +147,7 @@ func getDefaultS3CompliantStorageLocation() map[string][]byte {
 	return map[string][]byte{
 		repositoryserver.LocationTypeKey: []byte(crv1alpha1.LocationTypeS3Compliant),
 		repositoryserver.BucketKey:       []byte(testutil.TestS3BucketName),
-		PathKey:                          []byte(DefaultKopiaRepositoryPath),
+		pathKey:                          []byte(defaultKopiaRepositoryPath),
 		repositoryserver.RegionKey:       []byte(testutil.TestS3Region),
 		repositoryserver.EndpointKey:     []byte(os.Getenv("LOCATION_ENDPOINT")),
 	}
@@ -201,23 +201,23 @@ func createKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.RepositoryServ
 
 	commandArgs := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
-			RepoPassword:   DefaultKopiaRepositoryPassword,
+			RepoPassword:   defaultKopiaRepositoryPassword,
 			ConfigFilePath: command.DefaultConfigFilePath,
 			LogDirectory:   command.DefaultLogDirectory,
 		},
 		CacheDirectory:  command.DefaultCacheDirectory,
-		Hostname:        DefaultKopiaRepositoryServerHost,
+		Hostname:        defaultKopiaRepositoryServerHost,
 		ContentCacheMB:  contentCacheMB,
 		MetadataCacheMB: metadataCacheMB,
-		Username:        DefaultKopiaRepositoryUser,
-		RepoPathPrefix:  DefaultKopiaRepositoryPath,
+		Username:        defaultKopiaRepositoryUser,
+		RepoPathPrefix:  defaultKopiaRepositoryPath,
 		Location:        storageLocation,
 	}
 	return repository.CreateKopiaRepository(
 		cli,
-		DefaultKanisterNamespace,
+		defaultKanisterNamespace,
 		rs.Status.ServerInfo.PodName,
-		DefaultKopiaRepositoryServerContainer,
+		defaultKopiaRepositoryServerContainer,
 		commandArgs,
 	)
 }
