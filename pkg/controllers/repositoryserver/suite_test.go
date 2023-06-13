@@ -3,6 +3,11 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
+// Copyright 2023 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -15,58 +20,101 @@
 package repositoryserver
 
 import (
-	"path/filepath"
+	"context"
 	"testing"
-	"time"
 
 	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	ctrl "sigs.k8s.io/controller-runtime"
 
-	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/resource"
 )
 
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
-type ControllerSuite struct {
-	testEnv *envtest.Environment
+type RepoServerControllerSuite struct {
+	crCli                         crclientv1alpha1.CrV1alpha1Interface
+	kubeCli                       kubernetes.Interface
+	repoServerControllerNamespace string
+	repoServerSecrets             repositoryServerSecrets
 }
 
-var _ = Suite(&ControllerSuite{})
+var _ = Suite(&RepoServerControllerSuite{})
 
-func (s *ControllerSuite) SetUpSuite(c *C) {
-	c.Log("Bootstrapping test environment with Kanister CRDs")
-	useExistingCluster := true
-	s.testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "customresource")},
-		ErrorIfCRDPathMissing: true,
-		UseExistingCluster:    &useExistingCluster,
+func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
+	config, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+	cli, err := kubernetes.NewForConfig(config)
+	c.Assert(err, IsNil)
+	crCli, err := crclientv1alpha1.NewForConfig(config)
+	c.Assert(err, IsNil)
+
+	// Make sure the CRD's exist.
+	err = resource.CreateCustomResources(context.Background(), config)
+	c.Assert(err, IsNil)
+	err = resource.CreateRepoServerCustomResource(context.Background(), config)
+	c.Assert(err, IsNil)
+
+	s.kubeCli = cli
+	s.crCli = crCli
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:             scheme.Scheme,
+		Port:               9443,
+		MetricsBindAddress: "0",
+	})
+	c.Assert(err, IsNil)
+
+	err = (&RepositoryServerReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr)
+	c.Assert(err, IsNil)
+
+	go func() {
+		err = mgr.Start(ctrl.SetupSignalHandler())
+		c.Assert(err, IsNil)
+	}()
+
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "repositoryservercontrollertest-",
+		},
 	}
-
-	cfg, err := s.testEnv.Start()
+	ctx := context.Background()
+	cns, err := s.kubeCli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	c.Assert(cfg, NotNil)
-
-	err = crkanisteriov1alpha1.AddToScheme(scheme.Scheme)
-	c.Assert(err, IsNil)
-
-	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	c.Assert(err, IsNil)
-	c.Assert(k8sClient, NotNil)
+	s.repoServerControllerNamespace = cns.Name
+	s.createRepositoryServerSecrets(c)
 }
 
-func (s *ControllerSuite) TearDownSuite(c *C) {
-	if s.testEnv != nil {
-		c.Log("Tearing down the test environment")
-		err := s.testEnv.Stop()
+func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
+	kopiaTLSSecretData, err := getKopiaTLSSecret()
+	c.Assert(err, IsNil)
+	s.repoServerSecrets = repositoryServerSecrets{}
+	s.repoServerSecrets.serverUserAccess, err = createRepositoryServerUserAccessSecret(s.kubeCli, s.repoServerControllerNamespace, getRepoServerUserAccessSecretData("localhost", DefaultKopiaRepositoryServerAccessPassword))
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.serverAdmin, err = createRepositoryServerAdminSecret(s.kubeCli, s.repoServerControllerNamespace, getRepoServerAdminSecretData(DefaulKopiaRepositoryServerAdminUser, DefaultKopiaRepositoryServerAdminPassword))
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.repositoryPassword, err = createRepositoryPassword(s.kubeCli, s.repoServerControllerNamespace, getRepoPasswordSecretData(DefaultKopiaRepositoryPassword))
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.serverTLS, err = CreateKopiaTLSSecret(s.kubeCli, s.repoServerControllerNamespace, kopiaTLSSecretData)
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.storage, err = CreateStorageLocationSecret(s.kubeCli, s.repoServerControllerNamespace, getDefaultS3CompliantStorageLocation())
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.storageCredentials, err = createSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, "secrets.kanister.io/aws", getDefaultS3StorageCreds())
+	c.Assert(err, IsNil)
+}
+
+func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
+	if s.repoServerControllerNamespace != "" {
+		err := s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.repoServerControllerNamespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
-}
-
-func (s *ControllerSuite) TestWatch(c *C) {
-	// We give it a few seconds complete it's scan. This isn't required for the
-	// test, but is a more realistic startup scenario.
-	time.Sleep(5 * time.Second)
 }
