@@ -80,7 +80,7 @@ type GeneralCommandArgs struct {
 // contains subcommands, loggable flags, loggable key value pairs and
 // redacted key value pairs
 func GeneralCommand(cmdArgs GeneralCommandArgs) logsafe.Cmd {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	for _, subCmd := range cmdArgs.SubCommands {
 		args = args.AppendLoggable(subCmd)
 	}
