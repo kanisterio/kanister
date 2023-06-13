@@ -19,6 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 // ValidateCredentials returns error if secret is failed at validation.
@@ -42,28 +43,28 @@ func ValidateCredentials(secret *corev1.Secret) error {
 	}
 }
 
-func getLocationType(secret *corev1.Secret) (repositoryserver.RepositoryServerSecret, error) {
+func getLocationType(secret *corev1.Secret) (reposerver.RepositoryServerSecret, error) {
 	var locationType []byte
 	var ok bool
 	if secret == nil {
 		return nil, errors.New("Secret is Nil")
 	}
 
-	if locationType, ok = (secret.Data[repositoryserver.TypeKey]); !ok {
-		return nil, errors.Errorf("secret '%s:%s' does not have required field %s", secret.Namespace, secret.Name, repositoryserver.TypeKey)
+	if locationType, ok = (secret.Data[reposerver.TypeKey]); !ok {
+		return nil, errors.Wrapf(reposerver.ErrValidate, reposerver.MissingRequiredFieldErrorMsg, reposerver.TypeKey, secret.Namespace, secret.Name)
 	}
 
-	switch repositoryserver.LocType(string(locationType)) {
-	case repositoryserver.LocTypeS3:
-		return repositoryserver.NewAWSLocation(secret), nil
-	case repositoryserver.LocTypeAzure:
-		return repositoryserver.NewAzureLocation(secret), nil
-	case repositoryserver.LocTypeGCS:
-		return repositoryserver.NewGCPLocation(secret), nil
-	case repositoryserver.LocTypeFilestore:
-		return repositoryserver.NewFileStoreLocation(secret), nil
+	switch reposerver.LocType(string(locationType)) {
+	case reposerver.LocTypeS3:
+		return reposerver.NewAWSLocation(secret), nil
+	case reposerver.LocTypeAzure:
+		return reposerver.NewAzureLocation(secret), nil
+	case reposerver.LocTypeGCS:
+		return reposerver.NewGCPLocation(secret), nil
+	case reposerver.LocTypeFilestore:
+		return reposerver.NewFileStoreLocation(secret), nil
 	default:
-		return nil, errors.Errorf("Unsupported location type '%s' for secret '%s:%s'", locationType, secret.Namespace, secret.Name)
+		return nil, errors.Wrapf(reposerver.ErrValidate, reposerver.UnsupportedLocationTypeErrorMsg, locationType, secret.Namespace, secret.Name)
 	}
 }
 

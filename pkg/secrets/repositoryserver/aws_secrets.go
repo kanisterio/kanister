@@ -33,10 +33,10 @@ func NewAWSLocation(secret *corev1.Secret) *aws {
 
 func (l *aws) Validate() (err error) {
 	if _, ok := l.storageLocation.Data[BucketKey]; !ok {
-		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository storage location secret %s", BucketKey, l.storageLocation.Name)
+		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, BucketKey, l.storageLocation.Name)
 	}
 	if _, ok := l.storageLocation.Data[RegionKey]; !ok {
-		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository storage location secret %s", RegionKey, l.storageLocation.Name)
+		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, RegionKey, l.storageLocation.Name)
 	}
 	return nil
 }

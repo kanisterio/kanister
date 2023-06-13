@@ -24,6 +24,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/pkg/errors"
 )
 
@@ -54,7 +55,7 @@ const (
 // - session_token
 func ValidateAWSCredentials(secret *v1.Secret) error {
 	if string(secret.Type) != AWSSecretType {
-		return errors.New("Secret is not AWS secret")
+		return errors.Wrapf(reposerver.ErrValidate, reposerver.IncompatibleSecretTypeErrorMsg, AWSSecretType, secret.Namespace, secret.Name)
 	}
 	count := 0
 	if _, ok := secret.Data[AWSAccessKeyID]; ok {

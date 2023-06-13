@@ -47,4 +47,13 @@ const (
 	RepoPasswordKey                  = "repo-password"
 	RepositoryServerAdminUsernameKey = "username"
 	RepositoryServerAdminPasswordKey = "password"
+
+	// Error msg for missing required field in the secret
+	MissingRequiredFieldErrorMsg = "Missing required field %s in the secret '%s:%s'"
+	// Error msg for unknown in the secret
+	UnknownFieldErrorMsg = "'%s:%s' secret has an unknown field"
+	// Unsupported location type in the secret
+	UnsupportedLocationTypeErrorMsg = "Unsupported location type '%s' for secret '%s:%s'"
+	// Invalid Secret type error msg
+	IncompatibleSecretTypeErrorMsg = "Incompatible secret type. Expected type %s in the secret '%s:%s'"
 )

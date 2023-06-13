@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 const (
@@ -40,13 +40,13 @@ const (
 // - GCPServiceAccountJsonKey
 func ValidateGCPCredentials(secret *v1.Secret) error {
 	if string(secret.Type) != GCPSecretType {
-		return errors.Errorf("The type of the secret is incorrect,it is not a GCP compatible secret, the type of the secret should be %s", GCPSecretType)
+		return errors.Wrapf(reposerver.ErrValidate, reposerver.IncompatibleSecretTypeErrorMsg, GCPSecretType, secret.Namespace, secret.Name)
 	}
 	if _, ok := secret.Data[GCPProjectID]; !ok {
-		return errors.Wrapf(repositoryserver.ErrValidate, "%s field is required in the kopia repository storage credentials secret %s", GCPProjectID, secret.Name)
+		return errors.Wrapf(reposerver.ErrValidate, reposerver.MissingRequiredFieldErrorMsg, GCPProjectID, secret.Namespace, secret.Name)
 	}
 	if _, ok := secret.Data[GCPServiceAccountJsonKey]; !ok {
-		return errors.Wrapf(repositoryserver.ErrValidate, "%s field is required in the kopia repository storage credentials secret %s", GCPServiceAccountJsonKey, secret.Name)
+		return errors.Wrapf(reposerver.ErrValidate, reposerver.MissingRequiredFieldErrorMsg, GCPServiceAccountJsonKey, secret.Namespace, secret.Name)
 	}
 	return nil
 }
