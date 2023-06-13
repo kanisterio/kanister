@@ -33,7 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	crv1alpha1client "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -46,7 +46,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type RepoServerControllerSuite struct {
-	crCli                         crclientv1alpha1.CrV1alpha1Interface
+	crCli                         crv1alpha1client.CrV1alpha1Interface
 	kubeCli                       kubernetes.Interface
 	repoServerControllerNamespace string
 	repoServerSecrets             repositoryServerSecrets
@@ -59,7 +59,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	cli, err := kubernetes.NewForConfig(config)
 	c.Assert(err, IsNil)
-	crCli, err := crclientv1alpha1.NewForConfig(config)
+	crCli, err := crv1alpha1client.NewForConfig(config)
 	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
