@@ -32,8 +32,11 @@ func NewRepositoryServerUserAccessCredentials(secret *corev1.Secret) *repository
 }
 
 func (r *repositoryServerUserAccessCredentials) Validate() error {
+	if r.credentials == nil {
+		return errors.Wrapf(ErrValidate, NilSecretErrorMessage)
+	}
 	if len(r.credentials.Data) == 0 {
-		return errors.Wrapf(ErrValidate, "Empty secret. Expected at least one user access credential in the secret %s", r.credentials.Name)
+		return errors.Wrapf(ErrValidate, EmptySecretErrorMessage, r.credentials.Namespace, r.credentials.Name)
 	}
 	return nil
 }

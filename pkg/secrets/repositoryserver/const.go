@@ -56,4 +56,9 @@ const (
 	UnsupportedLocationTypeErrorMsg = "Unsupported location type '%s' for secret '%s:%s'"
 	// Invalid Secret type error msg
 	IncompatibleSecretTypeErrorMsg = "Incompatible secret type. Expected type %s in the secret '%s:%s'"
+
+	// Nil Secret error message
+	NilSecretErrorMessage = "Secret is Nil"
+	// Empty Secret error message
+	EmptySecretErrorMessage = "Empty secret. Expected at least one key value pair in the secret '%s:%s'"
 )

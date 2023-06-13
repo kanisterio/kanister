@@ -28,15 +28,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
-func performRepoServerSecretsValidation(p *validateParams) error {
-	ctx := context.Background()
+func performRepoServerSecretsValidation(ctx context.Context, p *validateParams) error {
 	var cli kubernetes.Interface
 	var secret *corev1.Secret
-	config, err := kube.LoadConfig()
-	if err != nil {
-		return err
-	}
-	cli, err = kubernetes.NewForConfig(config)
+
+	cli, err := kube.NewClient()
 	if err != nil {
 		return errors.Wrap(err, "could not get the kubernetes client")
 	}

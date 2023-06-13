@@ -32,6 +32,12 @@ func NewAWSLocation(secret *corev1.Secret) *aws {
 }
 
 func (l *aws) Validate() (err error) {
+	if l.storageLocation == nil {
+		return errors.Wrapf(ErrValidate, NilSecretErrorMessage)
+	}
+	if len(l.storageLocation.Data) == 0 {
+		return errors.Wrapf(ErrValidate, EmptySecretErrorMessage, l.storageLocation.Namespace, l.storageLocation.Name)
+	}
 	if _, ok := l.storageLocation.Data[BucketKey]; !ok {
 		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, BucketKey, l.storageLocation.Namespace, l.storageLocation.Name)
 	}

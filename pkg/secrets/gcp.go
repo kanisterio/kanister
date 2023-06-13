@@ -39,8 +39,14 @@ const (
 // - GCPProjectID
 // - GCPServiceAccountJsonKey
 func ValidateGCPCredentials(secret *v1.Secret) error {
+	if secret == nil {
+		return errors.Wrapf(reposerver.ErrValidate, reposerver.NilSecretErrorMessage)
+	}
 	if string(secret.Type) != GCPSecretType {
 		return errors.Wrapf(reposerver.ErrValidate, reposerver.IncompatibleSecretTypeErrorMsg, GCPSecretType, secret.Namespace, secret.Name)
+	}
+	if len(secret.Data) == 0 {
+		return errors.Wrapf(reposerver.ErrValidate, reposerver.EmptySecretErrorMessage, secret.Namespace, secret.Name)
 	}
 	if _, ok := secret.Data[GCPProjectID]; !ok {
 		return errors.Wrapf(reposerver.ErrValidate, reposerver.MissingRequiredFieldErrorMsg, GCPProjectID, secret.Namespace, secret.Name)

@@ -37,6 +37,9 @@ func NewRepoPassword(secret *corev1.Secret) *repositoryPassword {
 
 // Validate the kopia repository password for required fields as well as unknown fields
 func (r *repositoryPassword) Validate() error {
+	if r.password == nil {
+		return errors.Wrapf(ErrValidate, NilSecretErrorMessage)
+	}
 	// kopia repository must have exactly 1 field
 	if len(r.password.Data) != 1 {
 		return errors.Wrapf(ErrValidate, UnknownFieldErrorMsg, r.password.Namespace, r.password.Name)
