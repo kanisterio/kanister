@@ -35,7 +35,7 @@ func NewRepoPassword(secret *corev1.Secret) *repositoryPassword {
 	}
 }
 
-// ValidateSecret validates the kopia repository password for required fields as well as unknown fields
+// Validate the kopia repository password for required fields as well as unknown fields
 func (r *repositoryPassword) Validate() error {
 	var count int
 	if _, ok := r.password.Data[RepoPasswordKey]; !ok {
