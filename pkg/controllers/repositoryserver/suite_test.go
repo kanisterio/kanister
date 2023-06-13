@@ -82,8 +82,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 			GenerateName: "repositoryservercontrollertest-",
 		},
 	}
-	ctx := context.Background()
-	cns, err := s.kubeCli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	cns, err := s.kubeCli.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.repoServerControllerNamespace = cns.Name
 	s.createRepositoryServerSecrets(c)
