@@ -37,7 +37,6 @@ func (l *aws) Validate() (err error) {
 	}
 	if _, ok := l.storageLocation.Data[RegionKey]; !ok {
 		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository storage location secret %s", RegionKey, l.storageLocation.Name)
-
 	}
 	return nil
 }
