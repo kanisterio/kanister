@@ -8,7 +8,7 @@ This chart bootstraps a single node MySQL deployment on a [Kubernetes](http://ku
 
 ## Prerequisites
 
-- Kubernetes 1.20+
+- Kubernetes 1.23+
 - PV provisioner support in the underlying infrastructure
 - Kanister controller version 0.90.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
