@@ -38,27 +38,27 @@ func (h *RepoServerHandler) getSecretsFromCR(ctx context.Context) error {
 	//  same namespace. This namespace field can be overriden when we start creating secrets using 'kanctl' utility
 	repositoryServer := h.RepositoryServer
 	h.Logger.Info("Fetching secrets from all the secret references in the CR")
-	storage, err := h.fetchSecret(ctx, &repositoryServer.Spec.Storage.SecretRef)
+	storage, err := h.fetchSecret(ctx, repositoryServer.Spec.Storage.SecretRef)
 	if err != nil {
 		return err
 	}
-	storageCredentials, err := h.fetchSecret(ctx, &repositoryServer.Spec.Storage.CredentialSecretRef)
+	storageCredentials, err := h.fetchSecret(ctx, repositoryServer.Spec.Storage.CredentialSecretRef)
 	if err != nil {
 		return err
 	}
-	repositoryPassword, err := h.fetchSecret(ctx, &repositoryServer.Spec.Repository.PasswordSecretRef)
+	repositoryPassword, err := h.fetchSecret(ctx, repositoryServer.Spec.Repository.PasswordSecretRef)
 	if err != nil {
 		return err
 	}
-	serverAdmin, err := h.fetchSecret(ctx, &repositoryServer.Spec.Server.AdminSecretRef)
+	serverAdmin, err := h.fetchSecret(ctx, repositoryServer.Spec.Server.AdminSecretRef)
 	if err != nil {
 		return err
 	}
-	serverTLS, err := h.fetchSecret(ctx, &repositoryServer.Spec.Server.TLSSecretRef)
+	serverTLS, err := h.fetchSecret(ctx, repositoryServer.Spec.Server.TLSSecretRef)
 	if err != nil {
 		return err
 	}
-	serverUserAccess, err := h.fetchSecret(ctx, &repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef)
+	serverUserAccess, err := h.fetchSecret(ctx, repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef)
 	if err != nil {
 		return err
 	}
@@ -74,11 +74,7 @@ func (h *RepoServerHandler) getSecretsFromCR(ctx context.Context) error {
 	return nil
 }
 
-func (h *RepoServerHandler) fetchSecret(ctx context.Context, ref *corev1.SecretReference) (*corev1.Secret, error) {
-	if ref == nil {
-		return nil, errors.New("repository server CR does not have a secret reference set")
-	}
-
+func (h *RepoServerHandler) fetchSecret(ctx context.Context, ref corev1.SecretReference) (*corev1.Secret, error) {
 	h.Logger.Info(fmt.Sprintf("Fetching secret %s from namespace %s", ref.Name, ref.Namespace))
 	secret := corev1.Secret{}
 	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, &secret)
