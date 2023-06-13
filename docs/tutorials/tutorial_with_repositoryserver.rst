@@ -86,12 +86,12 @@ application is installed in the ``default`` namespace.
 Starting Kopia Repository Server
 ================================
 
-Since we will be using kopia data mover to copy/restore the backups to the location
-storage, we need to start the Kopia repository Server. To know more about kopia
-repository server, refer :ref:`architecture <architecture>`
+To copy or restore backups to the location storage using the Kopia data mover,
+it is necessary to start the Kopia repository server. To learn more about kopia
+repository server, refer to :ref:`architecture <architecture>`.
 
-The repository server controller requires Repository Server custom resource to
-be created to start the server. To understand more about this custom resource,
+The repository server controller requires the creation of a Repository Server
+custom resource to start the server. To understand more about this custom resource,
 see :ref:`architecture`.
 
 .. _creating_kopia_repository:
@@ -99,9 +99,9 @@ see :ref:`architecture`.
 Creating a Kopia Repository
 ---------------------------
 
-The kopia repository needs to be created before we start the repository server.
+The Kopia repository needs to be created before starting repository server.
 
-You can create it as shown below
+You can create it as shown below:
 
 .. code-block:: bash
 
@@ -115,15 +115,15 @@ You can create it as shown below
     --access-key=<ACCESS_KEY>
     --secret-access-key=<SECRET_ACCESS_KEY>
 
-To know more about how to create repository refer `kopia documentation
-<https://kopia.io/docs/reference/command-line/>`_ to understand more about kopia repository.
+To learn more about how to create repository and gain further insight into the Kopia
+repository refer to `kopia documentation <https://kopia.io/docs/reference/command-line/>`_
 
 
 Creating Secrets
 ----------------
 
-Please see :ref:`architecture` to know the secrets that needs to be created for
-repository server
+To learn about the secrets that need to be created for the repository server,
+Please refer to :ref:`architecture` section
 
 - ``Creating TLS secret``
 
@@ -151,8 +151,8 @@ repository server
 
 - ``Creating Storage Location Secret``
 
-   The secret should have same values for ``bucket``, ``endpoint``, ``region`` fields that
-   we have used while creating kopia repository
+   The secret should contain identical values for the ``bucket``, ``endpoint``, ``region``
+   fields that were used during the creation of the Kopia repository.
 
 .. code-block:: yaml
 
@@ -197,25 +197,26 @@ repository server
 
 .. _creating_repo_server_CR:
 
-Creating Repository Server custom resource
+Creating Repository Server Custom Resource
 ------------------------------------------
 
-Once the secrets are created, we need to create a repository Server CR having references
-to above created secrets. More details of the repository server CR
-can be found at :ref:`architecture`
+After creating the secrets, it is necessary to generate a repository server CR that
+references the previously created secrets. For more detailed information about the
+repository server CR, refer to the :ref:`architecture` section.
 
-We have to make sure that we use the same values for field,
-``spec.repository.username`` , ``spec.repository.hostname`` in the CR that we used while
-creating the repository in section :ref:`Creating a Kopia Repository <creating_kopia_repository>`
+It is important to ensure consistency by using the same values for the fields
+``spec.repository.username`` , ``spec.repository.hostname`` in the CR(Custom Resource) as those
+used during the repository creation process described in section
+:ref:`Creating a Kopia Repository <creating_kopia_repository>`.
 
-``--prefix`` field's value is a combination of prefix specified in `spec.data.path`
-field of location secret and sub-path provided in ``spec.repository.RootPath``
+The ``--prefix`` field's value is a combination of prefix specified in `spec.data.path`
+field of the location secret and the sub-path provided in the ``spec.repository.RootPath``
 field of Repository server CR.
 
-``spec.data.path`` field of location storage secret ``s3-location`` appended
-with ``spec.repository.RootPath`` in the repository Server CR combined together
-should match the``--prefix`` field of the command used to create repository as
-specified in section :ref:`Creating a Kopia Repository <creating_kopia_repository>`
+The ``spec.data.path`` field of the location storage secret ``s3-location`` appended
+with the ``spec.repository.RootPath`` in the repository Server CR should be combined
+together to match the ``--prefix`` field of the command used to create repository,as
+specified in section :ref:`Creating a Kopia Repository <creating_kopia_repository>`.
 
 
 .. code-block:: yaml
@@ -256,8 +257,9 @@ specified in section :ref:`Creating a Kopia Repository <creating_kopia_repositor
   EOF
 
 
-Once the Repository Server is created, you will see a repository server pod and
-a service exposing the kopia repository server created in ``kanister`` namespace.
+After creating the Repository Server, a repository server pod and
+a service will be visible in the ``kanister`` namespace,which exposes the
+created Kopia repository server.
 
 .. code-block:: bash
 
@@ -270,8 +272,8 @@ a service exposing the kopia repository server created in ``kanister`` namespace
    service/kanister-kanister-operator   ClusterIP   10.96.197.93    <none>        443/TCP     33m
    service/repo-server-service-rq2pq    ClusterIP   10.96.127.153   <none>        51515/TCP   2m13s
 
-To see if the server started successfully, you can check the status of
-the server using following command
+To verify the successful start of the server, you can use the following command to
+check the server's status.
 
 .. code-block:: bash
 

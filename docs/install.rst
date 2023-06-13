@@ -105,20 +105,19 @@ like below:
 
 .. _deploying_repo_server_controller:
 
-Deploying Kopia Repository server controller
+Deploying Kopia Repository Server Controller
 ============================================
 
-Kopia Repository server controller is not enabled by default. It can be
-deployed by setting the `repositoryServerController.enabled` value as
-shown below
+To enable the Kopia Repository server controller, set the repositoryServerController value as
+shown below during the deployment
 
 .. substitution-code-block:: bash
 
   helm upgrade --install kanister kanister/kanister-operator --namespace kanister --create-namespace \
   --set repositoryServerController.enabled=true
 
-This will create another container in the kanister pod for kopia
-repository server controller.
+Executing this command will add an additional container to the Kanister pod for the
+Kopia repository server controller.
 
 
 Building and Deploying from Source

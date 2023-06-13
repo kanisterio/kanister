@@ -550,13 +550,13 @@ The currently supported Profile template is based on the following definitions
 RepositoryServers
 -----------------
 
-RepositoryServers are a Kanister CustomResource that contains information about storage,
-repository and server details which are required for running a kopia repository server
-instance. Which could be further used for data operation artifacts.
+RepositoryServers are a Kanister CustomResource that contain information about storage,
+repository, and server details which are required for running a Kopia repository server
+instance, which can be further used for data operation artifacts.
 
-Unlike Secrets and ConfigMaps, only a single repository server can optionally be
-referenced by an ActionSet. As a result, it is not necessary to
-name the RepositoryServer in the Blueprint.
+In contrast to Secrets and ConfigMaps, an ActionSet can optionally reference only a
+single repository server, eliminating the need to name the RepositoryServer in the
+Blueprint.
 
 The following examples should be helpful.
 
@@ -568,7 +568,7 @@ The following examples should be helpful.
   # Access the RepositoryServer service name
   "{{ .RepositoryServer.ServerInfo.ServiceName }}"
 
-The currently supported RepositoryServer template is based on the following definitions
+The currently supported RepositoryServer template is based on the following definitions:
 
 .. code-block:: go
   :linenos:
