@@ -207,7 +207,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 			testFunction: func(rs *v1alpha1.RepositoryServer) {
 				storageLocationData := getDefaultS3CompliantStorageLocation()
 				storageLocationData[repositoryserver.BucketKey] = []byte("invalidbucket")
-				InvalidStorageLocationSecret, err := CreateStorageLocationSecret(s.kubeCli, s.repoServerControllerNamespace, storageLocationData)
+				InvalidStorageLocationSecret, err := createStorageLocationSecret(s.kubeCli, s.repoServerControllerNamespace, storageLocationData)
 				c.Assert(err, IsNil)
 				rs.Spec.Storage.SecretRef.Name = InvalidStorageLocationSecret.Name
 				rs.Spec.Storage.SecretRef.Namespace = InvalidStorageLocationSecret.Namespace
@@ -218,7 +218,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 			testFunction: func(rs *v1alpha1.RepositoryServer) {
 				storageLocationCredsData := getDefaultS3StorageCreds()
 				storageLocationCredsData[secrets.AWSAccessKeyID] = []byte("testaccesskey")
-				InvalidStorageLocationCrdesSecret, err := CreateStorageLocationSecret(s.kubeCli, s.repoServerControllerNamespace, storageLocationCredsData)
+				InvalidStorageLocationCrdesSecret, err := createStorageLocationSecret(s.kubeCli, s.repoServerControllerNamespace, storageLocationCredsData)
 				c.Assert(err, IsNil)
 				rs.Spec.Storage.CredentialSecretRef.Name = InvalidStorageLocationCrdesSecret.Name
 				rs.Spec.Storage.CredentialSecretRef.Namespace = InvalidStorageLocationCrdesSecret.Namespace
