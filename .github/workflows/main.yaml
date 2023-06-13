@@ -10,14 +10,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
-    # - name: Cache go deps
-    #   id: cache-go-dep
-    #   uses: actions/cache@v3
-    #   env:
-    #     cache-name: cache-go-deps
-    #   with:
-    #     path: ${GOPATH}/pkg/mod
-    #     key: ${{ runner.os }}-build-${{ env.cache-name }}
     - run: make go-mod-tidy
     - run: make go-mod-download
     - run: tar -cvf ./src.tar.gz ./ # preserve file permissions
