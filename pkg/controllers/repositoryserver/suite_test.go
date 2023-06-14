@@ -3,11 +3,6 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Copyright 2023 The Kanister Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
 //
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -94,8 +89,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 			GenerateName: "repositoryservercontrollertest-",
 		},
 	}
-	ctx := context.Background()
-	cns, err := s.kubeCli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	cns, err := s.kubeCli.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.repoServerControllerNamespace = cns.Name
 	s.createRepositoryServerSecrets(c)
