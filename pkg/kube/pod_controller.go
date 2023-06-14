@@ -178,7 +178,7 @@ func (p *podController) StopPod(ctx context.Context, stopTimeout time.Duration, 
 	}
 
 	if err := p.pcp.deletePod(ctx, p.pod.Namespace, p.podName, metav1.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds}); err != nil {
-		log.WithError(err).Print("Failed to delete pod", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
+		log.WithError(err).Print("Failed to delete pod", field.M{"PodName": p.podName, "Namespace": p.pod.Namespace})
 		return err
 	}
 
