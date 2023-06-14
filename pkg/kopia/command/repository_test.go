@@ -222,6 +222,19 @@ func (kRepoStatus *RepositoryUtilsSuite) TestRepositoryStatusCommand(c *check.C)
 			},
 			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log repository status",
 		},
+		{
+			f: func() []string {
+				args := RepositoryStatusCommandArgs{
+					CommandArgs: &CommandArgs{
+						ConfigFilePath: "path/kopia.config",
+						LogDirectory:   "cache/log",
+					},
+					GetJsonOutput: true,
+				}
+				return RepositoryStatusCommand(args)
+			},
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log repository status --json",
+		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, check.Equals, tc.expectedLog)
