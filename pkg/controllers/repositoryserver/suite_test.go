@@ -45,6 +45,7 @@ type RepoServerControllerSuite struct {
 	kubeCli                       kubernetes.Interface
 	repoServerControllerNamespace string
 	repoServerSecrets             repositoryServerSecrets
+	DefaultRepoServerReconciler   *RepositoryServerReconciler
 }
 
 var _ = Suite(&RepoServerControllerSuite{})
@@ -72,17 +73,18 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 		MetricsBindAddress: "0",
 	})
 	c.Assert(err, IsNil)
-
-	err = (&RepositoryServerReconciler{
+	repoServerReconciler := &RepositoryServerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr)
+	}
+	err = (repoServerReconciler).SetupWithManager(mgr)
 	c.Assert(err, IsNil)
 
 	go func() {
 		err = mgr.Start(ctrl.SetupSignalHandler())
 		c.Assert(err, IsNil)
 	}()
+	s.DefaultRepoServerReconciler = repoServerReconciler
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
