@@ -35,10 +35,10 @@ const (
 
 // ValidateGCPCredentials function is to verify the schema of GCP secrets
 // that need to be provided for kopia commands
-// Required fields:
-// - GCPProjectID
-// - GCPServiceAccountJsonKey
 func ValidateGCPCredentials(secret *v1.Secret) error {
+	// Required fields for the secret are
+	// - GCPProjectID
+	// - GCPServiceAccountJsonKey
 	if secret == nil {
 		return errors.Wrapf(reposerver.ErrValidate, reposerver.NilSecretErrorMessage)
 	}
