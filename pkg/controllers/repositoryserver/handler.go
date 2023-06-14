@@ -70,18 +70,6 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 			return err
 		}
 	}
-
-	if err := h.connectToKopiaRepository(); err != nil {
-		return errors.Wrap(err, "Failed to connect to Kopia repository")
-	}
-
-	if err := h.startRepoProxyServer(ctx); err != nil {
-		return errors.Wrap(err, "Failed to start Kopia API server")
-	}
-
-	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		return errors.Wrap(err, "Failed to create/update kopia API server access users")
-	}
 	return nil
 }
 

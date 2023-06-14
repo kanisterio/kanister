@@ -191,19 +191,15 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 			return errors.Wrap(err, "Failed to add new user to the Kopia API server")
 		}
 	}
-
-	repoServerAddress, serverAdminUserName, serverAdminPassword, err := h.getServerDetails(ctx)
-	if err != nil {
-		return err
-	}
-	err = h.refreshServer(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
-	if err != nil {
-		return errors.Wrap(err, "Failed to refresh Kopia API server")
-	}
 	return nil
 }
 
-func (h *RepoServerHandler) refreshServer(ctx context.Context, serverAddress, username, password string) error {
+func (h *RepoServerHandler) refreshServer(ctx context.Context) error {
+	serverAddress, username, password, err := h.getServerDetails(ctx)
+	if err != nil {
+		return err
+	}
+
 	repoPassword := string(h.RepositoryServerSecrets.repositoryPassword.Data[repoPasswordKey])
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {

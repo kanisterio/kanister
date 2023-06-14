@@ -16,11 +16,14 @@ package repositoryserver
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -78,7 +81,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	logger.Info("Setting the CR status as 'ServerPending' since a create or update event is in progress")
-	repositoryServer.Status.Progress = crkanisteriov1alpha1.ServerPending
+	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
 
 	logger.Info("Found RepositoryServer CR. Create or update owned resources")
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
@@ -87,17 +90,85 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
+
+	logger.Info("Setup RepositoryServer. Create or update owned resources")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'ServerStopped' since an error occurred in create/update event")
-		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerStopped
+
+		condition := getCondition(metav1.ConditionFalse, err.Error(), serverSetupErrMessage, crkanisteriov1alpha1.ServerSetup)
+		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
 		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
-		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
 		return ctrl.Result{}, err
 	}
+	condition := getCondition(metav1.ConditionTrue, "", serverSetupSuccessMessage, crkanisteriov1alpha1.ServerSetup)
+	apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+	logger.Info("Connect to Kopia Repository")
+	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
+		condition := getCondition(metav1.ConditionFalse, err.Error(), repositoryConnectedErrMessage, crkanisteriov1alpha1.RepositoryConnected)
+		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 60}, err
+	}
+	condition = getCondition(metav1.ConditionTrue, "", repositoryConnectedSuccessMessage, crkanisteriov1alpha1.RepositoryConnected)
+	apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+	logger.Info("Start Repo Server")
+	if err := repoServerHandler.startRepoProxyServer(ctx); err != nil {
+		condition := getCondition(metav1.ConditionFalse, err.Error(), serverInitializedErrMessage, crkanisteriov1alpha1.ServerInitialized)
+		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 60}, err
+	}
+	condition = getCondition(metav1.ConditionTrue, "", serverInitializedSuccessMessage, crkanisteriov1alpha1.ServerInitialized)
+	apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+	logger.Info("Add/Update users")
+	if err := repoServerHandler.createOrUpdateClientUsers(ctx); err != nil {
+		condition := getCondition(metav1.ConditionFalse, err.Error(), clientsInitializedErrMessage, crkanisteriov1alpha1.ClientsInitialized)
+		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 60}, err
+	}
+	condition = getCondition(metav1.ConditionTrue, "", clientsInitializedSuccessMessage, crkanisteriov1alpha1.ClientsInitialized)
+	apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+	logger.Info("Refresh Server")
+	if err := repoServerHandler.refreshServer(ctx); err != nil {
+		condition := getCondition(metav1.ConditionFalse, err.Error(), serverRefreshedErrMessage, crkanisteriov1alpha1.ServerRefreshed)
+		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+
+		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 60}, err
+	}
+	condition = getCondition(metav1.ConditionTrue, "", serverRefreshedSuccessMessage, crkanisteriov1alpha1.ServerRefreshed)
+	apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+
 	logger.Info("Setting the CR status as 'ServerReady' after completing the create/update event\n\n\n\n")
-	repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerReady
+	repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Ready
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
