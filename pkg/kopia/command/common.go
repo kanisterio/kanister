@@ -26,6 +26,7 @@ type CommandArgs struct {
 	RepoPassword   string
 	ConfigFilePath string
 	LogDirectory   string
+	LogLevel       string
 }
 
 func bashCommand(args logsafe.Cmd) []string {
@@ -38,22 +39,27 @@ func stringSliceCommand(args logsafe.Cmd) []string {
 	return args.StringSliceCMD()
 }
 
-func commonArgs(cmdArgs *CommandArgs, requireInfoLevel bool) logsafe.Cmd {
+func commonArgs(cmdArgs *CommandArgs) logsafe.Cmd {
 	c := logsafe.NewLoggable(kopiaCommand)
-	if requireInfoLevel {
-		c = c.AppendLoggable(logLevelInfoFlag)
+
+	if cmdArgs.LogLevel != "" {
+		c = c.AppendLoggableKV(logLevelFlag, cmdArgs.LogLevel)
 	} else {
-		c = c.AppendLoggable(logLevelErrorFlag)
+		c = c.AppendLoggableKV(logLevelFlag, LogLevelError)
 	}
+
 	if cmdArgs.ConfigFilePath != "" {
 		c = c.AppendLoggableKV(configFileFlag, cmdArgs.ConfigFilePath)
 	}
+
 	if cmdArgs.LogDirectory != "" {
 		c = c.AppendLoggableKV(logDirectoryFlag, cmdArgs.LogDirectory)
 	}
+
 	if cmdArgs.RepoPassword != "" {
 		c = c.AppendRedactedKV(passwordFlag, cmdArgs.RepoPassword)
 	}
+
 	return c
 }
 
@@ -67,7 +73,7 @@ func addTags(tags []string, args logsafe.Cmd) logsafe.Cmd {
 
 // ExecKopiaArgs returns the basic Argv for executing kopia with the given config file path.
 func ExecKopiaArgs(configFilePath string) []string {
-	return commonArgs(&CommandArgs{ConfigFilePath: configFilePath}, false).StringSliceCMD()
+	return commonArgs(&CommandArgs{ConfigFilePath: configFilePath}).StringSliceCMD()
 }
 
 const (
