@@ -197,3 +197,5 @@ require (
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
+
+replace github.com/kopia/kopia => github.com/kastenhq/kopia v0.0.0-20230614150441-acd11d16b580

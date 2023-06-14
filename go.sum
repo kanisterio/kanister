@@ -332,6 +332,8 @@ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
+github.com/kastenhq/kopia v0.0.0-20230614150441-acd11d16b580 h1:JaVLH5R0Y2SYso7yZDr9Pnd1gsDXBIeCeR8nwYEc/w0=
+github.com/kastenhq/kopia v0.0.0-20230614150441-acd11d16b580/go.mod h1:5YqMBl4QdYB1xDDxxYBCP006izAm9QzPa0EU1T/GK8w=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20220726203146-8a90401257d4 h1:MuAfIUYqmW0bIxyltt4EIAgKSV3GxvEwZzlqBqGLQko=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20220726203146-8a90401257d4/go.mod h1:6+N3Bn9Whpb+bnRFQ2A2kAyAUiYvYM0+N5bArNd4K8s=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
@@ -352,8 +354,6 @@ github.com/klauspost/pgzip v1.2.5/go.mod h1:Ch1tH69qFZu15pkjo5kYi6mth2Zzwzt50oCQ
 github.com/klauspost/reedsolomon v1.11.7 h1:9uaHU0slncktTEEg4+7Vl7q7XUNMBUOK4R9gnKhMjAU=
 github.com/klauspost/reedsolomon v1.11.7/go.mod h1:4bXRN+cVzMdml6ti7qLouuYi32KHJ5MGv0Qd8a47h6A=
 github.com/kopia/htmluibuild v0.0.0-20230326183719-f482ef17e2c9 h1:s5Wa89s8RlPjuwqd8K8kuf+T9Kz4+NsbKwR/pJ3PAT0=
-github.com/kopia/kopia v0.13.0-rc2 h1:EcV3wCgp3vIytg8h5vvstlFIRWNE8DeAdAbu9quoC/c=
-github.com/kopia/kopia v0.13.0-rc2/go.mod h1:eTgZSDaU2pDzVGC7QRubbKOeohvHzzbRXvhZMH+AGHA=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.0/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
