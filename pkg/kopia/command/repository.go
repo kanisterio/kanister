@@ -137,6 +137,7 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 
 type RepositoryStatusCommandArgs struct {
 	*CommandArgs
+	GetJsonOutput bool
 }
 
 // RepositoryStatusCommand returns the kopia command for checking status of the Kopia repository
@@ -151,5 +152,9 @@ func RepositoryStatusCommand(cmdArgs RepositoryStatusCommandArgs) []string {
 
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, statusSubCommand)
+	if cmdArgs.GetJsonOutput {
+		args = args.AppendLoggable(jsonFlag)
+	}
+
 	return stringSliceCommand(args)
 }
