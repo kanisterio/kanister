@@ -33,6 +33,7 @@ type VulnerabilityReport struct {
 	FixVersions FixVersionsResponse `json:"fix"`
 }
 
+// Filters vulnerabilites based on the severity levels set in severityTypeSet
 func filterVulnerabilityReportMatches(matches []MatchResponse, severityTypeSet map[string]bool) ([]VulnerabilityReport, error) {
 	matchingVulnerabilities := make([]VulnerabilityReport, 0)
 	for _, match := range matches {
@@ -43,6 +44,8 @@ func filterVulnerabilityReportMatches(matches []MatchResponse, severityTypeSet m
 	return matchingVulnerabilities, nil
 }
 
+// Unmarshalls the Matches from the vulnerability report and returns a list of vulnerabilities
+// based on the severity levels set in severityTypeSet
 func decodeVulnerabilityReports(vulnerabilityScannerResponse VulnerabilityScannerResponse, severityTypeSet map[string]bool) ([]VulnerabilityReport, error) {
 	var matches []MatchResponse
 	matchingVulnerabilities := make([]VulnerabilityReport, 0)
@@ -52,6 +55,8 @@ func decodeVulnerabilityReports(vulnerabilityScannerResponse VulnerabilityScanne
 	return filterVulnerabilityReportMatches(matches, severityTypeSet)
 }
 
+// Unmarshalls the MatchDetails from the vulnerability report and returns a list of vulnerabilities
+// based on the severity levels set in severityTypeSet
 func parseVulerabilitiesReport(filePath string, severityLevels []string) ([]VulnerabilityReport, error) {
 	matchingVulnerabilities := make([]VulnerabilityReport, 0)
 	data, err := os.ReadFile(filePath)
@@ -75,6 +80,8 @@ func main() {
 	severityInputList := flag.String("sl", "High,Critical", "Comma separated list of severity levels to scan. Valid severity levels are: "+strings.Join(validSeverityLevels, ","))
 	reportJsonFilePath := flag.String("p", "", "Path to the JSON file containing the vulnerabilities report")
 	flag.Parse()
+
+	// passing file path is compulsory
 	if *reportJsonFilePath == "" {
 		flag.PrintDefaults()
 		os.Exit(1)
