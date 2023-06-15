@@ -31,6 +31,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -139,12 +140,14 @@ type KopiaServerCreds struct {
 
 // RepositoryServer contains fields from Repository server CR that will be used to resolve go templates for repository server in blueprint
 type RepositoryServer struct {
-	Name        string
-	Namespace   string
-	ServerInfo  crv1alpha1.ServerInfo
-	Username    string
-	Credentials RepositoryServerCredentials
-	Address     string
+	Name            string
+	Namespace       string
+	ServerInfo      crv1alpha1.ServerInfo
+	Username        string
+	Credentials     RepositoryServerCredentials
+	Address         string
+	ContentCacheMB  int
+	MetadataCacheMB int
 }
 
 type RepositoryServerCredentials struct {
@@ -268,6 +271,8 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 	}, nil
 }
 
+const ClusterLocalDomain = "svc.cluster.local"
+
 func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*RepositoryServer, error) {
 	if ref == nil {
 		log.Debug().Print("Executing the action without a repository-server")
@@ -293,14 +298,29 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Fetching Repository Server Service")
 	}
-	repositoryServerAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", repositoryServerService.Name, repositoryServerService.Namespace, repositoryServerService.Spec.Ports[0].Port)
+	repositoryServerAddress := fmt.Sprintf("https://%s.%s.%s:%d", repositoryServerService.Name, repositoryServerService.Namespace, ClusterLocalDomain, repositoryServerService.Spec.Ports[0].Port)
+	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
+	if r.Spec.Repository.CacheSizeSettings.Content != "" {
+		contentCacheMB, err = strconv.Atoi(r.Spec.Repository.CacheSizeSettings.Content)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error Parsing Content Cache Size")
+		}
+	}
+	if r.Spec.Repository.CacheSizeSettings.Metadata != "" {
+		metadataCacheMB, err = strconv.Atoi(r.Spec.Repository.CacheSizeSettings.Metadata)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error Parsing Metadata Cache Size")
+		}
+	}
 	return &RepositoryServer{
-		Name:        r.Name,
-		Namespace:   r.Namespace,
-		ServerInfo:  r.Status.ServerInfo,
-		Username:    r.Spec.Server.UserAccess.Username,
-		Credentials: repoServerSecrets,
-		Address:     repositoryServerAddress,
+		Name:            r.Name,
+		Namespace:       r.Namespace,
+		ServerInfo:      r.Status.ServerInfo,
+		Username:        r.Spec.Server.UserAccess.Username,
+		Credentials:     repoServerSecrets,
+		Address:         repositoryServerAddress,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
 	}, nil
 }
 
