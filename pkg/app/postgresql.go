@@ -217,5 +217,5 @@ func (pdb PostgresDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil {
 		return "", "", err
 	}
-	return kube.Exec(pdb.cli, pdb.namespace, pod, container, command, nil)
+	return kube.Exec(ctx, pdb.cli, pdb.namespace, pod, container, command, nil)
 }

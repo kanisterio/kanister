@@ -281,8 +281,8 @@ func resticAzureArgs(profile *param.Profile, repository string) ([]string, error
 }
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
-func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
-	_, _, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+func GetOrCreateRepository(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
+	_, _, err := getLatestSnapshots(ctx, profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	if err == nil {
 		return nil
 	}
@@ -291,15 +291,15 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 	if err != nil {
 		return errors.Wrap(err, "Failed to create init command")
 	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return errors.Wrapf(err, "Failed to create object store backup location")
 }
 
 // CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots
-func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) error {
-	_, stderr, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+func CheckIfRepoIsReachable(ctx context.Context, profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) error {
+	_, stderr, err := getLatestSnapshots(ctx, profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	if IsPasswordIncorrect(stderr) { // If password didn't work
 		return errors.New(PasswordIncorrect)
 	}
@@ -313,13 +313,13 @@ func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encry
 }
 
 //nolint:unparam
-func getLatestSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
+func getLatestSnapshots(ctx context.Context, profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
 	// Use the latest snapshots command to check if the repository exists
 	cmd, err := LatestSnapshotsCommand(profile, artifactPrefix, encryptionKey)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to create snapshot command")
 	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return stdout, stderr, err

@@ -396,5 +396,5 @@ func (a RDSAuroraMySQLDB) execCommand(ctx context.Context, command []string) (st
 	if err != nil || podName == "" {
 		return "", "", err
 	}
-	return kube.Exec(a.cli, a.namespace, podName, containerName, command, nil)
+	return kube.Exec(ctx, a.cli, a.namespace, podName, containerName, command, nil)
 }

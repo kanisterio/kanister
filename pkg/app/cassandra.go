@@ -222,5 +222,5 @@ func (cas *CassandraInstance) execCommand(ctx context.Context, command []string)
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", cas.name)
 	}
-	return kube.Exec(cas.cli, cas.namespace, podname, containername, command, nil)
+	return kube.Exec(ctx, cas.cli, cas.namespace, podname, containername, command, nil)
 }

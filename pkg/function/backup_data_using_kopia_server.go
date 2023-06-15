@@ -126,6 +126,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	}
 
 	snapInfo, err := backupDataUsingKopiaServer(
+		ctx,
 		cli,
 		container,
 		hostname,
@@ -158,6 +159,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 }
 
 func backupDataUsingKopiaServer(
+	ctx context.Context,
 	cli kubernetes.Interface,
 	container,
 	hostname,
@@ -186,7 +188,7 @@ func backupDataUsingKopiaServer(
 		MetadataCacheMB: metadataCacheMB,
 	})
 
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err != nil {
@@ -208,7 +210,7 @@ func backupDataUsingKopiaServer(
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to construct snapshot create command")
 	}
-	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 

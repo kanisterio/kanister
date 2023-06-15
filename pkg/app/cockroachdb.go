@@ -295,7 +295,7 @@ func (c *CockroachDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil || podName == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and container name %s.", c.name)
 	}
-	return kube.Exec(c.cli, c.namespace, podName, containerName, command, nil)
+	return kube.Exec(ctx, c.cli, c.namespace, podName, containerName, command, nil)
 }
 
 func (c *CockroachDB) waitForGC(ctx context.Context) error {

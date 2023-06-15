@@ -83,7 +83,7 @@ type fakePodCommandExecutorProcessor struct {
 	execWithOptionsSyncEnd   testBarrier
 }
 
-func (fprp *fakePodCommandExecutorProcessor) execWithOptions(cli kubernetes.Interface, opts ExecOptions) (string, string, error) {
+func (fprp *fakePodCommandExecutorProcessor) execWithOptions(ctx context.Context, cli kubernetes.Interface, opts ExecOptions) (string, string, error) {
 	fprp.inExecWithOptionsCli = cli
 	fprp.inExecWithOptionsOpts = &opts
 	fprp.execWithOptionsSyncStart.SyncWithController()

@@ -242,5 +242,5 @@ func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, 
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
 	}
-	return kube.Exec(mdb.cli, mdb.namespace, podname, containername, command, nil)
+	return kube.Exec(ctx, mdb.cli, mdb.namespace, podname, containername, command, nil)
 }

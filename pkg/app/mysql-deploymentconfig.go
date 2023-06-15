@@ -194,7 +194,7 @@ func (mdep *MysqlDepConfig) execCommand(ctx context.Context, command []string) (
 	if err != nil {
 		return "", "", err
 	}
-	stdout, stderr, err := kube.Exec(mdep.cli, mdep.namespace, podName, containerName, command, nil)
+	stdout, stderr, err := kube.Exec(ctx, mdep.cli, mdep.namespace, podName, containerName, command, nil)
 	if err != nil {
 		return stdout, stderr, errors.Wrapf(err, "Error executing command in the pod.")
 	}

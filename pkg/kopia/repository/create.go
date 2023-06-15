@@ -34,6 +34,7 @@ import (
 // Returns true if successful or false with an error
 // If the error is an already exists error, returns false with no error
 func CreateKopiaRepository(
+	ctx context.Context,
 	cli kubernetes.Interface,
 	namespace,
 	pod,
@@ -44,7 +45,7 @@ func CreateKopiaRepository(
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate repository create command")
 	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 
@@ -60,6 +61,7 @@ func CreateKopiaRepository(
 	}
 
 	if err := setGlobalPolicy(
+		ctx,
 		cli,
 		namespace,
 		pod,
@@ -71,6 +73,7 @@ func CreateKopiaRepository(
 
 	// Set custom maintenance owner in case of successful repository creation
 	if err := setCustomMaintenanceOwner(
+		ctx,
 		cli,
 		namespace,
 		pod,
@@ -85,10 +88,10 @@ func CreateKopiaRepository(
 
 // setGlobalPolicy sets the global policy of the kopia repo to keep max-int32 latest
 // snapshots and zeros all other time-based retention fields
-func setGlobalPolicy(cli kubernetes.Interface, namespace, pod, container string, cmdArgs *command.CommandArgs) error {
+func setGlobalPolicy(ctx context.Context, cli kubernetes.Interface, namespace, pod, container string, cmdArgs *command.CommandArgs) error {
 	mods := command.GetPolicyModifications()
 	cmd := command.PolicySetGlobal(command.PolicySetGlobalCommandArgs{CommandArgs: cmdArgs, Modifications: mods})
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return err
@@ -100,6 +103,7 @@ const (
 
 // setCustomMaintenanceOwner sets custom maintenance owner as username@NSUID-maintenance
 func setCustomMaintenanceOwner(
+	ctx context.Context,
 	cli kubernetes.Interface,
 	namespace,
 	pod,
@@ -116,7 +120,7 @@ func setCustomMaintenanceOwner(
 		CommandArgs: cmdArgs,
 		CustomOwner: newOwner,
 	})
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return err

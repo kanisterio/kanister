@@ -79,9 +79,11 @@ func (s *ExecSuite) TearDownSuite(c *C) {
 }
 
 func (s *ExecSuite) TestStderr(c *C) {
+	ctx := context.Background()
+
 	cmd := []string{"sh", "-c", "echo -n hello >&2"}
 	for _, cs := range s.pod.Status.ContainerStatuses {
-		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, IsNil)
 		c.Assert(stdout, Equals, "")
 		c.Assert(stderr, Equals, "hello")
@@ -89,7 +91,7 @@ func (s *ExecSuite) TestStderr(c *C) {
 
 	cmd = []string{"sh", "-c", "echo -n hello && exit 1"}
 	for _, cs := range s.pod.Status.ContainerStatuses {
-		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, NotNil)
 		c.Assert(stdout, Equals, "hello")
 		c.Assert(stderr, Equals, "")
@@ -97,7 +99,7 @@ func (s *ExecSuite) TestStderr(c *C) {
 
 	cmd = []string{"sh", "-c", "count=0; while true; do printf $count; let count=$count+1; if [ $count -eq 6 ]; then exit 1; fi; done"}
 	for _, cs := range s.pod.Status.ContainerStatuses {
-		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, NotNil)
 		c.Assert(stdout, Equals, "012345")
 		c.Assert(stderr, Equals, "")
@@ -105,6 +107,8 @@ func (s *ExecSuite) TestStderr(c *C) {
 }
 
 func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
+	ctx := context.Background()
+
 	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
 
@@ -138,7 +142,7 @@ func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
 			Stdout:        bufout,
 			Stderr:        buferr,
 		}
-		_, _, err := ExecWithOptions(s.cli, opts)
+		_, _, err := ExecWithOptions(ctx, s.cli, opts)
 		c.Assert(err, IsNil)
 		c.Assert(bufout.String(), Equals, testCase.expectedOut)
 		c.Assert(buferr.String(), Equals, testCase.expectedErr)
@@ -146,11 +150,13 @@ func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
 }
 
 func (s *ExecSuite) TestExecEcho(c *C) {
+	ctx := context.Background()
+
 	cmd := []string{"sh", "-c", "cat -"}
 	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
 	for _, cs := range s.pod.Status.ContainerStatuses {
-		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, bytes.NewBufferString("badabing"))
+		stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, bytes.NewBufferString("badabing"))
 		c.Assert(err, IsNil)
 		c.Assert(stdout, Equals, "badabing")
 		c.Assert(stderr, Equals, "")
@@ -158,20 +164,23 @@ func (s *ExecSuite) TestExecEcho(c *C) {
 }
 
 func (s *ExecSuite) TestExecEchoDefaultContainer(c *C) {
+	ctx := context.Background()
+
 	cmd := []string{"sh", "-c", "cat -"}
 	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
-	stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, "", cmd, bytes.NewBufferString("badabing"))
+	stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, "", cmd, bytes.NewBufferString("badabing"))
 	c.Assert(err, IsNil)
 	c.Assert(stdout, Equals, "badabing")
 	c.Assert(stderr, Equals, "")
 }
 
 func (s *ExecSuite) TestLSWithoutStdIn(c *C) {
+	ctx := context.Background()
 	cmd := []string{"ls", "-l", "/home"}
 	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
-	stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, "", cmd, nil)
+	stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, "", cmd, nil)
 	c.Assert(err, IsNil)
 	c.Assert(stdout, Equals, "total 0")
 	c.Assert(stderr, Equals, "")
@@ -203,7 +212,7 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 	// "bash" "-c" "kopia repository create filesystem --path=$HOME/kopia_repo --password=newpass"
 	// but now we don't want `bash -c`
 	cmd := []string{"kopia", "repository", "create", "filesystem", "--path=$HOME/kopia_repo", "--password=newpass"}
-	stdout, stderr, err := Exec(s.cli, pod.Namespace, pod.Name, "", cmd, nil)
+	stdout, stderr, err := Exec(ctx, s.cli, pod.Namespace, pod.Name, "", cmd, nil)
 	c.Assert(err, IsNil)
 	c.Assert(strings.Contains(stdout, "Policy for (global):"), Equals, true)
 	c.Assert(strings.Contains(stderr, "Initializing repository with:"), Equals, true)

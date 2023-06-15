@@ -79,6 +79,8 @@ func (p *PodWriteSuite) TearDownSuite(c *C) {
 	}
 }
 func (p *PodWriteSuite) TestPodWriter(c *C) {
+	ctx := context.Background()
+
 	path := "/tmp/test.txt"
 	c.Assert(p.pod.Status.Phase, Equals, v1.PodRunning)
 	c.Assert(len(p.pod.Status.ContainerStatuses) > 0, Equals, true)
@@ -87,7 +89,7 @@ func (p *PodWriteSuite) TestPodWriter(c *C) {
 		err := pw.Write(context.Background(), p.pod.Namespace, p.pod.Name, cs.Name)
 		c.Assert(err, IsNil)
 		cmd := []string{"sh", "-c", "cat " + filepath.Clean(path)}
-		stdout, stderr, err := Exec(p.cli, p.pod.Namespace, p.pod.Name, cs.Name, cmd, nil)
+		stdout, stderr, err := Exec(ctx, p.cli, p.pod.Namespace, p.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, IsNil)
 		c.Assert(stdout, Equals, "badabing")
 		c.Assert(stderr, Equals, "")

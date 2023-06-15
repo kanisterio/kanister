@@ -98,7 +98,7 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 			if err != nil {
 				return nil, err
 			}
-			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
+			stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
@@ -116,14 +116,14 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 			if err != nil {
 				return nil, err
 			}
-			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
+			stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data")
 			}
 			if reclaimSpace {
-				spaceFreedStr, err := pruneData(cli, tp, pod, namespace, encryptionKey, targetPaths[i])
+				spaceFreedStr, err := pruneData(ctx, cli, tp, pod, namespace, encryptionKey, targetPaths[i])
 				if err != nil {
 					return nil, errors.Wrapf(err, "Error executing prune command")
 				}
@@ -137,12 +137,12 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 	}
 }
 
-func pruneData(cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, namespace, encryptionKey, targetPath string) (string, error) {
+func pruneData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, namespace, encryptionKey, targetPath string) (string, error) {
 	cmd, err := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
 	if err != nil {
 		return "", err
 	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 	spaceFreed := restic.SpaceFreedFromPruneLog(stdout)

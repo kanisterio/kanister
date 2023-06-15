@@ -228,7 +228,7 @@ func restoreDataFromServerPodFunc(
 				ContentCacheMB:  contentCacheMB,
 				MetadataCacheMB: metadataCacheMB,
 			})
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
+		stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 		if err != nil {
@@ -247,7 +247,7 @@ func restoreDataFromServerPodFunc(
 				SparseRestore:          sparseRestore,
 				IgnorePermissionErrors: true,
 			})
-		stdout, stderr, err = kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
+		stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 		return nil, errors.Wrap(err, "Failed to restore backup from Kopia API server")

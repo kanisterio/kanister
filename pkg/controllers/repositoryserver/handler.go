@@ -71,7 +71,7 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 		}
 	}
 
-	if err := h.connectToKopiaRepository(); err != nil {
+	if err := h.connectToKopiaRepository(ctx); err != nil {
 		return errors.Wrap(err, "Failed to connect to Kopia repository")
 	}
 

@@ -226,5 +226,5 @@ func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil || podName == "" {
 		return "", "", err
 	}
-	return kube.Exec(mongo.cli, mongo.namespace, podName, containerName, command, nil)
+	return kube.Exec(ctx, mongo.cli, mongo.namespace, podName, containerName, command, nil)
 }

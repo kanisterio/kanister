@@ -154,7 +154,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 		return backupDataParsedOutput{}, err
 	}
 	defer CleanUpCredsFile(ctx, pw, namespace, pod, container)
-	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
+	if err = restic.GetOrCreateRepository(ctx, cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
 		return backupDataParsedOutput{}, err
 	}
 
@@ -164,7 +164,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 	if err != nil {
 		return backupDataParsedOutput{}, err
 	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.LogWithCtx(ctx, pod, container, stdout)
 	format.LogWithCtx(ctx, pod, container, stderr)
 	if err != nil {

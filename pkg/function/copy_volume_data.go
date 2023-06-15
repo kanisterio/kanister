@@ -104,7 +104,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 
 		pod := pc.Pod()
 		// Get restic repository
-		if err := restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
+		if err := restic.GetOrCreateRepository(ctx, cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
 			return nil, err
 		}
 		// Copy data to object store

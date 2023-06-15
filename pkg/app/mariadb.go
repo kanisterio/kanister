@@ -217,7 +217,7 @@ func (m *MariaDB) execCommand(ctx context.Context, command []string) (string, st
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", m.name)
 	}
-	return kube.Exec(m.cli, m.namespace, podname, containername, command, nil)
+	return kube.Exec(ctx, m.cli, m.namespace, podname, containername, command, nil)
 }
 
 func mariaDBSTSName(release string) string {

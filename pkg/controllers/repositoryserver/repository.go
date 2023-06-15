@@ -15,6 +15,7 @@
 package repositoryserver
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/kanisterio/kanister/pkg/kopia/command"
@@ -25,7 +26,7 @@ const (
 	repoPasswordKey = "repo-password"
 )
 
-func (h *RepoServerHandler) connectToKopiaRepository() error {
+func (h *RepoServerHandler) connectToKopiaRepository(ctx context.Context) error {
 	contentCacheMB, metadataCacheMB, err := h.getRepositoryCacheSettings()
 	if err != nil {
 		return err
@@ -47,6 +48,7 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 	}
 
 	return repository.ConnectToKopiaRepository(
+		ctx,
 		h.KubeCli,
 		h.RepositoryServer.Namespace,
 		h.RepositoryServer.Status.ServerInfo.PodName,

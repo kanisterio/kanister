@@ -96,7 +96,7 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		bufStdout  = &bytes.Buffer{}
 		outWriters = io.MultiWriter(os.Stdout, bufStdout)
 	)
-	if err := kube.ExecOutput(cli, namespace, pod, container, cmd, nil, outWriters, os.Stderr); err != nil {
+	if err := kube.ExecOutput(ctx, cli, namespace, pod, container, cmd, nil, outWriters, os.Stderr); err != nil {
 		return nil, err
 	}
 

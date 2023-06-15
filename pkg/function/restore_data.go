@@ -150,7 +150,7 @@ func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 		if err != nil {
 			return nil, err
 		}
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
+		stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
 		if err != nil {

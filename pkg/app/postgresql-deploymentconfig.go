@@ -223,5 +223,5 @@ func (pgres *PostgreSQLDepConfig) execCommand(ctx context.Context, command []str
 	if err != nil {
 		return "", "", err
 	}
-	return kube.Exec(pgres.cli, pgres.namespace, pod, container, command, nil)
+	return kube.Exec(ctx, pgres.cli, pgres.namespace, pod, container, command, nil)
 }

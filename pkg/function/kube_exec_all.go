@@ -100,7 +100,7 @@ func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps
 	for _, p := range ps {
 		for _, c := range cs {
 			go func(p string, c string) {
-				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd, nil)
+				stdout, stderr, err := kube.Exec(ctx, cli, namespace, p, c, cmd, nil)
 				format.LogWithCtx(ctx, p, c, stdout)
 				format.LogWithCtx(ctx, p, c, stderr)
 				errChan <- err

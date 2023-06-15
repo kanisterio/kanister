@@ -15,6 +15,7 @@
 package maintenance
 
 import (
+	"context"
 	"strings"
 
 	"github.com/kopia/kopia/repo/manifest"
@@ -38,6 +39,7 @@ type KopiaUserProfile struct {
 // GetMaintenanceOwnerForConnectedRepository executes maintenance info command, parses output
 // and returns maintenance owner
 func GetMaintenanceOwnerForConnectedRepository(
+	ctx context.Context,
 	cli kubernetes.Interface,
 	namespace,
 	pod,
@@ -55,7 +57,7 @@ func GetMaintenanceOwnerForConnectedRepository(
 		GetJsonOutput: false,
 	}
 	cmd := command.MaintenanceInfo(args)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err != nil {
