@@ -301,6 +301,9 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	}
 	repositoryServerAddress := fmt.Sprintf("https://%s.%s.%s:%d", repositoryServerService.Name, repositoryServerService.Namespace, clusterLocalDomain, repositoryServerService.Spec.Ports[0].Port)
 	contentCacheMB, metadataCacheMB, err := getKopiaRepositoryCacheSize(r)
+	if err != nil {
+		return nil, err
+	}
 	return &RepositoryServer{
 		Name:            r.Name,
 		Namespace:       r.Namespace,
