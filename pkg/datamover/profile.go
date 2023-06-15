@@ -37,8 +37,11 @@ type profile struct {
 
 func (p *profile) Pull(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		kopiaSnap, err := p.kopiaSnapshotAndKopiaRepositoryServerConnection(ctx)
+		kopiaSnap, err := p.unmarshalKopiaSnapshot(ctx)
 		if err != nil {
+			return err
+		}
+		if err := p.connectToKopiaRepositoryServer(ctx); err != nil {
 			return err
 		}
 		return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
@@ -66,8 +69,11 @@ func (p *profile) Push(ctx context.Context, sourcePath, destinationPath string) 
 
 func (p *profile) Delete(ctx context.Context, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		kopiaSnap, err := p.kopiaSnapshotAndKopiaRepositoryServerConnection(ctx)
+		kopiaSnap, err := p.unmarshalKopiaSnapshot(ctx)
 		if err != nil {
+			return err
+		}
+		if err := p.connectToKopiaRepositoryServer(ctx); err != nil {
 			return err
 		}
 		return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, p.profile.Credential.KopiaServerSecret.Password)
@@ -90,15 +96,12 @@ func (p *profile) connectToKopiaRepositoryServer(ctx context.Context) error {
 	)
 }
 
-func (p *profile) kopiaSnapshotAndKopiaRepositoryServerConnection(ctx context.Context) (*snapshot.SnapshotInfo, error) {
+func (p *profile) unmarshalKopiaSnapshot(ctx context.Context) (*snapshot.SnapshotInfo, error) {
 	if p.snapJSON == "" {
 		return nil, errors.New("kopia snapshot information is required to delete data using kopia")
 	}
 	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.snapJSON)
 	if err != nil {
-		return nil, err
-	}
-	if err = p.connectToKopiaRepositoryServer(ctx); err != nil {
 		return nil, err
 	}
 	return &kopiaSnap, nil

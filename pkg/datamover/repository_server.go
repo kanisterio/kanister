@@ -33,7 +33,11 @@ type repositoryServer struct {
 }
 
 func (rs *repositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
-	kopiaSnap, password, err := rs.kopiaSnapshotAndRepositoryServerUserPassword(ctx)
+	kopiaSnap, err := rs.unmarshalKopiaSnapshot(ctx)
+	if err != nil {
+		return err
+	}
+	password, err := rs.connectToKopiaRepositoryServer(ctx)
 	if err != nil {
 		return err
 	}
@@ -49,7 +53,11 @@ func (rs *repositoryServer) Push(ctx context.Context, sourcePath, destinationPat
 }
 
 func (rs *repositoryServer) Delete(ctx context.Context, destinationPath string) error {
-	kopiaSnap, password, err := rs.kopiaSnapshotAndRepositoryServerUserPassword(ctx)
+	kopiaSnap, err := rs.unmarshalKopiaSnapshot(ctx)
+	if err != nil {
+		return err
+	}
+	password, err := rs.connectToKopiaRepositoryServer(ctx)
 	if err != nil {
 		return err
 	}
@@ -73,19 +81,15 @@ func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context) 
 	)
 }
 
-func (rs *repositoryServer) kopiaSnapshotAndRepositoryServerUserPassword(ctx context.Context) (*snapshot.SnapshotInfo, string, error) {
+func (rs *repositoryServer) unmarshalKopiaSnapshot(ctx context.Context) (*snapshot.SnapshotInfo, error) {
 	if rs.snapJSON == "" {
-		return nil, "", errors.New("kopia snapshot information is required to delete data using kopia")
+		return nil, errors.New("kopia snapshot information is required to delete data using kopia")
 	}
 	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.snapJSON)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	password, err := rs.connectToKopiaRepositoryServer(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	return &kopiaSnap, password, nil
+	return &kopiaSnap, nil
 }
 
 func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJson string) *repositoryServer {
