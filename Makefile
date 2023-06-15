@@ -320,8 +320,8 @@ stop-kind:
 check:
 	@./build/check.sh
 
-gomod:
-	@$(MAKE) run CMD='-c "./build/gomod.sh"'
+go-mod-tidy:
+	@$(MAKE) run CMD='-c "./build/gomodtidy.sh"'
 
 
 install-crds: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
