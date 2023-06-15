@@ -24,15 +24,15 @@ import (
 )
 
 // Check that RepositoryServer implements DataMover interface
-var _ DataMover = (*RepositoryServer)(nil)
+var _ DataMover = (*repositoryServer)(nil)
 
-type RepositoryServer struct {
+type repositoryServer struct {
 	outputName       string
 	repositoryServer *param.RepositoryServer
 	snapJSON         string
 }
 
-func (rs *RepositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
+func (rs *repositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
 	kopiaSnap, password, err := rs.kopiaSnapshotAndRepositoryServerUserPassword(ctx)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (rs *RepositoryServer) Pull(ctx context.Context, sourcePath, destinationPat
 	return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, password)
 }
 
-func (rs *RepositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
+func (rs *repositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
 	password, err := rs.connectToKopiaRepositoryServer(ctx)
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (rs *RepositoryServer) Push(ctx context.Context, sourcePath, destinationPat
 	return kopiaLocationPush(ctx, destinationPath, rs.outputName, sourcePath, password)
 }
 
-func (rs *RepositoryServer) Delete(ctx context.Context, destinationPath string) error {
+func (rs *repositoryServer) Delete(ctx context.Context, destinationPath string) error {
 	kopiaSnap, password, err := rs.kopiaSnapshotAndRepositoryServerUserPassword(ctx)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (rs *RepositoryServer) Delete(ctx context.Context, destinationPath string) 
 	return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, password)
 }
 
-func (rs *RepositoryServer) connectToKopiaRepositoryServer(ctx context.Context) (string, error) {
+func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context) (string, error) {
 	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs.repositoryServer)
 	if err != nil {
 		return "", errors.Wrap(err, "Error Retrieving Connection Data from Repository Server")
@@ -73,7 +73,7 @@ func (rs *RepositoryServer) connectToKopiaRepositoryServer(ctx context.Context) 
 	)
 }
 
-func (rs *RepositoryServer) kopiaSnapshotAndRepositoryServerUserPassword(ctx context.Context) (*snapshot.SnapshotInfo, string, error) {
+func (rs *repositoryServer) kopiaSnapshotAndRepositoryServerUserPassword(ctx context.Context) (*snapshot.SnapshotInfo, string, error) {
 	if rs.snapJSON == "" {
 		return nil, "", errors.New("kopia snapshot information is required to delete data using kopia")
 	}
@@ -88,10 +88,10 @@ func (rs *RepositoryServer) kopiaSnapshotAndRepositoryServerUserPassword(ctx con
 	return &kopiaSnap, password, nil
 }
 
-func NewRepositoryServerDataMover(repositoryServer *param.RepositoryServer, outputName, snapJson string) *RepositoryServer {
-	return &RepositoryServer{
+func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJson string) *repositoryServer {
+	return &repositoryServer{
 		outputName:       outputName,
-		repositoryServer: repositoryServer,
+		repositoryServer: repoServer,
 		snapJSON:         snapJson,
 	}
 }
