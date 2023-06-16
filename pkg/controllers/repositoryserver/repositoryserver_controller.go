@@ -79,7 +79,8 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err = r.Get(ctx, req.NamespacedName, repositoryServer); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
+	// resetting conditions
+	repositoryServer.Status.Conditions = nil;
 	logger.Info("Setting the CR status as 'ServerPending' since a create or update event is in progress")
 	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
 
