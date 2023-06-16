@@ -21,6 +21,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 type PhaseSuite struct{}
@@ -31,8 +32,9 @@ var (
 )
 
 type testFunc struct {
-	output *string
-	err    error
+	output          *string
+	err             error
+	progressPercent string
 }
 
 type anotherFunc struct {
@@ -48,6 +50,9 @@ func (*testFunc) Name() string {
 }
 
 func (tf *testFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	tf.progressPercent = progress.StartedPercent
+	defer func() { tf.progressPercent = progress.CompletedPercent }()
+
 	*tf.output = args["testKey"].(string)
 	return nil, tf.err
 }
@@ -58,6 +63,10 @@ func (tf *testFunc) RequiredArgs() []string {
 
 func (tf *testFunc) Arguments() []string {
 	return nil
+}
+
+func (tf *testFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	return crv1alpha1.PhaseProgress{ProgressPercent: tf.progressPercent}, nil
 }
 
 func (s *PhaseSuite) TestExec(c *C) {

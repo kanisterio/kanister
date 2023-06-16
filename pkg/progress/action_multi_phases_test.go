@@ -2,7 +2,6 @@ package progress
 
 import (
 	"context"
-	"time"
 
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 	. "gopkg.in/check.v1"
@@ -31,11 +30,11 @@ func (s *TestSuiteMultiPhases) SetUpTest(c *C) {
 				Name: "action-01",
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
-						Name: "echo-hello",
+						Name: "echo-hello-0-0",
 						Func: "echo-hello-func",
 					},
 					{
-						Name: "echo-world",
+						Name: "echo-hello-0-1",
 						Func: "echo-world-func",
 					},
 				},
@@ -69,11 +68,11 @@ func (s *TestSuiteMultiPhases) SetUpTest(c *C) {
 					Name: "action-01",
 					Phases: []crv1alpha1.Phase{
 						{
-							Name:  "echo-hello",
+							Name:  "echo-hello-0-0",
 							State: crv1alpha1.StatePending,
 						},
 						{
-							Name:  "echo-world",
+							Name:  "echo-hello-0-1",
 							State: crv1alpha1.StatePending,
 						},
 					},
@@ -123,98 +122,126 @@ func (s *TestSuiteMultiPhases) createFixtures(blueprint *crv1alpha1.Blueprint, a
 	return nil
 }
 
+//// Test phase percent as per the state of phase but with multiple phases with multiple actions
+
 func (s *TestSuiteMultiPhases) TestUpdateActionsProgress(c *C) {
-	now := time.Now()
 	var testCases = []struct {
-		indexAction int
-		indexPhase  int
-		phaseState  crv1alpha1.State
-		expected    string
+		indexAction           int
+		indexPhase            int
+		phaseState            crv1alpha1.State
+		phasePercent          string
+		expectedPhasePercent  string
+		expectedActionPercent string
 	}{
 		{
-			indexAction: 0,
-			indexPhase:  0,
-			phaseState:  crv1alpha1.StatePending,
-			expected:    progressPercentStarted,
+			indexAction:           0,
+			indexPhase:            0,
+			phaseState:            crv1alpha1.StatePending,
+			phasePercent:          "0",
+			expectedPhasePercent:  "",
+			expectedActionPercent: "",
 		},
 		{
-			indexAction: 0,
-			indexPhase:  0,
-			phaseState:  crv1alpha1.StateRunning,
-			expected:    progressPercentStarted,
+			indexAction:           0,
+			indexPhase:            0,
+			phaseState:            crv1alpha1.StateRunning,
+			phasePercent:          "30",
+			expectedPhasePercent:  "30",
+			expectedActionPercent: "15",
 		},
 		{
-			indexAction: 0,
-			indexPhase:  0,
-			phaseState:  crv1alpha1.StateComplete,
-			expected:    "50.00",
+			indexAction:           0,
+			indexPhase:            0,
+			phaseState:            crv1alpha1.StateComplete,
+			phasePercent:          CompletedPercent,
+			expectedPhasePercent:  CompletedPercent,
+			expectedActionPercent: "50",
 		},
 		{
-			indexAction: 0,
-			indexPhase:  1,
-			phaseState:  crv1alpha1.StatePending,
-			expected:    "50.00", // stays at 50% because 1st action is done
+			indexAction:           0,
+			indexPhase:            1,
+			phaseState:            crv1alpha1.StatePending,
+			phasePercent:          "0",
+			expectedPhasePercent:  "",
+			expectedActionPercent: "50", // stays at 50% because 1st action is done
 		},
 		{
-			indexAction: 0,
-			indexPhase:  1,
-			phaseState:  crv1alpha1.StateRunning,
-			expected:    "50.00", // stays at 50% because 1st action is done
+			indexAction:           0,
+			indexPhase:            1,
+			phaseState:            crv1alpha1.StateRunning,
+			phasePercent:          "60",
+			expectedPhasePercent:  "60",
+			expectedActionPercent: "80", // Averaging out action progress 100(phase-1)+60(phase-2)/2(total phases)
 		},
 		{
-			indexAction: 0,
-			indexPhase:  1,
-			phaseState:  crv1alpha1.StateComplete,
-			expected:    progressPercentCompleted,
+			indexAction:           0,
+			indexPhase:            1,
+			phaseState:            crv1alpha1.StateComplete,
+			phasePercent:          CompletedPercent,
+			expectedPhasePercent:  CompletedPercent,
+			expectedActionPercent: CompletedPercent,
 		},
 	}
 
 	for id, tc := range testCases {
+		// Get latest rev of actionset resource
+		as, err := s.clientset.CrV1alpha1().ActionSets(s.actionSet.GetNamespace()).Get(context.Background(), s.actionSet.GetName(), metav1.GetOptions{})
+		c.Assert(err, IsNil)
 		assertActionProgress(
 			c,
 			s.clientset,
-			s.actionSet,
-			now,
+			as,
 			tc.indexAction,
 			tc.indexPhase,
 			tc.phaseState,
-			tc.expected,
+			tc.phasePercent,
+			tc.expectedPhasePercent,
+			tc.expectedActionPercent,
 			id)
 	}
 }
 
 func (s *TestSuiteMultiPhases) TestUpdateActionsProgressWithFailures(c *C) {
-	now := time.Now()
 	var testCases = []struct {
-		indexAction int
-		indexPhase  int
-		phaseState  crv1alpha1.State
-		expected    string
+		indexAction           int
+		indexPhase            int
+		phaseState            crv1alpha1.State
+		phasePercent          string
+		expectedPhasePercent  string
+		expectedActionPercent string
 	}{
 		{
-			indexAction: 0,
-			indexPhase:  0,
-			phaseState:  crv1alpha1.StateComplete,
-			expected:    "50.00",
+			indexAction:           0,
+			indexPhase:            0,
+			phaseState:            crv1alpha1.StateComplete,
+			phasePercent:          CompletedPercent,
+			expectedPhasePercent:  CompletedPercent,
+			expectedActionPercent: "50",
 		},
 		{
-			indexAction: 0,
-			indexPhase:  1,
-			phaseState:  crv1alpha1.StateFailed,
-			expected:    "50.00", // stays at 50% because 1st action is done
+			indexAction:           0,
+			indexPhase:            1,
+			phaseState:            crv1alpha1.StateFailed,
+			phasePercent:          "30",
+			expectedPhasePercent:  "",
+			expectedActionPercent: "50", // stays at 50% because 1st action is done
 		},
 	}
 
 	for id, tc := range testCases {
+		// Get latest rev of actionset resource
+		as, err := s.clientset.CrV1alpha1().ActionSets(s.actionSet.GetNamespace()).Get(context.Background(), s.actionSet.GetName(), metav1.GetOptions{})
+		c.Assert(err, IsNil)
 		assertActionProgress(
 			c,
 			s.clientset,
-			s.actionSet,
-			now,
+			as,
 			tc.indexAction,
 			tc.indexPhase,
 			tc.phaseState,
-			tc.expected,
+			tc.phasePercent,
+			tc.expectedPhasePercent,
+			tc.expectedActionPercent,
 			id)
 	}
 }

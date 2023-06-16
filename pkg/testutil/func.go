@@ -16,11 +16,15 @@ package testutil
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -111,6 +115,13 @@ func (mf *mockKanisterFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 
 func (mf *mockKanisterFunc) Name() string {
 	return mf.name
+}
+func (mf *mockKanisterFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    progress.StartedPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func FailFuncError() error {
