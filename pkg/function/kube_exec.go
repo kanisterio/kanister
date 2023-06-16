@@ -22,9 +22,11 @@ import (
 	"regexp"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -44,7 +46,9 @@ const (
 	KubeExecCommandArg       = "command"
 )
 
-type kubeExecFunc struct{}
+type kubeExecFunc struct {
+	progressPercent string
+}
 
 func (*kubeExecFunc) Name() string {
 	return KubeExecFuncName
@@ -73,6 +77,10 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 }
 
 func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	kef.progressPercent = progress.StartedPercent
+	defer func() { kef.progressPercent = progress.CompletedPercent }()
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, err
@@ -118,4 +126,8 @@ func (*kubeExecFunc) Arguments() []string {
 		KubeExecCommandArg,
 		KubeExecContainerNameArg,
 	}
+}
+
+func (kef *kubeExecFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	return crv1alpha1.PhaseProgress{ProgressPercent: string(kef.progressPercent)}, nil
 }

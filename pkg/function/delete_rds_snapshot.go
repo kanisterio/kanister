@@ -16,16 +16,20 @@ package function
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -42,7 +46,9 @@ const (
 	DeleteRDSSnapshotSnapshotIDArg = "snapshotID"
 )
 
-type deleteRDSSnapshotFunc struct{}
+type deleteRDSSnapshotFunc struct {
+	progressPercent string
+}
 
 func (*deleteRDSSnapshotFunc) Name() string {
 	return DeleteRDSSnapshotFuncName
@@ -109,6 +115,10 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 }
 
 func (crs *deleteRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	crs.progressPercent = progress.StartedPercent
+	defer func() { crs.progressPercent = progress.CompletedPercent }()
+
 	var snapshotID string
 	var dbEngine RDSDBEngine
 	if err := Arg(args, DeleteRDSSnapshotSnapshotIDArg, &snapshotID); err != nil {
@@ -131,4 +141,12 @@ func (*deleteRDSSnapshotFunc) Arguments() []string {
 		DeleteRDSSnapshotSnapshotIDArg,
 		CreateRDSSnapshotDBEngine,
 	}
+}
+
+func (d *deleteRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    string(d.progressPercent),
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

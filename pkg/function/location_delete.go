@@ -17,12 +17,16 @@ package function
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -38,13 +42,19 @@ func init() {
 
 var _ kanister.Func = (*locationDeleteFunc)(nil)
 
-type locationDeleteFunc struct{}
+type locationDeleteFunc struct {
+	progressPercent string
+}
 
 func (*locationDeleteFunc) Name() string {
 	return LocationDeleteFuncName
 }
 
-func (*locationDeleteFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (l *locationDeleteFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	l.progressPercent = progress.StartedPercent
+	defer func() { l.progressPercent = progress.CompletedPercent }()
+
 	var artifact string
 	var err error
 	if err = Arg(args, LocationDeleteArtifactArg, &artifact); err != nil {
@@ -62,4 +72,12 @@ func (*locationDeleteFunc) RequiredArgs() []string {
 
 func (*locationDeleteFunc) Arguments() []string {
 	return []string{LocationDeleteArtifactArg}
+}
+
+func (l *locationDeleteFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    l.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

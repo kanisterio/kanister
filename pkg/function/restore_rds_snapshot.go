@@ -17,19 +17,23 @@ package function
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/postgres"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -74,7 +78,9 @@ const (
 	RDSPostgresDBInstanceEngineVersion = "13.0"
 )
 
-type restoreRDSSnapshotFunc struct{}
+type restoreRDSSnapshotFunc struct {
+	progressPercent string
+}
 
 func (*restoreRDSSnapshotFunc) Name() string {
 	return RestoreRDSSnapshotFuncName
@@ -99,7 +105,11 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 	}
 }
 
-func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	r.progressPercent = progress.StartedPercent
+	defer func() { r.progressPercent = progress.CompletedPercent }()
+
 	var namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string
 	var dbEngine RDSDBEngine
 
@@ -144,6 +154,14 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	}
 
 	return restoreRDSSnapshot(ctx, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile)
+}
+
+func (r *restoreRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    r.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {

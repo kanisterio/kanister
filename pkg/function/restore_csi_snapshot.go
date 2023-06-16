@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -25,8 +26,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -60,7 +63,9 @@ const (
 	RestoreCSISnapshotVolumeModeArg = "volumeMode"
 )
 
-type restoreCSISnapshotFunc struct{}
+type restoreCSISnapshotFunc struct {
+	progressPercent string
+}
 
 type restoreCSISnapshotArgs struct {
 	Name         string
@@ -77,7 +82,11 @@ func (*restoreCSISnapshotFunc) Name() string {
 	return RestoreCSISnapshotFuncName
 }
 
-func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (r *restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	r.progressPercent = progress.StartedPercent
+	defer func() { r.progressPercent = progress.CompletedPercent }()
+
 	var restoreSize string
 	var restoreArgs restoreCSISnapshotArgs
 	if err := Arg(args, RestoreCSISnapshotNameArg, &restoreArgs.Name); err != nil {
@@ -150,6 +159,14 @@ func (*restoreCSISnapshotFunc) Arguments() []string {
 		RestoreCSISnapshotVolumeModeArg,
 		RestoreCSISnapshotLabelsArg,
 	}
+}
+
+func (d *restoreCSISnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    d.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func getClient() (kubernetes.Interface, error) {

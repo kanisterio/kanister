@@ -16,18 +16,22 @@ package function
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -64,13 +68,19 @@ func init() {
 
 var _ kanister.Func = (*backupDataFunc)(nil)
 
-type backupDataFunc struct{}
+type backupDataFunc struct {
+	progressPercent string
+}
 
 func (*backupDataFunc) Name() string {
 	return BackupDataFuncName
 }
 
-func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (b *backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	b.progressPercent = progress.StartedPercent
+	defer func() { b.progressPercent = progress.CompletedPercent }()
+
 	var namespace, pod, container, includePath, backupArtifactPrefix, encryptionKey string
 	var err error
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
@@ -187,4 +197,13 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 		backupSize: backupSize,
 		phySize:    phySize,
 	}, nil
+}
+
+func (b *backupDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    string(string(b.progressPercent)),
+		LastTransitionTime: &metav1Time,
+	}, nil
+
 }

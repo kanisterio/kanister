@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -61,7 +62,9 @@ func init() {
 
 var _ kanister.Func = (*deleteDataFunc)(nil)
 
-type deleteDataFunc struct{}
+type deleteDataFunc struct {
+	progressPercent string
+}
 
 func (*deleteDataFunc) Name() string {
 	return DeleteDataFuncName
@@ -196,7 +199,11 @@ func pruneData(
 	return spaceFreed, errors.Wrapf(err, "Failed to prune data after forget")
 }
 
-func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	d.progressPercent = progress.StartedPercent
+	defer func() { d.progressPercent = progress.CompletedPercent }()
+
 	var namespace, deleteArtifactPrefix, deleteIdentifier, deleteTag, encryptionKey string
 	var reclaimSpace bool
 	var err error
@@ -252,4 +259,8 @@ func (*deleteDataFunc) Arguments() []string {
 		DeleteDataEncryptionKeyArg,
 		DeleteDataReclaimSpace,
 	}
+}
+
+func (d *deleteDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	return crv1alpha1.PhaseProgress{ProgressPercent: string(d.progressPercent)}, nil
 }

@@ -18,9 +18,11 @@ import (
 	"context"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -39,13 +41,19 @@ const (
 	DeleteCSISnapshotContentNameArg = "name"
 )
 
-type deleteCSISnapshotContentFunc struct{}
+type deleteCSISnapshotContentFunc struct {
+	progressPercent string
+}
 
 func (*deleteCSISnapshotContentFunc) Name() string {
 	return DeleteCSISnapshotContentFuncName
 }
 
-func (*deleteCSISnapshotContentFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (d *deleteCSISnapshotContentFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	d.progressPercent = progress.StartedPercent
+	defer func() { d.progressPercent = progress.CompletedPercent }()
+
 	var name string
 	if err := Arg(args, DeleteCSISnapshotContentNameArg, &name); err != nil {
 		return nil, err
@@ -79,6 +87,10 @@ func (*deleteCSISnapshotContentFunc) Arguments() []string {
 	return []string{
 		DeleteCSISnapshotContentNameArg,
 	}
+}
+
+func (c *deleteCSISnapshotContentFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	return crv1alpha1.PhaseProgress{ProgressPercent: string(c.progressPercent)}, nil
 }
 
 func deleteCSISnapshotContent(ctx context.Context, snapshotter snapshot.Snapshotter, name string) error {

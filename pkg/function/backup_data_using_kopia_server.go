@@ -19,18 +19,22 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
@@ -42,7 +46,9 @@ const (
 	KopiaRepositoryServerUserHostname = "repositoryServerUserHostname"
 )
 
-type backupDataUsingKopiaServerFunc struct{}
+type backupDataUsingKopiaServerFunc struct {
+	progressPercent string
+}
 
 func init() {
 	err := kanister.Register(&backupDataUsingKopiaServerFunc{})
@@ -77,7 +83,11 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
-func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+func (b *backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+	// Set progress percent
+	b.progressPercent = progress.StartedPercent
+	defer func() { b.progressPercent = progress.CompletedPercent }()
+
 	var (
 		container    string
 		err          error
@@ -161,6 +171,14 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		BackupDataOutputBackupPhysicalSize: humanize.Bytes(uint64(phySize)),
 	}
 	return output, nil
+}
+
+func (b *backupDataUsingKopiaServerFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    string(b.progressPercent),
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func backupDataUsingKopiaServer(

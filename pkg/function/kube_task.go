@@ -16,8 +16,10 @@ package function
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -27,6 +29,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -45,7 +48,9 @@ func init() {
 
 var _ kanister.Func = (*kubeTaskFunc)(nil)
 
-type kubeTaskFunc struct{}
+type kubeTaskFunc struct {
+	progressPercent string
+}
 
 func (*kubeTaskFunc) Name() string {
 	return KubeTaskFuncName
@@ -89,6 +94,10 @@ func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[str
 }
 
 func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	ktf.progressPercent = progress.StartedPercent
+	defer func() { ktf.progressPercent = progress.CompletedPercent }()
+
 	var namespace, image string
 	var command []string
 	var err error
@@ -127,4 +136,12 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskNamespaceArg,
 		KubeTaskPodOverrideArg,
 	}
+}
+
+func (k *kubeTaskFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    k.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

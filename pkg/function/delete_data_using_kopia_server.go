@@ -17,23 +17,29 @@ package function
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
 	DeleteDataUsingKopiaServerFuncName = "DeleteDataUsingKopiaServer"
 )
 
-type deleteDataUsingKopiaServerFunc struct{}
+type deleteDataUsingKopiaServerFunc struct {
+	progressPercent string
+}
 
 func init() {
 	err := kanister.Register(&deleteDataUsingKopiaServerFunc{})
@@ -65,7 +71,11 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
-func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+	// Set progress percent
+	d.progressPercent = progress.StartedPercent
+	defer func() { d.progressPercent = progress.CompletedPercent }()
+
 	var (
 		err          error
 		image        string
@@ -119,6 +129,14 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		tp.RepositoryServer.Username,
 		userAccessPassphrase,
 	)
+}
+
+func (d *deleteDataUsingKopiaServerFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    string(d.progressPercent),
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func deleteDataFromServer(

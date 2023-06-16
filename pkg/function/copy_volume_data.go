@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,11 +26,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -58,7 +61,9 @@ func init() {
 
 var _ kanister.Func = (*copyVolumeDataFunc)(nil)
 
-type copyVolumeDataFunc struct{}
+type copyVolumeDataFunc struct {
+	progressPercent string
+}
 
 func (*copyVolumeDataFunc) Name() string {
 	return CopyVolumeDataFuncName
@@ -158,7 +163,11 @@ func copyVolumeDataPodFunc(
 	}
 }
 
-func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	c.progressPercent = progress.StartedPercent
+	defer func() { c.progressPercent = progress.CompletedPercent }()
+
 	var namespace, vol, targetPath, encryptionKey string
 	var err error
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
@@ -206,4 +215,12 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataArtifactPrefixArg,
 		CopyVolumeDataEncryptionKeyArg,
 	}
+}
+
+func (c *copyVolumeDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    string(c.progressPercent),
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

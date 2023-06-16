@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +29,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -51,13 +53,19 @@ const (
 	KubeOpsOperationArg = "operation"
 )
 
-type kubeops struct{}
+type kubeops struct {
+	progressPercent string
+}
 
 func (*kubeops) Name() string {
 	return KubeOpsFuncName
 }
 
-func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (k *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	k.progressPercent = progress.StartedPercent
+	defer func() { k.progressPercent = progress.CompletedPercent }()
+
 	var spec, namespace string
 	var op kube.Operation
 	var objRefArg crv1alpha1.ObjectReference
@@ -127,4 +135,12 @@ func (*kubeops) Arguments() []string {
 		KubeOpsNamespaceArg,
 		KubeOpsObjectReferenceArg,
 	}
+}
+
+func (k *kubeops) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    k.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
