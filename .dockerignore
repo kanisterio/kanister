@@ -1,0 +1,14 @@
+/.container-*
+/.deploy-*
+/.dockerfile-*
+/.go
+/.push-*
+/.vendor
+/bin
+/dist
+**/*.swp
+/.idea
+/.vscode
+/.code
+/kanctl
+/kando
