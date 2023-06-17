@@ -16,8 +16,6 @@ package datamover
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"io"
 	"os"
 
@@ -52,41 +50,6 @@ func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password
 	default:
 		return snapshot.ReadFile(ctx, backupID, targetPath, password)
 	}
-}
-
-func secretsFromRepositoryServerCR(rs *param.RepositoryServer) (string, string, string, error) {
-	userCredJSON, err := json.Marshal(rs.Credentials.ServerUserAccess.Data)
-	if err != nil {
-		return "", "", "", errors.Wrap(err, "Error Unmarshalling User Credentials")
-	}
-	certJSON, err := json.Marshal(rs.Credentials.ServerTLS.Data)
-	if err != nil {
-		return "", "", "", errors.Wrap(err, "Error Unmarshalling Certificate")
-	}
-	hostname, userPassphrase, err := hostnameAndUserPassphraseFromRepoServer(string(userCredJSON))
-	if err != nil {
-		return "", "", "", errors.Wrap(err, "Error Getting Hostname/User Passphrase from User credentials")
-	}
-	return hostname, userPassphrase, string(certJSON), err
-}
-
-func hostnameAndUserPassphraseFromRepoServer(userCreds string) (string, string, error) {
-	var userAccessMap map[string]string
-	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
-		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
-	}
-
-	var userPassPhrase string
-	var hostName string
-	for key, val := range userAccessMap {
-		hostName = key
-		userPassPhrase = val
-	}
-	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassPhrase)
-	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
-	}
-	return hostName, string(decodedUserPassPhrase), nil
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
