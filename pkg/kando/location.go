@@ -37,12 +37,6 @@ const (
 
 type DataMoverType string
 
-type DataMoverArgs struct {
-	Type             DataMoverType
-	Profile          *param.Profile
-	RepositoryServer *param.RepositoryServer
-}
-
 func newLocationCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "location <command>",
@@ -55,19 +49,6 @@ func newLocationCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
 	cmd.PersistentFlags().StringP(repositoryServerFlagName, "r", "", "Pass a Repository Server CR as a JSON string (required for kopia based blueprints)")
 	return cmd
-}
-
-// NewDataMover creates an instance of DataMover Interface and returns
-// the preferred DataMover as per the arguments passed in kando command
-func NewDataMover(dm *DataMoverArgs, outputName, snapJson string) datamover.DataMover {
-	switch dm.Type {
-	case DataMoverTypeProfile:
-		return datamover.NewProfileDataMover(dm.Profile, outputName, snapJson)
-	case DataMoverTypeRepositoryServer:
-		return datamover.NewRepositoryServerDataMover(dm.RepositoryServer, outputName, snapJson)
-	default:
-		return nil
-	}
 }
 
 func pathFlag(cmd *cobra.Command) string {
@@ -89,9 +70,7 @@ func validateCommandArgs(cmd *cobra.Command) error {
 }
 
 func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, error) {
-	var dm *DataMoverArgs
-	var err error
-
+	kopiaSnapshot, outputName := getKopiaSnapshotAndOutputNameFlag(cmd, flag)
 	dataMoverType, err := dataMoverTypeFromCMD(cmd)
 	if err != nil {
 		return nil, err
@@ -99,24 +78,17 @@ func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, err
 
 	switch dataMoverType {
 	case DataMoverTypeProfile:
-		dm, err = dataMoverArgsForProfile(cmd)
+		profileRef, err := unmarshalProfileFlag(cmd)
 		if err != nil {
 			return nil, err
 		}
+		return datamover.NewProfileDataMover(profileRef, outputName, kopiaSnapshot), nil
 	case DataMoverTypeRepositoryServer:
-		dm, err = dataMoverArgsForRepositoryServer(cmd)
+		repositoryServerRef, err := unmarshalRepositoryServerFlag(cmd)
 		if err != nil {
 			return nil, err
 		}
-	default:
-		return nil, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
-	}
-
-	switch flag {
-	case kopiaSnapshotFlagName:
-		return NewDataMover(dm, "", kopiaSnapshotFlag(cmd)), nil
-	case outputNameFlagName:
-		return NewDataMover(dm, outputNameFlag(cmd), ""), nil
+		return datamover.NewRepositoryServerDataMover(repositoryServerRef, outputName, kopiaSnapshot), nil
 	default:
 		return nil, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 	}
@@ -148,24 +120,13 @@ func dataMoverTypeFromCMD(c *cobra.Command) (DataMoverType, error) {
 	return "", errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 }
 
-func dataMoverArgsForProfile(cmd *cobra.Command) (*DataMoverArgs, error) {
-	profileRef, err := unmarshalProfileFlag(cmd)
-	if err != nil {
-		return nil, err
+func getKopiaSnapshotAndOutputNameFlag(c *cobra.Command, flag string) (string, string) {
+	switch flag {
+	case kopiaSnapshotFlagName:
+		return c.Flag(kopiaSnapshotFlagName).Value.String(), ""
+	case outputNameFlagName:
+		return "", c.Flag(outputNameFlagName).Value.String()
+	default:
+		return "", ""
 	}
-	return &DataMoverArgs{
-		Type:    DataMoverTypeProfile,
-		Profile: profileRef,
-	}, nil
-}
-
-func dataMoverArgsForRepositoryServer(cmd *cobra.Command) (*DataMoverArgs, error) {
-	repositoryServerRef, err := unmarshalRepositoryServerFlag(cmd)
-	if err != nil {
-		return nil, err
-	}
-	return &DataMoverArgs{
-		Type:             DataMoverTypeRepositoryServer,
-		RepositoryServer: repositoryServerRef,
-	}, nil
 }

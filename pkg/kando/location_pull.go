@@ -60,7 +60,3 @@ func targetWriter(target string) (io.Writer, error) {
 func locationPull(ctx context.Context, p *param.Profile, path string, target io.Writer) error {
 	return location.Read(ctx, target, *p, path)
 }
-
-func kopiaSnapshotFlag(cmd *cobra.Command) string {
-	return cmd.Flags().Lookup(kopiaSnapshotFlagName).Value.String()
-}

@@ -18,10 +18,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/spf13/cobra"
-
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -55,8 +54,4 @@ const usePipeParam = `-`
 
 func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
 	return location.Write(ctx, source, *p, path)
-}
-
-func outputNameFlag(cmd *cobra.Command) string {
-	return cmd.Flags().Lookup(outputNameFlagName).Value.String()
 }
