@@ -218,7 +218,7 @@ and to avoid any errors while executing actionsets.
 Create Blueprint in the same namespace as the Kanister controller
 
 ```bash
-$ kubectl create -f ./mysql-blueprint.yaml -n kanister
+$ kubectl create -f ./examples/mysql-kopia-repository-server/mysql-blueprint.yaml -n kanister
 ```
 
 Once MySQL is running, you can populate it with some data. Let's add a table called "pets" to a test database:
