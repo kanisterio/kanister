@@ -18,9 +18,7 @@ deployment "time-logger" created
 
 ### 2. Protect the Application
 
-#### Create Repository Server CR
-
-- Create Kopia Repository using S3 as the location storage
+#### Create [Kopia Repository](https://kopia.io/docs/repositories/) using S3 as the location storage
 
 ```bash
 $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
@@ -32,6 +30,10 @@ $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
 --access-key=<aws_access_key> --secret-access-key=<aws_secret_access_key> --password=<repository_password>
 ```
 
+**NOTE:**
+All the secrets mentioned below are required to be created in the same namespace as the Kanister controller.
+And all the secrets would be used while creating the Repository Server CR. 
+
 - Generate TLS Certificates and create TLS secret for Kopia Repository Server for secure communication between Kopia Repository Server and Client
 
 ```bash
@@ -40,7 +42,7 @@ $ openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certi
 $ kubectl create secret tls repository-server-tls-cert --cert=certificate.pem --key=key.pem -n kanister
 ```
 
-- Create Location Secrets for Kopia Repository
+- Create Location Secrets for the S3 Object store
 
 ```bash
 # The following file s3_location_creds.yaml is a sample file for creating s3 credentials secrets. It contains the credentials for accessing the s3 bucket.
@@ -159,6 +161,10 @@ You could check the status of the Repository Server CR by running following comm
 $ kubectl get repositoryservers.cr.kanister.io kopia-repo-server-1 -n kanister -o yaml
 ```
 
+**NOTE:**
+Do not delete the secrets that were created above in order to ensure the proper functioning of the repository server
+and to avoid any errors while executing actionsets.
+
 #### Create Blueprint
 
 Create Blueprint in the same namespace as the Kanister controller
@@ -175,7 +181,7 @@ $ kanctl create actionset --action backup --namespace kanister --blueprint time-
 
 actionset "s3backup-f4c4q" created
 
-# View the status of the actionset
+# View the status of the actionset and wait for it to complete
 
 $ kubectl describe actionsets.cr.kanister.io -n kanister s3backup-f4c4q -oyaml
 ```
@@ -189,7 +195,7 @@ Warning: Neither --profile nor --repository-server flag is provided.
 Action might fail if blueprint is using these resources.
 actionset "restore-s3restore-g235d-23d2f" created
 
-# View the status of the actionset
+# View the status of the actionset and wait for it to complete
 $ kubectl --namespace kanister get actionset restore-s3restore-g235d-23d2f -oyaml
 ```
 
@@ -204,7 +210,7 @@ Warning: Neither --profile nor --repository-server flag is provided.
 Action might fail if blueprint is using these resources.
 actionset "delete-s3backup-f4c4q-2jj9n" created
 
-# View the status of the actionset
+# View the status of the actionset and wait for it to complete
 $ kubectl --namespace kanister get actionset delete-s3backup-f4c4q-2jj9n -oyaml
 ```
 
