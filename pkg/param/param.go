@@ -31,12 +31,16 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
-const timeFormat = time.RFC3339Nano
+const (
+	timeFormat         = time.RFC3339Nano
+	clusterLocalDomain = "svc.cluster.local"
+)
 
 // TemplateParams are the values that will change between separate runs of Phases.
 type TemplateParams struct {
@@ -139,12 +143,14 @@ type KopiaServerCreds struct {
 
 // RepositoryServer contains fields from Repository server CR that will be used to resolve go templates for repository server in blueprint
 type RepositoryServer struct {
-	Name        string
-	Namespace   string
-	ServerInfo  crv1alpha1.ServerInfo
-	Username    string
-	Credentials RepositoryServerCredentials
-	Address     string
+	Name            string
+	Namespace       string
+	ServerInfo      crv1alpha1.ServerInfo
+	Username        string
+	Credentials     RepositoryServerCredentials
+	Address         string
+	ContentCacheMB  int
+	MetadataCacheMB int
 }
 
 type RepositoryServerCredentials struct {
@@ -293,15 +299,39 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Fetching Repository Server Service")
 	}
-	repositoryServerAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", repositoryServerService.Name, repositoryServerService.Namespace, repositoryServerService.Spec.Ports[0].Port)
+	repositoryServerAddress := fmt.Sprintf("https://%s.%s.%s:%d", repositoryServerService.Name, repositoryServerService.Namespace, clusterLocalDomain, repositoryServerService.Spec.Ports[0].Port)
+	contentCacheMB, metadataCacheMB, err := getKopiaRepositoryCacheSize(r)
+	if err != nil {
+		return nil, err
+	}
 	return &RepositoryServer{
-		Name:        r.Name,
-		Namespace:   r.Namespace,
-		ServerInfo:  r.Status.ServerInfo,
-		Username:    r.Spec.Server.UserAccess.Username,
-		Credentials: repoServerSecrets,
-		Address:     repositoryServerAddress,
+		Name:            r.Name,
+		Namespace:       r.Namespace,
+		ServerInfo:      r.Status.ServerInfo,
+		Username:        r.Spec.Server.UserAccess.Username,
+		Credentials:     repoServerSecrets,
+		Address:         repositoryServerAddress,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
 	}, nil
+}
+
+func getKopiaRepositoryCacheSize(rs *crv1alpha1.RepositoryServer) (int, int, error) {
+	var err error
+	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
+	if rs.Spec.Repository.CacheSizeSettings.Content != "" {
+		contentCacheMB, err = strconv.Atoi(rs.Spec.Repository.CacheSizeSettings.Content)
+		if err != nil {
+			return 0, 0, errors.Wrap(err, "Error Parsing Content Cache Size")
+		}
+	}
+	if rs.Spec.Repository.CacheSizeSettings.Metadata != "" {
+		metadataCacheMB, err = strconv.Atoi(rs.Spec.Repository.CacheSizeSettings.Metadata)
+		if err != nil {
+			return 0, 0, errors.Wrap(err, "Error Parsing Metadata Cache Size")
+		}
+	}
+	return contentCacheMB, metadataCacheMB, nil
 }
 
 func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1.Credential) (*Credential, error) {
