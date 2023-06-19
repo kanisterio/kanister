@@ -211,7 +211,7 @@ This is stored as a `repositoryservers.cr.kanister.io` *CustomResource (CR)* whi
 **NOTE:**
 
 Do not delete the secrets that were created above in order to ensure the proper functioning of the repository server
-and to avoid any errors while creating actionsets.
+and to avoid any errors while executing actionsets.
 
 ### Create Blueprint
 
