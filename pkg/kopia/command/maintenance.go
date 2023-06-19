@@ -21,7 +21,7 @@ type MaintenanceInfoCommandArgs struct {
 
 // MaintenanceInfo returns the kopia command to get maintenance info
 func MaintenanceInfo(cmdArgs MaintenanceInfoCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
 	if cmdArgs.GetJsonOutput {
 		args = args.AppendLoggable(jsonFlag)
@@ -37,7 +37,7 @@ type MaintenanceSetOwnerCommandArgs struct {
 
 // MaintenanceSetOwner returns the kopia command for setting custom maintenance owner
 func MaintenanceSetOwner(cmdArgs MaintenanceSetOwnerCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
 	args = args.AppendLoggableKV(ownerFlag, cmdArgs.CustomOwner)
 	return stringSliceCommand(args)
@@ -49,7 +49,7 @@ type MaintenanceRunCommandArgs struct {
 
 // MaintenanceRunCommand returns the kopia command to run manual maintenance
 func MaintenanceRunCommand(cmdArgs MaintenanceRunCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
 
 	return stringSliceCommand(args)

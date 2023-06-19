@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
-    - run: make gomod
+    - run: make go-mod-tidy
     - run: make go-mod-download
     - run: tar -cvf ./src.tar.gz ./ # preserve file permissions
     - uses: actions/upload-artifact@v3
