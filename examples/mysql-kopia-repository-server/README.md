@@ -31,8 +31,6 @@ $ helm repo update
 $ helm install mysql-release bitnami/mysql \
   --namespace mysql \
   --create-namespace \
-  --set image.repository=kanisterio/mysql-kopia \
-  --set image.tag=0.90.2 \
   --set auth.rootPassword='<mysql-root-password>'
 ```
 
@@ -50,11 +48,8 @@ You can retrieve your root password by running the following command. Make sure 
 
 If you have deployed MySQL application with name other than `mysql-release` and namespace other than `mysql`, you need to modify the commands(backup, restore and delete) used below to use the correct release name and namespace
 
-### Create Repository Server CR
+### Create [Kopia Repository](https://kopia.io/docs/repositories/) using S3 as the location storage
 
-Create Kopia Repository Server CR if not created already
-
-- Create Kopia Repository using S3 as the location storage
 ```bash
 $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
 --log-dir=/tmp/kopia-cache repository create --no-check-for-updates \
@@ -64,6 +59,13 @@ $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
 --prefix=/repo-controller/ --region=<s3_bucket_region> \
 --access-key=<aws_access_key> --secret-access-key=<aws_secret_access_key> --password=<repository_password>
 ```
+
+### Create Repository Server CR
+
+**NOTE:**
+
+All the secrets mentioned below are required to be created in the same namespace as the Kanister controller.
+And all the secrets would be used while creating the Repository Server CR. 
 
 - Generate TLS Certificates and create TLS secret for Kopia Repository Server for secure communication between Kopia Repository Server and Client
 
@@ -134,13 +136,13 @@ $ kubectl create -f s3_location.yaml -n kanister
 - Apply Secrets for Kopia Repository Server User Access, Admin Access and Repository Access
 
 ```bash
-# The following command creates secrets for kopia repository server user access.
+# The following command creates secret for kopia repository server user access.
 kubectl create secret generic repository-server-user-access -n kanister --from-literal=localhost=<suitable_password_for_repository_server_user>
 
-# The following command creates secrets for kopia repository server admin access.
+# The following command creates secret for kopia repository server admin access.
 kubectl create secret generic repository-admin-user -n kanister --from-literal=username=<suitable_admin_username_for_repository_server> --from-literal=password=<suitable_password_for_repository_server_admin>
 
-# The following command creates secrets for kopia repository access.
+# The following command creates secret for kopia repository access.
 kubectl create secret generic repo-pass -n kanister --from-literal=repo-password=<repository_password_set_while_creating_kopia_repository>
 ```
 
@@ -205,6 +207,11 @@ $ kubectl get repositoryservers.cr.kanister.io kopia-repo-server-1 -n kanister -
 The above command will configure a kopia repository server, which manages artifacts resulting from Kanister
 data operations such as backup.
 This is stored as a `repositoryservers.cr.kanister.io` *CustomResource (CR)* which is then referenced in Kanister ActionSets.
+
+**NOTE:**
+
+Do not delete the secrets that were created above in order to ensure the proper functioning of the repository server
+and to avoid any errors while creating actionsets.
 
 ### Create Blueprint
 
