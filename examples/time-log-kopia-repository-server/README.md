@@ -221,3 +221,33 @@ If you run into any issues with the above commands, you can check the logs of th
 ```bash
 $ kubectl --namespace kanister logs -l app=kanister-operator
 ```
+
+you can also check events of the actionset
+```bash
+$ kubectl describe actionset restore-s3restore-g235d-23d2f -n kanister
+```
+
+## Cleanup
+
+### Delete the Deployment
+
+To uninstall/delete the `time-logger` deployment:
+
+```bash
+$ kubectl delete -f ./examples/time-log/time-logger-deployment.yaml -n time-log
+```
+The command removes all the Kubernetes components associated with the application and deletes the resources.
+
+### Delete CRs
+Remove Blueprint, RepositoryServer CR and ActionSets
+```bash
+$ kubectl delete blueprints.cr.kanister.io time-log -n kanister
+
+$ kubectl get repositoryservers -n kanister
+NAME                  AGE
+kopia-repo-server-1   122m
+
+$ kubectl delete repositoryservers kopia-repo-server-1 -n kanister
+
+$ kubectl --namespace kanister delete actionsets.cr.kanister.io s3backup-f4c4q restore-s3restore-g235d-23d2f delete-s3backup-f4c4q-2jj9n
+```
