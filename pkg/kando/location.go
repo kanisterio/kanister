@@ -71,12 +71,8 @@ func validateCommandArgs(cmd *cobra.Command) error {
 
 func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, error) {
 	kopiaSnapshot, outputName := getKopiaSnapshotAndOutputNameFlag(cmd, flag)
-	dataMoverType, err := dataMoverTypeFromCMD(cmd)
-	if err != nil {
-		return nil, err
-	}
 
-	switch dataMoverType {
+	switch dataMoverTypeFromCMD(cmd) {
 	case DataMoverTypeProfile:
 		profileRef, err := unmarshalProfileFlag(cmd)
 		if err != nil {
@@ -90,7 +86,7 @@ func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, err
 		}
 		return datamover.NewRepositoryServerDataMover(repositoryServerRef, outputName, kopiaSnapshot), nil
 	default:
-		return nil, errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
+		return nil, errors.New("Could not initialize DataMover.")
 	}
 }
 
@@ -108,16 +104,16 @@ func unmarshalRepositoryServerFlag(cmd *cobra.Command) (*param.RepositoryServer,
 	return rs, errors.Wrap(err, "failed to unmarshal kopia repository server CR")
 }
 
-func dataMoverTypeFromCMD(c *cobra.Command) (DataMoverType, error) {
+func dataMoverTypeFromCMD(c *cobra.Command) DataMoverType {
 	profile := c.Flags().Lookup(profileFlagName).Value.String()
 	if profile != "" {
-		return DataMoverTypeProfile, nil
+		return DataMoverTypeProfile
 	}
 	repositoryServer := c.Flags().Lookup(repositoryServerFlagName).Value.String()
 	if repositoryServer != "" {
-		return DataMoverTypeRepositoryServer, nil
+		return DataMoverTypeRepositoryServer
 	}
-	return "", errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
+	return ""
 }
 
 func getKopiaSnapshotAndOutputNameFlag(c *cobra.Command, flag string) (string, string) {
