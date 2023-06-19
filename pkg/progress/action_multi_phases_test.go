@@ -122,8 +122,6 @@ func (s *TestSuiteMultiPhases) createFixtures(blueprint *crv1alpha1.Blueprint, a
 	return nil
 }
 
-//// Test phase percent as per the state of phase but with multiple phases with multiple actions
-
 func (s *TestSuiteMultiPhases) TestUpdateActionsProgress(c *C) {
 	var testCases = []struct {
 		indexAction           int
