@@ -125,7 +125,7 @@ func (rs *repositoryServer) hostnameAndUserPassphrase() (string, string, error) 
 func (rs *repositoryServer) tlsCertificateData() (string, error) {
 	certJSON, err := json.Marshal(rs.repositoryServer.Credentials.ServerTLS.Data)
 	if err != nil {
-		return "", errors.Wrap(err, "Error Unmarshalling Certificate")
+		return "", errors.Wrap(err, "error reading repository server TLS cert")
 	}
 	return string(certJSON), err
 }
