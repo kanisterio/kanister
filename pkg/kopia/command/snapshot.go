@@ -22,7 +22,6 @@ import (
 )
 
 const (
-	requireLogLevelInfo        = true
 	manifestTypeSnapshotFilter = "type:snapshot"
 )
 
@@ -36,8 +35,16 @@ type SnapshotCreateCommandArgs struct {
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
 func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
+	// Default to info log level unless specified otherwise.
+	if cmdArgs.LogLevel == "" {
+		// Make a copy of the common command args, set the log level to info.
+		common := *cmdArgs.CommandArgs
+		common.LogLevel = LogLevelInfo
+		cmdArgs.CommandArgs = &common
+	}
+
 	parallelismStr := strconv.Itoa(cmdArgs.Parallelism)
-	args := commonArgs(cmdArgs.CommandArgs, requireLogLevelInfo)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = addTags(cmdArgs.Tags, args)
@@ -63,7 +70,7 @@ type SnapshotRestoreCommandArgs struct {
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, cmdArgs.SnapID, cmdArgs.TargetPath)
 	if cmdArgs.IgnorePermissionErrors {
 		args = args.AppendLoggable(ignorePermissionsError)
@@ -84,7 +91,7 @@ type SnapshotDeleteCommandArgs struct {
 
 // SnapshotDelete returns the kopia command for deleting a snapshot with given snapshot ID
 func SnapshotDelete(cmdArgs SnapshotDeleteCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, cmdArgs.SnapID, unsafeIgnoreSourceFlag)
 
 	return stringSliceCommand(args)
@@ -98,7 +105,7 @@ type SnapshotExpireCommandArgs struct {
 
 // SnapshotExpire returns the kopia command for removing snapshots with given root ID
 func SnapshotExpire(cmdArgs SnapshotExpireCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, cmdArgs.RootID)
 	if cmdArgs.MustDelete {
 		args = args.AppendLoggable(deleteFlag)
@@ -113,7 +120,7 @@ type SnapListAllCommandArgs struct {
 
 // SnapListAll returns the kopia command for listing all snapshots in the repository with their sizes
 func SnapListAll(cmdArgs SnapListAllCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(
 		snapshotSubCommand,
 		listSubCommand,
@@ -132,7 +139,7 @@ type SnapListAllWithSnapIDsCommandArgs struct {
 
 // SnapListAllWithSnapIDs returns the kopia command for listing all snapshots in the repository with snapshotIDs
 func SnapListAllWithSnapIDs(cmdArgs SnapListAllWithSnapIDsCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
 	args = args.AppendLoggableKV(filterFlag, manifestTypeSnapshotFilter)
 
@@ -145,7 +152,7 @@ type SnapListByTagsCommandArgs struct {
 }
 
 func SnapListByTags(cmdArgs SnapListByTagsCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(
 		snapshotSubCommand,
 		listSubCommand,

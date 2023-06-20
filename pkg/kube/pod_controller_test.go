@@ -231,7 +231,8 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 		"Pod deletion error": func(pcp *fakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: podControllerPodName,
+					Name:      podControllerPodName,
+					Namespace: podControllerNS,
 				},
 			}
 			err := pc.StartPod(ctx)
@@ -245,7 +246,8 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 		"Pod successfully deleted": func(pcp *fakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: podControllerPodName,
+					Name:      podControllerPodName,
+					Namespace: podControllerNS,
 				},
 			}
 			err := pc.StartPod(ctx)
@@ -270,8 +272,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 		}
 
 		pc := NewPodController(cli, &PodOptions{
-			Namespace: podControllerNS,
-			Name:      podControllerPodName,
+			Name: podControllerPodName,
 		}, WithPodControllerProcessor(pcp))
 
 		tc(pcp, pc)
