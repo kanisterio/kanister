@@ -15,8 +15,6 @@
 package kanctl
 
 import (
-	"context"
-
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -57,23 +55,18 @@ func newValidateCommand() *cobra.Command {
 }
 
 func performValidation(cmd *cobra.Command, args []string) error {
-	var ctx context.Context
 	p, err := extractValidateParams(cmd, args)
 	if err != nil {
 		return err
 	}
 	cmd.SilenceUsage = true
-	ctx = cmd.Context()
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	switch p.resourceKind {
 	case "profile":
 		return performProfileValidation(p)
 	case "blueprint":
 		return performBlueprintValidation(p)
 	case "repository-server-secrets":
-		return performRepoServerSecretsValidation(ctx, p)
+		return performRepoServerSecretsValidation(cmd.Context(), p)
 	default:
 		return errors.Errorf("resource %s is not supported for validate subcommand", p.resourceKind)
 	}
