@@ -50,7 +50,7 @@ func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
 	var locationType []byte
 	var ok bool
 	if secret == nil {
-		return nil, errors.New("Secret is Nil")
+		return nil, errors.New("Secret or kopia repository location is Nil")
 	}
 
 	if locationType, ok = (secret.Data[reposerver.TypeKey]); !ok {
