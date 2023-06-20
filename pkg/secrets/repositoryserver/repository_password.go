@@ -15,13 +15,11 @@
 package repositoryserver
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-)
 
-var ErrValidate = fmt.Errorf("validation Failed")
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
+)
 
 var _ Secret = &repositoryPassword{}
 
@@ -38,17 +36,17 @@ func NewRepoPassword(secret *corev1.Secret) *repositoryPassword {
 // Validate the kopia repository password for required fields as well as unknown fields
 func (r *repositoryPassword) Validate() error {
 	if r.password == nil {
-		return errors.Wrapf(ErrValidate, NilSecretErrorMessage)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
 	if len(r.password.Data) == 0 {
-		return errors.Wrapf(ErrValidate, EmptySecretErrorMessage, r.password.Namespace, r.password.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, r.password.Namespace, r.password.Name)
 	}
 	// kopia repository must have exactly 1 field
 	if len(r.password.Data) != 1 {
-		return errors.Wrapf(ErrValidate, UnknownFieldErrorMsg, r.password.Namespace, r.password.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, r.password.Namespace, r.password.Name)
 	}
 	if _, ok := r.password.Data[RepoPasswordKey]; !ok {
-		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, RepoPasswordKey, r.password.Namespace, r.password.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RepoPasswordKey, r.password.Namespace, r.password.Name)
 	}
 	return nil
 }

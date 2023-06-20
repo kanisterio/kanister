@@ -17,6 +17,8 @@ package repositoryserver
 import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 var _ Secret = &repositoryServerUserAccessCredentials{}
@@ -33,10 +35,10 @@ func NewRepositoryServerUserAccessCredentials(secret *corev1.Secret) *repository
 
 func (r *repositoryServerUserAccessCredentials) Validate() error {
 	if r.credentials == nil {
-		return errors.Wrapf(ErrValidate, NilSecretErrorMessage)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
 	if len(r.credentials.Data) == 0 {
-		return errors.Wrapf(ErrValidate, EmptySecretErrorMessage, r.credentials.Namespace, r.credentials.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, r.credentials.Namespace, r.credentials.Name)
 	}
 	return nil
 }

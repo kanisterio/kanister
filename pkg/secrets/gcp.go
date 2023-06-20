@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 const (
@@ -40,19 +40,19 @@ func ValidateGCPCredentials(secret *v1.Secret) error {
 	// - GCPProjectID
 	// - GCPServiceAccountJsonKey
 	if secret == nil {
-		return errors.Wrapf(reposerver.ErrValidate, reposerver.NilSecretErrorMessage)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
 	if string(secret.Type) != GCPSecretType {
-		return errors.Wrapf(reposerver.ErrValidate, reposerver.IncompatibleSecretTypeErrorMsg, GCPSecretType, secret.Namespace, secret.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, secret.Namespace, secret.Name)
 	}
 	if len(secret.Data) == 0 {
-		return errors.Wrapf(reposerver.ErrValidate, reposerver.EmptySecretErrorMessage, secret.Namespace, secret.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, secret.Namespace, secret.Name)
 	}
 	if _, ok := secret.Data[GCPProjectID]; !ok {
-		return errors.Wrapf(reposerver.ErrValidate, reposerver.MissingRequiredFieldErrorMsg, GCPProjectID, secret.Namespace, secret.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, secret.Namespace, secret.Name)
 	}
 	if _, ok := secret.Data[GCPServiceAccountJsonKey]; !ok {
-		return errors.Wrapf(reposerver.ErrValidate, reposerver.MissingRequiredFieldErrorMsg, GCPServiceAccountJsonKey, secret.Namespace, secret.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceAccountJsonKey, secret.Namespace, secret.Name)
 	}
 	return nil
 }

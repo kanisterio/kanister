@@ -68,7 +68,7 @@ func getSecretFromFile(ctx context.Context, filename string) (*corev1.Secret, er
 	secret := &corev1.Secret{}
 	err = d.Decode(secret)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to decode the secret passed")
 	}
 	return secret, nil
 }

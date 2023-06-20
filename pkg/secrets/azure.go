@@ -15,10 +15,11 @@
 package secrets
 
 import (
-	"github.com/kanisterio/kanister/pkg/objectstore"
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/objectstore"
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 const (
@@ -45,7 +46,7 @@ const (
 // - azure_storage_environment
 func ValidateAzureCredentials(secret *v1.Secret) error {
 	if string(secret.Type) != AzureSecretType {
-		return errors.Wrapf(reposerver.ErrValidate, reposerver.IncompatibleSecretTypeErrorMsg, AzureSecretType, secret.Namespace, secret.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AzureSecretType, secret.Namespace, secret.Name)
 	}
 	count := 0
 	if _, ok := secret.Data[AzureStorageAccountID]; ok {

@@ -17,6 +17,8 @@ package repositoryserver
 import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 var _ Secret = &azure{}
@@ -33,13 +35,13 @@ func NewAzureLocation(secret *corev1.Secret) *azure {
 
 func (l *azure) Validate() error {
 	if l.storageLocation == nil {
-		return errors.Wrapf(ErrValidate, NilSecretErrorMessage)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
 	if len(l.storageLocation.Data) == 0 {
-		return errors.Wrapf(ErrValidate, EmptySecretErrorMessage, l.storageLocation.Namespace, l.storageLocation.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, l.storageLocation.Namespace, l.storageLocation.Name)
 	}
 	if _, ok := l.storageLocation.Data[BucketKey]; !ok {
-		return errors.Wrapf(ErrValidate, MissingRequiredFieldErrorMsg, BucketKey, l.storageLocation.Namespace, l.storageLocation.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, l.storageLocation.Namespace, l.storageLocation.Name)
 	}
 	return nil
 }

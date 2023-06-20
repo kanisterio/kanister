@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
@@ -37,7 +38,9 @@ func ValidateCredentials(secret *corev1.Secret) error {
 	case GCPSecretType:
 		return ValidateGCPCredentials(secret)
 	case FilestoreSecretType:
-		return ValidateFileStoreCredentials(secret)
+		// returning nil currently since we
+		// dont need credentials for file store
+		return nil
 	default:
 		return errors.Errorf("Unsupported type '%s' for secret '%s:%s'", string(secret.Type), secret.Namespace, secret.Name)
 	}
@@ -51,7 +54,7 @@ func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
 	}
 
 	if locationType, ok = (secret.Data[reposerver.TypeKey]); !ok {
-		return nil, errors.Wrapf(reposerver.ErrValidate, reposerver.MissingRequiredFieldErrorMsg, reposerver.TypeKey, secret.Namespace, secret.Name)
+		return nil, errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, secret.Namespace, secret.Name)
 	}
 
 	switch reposerver.LocType(string(locationType)) {
@@ -64,7 +67,7 @@ func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
 	case reposerver.LocTypeFilestore:
 		return reposerver.NewFileStoreLocation(secret), nil
 	default:
-		return nil, errors.Wrapf(reposerver.ErrValidate, reposerver.UnsupportedLocationTypeErrorMsg, locationType, secret.Namespace, secret.Name)
+		return nil, errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, locationType, secret.Namespace, secret.Name)
 	}
 }
 

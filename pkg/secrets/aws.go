@@ -19,13 +19,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	"github.com/pkg/errors"
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 const (
@@ -55,7 +55,7 @@ const (
 // - session_token
 func ValidateAWSCredentials(secret *v1.Secret) error {
 	if string(secret.Type) != AWSSecretType {
-		return errors.Wrapf(reposerver.ErrValidate, reposerver.IncompatibleSecretTypeErrorMsg, AWSSecretType, secret.Namespace, secret.Name)
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AWSSecretType, secret.Namespace, secret.Name)
 	}
 	count := 0
 	if _, ok := secret.Data[AWSAccessKeyID]; ok {
