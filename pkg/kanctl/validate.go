@@ -63,17 +63,13 @@ func performValidation(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	cmd.SilenceUsage = true
-	ctx = cmd.Context()
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	switch p.resourceKind {
 	case "profile":
 		return performProfileValidation(p)
 	case "blueprint":
 		return performBlueprintValidation(p)
 	case "repository-server-secrets":
-		return performRepoServerSecretsValidation(ctx, p)
+		return performRepoServerSecretsValidation(cmd.Context(), p)
 	default:
 		return errors.Errorf("resource %s is not supported for validate subcommand", p.resourceKind)
 	}
