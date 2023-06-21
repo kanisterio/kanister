@@ -18,9 +18,10 @@ import (
 	"context"
 	"io"
 
+	"github.com/spf13/cobra"
+
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/spf13/cobra"
 )
 
 const (

@@ -16,8 +16,6 @@ package datamover
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 
 	"github.com/pkg/errors"
 
@@ -100,33 +98,36 @@ func (rs *repositoryServer) unmarshalKopiaSnapshot() (*snapshot.SnapshotInfo, er
 
 func (rs *repositoryServer) hostnameAndUserPassphrase() (string, string, error) {
 	var hostname, userPassphrase string
-	userCredsJSON, err := json.Marshal(rs.repositoryServer.Credentials.ServerUserAccess.Data)
-	if err != nil {
-		return "", "", errors.Wrap(err, "Error Unmarshalling User Credentials")
-	}
-	var userAccessMap map[string]string
-	if err := json.Unmarshal([]byte(string(userCredsJSON)), &userAccessMap); err != nil {
-		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
+	userAccessMap := make(map[string]string)
+	for key, value := range rs.repositoryServer.Credentials.ServerUserAccess.Data {
+		userAccessMap[key] = string(value)
 	}
 
+	// if hostname is not provided, use the random hostname in the map as default
+	for key, val := range userAccessMap {
+		hostname = key
+		userPassphrase = val
+		break
+	}
 	// check if hostname is provided in the repository server
 	if rs.hostName != "" {
+		err := rs.checkHostnameExistsInUserAccessMap(userAccessMap)
+		if err != nil {
+			return "", "", err
+		}
 		hostname = rs.hostName
 		userPassphrase = userAccessMap[hostname]
-	} else {
-		// if hostname is not provided, use the first hostname in the map
-		for key, val := range userAccessMap {
-			hostname = key
-			userPassphrase = val
-			break
-		}
 	}
 
-	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassphrase)
-	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
+	return hostname, string(userPassphrase), nil
+}
+
+func (rs *repositoryServer) checkHostnameExistsInUserAccessMap(userAccessMap map[string]string) error {
+	// check if hostname is provided in the repository server exists in the user access map
+	if _, ok := userAccessMap[rs.hostName]; !ok {
+		return errors.New("hostname provided in the repository server does not exist in the user access map")
 	}
-	return hostname, string(decodedUserPassPhrase), nil
+	return nil
 }
 
 func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJson, hostname string) *repositoryServer {
