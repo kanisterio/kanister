@@ -413,7 +413,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 		_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{})
 		return errors.WithStack(err)
 	}
-	log.WithContext(ctx).Print("NISHANT triggered an actionset and the controller started executing actions", field.M{"NewActionSetName": as.GetName()})
+	log.WithContext(ctx).Print("NISHANT-2 triggered an actionset and the controller started executing actions", field.M{"NewActionSetName": as.GetName()})
 	return nil
 }
 
