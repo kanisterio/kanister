@@ -36,7 +36,7 @@ func newLocationDeleteCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return dataMover.Delete(context.Background(), pathFlag(c))
+			return dataMover.Delete(c.Context(), pathFlag(c))
 		},
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")

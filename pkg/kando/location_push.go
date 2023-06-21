@@ -42,7 +42,7 @@ func newLocationPushCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return dataMover.Push(context.Background(), args[0], pathFlag(c))
+			return dataMover.Push(c.Context(), args[0], pathFlag(c))
 		},
 	}
 	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")
