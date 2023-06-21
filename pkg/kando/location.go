@@ -28,7 +28,7 @@ const (
 	pathFlagName                         = "path"
 	profileFlagName                      = "profile"
 	repositoryServerFlagName             = "repository-server"
-	repositoryServerUserHostnameFlagName = "repository-server-user-hostname"
+	repositoryServerUserHostnameFlagName = "user-hostname"
 
 	// DataMoverTypeProfile is used to specify that the DataMover is of type Profile
 	DataMoverTypeProfile DataMoverType = "profile"
