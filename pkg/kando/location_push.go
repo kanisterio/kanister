@@ -38,7 +38,7 @@ func newLocationPushCommand() *cobra.Command {
 			if err := validateCommandArgs(c); err != nil {
 				return err
 			}
-			dataMover, err := dataMoverFromCMD(c, outputNameFlagName)
+			dataMover, err := dataMoverForOutputNameFlag(c)
 			if err != nil {
 				return err
 			}

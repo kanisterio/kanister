@@ -69,9 +69,17 @@ func validateCommandArgs(cmd *cobra.Command) error {
 	return nil
 }
 
-func dataMoverFromCMD(cmd *cobra.Command, flag string) (datamover.DataMover, error) {
-	kopiaSnapshot, outputName := getKopiaSnapshotAndOutputNameFlag(cmd, flag)
+// dataMoverForKopiaSnapshotFlag returns a DataMover based on the --kopia-snapshot flag
+func dataMoverForKopiaSnapshotFlag(cmd *cobra.Command) (datamover.DataMover, error) {
+	return dataMoverFromCMD(cmd, cmd.Flag(kopiaSnapshotFlagName).Value.String(), "")
+}
 
+// dataMoverForOutputNameFlag returns a DataMover based on the --output-name flag
+func dataMoverForOutputNameFlag(cmd *cobra.Command) (datamover.DataMover, error) {
+	return dataMoverFromCMD(cmd, "", cmd.Flag(outputNameFlagName).Value.String())
+}
+
+func dataMoverFromCMD(cmd *cobra.Command, kopiaSnapshot, outputName string) (datamover.DataMover, error) {
 	switch dataMoverTypeFromCMD(cmd) {
 	case DataMoverTypeProfile:
 		profileRef, err := unmarshalProfileFlag(cmd)
@@ -114,15 +122,4 @@ func dataMoverTypeFromCMD(c *cobra.Command) DataMoverType {
 		return DataMoverTypeRepositoryServer
 	}
 	return ""
-}
-
-func getKopiaSnapshotAndOutputNameFlag(c *cobra.Command, flag string) (string, string) {
-	switch flag {
-	case kopiaSnapshotFlagName:
-		return c.Flag(kopiaSnapshotFlagName).Value.String(), ""
-	case outputNameFlagName:
-		return "", c.Flag(outputNameFlagName).Value.String()
-	default:
-		return "", ""
-	}
 }

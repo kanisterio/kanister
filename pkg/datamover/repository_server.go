@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -72,13 +73,12 @@ func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context) 
 	if err != nil {
 		return "", errors.Wrap(err, "Error Retrieving Hostname and User Passphrase from Repository Server")
 	}
-	certData, err := rs.tlsCertificateData()
 	if err != nil {
 		return "", errors.Wrap(err, "Error Retrieving TLS Certificate Data from Repository Server")
 	}
 	return userPassphrase, repository.ConnectToAPIServer(
 		ctx,
-		certData,
+		string(rs.repositoryServer.Credentials.ServerTLS.Data[kopia.TLSCertificateKey]),
 		userPassphrase,
 		hostname,
 		rs.repositoryServer.Address,
@@ -120,14 +120,6 @@ func (rs *repositoryServer) hostnameAndUserPassphrase() (string, string, error) 
 		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
 	}
 	return hostName, string(decodedUserPassPhrase), nil
-}
-
-func (rs *repositoryServer) tlsCertificateData() (string, error) {
-	certJSON, err := json.Marshal(rs.repositoryServer.Credentials.ServerTLS.Data)
-	if err != nil {
-		return "", errors.Wrap(err, "Error Unmarshalling Certificate")
-	}
-	return string(certJSON), err
 }
 
 func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJson string) *repositoryServer {
