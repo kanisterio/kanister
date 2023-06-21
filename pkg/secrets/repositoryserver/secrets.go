@@ -12,12 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package secrets
+package repositoryserver
 
-import (
-	"testing"
-
-	. "gopkg.in/check.v1"
-)
-
-func Test(t *testing.T) { TestingT(t) }
+type Secret interface {
+	Validate() error
+}

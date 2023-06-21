@@ -14,10 +14,5 @@
 
 package secrets
 
-import (
-	"testing"
-
-	. "gopkg.in/check.v1"
-)
-
-func Test(t *testing.T) { TestingT(t) }
+// FilestoreSecretType represents the secret type for Filestore credentials.
+const FilestoreSecretType string = "secrets.kanister.io/filestore"
