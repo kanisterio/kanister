@@ -73,9 +73,7 @@ func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context) 
 	if err != nil {
 		return "", errors.Wrap(err, "Error Retrieving Hostname and User Passphrase from Repository Server")
 	}
-	if err != nil {
-		return "", errors.Wrap(err, "Error Retrieving TLS Certificate Data from Repository Server")
-	}
+
 	return userPassphrase, repository.ConnectToAPIServer(
 		ctx,
 		string(rs.repositoryServer.Credentials.ServerTLS.Data[kopia.TLSCertificateKey]),
