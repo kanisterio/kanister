@@ -1,0 +1,83 @@
+// Copyright 2023 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package secrets
+
+import (
+	"testing"
+
+	"github.com/pkg/errors"
+	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+)
+
+func Test(t *testing.T) { TestingT(t) }
+
+type SecretsSuite struct{}
+
+var _ = Suite(&SecretsSuite{})
+
+func (s *GCPSecretSuite) TestGetLocationSecret(c *C) {
+
+	for i, tc := range []struct {
+		secret        *v1.Secret
+		errChecker    Checker
+		expectedError error
+	}{
+		{ // Valid secret type
+			secret: &v1.Secret{
+				Type: v1.SecretType(repositoryserver.Location),
+				Data: map[string][]byte{
+					reposerver.TypeKey: []byte(reposerver.LocTypeGCS),
+				},
+			},
+			errChecker:    IsNil,
+			expectedError: nil,
+		},
+		{ // Missing location type
+			secret: &v1.Secret{
+				Type: v1.SecretType(repositoryserver.Location),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sec",
+					Namespace: "ns",
+				},
+			},
+			errChecker:    NotNil,
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, "ns", "sec"),
+		},
+		{ // Unsupported location type
+			secret: &v1.Secret{
+				Type: v1.SecretType(repositoryserver.Location),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sec",
+					Namespace: "ns",
+				},
+				Data: map[string][]byte{
+					reposerver.TypeKey: []byte("invalid"),
+				},
+			},
+			errChecker:    NotNil,
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, "invalid", "ns", "sec"),
+		},
+	} {
+		_, err := getLocationSecret(tc.secret)
+		c.Check(err, tc.errChecker)
+		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
+	}
+}
