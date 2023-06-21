@@ -15,7 +15,6 @@
 package kando
 
 import (
-	"context"
 	"os"
 
 	"github.com/pkg/errors"
@@ -30,7 +29,7 @@ import (
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	root := newRootCommand()
-	if err := root.ExecuteContext(context.Background()); err != nil {
+	if err := root.Execute(); err != nil {
 		log.WithError(err).Print("Kando failed to execute")
 		os.Exit(1)
 	}
