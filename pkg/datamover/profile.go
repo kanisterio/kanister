@@ -98,7 +98,7 @@ func (p *profile) connectToKopiaRepositoryServer(ctx context.Context) error {
 
 func (p *profile) unmarshalKopiaSnapshot(ctx context.Context) (*snapshot.SnapshotInfo, error) {
 	if p.snapJSON == "" {
-		return nil, errors.New("kopia snapshot information is required to delete data using kopia")
+		return nil, errors.New("kopia snapshot information is required to manage data using kopia")
 	}
 	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.snapJSON)
 	if err != nil {
