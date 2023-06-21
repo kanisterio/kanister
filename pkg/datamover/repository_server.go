@@ -34,6 +34,7 @@ type repositoryServer struct {
 	outputName       string
 	repositoryServer *param.RepositoryServer
 	snapJSON         string
+	hostName         string
 }
 
 func (rs *repositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
@@ -98,6 +99,7 @@ func (rs *repositoryServer) unmarshalKopiaSnapshot() (*snapshot.SnapshotInfo, er
 }
 
 func (rs *repositoryServer) hostnameAndUserPassphrase() (string, string, error) {
+	var hostname, userPassphrase string
 	userCredsJSON, err := json.Marshal(rs.repositoryServer.Credentials.ServerUserAccess.Data)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Error Unmarshalling User Credentials")
@@ -107,23 +109,31 @@ func (rs *repositoryServer) hostnameAndUserPassphrase() (string, string, error) 
 		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
 	}
 
-	var userPassPhrase string
-	var hostName string
-	for key, val := range userAccessMap {
-		hostName = key
-		userPassPhrase = val
+	// check if hostname is provided in the repository server
+	if rs.hostName != "" {
+		hostname = rs.hostName
+		userPassphrase = userAccessMap[hostname]
+	} else {
+		// if hostname is not provided, use the first hostname in the map
+		for key, val := range userAccessMap {
+			hostname = key
+			userPassphrase = val
+			break
+		}
 	}
-	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassPhrase)
+
+	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassphrase)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
 	}
-	return hostName, string(decodedUserPassPhrase), nil
+	return hostname, string(decodedUserPassPhrase), nil
 }
 
-func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJson string) *repositoryServer {
+func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJson, hostname string) *repositoryServer {
 	return &repositoryServer{
 		outputName:       outputName,
 		repositoryServer: repoServer,
 		snapJSON:         snapJson,
+		hostName:         hostname,
 	}
 }

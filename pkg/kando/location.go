@@ -25,9 +25,10 @@ import (
 )
 
 const (
-	pathFlagName             = "path"
-	profileFlagName          = "profile"
-	repositoryServerFlagName = "repository-server"
+	pathFlagName                 = "path"
+	profileFlagName              = "profile"
+	repositoryServerFlagName     = "repository-server"
+	repositoryServerUserHostname = "repository-server-user-hostname"
 
 	// DataMoverTypeProfile is used to specify that the DataMover is of type Profile
 	DataMoverTypeProfile DataMoverType = "profile"
@@ -48,6 +49,7 @@ func newLocationCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
 	cmd.PersistentFlags().StringP(repositoryServerFlagName, "r", "", "Pass a Repository Server CR as a JSON string (required for kopia based blueprints)")
+	cmd.Flags().StringP(repositoryServerUserHostname, "u", "", "Pass the Repository Server User Hostname (only if --repository-server is passed)")
 	return cmd
 }
 
@@ -92,7 +94,7 @@ func dataMoverFromCMD(cmd *cobra.Command, kopiaSnapshot, outputName string) (dat
 		if err != nil {
 			return nil, err
 		}
-		return datamover.NewRepositoryServerDataMover(repositoryServerRef, outputName, kopiaSnapshot), nil
+		return datamover.NewRepositoryServerDataMover(repositoryServerRef, outputName, kopiaSnapshot, cmd.Flag(repositoryServerUserHostname).Value.String()), nil
 	default:
 		return nil, errors.New("Could not initialize DataMover.")
 	}
