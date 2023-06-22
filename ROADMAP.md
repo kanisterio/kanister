@@ -24,6 +24,7 @@ Please join the Kanister community to give feedback on the roadmap
 2. Kopia.io Repository Controller with a CR to control the lifecycle of a Kopia Repository Server
 3. [Progress tracking for individual Phases in an Action](https://github.com/kanisterio/kanister/blob/master/design/progress-tracking.md)
 4. ActionSet metrics
+5. Container image vulnerability scanning
 
 ### New Features:
 
