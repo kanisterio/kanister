@@ -49,7 +49,7 @@ func newLocationCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
 	cmd.PersistentFlags().StringP(repositoryServerFlagName, "r", "", "Pass a Repository Server CR as a JSON string (required for kopia based blueprints)")
-	cmd.PersistentFlags().StringP(repositoryServerUserHostnameFlagName, "u", "", "Pass the Repository Server User Hostname (applicable if --repository-server is passed)")
+	cmd.PersistentFlags().StringP(repositoryServerUserHostnameFlagName, "", "", "Pass the Repository Server User Hostname (applicable if --repository-server is passed)")
 	return cmd
 }
 
