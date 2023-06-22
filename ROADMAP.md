@@ -13,7 +13,7 @@ Please join the Kanister community to give feedback on the roadmap
 2. Blueprints Maintenance and Support Policy
    1. project test matrix: Kopia vs Restic vs Stow, downstream adopters vs Kanister standalone
    2. community maintained examples: move to a new public repo
-3. Move Kanister.io web site to GitHub Repo
+3. Move the Kanister.io website to GitHub Repo
 4. Leverage issues for planning?
 
 ## Development Work
