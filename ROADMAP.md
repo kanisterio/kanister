@@ -29,10 +29,9 @@ Please join the Kanister community to give feedback on the roadmap
 ### New Features:
 
 1. Track and log events triggered by Blueprint Actions
-2. Image Vulnerability Scanning
-3. ARM support
-4. Use GitHub pages with Jekyll or Hugo for documentation
-5. Vault integration for Repository Server secrets
+2. ARM support
+3. Use GitHub pages with Jekyll or Hugo for documentation
+4. Vault integration for Repository Server secrets
 
 ### Backlog: (ideas and maintenace)
 
