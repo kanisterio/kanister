@@ -33,7 +33,7 @@ Please join the Kanister community to give feedback on the roadmap
 3. Use GitHub pages with Jekyll or Hugo for documentation
 4. Vault integration for Repository Server secrets
 
-### Backlog: (ideas and maintenace)
+### Backlog: (ideas and maintenance)
 
 1. Deprecate Restic
 2. Generate Kanister controller using KubeBuilder - current one is based on rook operator
