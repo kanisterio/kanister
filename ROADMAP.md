@@ -20,7 +20,7 @@ Please join the Kanister community to give feedback on the roadmap
 
 ### Prioritized (Doing):
 
-1. Fork Block functions, deprecate unsed Kanister code
+1. Fork block storage functions, deprecate unused Kanister code
 2. Kopia.io Repository Controller with a CR to control the lifecycle of a Kopia Repository Server
 3. [Progress tracking for individual Phases in an Action](https://github.com/kanisterio/kanister/blob/master/design/progress-tracking.md)
 4. ActionSet metrics
