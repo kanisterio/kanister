@@ -37,7 +37,7 @@ Please join the Kanister community to give feedback on the roadmap
 
 1. Deprecate Restic
 2. Generate Kanister controller using KubeBuilder - current one is based on rook operator
-3. Merge Repository controller into Kanister controller after a.
+3. Merge the Repository controller into the Kanister controller after 2.
 4. Replace [github.com/pkg/errors](http://github.com/pkg/errors) package with a supported fork
 5. Replace http://gopkg.in/check.v1 with a better test framework
 6. Release notes
