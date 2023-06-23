@@ -34,7 +34,6 @@ type SecretUtilsSuite struct{}
 var _ = Suite(&SecretUtilsSuite{})
 
 func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
-
 	for i, tc := range []struct {
 		secret        *v1.Secret
 		errChecker    Checker
