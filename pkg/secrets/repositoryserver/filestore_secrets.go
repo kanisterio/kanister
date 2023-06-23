@@ -12,12 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package secrets
+package repositoryserver
 
 import (
-	"testing"
-
-	. "gopkg.in/check.v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+var _ Secret = &fileStore{}
+
+type fileStore struct {
+	storageLocation *corev1.Secret
+}
+
+func NewFileStoreLocation(secret *corev1.Secret) *fileStore {
+	return &fileStore{
+		storageLocation: secret,
+	}
+}
+
+func (l *fileStore) Validate() error {
+	// Currently empty since all the fields are optional
+	return nil
+}
