@@ -195,6 +195,9 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 
 func (h *RepoServerHandler) refreshServer(ctx context.Context) error {
 	serverAddress, username, password, err := h.getServerDetails(ctx)
+	if err != nil {
+		return err
+	}
 	repoPassword := string(h.RepositoryServerSecrets.repositoryPassword.Data[reposerver.RepoPasswordKey])
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {
