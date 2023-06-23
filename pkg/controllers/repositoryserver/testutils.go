@@ -33,7 +33,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/secrets"
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
@@ -114,24 +114,24 @@ func getDefaultS3StorageCreds() map[string][]byte {
 
 func getDefaultS3CompliantStorageLocation() map[string][]byte {
 	return map[string][]byte{
-		repositoryserver.LocationTypeKey: []byte(crv1alpha1.LocationTypeS3Compliant),
-		repositoryserver.BucketKey:       []byte(testutil.TestS3BucketName),
-		pathKey:                          []byte(defaultKopiaRepositoryPath),
-		repositoryserver.RegionKey:       []byte(testutil.TestS3Region),
-		repositoryserver.EndpointKey:     []byte(os.Getenv("LOCATION_ENDPOINT")),
+		reposerver.TypeKey:     []byte(crv1alpha1.LocationTypeS3Compliant),
+		reposerver.BucketKey:   []byte(testutil.TestS3BucketName),
+		pathKey:                []byte(defaultKopiaRepositoryPath),
+		reposerver.RegionKey:   []byte(testutil.TestS3Region),
+		reposerver.EndpointKey: []byte(os.Getenv("LOCATION_ENDPOINT")),
 	}
 }
 
 func getRepoPasswordSecretData(password string) map[string][]byte {
 	return map[string][]byte{
-		repoPasswordKey: []byte(password),
+		reposerver.RepoPasswordKey: []byte(password),
 	}
 }
 
 func getRepoServerAdminSecretData(username, password string) map[string][]byte {
 	return map[string][]byte{
-		serverAdminUserNameKey: []byte(username),
-		serverAdminPasswordKey: []byte(password),
+		reposerver.AdminUsernameKey: []byte(username),
+		reposerver.AdminPasswordKey: []byte(password),
 	}
 }
 
@@ -157,7 +157,7 @@ func createSecret(cli kubernetes.Interface, namespace, name string, secrettype v
 }
 
 func createRepositoryServerAdminSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
-	return createSecret(cli, namespace, "test-repository-server-admin-", repositoryserver.RepositoryServerAdminCredentials, data)
+	return createSecret(cli, namespace, "test-repository-server-admin-", reposerver.AdminCredentialsSecret, data)
 }
 
 func createRepositoryServerUserAccessSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
@@ -165,7 +165,7 @@ func createRepositoryServerUserAccessSecret(cli kubernetes.Interface, namespace 
 }
 
 func createRepositoryPassword(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
-	return createSecret(cli, "test-repository-password-", namespace, repositoryserver.RepositoryPassword, data)
+	return createSecret(cli, "test-repository-password-", namespace, reposerver.RepositoryPasswordSecret, data)
 }
 
 func createKopiaTLSSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
@@ -173,5 +173,5 @@ func createKopiaTLSSecret(cli kubernetes.Interface, namespace string, data map[s
 }
 
 func createStorageLocationSecret(cli kubernetes.Interface, namespace string, data map[string][]byte) (se *v1.Secret, err error) {
-	return createSecret(cli, "test-repository-server-storage-", namespace, repositoryserver.Location, data)
+	return createSecret(cli, "test-repository-server-storage-", namespace, reposerver.Location, data)
 }
