@@ -342,7 +342,7 @@ into the specified function.
 To learn more about Kanister's CustomResources, see :ref:`architecture`.
 
 The Blueprint to be created includes two actions called ``backup``
-and ``restore``. The ``backup`` action comprises a single phase named as
+and ``restore``. The ``backup`` action comprises of a single phase named as
 ``backupToS3``.
 
 ``backupToS3`` invokes the Kanister function ``BackupDataUsingKopiaServer``
