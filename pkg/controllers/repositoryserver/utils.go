@@ -57,20 +57,20 @@ const (
 	tlsKeyPath              = "/mnt/secrets/tlscert/tls.key"
 	tlsCertPath             = "/mnt/secrets/tlscert/tls.crt"
 
-	serverSetupErrMessage     string = "Failed to Setup Kopia Server"
-	serverSetupSuccessMessage string = "Kopia Server Setup Successful"
+	serverSetupErrReason     string = "KopiaRepositoryServerSetupFailed"
+	serverSetupSuccessReason string = "KopiaRepositoryServerSetupSucceeded"
 
-	repositoryConnectedErrMessage     string = "Failed to Connect to Kopia Repository"
-	repositoryConnectedSuccessMessage string = "Connected to Kopia Repository"
+	repositoryConnectedErrReason     string = "KopiaRepositoryConnectionFailed"
+	repositoryConnectedSuccessReason string = "KopiaRepositoryConnectionSucceeded"
 
-	serverInitializedErrMessage     string = "Failed to Start Kopia Repository Server"
-	serverInitializedSuccessMessage string = "Kopia Server Started"
+	serverInitializedErrReason     string = "KopiaRepositoryServerInitializationFailed"
+	serverInitializedSuccessReason string = "KopiaRepositoryServerInitializationSucceeded"
 
-	clientsInitializedErrMessage     string = "Failed to Create/Update Client"
-	clientsInitializedSuccessMessage string = "Added users to kopia repo server"
+	clientsInitializedErrReason     string = "ClientInitializationFailed"
+	clientsInitializedSuccessReason string = "ClientInitializationSuccessful"
 
-	serverRefreshedErrMessage     string = "Failed to Refresh Server"
-	serverRefreshedSuccessMessage string = "Server Refreshed"
+	serverRefreshedErrReason     string = "ServerRefreshFailed"
+	serverRefreshedSuccessReason string = "ServerRefreshed"
 )
 
 func getRepoServerService(namespace string) corev1.Service {
