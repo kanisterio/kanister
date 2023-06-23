@@ -16,9 +16,7 @@ package repositoryserver
 
 import (
 	"context"
-	"fmt"
 	"testing"
-	"time"
 
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
@@ -27,19 +25,12 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1client "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/secrets"
-<<<<<<< HEAD
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	"github.com/pkg/errors"
-=======
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/testutil"
->>>>>>> baseUnitTestSuite
 )
 
 // Hook up gocheck into the "go test" runner.

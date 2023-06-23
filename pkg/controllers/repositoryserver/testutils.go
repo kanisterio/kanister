@@ -17,11 +17,17 @@ package repositoryserver
 import (
 	"os"
 
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -55,5 +61,97 @@ func getDefaultS3CompliantStorageLocation() map[string][]byte {
 		pathKey:                []byte(defaultKopiaRepositoryPath),
 		reposerver.RegionKey:   []byte(testutil.TestS3Region),
 		reposerver.EndpointKey: []byte(os.Getenv("LOCATION_ENDPOINT")),
+	}
+}
+
+func createKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.RepositoryServer, storageLocation map[string][]byte) error {
+	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
+
+	commandArgs := command.RepositoryCommandArgs{
+		CommandArgs: &command.CommandArgs{
+			RepoPassword:   defaultKopiaRepositoryPassword,
+			ConfigFilePath: command.DefaultConfigFilePath,
+			LogDirectory:   command.DefaultLogDirectory,
+		},
+		CacheDirectory:  command.DefaultCacheDirectory,
+		Hostname:        defaultKopiaRepositoryServerHost,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
+		Username:        defaultKopiaRepositoryUser,
+		RepoPathPrefix:  defaultKopiaRepositoryPath,
+		Location:        storageLocation,
+	}
+	return repository.CreateKopiaRepository(
+		cli,
+		defaultKanisterNamespace,
+		rs.Status.ServerInfo.PodName,
+		defaultKopiaRepositoryServerContainer,
+		commandArgs,
+	)
+}
+
+func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryServer {
+	repositoryServer := &crv1alpha1.RepositoryServer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-kopia-repo-server-",
+			Namespace:    namespace,
+		},
+		Spec: crv1alpha1.RepositoryServerSpec{
+			Storage: crv1alpha1.Storage{
+				SecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+				CredentialSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+			Repository: crv1alpha1.Repository{
+				RootPath: defaultKopiaRepositoryPath,
+				Username: defaultKopiaRepositoryUser,
+				Hostname: defaultKopiaRepositoryServerHost,
+				PasswordSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+			Server: crv1alpha1.Server{
+				UserAccess: crv1alpha1.UserAccess{
+					UserAccessSecretRef: v1.SecretReference{
+						Namespace: namespace,
+					},
+					Username: defaultKopiaRepositoryServerAccessUser,
+				},
+				AdminSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+				TLSSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+		},
+	}
+	return repositoryServer
+}
+
+func setRepositoryServerSecretsInCR(secrets *repositoryServerSecrets, repoServerCR *crv1alpha1.RepositoryServer) {
+	if secrets != nil {
+		if secrets.serverAdmin != nil {
+			repoServerCR.Spec.Server.AdminSecretRef.Name = secrets.serverAdmin.Name
+		}
+		if secrets.repositoryPassword != nil {
+			repoServerCR.Spec.Repository.PasswordSecretRef.Name = secrets.repositoryPassword.Name
+		}
+
+		if secrets.serverUserAccess != nil {
+			repoServerCR.Spec.Server.UserAccess.UserAccessSecretRef.Name = secrets.serverUserAccess.Name
+		}
+		if secrets.serverTLS != nil {
+			repoServerCR.Spec.Server.TLSSecretRef.Name = secrets.serverTLS.Name
+		}
+		if secrets.storage != nil {
+			repoServerCR.Spec.Storage.SecretRef.Name = secrets.storage.Name
+		}
+		if secrets.storageCredentials != nil {
+			repoServerCR.Spec.Storage.CredentialSecretRef.Name = secrets.storageCredentials.Name
+		}
 	}
 }
