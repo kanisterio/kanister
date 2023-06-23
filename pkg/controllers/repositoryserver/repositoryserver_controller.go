@@ -16,7 +16,6 @@ package repositoryserver
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -99,16 +98,16 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Connect to Kopia Repository")	
+	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
 		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
 			return ctrl.Result{}, uerr
-		}		
+		}
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Start Repository Server")	
+	logger.Info("Start Repository Server")
 	if err := repoServerHandler.startRepoProxyServer(ctx); err != nil {
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
 		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
@@ -131,7 +130,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
 		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
 			return ctrl.Result{}, uerr
-		}		
+		}
 		return ctrl.Result{}, err
 	}
 
