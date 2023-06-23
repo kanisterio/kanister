@@ -15,7 +15,7 @@
 package secrets
 
 import (
-	"encoding/base64"
+	"testing"
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
@@ -23,99 +23,95 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
-type GCPSecretSuite struct{}
+func Test(t *testing.T) { TestingT(t) }
 
-var _ = Suite(&GCPSecretSuite{})
+type SecretUtilsSuite struct{}
 
-func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
-	var serviceKey []byte
+var _ = Suite(&SecretUtilsSuite{})
 
-	base64.StdEncoding.Encode(serviceKey, []byte("secret_key"))
+func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
+
 	for i, tc := range []struct {
 		secret        *v1.Secret
-		expectedError error
 		errChecker    Checker
+		expectedError error
 	}{
-		{
+		{ // Valid secret type
 			secret: &v1.Secret{
-				Type: v1.SecretType(GCPSecretType),
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sec",
-					Namespace: "ns",
-				},
+				Type: v1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					GCPProjectID:  []byte("key_id"),
-					GCPServiceKey: serviceKey,
+					reposerver.TypeKey: []byte(reposerver.LocTypeGCS),
 				},
 			},
-			expectedError: nil,
 			errChecker:    IsNil,
+			expectedError: nil,
 		},
-		{ // Incomatible secret type
+		{ // Valid secret type
 			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+				Type: v1.SecretType(repositoryserver.Location),
+				Data: map[string][]byte{
+					reposerver.TypeKey: []byte(reposerver.LocTypeAzure),
+				},
+			},
+			errChecker:    IsNil,
+			expectedError: nil,
+		},
+		{ // Valid secret type
+			secret: &v1.Secret{
+				Type: v1.SecretType(repositoryserver.Location),
+				Data: map[string][]byte{
+					reposerver.TypeKey: []byte(reposerver.LocTypeS3),
+				},
+			},
+			errChecker:    IsNil,
+			expectedError: nil,
+		},
+		{ // Valid secret type
+			secret: &v1.Secret{
+				Type: v1.SecretType(repositoryserver.Location),
+				Data: map[string][]byte{
+					reposerver.TypeKey: []byte(reposerver.LocTypeFilestore),
+				},
+			},
+			errChecker:    IsNil,
+			expectedError: nil,
+		},
+		{ // Missing location type
+			secret: &v1.Secret{
+				Type: v1.SecretType(repositoryserver.Location),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sec",
+					Namespace: "ns",
+				},
+			},
+			errChecker:    NotNil,
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, "ns", "sec"),
+		},
+		{ // Unsupported location type
+			secret: &v1.Secret{
+				Type: v1.SecretType(repositoryserver.Location),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					GCPProjectID:  []byte("key_id"),
-					GCPServiceKey: serviceKey,
+					reposerver.TypeKey: []byte("invalid"),
 				},
 			},
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, "ns", "sec"),
 			errChecker:    NotNil,
-		},
-		{ // missing field - GCPServiceKey
-			secret: &v1.Secret{
-				Type: v1.SecretType(GCPSecretType),
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sec",
-					Namespace: "ns",
-				},
-				Data: map[string][]byte{
-					GCPProjectID: []byte("key_id"),
-				},
-			},
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceKey, "ns", "sec"),
-			errChecker:    NotNil,
-		},
-		{ // missing field - GCPProjectID
-			secret: &v1.Secret{
-				Type: v1.SecretType(GCPSecretType),
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sec",
-					Namespace: "ns",
-				},
-				Data: map[string][]byte{
-					GCPServiceKey: []byte("service_key"),
-				},
-			},
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, "ns", "sec"),
-			errChecker:    NotNil,
-		},
-		{ // secret is Empty
-			secret: &v1.Secret{
-				Type: v1.SecretType(GCPSecretType),
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sec",
-					Namespace: "ns",
-				},
-			},
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
-			errChecker:    NotNil,
-		},
-		{ // secret is nil
-			secret:        nil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
-			errChecker:    NotNil,
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, "invalid", "ns", "sec"),
 		},
 	} {
-		err := ValidateGCPCredentials(tc.secret)
+		rsecret, err := getLocationSecret(tc.secret)
 		c.Check(err, tc.errChecker)
-		c.Check(err, DeepEquals, tc.expectedError, Commentf("test number: %d", i))
+		if err != nil {
+			c.Check(rsecret, NotNil)
+		}
+		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
 
 	}
 }

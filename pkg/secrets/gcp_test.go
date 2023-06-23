@@ -15,7 +15,7 @@
 package secrets
 
 import (
-	"testing"
+	"encoding/base64"
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
@@ -23,61 +23,99 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+type GCPSecretSuite struct{}
 
-type SecretsSuite struct{}
+var _ = Suite(&GCPSecretSuite{})
 
-var _ = Suite(&SecretsSuite{})
+func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
+	var serviceKey []byte
 
-func (s *GCPSecretSuite) TestGetLocationSecret(c *C) {
-
+	base64.StdEncoding.Encode(serviceKey, []byte("secret_key"))
 	for i, tc := range []struct {
 		secret        *v1.Secret
-		errChecker    Checker
 		expectedError error
+		errChecker    Checker
 	}{
-		{ // Valid secret type
+		{
 			secret: &v1.Secret{
-				Type: v1.SecretType(repositoryserver.Location),
+				Type: v1.SecretType(GCPSecretType),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sec",
+					Namespace: "ns",
+				},
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeGCS),
+					GCPProjectID:  []byte("key_id"),
+					GCPServiceKey: serviceKey,
 				},
 			},
-			errChecker:    IsNil,
 			expectedError: nil,
+			errChecker:    IsNil,
 		},
-		{ // Missing location type
+		{ // Incomatible secret type
 			secret: &v1.Secret{
-				Type: v1.SecretType(repositoryserver.Location),
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sec",
-					Namespace: "ns",
-				},
-			},
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, "ns", "sec"),
-		},
-		{ // Unsupported location type
-			secret: &v1.Secret{
-				Type: v1.SecretType(repositoryserver.Location),
+				Type: v1.SecretType(AWSSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte("invalid"),
+					GCPProjectID:  []byte("key_id"),
+					GCPServiceKey: serviceKey,
 				},
 			},
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, "ns", "sec"),
 			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, "invalid", "ns", "sec"),
+		},
+		{ // missing field - GCPServiceKey
+			secret: &v1.Secret{
+				Type: v1.SecretType(GCPSecretType),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sec",
+					Namespace: "ns",
+				},
+				Data: map[string][]byte{
+					GCPProjectID: []byte("key_id"),
+				},
+			},
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceKey, "ns", "sec"),
+			errChecker:    NotNil,
+		},
+		{ // missing field - GCPProjectID
+			secret: &v1.Secret{
+				Type: v1.SecretType(GCPSecretType),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sec",
+					Namespace: "ns",
+				},
+				Data: map[string][]byte{
+					GCPServiceKey: []byte("service_key"),
+				},
+			},
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, "ns", "sec"),
+			errChecker:    NotNil,
+		},
+		{ // secret is Empty
+			secret: &v1.Secret{
+				Type: v1.SecretType(GCPSecretType),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "sec",
+					Namespace: "ns",
+				},
+			},
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
+			errChecker:    NotNil,
+		},
+		{ // secret is nil
+			secret:        nil,
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
+			errChecker:    NotNil,
 		},
 	} {
-		_, err := getLocationSecret(tc.secret)
+		err := ValidateGCPCredentials(tc.secret)
 		c.Check(err, tc.errChecker)
-		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
+		c.Check(err, DeepEquals, tc.expectedError, Commentf("test number: %d", i))
+
 	}
 }
