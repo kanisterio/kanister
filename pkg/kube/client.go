@@ -15,8 +15,6 @@
 package kube
 
 import (
-	"os"
-
 	"github.com/pkg/errors"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
@@ -45,19 +43,6 @@ func ConfigNamespace() (string, error) {
 
 // LoadConfig returns a kubernetes client config based on global settings.
 func LoadConfig() (*rest.Config, error) {
-	kubeConfigEnv := os.Getenv(clientcmd.RecommendedConfigPathEnvVar)
-	if len(kubeConfigEnv) != 0 {
-		return clientcmd.BuildConfigFromFlags("", kubeConfigEnv)
-	}
-
-	if c, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile); err == nil {
-		return c, nil
-	}
-
-	if c, err := rest.InClusterConfig(); err == nil {
-		return c, nil
-	}
-
 	return newClientConfig().ClientConfig()
 }
 
