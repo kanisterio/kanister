@@ -122,7 +122,6 @@ type RepositoryServerStatus struct {
 	Progress   RepositoryServerProgress `json:"progress,omitempty"`
 }
 
-
 const (
 
 	// ServerSetup indicates whether the repository pod and service have been
