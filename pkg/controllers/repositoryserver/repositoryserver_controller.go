@@ -16,6 +16,7 @@ package repositoryserver
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -87,6 +88,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
+	logger.Info("Setup RepositoryServer, Create or update owned resources")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
@@ -96,6 +98,43 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
 		return ctrl.Result{}, err
 	}
+
+	logger.Info("Connect to Kopia Repository")	
+	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+			return ctrl.Result{}, uerr
+		}		
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Start Repository Server")	
+	if err := repoServerHandler.startRepoProxyServer(ctx); err != nil {
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Add/Update users")
+	if err := repoServerHandler.createOrUpdateClientUsers(ctx); err != nil {
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Refresh Server")
+	if err := repoServerHandler.refreshServer(ctx); err != nil {
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+			return ctrl.Result{}, uerr
+		}		
+		return ctrl.Result{}, err
+	}
+
 	logger.Info("Setting the CR status as 'Ready' after completing the create/update event\n\n\n\n")
 	repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Ready
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
