@@ -332,17 +332,18 @@ Invoking Kanister Actions
 Kanister CustomResources are created in the same namespace as
 the Kanister controller.
 
-The first Kanister CustomResource we're going to deploy is a Blueprint.
-Blueprints are a set of instructions that tell the controller how to perform
+The initial Kanister CustomResource to be deployed is referred to as Blueprint.
+Blueprints are a set of instructions that direct the controller on executing
 actions on an application. An action consists of one or more phases. Each phase
-invokes a :doc:`Kanister Function </functions>`. All Kanister functions accept a
-list of strings. The ``args`` field in a Blueprint's phase is rendered and passed
-into the specified Function.
+invokes a :doc:`Kanister Function </functions>`. Every Kanister function accepts a
+string list as input. The ``args`` field in a Blueprint's phase is rendered and passed
+into the specified function.
 
-For more on CustomResources in Kanister, see :ref:`architecture`.
+To learn more about Kanister's CustomResources, see :ref:`architecture`.
 
-The Blueprint we'll create has a two actions called ``backup``
-and ``restore``. The action ``backup`` has a single phase named ``backupToS3``.
+The Blueprint to be created includes two actions called ``backup``
+and ``restore``. The ``backup`` action comprises a single phase named as
+``backupToS3``.
 
 ``backupToS3`` invokes the Kanister function ``BackupDataUsingKopiaServer``
 that uses kopia repository server to copy backup data to s3 storage. The action
@@ -351,12 +352,14 @@ that uses kopia repository server to copy backup data to s3 storage. The action
 ``RestoreDataUsingKopiaServer`` restores data using kopia repository server form
 s3 storage.
 
-For more information of kanister function refer
+To learn more about the Kanister function, refer to the documentation on
 :doc:`Kanister's parameter templating </functions>`.
 
-We are using output artifacts here to store the path of our data in s3 and
-snapshot ID that that will be used as ``backupIdentifier`` while performing restore.
-To know more about artifacts you can refer :ref:`tutorials`.
+Output artifacts are used in this scenario to store the data path in s3 and
+the corresponding snapshot ID that which will serve as the ``backupIdentifier``
+during restoration process.
+
+To know more about artifacts, refer to the :ref:`tutorials` section.
 
 Blueprint
 ---------
@@ -415,7 +418,8 @@ Blueprint
           replicas: 1
   EOF
 
-Once we create a Blueprint, we can see its events by using the following command:
+After creating a blueprint, the events associated with it can be viewed by using
+the following command:
 
 .. code-block:: yaml
 
@@ -425,12 +429,13 @@ Once we create a Blueprint, we can see its events by using the following command
     ----     ------    ----  ----                 -------
     Normal   Added      4m   Kanister Controller  Added blueprint time-log-bp
 
-The next CustomResource we'll deploy is an ActionSet. An ActionSet is created
-each time you want to execute any Kanister actions. The ActionSet contains all
-the runtime information the controller needs during execution. It may contain
-multiple actions, each acting on a different Kubernetes object. The ActionSet
-we're about to create in this tutorial specifies the ``time-logger`` Deployment we
-created earlier and selects the ``backup`` action inside our Blueprint.
+The next CustomResource to be deployed is an ActionSet. An ActionSet is created
+whenever there is a need to execute Kanister actions. It contains all
+the runtime information that is essential for the controller during execution.
+It can include multiple actions, each acting on a different Kubernetes object.
+In this tutorial, the forthcoming ActionSet specifies the ``time-logger``
+deployment that was previously created and selects the ``backup`` action
+within our Blueprint.
 
 
 Add some data in the time logger app.
@@ -454,11 +459,11 @@ ActionSet
   $ kanctl create actionset --action backup --namespace kanister --blueprint time-log-bp --deployment default/time-logger --repository-server kanister/kopia-repo-server
   actionset actionset backup-rlcnp created
 
-``--repository-server`` flag is used to provide the reference to the repository server
-CR that we created in step :ref:`Creating Repository Server custom resource <creating_repo_server_CR>`. Since
-the details related to kopia repository server and the secrets are present in the CR,
-the blueprint will be able to read these details using template parameters and will
-perform backup using kopia repository server.
+The ``--repository-server`` flag is used to provide the reference to the repository server
+CR created in step :ref:`Creating Repository Server custom resource <creating_repo_server_CR>`.
+As the CR contains the details related to the Kopia repository server and the associated secrets,
+the blueprint can access these details using template parameters. This enables the blueprint to
+execute backup operation using the Kopia repository server.
 
 
 .. code-block:: bash
@@ -490,14 +495,15 @@ Lets delete the date from ``timelogger`` app.
    -rw-r--r-- 1 root root 7482 Jun  5 06:26 time.log
 
 
-Lets perform restore now, by using ``restore`` action from the ``time-log-bp`` blueprint
+Now, let's proceed with the restore process by using the ``restore`` action from the
+``time-log-bp`` blueprint:
 
 .. code-block:: bash
 
    $ kanctl --namespace kanister create actionset --action restore --from "backup-rlcnp" --repository-server kanister/kopia-repo-server
    actionset restore-backup-rlcnp-g5h65 create
 
-We can see if the restore is successful by describing the actionset
+The success of the restore operation can be assessed by describing the actionset.
 
 .. code-block:: bash
 
@@ -515,8 +521,9 @@ We can see if the restore is successful by describing the actionset
     Normal  Ended Phase      3s    Kanister Controller  Completed phase bringupPod
     Normal  Update Complete  2s    Kanister Controller  Updated ActionSet 'restore-backup-rlcnp-g5h65' Status->complete
 
-Lets check if the data was restored successfully. We should see the ``time.log``
-file that was removed before performing restore
+It is necessary to verify if the data has been successfully restored. The presence of
+the ``time.log`` file, which was removed prior to the restore process, should confirm
+the successful restoration.
 
 .. code-block:: bash
 
