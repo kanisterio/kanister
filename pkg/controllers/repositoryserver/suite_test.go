@@ -28,6 +28,9 @@ import (
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/resource"
+	"github.com/kanisterio/kanister/pkg/secrets"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -89,21 +92,53 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 }
 
 func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
-	kopiaTLSSecretData, err := getKopiaTLSSecret()
+	kopiaTLSSecretData, err := testutil.GetKopiaTLSSecretData()
 	c.Assert(err, IsNil)
 	s.repoServerSecrets = repositoryServerSecrets{}
-	s.repoServerSecrets.serverUserAccess, err = createRepositoryServerUserAccessSecret(s.kubeCli, s.repoServerControllerNamespace, getRepoServerUserAccessSecretData("localhost", defaultKopiaRepositoryServerAccessPassword))
+	s.repoServerSecrets.serverUserAccess, err = s.CreateRepositoryServerUserAccessSecret(testutil.GetRepoServerUserAccessSecretData("localhost", defaultKopiaRepositoryServerAccessPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.serverAdmin, err = createRepositoryServerAdminSecret(s.kubeCli, s.repoServerControllerNamespace, getRepoServerAdminSecretData(defaulKopiaRepositoryServerAdminUser, defaultKopiaRepositoryServerAdminPassword))
+	s.repoServerSecrets.serverAdmin, err = s.CreateRepositoryServerAdminSecret(testutil.GetRepoServerAdminSecretData(defaulKopiaRepositoryServerAdminUser, defaultKopiaRepositoryServerAdminPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.repositoryPassword, err = createRepositoryPassword(s.kubeCli, s.repoServerControllerNamespace, getRepoPasswordSecretData(defaultKopiaRepositoryPassword))
+	s.repoServerSecrets.repositoryPassword, err = s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData(defaultKopiaRepositoryPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.serverTLS, err = createKopiaTLSSecret(s.kubeCli, s.repoServerControllerNamespace, kopiaTLSSecretData)
+	s.repoServerSecrets.serverTLS, err = s.CreateKopiaTLSSecret(kopiaTLSSecretData)
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storage, err = createStorageLocationSecret(s.kubeCli, s.repoServerControllerNamespace, getDefaultS3CompliantStorageLocation())
+	s.repoServerSecrets.storage, err = s.CreateStorageLocationSecret(getDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storageCredentials, err = createSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, "secrets.kanister.io/aws", getDefaultS3StorageCreds())
+	s.repoServerSecrets.storageCredentials, err = s.CreateAWSStorageCredentialsSecret(getDefaultS3StorageCreds())
 	c.Assert(err, IsNil)
+}
+
+func (s *RepoServerControllerSuite) CreateRepositoryServerAdminSecret(data map[string][]byte) (se *v1.Secret, err error) {
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-admin-", reposerver.AdminCredentialsSecret, data)
+}
+
+func (s *RepoServerControllerSuite) CreateRepositoryServerUserAccessSecret(data map[string][]byte) (se *v1.Secret, err error) {
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-user-access-", "", data)
+}
+
+func (s *RepoServerControllerSuite) CreateRepositoryPasswordSecret(data map[string][]byte) (se *v1.Secret, err error) {
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-password-", reposerver.RepositoryPasswordSecret, data)
+}
+
+func (s *RepoServerControllerSuite) CreateKopiaTLSSecret(data map[string][]byte) (se *v1.Secret, err error) {
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-kopia-tls-", v1.SecretTypeTLS, data)
+}
+
+func (s *RepoServerControllerSuite) CreateStorageLocationSecret(data map[string][]byte) (se *v1.Secret, err error) {
+	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-", s.repoServerControllerNamespace, reposerver.Location, data)
+}
+
+func (s *RepoServerControllerSuite) CreateAWSStorageCredentialsSecret(data map[string][]byte) (se *v1.Secret, err error) {
+	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, v1.SecretType(secrets.AWSSecretType), data)
+}
+
+func (s *RepoServerControllerSuite) CreateAzureStorageCredentialsSecret(data map[string][]byte) (se *v1.Secret, err error) {
+	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, v1.SecretType(secrets.AzureSecretType), data)
+}
+
+func (s *RepoServerControllerSuite) CreateGCPStorageCredentialsSecret(data map[string][]byte) (se *v1.Secret, err error) {
+	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, v1.SecretType(secrets.GCPSecretType), data)
 }
 
 func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
