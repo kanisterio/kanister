@@ -136,8 +136,8 @@ const (
 	// ServerInitialized means that the proxy server, that serves the repository, has been started
 	ServerInitialized string = "ServerInitialized"
 
-	// ClientsInitialized indicates that the client users have been added or updated to the repository server
-	ClientsInitialized string = "ClientsInitialized"
+	// ClientUserInitialized indicates that the client users have been added or updated to the repository server
+	ClientUserInitialized string = "ClientUserInitialized"
 
 	// ServerRefreshed denotes the refreshed condition of the repository server in order to register client users
 	ServerRefreshed string = "ServerRefreshed"
