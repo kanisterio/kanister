@@ -116,6 +116,5 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 		err := ValidateGCPCredentials(tc.secret)
 		c.Check(err, tc.errChecker)
 		c.Check(err, DeepEquals, tc.expectedError, Commentf("test number: %d", i))
-
 	}
 }

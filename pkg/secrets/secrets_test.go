@@ -111,6 +111,5 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 			c.Check(rsecret, NotNil)
 		}
 		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
-
 	}
 }
