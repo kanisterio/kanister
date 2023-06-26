@@ -97,6 +97,5 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 		if err != nil {
 			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
 		}
-
 	}
 }
