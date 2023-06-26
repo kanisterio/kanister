@@ -28,7 +28,6 @@ type AWSSecretCredsSuite struct{}
 var _ = Suite(&AWSSecretCredsSuite{})
 
 func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
-
 	for i, tc := range []struct {
 		secret        Secret
 		errChecker    Checker
@@ -90,12 +89,11 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 		{ // Nil Secret
 			secret:        NewAWSLocation(nil),
 			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage, "ns", "sec"),
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
 		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
-
 	}
 }

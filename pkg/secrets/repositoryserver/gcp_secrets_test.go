@@ -28,7 +28,6 @@ type GCPSecretCredsSuite struct{}
 var _ = Suite(&GCPSecretCredsSuite{})
 
 func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *C) {
-
 	for i, tc := range []struct {
 		secret        Secret
 		errChecker    Checker
@@ -76,12 +75,11 @@ func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *C) {
 		{ // Nil Secret
 			secret:        NewGCPLocation(nil),
 			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage, "ns", "sec"),
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
 		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
-
 	}
 }

@@ -28,7 +28,6 @@ type AzureSecretCredsSuite struct{}
 var _ = Suite(&AzureSecretCredsSuite{})
 
 func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
-
 	for i, tc := range []struct {
 		secret        Secret
 		errChecker    Checker
@@ -90,12 +89,11 @@ func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
 		{ // Nil Secret
 			secret:        NewAzureLocation(nil),
 			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage, "ns", "sec"),
+			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
 		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
-
 	}
 }
