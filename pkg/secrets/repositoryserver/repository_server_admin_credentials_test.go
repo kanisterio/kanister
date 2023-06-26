@@ -56,6 +56,7 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 				},
 				Data: map[string][]byte{
 					AdminPasswordKey: []byte("adminpassword"),
+					BucketKey:        []byte("bucketkey"),
 				},
 			}),
 			errChecker:    NotNil,
@@ -70,6 +71,7 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 				},
 				Data: map[string][]byte{
 					AdminUsernameKey: []byte("adminusername"),
+					BucketKey:        []byte("bucketkey"),
 				},
 			}),
 			errChecker:    NotNil,
@@ -110,6 +112,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
-		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
+		if err != nil {
+			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+		}
 	}
 }

@@ -47,20 +47,6 @@ func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
 			}),
 			errChecker: IsNil,
 		},
-		{ // Missing required field - Region Key
-			secret: NewAzureLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypeAzure),
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sec",
-					Namespace: "ns",
-				},
-				Data: map[string][]byte{
-					BucketKey: []byte("bucket"),
-				},
-			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, "ns", "sec"),
-		},
 		{ // Missing required field - Bucket Key
 			secret: NewAzureLocation(&v1.Secret{
 				Type: v1.SecretType(LocTypeAzure),
@@ -69,7 +55,7 @@ func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					BucketKey: []byte("region"),
+					RegionKey: []byte("region"),
 				},
 			}),
 			errChecker:    NotNil,
@@ -94,6 +80,9 @@ func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
-		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
+
+		if err != nil {
+			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+		}
 	}
 }

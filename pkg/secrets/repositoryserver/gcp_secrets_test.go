@@ -55,7 +55,7 @@ func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					BucketKey: []byte("region"),
+					RegionKey: []byte("region"),
 				},
 			}),
 			errChecker:    NotNil,
@@ -80,6 +80,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *C) {
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
-		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
+		if err != nil {
+			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+		}
 	}
 }

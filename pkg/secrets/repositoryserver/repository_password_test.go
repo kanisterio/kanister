@@ -54,7 +54,7 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					BucketKey: []byte("invalidkey"),
+					BucketKey: []byte("bucketkey"),
 				},
 			}),
 			errChecker:    NotNil,
@@ -68,7 +68,7 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					BucketKey:       []byte("invalidkey"),
+					BucketKey:       []byte("bucketkey"),
 					RepoPasswordKey: []byte("repopassword"),
 				},
 			}),
@@ -94,6 +94,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
-		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
+		if err != nil {
+			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+		}
 	}
 }
