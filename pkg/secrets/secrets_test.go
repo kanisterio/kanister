@@ -107,9 +107,12 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 	} {
 		rsecret, err := getLocationSecret(tc.secret)
 		c.Check(err, tc.errChecker)
-		if err != nil {
+		if err == nil {
 			c.Check(rsecret, NotNil)
 		}
-		c.Check(err, Equals, tc.expectedError, Commentf("test number: %d", i))
+		if err != nil {
+			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+		}
+
 	}
 }

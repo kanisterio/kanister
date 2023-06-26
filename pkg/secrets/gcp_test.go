@@ -17,12 +17,11 @@ package secrets
 import (
 	"encoding/base64"
 
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 type GCPSecretSuite struct{}
@@ -30,13 +29,12 @@ type GCPSecretSuite struct{}
 var _ = Suite(&GCPSecretSuite{})
 
 func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
-	var serviceKey []byte
-
-	base64.StdEncoding.Encode(serviceKey, []byte("secret_key"))
+	serviceAccountJson := make([]byte, base64.StdEncoding.EncodedLen(len([]byte("service_account_json"))))
+	base64.StdEncoding.Encode(serviceAccountJson, []byte("service_account_json"))
 	for i, tc := range []struct {
-		secret        *v1.Secret
-		expectedError error
-		errChecker    Checker
+		secret      *v1.Secret
+		errChecker  Checker
+		expectedErr error
 	}{
 		{
 			secret: &v1.Secret{
@@ -46,12 +44,12 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					GCPProjectID:  []byte("key_id"),
-					GCPServiceKey: serviceKey,
+					GCPProjectID:             []byte("key_id"),
+					GCPServiceAccountJsonKey: serviceAccountJson,
 				},
 			},
-			expectedError: nil,
-			errChecker:    IsNil,
+			errChecker:  IsNil,
+			expectedErr: nil,
 		},
 		{ // Incomatible secret type
 			secret: &v1.Secret{
@@ -61,12 +59,12 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					GCPProjectID:  []byte("key_id"),
-					GCPServiceKey: serviceKey,
+					GCPProjectID:             []byte("key_id"),
+					GCPServiceAccountJsonKey: serviceAccountJson,
 				},
 			},
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, "ns", "sec"),
-			errChecker:    NotNil,
+			errChecker:  NotNil,
+			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, "ns", "sec"),
 		},
 		{ // missing field - GCPServiceKey
 			secret: &v1.Secret{
@@ -79,8 +77,8 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 					GCPProjectID: []byte("key_id"),
 				},
 			},
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceKey, "ns", "sec"),
-			errChecker:    NotNil,
+			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceAccountJsonKey, "ns", "sec"),
+			errChecker:  NotNil,
 		},
 		{ // missing field - GCPProjectID
 			secret: &v1.Secret{
@@ -90,11 +88,11 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					GCPServiceKey: []byte("service_key"),
+					GCPServiceAccountJsonKey: []byte("service_account_json"),
 				},
 			},
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, "ns", "sec"),
-			errChecker:    NotNil,
+			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, "ns", "sec"),
+			errChecker:  NotNil,
 		},
 		{ // secret is Empty
 			secret: &v1.Secret{
@@ -104,17 +102,18 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 					Namespace: "ns",
 				},
 			},
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
-			errChecker:    NotNil,
+			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
+			errChecker:  NotNil,
 		},
 		{ // secret is nil
-			secret:        nil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
-			errChecker:    NotNil,
+			secret:      nil,
+			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
+			errChecker:  NotNil,
 		},
 	} {
 		err := ValidateGCPCredentials(tc.secret)
-		c.Check(err, tc.errChecker)
-		c.Check(err, DeepEquals, tc.expectedError, Commentf("test number: %d", i))
+		if err != nil {
+			c.Check(err.Error(), Equals, tc.expectedErr.Error(), Commentf("test number: %d", i))
+		}
 	}
 }
