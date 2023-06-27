@@ -300,3 +300,23 @@ func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod
 	}
 	return nil
 }
+
+func (h *RepoServerHandler) updateProgressInCRStatus(ctx context.Context, progress crv1alpha1.RepositoryServerProgress) error {
+	h.Logger.Info("Fetch latest version of RepositoryServer to update the ServerInfo in its status")
+	repoServerName := h.RepositoryServer.Name
+	repoServerNamespace := h.RepositoryServer.Namespace
+	rs := crv1alpha1.RepositoryServer{}
+	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: repoServerName, Namespace: repoServerNamespace}, &rs)
+	if err != nil {
+		return err
+	}
+	h.Logger.Info("Update the Progress")
+	rs.Status.Progress = progress
+	err = h.Reconciler.Status().Update(ctx, &rs)
+	if err != nil {
+		return err
+	}
+	h.Logger.Info("Use this updated RepositoryServer CR")
+	h.RepositoryServer = &rs
+	return nil
+}
