@@ -86,6 +86,8 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    - run: sudo rm -rf /usr/share/dotnet
+    - run: sudo rm -rf "$AGENT_TOOLSDIRECTORY"
     - run: tar -xvf ./src.tar.gz
     - run: make release-snapshot
     - run: ./build/push_images.sh
