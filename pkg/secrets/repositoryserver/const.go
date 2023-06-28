@@ -42,6 +42,8 @@ const (
 	RegionKey        = "region"
 	SkipSSLVerifyKey = "skipSSLVerify"
 	TypeKey          = "type"
+	// Location secret key to be used only for filestore location type
+	ClaimNameKey = "claimName"
 
 	// Kopia Repository Server secret keys
 	RepoPasswordKey  = "repo-password"
