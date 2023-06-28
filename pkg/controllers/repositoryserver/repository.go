@@ -23,17 +23,18 @@ import (
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
-	contentCacheMB, metadataCacheMB, err := h.getRepositoryCacheSettings()
+	contentCacheMB, metadataCacheMB, cacheDirectory, err := h.getRepositoryCacheSettings()
 	if err != nil {
 		return err
 	}
+	configFilePath, logDirectory := h.getRepositoryCommonArguments()
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
 			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[reposerver.RepoPasswordKey]),
-			ConfigFilePath: command.DefaultConfigFilePath,
-			LogDirectory:   command.DefaultLogDirectory,
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
 		},
-		CacheDirectory:  command.DefaultCacheDirectory,
+		CacheDirectory:  cacheDirectory,
 		Hostname:        h.RepositoryServer.Spec.Repository.Hostname,
 		ContentCacheMB:  contentCacheMB,
 		MetadataCacheMB: metadataCacheMB,
@@ -52,8 +53,21 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 	)
 }
 
-func (h *RepoServerHandler) getRepositoryCacheSettings() (contentCacheMB, metadataCacheMB int, err error) {
+func (h *RepoServerHandler) getRepositoryCommonArguments() (configFilePath, logDirectory string) {
+	configFilePath = command.DefaultConfigFilePath
+	logDirectory = command.DefaultLogDirectory
+	if h.RepositoryServer.Spec.Repository.ConfigFilePath != "" {
+		configFilePath = h.RepositoryServer.Spec.Repository.ConfigFilePath
+	}
+	if h.RepositoryServer.Spec.Repository.LogDirectory != "" {
+		logDirectory = h.RepositoryServer.Spec.Repository.LogDirectory
+	}
+	return
+}
+
+func (h *RepoServerHandler) getRepositoryCacheSettings() (contentCacheMB, metadataCacheMB int, cacheDirectory string, err error) {
 	contentCacheMB, metadataCacheMB = command.GetGeneralCacheSizeSettings()
+	cacheDirectory = command.DefaultCacheDirectory
 	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content != "" {
 		contentCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content)
 		if err != nil {
@@ -65,6 +79,9 @@ func (h *RepoServerHandler) getRepositoryCacheSettings() (contentCacheMB, metada
 		if err != nil {
 			return
 		}
+	}
+	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.CacheDirectory != "" {
+		cacheDirectory = h.RepositoryServer.Spec.Repository.CacheSizeSettings.CacheDirectory
 	}
 	return
 }
