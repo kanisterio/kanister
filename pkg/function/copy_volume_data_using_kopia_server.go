@@ -66,21 +66,17 @@ func (f *copyVolumeDataUsingKopiaServerFunc) Arguments() []string {
 	return []string{
 		CopyVolumeDataNamespaceArg,
 		CopyVolumeDataVolumeArg,
-		CopyVolumeDataEncryptionKeyArg,
 		CopyVolumeDataUsingKopiaServerSnapshotTagsArg,
 	}
 }
 
 func (f *copyVolumeDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
-	var namespace, vol, encryptionKey, tagsStr string
+	var namespace, vol, tagsStr string
 	var err error
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, CopyVolumeDataVolumeArg, &vol); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, CopyVolumeDataEncryptionKeyArg, &encryptionKey); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, CopyVolumeDataUsingKopiaServerSnapshotTagsArg, &tagsStr, ""); err != nil {
@@ -101,10 +97,10 @@ func (f *copyVolumeDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return copyVolumeDataUsingKopiaServer(ctx, cli, tp, namespace, vol, encryptionKey, podOverride, tags)
+	return copyVolumeDataUsingKopiaServer(ctx, cli, tp, namespace, vol, podOverride, tags)
 }
 
-func copyVolumeDataUsingKopiaServer(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, encryptionKey string, podOverride map[string]interface{}, tags []string) (map[string]interface{}, error) {
+func copyVolumeDataUsingKopiaServer(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc string, podOverride map[string]interface{}, tags []string) (map[string]interface{}, error) {
 	// Validate PVC exists
 	if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
 		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
@@ -120,11 +116,11 @@ func copyVolumeDataUsingKopiaServer(ctx context.Context, cli kubernetes.Interfac
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := copyVolumeDataUsingKopiaServerPodFunc(cli, tp, namespace, mountPoint, encryptionKey, tags)
+	podFunc := copyVolumeDataUsingKopiaServerPodFunc(cli, tp, namespace, mountPoint, tags)
 	return pr.Run(ctx, podFunc)
 }
 
-func copyVolumeDataUsingKopiaServerPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint, encryptionKey string, tags []string) func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
+func copyVolumeDataUsingKopiaServerPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint string, tags []string) func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
 	return func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrap(err, "Failed while waiting for Pod: "+pod.Name+" to be ready")
