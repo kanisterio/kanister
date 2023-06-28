@@ -94,6 +94,5 @@ func (s *RepoServerControllerSuite) TestConfigFileAndLogDirectoryConfiguration(c
 
 	configFilePath, logDirectory = repoServerHandler.getRepositoryCommonArguments()
 	c.Assert(configFilePath, Equals, "/tmp/test-config")
-	c.Assert(logDirectory, Equals, command.DefaultLogDirectory, "/tmp/test-log-directory")
-
+	c.Assert(logDirectory, Equals, "/tmp/test-log-directory")
 }
