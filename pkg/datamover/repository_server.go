@@ -130,11 +130,11 @@ func (rs *repositoryServer) checkHostnameExistsInUserAccessMap(userAccessMap map
 	return nil
 }
 
-func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJson, hostname string) *repositoryServer {
+func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJson, clientHostname string) *repositoryServer {
 	return &repositoryServer{
 		outputName:       outputName,
 		repositoryServer: repoServer,
 		snapJSON:         snapJson,
-		hostName:         hostname,
+		hostName:         clientHostname,
 	}
 }
