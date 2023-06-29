@@ -282,7 +282,7 @@ func waitForRepositoryServerReady(ctx context.Context, cli *kubernetes.Clientset
 	defer waitCancel()
 	pollErr := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
-		if repositoryServer.Status.Progress == v1alpha1.ServerReady && err == nil {
+		if repositoryServer.Status.Progress == v1alpha1.Ready && err == nil {
 			return true, nil
 		}
 		return false, err
