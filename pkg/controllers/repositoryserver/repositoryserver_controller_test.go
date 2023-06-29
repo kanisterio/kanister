@@ -16,7 +16,9 @@ package repositoryserver
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
@@ -25,12 +27,16 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1client "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	"github.com/pkg/errors"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -141,6 +147,162 @@ func (s *RepoServerControllerSuite) CreateAzureStorageCredentialsSecret(data map
 
 func (s *RepoServerControllerSuite) CreateGCPStorageCredentialsSecret(data map[string][]byte) (se *v1.Secret, err error) {
 	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, v1.SecretType(secrets.GCPSecretType), data)
+}
+
+func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
+	// Create a repository server CR.
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	// Update the repository server CR's Immutable field.
+	repoServerCRCreated.Spec.Repository.RootPath = "/updated-test-path/"
+	_, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Update(context.Background(), repoServerCRCreated, metav1.UpdateOptions{})
+	// Expect an error.
+	c.Assert(err, NotNil)
+	// Delete the repository server CR.
+	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+}
+
+func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C) {
+	// Test if the repository server CR state is Ready
+	// with all the right configuration
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3CompliantStorageLocation())
+	c.Assert(err, IsNil)
+	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
+	c.Assert(err, IsNil)
+}
+
+func (s *RepoServerControllerSuite) TestRepositoryServerCRStateWithoutSecrets(c *C) {
+	// Test if server is stopped
+	// when no storage secrets are set
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3CompliantStorageLocation())
+	c.Assert(err, IsNil)
+	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
+	c.Assert(err, NotNil)
+	c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.ServerStopped)
+}
+
+func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
+	// Test if pod and service for repository server
+	// is created successfully
+	ctx := context.Background()
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	pod, err := s.kubeCli.CoreV1().Pods(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Status.ServerInfo.PodName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(len(pod.OwnerReferences), Equals, 1)
+	c.Assert(pod.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
+	service, err := s.kubeCli.CoreV1().Services(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Status.ServerInfo.ServiceName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(len(service.OwnerReferences), Equals, 1)
+	c.Assert(service.OwnerReferences[0].UID, Equals, repoServerCRCreated.UID)
+}
+
+func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
+	ctx := context.Background()
+	originalrepoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, originalrepoServerCR)
+	for _, tc := range []struct {
+		description  string
+		testFunction func(rs *v1alpha1.RepositoryServer)
+	}{
+		{
+			description: "Invalid Repository Password",
+			testFunction: func(rs *v1alpha1.RepositoryServer) {
+				InvalidRepositoryPassword, err := s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData("invalidPassword"))
+				c.Assert(err, IsNil)
+				rs.Spec.Repository.PasswordSecretRef.Name = InvalidRepositoryPassword.Name
+				rs.Spec.Repository.PasswordSecretRef.Namespace = InvalidRepositoryPassword.Namespace
+			},
+		},
+		{
+			description: "Invalid Storage Location",
+			testFunction: func(rs *v1alpha1.RepositoryServer) {
+				storageLocationData := getDefaultS3CompliantStorageLocation()
+				storageLocationData[repositoryserver.BucketKey] = []byte("invalidbucket")
+				InvalidStorageLocationSecret, err := s.CreateStorageLocationSecret(storageLocationData)
+				c.Assert(err, IsNil)
+				rs.Spec.Storage.SecretRef.Name = InvalidStorageLocationSecret.Name
+				rs.Spec.Storage.SecretRef.Namespace = InvalidStorageLocationSecret.Namespace
+			},
+		},
+		{
+			description: "Invalid Storage location credentials",
+			testFunction: func(rs *v1alpha1.RepositoryServer) {
+				storageLocationCredsData := getDefaultS3StorageCreds()
+				storageLocationCredsData[secrets.AWSAccessKeyID] = []byte("testaccesskey")
+				InvalidStorageLocationCrdesSecret, err := s.CreateStorageLocationSecret(storageLocationCredsData)
+				c.Assert(err, IsNil)
+				rs.Spec.Storage.CredentialSecretRef.Name = InvalidStorageLocationCrdesSecret.Name
+				rs.Spec.Storage.CredentialSecretRef.Namespace = InvalidStorageLocationCrdesSecret.Namespace
+
+			},
+		},
+	} {
+
+		invalidCR := *originalrepoServerCR
+		tc.testFunction(&invalidCR)
+		repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &invalidCR, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
+		err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+		c.Assert(err, IsNil)
+		c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.ServerStopped)
+	}
+
+}
+
+func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
+	ctxTimeout := 3 * time.Minute
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		repoServerCR, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		if repoServerCR.Status.ServerInfo.PodName == "" || repoServerCR.Status.ServerInfo.ServiceName == "" {
+			return false, errors.New("Repository server CR server not set")
+		}
+		return true, nil
+	})
+	return err
+}
+
+func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, rs *v1alpha1.RepositoryServer) error {
+	ctxTimeout := 10 * time.Minute
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
+	defer cancel()
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		if rs.Status.Progress == v1alpha1.ServerPending {
+			return false, nil
+		}
+		if rs.Status.Progress == v1alpha1.ServerStopped {
+			return false, errors.New(fmt.Sprintf(" There is failure in staring the repository server, server is in %s state, please check logs", rs.Status.Progress))
+		}
+		if rs.Status.Progress == v1alpha1.ServerReady {
+			return true, nil
+		}
+		return false, errors.New(fmt.Sprintf("Unexpected Repository server state: %s", rs.Status.Progress))
+	})
+
+	return err
 }
 
 func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
