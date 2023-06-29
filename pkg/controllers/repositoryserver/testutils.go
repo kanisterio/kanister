@@ -17,6 +17,10 @@ package repositoryserver
 import (
 	"os"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
@@ -25,9 +29,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/testutil"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (

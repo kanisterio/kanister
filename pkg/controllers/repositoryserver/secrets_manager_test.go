@@ -34,35 +34,11 @@ func (s *RepoServerControllerSuite) TestSuccessfulFetchSecretsForRepositoryServe
 	err := repoServerHandler.getSecretsFromCR(context.Background())
 	c.Assert(err, IsNil)
 	c.Assert(repoServerHandler.RepositoryServerSecrets, NotNil)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.repositoryPassword, NotNil)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverAdmin, NotNil)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverUserAccess, NotNil)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverTLS, NotNil)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.storage, NotNil)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.storageCredentials, NotNil)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverAdmin.Name, Equals, s.repoServerSecrets.serverAdmin.Name)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverTLS.Name, Equals, s.repoServerSecrets.serverTLS.Name)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.repositoryPassword.Name, Equals, s.repoServerSecrets.repositoryPassword.Name)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverUserAccess.Name, Equals, s.repoServerSecrets.serverUserAccess.Name)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.storageCredentials.Name, Equals, s.repoServerSecrets.storageCredentials.Name)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.storage.Name, Equals, s.repoServerSecrets.storage.Name)
+	c.Assert(repoServerHandler.RepositoryServerSecrets, DeepEquals, s.repoServerSecrets)
 
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverAdmin.Namespace, Equals, s.repoServerSecrets.serverAdmin.Namespace)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverTLS.Namespace, Equals, s.repoServerSecrets.serverTLS.Namespace)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.repositoryPassword.Namespace, Equals, s.repoServerSecrets.repositoryPassword.Namespace)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.serverUserAccess.Namespace, Equals, s.repoServerSecrets.serverUserAccess.Namespace)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.storageCredentials.Namespace, Equals, s.repoServerSecrets.storageCredentials.Namespace)
-	c.Assert(repoServerHandler.RepositoryServerSecrets.storage.Namespace, Equals, s.repoServerSecrets.storage.Namespace)
-}
-
-func (s *RepoServerControllerSuite) TestUnsuccessfulFetchSecretsForRepositoryServer(c *C) {
 	// Test getSecretsFromCR is unsuccesful when one of the secrets does not exist in the namespace
-	repositoryServer := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
 	repositoryServer.Spec.Storage.SecretRef.Name = "SecretDoesNotExist"
-	repoServerHandler := RepoServerHandler{RepositoryServer: repositoryServer}
-	repoServerHandler.RepositoryServer = repositoryServer
-	err := repoServerHandler.getSecretsFromCR(context.Background())
+	err = repoServerHandler.getSecretsFromCR(context.Background())
 	c.Assert(err, NotNil)
 	c.Assert(repoServerHandler.RepositoryServerSecrets, IsNil)
 }
