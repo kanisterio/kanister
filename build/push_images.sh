@@ -18,7 +18,10 @@ set -o errexit
 set -o nounset
 
 IMAGE_REGISTRY="ghcr.io/kanisterio"
-IMAGES=("mysql-sidecar" "kafka-adobe-s3-sink-connector" "postgres-kanister-tools" "postgresql" "cassandra" "kanister-kubectl-1.18" "mongodb" "es-sidecar" "controller" "kanister-tools" "kafka-adobe-s3-source-connector" "mssql-tools")
+
+IMAGES_NAME_PATH="valid_images.json"
+
+IMAGES=(`cat $IMAGES_NAME_PATH | jq -r .images[]`)
 
 TAG=${1:-"v9.99.9-dev"}
 
