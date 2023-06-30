@@ -192,7 +192,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerCRStateWithoutSecrets(c 
 	c.Assert(err, IsNil)
 	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
 	c.Assert(err, NotNil)
-	c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.ServerStopped)
+	c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.Failed)
 }
 
 func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
@@ -263,7 +263,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 		c.Assert(err, IsNil)
 		err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 		c.Assert(err, IsNil)
-		c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.ServerStopped)
+		c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.Failed)
 	}
 
 }
@@ -290,13 +290,13 @@ func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, rs *v1alph
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		if rs.Status.Progress == v1alpha1.ServerPending {
+		if rs.Status.Progress == v1alpha1.Pending {
 			return false, nil
 		}
-		if rs.Status.Progress == v1alpha1.ServerStopped {
+		if rs.Status.Progress == v1alpha1.Failed {
 			return false, errors.New(fmt.Sprintf(" There is failure in staring the repository server, server is in %s state, please check logs", rs.Status.Progress))
 		}
-		if rs.Status.Progress == v1alpha1.ServerReady {
+		if rs.Status.Progress == v1alpha1.Ready {
 			return true, nil
 		}
 		return false, errors.New(fmt.Sprintf("Unexpected Repository server state: %s", rs.Status.Progress))
