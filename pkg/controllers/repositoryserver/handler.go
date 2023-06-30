@@ -70,6 +70,18 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 			return err
 		}
 	}
+
+	if err := h.connectToKopiaRepository(); err != nil {
+		return errors.Wrap(err, "Failed to connect to Kopia repository")
+	}
+
+	if err := h.startRepoProxyServer(ctx); err != nil {
+		return errors.Wrap(err, "Failed to start Kopia API server")
+	}
+
+	if err := h.createOrUpdateClientUsers(ctx); err != nil {
+		return errors.Wrap(err, "Failed to create/update kopia API server access users")
+	}
 	return nil
 }
 
@@ -298,25 +310,5 @@ func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod
 	if err := kube.WaitForPodReady(ctx, h.KubeCli, pod.Namespace, pod.Name); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed while waiting for pod %s to be ready", pod.Name))
 	}
-	return nil
-}
-
-func (h *RepoServerHandler) updateProgressInCRStatus(ctx context.Context, progress crv1alpha1.RepositoryServerProgress) error {
-	h.Logger.Info("Fetch latest version of RepositoryServer to update the ServerInfo in its status")
-	repoServerName := h.RepositoryServer.Name
-	repoServerNamespace := h.RepositoryServer.Namespace
-	rs := crv1alpha1.RepositoryServer{}
-	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: repoServerName, Namespace: repoServerNamespace}, &rs)
-	if err != nil {
-		return err
-	}
-	h.Logger.Info("Update the Progress")
-	rs.Status.Progress = progress
-	err = h.Reconciler.Status().Update(ctx, &rs)
-	if err != nil {
-		return err
-	}
-	h.Logger.Info("Use this updated RepositoryServer CR")
-	h.RepositoryServer = &rs
 	return nil
 }
