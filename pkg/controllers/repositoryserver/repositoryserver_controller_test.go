@@ -268,6 +268,31 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 
 }
 
+func (s *RepoServerControllerSuite) TestFilestoreLocationVolumeMountOnRepoServerPod(c *C) {
+	var err error
+	ctx := context.Background()
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-pvc-",
+		},
+	}
+	pvc, err = s.kubeCli.CoreV1().PersistentVolumeClaims(s.repoServerControllerNamespace).Create(ctx, pvc, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.storage, err = s.CreateStorageLocationSecret(testutil.GetFileStoreLocationSecretData(pvc.Name))
+	c.Assert(err, IsNil)
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+	pod, err := s.kubeCli.CoreV1().Pods(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Status.ServerInfo.PodName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(len(pod.Spec.Volumes), Equals, 1)
+	c.Assert(pod.Spec.Volumes[0].Name, Equals, pvc.Name)
+}
+
 func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
 	ctxTimeout := 3 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)

@@ -435,3 +435,10 @@ func GetKopiaTLSSecretData() (map[string][]byte, error) {
 		"tls.key": caPrivKeyPEM.Bytes(),
 	}, nil
 }
+
+func GetFileStoreLocationSecretData(claimName string) map[string][]byte {
+	return map[string][]byte{
+		reposerver.TypeKey:      []byte(reposerver.LocTypeFilestore),
+		reposerver.ClaimNameKey: []byte(claimName),
+	}
+}
