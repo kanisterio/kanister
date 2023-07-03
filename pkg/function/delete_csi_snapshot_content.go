@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"time"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -23,6 +24,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func init() {
@@ -90,7 +92,11 @@ func (*deleteCSISnapshotContentFunc) Arguments() []string {
 }
 
 func (c *deleteCSISnapshotContentFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
-	return crv1alpha1.PhaseProgress{ProgressPercent: string(c.progressPercent)}, nil
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    c.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func deleteCSISnapshotContent(ctx context.Context, snapshotter snapshot.Snapshotter, name string) error {

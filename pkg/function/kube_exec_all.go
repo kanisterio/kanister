@@ -105,7 +105,7 @@ func (*kubeExecAllFunc) Arguments() []string {
 func (k *kubeExecAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    string(k.progressPercent),
+		ProgressPercent:    k.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

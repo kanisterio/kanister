@@ -194,7 +194,7 @@ func (crs *createRDSSnapshotFunc) Arguments() []string {
 func (crs *createRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    string(crs.progressPercent),
+		ProgressPercent:    crs.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

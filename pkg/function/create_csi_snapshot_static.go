@@ -172,7 +172,7 @@ func createCSISnapshotStatic(
 func (c *createCSISnapshotStaticFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    string(c.progressPercent),
+		ProgressPercent:    c.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

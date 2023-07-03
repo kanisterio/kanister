@@ -19,9 +19,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -262,5 +264,9 @@ func (*deleteDataFunc) Arguments() []string {
 }
 
 func (d *deleteDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
-	return crv1alpha1.PhaseProgress{ProgressPercent: string(d.progressPercent)}, nil
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    d.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

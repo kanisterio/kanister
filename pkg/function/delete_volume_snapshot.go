@@ -136,7 +136,7 @@ func (*deleteVolumeSnapshotFunc) Arguments() []string {
 func (d *deleteVolumeSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    string(d.progressPercent),
+		ProgressPercent:    d.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

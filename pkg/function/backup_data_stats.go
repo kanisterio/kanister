@@ -196,7 +196,7 @@ func (*BackupDataStatsFunc) Arguments() []string {
 func (b *BackupDataStatsFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    string(b.progressPercent),
+		ProgressPercent:    b.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

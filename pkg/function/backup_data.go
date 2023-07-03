@@ -202,7 +202,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 func (b *backupDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    string(string(b.progressPercent)),
+		ProgressPercent:    b.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 

@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"time"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -27,6 +28,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func init() {
@@ -129,5 +131,9 @@ func (*kubeExecFunc) Arguments() []string {
 }
 
 func (kef *kubeExecFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
-	return crv1alpha1.PhaseProgress{ProgressPercent: string(kef.progressPercent)}, nil
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    kef.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
