@@ -33,18 +33,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
-const (
-	defaulKopiaRepositoryServerAdminUser       = "admin@test"
-	defaultKopiaRepositoryServerAdminPassword  = "admin1234"
-	defaultKopiaRepositoryServerHost           = "localhost"
-	defaultKopiaRepositoryPassword             = "test1234"
-	defaultKopiaRepositoryUser                 = "repository-user"
-	defaultKopiaRepositoryServerAccessUser     = "kanister-user"
-	defaultKopiaRepositoryServerAccessPassword = "test1234"
-	defaultKanisterNamespace                   = "kanister"
-	defaultKopiaRepositoryServerContainer      = "repo-server-container"
-)
-
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
@@ -108,13 +96,13 @@ func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
 	c.Assert(err, IsNil)
 
 	s.repoServerSecrets = repositoryServerSecrets{}
-	s.repoServerSecrets.serverUserAccess, err = s.CreateRepositoryServerUserAccessSecret(testutil.GetRepoServerUserAccessSecretData("localhost", defaultKopiaRepositoryServerAccessPassword))
+	s.repoServerSecrets.serverUserAccess, err = s.CreateRepositoryServerUserAccessSecret(testutil.GetRepoServerUserAccessSecretData("localhost", testutil.KopiaRepositoryServerAccessPassword))
 	c.Assert(err, IsNil)
 
-	s.repoServerSecrets.serverAdmin, err = s.CreateRepositoryServerAdminSecret(testutil.GetRepoServerAdminSecretData(defaulKopiaRepositoryServerAdminUser, defaultKopiaRepositoryServerAdminPassword))
+	s.repoServerSecrets.serverAdmin, err = s.CreateRepositoryServerAdminSecret(testutil.GetRepoServerAdminSecretData(testutil.KopiaRepositoryServerAdminUser, testutil.KopiaRepositoryServerAdminPassword))
 	c.Assert(err, IsNil)
 
-	s.repoServerSecrets.repositoryPassword, err = s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData(defaultKopiaRepositoryPassword))
+	s.repoServerSecrets.repositoryPassword, err = s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData(testutil.KopiaRepositoryPassword))
 	c.Assert(err, IsNil)
 
 	s.repoServerSecrets.serverTLS, err = s.CreateKopiaTLSSecret(kopiaTLSSecretData)
