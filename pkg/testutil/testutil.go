@@ -44,8 +44,8 @@ import (
 )
 
 const (
-	testBPArg                  = "key"
-	defaultKopiaRepositoryPath = "kopia-repo-path-test"
+	testBPArg               = "key"
+	TestKopiaRepositoryPath = "kopia-repo-path-test"
 )
 
 // NewTestPVC function returns a pointer to a new PVC test object
@@ -452,7 +452,7 @@ func GetDefaultS3CompliantStorageLocation() map[string][]byte {
 	return map[string][]byte{
 		reposerver.TypeKey:     []byte(crv1alpha1.LocationTypeS3Compliant),
 		reposerver.BucketKey:   []byte(TestS3BucketName),
-		reposerver.PrefixKey:   []byte(defaultKopiaRepositoryPath),
+		reposerver.PrefixKey:   []byte(TestKopiaRepositoryPath),
 		reposerver.RegionKey:   []byte(TestS3Region),
 		reposerver.EndpointKey: []byte(os.Getenv("LOCATION_ENDPOINT")),
 	}
