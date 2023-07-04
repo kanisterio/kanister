@@ -15,9 +15,17 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"os"
+	"time"
 
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -25,11 +33,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/secrets"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 const (
@@ -339,4 +350,109 @@ func BlueprintWithConfigMap(bp *crv1alpha1.Blueprint) *crv1alpha1.Blueprint {
 		bp.Actions[actionName].Phases[i].Args = cmArgs
 	}
 	return bp
+}
+
+func CreateSecret(cli kubernetes.Interface, namespace, name string, secrettype v1.SecretType, data map[string][]byte) (se *v1.Secret, err error) {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: name,
+		},
+		Data: data,
+	}
+	if secrettype != "" {
+		secret.Type = secrettype
+	}
+
+	se, err = cli.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	return
+}
+
+func GetRepoPasswordSecretData(password string) map[string][]byte {
+	return map[string][]byte{
+		reposerver.RepoPasswordKey: []byte(password),
+	}
+}
+
+func GetRepoServerAdminSecretData(username, password string) map[string][]byte {
+	return map[string][]byte{
+		reposerver.AdminUsernameKey: []byte(username),
+		reposerver.AdminPasswordKey: []byte(password),
+	}
+}
+
+func GetRepoServerUserAccessSecretData(hostname, password string) map[string][]byte {
+	return map[string][]byte{
+		hostname: []byte(password),
+	}
+}
+
+func GetKopiaTLSSecretData() (map[string][]byte, error) {
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(2019),
+		Subject: pkix.Name{
+			Organization:  []string{"Test Organization"},
+			Country:       []string{"Test Country"},
+			Province:      []string{"Test Province"},
+			Locality:      []string{"Test Locality"},
+			StreetAddress: []string{"Test Street"},
+			PostalCode:    []string{"123456"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(0, 0, 1),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return nil, err
+	}
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		return nil, err
+	}
+
+	caPEM := new(bytes.Buffer)
+	err = pem.Encode(caPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caBytes,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	caPrivKeyPEM := new(bytes.Buffer)
+	err = pem.Encode(caPrivKeyPEM, &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string][]byte{
+		"tls.crt": caPEM.Bytes(),
+		"tls.key": caPrivKeyPEM.Bytes(),
+	}, nil
+}
+
+func GetDefaultS3StorageCreds() map[string][]byte {
+	key := os.Getenv(awsconfig.AccessKeyID)
+	val := os.Getenv(awsconfig.SecretAccessKey)
+
+	return map[string][]byte{
+		secrets.AWSAccessKeyID:     []byte(key),
+		secrets.AWSSecretAccessKey: []byte(val),
+	}
+}
+
+func GetDefaultS3CompliantStorageLocation() map[string][]byte {
+	return map[string][]byte{
+		reposerver.TypeKey:     []byte(crv1alpha1.LocationTypeS3Compliant),
+		reposerver.BucketKey:   []byte(TestS3BucketName),
+		reposerver.PrefixKey:   []byte(KopiaRepositoryPath),
+		reposerver.RegionKey:   []byte(TestS3Region),
+		reposerver.EndpointKey: []byte(os.Getenv("LOCATION_ENDPOINT")),
+	}
 }
