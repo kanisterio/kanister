@@ -69,10 +69,12 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	})
 	c.Assert(err, IsNil)
 
-	err = (&RepositoryServerReconciler{
+	repoReconciler := &RepositoryServerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr)
+	}
+
+	err = repoReconciler.SetupWithManager(mgr)
 	c.Assert(err, IsNil)
 
 	go func() {
