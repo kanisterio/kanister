@@ -35,10 +35,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/secrets"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
@@ -434,4 +438,92 @@ func GetKopiaTLSSecretData() (map[string][]byte, error) {
 		"tls.crt": caPEM.Bytes(),
 		"tls.key": caPrivKeyPEM.Bytes(),
 	}, nil
+}
+
+func GetDefaultS3StorageCreds() map[string][]byte {
+	key := os.Getenv(awsconfig.AccessKeyID)
+	val := os.Getenv(awsconfig.SecretAccessKey)
+
+	return map[string][]byte{
+		secrets.AWSAccessKeyID:     []byte(key),
+		secrets.AWSSecretAccessKey: []byte(val),
+	}
+}
+
+func GetDefaultS3CompliantStorageLocation() map[string][]byte {
+	return map[string][]byte{
+		reposerver.TypeKey:     []byte(crv1alpha1.LocationTypeS3Compliant),
+		reposerver.BucketKey:   []byte(TestS3BucketName),
+		reposerver.PrefixKey:   []byte(KopiaRepositoryPath),
+		reposerver.RegionKey:   []byte(TestS3Region),
+		reposerver.EndpointKey: []byte(os.Getenv("LOCATION_ENDPOINT")),
+	}
+}
+
+func CreateTestKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.RepositoryServer, storageLocation map[string][]byte) error {
+	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
+
+	commandArgs := command.RepositoryCommandArgs{
+		CommandArgs: &command.CommandArgs{
+			RepoPassword:   KopiaRepositoryPassword,
+			ConfigFilePath: command.DefaultConfigFilePath,
+			LogDirectory:   command.DefaultLogDirectory,
+		},
+		CacheDirectory:  command.DefaultCacheDirectory,
+		Hostname:        KopiaRepositoryServerHost,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
+		Username:        KopiaRepositoryUser,
+		RepoPathPrefix:  KopiaRepositoryPath,
+		Location:        storageLocation,
+	}
+	return repository.CreateKopiaRepository(
+		cli,
+		KanisterNamespace,
+		rs.Status.ServerInfo.PodName,
+		DefaultKopiaRepositoryServerContainer,
+		commandArgs,
+	)
+}
+
+func GetTestKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryServer {
+	repositoryServer := &crv1alpha1.RepositoryServer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-kopia-repo-server-",
+			Namespace:    namespace,
+		},
+		Spec: crv1alpha1.RepositoryServerSpec{
+			Storage: crv1alpha1.Storage{
+				SecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+				CredentialSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+			Repository: crv1alpha1.Repository{
+				RootPath: KopiaRepositoryPath,
+				Username: KopiaRepositoryUser,
+				Hostname: KopiaRepositoryServerHost,
+				PasswordSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+			Server: crv1alpha1.Server{
+				UserAccess: crv1alpha1.UserAccess{
+					UserAccessSecretRef: v1.SecretReference{
+						Namespace: namespace,
+					},
+					Username: KopiaRepositoryServerAccessUser,
+				},
+				AdminSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+				TLSSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+		},
+	}
+	return repositoryServer
 }

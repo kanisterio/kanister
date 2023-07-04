@@ -20,10 +20,11 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
-	repositoryServer := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
 	defaultcontentCacheMB, defaultmetadataCacheMB := command.GetGeneralCacheSizeSettings()
 	repoServerHandler := RepoServerHandler{

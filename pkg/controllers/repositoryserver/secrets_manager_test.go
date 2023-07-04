@@ -19,11 +19,13 @@ import (
 
 	. "gopkg.in/check.v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 func (s *RepoServerControllerSuite) TestSuccessfulFetchSecretsForRepositoryServer(c *C) {
 	// Test getSecretsFromCR is successfull
-	repositoryServer := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
 	repoServerHandler := RepoServerHandler{
 		Req:              reconcile.Request{},

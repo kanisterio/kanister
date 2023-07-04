@@ -28,6 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1client "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -60,7 +61,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	crCli, err := crv1alpha1client.NewForConfig(config)
 	c.Assert(err, IsNil)
 
-	// Make sure the CRD's exist.
+	// Make sure the CRDs exist.
 	err = resource.CreateCustomResources(context.Background(), config)
 	c.Assert(err, IsNil)
 	err = resource.CreateRepoServerCustomResource(context.Background(), config)
@@ -102,18 +103,24 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
 	kopiaTLSSecretData, err := testutil.GetKopiaTLSSecretData()
 	c.Assert(err, IsNil)
+
 	s.repoServerSecrets = repositoryServerSecrets{}
-	s.repoServerSecrets.serverUserAccess, err = s.CreateRepositoryServerUserAccessSecret(testutil.GetRepoServerUserAccessSecretData("localhost", defaultKopiaRepositoryServerAccessPassword))
+	s.repoServerSecrets.serverUserAccess, err = s.CreateRepositoryServerUserAccessSecret(testutil.GetRepoServerUserAccessSecretData("localhost", testutil.KopiaRepositoryServerAccessPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.serverAdmin, err = s.CreateRepositoryServerAdminSecret(testutil.GetRepoServerAdminSecretData(defaulKopiaRepositoryServerAdminUser, defaultKopiaRepositoryServerAdminPassword))
+
+	s.repoServerSecrets.serverAdmin, err = s.CreateRepositoryServerAdminSecret(testutil.GetRepoServerAdminSecretData(testutil.KopiaRepositoryServerAdminUser, testutil.KopiaRepositoryServerAdminPassword))
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.repositoryPassword, err = s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData(defaultKopiaRepositoryPassword))
+
+	s.repoServerSecrets.repositoryPassword, err = s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData(testutil.KopiaRepositoryPassword))
 	c.Assert(err, IsNil)
+
 	s.repoServerSecrets.serverTLS, err = s.CreateKopiaTLSSecret(kopiaTLSSecretData)
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storage, err = s.CreateStorageLocationSecret(getDefaultS3CompliantStorageLocation())
+
+	s.repoServerSecrets.storage, err = s.CreateStorageLocationSecret(testutil.GetDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storageCredentials, err = s.CreateAWSStorageCredentialsSecret(getDefaultS3StorageCreds())
+
+	s.repoServerSecrets.storageCredentials, err = s.CreateAWSStorageCredentialsSecret(testutil.GetDefaultS3StorageCreds())
 	c.Assert(err, IsNil)
 }
 
@@ -151,7 +158,7 @@ func (s *RepoServerControllerSuite) CreateGCPStorageCredentialsSecret(data map[s
 
 func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 	// Create a repository server CR.
-	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
@@ -168,13 +175,13 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C) {
 	// Test if the repository server CR state is Ready
 	// with all the right configuration
-	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
-	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3CompliantStorageLocation())
+	err = testutil.CreateTestKopiaRepository(s.kubeCli, repoServerCRCreated, testutil.GetDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
 	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
 	c.Assert(err, IsNil)
@@ -183,12 +190,12 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 func (s *RepoServerControllerSuite) TestRepositoryServerCRStateWithoutSecrets(c *C) {
 	// Test if server is stopped
 	// when no storage secrets are set
-	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
-	err = createKopiaRepository(s.kubeCli, repoServerCRCreated, getDefaultS3CompliantStorageLocation())
+	err = testutil.CreateTestKopiaRepository(s.kubeCli, repoServerCRCreated, testutil.GetDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
 	err = s.waitOnRepositoryServerState(c, repoServerCRCreated)
 	c.Assert(err, NotNil)
@@ -199,7 +206,7 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 	// Test if pod and service for repository server
 	// is created successfully
 	ctx := context.Background()
-	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
@@ -217,7 +224,7 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 
 func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 	ctx := context.Background()
-	originalrepoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	originalrepoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, originalrepoServerCR)
 	for _, tc := range []struct {
 		description  string
@@ -235,7 +242,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 		{
 			description: "Invalid Storage Location",
 			testFunction: func(rs *v1alpha1.RepositoryServer) {
-				storageLocationData := getDefaultS3CompliantStorageLocation()
+				storageLocationData := testutil.GetDefaultS3CompliantStorageLocation()
 				storageLocationData[repositoryserver.BucketKey] = []byte("invalidbucket")
 				InvalidStorageLocationSecret, err := s.CreateStorageLocationSecret(storageLocationData)
 				c.Assert(err, IsNil)
@@ -246,7 +253,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 		{
 			description: "Invalid Storage location credentials",
 			testFunction: func(rs *v1alpha1.RepositoryServer) {
-				storageLocationCredsData := getDefaultS3StorageCreds()
+				storageLocationCredsData := testutil.GetDefaultS3StorageCreds()
 				storageLocationCredsData[secrets.AWSAccessKeyID] = []byte("testaccesskey")
 				InvalidStorageLocationCrdesSecret, err := s.CreateStorageLocationSecret(storageLocationCredsData)
 				c.Assert(err, IsNil)
@@ -303,6 +310,30 @@ func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, rs *v1alph
 	})
 
 	return err
+}
+
+func setRepositoryServerSecretsInCR(secrets *repositoryServerSecrets, repoServerCR *crv1alpha1.RepositoryServer) {
+	if secrets != nil {
+		if secrets.serverAdmin != nil {
+			repoServerCR.Spec.Server.AdminSecretRef.Name = secrets.serverAdmin.Name
+		}
+		if secrets.repositoryPassword != nil {
+			repoServerCR.Spec.Repository.PasswordSecretRef.Name = secrets.repositoryPassword.Name
+		}
+
+		if secrets.serverUserAccess != nil {
+			repoServerCR.Spec.Server.UserAccess.UserAccessSecretRef.Name = secrets.serverUserAccess.Name
+		}
+		if secrets.serverTLS != nil {
+			repoServerCR.Spec.Server.TLSSecretRef.Name = secrets.serverTLS.Name
+		}
+		if secrets.storage != nil {
+			repoServerCR.Spec.Storage.SecretRef.Name = secrets.storage.Name
+		}
+		if secrets.storageCredentials != nil {
+			repoServerCR.Spec.Storage.CredentialSecretRef.Name = secrets.storageCredentials.Name
+		}
+	}
 }
 
 func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
