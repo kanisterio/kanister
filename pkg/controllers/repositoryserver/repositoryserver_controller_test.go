@@ -33,6 +33,18 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
+const (
+	defaulKopiaRepositoryServerAdminUser       = "admin@test"
+	defaultKopiaRepositoryServerAdminPassword  = "admin1234"
+	defaultKopiaRepositoryServerHost           = "localhost"
+	defaultKopiaRepositoryPassword             = "test1234"
+	defaultKopiaRepositoryUser                 = "repository-user"
+	defaultKopiaRepositoryServerAccessUser     = "kanister-user"
+	defaultKopiaRepositoryServerAccessPassword = "test1234"
+	defaultKanisterNamespace                   = "kanister"
+	defaultKopiaRepositoryServerContainer      = "repo-server-container"
+)
+
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
@@ -53,7 +65,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	crCli, err := crclientv1alpha1.NewForConfig(config)
 	c.Assert(err, IsNil)
 
-	// Make sure the CRD's exist.
+	// Make sure the CRDs exist.
 	err = resource.CreateCustomResources(context.Background(), config)
 	c.Assert(err, IsNil)
 	err = resource.CreateRepoServerCustomResource(context.Background(), config)
@@ -94,18 +106,24 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
 	kopiaTLSSecretData, err := testutil.GetKopiaTLSSecretData()
 	c.Assert(err, IsNil)
+
 	s.repoServerSecrets = repositoryServerSecrets{}
 	s.repoServerSecrets.serverUserAccess, err = s.CreateRepositoryServerUserAccessSecret(testutil.GetRepoServerUserAccessSecretData("localhost", defaultKopiaRepositoryServerAccessPassword))
 	c.Assert(err, IsNil)
+
 	s.repoServerSecrets.serverAdmin, err = s.CreateRepositoryServerAdminSecret(testutil.GetRepoServerAdminSecretData(defaulKopiaRepositoryServerAdminUser, defaultKopiaRepositoryServerAdminPassword))
 	c.Assert(err, IsNil)
+
 	s.repoServerSecrets.repositoryPassword, err = s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData(defaultKopiaRepositoryPassword))
 	c.Assert(err, IsNil)
+
 	s.repoServerSecrets.serverTLS, err = s.CreateKopiaTLSSecret(kopiaTLSSecretData)
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storage, err = s.CreateStorageLocationSecret(getDefaultS3CompliantStorageLocation())
+
+	s.repoServerSecrets.storage, err = s.CreateStorageLocationSecret(testutil.GetDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
-	s.repoServerSecrets.storageCredentials, err = s.CreateAWSStorageCredentialsSecret(getDefaultS3StorageCreds())
+
+	s.repoServerSecrets.storageCredentials, err = s.CreateAWSStorageCredentialsSecret(testutil.GetDefaultS3StorageCreds())
 	c.Assert(err, IsNil)
 }
 

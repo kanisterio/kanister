@@ -39,11 +39,13 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/secrets"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 const (
-	testBPArg = "key"
+	testBPArg                  = "key"
+	defaultKopiaRepositoryPath = "kopia-repo-path-test"
 )
 
 // NewTestPVC function returns a pointer to a new PVC test object
@@ -434,4 +436,24 @@ func GetKopiaTLSSecretData() (map[string][]byte, error) {
 		"tls.crt": caPEM.Bytes(),
 		"tls.key": caPrivKeyPEM.Bytes(),
 	}, nil
+}
+
+func GetDefaultS3StorageCreds() map[string][]byte {
+	key := os.Getenv(awsconfig.AccessKeyID)
+	val := os.Getenv(awsconfig.SecretAccessKey)
+
+	return map[string][]byte{
+		secrets.AWSAccessKeyID:     []byte(key),
+		secrets.AWSSecretAccessKey: []byte(val),
+	}
+}
+
+func GetDefaultS3CompliantStorageLocation() map[string][]byte {
+	return map[string][]byte{
+		reposerver.TypeKey:     []byte(crv1alpha1.LocationTypeS3Compliant),
+		reposerver.BucketKey:   []byte(TestS3BucketName),
+		reposerver.PrefixKey:   []byte(defaultKopiaRepositoryPath),
+		reposerver.RegionKey:   []byte(TestS3Region),
+		reposerver.EndpointKey: []byte(os.Getenv("LOCATION_ENDPOINT")),
+	}
 }
