@@ -29,7 +29,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	crv1alpha1client "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -44,7 +44,7 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type RepoServerControllerSuite struct {
-	crCli                         crv1alpha1client.CrV1alpha1Interface
+	crCli                         crclientv1alpha1.CrV1alpha1Interface
 	kubeCli                       kubernetes.Interface
 	repoServerControllerNamespace string
 	repoServerSecrets             repositoryServerSecrets
@@ -58,7 +58,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	cli, err := kubernetes.NewForConfig(config)
 	c.Assert(err, IsNil)
-	crCli, err := crv1alpha1client.NewForConfig(config)
+	crCli, err := crclientv1alpha1.NewForConfig(config)
 	c.Assert(err, IsNil)
 
 	// Make sure the CRDs exist.
@@ -76,19 +76,20 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 		MetricsBindAddress: "0",
 	})
 	c.Assert(err, IsNil)
-	repoServerReconciler := &RepositoryServerReconciler{
+
+	repoReconciler := &RepositoryServerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}
-	err = (repoServerReconciler).SetupWithManager(mgr)
+
+	err = repoReconciler.SetupWithManager(mgr)
 	c.Assert(err, IsNil)
 
 	go func() {
 		err = mgr.Start(ctrl.SetupSignalHandler())
 		c.Assert(err, IsNil)
 	}()
-	s.DefaultRepoServerReconciler = repoServerReconciler
-
+	s.DefaultRepoServerReconciler = repoReconciler
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "repositoryservercontrollertest-",
