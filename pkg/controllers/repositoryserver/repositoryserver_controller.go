@@ -77,7 +77,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	logger.WithValues("Name", repositoryServer.Name).WithValues("Namespace",repositoryServer.Namespace)
+	logger.WithValues("Name", repositoryServer.Name).WithValues("Namespace", repositoryServer.Namespace)
 
 	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
 
@@ -106,7 +106,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Start Repository Server")	
+	logger.Info("Start Repository Server")
 	if err := repoServerHandler.startRepoProxyServer(ctx); err != nil {
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
@@ -114,7 +114,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Add/Update users")	
+	logger.Info("Add/Update users")
 	if err := repoServerHandler.createOrUpdateClientUsers(ctx); err != nil {
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
