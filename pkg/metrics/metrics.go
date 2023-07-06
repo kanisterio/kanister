@@ -24,6 +24,9 @@ func getLabelNames(bl []BoundedLabel) []string {
 func generateLabelCombinations(boundedLabels []BoundedLabel, labelIndex int,
 	labelSlice [][]string, resultCombinations *[][][]string) {
 	if labelIndex >= len(boundedLabels) {
+		if len(labelSlice) == 0 {
+			return
+		}
 		newCombination := append([][]string(nil), labelSlice...)
 		*resultCombinations = append(*resultCombinations, newCombination)
 		return
