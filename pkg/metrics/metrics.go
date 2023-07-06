@@ -21,10 +21,33 @@ func getLabelNames(bl []BoundedLabel) []string {
 	return labelNames
 }
 
-func getSampleCombinations() []prometheus.Labels {
-	result := make([]prometheus.Labels, 0)
-	result = append(result, prometheus.Labels{"resolution": "success"})
-	return result
+func generateLabelCombinations(boundedLabels []BoundedLabel, labelIndex int,
+	labelSlice [][]string, resultCombinations *[][][]string) {
+	if labelIndex >= len(boundedLabels) {
+		newCombination := append([][]string(nil), labelSlice...)
+		*resultCombinations = append(*resultCombinations, newCombination)
+		return
+	}
+	for i := 0; i < len(boundedLabels[labelIndex].LabelValues); i++ {
+		labelSlice = append(labelSlice, []string{boundedLabels[labelIndex].LabelName, boundedLabels[labelIndex].LabelValues[i]})
+		generateLabelCombinations(boundedLabels, labelIndex+1, labelSlice, resultCombinations)
+		labelSlice = labelSlice[:len(labelSlice)-1]
+	}
+}
+
+func getLabelCombinations(boundedLabels []BoundedLabel) []prometheus.Labels {
+	resultCombinations := make([][][]string, 0)
+	labelSlice := make([][]string, 0)
+	generateLabelCombinations(boundedLabels, 0, labelSlice, &resultCombinations)
+	resultPrometheusLabels := make([]prometheus.Labels, 0)
+	for _, combination := range resultCombinations {
+		labelSet := make(prometheus.Labels)
+		for _, label := range combination {
+			labelSet[label[0]] = label[1]
+		}
+		resultPrometheusLabels = append(resultPrometheusLabels, labelSet)
+	}
+	return resultPrometheusLabels
 }
 
 func setDefaultCounterWithLabels(cv *prometheus.CounterVec, lc []prometheus.Labels) {
@@ -45,7 +68,7 @@ func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, bounde
 	if err != nil {
 		panic(fmt.Sprintf("failed to register CounterVec. error: %v", err))
 	}
-	combinations := getSampleCombinations()
+	combinations := getLabelCombinations(boundedLabels)
 	setDefaultCounterWithLabels(gv, combinations)
 	return gv
 }
