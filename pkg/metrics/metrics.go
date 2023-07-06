@@ -8,53 +8,76 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// BoundedLabel is a type that represents a label and its associated
+// valid values
 type BoundedLabel struct {
 	LabelName   string
 	LabelValues []string
 }
 
+// getLabelNames extracts the all the `LabelName` fields from each BoundedLabel struct
 func getLabelNames(bl []BoundedLabel) []string {
-	labelNames := make([]string, 0)
+	ln := make([]string, 0)
 	for _, l := range bl {
-		labelNames = append(labelNames, l.LabelName)
+		ln = append(ln, l.LabelName)
 	}
-	return labelNames
+	return ln
 }
 
-func generateLabelCombinations(boundedLabels []BoundedLabel, labelIndex int,
-	labelSlice [][]string, resultCombinations *[][][]string) {
-	if labelIndex >= len(boundedLabels) {
-		if len(labelSlice) == 0 {
+// generateLabelCombinations uses backtracking approach to generate
+// a list of label permutations
+func generateLabelCombinations(bl []BoundedLabel, labelIndex int,
+	workingSlice [][]string, resultCombinations *[][][]string) {
+	if labelIndex >= len(bl) {
+		if len(workingSlice) == 0 {
 			return
 		}
-		newCombination := append([][]string(nil), labelSlice...)
+		newCombination := append([][]string(nil), workingSlice...)
 		*resultCombinations = append(*resultCombinations, newCombination)
 		return
 	}
-	for i := 0; i < len(boundedLabels[labelIndex].LabelValues); i++ {
-		labelSlice = append(labelSlice, []string{boundedLabels[labelIndex].LabelName, boundedLabels[labelIndex].LabelValues[i]})
-		generateLabelCombinations(boundedLabels, labelIndex+1, labelSlice, resultCombinations)
-		labelSlice = labelSlice[:len(labelSlice)-1]
+	for i := 0; i < len(bl[labelIndex].LabelValues); i++ {
+		workingSlice = append(workingSlice, []string{bl[labelIndex].LabelName, bl[labelIndex].LabelValues[i]})
+		generateLabelCombinations(bl, labelIndex+1, workingSlice, resultCombinations)
+		workingSlice = workingSlice[:len(workingSlice)-1]
 	}
 }
 
-func getLabelCombinations(boundedLabels []BoundedLabel) []prometheus.Labels {
+// getLabelCombinations takes a slice of BoundedLabel elements and
+// returns a list of permutations of possible label permutations.
+/*
+Considering the below example - If we have two BoundedLabel elements:
+BoundedLabel{
+  LabelName: "operation_type"
+  LabelValues: ["backup", "restore"]
+}
+BoundedLabel{
+  LabelName: "action_set_resolution"
+  LabelValues: ["success", "failure"]
+}
+The method generates the permutation list:
+[ {"operation_type": "backup", "action_set_resolution": "success"},
+{"operation_type": "backup", "action_set_resolution": "failure"},
+{"operation_type": "restore", "action_set_resolution": "success"},
+{"operation_type": "restore", "action_set_resolution": "failure"}]
+*/
+func getLabelCombinations(bl []BoundedLabel) []prometheus.Labels {
 	resultCombinations := make([][][]string, 0)
 	labelSlice := make([][]string, 0)
-	generateLabelCombinations(boundedLabels, 0, labelSlice, &resultCombinations)
+	generateLabelCombinations(bl, 0, labelSlice, &resultCombinations)
 	resultPrometheusLabels := make([]prometheus.Labels, 0)
-	for _, combination := range resultCombinations {
+	for _, c := range resultCombinations {
 		labelSet := make(prometheus.Labels)
-		for _, label := range combination {
-			labelSet[label[0]] = label[1]
+		for _, l := range c {
+			labelSet[l[0]] = l[1]
 		}
 		resultPrometheusLabels = append(resultPrometheusLabels, labelSet)
 	}
 	return resultPrometheusLabels
 }
 
-func setDefaultCounterWithLabels(cv *prometheus.CounterVec, lc []prometheus.Labels) {
-	for _, c := range lc {
+func setDefaultCounterWithLabels(cv *prometheus.CounterVec, l []prometheus.Labels) {
+	for _, c := range l {
 		cv.With(c).Add(0)
 	}
 }
@@ -63,14 +86,14 @@ func setDefaultCounterWithLabels(cv *prometheus.CounterVec, lc []prometheus.Labe
 // Based on the combinations returned by generateCombinations, it will set each counter value to 0.
 // If a nil counter is returned during registeration, the method will
 // panic
-func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, boundedLabels []BoundedLabel) *prometheus.CounterVec {
-	labels := getLabelNames(boundedLabels)
+func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, bl []BoundedLabel) *prometheus.CounterVec {
+	labels := getLabelNames(bl)
 	v := prometheus.NewCounterVec(opts, labels)
 	gv, err := registerCounterVec(r, v)
 	if err != nil {
 		panic(fmt.Sprintf("failed to register CounterVec. error: %v", err))
 	}
-	combinations := getLabelCombinations(boundedLabels)
+	combinations := getLabelCombinations(bl)
 	setDefaultCounterWithLabels(gv, combinations)
 	return gv
 }
