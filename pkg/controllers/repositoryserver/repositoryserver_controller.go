@@ -16,6 +16,7 @@ package repositoryserver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -76,6 +77,8 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	logger.WithValues("Name", repositoryServer.Name).WithValues("Namespace",repositoryServer.Namespace)
+
 	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
 
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
@@ -85,6 +88,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("Create or update owned resources")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
@@ -94,6 +98,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
@@ -101,6 +106,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("Start Repository Server")	
 	if err := repoServerHandler.startRepoProxyServer(ctx); err != nil {
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
@@ -108,6 +114,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("Add/Update users")	
 	if err := repoServerHandler.createOrUpdateClientUsers(ctx); err != nil {
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
@@ -115,6 +122,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("Refresh Server")
 	if err := repoServerHandler.refreshServer(ctx); err != nil {
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
