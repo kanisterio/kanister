@@ -1,11 +1,11 @@
 package metrics
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	. "gopkg.in/check.v1"
 )
 
@@ -68,7 +68,6 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 	boundedLabels = make([]BoundedLabel, 0)
 	expectedPrometheusLabels = []prometheus.Labels{}
 	receivedCombinations = getLabelCombinations(boundedLabels)
-	fmt.Printf("receivedCombinations: %v\n", receivedCombinations)
 	isEqual = reflect.DeepEqual(receivedCombinations, expectedPrometheusLabels)
 	c.Assert(isEqual, Equals, true)
 
@@ -82,4 +81,27 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 	receivedCombinations = getLabelCombinations(boundedLabels)
 	isEqual = reflect.DeepEqual(receivedCombinations, expectedPrometheusLabels)
 	c.Assert(isEqual, Equals, true)
+}
+
+func (m *MetricsSuite) TestInitCounterVec(c *C) {
+	boundedLabels := make([]BoundedLabel, 2)
+	boundedLabels[0] = BoundedLabel{LabelName: "operation_type", LabelValues: []string{"backup", "restore"}}
+	boundedLabels[1] = BoundedLabel{LabelName: "resolution", LabelValues: []string{"success", "failure"}}
+	actionSetCounterOpts := prometheus.CounterOpts{
+		Name: "action_set_resolutions_total",
+		Help: "Total number of action set resolutions",
+	}
+	actionSetCounterVec := InitCounterVec(prometheus.DefaultRegisterer, actionSetCounterOpts, boundedLabels)
+	c.Assert(float64(0), Equals, testutil.ToFloat64(actionSetCounterVec.WithLabelValues("backup", "success")))
+	c.Assert(float64(0), Equals, testutil.ToFloat64(actionSetCounterVec.WithLabelValues("backup", "failure")))
+	c.Assert(float64(0), Equals, testutil.ToFloat64(actionSetCounterVec.WithLabelValues("restore", "success")))
+	c.Assert(float64(0), Equals, testutil.ToFloat64(actionSetCounterVec.WithLabelValues("restore", "failure")))
+
+	actionSetCounterVec.WithLabelValues("backup", "success").Inc()
+
+	actionSetCounterVec = InitCounterVec(prometheus.DefaultRegisterer, actionSetCounterOpts, boundedLabels)
+	c.Assert(float64(1), Equals, testutil.ToFloat64(actionSetCounterVec.WithLabelValues("backup", "success")))
+	c.Assert(float64(0), Equals, testutil.ToFloat64(actionSetCounterVec.WithLabelValues("backup", "failure")))
+	c.Assert(float64(0), Equals, testutil.ToFloat64(actionSetCounterVec.WithLabelValues("restore", "success")))
+	c.Assert(float64(0), Equals, testutil.ToFloat64(actionSetCounterVec.WithLabelValues("restore", "failure")))
 }

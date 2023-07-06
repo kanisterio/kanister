@@ -65,7 +65,6 @@ func setDefaultCounterWithLabels(cv *prometheus.CounterVec, lc []prometheus.Labe
 // panic
 func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, boundedLabels []BoundedLabel) *prometheus.CounterVec {
 	labels := getLabelNames(boundedLabels)
-	//nameValueMapping := getLabelNameValueMapping(boundedLabels)
 	v := prometheus.NewCounterVec(opts, labels)
 	gv, err := registerCounterVec(r, v)
 	if err != nil {
