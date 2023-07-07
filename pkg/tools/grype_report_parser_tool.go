@@ -25,7 +25,7 @@ type fixVersionsResponse struct {
 }
 
 type vulnerabilityReport struct {
-	ID          string              `json: id`
+	ID          string              `json:"id"`
 	Severity    string              `json:"severity"`
 	Namespace   string              `json:"namespace"`
 	Description string              `json:"description"`
@@ -77,7 +77,7 @@ func parseVulerabilitiesReport(filePath string, severityLevels []string) ([]vuln
 // printResult Displays the filtered list of vulnerability reports to stdout
 func printResult(mv []vulnerabilityReport) {
 	for _, vulnerability := range mv {
-		fmt.Printf("Id: %s\n", vulnerability.ID)
+		fmt.Printf("ID: %s\n", vulnerability.ID)
 		fmt.Printf("Severity: %s\n", vulnerability.Severity)
 		fmt.Printf("Namespace: %s\n", vulnerability.Namespace)
 		fmt.Printf("Description: %s\n", vulnerability.Description)
