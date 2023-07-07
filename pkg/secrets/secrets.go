@@ -61,7 +61,7 @@ func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
 	case reposerver.LocTypeS3:
 		return reposerver.NewAWSLocation(secret), nil
 	case reposerver.LocTypes3Compliant:
-		return reposerver.NewAWSLocation(secret), nil
+		return reposerver.NewS3CompliantLocation(secret), nil
 	case reposerver.LocTypeAzure:
 		return reposerver.NewAzureLocation(secret), nil
 	case reposerver.LocTypeGCS:
