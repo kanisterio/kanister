@@ -23,16 +23,18 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
-func (s *RepoServerControllerSuite) TestSuccessfulFetchSecretsForRepositoryServer(c *C) {
+func (s *RepoServerControllerSuite) TestFetchSecretsForRepositoryServer(c *C) {
 	// Test getSecretsFromCR is successfull
 	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
+
 	repoServerHandler := RepoServerHandler{
 		Req:              reconcile.Request{},
 		Reconciler:       s.DefaultRepoServerReconciler,
 		KubeCli:          s.kubeCli,
 		RepositoryServer: repositoryServer,
 	}
+
 	err := repoServerHandler.getSecretsFromCR(context.Background())
 	c.Assert(err, IsNil)
 	c.Assert(repoServerHandler.RepositoryServerSecrets, NotNil)
@@ -40,6 +42,7 @@ func (s *RepoServerControllerSuite) TestSuccessfulFetchSecretsForRepositoryServe
 
 	// Test getSecretsFromCR is unsuccesful when one of the secrets does not exist in the namespace
 	repositoryServer.Spec.Storage.SecretRef.Name = "SecretDoesNotExist"
+
 	err = repoServerHandler.getSecretsFromCR(context.Background())
 	c.Assert(err, NotNil)
 	c.Assert(repoServerHandler.RepositoryServerSecrets, IsNil)

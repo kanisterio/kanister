@@ -26,7 +26,9 @@ import (
 func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
+
 	defaultcontentCacheMB, defaultmetadataCacheMB := command.GetGeneralCacheSizeSettings()
+
 	repoServerHandler := RepoServerHandler{
 		Req:              reconcile.Request{},
 		Reconciler:       s.DefaultRepoServerReconciler,
