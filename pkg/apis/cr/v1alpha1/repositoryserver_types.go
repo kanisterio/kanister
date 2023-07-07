@@ -33,7 +33,7 @@ type RepositoryServer struct {
 	// It has all the details required to start the kopia repository server
 	Spec RepositoryServerSpec `json:"spec"`
 	// Status refers to the current status of the repository server.
-	Status RepositoryServerStatus `json:"status"`
+	Status RepositoryServerStatus `json:"status,omitempty"`
 }
 
 // RepositoryServerSpec is the specification for the RepositoryServer
@@ -55,7 +55,6 @@ type RepositoryServerSpec struct {
 type Storage struct {
 	// SecretRef has the details of the object storage (location)
 	// where the kopia would backup the data
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
 	SecretRef corev1.SecretReference `json:"secretRef"`
 	// CredentialSecretRef stores the credentials required
@@ -69,17 +68,16 @@ type Repository struct {
 	// Path for the repository, it will be a relative sub path
 	// within the path prefix specified in the location
 	// More info: https://kopia.io/docs/reference/command-line/common/#commands-to-manipulate-repository
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
 	RootPath string `json:"rootPath"`
 	// If specified, these values will be used by the controller to
 	// override default username when connecting to the
 	// repository from the server.
-	Username string `json:"username"`
+	Username string `json:"username,omitempty"`
 	// If specified, these values will be used by the controller to
 	// override default hostname when connecting to the
 	// repository from the server.
-	Hostname string `json:"hostname"`
+	Hostname string `json:"hostname,omitempty"`
 	// PasswordSecretRef has the password required to connect to kopia repository
 	PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef"`
 	CacheSizeSettings CacheSizeSettings      `json:"cacheSizeSettings,omitempty"`
@@ -99,12 +97,10 @@ type Server struct {
 	UserAccess UserAccess `json:"userAccess"`
 	// AdminSecretRef has the username and password required to start the
 	// kopia repository server
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
 	AdminSecretRef corev1.SecretReference `json:"adminSecretRef"`
 	// TLSSecretRef has the certificates required for kopia repository
 	// client server connection
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
 	TLSSecretRef corev1.SecretReference `json:"tlsSecretRef"`
 }
@@ -121,48 +117,44 @@ type UserAccess struct {
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
 type RepositoryServerStatus struct {
-	Conditions []Condition              `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Conditions []metav1.Condition       `json:"conditions,omitempty"`
 	ServerInfo ServerInfo               `json:"serverInfo,omitempty"`
-	Progress   RepositoryServerProgress `json:"progress"`
+	Progress   RepositoryServerProgress `json:"progress,omitempty"`
 }
-
-// Condition contains details of the current state of the RepositoryServer resource
-type Condition struct {
-	LastTransitionTime metav1.Time                   `json:"lastTransitionTime,omitempty"`
-	LastUpdateTime     metav1.Condition              `json:"lastUpdateTime,omitempty"`
-	Status             metav1.ConditionStatus        `json:"status"`
-	Type               RepositoryServerConditionType `json:"type"`
-}
-
-// RepositoryServerConditionType defines all the various condition types of the RepositoryServer resource
-type RepositoryServerConditionType string
 
 const (
+
+	// ServerSetup indicates whether the repository pod and service have been
+	ServerSetup string = "ServerSetup"
+
+	// RepositoryConnected indicates whether the existing repository is connected and ready to use
+	RepositoryConnected string = "RepositoryConnected"
+
 	// RepositoryReady indicates whether the existing repository is connected and ready to use
-	RepositoryReady RepositoryServerConditionType = "RepositoryReady"
+	RepositoryReady string = "RepositoryReady"
 
 	// ServerInitialized means that the proxy server, that serves the repository, has been started
-	ServerInitialized RepositoryServerConditionType = "ServerInitialized"
+	ServerInitialized string = "ServerInitialized"
 
-	// ClientsInitialized indicates that the client users have been added or updated to the repository server
-	ClientsInitialized RepositoryServerConditionType = "ClientsInitialized"
+	// ClientUserInitialized indicates that the client users have been added or updated to the repository server
+	ClientUserInitialized string = "ClientUserInitialized"
 
 	// ServerRefreshed denotes the refreshed condition of the repository server in order to register client users
-	ServerRefreshed RepositoryServerConditionType = "ServerRefreshed"
+	ServerRefreshed string = "ServerRefreshed"
 )
 
 // RepositoryServerProgress is the field users would check to know the state of RepositoryServer
 type RepositoryServerProgress string
 
 const (
-	// ServerReady represents the ready state of the repository server and the pod which runs the proxy server
-	ServerReady RepositoryServerProgress = "ServerReady"
+	// Ready represents the ready state of the repository server
+	Ready RepositoryServerProgress = "Ready"
 
-	// ServerStopped represents the terminated state of the repository server pod due to any unforeseen errors
-	ServerStopped RepositoryServerProgress = "ServerStopped"
+	// Failed represents the terminated state of the repository server CR due to any unforeseen errors
+	Failed RepositoryServerProgress = "Failed"
 
-	// ServerPending indicates the pending state of the RepositoryServer CR when Reconcile callback is in progress
-	ServerPending RepositoryServerProgress = "ServerPending"
+	// Pending indicates the pending state of the RepositoryServer CR when Reconcile callback is in progress
+	Pending RepositoryServerProgress = "Pending"
 )
 
 // ServerInfo describes all the information required by the client users to connect to the repository server
