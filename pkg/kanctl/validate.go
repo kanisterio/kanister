@@ -15,8 +15,6 @@
 package kanctl
 
 import (
-	"context"
-
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -57,7 +55,6 @@ func newValidateCommand() *cobra.Command {
 }
 
 func performValidation(cmd *cobra.Command, args []string) error {
-	var ctx context.Context
 	p, err := extractValidateParams(cmd, args)
 	if err != nil {
 		return err
