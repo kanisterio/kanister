@@ -35,9 +35,10 @@ var _ = Suite(&SecretUtilsSuite{})
 
 func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 	for i, tc := range []struct {
-		secret        *v1.Secret
-		errChecker    Checker
-		expectedError error
+		secret                *v1.Secret
+		errChecker            Checker
+		locationSecretChecker Checker
+		expectedError         error
 	}{
 		{ // Valid secret type
 			secret: &v1.Secret{
@@ -46,8 +47,9 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					reposerver.TypeKey: []byte(reposerver.LocTypeGCS),
 				},
 			},
-			errChecker:    IsNil,
-			expectedError: nil,
+			errChecker:            IsNil,
+			locationSecretChecker: NotNil,
+			expectedError:         nil,
 		},
 		{ // Valid secret type
 			secret: &v1.Secret{
@@ -56,8 +58,9 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					reposerver.TypeKey: []byte(reposerver.LocTypeAzure),
 				},
 			},
-			errChecker:    IsNil,
-			expectedError: nil,
+			errChecker:            IsNil,
+			locationSecretChecker: NotNil,
+			expectedError:         nil,
 		},
 		{ // Valid secret type
 			secret: &v1.Secret{
@@ -66,8 +69,9 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					reposerver.TypeKey: []byte(reposerver.LocTypeS3),
 				},
 			},
-			errChecker:    IsNil,
-			expectedError: nil,
+			errChecker:            IsNil,
+			locationSecretChecker: NotNil,
+			expectedError:         nil,
 		},
 		{ // Valid secret type
 			secret: &v1.Secret{
@@ -76,8 +80,9 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					reposerver.TypeKey: []byte(reposerver.LocTypeFilestore),
 				},
 			},
-			errChecker:    IsNil,
-			expectedError: nil,
+			errChecker:            IsNil,
+			locationSecretChecker: NotNil,
+			expectedError:         nil,
 		},
 		{ // Missing location type
 			secret: &v1.Secret{
@@ -87,8 +92,9 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					Namespace: "ns",
 				},
 			},
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, "ns", "sec"),
+			errChecker:            NotNil,
+			locationSecretChecker: IsNil,
+			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, "ns", "sec"),
 		},
 		{ // Unsupported location type
 			secret: &v1.Secret{
@@ -101,15 +107,14 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					reposerver.TypeKey: []byte("invalid"),
 				},
 			},
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, "invalid", "ns", "sec"),
+			errChecker:            NotNil,
+			locationSecretChecker: IsNil,
+			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, "invalid", "ns", "sec"),
 		},
 	} {
 		rsecret, err := getLocationSecret(tc.secret)
 		c.Check(err, tc.errChecker)
-		if err == nil {
-			c.Check(rsecret, NotNil)
-		}
+		c.Check(rsecret, tc.locationSecretChecker)
 		if err != nil {
 			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
 		}
