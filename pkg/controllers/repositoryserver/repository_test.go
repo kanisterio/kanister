@@ -69,5 +69,4 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(contentCacheMB, Equals, 1100)
 	c.Assert(metadataCacheMB, Equals, defaultmetadataCacheMB)
-
 }
