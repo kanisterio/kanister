@@ -15,9 +15,10 @@
 package repositoryserver
 
 import (
-	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 type s3Compliant struct {
