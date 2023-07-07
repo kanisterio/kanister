@@ -40,6 +40,9 @@ func (s s3Compliant) Validate() error {
 	if len(s.storageLocation.Data) == 0 {
 		return errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, s.storageLocation.Namespace, s.storageLocation.Name)
 	}
+	if _, ok := s.storageLocation.Data[BucketKey]; !ok {
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, s.storageLocation.Namespace, s.storageLocation.Name)
+	}
 	if _, ok := s.storageLocation.Data[EndpointKey]; !ok {
 		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, EndpointKey, s.storageLocation.Namespace, s.storageLocation.Name)
 	}
