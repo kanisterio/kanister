@@ -14,7 +14,7 @@ func Test(t *testing.T) { TestingT(t) }
 
 var _ = Suite(&VulnerabilityParserSuite{})
 
-func (v *VulnerabilityParserSuite) TestNotExistentResult(c *C) {
+func (v *VulnerabilityParserSuite) TestNonExistentResult(c *C) {
 	severityLevels := []string{"High", "Critical"}
 	matchingVulnerabilities, err := parseVulerabilitiesReport("mock_data/result_non_existent.json", severityLevels)
 	c.Assert(len(matchingVulnerabilities), Equals, 0)
@@ -48,7 +48,7 @@ func (v *VulnerabilityParserSuite) TestValidJsonForMatchingVulerabilities(c *C) 
 	c.Assert(len(matchingVulnerabilities), Equals, 2)
 	c.Assert(err, IsNil)
 	for index, vulnerability := range matchingVulnerabilities {
-		c.Assert(vulnerability.Id, Equals, expectedIds[index])
+		c.Assert(vulnerability.ID, Equals, expectedIds[index])
 		c.Assert(vulnerability.Severity, Equals, severityLevels[index])
 	}
 }

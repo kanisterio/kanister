@@ -25,14 +25,14 @@ type fixVersionsResponse struct {
 }
 
 type vulnerabilityReport struct {
-	Id          string              `json: id`
+	ID          string              `json: id`
 	Severity    string              `json:"severity"`
 	Namespace   string              `json:"namespace"`
 	Description string              `json:"description"`
 	FixVersions fixVersionsResponse `json:"fix"`
 }
 
-// filterVulnerabilityReportMatches filters vulnerabilites based on the severity levels set in severityTypeSet
+// filterVulnerabilityReportMatches filters vulnerabilities based on the severity levels set in severityTypeSet
 func filterVulnerabilityReportMatches(matches []matchResponse, severityTypeSet map[string]bool) ([]vulnerabilityReport, error) {
 	mv := make([]vulnerabilityReport, 0)
 	for _, m := range matches {
@@ -49,7 +49,7 @@ func decodeVulnerabilityReports(v vulnerabilityScannerResponse, severityTypeSet 
 	var mr []matchResponse
 	mv := make([]vulnerabilityReport, 0)
 	if err := json.Unmarshal(v.Matches, &mr); err != nil {
-		return mv, fmt.Errorf("error while unmarshaling matches with error: %v", err)
+		return mv, fmt.Errorf("failed to unmarshal matches: %v", err)
 	}
 	return filterVulnerabilityReportMatches(mr, severityTypeSet)
 }
@@ -60,12 +60,12 @@ func parseVulerabilitiesReport(filePath string, severityLevels []string) ([]vuln
 	mv := make([]vulnerabilityReport, 0)
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return mv, fmt.Errorf("error while parsing file at path %s with error %v", filePath, err)
+		return mv, fmt.Errorf("failed to read file at path %s: %v", filePath, err)
 	}
 	var response vulnerabilityScannerResponse
 
 	if err = json.Unmarshal(data, &response); err != nil {
-		return mv, fmt.Errorf("error while parsing file at path %s with error %v", filePath, err)
+		return mv, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 	severityTypeSet := make(map[string]bool)
 	for _, severityLevel := range severityLevels {
@@ -77,7 +77,7 @@ func parseVulerabilitiesReport(filePath string, severityLevels []string) ([]vuln
 // printResult Displays the filtered list of vulnerability reports to stdout
 func printResult(mv []vulnerabilityReport) {
 	for _, vulnerability := range mv {
-		fmt.Printf("Id: %s\n", vulnerability.Id)
+		fmt.Printf("Id: %s\n", vulnerability.ID)
 		fmt.Printf("Severity: %s\n", vulnerability.Severity)
 		fmt.Printf("Namespace: %s\n", vulnerability.Namespace)
 		fmt.Printf("Description: %s\n", vulnerability.Description)
@@ -88,7 +88,7 @@ func printResult(mv []vulnerabilityReport) {
 
 func main() {
 	validSeverityLevels := []string{"Negliable", "Low", "Medium", "High", "Critical"}
-	severityInputList := flag.String("sl", "High,Critical", "Comma separated list of severity levels to scan. Valid severity levels are: "+strings.Join(validSeverityLevels, ","))
+	severityInputList := flag.String("s", "High,Critical", "Comma separated list of severity levels to scan. Valid severity levels are: "+strings.Join(validSeverityLevels, ","))
 	reportJsonFilePath := flag.String("p", "", "Path to the JSON file containing the vulnerabilities report")
 	flag.Parse()
 
@@ -100,7 +100,7 @@ func main() {
 	severityLevels := strings.Split(*severityInputList, ",")
 	mv, err := parseVulerabilitiesReport(*reportJsonFilePath, severityLevels)
 	if err != nil {
-		fmt.Printf("Found an error: %v\n", err)
+		fmt.Printf("Failed to parse vulnerabilities report: %v\n", err)
 		os.Exit(1)
 	}
 	fmt.Printf("Found %d vulnerabilities\n", len(mv))
