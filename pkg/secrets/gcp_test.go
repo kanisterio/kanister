@@ -51,7 +51,7 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 			errChecker:  IsNil,
 			expectedErr: nil,
 		},
-		{ // Incomatible secret type
+		{ // Incompatible secret type
 			secret: &v1.Secret{
 				Type: v1.SecretType(AWSSecretType),
 				ObjectMeta: metav1.ObjectMeta{
