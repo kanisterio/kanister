@@ -15,10 +15,22 @@
 package datamover
 
 import (
+	"context"
+	"github.com/kanisterio/kanister/pkg/kube"
 	. "gopkg.in/check.v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
-type RepositoryServerSuite struct{}
+type RepositoryServerSuite struct {
+	namespace  *corev1.Namespace
+	pod        *corev1.Pod
+	ctx        context.Context
+	cli        kubernetes.Interface
+	s3Creds    *corev1.Secret
+	s3Location *corev1.Secret
+	tlsSecret  *corev1.Secret
+}
 
 var _ = Suite(&RepositoryServerSuite{})
 
@@ -31,4 +43,42 @@ func (rss *RepositoryServerSuite) TestRepositoryServerImplementsDataMover(c *C) 
 	dm = &rs
 	_, ok = dm.(DataMover)
 	c.Assert(ok, Equals, true)
+}
+
+func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
+	// Set Context as Background
+	rss.ctx = context.Background()
+
+	// Get Kubernetes Client
+	cli, err := newTestClient()
+	c.Assert(err, IsNil)
+	rss.cli = cli
+
+	// Create Test Namespace
+	rss.namespace, err = createRepositoryServerTestNamespace(rss.ctx, rss.cli)
+	c.Assert(err, IsNil)
+
+	// Create Test Pod
+	rss.pod, err = createRepositoryServerTestPod(rss.ctx, rss.cli, rss.namespace.GetName())
+	c.Assert(err, IsNil)
+
+	// Wait for Test Pod to get Ready
+	c.Assert(kube.WaitForPodReady(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod.Name), IsNil)
+
+	// Create Test Service
+	_, err = createRepositoryServerTestService(rss.ctx, rss.cli, rss.namespace.GetName())
+	c.Assert(err, IsNil)
+
+	// Configure and Create Test S3 Credential and Location Secrets
+	rss.s3Creds, rss.s3Location, err = testS3CredsLocationSecret(rss.ctx, rss.cli, rss.namespace.GetName())
+	c.Assert(err, IsNil)
+
+	// Configure and Create Test TLS Certificate Secret
+	rss.tlsSecret, err = testKopiaTLSCertificate(rss.ctx, rss.cli, rss.namespace.GetName())
+	c.Assert(err, IsNil)
+
+	// Configure and Create Kopia Repository
+	err = createTestKopiaRepository(rss.s3Location, rss.cli, rss.namespace.GetName(), rss.pod)
+	c.Assert(err, IsNil)
+
 }
