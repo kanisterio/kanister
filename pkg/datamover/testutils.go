@@ -26,6 +26,9 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/format"
+	"github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -40,20 +43,28 @@ import (
 )
 
 const (
-	repositoryServerTestNamespace  = "repository-server-test-namespace-"
-	repositoryServerTestPod        = "repository-server-test-pod-"
-	repositoryServerTestService    = "repository-server-test-service-"
-	kanisterToolsImage             = "ghcr.io/kanisterio/kanister-tools:0.93.0"
-	kanisterToolsImageEnvName      = "KANISTER_TOOLS"
-	testAwsAccessKeyId             = "AKIAIOSFODNN7EXAMPLE"
-	testAwsAccessSecretKey         = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-	testAwsRegion                  = "us-west-2"
-	testAwsLocationEndpoint        = "http://minio.minio.svc.cluster.local:9000"
-	testAwsS3BucketName            = "tests.kanister.io"
-	defaultKopiaRepositoryPassword = "test1234"
-	defaultKopiaRepositoryUser     = "repositoryuser"
-	defaultKopiaRepositoryPath     = "repository-server-test"
-	defaultKopiaRepositoryHost     = "localhost"
+	clusterLocalDomain               = "svc.cluster.local"
+	repositoryServerTestNamespace    = "repository-server-test-namespace-"
+	repositoryServerTestPod          = "repository-server-test-pod-"
+	repositoryServerTestService      = "repository-server-test-service-"
+	kanisterToolsImage               = "ghcr.io/kanisterio/kanister-tools:0.93.0"
+	kanisterToolsImageEnvName        = "KANISTER_TOOLS"
+	testAwsAccessKeyId               = "AKIAIOSFODNN7EXAMPLE"
+	testAwsAccessSecretKey           = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	testAwsRegion                    = "us-west-2"
+	testAwsLocationEndpoint          = "http://minio.minio.svc.cluster.local:9000"
+	testAwsS3BucketName              = "tests.kanister.io"
+	defaultKopiaRepositoryPassword   = "test1234"
+	defaultKopiaRepositoryUser       = "repositoryuser"
+	defaultKopiaRepositoryPath       = "repository-server-test"
+	defaultKopiaRepositoryHost       = "localhost"
+	defaultServerStartTimeout        = 10 * time.Minute
+	testRepoServerName               = "test-repo-server"
+	testKopiaRepoServerAdminUsername = "testadmin@localhost"
+	testKopiaRepoServerUsername      = "testinguser"
+	testKopiaRepoServerAdminPassword = "testpass1234"
+	testTLSKeyPath                   = "/tmp/tls/tls.key"
+	testTLSCertPath                  = "/tmp/tls/tls.crt"
 )
 
 func newTestClient() (*kubernetes.Clientset, error) {
@@ -70,32 +81,6 @@ func newTestClient() (*kubernetes.Clientset, error) {
 	_, err = crclient.NewForConfig(cfg)
 
 	return testClient, nil
-}
-
-func createTestKopiaRepository(location *corev1.Secret, cli kubernetes.Interface, namespace string, pod *corev1.Pod) error {
-	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
-	args := kopiacmd.RepositoryCommandArgs{
-		CommandArgs: &kopiacmd.CommandArgs{
-			RepoPassword:   defaultKopiaRepositoryPassword,
-			ConfigFilePath: kopiacmd.DefaultConfigFilePath,
-			LogDirectory:   kopiacmd.DefaultLogDirectory,
-		},
-		CacheDirectory:  kopiacmd.DefaultCacheDirectory,
-		Hostname:        defaultKopiaRepositoryHost,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
-		Username:        defaultKopiaRepositoryUser,
-		RepoPathPrefix:  defaultKopiaRepositoryPath,
-		Location:        location.Data,
-	}
-
-	return repository.ConnectToOrCreateKopiaRepository(
-		cli,
-		namespace,
-		pod.GetName(),
-		pod.Spec.Containers[0].Name,
-		args,
-	)
 }
 
 func createRepositoryServerTestNamespace(ctx context.Context, cli kubernetes.Interface) (*corev1.Namespace, error) {
@@ -118,7 +103,7 @@ func getKanisterToolsImage() string {
 	return kanisterToolsImage
 }
 
-func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Pod, error) {
+func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface, namespace string, secret *corev1.Secret) (*corev1.Pod, error) {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: repositoryServerTestPod,
@@ -151,6 +136,23 @@ func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface
 						{
 							Name:  "LOCATION_ENDPOINT",
 							Value: testAwsLocationEndpoint,
+						},
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      "tls-certs",
+							MountPath: "/tmp/tls/",
+							ReadOnly:  true,
+						},
+					},
+				},
+			},
+			Volumes: []corev1.Volume{
+				{
+					Name: "tls-certs",
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: secret.GetName(),
 						},
 					},
 				},
@@ -294,4 +296,154 @@ func testKopiaTLSCertificate(ctx context.Context, cli kubernetes.Interface, name
 	}
 
 	return tlsCreated, nil
+}
+
+func testKopiaRepositoryServerUserAccess(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, error) {
+	userAccess := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-repository-server-user-access-",
+		},
+		Data: map[string][]byte{
+			defaultKopiaRepositoryHost: []byte(testKopiaRepoServerAdminPassword),
+		},
+	}
+
+	userAccessCreated, err := cli.CoreV1().Secrets(namespace).Create(ctx, userAccess, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return userAccessCreated, nil
+}
+
+func createTestKopiaRepository(location *corev1.Secret, cli kubernetes.Interface, namespace string, pod *corev1.Pod) error {
+	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
+	args := kopiacmd.RepositoryCommandArgs{
+		CommandArgs: &kopiacmd.CommandArgs{
+			RepoPassword:   defaultKopiaRepositoryPassword,
+			ConfigFilePath: kopiacmd.DefaultConfigFilePath,
+			LogDirectory:   kopiacmd.DefaultLogDirectory,
+		},
+		CacheDirectory:  kopiacmd.DefaultCacheDirectory,
+		Hostname:        defaultKopiaRepositoryHost,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
+		Username:        defaultKopiaRepositoryUser,
+		RepoPathPrefix:  defaultKopiaRepositoryPath,
+		Location:        location.Data,
+	}
+
+	return repository.ConnectToOrCreateKopiaRepository(
+		cli,
+		namespace,
+		pod.GetName(),
+		pod.Spec.Containers[0].Name,
+		args,
+	)
+}
+
+func startTestKopiaRepositoryServer(cli kubernetes.Interface, namespace string, pod *corev1.Pod) error {
+	cmd := kopiacmd.ServerStart(
+		kopiacmd.ServerStartCommandArgs{
+			CommandArgs: &kopiacmd.CommandArgs{
+				RepoPassword:   "",
+				ConfigFilePath: kopiacmd.DefaultConfigFilePath,
+				LogDirectory:   kopiacmd.DefaultLogDirectory,
+			},
+			ServerAddress:    "https://0.0.0.0:51515",
+			TLSCertFile:      testTLSCertPath,
+			TLSKeyFile:       testTLSKeyPath,
+			ServerUsername:   testKopiaRepoServerAdminUsername,
+			ServerPassword:   testKopiaRepoServerAdminPassword,
+			AutoGenerateCert: false,
+			Background:       true,
+		})
+
+	stdout, stderr, err := kube.Exec(cli, namespace, pod.GetName(), pod.Spec.Containers[0].Name, cmd, nil)
+	format.Log(pod.GetName(), pod.Spec.Containers[0].Name, stdout)
+	format.Log(pod.GetName(), pod.Spec.Containers[0].Name, stderr)
+	if err != nil {
+		return errors.Wrap(err, "Failed to start Kopia API server")
+	}
+	return nil
+}
+
+func getServerStatusCommand(ctx context.Context, cli kubernetes.Interface, namespace string, tlsSecret *corev1.Secret) ([]string, error) {
+	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, cli, tlsSecret.GetName(), namespace)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Extracting Fingerprint from the TLS Certificates")
+	}
+
+	cmd := kopiacmd.ServerStatus(
+		kopiacmd.ServerStatusCommandArgs{
+			CommandArgs: &kopiacmd.CommandArgs{
+				RepoPassword:   "",
+				ConfigFilePath: kopiacmd.DefaultConfigFilePath,
+				LogDirectory:   kopiacmd.DefaultLogDirectory,
+			},
+			ServerAddress:  "https://0.0.0.0:51515",
+			ServerUsername: testKopiaRepoServerAdminUsername,
+			ServerPassword: testKopiaRepoServerAdminPassword,
+			Fingerprint:    fingerprint,
+		})
+	return cmd, nil
+}
+
+func waitForServerReady(ctx context.Context, cli kubernetes.Interface, namespace string, pod *corev1.Pod, tlsSecret *corev1.Secret) error {
+	cmd, err := getServerStatusCommand(ctx, cli, namespace, tlsSecret)
+	if err != nil {
+		return errors.Wrap(err, "Error Getting Server Status Command")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, defaultServerStartTimeout)
+	defer cancel()
+
+	return repositoryserver.WaitTillCommandSucceed(ctx, cli, cmd, namespace, pod.GetName(), pod.Spec.Containers[0].Name)
+}
+
+func addTestUserInKopiaRepositoryServer(cli kubernetes.Interface, namespace string, pod *corev1.Pod) error {
+	testUser := fmt.Sprintf("%s@%s", testKopiaRepoServerUsername, defaultKopiaRepositoryHost)
+	cmd := kopiacmd.ServerAddUser(
+		kopiacmd.ServerAddUserCommandArgs{
+			CommandArgs: &kopiacmd.CommandArgs{
+				RepoPassword:   defaultKopiaRepositoryPassword,
+				ConfigFilePath: kopiacmd.DefaultConfigFilePath,
+				LogDirectory:   kopiacmd.DefaultLogDirectory,
+			},
+			NewUsername:  testUser,
+			UserPassword: testKopiaRepoServerAdminPassword,
+		})
+	stdout, stderr, err := kube.Exec(cli, namespace, pod.GetName(), pod.Spec.Containers[0].Name, cmd, nil)
+	format.Log(pod.GetName(), pod.Spec.Containers[0].Name, stdout)
+	format.Log(pod.GetName(), pod.Spec.Containers[0].Name, stderr)
+	if err != nil {
+		return errors.Wrap(err, "Failed to add users in Kopia API server")
+	}
+	return nil
+}
+
+func refreshTestKopiaRepositoryServer(ctx context.Context, cli kubernetes.Interface, namespace string, pod *corev1.Pod, tlsSecret *corev1.Secret) error {
+	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, cli, tlsSecret.GetName(), namespace)
+	if err != nil {
+		return errors.Wrap(err, "Error Extracting Fingerprint from the TLS Certificates")
+	}
+
+	cmd := kopiacmd.ServerRefresh(
+		kopiacmd.ServerRefreshCommandArgs{
+			CommandArgs: &kopiacmd.CommandArgs{
+				RepoPassword:   defaultKopiaRepositoryPassword,
+				ConfigFilePath: kopiacmd.DefaultConfigFilePath,
+				LogDirectory:   kopiacmd.DefaultLogDirectory,
+			},
+			ServerAddress:  "https://0.0.0.0:51515",
+			ServerUsername: testKopiaRepoServerAdminUsername,
+			ServerPassword: testKopiaRepoServerAdminPassword,
+			Fingerprint:    fingerprint,
+		})
+	stdout, stderr, err := kube.Exec(cli, namespace, pod.GetName(), pod.Spec.Containers[0].Name, cmd, nil)
+	format.Log(pod.GetName(), pod.Spec.Containers[0].Name, stdout)
+	format.Log(pod.GetName(), pod.Spec.Containers[0].Name, stderr)
+	if err != nil {
+		return errors.Wrap(err, "Failed to refresh Kopia API server")
+	}
+	return nil
 }
