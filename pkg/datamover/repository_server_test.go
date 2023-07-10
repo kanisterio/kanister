@@ -18,12 +18,18 @@ import (
 	"context"
 	"fmt"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"os/exec"
 )
 
 type RepositoryServerSuite struct {
@@ -38,6 +44,8 @@ type RepositoryServerSuite struct {
 	userAccessSecret *corev1.Secret
 	repoServer       *param.RepositoryServer
 }
+
+const testContent = "test-content"
 
 var _ = Suite(&RepositoryServerSuite{})
 
@@ -114,6 +122,8 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 
 	// Set Kopia Repo Server Template Param
 	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
+	rss.pod, err = rss.cli.CoreV1().Pods(rss.namespace.GetName()).Get(rss.ctx, rss.pod.GetName(), metav1.GetOptions{})
+	c.Assert(err, IsNil)
 	rss.repoServer = &param.RepositoryServer{
 		Name:      testRepoServerName,
 		Namespace: rss.namespace.GetName(),
@@ -128,6 +138,42 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 		},
 		ContentCacheMB:  contentCacheMB,
 		MetadataCacheMB: metadataCacheMB,
-		Address:         fmt.Sprintf("https://%s.%s.%s:%d", rss.service.GetName(), rss.namespace.GetName(), clusterLocalDomain, rss.service.Spec.Ports[0].Port),
+		Address:         fmt.Sprintf("https://%s:%d", rss.pod.Status.HostIP, rss.service.Spec.Ports[0].NodePort),
 	}
+}
+
+func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer() error {
+	log.Error().Print("<------------- Debug Logs ------------->", field.M{
+		"rss.repoServer": rss.repoServer,
+		"rss.tlsSecret":  rss.tlsSecret,
+	})
+	return repository.ConnectToAPIServer(
+		rss.ctx,
+		string(rss.tlsSecret.Data[kopia.TLSCertificateKey]),
+		testKopiaRepoServerAdminPassword,
+		defaultKopiaRepositoryHost,
+		rss.repoServer.Address,
+		testKopiaRepoServerUsername,
+		rss.repoServer.ContentCacheMB,
+		rss.repoServer.MetadataCacheMB,
+	)
+}
+
+func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServer(c *C) {
+	// Setup Test Data
+	dir := c.MkDir()
+	cmd := exec.Command("touch", fmt.Sprintf("%s/%s", dir, "test.txt"))
+	_, err := cmd.Output()
+	c.Assert(err, IsNil)
+	cmd = exec.Command("echo", testContent, ">>", fmt.Sprintf("%s/%s", dir, "test.txt"))
+	_, err = cmd.Output()
+	c.Assert(err, IsNil)
+
+	// Connect With Test Kopia RepositoryServer
+	err = rss.connectWithTestKopiaRepositoryServer()
+	c.Assert(err, IsNil)
+
+	// Test Kopia Repository Server Location Push
+	err = kopiaLocationPush(rss.ctx, defaultKopiaRepositoryPath, "kandoOutput", dir, testKopiaRepoServerAdminPassword)
+	c.Assert(err, IsNil)
 }

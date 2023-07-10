@@ -35,6 +35,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"math/big"
@@ -43,7 +44,6 @@ import (
 )
 
 const (
-	clusterLocalDomain               = "svc.cluster.local"
 	repositoryServerTestNamespace    = "repository-server-test-namespace-"
 	repositoryServerTestPod          = "repository-server-test-pod-"
 	repositoryServerTestService      = "repository-server-test-service-"
@@ -61,7 +61,7 @@ const (
 	defaultServerStartTimeout        = 10 * time.Minute
 	testRepoServerName               = "test-repo-server"
 	testKopiaRepoServerAdminUsername = "testadmin@localhost"
-	testKopiaRepoServerUsername      = "testinguser"
+	testKopiaRepoServerUsername      = "testuser"
 	testKopiaRepoServerAdminPassword = "testpass1234"
 	testTLSKeyPath                   = "/tmp/tls/tls.key"
 	testTLSCertPath                  = "/tmp/tls/tls.crt"
@@ -108,6 +108,7 @@ func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: repositoryServerTestPod,
 			Namespace:    namespace,
+			Labels:       map[string]string{"app": "test-repo-server"},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
@@ -177,12 +178,15 @@ func createRepositoryServerTestService(ctx context.Context, cli kubernetes.Inter
 			Labels:    map[string]string{"name": name},
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{"name": name},
+			Type:     corev1.ServiceTypeNodePort,
+			Selector: map[string]string{"app": "test-repo-server"},
 			Ports: []corev1.ServicePort{
 				{
-					Name:     "test-repo-server-service-port",
-					Protocol: "TCP",
-					Port:     51515,
+					Name:       "test-repo-server-service-port",
+					Protocol:   "TCP",
+					Port:       51515,
+					NodePort:   31325,
+					TargetPort: intstr.FromInt(51515),
 				},
 			},
 		},
