@@ -367,6 +367,11 @@ func CreateSecret(cli kubernetes.Interface, namespace, name string, secrettype v
 	}
 
 	se, err = cli.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	// Since CLI doesnt return gvk of the object created, setting it manually
+	if err == nil {
+		se.APIVersion = "v1"
+		se.Kind = "Secret"
+	}
 	return
 }
 

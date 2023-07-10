@@ -24,8 +24,10 @@ import (
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -72,9 +74,12 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 
 	s.kubeCli = cli
 	s.crCli = crCli
+	scheme := runtime.NewScheme()
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
+	utilruntime.Must(crv1alpha1.AddToScheme(scheme))
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme.Scheme,
+		Scheme:             scheme,
 		Port:               9443,
 		MetricsBindAddress: "0",
 	})
@@ -148,19 +153,19 @@ func (s *RepoServerControllerSuite) CreateKopiaTLSSecret(data map[string][]byte)
 }
 
 func (s *RepoServerControllerSuite) CreateStorageLocationSecret(data map[string][]byte) (se *v1.Secret, err error) {
-	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-", s.repoServerControllerNamespace, reposerver.Location, data)
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-storage-", reposerver.Location, data)
 }
 
 func (s *RepoServerControllerSuite) CreateAWSStorageCredentialsSecret(data map[string][]byte) (se *v1.Secret, err error) {
-	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, v1.SecretType(secrets.AWSSecretType), data)
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-storage-creds-", v1.SecretType(secrets.AWSSecretType), data)
 }
 
 func (s *RepoServerControllerSuite) CreateAzureStorageCredentialsSecret(data map[string][]byte) (se *v1.Secret, err error) {
-	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, v1.SecretType(secrets.AzureSecretType), data)
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-storage-creds-", v1.SecretType(secrets.AzureSecretType), data)
 }
 
 func (s *RepoServerControllerSuite) CreateGCPStorageCredentialsSecret(data map[string][]byte) (se *v1.Secret, err error) {
-	return testutil.CreateSecret(s.kubeCli, "test-repository-server-storage-creds-", s.repoServerControllerNamespace, v1.SecretType(secrets.GCPSecretType), data)
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-storage-creds-", v1.SecretType(secrets.GCPSecretType), data)
 }
 
 func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {

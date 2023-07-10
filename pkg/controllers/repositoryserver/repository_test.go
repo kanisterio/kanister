@@ -49,8 +49,8 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	}
 	contentCacheMB, metadataCacheMB, err = repoServerHandler.getRepositoryCacheSettings()
 	c.Assert(err, IsNil)
-	c.Assert(contentCacheMB, Equals, 1000)
-	c.Assert(metadataCacheMB, Equals, 1100)
+	c.Assert(contentCacheMB, Equals, 1100)
+	c.Assert(metadataCacheMB, Equals, 1000)
 
 	// Check if default Content Cache size is set
 	repositoryServer.Spec.Repository.CacheSizeSettings = v1alpha1.CacheSizeSettings{
