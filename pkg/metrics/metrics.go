@@ -24,7 +24,7 @@ func getLabelNames(bl []BoundedLabel) []string {
 	return ln
 }
 
-// generateLabelCombinations uses backtracking approach to generate
+// generateLabelCombinations uses a backtracking approach to generate
 // a list of label permutations
 func generateLabelCombinations(bl []BoundedLabel, labelIndex int,
 	workingSlice [][]string, resultCombinations *[][][]string) {
@@ -45,23 +45,23 @@ func generateLabelCombinations(bl []BoundedLabel, labelIndex int,
 
 // getLabelCombinations takes a slice of BoundedLabel elements and
 // returns a list of permutations of possible label permutations.
-/*
-Considering the below example - If we have two BoundedLabel elements:
-BoundedLabel{
-  LabelName: "operation_type"
-  LabelValues: ["backup", "restore"]
-}
-BoundedLabel{
-  LabelName: "action_set_resolution"
-  LabelValues: ["success", "failure"]
-}
-The method generates the permutation list:
-[ {"operation_type": "backup", "action_set_resolution": "success"},
-{"operation_type": "backup", "action_set_resolution": "failure"},
-{"operation_type": "restore", "action_set_resolution": "success"},
-{"operation_type": "restore", "action_set_resolution": "failure"}]
-*/
 func getLabelCombinations(bl []BoundedLabel) []prometheus.Labels {
+	/*
+		Considering the following example - If we have two BoundedLabel elements:
+		BoundedLabel{
+		  LabelName: "operation_type"
+		  LabelValues: ["backup", "restore"]
+		}
+		BoundedLabel{
+		  LabelName: "action_set_resolution"
+		  LabelValues: ["success", "failure"]
+		}
+		The following code generates the permutation list:
+		[ {"operation_type": "backup", "action_set_resolution": "success"},
+		{"operation_type": "backup", "action_set_resolution": "failure"},
+		{"operation_type": "restore", "action_set_resolution": "success"},
+		{"operation_type": "restore", "action_set_resolution": "failure"}]
+	*/
 	resultCombinations := make([][][]string, 0)
 	labelSlice := make([][]string, 0)
 	generateLabelCombinations(bl, 0, labelSlice, &resultCombinations)
