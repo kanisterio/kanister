@@ -241,7 +241,6 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
-
 }
 
 // TestRepositoryServerCRStateWithoutSecrets checks if server creation is failed

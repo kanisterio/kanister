@@ -47,7 +47,6 @@ type RepoServerHandler struct {
 }
 
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
-
 	if err := h.getSecretsFromCR(ctx); err != nil {
 		return errors.Wrap(err, "Failed to get Kopia API server secrets")
 	}
@@ -149,7 +148,7 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create RepositoryServer service")
 	}
-	err = h.Reconciler.Get(ctx, types.NamespacedName{Name: svc.Name, Namespace: repoServerNamespace}, &svc)
+
 	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
 		Factor: 2,
 		Jitter: false,
