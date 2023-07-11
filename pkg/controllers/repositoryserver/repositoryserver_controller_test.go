@@ -209,6 +209,10 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 	// Expect an error.
 	c.Assert(err, NotNil)
 
+	// Check Error Message
+	expectedErrorMessage := fmt.Sprintf("RepositoryServer.cr.kanister.io \"%s\" is invalid: spec.repository.rootPath: Invalid value: \"string\": Value is immutable", repoServerCRCreated.GetName())
+	c.Assert(err.Error(), Equals, expectedErrorMessage)
+
 	// Delete the repository server CR.
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
