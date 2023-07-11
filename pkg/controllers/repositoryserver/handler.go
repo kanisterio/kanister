@@ -146,7 +146,7 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create RepositoryServer service")
 	}
-
+	err = h.Reconciler.Get(ctx, types.NamespacedName{Name: svc.Name, Namespace: repoServerNamespace}, &svc)
 	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
 		Factor: 2,
 		Jitter: false,
@@ -154,6 +154,7 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 		Max:    15 * time.Second,
 	}, func(ctx context.Context) (bool, error) {
 		endpt := corev1.Endpoints{}
+		fmt.Println(svc.Name)
 		err := h.Reconciler.Get(ctx, types.NamespacedName{Name: svc.Name, Namespace: repoServerNamespace}, &endpt)
 		switch {
 		case apierrors.IsNotFound(err):
@@ -222,6 +223,8 @@ func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *c
 
 func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, []corev1.EnvVar, error) {
 	podOverride, err := h.preparePodOverride(ctx)
+	fmt.Println("######pod override error")
+	fmt.Println(err)
 	if err != nil {
 		return nil, nil, err
 	}
