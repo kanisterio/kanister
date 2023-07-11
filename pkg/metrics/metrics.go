@@ -91,7 +91,8 @@ func setDefaultCounterWithLabels(cv *prometheus.CounterVec, l []prometheus.Label
 	}
 }
 
-// InitCounterVec initializes and registers the counter metrics vector.
+// InitCounterVec initializes and registers the counter metrics vector. It takes a list of
+// BoundedLabel objects - if any label value or label name is nil, then this method will panic.
 // Based on the combinations returned by generateCombinations, it will set each counter value to 0.
 // If a nil counter is returned during registeration, the method will
 // panic
@@ -110,7 +111,8 @@ func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, bl []B
 	return gv
 }
 
-// InitGaugeVec initializes the gauge metrics vector.
+// InitGaugeVec initializes the gauge metrics vector. It takes a list of BoundedLabels, but the
+// LabelValue field of each BoundedLabel will be ignored.
 // If a nil counter is returned during registeration, the method will
 // panic
 func InitGaugeVec(r prometheus.Registerer, opts prometheus.GaugeOpts, bl []BoundedLabel) *prometheus.GaugeVec {
@@ -123,7 +125,8 @@ func InitGaugeVec(r prometheus.Registerer, opts prometheus.GaugeOpts, bl []Bound
 	return gv
 }
 
-// InitHistogramVec initializes the histogram metrics vector
+// InitHistogramVec initializes the histogram metrics vector. It takes a list of BoundedLabels, but the
+// LabelValue field of each BoundedLabel will be ignored.
 // If a nil counter is returned during registeration, the method will
 // panic
 func InitHistogramVec(r prometheus.Registerer, opts prometheus.HistogramOpts, bl []BoundedLabel) *prometheus.HistogramVec {
