@@ -16,7 +16,6 @@ package repositoryserver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -77,8 +76,6 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	logger.WithValues("Name", repositoryServer.Name).WithValues("Namespace", repositoryServer.Namespace)
-
 	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
 
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
@@ -106,7 +103,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Start Repository Server")
+	logger.Info("Start Kopia Repository Server")
 	if err := repoServerHandler.startRepoProxyServer(ctx); err != nil {
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
