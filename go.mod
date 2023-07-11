@@ -41,7 +41,7 @@ require (
 	github.com/openshift/api v0.0.0-20230406152840-ce21e3fe5da2
 	github.com/openshift/client-go v0.0.0-20230324103026-3f1513df25e0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.15.1
+	github.com/prometheus/client_golang v1.16.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
 	github.com/vmware/govmomi v0.30.5
@@ -153,7 +153,7 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
-	github.com/prometheus/procfs v0.9.0 // indirect
+	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/rs/xid v1.4.0 // indirect
