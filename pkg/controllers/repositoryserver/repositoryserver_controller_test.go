@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -84,7 +84,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	s.crCli = crCli
 
 	scheme := runtime.NewScheme()
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(k8sscheme.AddToScheme(scheme))
 	utilruntime.Must(crv1alpha1.AddToScheme(scheme))
 
 	ns := &v1.Namespace{
@@ -378,7 +378,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 		return true, nil
 	})
 	if err != nil {
-		return errors.Wrapf(err, "repository server CR not set")
+		return errors.Wrapf(err, "podname and service name are not set on repository server CR")
 	}
 	return err
 }
