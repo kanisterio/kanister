@@ -47,13 +47,16 @@ type RepoServerHandler struct {
 }
 
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
+
+	if err := h.getSecretsFromCR(ctx); err != nil {
+		return errors.Wrap(err, "Failed to get Kopia API server secrets")
+	}
+
 	svc, err := h.reconcileService(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile service")
 	}
-	if err = h.getSecretsFromCR(ctx); err != nil {
-		return errors.Wrap(err, "Failed to get Kopia API server secrets")
-	}
+
 	envVars, pod, err := h.reconcilePod(ctx, svc)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile Kopia API server pod")
@@ -154,7 +157,6 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 		Max:    15 * time.Second,
 	}, func(ctx context.Context) (bool, error) {
 		endpt := corev1.Endpoints{}
-		fmt.Println(svc.Name)
 		err := h.Reconciler.Get(ctx, types.NamespacedName{Name: svc.Name, Namespace: repoServerNamespace}, &endpt)
 		switch {
 		case apierrors.IsNotFound(err):
@@ -223,8 +225,7 @@ func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *c
 
 func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, []corev1.EnvVar, error) {
 	podOverride, err := h.preparePodOverride(ctx)
-	fmt.Println("######pod override error")
-	fmt.Println(err)
+
 	if err != nil {
 		return nil, nil, err
 	}

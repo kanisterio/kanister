@@ -50,6 +50,21 @@ if [ -n "${ERRS}" ]; then
 fi
 echo
 
+check_dependencies() {
+    # Check if minio is already deployed
+    if helm status minio -n minio > /dev/null 2>&1 ; then
+        # Setting env vars to access MinIO
+        export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+        export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        export AWS_REGION="us-west-2"
+        export LOCATION_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
+    else
+        echo "Please install MinIO using 'make install-minio' and try again."
+        exit 1
+    fi
+}
+
+check_dependencies
 echo "Running tests:"
 go test -v -installsuffix "static" -i ${TARGETS}
 go test -v ${TARGETS} -list .

@@ -16,7 +16,6 @@ package repositoryserver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -77,7 +76,6 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err = r.Get(ctx, req.NamespacedName, repositoryServer); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	fmt.Println(repositoryServer)
 
 	logger.Info("Setting the CR status as 'Pending' since a create or update event is in progress")
 	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
@@ -90,7 +88,6 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
-		fmt.Println(err)
 		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
 		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {

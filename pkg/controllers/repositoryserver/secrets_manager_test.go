@@ -15,35 +15,39 @@
 package repositoryserver
 
 import (
+	"context"
+
+	"github.com/kanisterio/kanister/pkg/testutil"
 	. "gopkg.in/check.v1"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func (s *RepoServerControllerSuite) TestFetchSecretsForRepositoryServer(c *C) {
 	// Test getSecretsFromCR is successfull
-	//repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	//setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
-	//
-	//repoServerHandler := RepoServerHandler{
-	//	Req:              reconcile.Request{},
-	//	Reconciler:       s.DefaultRepoServerReconciler,
-	//	KubeCli:          s.kubeCli,
-	//	RepositoryServer: repositoryServer,
-	//}
-	//
-	//err := repoServerHandler.getSecretsFromCR(context.Background())
-	//c.Assert(err, IsNil)
-	//c.Assert(repoServerHandler.RepositoryServerSecrets, NotNil)
-	//c.Assert(repoServerHandler.RepositoryServerSecrets.repositoryPassword, DeepEquals, s.repoServerSecrets.repositoryPassword)
-	//c.Assert(repoServerHandler.RepositoryServerSecrets.storage, DeepEquals, s.repoServerSecrets.storage)
-	//c.Assert(repoServerHandler.RepositoryServerSecrets.storageCredentials, DeepEquals, s.repoServerSecrets.storageCredentials)
-	//c.Assert(repoServerHandler.RepositoryServerSecrets.serverAdmin, DeepEquals, s.repoServerSecrets.serverAdmin)
-	//c.Assert(repoServerHandler.RepositoryServerSecrets.serverTLS, DeepEquals, s.repoServerSecrets.serverTLS)
-	//c.Assert(repoServerHandler.RepositoryServerSecrets.serverUserAccess, DeepEquals, s.repoServerSecrets.serverUserAccess)
-	//
-	//// Test getSecretsFromCR is unsuccesful when one of the secrets does not exist in the namespace
-	//repositoryServer.Spec.Storage.SecretRef.Name = "SecretDoesNotExist"
-	//repoServerHandler.RepositoryServerSecrets = repositoryServerSecrets{}
-	//err = repoServerHandler.getSecretsFromCR(context.Background())
-	//c.Assert(err, NotNil)
-	//c.Assert(repoServerHandler.RepositoryServerSecrets, Equals, repositoryServerSecrets{})
+	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
+
+	repoServerHandler := RepoServerHandler{
+		Req:              reconcile.Request{},
+		Reconciler:       s.DefaultRepoServerReconciler,
+		KubeCli:          s.kubeCli,
+		RepositoryServer: repositoryServer,
+	}
+
+	err := repoServerHandler.getSecretsFromCR(context.Background())
+	c.Assert(err, IsNil)
+	c.Assert(repoServerHandler.RepositoryServerSecrets, NotNil)
+	c.Assert(repoServerHandler.RepositoryServerSecrets.repositoryPassword, DeepEquals, s.repoServerSecrets.repositoryPassword)
+	c.Assert(repoServerHandler.RepositoryServerSecrets.storage, DeepEquals, s.repoServerSecrets.storage)
+	c.Assert(repoServerHandler.RepositoryServerSecrets.storageCredentials, DeepEquals, s.repoServerSecrets.storageCredentials)
+	c.Assert(repoServerHandler.RepositoryServerSecrets.serverAdmin, DeepEquals, s.repoServerSecrets.serverAdmin)
+	c.Assert(repoServerHandler.RepositoryServerSecrets.serverTLS, DeepEquals, s.repoServerSecrets.serverTLS)
+	c.Assert(repoServerHandler.RepositoryServerSecrets.serverUserAccess, DeepEquals, s.repoServerSecrets.serverUserAccess)
+
+	// Test getSecretsFromCR is unsuccesful when one of the secrets does not exist in the namespace
+	repositoryServer.Spec.Storage.SecretRef.Name = "SecretDoesNotExist"
+	repoServerHandler.RepositoryServerSecrets = repositoryServerSecrets{}
+	err = repoServerHandler.getSecretsFromCR(context.Background())
+	c.Assert(err, NotNil)
+	c.Assert(repoServerHandler.RepositoryServerSecrets, Equals, repositoryServerSecrets{})
 }

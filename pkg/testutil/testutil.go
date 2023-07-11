@@ -482,9 +482,9 @@ func CreateTestKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.Repository
 		RepoPathPrefix:  KopiaRepositoryPath,
 		Location:        storageLocation,
 	}
-	return repository.CreateKopiaRepository(
+	return repository.ConnectToOrCreateKopiaRepository(
 		cli,
-		KanisterNamespace,
+		rs.Namespace,
 		rs.Status.ServerInfo.PodName,
 		DefaultKopiaRepositoryServerContainer,
 		commandArgs,
