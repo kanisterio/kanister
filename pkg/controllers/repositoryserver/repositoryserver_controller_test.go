@@ -97,10 +97,10 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 
 	s.repoServerControllerNamespace = cns.Name
 
-	os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
-
 	// Since we are not creating the controller in a pod
 	// the repository server controller needs few env variables set explicitly
+	os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
+
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:             scheme,
 		Port:               9443,
