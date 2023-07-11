@@ -27,25 +27,32 @@ func getLabelNames(bl []BoundedLabel) []string {
 // generateLabelCombinations uses a backtracking approach to generate
 // a list of label permutations
 func generateLabelCombinations(bl []BoundedLabel, labelIndex int,
-	workingSlice [][]string, resultCombinations *[][][]string) {
+	workingSlice [][]string, resultCombinations *[][][]string) (bool, error) {
 	if labelIndex >= len(bl) {
 		if len(workingSlice) == 0 {
-			return
+			return true, nil
 		}
 		newCombination := append([][]string(nil), workingSlice...)
 		*resultCombinations = append(*resultCombinations, newCombination)
-		return
+		return true, nil
+	}
+	if bl[labelIndex].LabelValues == nil {
+		return false, fmt.Errorf("failed to generate label combination due to nil label value for label name: %s", bl[labelIndex].LabelName)
 	}
 	for i := 0; i < len(bl[labelIndex].LabelValues); i++ {
 		workingSlice = append(workingSlice, []string{bl[labelIndex].LabelName, bl[labelIndex].LabelValues[i]})
-		generateLabelCombinations(bl, labelIndex+1, workingSlice, resultCombinations)
+		res, err := generateLabelCombinations(bl, labelIndex+1, workingSlice, resultCombinations)
+		if err != nil {
+			return res, err
+		}
 		workingSlice = workingSlice[:len(workingSlice)-1]
 	}
+	return true, nil
 }
 
 // getLabelCombinations takes a slice of BoundedLabel elements and
 // returns a list of permutations of possible label permutations.
-func getLabelCombinations(bl []BoundedLabel) []prometheus.Labels {
+func getLabelCombinations(bl []BoundedLabel) ([]prometheus.Labels, error) {
 	/*
 		Considering the following example - If we have two BoundedLabel elements:
 		BoundedLabel{
@@ -64,7 +71,7 @@ func getLabelCombinations(bl []BoundedLabel) []prometheus.Labels {
 	*/
 	resultCombinations := make([][][]string, 0)
 	labelSlice := make([][]string, 0)
-	generateLabelCombinations(bl, 0, labelSlice, &resultCombinations)
+	_, err := generateLabelCombinations(bl, 0, labelSlice, &resultCombinations)
 	resultPrometheusLabels := make([]prometheus.Labels, 0)
 	for _, c := range resultCombinations {
 		labelSet := make(prometheus.Labels)
@@ -73,12 +80,14 @@ func getLabelCombinations(bl []BoundedLabel) []prometheus.Labels {
 		}
 		resultPrometheusLabels = append(resultPrometheusLabels, labelSet)
 	}
-	return resultPrometheusLabels
+	return resultPrometheusLabels, err
 }
 
+// setDefaultCounterWithLabels initializes all the counters within a counter vec
+// and sets them to 0
 func setDefaultCounterWithLabels(cv *prometheus.CounterVec, l []prometheus.Labels) {
 	for _, c := range l {
-		cv.With(c).Add(0)
+		cv.With(c)
 	}
 }
 
@@ -93,7 +102,10 @@ func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, bl []B
 	if err != nil {
 		panic(fmt.Sprintf("failed to register CounterVec. error: %v", err))
 	}
-	combinations := getLabelCombinations(bl)
+	combinations, err := getLabelCombinations(bl)
+	if err != nil {
+		panic(fmt.Sprintf("failed to register CounterVec. error: %v", err))
+	}
 	setDefaultCounterWithLabels(gv, combinations)
 	return gv
 }
@@ -101,7 +113,8 @@ func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, bl []B
 // InitGaugeVec initializes the gauge metrics vector.
 // If a nil counter is returned during registeration, the method will
 // panic
-func InitGaugeVec(r prometheus.Registerer, opts prometheus.GaugeOpts, labels []string) *prometheus.GaugeVec {
+func InitGaugeVec(r prometheus.Registerer, opts prometheus.GaugeOpts, bl []BoundedLabel) *prometheus.GaugeVec {
+	labels := getLabelNames(bl)
 	v := prometheus.NewGaugeVec(opts, labels)
 	gv, err := registerGaugeVec(r, v)
 	if err != nil {
@@ -113,7 +126,8 @@ func InitGaugeVec(r prometheus.Registerer, opts prometheus.GaugeOpts, labels []s
 // InitHistogramVec initializes the histogram metrics vector
 // If a nil counter is returned during registeration, the method will
 // panic
-func InitHistogramVec(r prometheus.Registerer, opts prometheus.HistogramOpts, labels []string) *prometheus.HistogramVec {
+func InitHistogramVec(r prometheus.Registerer, opts prometheus.HistogramOpts, bl []BoundedLabel) *prometheus.HistogramVec {
+	labels := getLabelNames(bl)
 	v := prometheus.NewHistogramVec(opts, labels)
 	h, err := registerHistogramVec(r, v)
 	if err != nil {
