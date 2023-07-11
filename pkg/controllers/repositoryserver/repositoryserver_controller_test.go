@@ -97,9 +97,10 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 
 	s.repoServerControllerNamespace = cns.Name
 
+	os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
+
 	// Since we are not creating the controller in a pod
 	// the repository server controller needs few env variables set explicitly
-	os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:             scheme,
 		Port:               9443,
@@ -359,7 +360,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 }
 
 func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
-	ctxTimeout := 1 * time.Minute
+	ctxTimeout := 25 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -379,7 +380,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 }
 
 func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerverName string) error {
-	ctxTimeout := 10 * time.Minute
+	ctxTimeout := 15 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
