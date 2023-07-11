@@ -100,24 +100,27 @@ BoundedLabel{
 // {"operation_type": "backup", "action_set_resolution": "failure"},
 // {"operation_type": "restore", "action_set_resolution": "success"}, 
 // {"operation_type": "restore", "action_set_resolution": "failure"}]
-func generateLabelCombinations([] BoundedLabel) []prometheus.Labels
+func generateLabelCombinations([] BoundedLabel) ([]prometheus.Labels, error)
  
 
-// InitCounterVec initializes and registers the counter metrics vector.
+// InitCounterVec initializes and registers the counter metrics vector. It takes a list of 
+// BoundedLabel objects - if any label value or label name is nil, then this method will panic. 
 // Based on the combinations returned by generateCombinations, it will set each counter value to 0.
 // If a nil counter is returned during registeration, the method will
 // panic
 func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, boundedLabels []BoundedLabel) *prometheus.CounterVec
 
-// InitGaugeVec initializes the gauge metrics vector.
+// InitGaugeVec initializes the gauge metrics vector. It takes a list of BoundedLabels, but the 
+// LabelValue field of each BoundedLabel will be ignored.
 // If a nil counter is returned during registeration, the method will
 // panic
-func InitGaugeVec(r prometheus.Registerer, opts prometheus.CounterOpts, labels []string) *prometheus.GaugeVec
+func InitGaugeVec(r prometheus.Registerer, opts prometheus.CounterOpts, boundedLabels []BoundedLabel) *prometheus.GaugeVec
 
-// InitGauge initializes the histogram metrics vector
+// InitHistogramVec initializes the histogram metrics vector. It takes a list of BoundedLabels, but the 
+// LabelValue field of each BoundedLabel will be ignored.
 // If a nil counter is returned during registeration, the method will
 // panic
-func InitHistogramVec(r prometheus.Registerer, opts prometheus.CounterOpts, labels []string) *prometheus.HistogramVec
+func InitHistogramVec(r prometheus.Registerer, opts prometheus.CounterOpts, boundedLabels []BoundedLabel) *prometheus.HistogramVec
 
 // InitCounter initializes a new counter.
 // If a nil counter is returned during registeration, the method will
@@ -134,19 +137,16 @@ func InitGauge(r prometheus.Registerer, opts prometheus.GaugeOpts) prometheus.Ga
 // panic
 func InitHistogram(r prometheus.Registerer, opts prometheus.HistogramOpts) prometheus.Histogram
 
-// registerCollector is an helper to register a metric and log registration errors
-// If a nil counter is returned during registeration, the method will
-// panic
+// registerCounterVec registers the CounterVec with the provided Registerer. If the
+// CounterVec has already been registered, the existing metric will be returned.
 func registerCounterVec(r prometheus.Registerer, g *prometheus.CounterVec) (*prometheus.CounterVec, error) 
 
-// registerHistogramVec registers the Histogram vector metrics.
-// If a nil counter is returned during registeration, the method will
-// panic
+// registerHistogramVec registers the Histogram with the provided Registerer. If the
+// HistogramVec has already been registered, the existing metric will be returned.
 func registerHistogramVec(r prometheus.Registerer, g *prometheus.HistogramVec) (*prometheus.HistogramVec, error) 
 
-// registerGaugeVec registers the Gauge vector metrics.
-// If a nil counter is returned during registeration, the method will
-// panic
+// registerGaugeVec registers the GaugeVec with the provided Registerer. If the
+// GaugeVec has already been registered, the existing GaugeVec will be returned.
 func registerGaugeVec(r prometheus.Registerer, g *prometheus.GaugeVec) (*prometheus.GaugeVec, error) 
 
 // registerGauge registers the Gauge with the provided Registerer. If the
@@ -210,7 +210,7 @@ type Controller struct {
 func New(c *rest.Config) *Controller {
 	return &Controller{
 		config:  c,
-		metrics: newMetrics(), // this helper method call will be made during init
+		metrics: newMetrics(prometheus.DefaultRegistry), // this helper method call will be made during init
 	}
 }
 ```
@@ -224,7 +224,7 @@ const (
     ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE = "operation_type"
 )
 
-type Metrics struct {
+type metrics struct {
     ActionSetCounterVec *prometheus.CounterVec
 }
 
@@ -248,12 +248,12 @@ func constructActionSetCounterVecLabels(operation_type string, resolution string
 }
 
 // helper method to create a Metrics interface
-func newMetrics() *metrics {
+func newMetrics(gatherer prometheus.Gatherer) *metrics {
     actionSetCounterOpts := prometheus.CounterOpts{
         Name: "action_set_resolutions_total",
         Help: "Total number of action set resolutions",
     }
-    actionSetCounterVec := kanistermetrics.InitCounterVec(prometheus.DefaultRegisterer,
+    actionSetCounterVec := kanistermetrics.InitCounterVec(gatherer,
 		actionSetCounterOpts, getActionSetCounterVecLabels())
     return &metrics{ActionSetCounterVec: actionSetCounterVec}
 }
@@ -281,6 +281,6 @@ func (c *Controller) handleActionSet(ctx context.Context) {
 
 1. The testing will include manual testing of whether the metrics added are successfully getting exported to kanister. 
 
-2. The interfaces listed above in the metrics package will not be unit tested, since they would be testing the behavior of the Prometheus API itself, which breaks the chain of trust principle with dependencies in unit testing.  
+2. The interfaces listed above in the metrics package, apart from InitCounterVec and generateLabelCombinations, will not be unit-tested, since they would be testing the behavior of the Prometheus API itself, which breaks the chain of trust principle with dependencies in unit testing.  
 
 3. Integration tests will be added for code that exports new metrics, to ensure that the behavior of exporting metrics is correct. 
