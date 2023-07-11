@@ -23,24 +23,25 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	awsconfig "github.com/kanisterio/kanister/pkg/aws"
-	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
-	"github.com/kanisterio/kanister/pkg/format"
-	"github.com/kanisterio/kanister/pkg/kopia"
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
-	"github.com/kanisterio/kanister/pkg/kube"
+	"math/big"
+	"os"
+	"time"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
-	"math/big"
-	"os"
-	"time"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/format"
+	"github.com/kanisterio/kanister/pkg/kopia"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 const (
@@ -77,8 +78,6 @@ func newTestClient() (*kubernetes.Clientset, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Clienset for k8s config")
 	}
-
-	_, err = crclient.NewForConfig(cfg)
 
 	return testClient, nil
 }

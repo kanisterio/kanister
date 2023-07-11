@@ -17,19 +17,20 @@ package datamover
 import (
 	"context"
 	"fmt"
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/kopia"
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
-	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/kanisterio/kanister/pkg/param"
+	"os/exec"
+	"path/filepath"
+
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"os/exec"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/kopia"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 type RepositoryServerSuite struct {
@@ -45,20 +46,7 @@ type RepositoryServerSuite struct {
 	repoServer       *param.RepositoryServer
 }
 
-const testContent = "test-content"
-
 var _ = Suite(&RepositoryServerSuite{})
-
-func (rss *RepositoryServerSuite) TestRepositoryServerImplementsDataMover(c *C) {
-	rs := repositoryServer{}
-	var dm interface{} = rs
-	_, ok := dm.(DataMover)
-	c.Assert(ok, Equals, false)
-
-	dm = &rs
-	_, ok = dm.(DataMover)
-	c.Assert(ok, Equals, true)
-}
 
 func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	// Set Context as Background
@@ -143,10 +131,6 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 }
 
 func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer() error {
-	log.Error().Print("<------------- Debug Logs ------------->", field.M{
-		"rss.repoServer": rss.repoServer,
-		"rss.tlsSecret":  rss.tlsSecret,
-	})
 	return repository.ConnectToAPIServer(
 		rss.ctx,
 		string(rss.tlsSecret.Data[kopia.TLSCertificateKey]),
@@ -159,21 +143,57 @@ func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer() error {
 	)
 }
 
-func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServer(c *C) {
+func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServerDataMover(c *C) {
 	// Setup Test Data
-	dir := c.MkDir()
-	cmd := exec.Command("touch", fmt.Sprintf("%s/%s", dir, "test.txt"))
+	sourceDir := c.MkDir()
+	filePath := filepath.Join(sourceDir, "test.txt")
+
+	cmd := exec.Command("touch", filePath)
 	_, err := cmd.Output()
 	c.Assert(err, IsNil)
-	cmd = exec.Command("echo", testContent, ">>", fmt.Sprintf("%s/%s", dir, "test.txt"))
-	_, err = cmd.Output()
-	c.Assert(err, IsNil)
+
+	targetDir := c.MkDir()
 
 	// Connect With Test Kopia RepositoryServer
 	err = rss.connectWithTestKopiaRepositoryServer()
 	c.Assert(err, IsNil)
 
 	// Test Kopia Repository Server Location Push
-	err = kopiaLocationPush(rss.ctx, defaultKopiaRepositoryPath, "kandoOutput", dir, testKopiaRepoServerAdminPassword)
+	snapInfo, err := kopiaLocationPush(rss.ctx, defaultKopiaRepositoryPath, "kandoOutput", sourceDir, testKopiaRepoServerAdminPassword)
+	c.Assert(err, IsNil)
+
+	// Test Kopia Repository Server Location Pull
+	err = kopiaLocationPull(rss.ctx, snapInfo.ID, defaultKopiaRepositoryPath, targetDir, testKopiaRepoServerAdminPassword)
+	c.Assert(err, IsNil)
+
+	// Test Kopia Repository Location Delete
+	err = kopiaLocationDelete(rss.ctx, snapInfo.ID, defaultKopiaRepositoryPath, testKopiaRepoServerAdminPassword)
+	c.Assert(err, IsNil)
+}
+
+func (rss *RepositoryServerSuite) TearDownSuite(c *C) {
+	// Delete Secrets
+	err := rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.tlsSecret.GetName(), metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+
+	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.userAccessSecret.GetName(), metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+
+	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.s3Creds.GetName(), metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+
+	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.s3Location.GetName(), metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+
+	// Delete Service
+	err = rss.cli.CoreV1().Services(rss.namespace.GetName()).Delete(rss.ctx, rss.service.GetName(), metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+
+	// Delete Test Pod
+	err = rss.cli.CoreV1().Pods(rss.namespace.GetName()).Delete(rss.ctx, rss.pod.GetName(), metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+
+	// Delete Namespace
+	err = rss.cli.CoreV1().Namespaces().Delete(rss.ctx, rss.namespace.GetName(), metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
