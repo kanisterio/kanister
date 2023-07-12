@@ -27,6 +27,8 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -301,7 +303,7 @@ func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod
 	return nil
 }
 
-func (h *RepoServerHandler) updateProgressInCRStatus(ctx context.Context, progress crv1alpha1.RepositoryServerProgress) error {
+func (h *RepoServerHandler) updateProgressInCRStatus(ctx context.Context, progress crv1alpha1.RepositoryServerProgress, condition metav1.Condition) error {
 	repoServerName := h.RepositoryServer.Name
 	repoServerNamespace := h.RepositoryServer.Namespace
 	rs := crv1alpha1.RepositoryServer{}
@@ -309,7 +311,10 @@ func (h *RepoServerHandler) updateProgressInCRStatus(ctx context.Context, progre
 	if err != nil {
 		return err
 	}
-	rs.Status.Progress = progress
+	apimeta.SetStatusCondition(&rs.Status.Conditions, condition)
+	if progress != "" {
+		rs.Status.Progress = progress
+	}
 	err = h.Reconciler.Status().Update(ctx, &rs)
 	if err != nil {
 		return err

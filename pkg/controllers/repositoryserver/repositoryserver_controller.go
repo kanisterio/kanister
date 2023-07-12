@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -82,7 +81,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
 	repoServerHandler.RepositoryServer = repositoryServer
-
+    repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Pending 
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -91,10 +90,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
 		condition := getCondition(metav1.ConditionFalse, serverSetupErrReason, err.Error(), crkanisteriov1alpha1.ServerSetup)
-		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
-
-		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
-		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed, condition); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
@@ -102,44 +98,63 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	condition := getCondition(metav1.ConditionTrue, serverSetupSuccessReason, "", crkanisteriov1alpha1.ServerSetup)
-	apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
-
+	if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Pending, condition); uerr != nil {
+		return ctrl.Result{}, uerr
+	}
 	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
-		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, repositoryConnectedErrReason, err.Error(), crkanisteriov1alpha1.RepositoryConnected)
+		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed, condition); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
+	}
+
+	condition = getCondition(metav1.ConditionTrue, repositoryConnectedSuccessReason, "", crkanisteriov1alpha1.RepositoryConnected)
+	if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Pending, condition); uerr != nil {
+		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Start Kopia Repository Server")
 	if err := repoServerHandler.startRepoProxyServer(ctx); err != nil {
-		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, serverInitializedErrReason, err.Error(), crkanisteriov1alpha1.ServerInitialized)
+		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed, condition); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
+	}
+
+	condition = getCondition(metav1.ConditionTrue, serverInitializedSuccessReason, "", crkanisteriov1alpha1.ServerInitialized)
+	if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Pending, condition); uerr != nil {
+		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Add/Update users")
 	if err := repoServerHandler.createOrUpdateClientUsers(ctx); err != nil {
-		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, clientsInitializedErrReason, err.Error(), crkanisteriov1alpha1.ClientUserInitialized)
+		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed, condition); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
+	}
+
+	condition = getCondition(metav1.ConditionTrue, clientsInitializedSuccessReason, "", crkanisteriov1alpha1.ClientUserInitialized)
+	if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Pending, condition); uerr != nil {
+		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Refresh Server")
 	if err := repoServerHandler.refreshServer(ctx); err != nil {
-		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		condition = getCondition(metav1.ConditionFalse, serverRefreshedErrReason, err.Error(), crkanisteriov1alpha1.ServerRefreshed)
+		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed, condition); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
-
-	if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Ready); uerr != nil {
+	condition = getCondition(metav1.ConditionTrue, serverRefreshedSuccessReason, "", crkanisteriov1alpha1.ServerRefreshed)
+	if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Ready, condition); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
-
 	return ctrl.Result{}, nil
 }
 

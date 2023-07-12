@@ -222,7 +222,7 @@ func (h *RepoServerHandler) refreshServer(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to refresh Kopia API server")
 	}
-	return nil
+	return nil 
 }
 
 func (h *RepoServerHandler) getRepositoryServerStartTimeout() time.Duration {
@@ -230,7 +230,7 @@ func (h *RepoServerHandler) getRepositoryServerStartTimeout() time.Duration {
 	if serverStartTimeoutEnv != "" {
 		serverStartTimeout, err := time.ParseDuration(serverStartTimeoutEnv)
 		if err != nil {
-			h.Logger.Info("Error parsing env variable", err)
+			h.Logger.Info("Error parsing env variable", "error", err)
 			return DefaultServerStartTimeout
 		}
 		return serverStartTimeout * time.Second

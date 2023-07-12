@@ -59,6 +59,18 @@ const (
 
 	serverSetupErrReason     string = "KopiaRepositoryServerSetupFailed"
 	serverSetupSuccessReason string = "KopiaRepositoryServerSetupSucceeded"
+
+	repositoryConnectedErrReason     string = "KopiaRepositoryConnectionFailed"
+	repositoryConnectedSuccessReason string = "KopiaRepositoryConnectionSucceeded"
+
+	serverInitializedErrReason     string = "KopiaRepositoryServerInitializationFailed"
+	serverInitializedSuccessReason string = "KopiaRepositoryServerInitializationSucceeded"
+
+	clientsInitializedErrReason     string = "ClientInitializationFailed"
+	clientsInitializedSuccessReason string = "ClientInitializationSuccessful"
+
+	serverRefreshedErrReason     string = "ServerRefreshFailed"
+	serverRefreshedSuccessReason string = "ServerRefreshed"
 )
 
 func getRepoServerService(namespace string) corev1.Service {
