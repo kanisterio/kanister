@@ -68,20 +68,6 @@ const (
 	testTLSCertPath                  = "/tmp/tls/tls.crt"
 )
 
-func newTestClient() (*kubernetes.Clientset, error) {
-	cfg, err := kube.LoadConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to Load config")
-	}
-
-	testClient, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Clienset for k8s config")
-	}
-
-	return testClient, nil
-}
-
 func createRepositoryServerTestNamespace(ctx context.Context, cli kubernetes.Interface) (*corev1.Namespace, error) {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

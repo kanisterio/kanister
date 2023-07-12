@@ -53,7 +53,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	rss.ctx = context.Background()
 
 	// Get Kubernetes Client
-	cli, err := newTestClient()
+	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	rss.cli = cli
 
