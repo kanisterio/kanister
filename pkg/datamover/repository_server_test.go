@@ -62,15 +62,15 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	// Configure and Create Test S3 Credential and Location Secrets
-	rss.s3Creds, rss.s3Location, err = testS3CredsLocationSecret(rss.ctx, rss.cli, rss.namespace.GetName())
+	rss.s3Creds, rss.s3Location, err = createTestS3CredsLocationSecret(rss.ctx, rss.cli, rss.namespace.GetName())
 	c.Assert(err, IsNil)
 
 	// Configure and Create Test User Access Secret for Kopia Repository Server
-	rss.userAccessSecret, err = testKopiaRepositoryServerUserAccess(rss.ctx, rss.cli, rss.namespace.GetName())
+	rss.userAccessSecret, err = createTestKopiaRepositoryServerUserAccess(rss.ctx, rss.cli, rss.namespace.GetName())
 	c.Assert(err, IsNil)
 
 	// Configure and Create Test TLS Certificate Secret
-	rss.tlsSecret, err = testKopiaTLSCertificate(rss.ctx, rss.cli, rss.namespace.GetName())
+	rss.tlsSecret, err = createTestKopiaTLSCertificate(rss.ctx, rss.cli, rss.namespace.GetName())
 	c.Assert(err, IsNil)
 
 	// Create Test Pod
