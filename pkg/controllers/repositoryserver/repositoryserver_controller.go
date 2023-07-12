@@ -21,6 +21,8 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
@@ -91,9 +93,17 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
+		condition := getCondition(metav1.ConditionFalse, serverSetupErrReason, err.Error(), crkanisteriov1alpha1.ServerSetup)
+		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
+		
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
 		return ctrl.Result{}, err
 	}
+
+	condition := getCondition(metav1.ConditionTrue, serverSetupSuccessReason, "", crkanisteriov1alpha1.ServerSetup)
+	apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
 
 	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
