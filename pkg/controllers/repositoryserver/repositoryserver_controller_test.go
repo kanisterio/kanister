@@ -367,6 +367,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 	ctxTimeout := 25 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
+	var serverInfoUpdated bool
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		repoServerCR, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerName, metav1.GetOptions{})
 		if err != nil {
@@ -375,8 +376,14 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 		if repoServerCR.Status.ServerInfo.PodName == "" || repoServerCR.Status.ServerInfo.ServiceName == "" {
 			return false, errors.New("pod name or service name is not set on repository server CR")
 		}
+		serverInfoUpdated = true
 		return true, nil
 	})
+
+	if !serverInfoUpdated && err == nil {
+		err = errors.New("pod name or service name is not set on repository server CR")
+	}
+
 	if err != nil {
 		return errors.Wrapf(err, "failed waiting for RepoServer Info updates in the CR")
 	}
