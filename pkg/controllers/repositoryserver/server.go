@@ -222,7 +222,7 @@ func (h *RepoServerHandler) refreshServer(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to refresh Kopia API server")
 	}
-	return nil 
+	return nil
 }
 
 func (h *RepoServerHandler) getRepositoryServerStartTimeout() time.Duration {
