@@ -185,7 +185,7 @@ func createRepositoryServerTestService(ctx context.Context, cli kubernetes.Inter
 	return serviceCreated, nil
 }
 
-func createTestS3CredsLocationSecret(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, *corev1.Secret, error) {
+func createTestS3CredsLocationSecrets(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, *corev1.Secret, error) {
 	key := testAwsAccessKeyId
 	val := testAwsAccessSecretKey
 	s3Creds := &corev1.Secret{
@@ -223,7 +223,7 @@ func createTestS3CredsLocationSecret(ctx context.Context, cli kubernetes.Interfa
 	return s3CredsCreated, s3LocationCreated, nil
 }
 
-func createTestKopiaTLSCertificate(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, error) {
+func createTestKopiaTLSCertificateSecret(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, error) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(2019),
 		Subject: pkix.Name{
@@ -287,7 +287,7 @@ func createTestKopiaTLSCertificate(ctx context.Context, cli kubernetes.Interface
 	return tlsCreated, nil
 }
 
-func createTestKopiaRepositoryServerUserAccess(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, error) {
+func createTestKopiaRepositoryServerUserAccessSecret(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, error) {
 	userAccess := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-repository-server-user-access-",
