@@ -24,7 +24,7 @@ import (
 
 func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
 
 	defaultcontentCacheMB, defaultmetadataCacheMB := command.GetGeneralCacheSizeSettings()
 
@@ -32,7 +32,7 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Req:              reconcile.Request{},
 		Reconciler:       s.DefaultRepoServerReconciler,
 		KubeCli:          s.kubeCli,
-		RepositoryServer: repositoryServer,
+		RepositoryServer: &repositoryServer,
 	}
 
 	// Test if Default cache size settings are set

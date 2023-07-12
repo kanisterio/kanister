@@ -198,9 +198,9 @@ func (s *RepoServerControllerSuite) CreateGCPStorageCredentialsSecret(data map[s
 func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 	// Create a repository server CR.
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
 
-	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), repoServerCR, metav1.CreateOptions{})
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Update the repository server CR's Immutable field.
@@ -223,9 +223,9 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C) {
 	ctx := context.Background()
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
 
-	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, repoServerCR, metav1.CreateOptions{})
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
@@ -253,7 +253,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 func (s *RepoServerControllerSuite) TestRepositoryServerCRStateWithoutSecrets(c *C) {
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	ctx := context.Background()
-	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, repoServerCR, metav1.CreateOptions{})
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
@@ -275,9 +275,9 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 	ctx := context.Background()
 
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
 
-	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, repoServerCR, metav1.CreateOptions{})
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
@@ -304,7 +304,7 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 	ctx := context.Background()
 	originalrepoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, originalrepoServerCR)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &originalrepoServerCR)
 	for _, tc := range []struct {
 		description  string
 		testFunction func(rs *v1alpha1.RepositoryServer)
@@ -346,7 +346,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 			},
 		},
 	} {
-		invalidCR := *originalrepoServerCR
+		invalidCR := originalrepoServerCR
 		tc.testFunction(&invalidCR)
 
 		repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &invalidCR, metav1.CreateOptions{})
