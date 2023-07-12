@@ -92,10 +92,9 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
 		condition := getCondition(metav1.ConditionFalse, serverSetupErrReason, err.Error(), crkanisteriov1alpha1.ServerSetup)
 		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
-		
-		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
 
-		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
+		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
