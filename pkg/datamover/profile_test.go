@@ -35,7 +35,7 @@ var _ = Suite(&ProfileSuite{})
 
 const testContent = "test-content"
 
-func (ps *ProfileSuite) SetUpSuite() {
+func (ps *ProfileSuite) SetUpSuite(c *C) {
 	// Set Context as Background
 	ps.ctx = context.Background()
 
@@ -79,5 +79,5 @@ func (ps *ProfileSuite) TestLocationOperationsForProfileDataMover(c *C) {
 	c.Assert(err, IsNil)
 }
 
-func (ps *ProfileSuite) TearDownSuite() {
+func (ps *ProfileSuite) TearDownSuite(c *C) {
 }
