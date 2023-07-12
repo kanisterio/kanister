@@ -21,10 +21,11 @@ import (
 type LocType string
 
 const (
-	LocTypeS3        LocType = "s3"
-	LocTypeGCS       LocType = "gcs"
-	LocTypeAzure     LocType = "azure"
-	LocTypeFilestore LocType = "filestore"
+	LocTypeS3          LocType = "s3"
+	LocTypes3Compliant LocType = "s3Compliant"
+	LocTypeGCS         LocType = "gcs"
+	LocTypeAzure       LocType = "azure"
+	LocTypeFilestore   LocType = "filestore"
 
 	// Location represents the storage location secret type for kopia repository server
 	Location corev1.SecretType = "secrets.kanister.io/storage-location"

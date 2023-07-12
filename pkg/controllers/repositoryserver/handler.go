@@ -47,13 +47,15 @@ type RepoServerHandler struct {
 }
 
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
+	if err := h.getSecretsFromCR(ctx); err != nil {
+		return errors.Wrap(err, "Failed to get Kopia API server secrets")
+	}
+
 	svc, err := h.reconcileService(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile service")
 	}
-	if err = h.getSecretsFromCR(ctx); err != nil {
-		return errors.Wrap(err, "Failed to get Kopia API server secrets")
-	}
+
 	envVars, pod, err := h.reconcilePod(ctx, svc)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile Kopia API server pod")
@@ -69,6 +71,18 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 		if err != nil {
 			return err
 		}
+	}
+
+	if err := h.connectToKopiaRepository(); err != nil {
+		return errors.Wrap(err, "Failed to connect to Kopia repository")
+	}
+
+	if err := h.startRepoProxyServer(ctx); err != nil {
+		return errors.Wrap(err, "Failed to start Kopia API server")
+	}
+
+	if err := h.createOrUpdateClientUsers(ctx); err != nil {
+		return errors.Wrap(err, "Failed to create/update kopia API server access users")
 	}
 	return nil
 }
@@ -210,6 +224,7 @@ func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *c
 
 func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, []corev1.EnvVar, error) {
 	podOverride, err := h.preparePodOverride(ctx)
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -304,25 +319,5 @@ func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod
 	if err := kube.WaitForPodReady(ctx, h.KubeCli, pod.Namespace, pod.Name); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed while waiting for pod %s to be ready", pod.Name))
 	}
-	return nil
-}
-
-func (h *RepoServerHandler) updateProgressInCRStatus(ctx context.Context, progress crv1alpha1.RepositoryServerProgress) error {
-	h.Logger.Info("Fetch latest version of RepositoryServer to update the ServerInfo in its status")
-	repoServerName := h.RepositoryServer.Name
-	repoServerNamespace := h.RepositoryServer.Namespace
-	rs := crv1alpha1.RepositoryServer{}
-	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: repoServerName, Namespace: repoServerNamespace}, &rs)
-	if err != nil {
-		return err
-	}
-	h.Logger.Info("Update the Progress")
-	rs.Status.Progress = progress
-	err = h.Reconciler.Status().Update(ctx, &rs)
-	if err != nil {
-		return err
-	}
-	h.Logger.Info("Use this updated RepositoryServer CR")
-	h.RepositoryServer = &rs
 	return nil
 }
