@@ -374,7 +374,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 			return false, err
 		}
 		if repoServerCR.Status.ServerInfo.PodName == "" || repoServerCR.Status.ServerInfo.ServiceName == "" {
-			return false, errors.New("pod name or service name is not set on repository server CR")
+			return false, nil
 		}
 		serverInfoUpdated = true
 		return true, nil
