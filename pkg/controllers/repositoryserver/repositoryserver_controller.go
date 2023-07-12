@@ -90,14 +90,14 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info("Create or update owned resources")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
-		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
-			return ctrl.Result{}, uerr
-		}
 		condition := getCondition(metav1.ConditionFalse, serverSetupErrReason, err.Error(), crkanisteriov1alpha1.ServerSetup)
 		apimeta.SetStatusCondition(&repoServerHandler.RepositoryServer.Status.Conditions, condition)
 		
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Failed
 
+		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
 		return ctrl.Result{}, err
 	}
