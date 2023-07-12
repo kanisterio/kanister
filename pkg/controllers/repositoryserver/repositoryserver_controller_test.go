@@ -221,7 +221,6 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 
 // TestRepositoryServerStatusIsServerReady creates a CR with correct configurations and
 // tests that the CR gets into created/ready state
-
 func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C) {
 	ctx := context.Background()
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
@@ -252,7 +251,6 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 
 // TestRepositoryServerCRStateWithoutSecrets checks if server creation is failed
 // when no storage secrets are set
-
 func (s *RepoServerControllerSuite) TestRepositoryServerCRStateWithoutSecrets(c *C) {
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	ctx := context.Background()
@@ -274,7 +272,6 @@ func (s *RepoServerControllerSuite) TestRepositoryServerCRStateWithoutSecrets(c 
 
 // TestCreationOfOwnedResources checks if pod and service for repository server
 // is created successfully
-
 func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 	ctx := context.Background()
 
