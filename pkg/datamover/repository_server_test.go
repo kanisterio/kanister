@@ -23,6 +23,7 @@ import (
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -31,6 +32,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 type RepositoryServerSuite struct {
@@ -44,6 +48,7 @@ type RepositoryServerSuite struct {
 	tlsSecret        *corev1.Secret
 	userAccessSecret *corev1.Secret
 	repoServer       *param.RepositoryServer
+	user             string
 }
 
 var _ = Suite(&RepositoryServerSuite{})
@@ -51,6 +56,9 @@ var _ = Suite(&RepositoryServerSuite{})
 func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	// Set Context as Background
 	rss.ctx = context.Background()
+
+	// Set Repository Server Test User
+	rss.user = fmt.Sprintf("%s%s", testKopiaRepoServerUsername, rand.String(5))
 
 	// Get Kubernetes Client
 	cli, err := kube.NewClient()
@@ -62,15 +70,22 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	// Configure and Create Test S3 Credential and Location Secrets
-	rss.s3Creds, rss.s3Location, err = createTestS3CredsLocationSecrets(rss.ctx, rss.cli, rss.namespace.GetName())
+	storageCredentialsSecretData := testutil.GetDefaultS3StorageCreds()
+	storageStorageLocationSecretData := testutil.GetDefaultS3CompliantStorageLocation()
+	rss.s3Creds, err = testutil.CreateSecret(rss.cli, rss.namespace.GetName(), "test-s3-creds-", corev1.SecretType(secrets.AWSSecretType), storageCredentialsSecretData)
+	c.Assert(err, IsNil)
+	rss.s3Location, err = testutil.CreateSecret(rss.cli, rss.namespace.GetName(), "test-s3-location-", repositoryserver.Location, storageStorageLocationSecretData)
 	c.Assert(err, IsNil)
 
 	// Configure and Create Test User Access Secret for Kopia Repository Server
-	rss.userAccessSecret, err = createTestKopiaRepositoryServerUserAccessSecret(rss.ctx, rss.cli, rss.namespace.GetName())
+	userAccessSecretData := testutil.GetRepoServerUserAccessSecretData(defaultKopiaRepositoryHost, testKopiaRepoServerAdminPassword)
+	rss.userAccessSecret, err = testutil.CreateSecret(rss.cli, rss.namespace.GetName(), "test-repository-server-user-access-", "", userAccessSecretData)
 	c.Assert(err, IsNil)
 
 	// Configure and Create Test TLS Certificate Secret
-	rss.tlsSecret, err = createTestKopiaTLSCertificateSecret(rss.ctx, rss.cli, rss.namespace.GetName())
+	kopiaTLSSecretata, err := testutil.GetKopiaTLSSecretData()
+	c.Assert(err, IsNil)
+	rss.tlsSecret, err = testutil.CreateSecret(rss.cli, rss.namespace.GetName(), "test-repository-server-user-access-", corev1.SecretTypeTLS, kopiaTLSSecretata)
 	c.Assert(err, IsNil)
 
 	// Create Test Pod
@@ -97,7 +112,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add Test Client User in Kopia Repository
-	err = addTestUserInKopiaRepositoryServer(rss.cli, rss.namespace.GetName(), rss.pod)
+	err = addTestUserInKopiaRepositoryServer(rss.cli, rss.namespace.GetName(), rss.pod, rss.user)
 	c.Assert(err, IsNil)
 
 	// Refresh Kopia Repository Server
@@ -119,7 +134,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 			PodName:     rss.pod.GetName(),
 			ServiceName: rss.service.GetName(),
 		},
-		Username: testKopiaRepoServerUsername,
+		Username: rss.user,
 		Credentials: param.RepositoryServerCredentials{
 			ServerTLS:        *rss.tlsSecret,
 			ServerUserAccess: *rss.userAccessSecret,
@@ -137,7 +152,7 @@ func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer() error {
 		testKopiaRepoServerAdminPassword,
 		defaultKopiaRepositoryHost,
 		rss.repoServer.Address,
-		testKopiaRepoServerUsername,
+		rss.user,
 		rss.repoServer.ContentCacheMB,
 		rss.repoServer.MetadataCacheMB,
 	)

@@ -15,15 +15,8 @@
 package datamover
 
 import (
-	"bytes"
 	"context"
-	crand "crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
-	"math/big"
 	"os"
 	"time"
 
@@ -34,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/format"
@@ -54,7 +46,6 @@ const (
 	testAwsAccessSecretKey           = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	testAwsRegion                    = "us-west-2"
 	testAwsLocationEndpoint          = "http://minio.minio.svc.cluster.local:9000"
-	testAwsS3BucketName              = "tests.kanister.io"
 	defaultKopiaRepositoryPassword   = "test1234"
 	defaultKopiaRepositoryUser       = "repositoryuser"
 	defaultKopiaRepositoryPath       = "repository-server-test"
@@ -62,7 +53,7 @@ const (
 	defaultServerStartTimeout        = 10 * time.Minute
 	testRepoServerName               = "test-repo-server"
 	testKopiaRepoServerAdminUsername = "testadmin@localhost"
-	testKopiaRepoServerUsername      = "testuser"
+	testKopiaRepoServerUsername      = "testuser-"
 	testKopiaRepoServerAdminPassword = "testpass1234"
 	testTLSKeyPath                   = "/tmp/tls/tls.key"
 	testTLSCertPath                  = "/tmp/tls/tls.crt"
@@ -185,125 +176,6 @@ func createRepositoryServerTestService(ctx context.Context, cli kubernetes.Inter
 	return serviceCreated, nil
 }
 
-func createTestS3CredsLocationSecrets(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, *corev1.Secret, error) {
-	key := testAwsAccessKeyId
-	val := testAwsAccessSecretKey
-	s3Creds := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-s3-creds-",
-		},
-		Type: "secrets.kanister.io/aws",
-		Data: map[string][]byte{
-			"aws_access_key_id":     []byte(key),
-			"aws_secret_access_key": []byte(val),
-		},
-	}
-	s3Location := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-s3-location-",
-		},
-		Data: map[string][]byte{
-			"type":     []byte(crv1alpha1.LocationTypeS3Compliant),
-			"bucket":   []byte(testAwsS3BucketName),
-			"path":     []byte(defaultKopiaRepositoryPath),
-			"region":   []byte(testAwsRegion),
-			"endpoint": []byte(testAwsLocationEndpoint),
-		},
-	}
-
-	s3CredsCreated, err := cli.CoreV1().Secrets(namespace).Create(ctx, s3Creds, metav1.CreateOptions{})
-	if err != nil {
-		return nil, nil, err
-	}
-	s3LocationCreated, err := cli.CoreV1().Secrets(namespace).Create(ctx, s3Location, metav1.CreateOptions{})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return s3CredsCreated, s3LocationCreated, nil
-}
-
-func createTestKopiaTLSCertificateSecret(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, error) {
-	ca := &x509.Certificate{
-		SerialNumber: big.NewInt(2019),
-		Subject: pkix.Name{
-			Organization:  []string{"Test Organization"},
-			Country:       []string{"Test Country"},
-			Province:      []string{"Test Province"},
-			Locality:      []string{"Test Locality"},
-			StreetAddress: []string{"Test Street"},
-			PostalCode:    []string{"123456"},
-		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(0, 0, 1),
-		IsCA:                  true,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		BasicConstraintsValid: true,
-	}
-	caPrivKey, err := rsa.GenerateKey(crand.Reader, 4096)
-	if err != nil {
-		return nil, err
-	}
-	caBytes, err := x509.CreateCertificate(crand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
-	if err != nil {
-		return nil, err
-	}
-
-	caPEM := new(bytes.Buffer)
-	err = pem.Encode(caPEM, &pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: caBytes,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	caPrivKeyPEM := new(bytes.Buffer)
-	err = pem.Encode(caPrivKeyPEM, &pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	tls := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-repository-server-tls-cert-",
-		},
-		Type: "kubernetes.io/tls",
-		Data: map[string][]byte{
-			"tls.crt": caPEM.Bytes(),
-			"tls.key": caPrivKeyPEM.Bytes(),
-		},
-	}
-
-	tlsCreated, err := cli.CoreV1().Secrets(namespace).Create(ctx, tls, metav1.CreateOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return tlsCreated, nil
-}
-
-func createTestKopiaRepositoryServerUserAccessSecret(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, error) {
-	userAccess := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-repository-server-user-access-",
-		},
-		Data: map[string][]byte{
-			defaultKopiaRepositoryHost: []byte(testKopiaRepoServerAdminPassword),
-		},
-	}
-
-	userAccessCreated, err := cli.CoreV1().Secrets(namespace).Create(ctx, userAccess, metav1.CreateOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return userAccessCreated, nil
-}
-
 func createTestKopiaRepository(location *corev1.Secret, cli kubernetes.Interface, namespace string, pod *corev1.Pod) error {
 	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 	args := kopiacmd.RepositoryCommandArgs{
@@ -389,8 +261,8 @@ func waitForServerReady(ctx context.Context, cli kubernetes.Interface, namespace
 	return repositoryserver.WaitTillCommandSucceed(ctx, cli, cmd, namespace, pod.GetName(), pod.Spec.Containers[0].Name)
 }
 
-func addTestUserInKopiaRepositoryServer(cli kubernetes.Interface, namespace string, pod *corev1.Pod) error {
-	testUser := fmt.Sprintf("%s@%s", testKopiaRepoServerUsername, defaultKopiaRepositoryHost)
+func addTestUserInKopiaRepositoryServer(cli kubernetes.Interface, namespace string, pod *corev1.Pod, username string) error {
+	testUser := fmt.Sprintf("%s@%s", username, defaultKopiaRepositoryHost)
 	cmd := kopiacmd.ServerAddUser(
 		kopiacmd.ServerAddUserCommandArgs{
 			CommandArgs: &kopiacmd.CommandArgs{
