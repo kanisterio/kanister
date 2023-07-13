@@ -92,12 +92,7 @@ func (h *RepoServerHandler) reconcileService(ctx context.Context) (*corev1.Servi
 	if err != nil {
 		return nil, err
 	}
-	h.Logger.Info("Update service name in RepositoryServer /status")
-	serverInfo := crv1alpha1.ServerInfo{
-		PodName:     h.RepositoryServer.Status.ServerInfo.PodName,
-		ServiceName: svc.Name,
-	}
-	if err := h.updateServerInfoInCRStatus(ctx, serverInfo); err != nil {
+	if err := h.updateServerInfoInCRStatus(ctx, h.RepositoryServer.Status.ServerInfo.PodName, svc.Name); err != nil {
 		return nil, errors.Wrap(err, "Failed to update service name in RepositoryServer /status")
 	}
 	return svc, err
@@ -163,6 +158,9 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 	h.Logger.Info("Check if the pod resource exists. If exists, reconcile with CR spec")
 	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: podName, Namespace: repoServerNamespace}, pod)
 	if err == nil {
+		if pod.Status.Phase == corev1.PodFailed && pod.Status.ContainerStatuses[0].State.Waiting != nil && pod.Status.ContainerStatuses[0].State.Waiting.Reason == "CrashLoopBackOff" {
+			return h.handlePodFailure(ctx, pod, repoServerNamespace, svc)
+		}
 		pod, err = h.updatePod(ctx, pod, svc)
 		return nil, pod, err
 	}
@@ -170,21 +168,30 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 		return nil, nil, err
 	}
 	h.Logger.Info("Pod resource not found. Creating new pod")
+	return h.createPodUpdateStatus(ctx, repoServerNamespace, svc)
+}
+
+func (h *RepoServerHandler) createPodUpdateStatus(ctx context.Context, repoServerNamespace string, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
 	var envVars []corev1.EnvVar
-	pod, envVars, err = h.createPod(ctx, repoServerNamespace, svc)
+	pod, envVars, err := h.createPod(ctx, repoServerNamespace, svc)
 	if err != nil {
 		return nil, nil, err
 	}
-	h.Logger.Info("Update pod name in RepositoryServer /status")
-	serverInfo := crv1alpha1.ServerInfo{
-		PodName:     pod.Name,
-		ServiceName: h.RepositoryServer.Status.ServerInfo.ServiceName,
-	}
-	if err := h.updateServerInfoInCRStatus(ctx, serverInfo); err != nil {
+	if err := h.updateServerInfoInCRStatus(ctx, pod.Name, h.RepositoryServer.Status.ServerInfo.ServiceName); err != nil {
 		return nil, nil, errors.Wrap(err, "Failed to update pod name in RepositoryServer /status")
 	}
-
 	return envVars, pod, nil
+}
+
+func (h *RepoServerHandler) handlePodFailure(ctx context.Context, pod *corev1.Pod, repoServerNamespace string, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
+	if err := h.deletePod(ctx, pod); err != nil {
+		return nil, nil, err
+	}
+	return h.createPodUpdateStatus(ctx, repoServerNamespace, svc)
+}
+
+func (h *RepoServerHandler) deletePod(ctx context.Context, pod *corev1.Pod) error {
+	return h.Reconciler.Delete(ctx, pod)
 }
 
 func (h *RepoServerHandler) updatePod(ctx context.Context, pod *corev1.Pod, svc *corev1.Service) (*corev1.Pod, error) {
@@ -276,7 +283,7 @@ func (h *RepoServerHandler) preparePodOverride(ctx context.Context) (map[string]
 	return podOverride, nil
 }
 
-func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, info crv1alpha1.ServerInfo) error {
+func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, podName string, serviceName string) error {
 	h.Logger.Info("Fetch latest version of RepositoryServer to update the ServerInfo in its status")
 	repoServerName := h.RepositoryServer.Name
 	repoServerNamespace := h.RepositoryServer.Namespace
@@ -285,7 +292,11 @@ func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, info
 	if err != nil {
 		return err
 	}
-	h.Logger.Info("Update the ServerInfo")
+	h.Logger.Info("Update pod name in RepositoryServer /status")
+	info := crv1alpha1.ServerInfo{
+		PodName:     podName,
+		ServiceName: serviceName,
+	}
 	rs.Status.ServerInfo = info
 	err = h.Reconciler.Status().Update(ctx, &rs)
 	if err != nil {
