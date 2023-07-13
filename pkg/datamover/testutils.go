@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia"
@@ -69,13 +70,6 @@ func createRepositoryServerTestNamespace(ctx context.Context, cli kubernetes.Int
 	return nsCreated, nil
 }
 
-func getKanisterToolsImage() string {
-	if val, ok := os.LookupEnv(kanisterToolsImageEnvName); ok {
-		return val
-	}
-	return kanisterToolsImage
-}
-
 func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface, namespace string, secret *corev1.Secret) (*corev1.Pod, error) {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -87,7 +81,7 @@ func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface
 			Containers: []corev1.Container{
 				{
 					Name:  "test-repository-server-container",
-					Image: getKanisterToolsImage(),
+					Image: consts.LatestKanisterToolsImage,
 					Ports: []corev1.ContainerPort{
 						{
 							HostPort:      51515,
