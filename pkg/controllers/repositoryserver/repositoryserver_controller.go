@@ -121,7 +121,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if uerr := repoServerHandler.updateProgressInCRStatus(ctx, crkanisteriov1alpha1.Failed, condition); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: false}, err
 	}
 
 	condition = getCondition(metav1.ConditionTrue, serverInitializedSuccessReason, "", crkanisteriov1alpha1.ServerInitialized)

@@ -48,35 +48,43 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 		return nil
 	}
 
-	cmd := command.ServerStart(
-		command.ServerStartCommandArgs{
-			CommandArgs: &command.CommandArgs{
-				RepoPassword:   "",
-				ConfigFilePath: command.DefaultConfigFilePath,
-				LogDirectory:   command.DefaultLogDirectory,
+	maxRetries := 5
+	for retries := 1; retries <= maxRetries; retries++ {
+		cmd := command.ServerStart(
+			command.ServerStartCommandArgs{
+				CommandArgs: &command.CommandArgs{
+					RepoPassword:   "",
+					ConfigFilePath: command.DefaultConfigFilePath,
+					LogDirectory:   command.DefaultLogDirectory,
+				},
+				ServerAddress:    repoServerAddress,
+				TLSCertFile:      tlsCertPath,
+				TLSKeyFile:       tlsKeyPath,
+				ServerUsername:   serverAdminUserName,
+				ServerPassword:   serverAdminPassword,
+				AutoGenerateCert: false,
+				Background:       true,
 			},
-			ServerAddress:    repoServerAddress,
-			TLSCertFile:      tlsCertPath,
-			TLSKeyFile:       tlsKeyPath,
-			ServerUsername:   serverAdminUserName,
-			ServerPassword:   serverAdminPassword,
-			AutoGenerateCert: false,
-			Background:       true,
-		},
-	)
-	stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
-	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
-	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
-	if err != nil {
-		return errors.Wrap(err, "Failed to start Kopia API server")
-	}
+		)
+		stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
+		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
+		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
+		if err == nil {
+			// Server started successfully, wait for it to be ready
+			err = h.waitForServerReady(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
+			if err == nil {
+				return nil
+			}
+		}
 
-	err = h.waitForServerReady(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
-	if err != nil {
-		return errors.Wrap(err, "Failed to check Kopia API server status")
+		// Retry after a delay
+		if retries < maxRetries {
+			delay := time.Second * 5
+			h.Logger.Info("Retrying server start...")
+			time.Sleep(delay)
+		}
 	}
-
-	return nil
+	return errors.New("Failed to start Kopia API server after maximum retries")
 }
 
 func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, string, string, error) {
