@@ -158,9 +158,6 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 	h.Logger.Info("Check if the pod resource exists. If exists, reconcile with CR spec")
 	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: podName, Namespace: repoServerNamespace}, pod)
 	if err == nil {
-		if pod.Status.Phase == corev1.PodFailed && pod.Status.ContainerStatuses[0].State.Waiting != nil && pod.Status.ContainerStatuses[0].State.Waiting.Reason == "CrashLoopBackOff" {
-			return h.handlePodFailure(ctx, pod, repoServerNamespace, svc)
-		}
 		pod, err = h.updatePod(ctx, pod, svc)
 		return nil, pod, err
 	}
@@ -181,17 +178,6 @@ func (h *RepoServerHandler) createPodUpdateStatus(ctx context.Context, repoServe
 		return nil, nil, errors.Wrap(err, "Failed to update pod name in RepositoryServer /status")
 	}
 	return envVars, pod, nil
-}
-
-func (h *RepoServerHandler) handlePodFailure(ctx context.Context, pod *corev1.Pod, repoServerNamespace string, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
-	if err := h.deletePod(ctx, pod); err != nil {
-		return nil, nil, err
-	}
-	return h.createPodUpdateStatus(ctx, repoServerNamespace, svc)
-}
-
-func (h *RepoServerHandler) deletePod(ctx context.Context, pod *corev1.Pod) error {
-	return h.Reconciler.Delete(ctx, pod)
 }
 
 func (h *RepoServerHandler) updatePod(ctx context.Context, pod *corev1.Pod, svc *corev1.Service) (*corev1.Pod, error) {
