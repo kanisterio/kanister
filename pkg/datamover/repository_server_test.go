@@ -152,7 +152,7 @@ func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer() error {
 		testKopiaRepoServerAdminPassword,
 		defaultKopiaRepositoryHost,
 		rss.repoServer.Address,
-		rss.user,
+		rss.repoServer.Username,
 		rss.repoServer.ContentCacheMB,
 		rss.repoServer.MetadataCacheMB,
 	)
