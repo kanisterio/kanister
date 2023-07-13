@@ -83,9 +83,9 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	// Configure and Create Test TLS Certificate Secret
-	kopiaTLSSecretata, err := testutil.GetKopiaTLSSecretData()
+	kopiaTLSSecretData, err := testutil.GetKopiaTLSSecretData()
 	c.Assert(err, IsNil)
-	rss.tlsSecret, err = testutil.CreateSecret(rss.cli, rss.namespace.GetName(), "test-repository-server-user-access-", corev1.SecretTypeTLS, kopiaTLSSecretata)
+	rss.tlsSecret, err = testutil.CreateSecret(rss.cli, rss.namespace.GetName(), "test-repository-server-user-access-", corev1.SecretTypeTLS, kopiaTLSSecretData)
 	c.Assert(err, IsNil)
 
 	// Create Test Pod
