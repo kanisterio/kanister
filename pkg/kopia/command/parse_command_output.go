@@ -95,7 +95,6 @@ func LatestSnapshotInfoFromManifestList(output string) (string, string, error) {
 func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error) {
 	snapID := ""
 	rootID := ""
-	var snapErr error
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		snapManifest := &snapshot.Manifest{}
@@ -107,7 +106,7 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		if snapManifest.RootEntry != nil {
 			rootID = snapManifest.RootEntry.ObjectID.String()
 			if snapManifest.RootEntry.DirSummary != nil && snapManifest.RootEntry.DirSummary.FatalErrorCount > 0 {
-				snapErr = errors.New(fmt.Sprintf("Error occurred while snapshot creation. Output %s", output))
+				return "", "", errors.New(fmt.Sprintf("Error occurred while snapshot creation. Output %s", output))
 			}
 		}
 	}
@@ -117,7 +116,7 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 	if rootID == "" {
 		return "", "", errors.New(fmt.Sprintf("Failed to get root ID from create snapshot output %s", output))
 	}
-	return snapID, rootID, snapErr
+	return snapID, rootID, nil
 }
 
 // SnapSizeStatsFromSnapListAll returns a list of snapshot logical sizes assuming the input string
