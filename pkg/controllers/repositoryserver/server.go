@@ -212,25 +212,36 @@ func (h *RepoServerHandler) refreshServer(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
 	}
 
-	cmd := command.ServerRefresh(
-		command.ServerRefreshCommandArgs{
-			CommandArgs: &command.CommandArgs{
-				RepoPassword:   repoPassword,
-				ConfigFilePath: command.DefaultConfigFilePath,
-				LogDirectory:   command.DefaultLogDirectory,
-			},
-			ServerAddress:  serverAddress,
-			ServerUsername: username,
-			ServerPassword: password,
-			Fingerprint:    fingerprint,
-		})
-	stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
-	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
-	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
-	if err != nil {
-		return errors.Wrap(err, "Failed to refresh Kopia API server")
+	maxRetries := 5
+	for retries := 1; retries <= maxRetries; retries++ {
+		cmd := command.ServerRefresh(
+			command.ServerRefreshCommandArgs{
+				CommandArgs: &command.CommandArgs{
+					RepoPassword:   repoPassword,
+					ConfigFilePath: command.DefaultConfigFilePath,
+					LogDirectory:   command.DefaultLogDirectory,
+				},
+				ServerAddress:  serverAddress,
+				ServerUsername: username,
+				ServerPassword: password,
+				Fingerprint:    fingerprint,
+			})
+		stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
+		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
+		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
+		if err == nil {
+			return nil
+		}
+
+		// Retry after a delay
+		if retries < maxRetries {
+			delay := time.Second * 5
+			h.Logger.Info("Retrying server refresh...")
+			time.Sleep(delay)
+		}
 	}
-	return nil
+
+	return errors.New("Failed to refresh Kopia API server after maximum retries")
 }
 
 func (h *RepoServerHandler) getRepositoryServerStartTimeout() time.Duration {
