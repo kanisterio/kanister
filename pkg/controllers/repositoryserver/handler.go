@@ -168,6 +168,15 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 	return h.createPodUpdateStatus(ctx, repoServerNamespace, svc)
 }
 
+func (h *RepoServerHandler) handleEvent(ctx context.Context, eventType, reason, eventMessage, conditionMsg ,conditionType string, progress crv1alpha1.RepositoryServerProgress, status metav1.ConditionStatus) error {
+	condition := getCondition(status, reason, conditionMsg, conditionType)
+	if uerr := h.updateProgressInCRStatus(ctx, progress, condition); uerr != nil {
+		return uerr
+	}
+	h.Reconciler.Recorder.Event(h.RepositoryServer, eventType, reason, eventMessage)
+	return nil
+}
+
 func (h *RepoServerHandler) createPodUpdateStatus(ctx context.Context, repoServerNamespace string, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
 	var envVars []corev1.EnvVar
 	pod, envVars, err := h.createPod(ctx, repoServerNamespace, svc)
