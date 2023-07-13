@@ -106,7 +106,7 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		if snapManifest.RootEntry != nil {
 			rootID = snapManifest.RootEntry.ObjectID.String()
 			if snapManifest.RootEntry.DirSummary != nil && snapManifest.RootEntry.DirSummary.FatalErrorCount > 0 {
-				return "", "", errors.New(fmt.Sprintf("Error occurred while snapshot creation. Output %s", output))
+				return "", "", errors.New(fmt.Sprintf("Error occurred during snapshot creation. Output %s", output))
 			}
 		}
 	}
