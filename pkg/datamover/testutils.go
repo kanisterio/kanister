@@ -34,6 +34,7 @@ import (
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 const (
@@ -42,10 +43,6 @@ const (
 	repositoryServerTestService      = "repository-server-test-service-"
 	kanisterToolsImage               = "ghcr.io/kanisterio/kanister-tools:0.93.0"
 	kanisterToolsImageEnvName        = "KANISTER_TOOLS"
-	testAwsAccessKeyId               = "AKIAIOSFODNN7EXAMPLE"
-	testAwsAccessSecretKey           = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-	testAwsRegion                    = "us-west-2"
-	testAwsLocationEndpoint          = "http://minio.minio.svc.cluster.local:9000"
 	defaultKopiaRepositoryPassword   = "test1234"
 	defaultKopiaRepositoryUser       = "repositoryuser"
 	defaultKopiaRepositoryPath       = "repository-server-test"
@@ -100,19 +97,19 @@ func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface
 					Env: []corev1.EnvVar{
 						{
 							Name:  awsconfig.AccessKeyID,
-							Value: testAwsAccessKeyId,
+							Value: os.Getenv(testutil.S3CompliantAccessKeyIDEnv),
 						},
 						{
 							Name:  awsconfig.SecretAccessKey,
-							Value: testAwsAccessSecretKey,
+							Value: os.Getenv(testutil.S3CompliantSecretAccessKeyEnv),
 						},
 						{
 							Name:  awsconfig.Region,
-							Value: testAwsRegion,
+							Value: testutil.TestS3Region,
 						},
 						{
 							Name:  "LOCATION_ENDPOINT",
-							Value: testAwsLocationEndpoint,
+							Value: os.Getenv(testutil.S3CompliantLocationEndpointEnv),
 						},
 					},
 					VolumeMounts: []corev1.VolumeMount{
