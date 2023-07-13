@@ -17,16 +17,10 @@ package ingress
 import (
 	"context"
 
-	"github.com/pkg/errors"
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
-	netv1 "k8s.io/api/networking/v1"
-	netv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 const (
@@ -52,34 +46,7 @@ type Manager interface {
 	Update(ctx context.Context, ingress *unstructured.Unstructured, opts metav1.UpdateOptions) (runtime.Object, error)
 }
 
-// NewManager can be used to get the Manager based on the APIVersion of the ingress resources on the cluster
-// so that, respecitve methods from that APIVersion can be called
+// NewManager can be used to get the ingress resource manager
 func NewManager(ctx context.Context, kubeCli kubernetes.Interface) (Manager, error) {
-	exists, err := kube.IsResAvailableInGroupVersion(ctx, kubeCli.Discovery(), netv1.GroupName, netv1.SchemeGroupVersion.Version, ingressRes)
-	if err != nil {
-		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
-	}
-	if exists {
-		return NewNetworkingV1(kubeCli), nil
-	}
-
-	exists, err = kube.IsResAvailableInGroupVersion(ctx, kubeCli.Discovery(), extensionsv1beta1.GroupName, extensionsv1beta1.SchemeGroupVersion.Version, ingressRes)
-	if err != nil {
-		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
-	}
-	if exists {
-		return NewExtensionsV1beta1(kubeCli), nil
-	}
-
-	exists, err = kube.IsResAvailableInGroupVersion(ctx, kubeCli.Discovery(), netv1beta1.GroupName, netv1beta1.SchemeGroupVersion.Version, ingressRes)
-	if err != nil {
-		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
-	}
-	if exists {
-		return NewNetworkingV1beta1(kubeCli), nil
-	}
-
-	// We were not able to figure out which groupVersion, resource is available in.
-	// Most probably its because fake CLI was used, fallback to extensions/v1beta1
-	return NewExtensionsV1beta1(kubeCli), nil
+	return NewNetworkingV1(kubeCli), nil
 }
