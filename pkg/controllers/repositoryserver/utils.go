@@ -71,6 +71,16 @@ const (
 
 	serverRefreshedErrReason     string = "ServerRefreshFailed"
 	serverRefreshedSuccessReason string = "ServerRefreshed"
+
+	serverSetupEventMsg string = "Successfully setup Server"
+
+	repositoryConnectedEventMsg string = "Successfully connected to Repository"
+
+	serverInitializedEventMsg string = "Successfully Started Kopia Repository Server"
+
+	clientsInitializedEventMsg string = "Users Added"
+
+	serverRefreshedEventMsg string = "Server Refreshed Successfully"
 )
 
 func getRepoServerService(namespace string) corev1.Service {

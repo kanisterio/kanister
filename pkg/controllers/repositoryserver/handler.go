@@ -168,7 +168,7 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 	return h.createPodUpdateStatus(ctx, repoServerNamespace, svc)
 }
 
-func (h *RepoServerHandler) handleEvent(ctx context.Context, eventType, reason, eventMessage, conditionMsg ,conditionType string, progress crv1alpha1.RepositoryServerProgress, status metav1.ConditionStatus) error {
+func (h *RepoServerHandler) handleEvent(ctx context.Context, eventType, reason, eventMessage, conditionMsg, conditionType string, progress crv1alpha1.RepositoryServerProgress, status metav1.ConditionStatus) error {
 	condition := getCondition(status, reason, conditionMsg, conditionType)
 	if uerr := h.updateProgressInCRStatus(ctx, progress, condition); uerr != nil {
 		return uerr

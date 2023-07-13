@@ -89,13 +89,13 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info("Create or update owned resources")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
-		if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeWarning, serverSetupErrReason,err.Error(), err.Error(), crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
+		if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeWarning, serverSetupErrReason, err.Error(), err.Error(), crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, serverSetupSuccessReason, "Successfully setup Server ", "", crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, serverSetupSuccessReason, serverSetupEventMsg, "", crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
@@ -107,7 +107,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, repositoryConnectedSuccessReason, "Successfully connected to Repository", "", crkanisteriov1alpha1.RepositoryConnected, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, repositoryConnectedSuccessReason, repositoryConnectedEventMsg, "", crkanisteriov1alpha1.RepositoryConnected, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
@@ -119,7 +119,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{Requeue: false}, err
 	}
 
-	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, serverInitializedSuccessReason, "Successfully connected to Repository", "", crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, serverInitializedSuccessReason, serverInitializedEventMsg, "", crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
@@ -131,7 +131,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, clientsInitializedSuccessReason, "Users Added", "", crkanisteriov1alpha1.ClientUserInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, clientsInitializedSuccessReason, clientsInitializedEventMsg, "", crkanisteriov1alpha1.ClientUserInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
@@ -143,7 +143,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{Requeue: false}, err
 	}
 
-	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, serverInitializedSuccessReason, "Server Refreshed Successfully", "", crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Ready, metav1.ConditionTrue); uerr != nil {
+	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, serverInitializedSuccessReason, serverRefreshedEventMsg, "", crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Ready, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 	return ctrl.Result{}, nil
