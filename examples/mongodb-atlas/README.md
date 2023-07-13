@@ -7,7 +7,7 @@ It deploys and scales a MongoDB cluster in the cloud.
 ## Prerequisites
 
 * Kubernetes 1.20+
-* Kanister controller version 0.92.0 installed in your cluster
+* Kanister controller version 0.93.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 * Already provisioned MongoDB Atlas cluster (https://www.mongodb.com/docs/atlas/getting-started)
 
@@ -19,7 +19,7 @@ to install.
 ```bash
 $ helm repo add kanister https://charts.kanister.io
 $ helm install kanister --namespace kanister --create-namespace \
-    kanister/kanister-operator --set image.tag=0.92.0
+    kanister/kanister-operator --set image.tag=0.93.0
 ```
 
 ### Create Blueprint
