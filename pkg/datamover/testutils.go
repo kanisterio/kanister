@@ -155,10 +155,11 @@ func createRepositoryServerTestService(ctx context.Context, cli kubernetes.Inter
 			Selector: map[string]string{"app": "test-repo-server"},
 			Ports: []corev1.ServicePort{
 				{
-					Name:       "test-repo-server-service-port",
-					Protocol:   "TCP",
-					Port:       51515,
-					NodePort:   31325,
+					Name:     "test-repo-server-service-port",
+					Protocol: "TCP",
+					Port:     51515,
+					// Selects Random Port from NodePort Range
+					NodePort:   int32(rand.IntnRange(30000, 32767)),
 					TargetPort: intstr.FromInt(51515),
 				},
 			},
