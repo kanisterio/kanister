@@ -48,7 +48,6 @@ jobs:
     # before running `make test`, to create some CRDs on the cluster.
     - run: |
         make install-csi-hostpath-driver
-        make install-minio
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
   build:
