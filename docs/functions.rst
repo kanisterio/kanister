@@ -1671,7 +1671,6 @@ function argument and restores data to the specified path.
    `volumes`, No, `map[string]string`, mapping of `pvcName` to `mountPath` under which the volume will be available
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
    `userHostname`, No, `string`, user's hostname from user access map to be provided to the kopia repository server for performing restore
-   kopia repository server for performing restore
 
 .. note::
    The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
