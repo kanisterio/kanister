@@ -42,8 +42,6 @@ const (
 	repositoryServerTestNamespace    = "repository-server-test-namespace-"
 	repositoryServerTestPod          = "repository-server-test-pod-"
 	repositoryServerTestService      = "repository-server-test-service-"
-	kanisterToolsImage               = "ghcr.io/kanisterio/kanister-tools:0.93.0"
-	kanisterToolsImageEnvName        = "KANISTER_TOOLS"
 	defaultKopiaRepositoryPassword   = "test1234"
 	defaultKopiaRepositoryUser       = "repositoryuser"
 	defaultKopiaRepositoryPath       = "repository-server-test"
