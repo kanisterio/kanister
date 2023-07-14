@@ -105,6 +105,9 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		snapID = string(snapManifest.ID)
 		if snapManifest.RootEntry != nil {
 			rootID = snapManifest.RootEntry.ObjectID.String()
+			if snapManifest.RootEntry.DirSummary != nil && snapManifest.RootEntry.DirSummary.FatalErrorCount > 0 {
+				return "", "", errors.New(fmt.Sprintf("Error occurred during snapshot creation. Output %s", output))
+			}
 		}
 	}
 	if snapID == "" {
