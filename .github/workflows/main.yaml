@@ -48,6 +48,7 @@ jobs:
     # before running `make test`, to create some CRDs on the cluster.
     - run: |
         make install-csi-hostpath-driver
+        make install-minio
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
   build:
@@ -86,6 +87,8 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    - run: sudo rm -rf /usr/share/dotnet
+    - run: sudo rm -rf "$AGENT_TOOLSDIRECTORY"
     - run: tar -xvf ./src.tar.gz
     - run: make release-snapshot
     - run: ./build/push_images.sh

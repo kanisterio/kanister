@@ -15,9 +15,17 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"os"
+	"time"
 
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -25,15 +33,24 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/secrets"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 const (
-	testBPArg = "key"
+	testBPArg                      = "key"
+	s3CompliantAccessKeyIDEnv      = "S3_COMPLIANT_AWS_ACCESS_KEY_ID"
+	s3CompliantSecretAccessKeyEnv  = "S3_COMPLIANT_AWS_SECRET_ACCESS_KEY"
+	s3CompliantLocationEndpointEnv = "S3_COMPLIANT_LOCATION_ENDPOINT"
 )
 
 // NewTestPVC function returns a pointer to a new PVC test object
@@ -339,4 +356,182 @@ func BlueprintWithConfigMap(bp *crv1alpha1.Blueprint) *crv1alpha1.Blueprint {
 		bp.Actions[actionName].Phases[i].Args = cmArgs
 	}
 	return bp
+}
+
+func CreateSecret(cli kubernetes.Interface, namespace, name string, secrettype v1.SecretType, data map[string][]byte) (se *v1.Secret, err error) {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: name,
+		},
+		Data: data,
+	}
+	if secrettype != "" {
+		secret.Type = secrettype
+	}
+
+	se, err = cli.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	// Since CLI doesnt return gvk of the object created, setting it manually
+	if err == nil {
+		se.APIVersion = "v1"
+		se.Kind = "Secret"
+	}
+	return
+}
+
+func GetRepoPasswordSecretData(password string) map[string][]byte {
+	return map[string][]byte{
+		reposerver.RepoPasswordKey: []byte(password),
+	}
+}
+
+func GetRepoServerAdminSecretData(username, password string) map[string][]byte {
+	return map[string][]byte{
+		reposerver.AdminUsernameKey: []byte(username),
+		reposerver.AdminPasswordKey: []byte(password),
+	}
+}
+
+func GetRepoServerUserAccessSecretData(hostname, password string) map[string][]byte {
+	return map[string][]byte{
+		hostname: []byte(password),
+	}
+}
+
+func GetKopiaTLSSecretData() (map[string][]byte, error) {
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(2019),
+		Subject: pkix.Name{
+			Organization:  []string{"Test Organization"},
+			Country:       []string{"Test Country"},
+			Province:      []string{"Test Province"},
+			Locality:      []string{"Test Locality"},
+			StreetAddress: []string{"Test Street"},
+			PostalCode:    []string{"123456"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(0, 0, 1),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return nil, err
+	}
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		return nil, err
+	}
+
+	caPEM := new(bytes.Buffer)
+	err = pem.Encode(caPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caBytes,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	caPrivKeyPEM := new(bytes.Buffer)
+	err = pem.Encode(caPrivKeyPEM, &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string][]byte{
+		"tls.crt": caPEM.Bytes(),
+		"tls.key": caPrivKeyPEM.Bytes(),
+	}, nil
+}
+
+func GetDefaultS3StorageCreds() map[string][]byte {
+	key := os.Getenv(s3CompliantAccessKeyIDEnv)
+	val := os.Getenv(s3CompliantSecretAccessKeyEnv)
+
+	return map[string][]byte{
+		secrets.AWSAccessKeyID:     []byte(key),
+		secrets.AWSSecretAccessKey: []byte(val),
+	}
+}
+
+func GetDefaultS3CompliantStorageLocation() map[string][]byte {
+	return map[string][]byte{
+		reposerver.TypeKey:     []byte(crv1alpha1.LocationTypeS3Compliant),
+		reposerver.BucketKey:   []byte(TestS3BucketName),
+		reposerver.PrefixKey:   []byte(KopiaRepositoryPath),
+		reposerver.RegionKey:   []byte(TestS3Region),
+		reposerver.EndpointKey: []byte(os.Getenv(s3CompliantLocationEndpointEnv)),
+	}
+}
+
+func CreateTestKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.RepositoryServer, storageLocation map[string][]byte) error {
+	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
+
+	commandArgs := command.RepositoryCommandArgs{
+		CommandArgs: &command.CommandArgs{
+			RepoPassword:   KopiaRepositoryPassword,
+			ConfigFilePath: command.DefaultConfigFilePath,
+			LogDirectory:   command.DefaultLogDirectory,
+		},
+		CacheDirectory:  command.DefaultCacheDirectory,
+		Hostname:        KopiaRepositoryServerHost,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
+		Username:        KopiaRepositoryUser,
+		RepoPathPrefix:  KopiaRepositoryPath,
+		Location:        storageLocation,
+	}
+	return repository.ConnectToOrCreateKopiaRepository(
+		cli,
+		rs.Namespace,
+		rs.Status.ServerInfo.PodName,
+		DefaultKopiaRepositoryServerContainer,
+		commandArgs,
+	)
+}
+
+func GetTestKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryServer {
+	repositoryServer := &crv1alpha1.RepositoryServer{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-kopia-repo-server-",
+			Namespace:    namespace,
+		},
+		Spec: crv1alpha1.RepositoryServerSpec{
+			Storage: crv1alpha1.Storage{
+				SecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+				CredentialSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+			Repository: crv1alpha1.Repository{
+				RootPath: KopiaRepositoryPath,
+				Username: KopiaRepositoryUser,
+				Hostname: KopiaRepositoryServerHost,
+				PasswordSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+			Server: crv1alpha1.Server{
+				UserAccess: crv1alpha1.UserAccess{
+					UserAccessSecretRef: v1.SecretReference{
+						Namespace: namespace,
+					},
+					Username: KopiaRepositoryServerAccessUser,
+				},
+				AdminSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+				TLSSecretRef: v1.SecretReference{
+					Namespace: namespace,
+				},
+			},
+		},
+	}
+	return repositoryServer
 }
