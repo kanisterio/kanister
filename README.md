@@ -12,6 +12,8 @@ and easy to install, operate and scale.
 
 ## Highlights
 
+
+## Change from git clone
 ✅ _Kubernetes centric_ - Kanister's APIs are implemented as [Custom Resource
 Definitions](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/)
 that conforms to Kubernetes' declarative management, security and distribution
