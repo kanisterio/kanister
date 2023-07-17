@@ -205,10 +205,10 @@ func (s *RepoServerControllerSuite) CreateGCPStorageCredentialsSecret(data map[s
 }
 
 func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
-	majorVersion, err := strconv.Atoi(s.k8sServerVersion.Major)
+	minorVersion, err := strconv.Atoi(s.k8sServerVersion.Minor)
 	c.Assert(err, IsNil)
 
-	if s.k8sServerVersion.Minor == "1" && majorVersion < 25 {
+	if s.k8sServerVersion.Major == "1" && minorVersion < 25 {
 		c.Skip("skipping the test since CRD validation rules feature is enabled only after k8s version 1.25")
 	}
 	// Create a repository server CR.
