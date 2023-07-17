@@ -19,6 +19,8 @@ import (
 	"os"
 	"strings"
 
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -346,22 +348,14 @@ func (s *VolumeSnapshotTestSuite) getCreds(c *C, ctx context.Context, cli kubern
 		return GetEnvOrSkip(c, awsconfig.AccessKeyID), GetEnvOrSkip(c, awsconfig.SecretAccessKey), crv1alpha1.LocationTypeS3Compliant, nil
 
 	case pv.Spec.GCEPersistentDisk != nil:
-		serviceKey, err := getServiceKey(c)
+		_ = GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
+		creds, err := google.FindDefaultCredentials(ctx, compute.ComputeScope)
 		if err != nil {
 			return "", "", "", err
 		}
-		return "test_project_id", serviceKey, crv1alpha1.LocationTypeGCS, nil
+		return creds.ProjectID, string(creds.JSON), crv1alpha1.LocationTypeGCS, nil
 	}
 	return "", "", "", nil
-}
-
-func getServiceKey(c *C) (string, error) {
-	filename := GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
-	b, err := os.ReadFile(filename)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
 }
 
 func GetEnvOrSkip(c *C, varName string) string {

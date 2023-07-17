@@ -47,7 +47,7 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 vm-driver ?= "kvm"
 
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.12"
+ocp_version ?= "4.13"
 ###
 ### These variables should not need tweaking.
 ###
@@ -320,8 +320,8 @@ stop-kind:
 check:
 	@./build/check.sh
 
-gomod:
-	@$(MAKE) run CMD='-c "./build/gomod.sh"'
+go-mod-tidy:
+	@$(MAKE) run CMD='-c "./build/gomodtidy.sh"'
 
 
 install-crds: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
