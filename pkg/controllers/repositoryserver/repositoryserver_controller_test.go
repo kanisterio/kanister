@@ -72,6 +72,7 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	c.Assert(err, IsNil)
 	s.k8sServerVersion, err = discoveryClient.ServerVersion()
 	c.Assert(err, IsNil)
 
