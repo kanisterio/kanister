@@ -96,7 +96,6 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
-	username := tp.RepositoryServer.Username
 	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
@@ -117,7 +116,7 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		tp.RepositoryServer.Address,
 		fingerprint,
 		snapID,
-		username,
+		tp.RepositoryServer.Username,
 		userAccessPassphrase,
 	)
 }

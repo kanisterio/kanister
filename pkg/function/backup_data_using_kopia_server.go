@@ -121,7 +121,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
-	username := tp.RepositoryServer.Username
 	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
@@ -141,7 +140,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		pod,
 		tp.RepositoryServer.Address,
 		fingerprint,
-		username,
+		tp.RepositoryServer.Username,
 		userAccessPassphrase,
 		tags,
 	)

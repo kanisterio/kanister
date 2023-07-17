@@ -120,7 +120,6 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		}
 	}
 
-	username := tp.RepositoryServer.Username
 	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
@@ -144,7 +143,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		tp.RepositoryServer.Address,
 		fingerprint,
 		snapID,
-		username,
+		tp.RepositoryServer.Username,
 		userAccessPassphrase,
 		sparseRestore,
 		vols,
