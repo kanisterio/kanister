@@ -9,11 +9,6 @@ updates:
     commit-message:
       prefix: "deps(go):"
     ignore:
-      # Avoids unnecessarily auto-creating PRs for k8s dependencies, as these
-      # will be closed since k8s dependencies need to be updated all at once
-      # starting with kanister and go through additional validation.
-      - dependency-name: "k8s.io/*"
-      - dependency-name: "sigs.k8s.io/*"
       # Dependabot opens PRs for older versions of openshift that would downgrade the version in use.
       - dependency-name: "github.com/openshift/api"
     groups:
@@ -28,3 +23,9 @@ updates:
         - "github.com/minio/minio-go/*"
         - "golang.org/x/*"
         - "google.golang.org/*"
+      # create a single PR for k8s dependencies, so they can be updated all at
+      # once and go through additional validation.
+      k8s:
+        patterns:
+        - "k8s.io/*"
+        - "sigs.k8s.io/*"
