@@ -49,6 +49,6 @@ jobs:
           If you haven't already, please take a moment to review our project [contributing guideline](https://github.com/kanisterio/kanister/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/kanisterio/kanister/blob/master/CODE_OF_CONDUCT.md) document.
     - uses: alex-page/github-project-automation-plus@v0.8.1
       with:
-        repo-token: ${{ secrets.GH_TOKEN }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
         project: Kanister
         column: In Progress
