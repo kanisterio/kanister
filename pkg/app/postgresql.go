@@ -49,7 +49,7 @@ func NewPostgresDB(name string, subPath string) App {
 			RepoName: helm.BitnamiRepoName,
 			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "postgresql",
-			Version:  "12.6.0", // TODO: Revert once #2155 is addressed
+			// Version:  "12.6.0", // use latest chart version
 			Values: map[string]string{
 				"image.pullPolicy":          "Always",
 				"auth.postgresPassword":     "test@54321",
