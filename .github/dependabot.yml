@@ -2,9 +2,10 @@ version: 2
 updates:
   - package-ecosystem: gomod
     directory: "/"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 4
     schedule:
-      interval: daily
+      interval: weekly
+      day: tuesday
     commit-message:
       prefix: "deps(go):"
     ignore:
@@ -15,3 +16,15 @@ updates:
       - dependency-name: "sigs.k8s.io/*"
       # Dependabot opens PRs for older versions of openshift that would downgrade the version in use.
       - dependency-name: "github.com/openshift/api"
+    groups:
+      # create large PR upgrading multiple infrastructure dependencies in one shot,
+      # only include upstream dependencies that are stable and have somewhat
+      # regular releases which would be otherwise hard to manually manage.
+      common-golang:
+        patterns:
+        - "cloud.google.com/*"
+        - "github.com/aws/aws-sdk-go/*"
+        - "github.com/Azure/azure-sdk-for-go/sdk/*"
+        - "github.com/minio/minio-go/*"
+        - "golang.org/x/*"
+        - "google.golang.org/*"
