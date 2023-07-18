@@ -28,3 +28,8 @@ updates:
         patterns:
         - "k8s.io/*"
         - "sigs.k8s.io/*"
+  - package-ecosystem: github-actions
+    directory: "/"
+    open-pull-requests-limit: 3
+    schedule:
+      interval: daily
