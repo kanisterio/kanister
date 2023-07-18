@@ -20,7 +20,7 @@ require (
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/aws/aws-sdk-go v1.44.300
+	github.com/aws/aws-sdk-go v1.44.301
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-logr/logr v1.2.4
 	github.com/go-openapi/strfmt v0.21.7
@@ -44,7 +44,7 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
-	github.com/vmware/govmomi v0.30.5
+	github.com/vmware/govmomi v0.30.6
 	go.uber.org/zap v1.24.0
 	golang.org/x/oauth2 v0.10.0
 	google.golang.org/api v0.131.0
