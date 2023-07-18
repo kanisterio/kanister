@@ -39,7 +39,7 @@ const (
 	// BackupDataUsingKopiaServerSnapshotTagsArg is the key used for returning snapshot tags
 	BackupDataUsingKopiaServerSnapshotTagsArg = "snapshotTags"
 	// KopiaRepositoryServerUserHostname is the key used for returning the hostname of the user
-	KopiaRepositoryServerUserHostname = "userHostname"
+	KopiaRepositoryServerUserHostname = "repositoryServerUserHostname"
 )
 
 type backupDataUsingKopiaServerFunc struct{}
