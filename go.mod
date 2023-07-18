@@ -44,7 +44,7 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
-	github.com/vmware/govmomi v0.30.5
+	github.com/vmware/govmomi v0.30.6
 	go.uber.org/zap v1.24.0
 	golang.org/x/oauth2 v0.10.0
 	google.golang.org/api v0.131.0
