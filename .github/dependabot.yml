@@ -5,7 +5,6 @@ updates:
     open-pull-requests-limit: 4
     schedule:
       interval: weekly
-      day: tuesday
     commit-message:
       prefix: "deps(go):"
     ignore:
