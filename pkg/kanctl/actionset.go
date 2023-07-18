@@ -764,7 +764,7 @@ func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli 
 			}
 			return errors.New("error while fetching repo server")
 		}
-		if rs.Status.Progress != "ServerReady" {
+		if rs.Status.Progress != crv1alpha1.Ready {
 			err = errors.New("Repository Server Not Ready")
 			return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
 		}
