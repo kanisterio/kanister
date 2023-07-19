@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kanisterio/kanister/pkg/log"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -24,10 +25,14 @@ func getLabelNames(bl []BoundedLabel) []string {
 	return ln
 }
 
-// generateLabelCombinations uses a backtracking approach to generate
-// a list of label permutations
-func generateLabelCombinations(bl []BoundedLabel, labelIndex int,
-	workingSlice [][]string, resultCombinations *[][][]string) (bool, error) {
+// fillLabelCombinations uses a backtracking approach to generate
+// a list of label permutations and add them to the reference list
+// passed as an argument
+func fillLabelCombinations(
+	bl []BoundedLabel, labelIndex int,
+	workingSlice [][]string,
+	resultCombinations *[][][]string,
+) (bool, error) {
 	if labelIndex >= len(bl) {
 		if len(workingSlice) == 0 {
 			return true, nil
@@ -41,7 +46,7 @@ func generateLabelCombinations(bl []BoundedLabel, labelIndex int,
 	}
 	for i := 0; i < len(bl[labelIndex].LabelValues); i++ {
 		workingSlice = append(workingSlice, []string{bl[labelIndex].LabelName, bl[labelIndex].LabelValues[i]})
-		res, err := generateLabelCombinations(bl, labelIndex+1, workingSlice, resultCombinations)
+		res, err := fillLabelCombinations(bl, labelIndex+1, workingSlice, resultCombinations)
 		if err != nil {
 			return res, err
 		}
@@ -71,7 +76,7 @@ func getLabelCombinations(bl []BoundedLabel) ([]prometheus.Labels, error) {
 	*/
 	resultCombinations := make([][][]string, 0)
 	labelSlice := make([][]string, 0)
-	_, err := generateLabelCombinations(bl, 0, labelSlice, &resultCombinations)
+	_, err := fillLabelCombinations(bl, 0, labelSlice, &resultCombinations)
 	resultPrometheusLabels := make([]prometheus.Labels, 0)
 	for _, c := range resultCombinations {
 		labelSet := make(prometheus.Labels)
