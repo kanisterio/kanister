@@ -269,7 +269,7 @@ func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, erro
 }
 
 func checkHostnameExistsInUserAccessMap(userAccessMap map[string]string, hostname string) error {
-	// check if hostname is provided in the repository server exists in the user access map
+	// check if hostname is provided by the user exists in the user access map
 	if _, ok := userAccessMap[hostname]; !ok {
 		return errors.New("hostname provided in the repository server CR does not exist in the user access map")
 	}
