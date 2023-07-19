@@ -70,7 +70,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	// Configure and Create Test S3 Credential and Location Secrets
-	storageCredentialsSecretData := testutil.GetDefaultS3StorageCreds()
+	storageCredentialsSecretData := testutil.GetDefaultS3StorageCreds(c)
 	storageStorageLocationSecretData := testutil.GetDefaultS3CompliantStorageLocation()
 	rss.s3Creds, err = testutil.CreateSecret(rss.cli, rss.namespace.GetName(), "test-s3-creds-", corev1.SecretType(secrets.AWSSecretType), storageCredentialsSecretData)
 	c.Assert(err, IsNil)
