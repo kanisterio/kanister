@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -27,6 +28,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -59,12 +62,18 @@ type RepoServerControllerSuite struct {
 	repoServerSecrets             repositoryServerSecrets
 	DefaultRepoServerReconciler   *RepositoryServerReconciler
 	cancel                        context.CancelFunc
+	k8sServerVersion              *version.Info
 }
 
 var _ = Suite(&RepoServerControllerSuite{})
 
 func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	config, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	c.Assert(err, IsNil)
+	s.k8sServerVersion, err = discoveryClient.ServerVersion()
 	c.Assert(err, IsNil)
 
 	cli, err := kubernetes.NewForConfig(config)
@@ -159,7 +168,7 @@ func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
 	s.repoServerSecrets.storage, err = s.CreateStorageLocationSecret(testutil.GetDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
 
-	s.repoServerSecrets.storageCredentials, err = s.CreateAWSStorageCredentialsSecret(testutil.GetDefaultS3StorageCreds())
+	s.repoServerSecrets.storageCredentials, err = s.CreateAWSStorageCredentialsSecret(testutil.GetDefaultS3StorageCreds(c))
 	c.Assert(err, IsNil)
 }
 
@@ -196,6 +205,12 @@ func (s *RepoServerControllerSuite) CreateGCPStorageCredentialsSecret(data map[s
 }
 
 func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
+	minorVersion, err := strconv.Atoi(s.k8sServerVersion.Minor)
+	c.Assert(err, IsNil)
+
+	if s.k8sServerVersion.Major == "1" && minorVersion < 25 {
+		c.Skip("skipping the test since CRD validation rules feature is enabled only after k8s version 1.25")
+	}
 	// Create a repository server CR.
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
@@ -335,7 +350,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 		{
 			description: "Invalid Storage location credentials",
 			testFunction: func(rs *v1alpha1.RepositoryServer) {
-				storageLocationCredsData := testutil.GetDefaultS3StorageCreds()
+				storageLocationCredsData := testutil.GetDefaultS3StorageCreds(c)
 				storageLocationCredsData[secrets.AWSAccessKeyID] = []byte("testaccesskey")
 
 				InvalidStorageLocationCrdesSecret, err := s.CreateStorageLocationSecret(storageLocationCredsData)
