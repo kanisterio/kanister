@@ -16,6 +16,7 @@ package kanister
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/Masterminds/semver"
@@ -47,6 +48,7 @@ func Register(f Func) error {
 	funcMu.Lock()
 	defer funcMu.Unlock()
 	if f == nil {
+		fmt.Printf("kanister: cannot register nil function")
 		return errors.Errorf("kanister: Cannot register nil function")
 	}
 	if _, ok := funcs[f.Name()][version]; ok {
@@ -55,6 +57,7 @@ func Register(f Func) error {
 	if _, ok := funcs[f.Name()]; !ok {
 		funcs[f.Name()] = make(map[semver.Version]Func)
 	}
+	fmt.Println("kanister: finished registering function " + f.Name())
 	funcs[f.Name()][version] = f
 	return nil
 }

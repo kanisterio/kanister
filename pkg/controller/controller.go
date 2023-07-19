@@ -27,8 +27,23 @@ import (
 	"strings"
 	"sync"
 
+	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/scheme"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/customresource"
+	"github.com/kanisterio/kanister/pkg/eventer"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
+	kanistermetrics "github.com/kanisterio/kanister/pkg/metrics"
+	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/reconcile"
+	"github.com/kanisterio/kanister/pkg/validate"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,21 +54,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/tools/reference"
-
-	kanister "github.com/kanisterio/kanister/pkg"
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/scheme"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/eventer"
-	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/progress"
-	"github.com/kanisterio/kanister/pkg/reconcile"
-	"github.com/kanisterio/kanister/pkg/validate"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
+
+type metrics struct {
+	actionSetResolutionCounterVec prometheus.CounterVec
+}
 
 // Controller represents a controller object for kanister custom resources
 type Controller struct {
@@ -64,12 +69,35 @@ type Controller struct {
 	osClient         osversioned.Interface
 	recorder         record.EventRecorder
 	actionSetTombMap sync.Map
+	metrics          *metrics
+}
+
+const (
+	ACTION_SET_COUNTER_VEC_LABEL_RES     = "resolution"
+	ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE = "operation_type"
+)
+
+func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
+	bl := make([]kanistermetrics.BoundedLabel, 1)
+	bl[0] = kanistermetrics.BoundedLabel{LabelName: ACTION_SET_COUNTER_VEC_LABEL_RES,
+		LabelValues: []string{"success", "failure"}}
+	return bl
+}
+
+func newMetrics() *metrics {
+	actionSetCounterOpts := prometheus.CounterOpts{
+		Name: "action_set_resolutions_total",
+		Help: "Total number of action set resolutions",
+	}
+	actionSetResolutionCounterVec := kanistermetrics.InitCounterVec(prometheus.DefaultRegisterer, actionSetCounterOpts, getActionSetCounterVecLabels())
+	return &metrics{actionSetResolutionCounterVec: *actionSetResolutionCounterVec}
 }
 
 // New create controller for watching kanister custom resources created
 func New(c *rest.Config) *Controller {
 	return &Controller{
-		config: c,
+		config:  c,
+		metrics: newMetrics(),
 	}
 }
 
@@ -517,6 +545,9 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			param.UpdatePhaseParams(ctx, tp, p.Name(), output)
 			c.logAndSuccessEvent(ctx, fmt.Sprintf("Completed phase %s", p.Name()), "Ended Phase", as)
 		}
+		c.metrics.actionSetResolutionCounterVec.WithLabelValues("success").Inc()
+		fmt.Printf("NISHANT:INCREMENTED SUCCESS!")
+		// NISHANT: should add metrics here?
 		return nil
 	})
 	return nil
