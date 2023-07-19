@@ -47,13 +47,15 @@ type RepoServerHandler struct {
 }
 
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
+	if err := h.getSecretsFromCR(ctx); err != nil {
+		return errors.Wrap(err, "Failed to get Kopia API server secrets")
+	}
+
 	svc, err := h.reconcileService(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile service")
 	}
-	if err = h.getSecretsFromCR(ctx); err != nil {
-		return errors.Wrap(err, "Failed to get Kopia API server secrets")
-	}
+
 	envVars, pod, err := h.reconcilePod(ctx, svc)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile Kopia API server pod")
@@ -222,6 +224,7 @@ func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *c
 
 func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, []corev1.EnvVar, error) {
 	podOverride, err := h.preparePodOverride(ctx)
+
 	if err != nil {
 		return nil, nil, err
 	}
