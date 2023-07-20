@@ -144,6 +144,9 @@ func checkKopiaRepositoryServerReady(c *cobra.Command, rs *param.RepositoryServe
 		return err
 	}
 	repoServer, err := crCli.RepositoryServers(rs.Namespace).Get(c.Context(), rs.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
 	if repoServer.Status.Progress == crv1alpha1.Ready {
 		return nil
 	}
