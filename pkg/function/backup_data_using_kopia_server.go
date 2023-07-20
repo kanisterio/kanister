@@ -244,6 +244,7 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostname string) (string
 	}
 
 	// Set First Value of Hostname and Passphrase from User Access Map
+	// Or if Hostname provided by the user, set the Hostname and Password for hostname provided
 	var userPassPhrase string
 	for key, val := range userAccessMap {
 		if hostname == "" || hostname == key {
