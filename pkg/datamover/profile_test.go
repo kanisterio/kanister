@@ -78,6 +78,3 @@ func (ps *ProfileSuite) TestLocationOperationsForProfileDataMover(c *C) {
 	err = locationDelete(ps.ctx, p, dir)
 	c.Assert(err, IsNil)
 }
-
-func (ps *ProfileSuite) TearDownSuite(c *C) {
-}
