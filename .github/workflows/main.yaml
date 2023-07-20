@@ -37,7 +37,7 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: src
-    - uses: helm/kind-action@v1.4.0
+    - uses: helm/kind-action@v1.8.0
     - run: tar -xvf ./src.tar.gz
     - run: |
         make install-csi-hostpath-driver
