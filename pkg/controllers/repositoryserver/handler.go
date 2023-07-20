@@ -301,7 +301,7 @@ func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod
 	return nil
 }
 
-func (h *RepoServerHandler) updateProgressInCRStatus(ctx context.Context, progress crv1alpha1.RepositoryServerProgress) error {
+func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progress crv1alpha1.RepositoryServerProgress) error {
 	repoServerName := h.RepositoryServer.Name
 	repoServerNamespace := h.RepositoryServer.Namespace
 	rs := crv1alpha1.RepositoryServer{}
