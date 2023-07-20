@@ -235,25 +235,29 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostname string) (string
 		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
 	}
 
-	var hostName, userPassPhrase string
-	for key, val := range userAccessMap {
-		hostName = key
-		userPassPhrase = val
-	}
+	// Check if Hostname Provided Exists in User Access Map
 	if hostname != "" {
 		err := checkHostnameExistsInUserAccessMap(userAccessMap, hostname)
 		if err != nil {
 			return "", "", errors.Wrap(err, "Failed to find Hostname in User Access Map")
 		}
-		hostName = hostname
-		userPassPhrase = userAccessMap[hostname]
+	}
+
+	// Set First Value of Hostname and Passphrase from User Access Map
+	var userPassPhrase string
+	for key, val := range userAccessMap {
+		if hostname == "" || hostname == key {
+			hostname = key
+			userPassPhrase = val
+			break
+		}
 	}
 
 	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassPhrase)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
 	}
-	return hostName, string(decodedUserPassPhrase), nil
+	return hostname, string(decodedUserPassPhrase), nil
 }
 
 func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
