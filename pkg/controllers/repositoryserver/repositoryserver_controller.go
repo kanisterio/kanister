@@ -103,28 +103,8 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Start Kopia Repository Server")
-	if err := repoServerHandler.startRepoProxyServer(ctx); err != nil {
-		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
-			return ctrl.Result{}, uerr
-		}
-		return ctrl.Result{}, err
-	}
-
-	logger.Info("Add/Update users in Kopia Repository Server")
-	if err := repoServerHandler.createOrUpdateClientUsers(ctx); err != nil {
-		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
-			return ctrl.Result{}, uerr
-		}
-		return ctrl.Result{}, err
-	}
-
-	logger.Info("Refresh Kopia Repository Server")
-	if err := repoServerHandler.refreshServer(ctx); err != nil {
-		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
-			return ctrl.Result{}, uerr
-		}
-		return ctrl.Result{}, err
+	if result, err := repoServerHandler.performRepositoryServerActions(ctx, logger); err != nil {
+		return result, err
 	}
 
 	if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Ready); uerr != nil {
