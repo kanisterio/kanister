@@ -191,6 +191,11 @@ func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServerDataM
 	// Test Kopia Repository Location Delete
 	err = kopiaLocationDelete(rss.ctx, snapInfo.ID, defaultKopiaRepositoryPath, testKopiaRepoServerAdminPassword)
 	c.Assert(err, IsNil)
+
+	// Verify Data is Deleted from the Location
+	// Expect an Error while Pulling Data
+	err = kopiaLocationPull(rss.ctx, snapInfo.ID, defaultKopiaRepositoryPath, targetDir, testKopiaRepoServerAdminPassword)
+	c.Assert(err, NotNil)
 }
 
 func (rss *RepositoryServerSuite) TearDownSuite(c *C) {
