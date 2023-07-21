@@ -88,6 +88,34 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	rss.tlsSecret, err = testutil.CreateSecret(rss.cli, rss.namespace.GetName(), "test-repository-server-user-access-", corev1.SecretTypeTLS, kopiaTLSSecretData)
 	c.Assert(err, IsNil)
 
+	// Setup Kopia Repository Server
+	rss.setupKopiaRepositoryServer(c)
+
+	// Set Kopia Repo Server Template Param
+	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
+	rss.pod, err = rss.cli.CoreV1().Pods(rss.namespace.GetName()).Get(rss.ctx, rss.pod.GetName(), metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	rss.repoServer = &param.RepositoryServer{
+		Name:      testRepoServerName,
+		Namespace: rss.namespace.GetName(),
+		ServerInfo: crv1alpha1.ServerInfo{
+			PodName:     rss.pod.GetName(),
+			ServiceName: rss.service.GetName(),
+		},
+		Username: rss.user,
+		Credentials: param.RepositoryServerCredentials{
+			ServerTLS:        *rss.tlsSecret,
+			ServerUserAccess: *rss.userAccessSecret,
+		},
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
+		Address:         fmt.Sprintf("https://%s:%d", rss.pod.Status.HostIP, rss.service.Spec.Ports[0].NodePort),
+	}
+}
+
+func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
+	var err error
+
 	// Create Test Pod
 	rss.pod, err = createRepositoryServerTestPod(rss.ctx, rss.cli, rss.namespace.GetName(), rss.tlsSecret)
 	c.Assert(err, IsNil)
@@ -122,27 +150,6 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	// Wait for Kopia Repository Server To Get Ready
 	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod, rss.tlsSecret)
 	c.Assert(err, IsNil)
-
-	// Set Kopia Repo Server Template Param
-	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
-	rss.pod, err = rss.cli.CoreV1().Pods(rss.namespace.GetName()).Get(rss.ctx, rss.pod.GetName(), metav1.GetOptions{})
-	c.Assert(err, IsNil)
-	rss.repoServer = &param.RepositoryServer{
-		Name:      testRepoServerName,
-		Namespace: rss.namespace.GetName(),
-		ServerInfo: crv1alpha1.ServerInfo{
-			PodName:     rss.pod.GetName(),
-			ServiceName: rss.service.GetName(),
-		},
-		Username: rss.user,
-		Credentials: param.RepositoryServerCredentials{
-			ServerTLS:        *rss.tlsSecret,
-			ServerUserAccess: *rss.userAccessSecret,
-		},
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
-		Address:         fmt.Sprintf("https://%s:%d", rss.pod.Status.HostIP, rss.service.Spec.Ports[0].NodePort),
-	}
 }
 
 func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer() error {
