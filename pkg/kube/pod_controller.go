@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/pkg/errors"
@@ -40,9 +41,13 @@ var (
 type PodController interface {
 	PodName() string
 	Pod() *corev1.Pod
-	StartPod(ctx context.Context, stopTimeout time.Duration) error
+	StartPod(ctx context.Context) error
 	WaitForPodReady(ctx context.Context) error
-	StopPod(ctx context.Context) error
+	WaitForPodCompletion(ctx context.Context) error
+	StopPod(ctx context.Context, timeout time.Duration, gracePeriodSeconds int64) error
+
+	StreamPodLogs(ctx context.Context) (io.ReadCloser, error)
+
 	GetCommandExecutor() (PodCommandExecutor, error)
 	GetFileWriter() (PodFileWriter, error)
 }
@@ -50,7 +55,8 @@ type PodController interface {
 // podControllerProcessor aids in unit testing
 type podControllerProcessor interface {
 	createPod(ctx context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error)
-	waitForPodReady(ctx context.Context, podName string) error
+	waitForPodReady(ctx context.Context, namespace, podName string) error
+	waitForPodCompletion(ctx context.Context, namespace, podName string) error
 	deletePod(ctx context.Context, namespace string, podName string, opts metav1.DeleteOptions) error
 }
 
@@ -59,10 +65,9 @@ type podController struct {
 	cli        kubernetes.Interface
 	podOptions *PodOptions
 
-	pod         *corev1.Pod
-	podReady    bool
-	podName     string
-	stopTimeout time.Duration
+	pod      *corev1.Pod
+	podReady bool
+	podName  string
 
 	pcp podControllerProcessor
 }
@@ -101,8 +106,7 @@ func (p *podController) Pod() *corev1.Pod {
 }
 
 // StartPod creates pod and in case of success, it stores pod name for further use.
-// stopTimeout is also stored and will be used when StopPod will be called
-func (p *podController) StartPod(ctx context.Context, stopTimeout time.Duration) error {
+func (p *podController) StartPod(ctx context.Context) error {
 	if p.podName != "" {
 		return errors.Wrap(ErrPodControllerPodAlreadyStarted, "Failed to create pod")
 	}
@@ -119,7 +123,6 @@ func (p *podController) StartPod(ctx context.Context, stopTimeout time.Duration)
 
 	p.pod = pod
 	p.podName = pod.Name
-	p.stopTimeout = stopTimeout
 
 	return nil
 }
@@ -130,9 +133,8 @@ func (p *podController) WaitForPodReady(ctx context.Context) error {
 		return ErrPodControllerPodNotStarted
 	}
 
-	if err := p.pcp.waitForPodReady(ctx, p.podName); err != nil {
+	if err := p.pcp.waitForPodReady(ctx, p.pod.Namespace, p.pod.Name); err != nil {
 		log.WithError(err).Print("Pod failed to become ready in time", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
-		_ = p.StopPod(ctx) // best-effort
 		return errors.Wrap(err, "Pod failed to become ready in time")
 	}
 
@@ -141,23 +143,42 @@ func (p *podController) WaitForPodReady(ctx context.Context) error {
 	return nil
 }
 
-// StopPod stops the pod which was previously started, otherwise it will return ErrPodControllerPodNotStarted error.
-// stopTimeout passed to Start will be used
-func (p *podController) StopPod(ctx context.Context) error {
+// WaitForPodCompletion waits for a pod to reach a terminal state.
+func (p *podController) WaitForPodCompletion(ctx context.Context) error {
 	if p.podName == "" {
 		return ErrPodControllerPodNotStarted
 	}
 
-	if p.stopTimeout != PodControllerInfiniteStopTime {
+	if !p.podReady {
+		return ErrPodControllerPodNotReady
+	}
+
+	if err := p.pcp.waitForPodCompletion(ctx, p.pod.Namespace, p.pod.Name); err != nil {
+		log.WithError(err).Print("Pod failed to complete in time", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
+		return errors.Wrap(err, "Pod failed to complete in time")
+	}
+
+	p.podReady = false
+
+	return nil
+}
+
+// StopPod stops the pod which was previously started, otherwise it will return ErrPodControllerPodNotStarted error.
+// stopTimeout is used to limit execution time
+// gracePeriodSeconds is used to specify pod deletion grace period. If set to zero, pod should be deleted immediately
+func (p *podController) StopPod(ctx context.Context, stopTimeout time.Duration, gracePeriodSeconds int64) error {
+	if p.podName == "" {
+		return ErrPodControllerPodNotStarted
+	}
+
+	if stopTimeout != PodControllerInfiniteStopTime {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.stopTimeout)
+		ctx, cancel = context.WithTimeout(ctx, stopTimeout)
 		defer cancel()
 	}
 
-	gracePeriodSeconds := int64(0) // force immediate deletion
-
-	if err := p.pcp.deletePod(ctx, p.podOptions.Namespace, p.podName, metav1.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds}); err != nil {
-		log.WithError(err).Print("Failed to delete pod", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
+	if err := p.pcp.deletePod(ctx, p.pod.Namespace, p.podName, metav1.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds}); err != nil {
+		log.WithError(err).Print("Failed to delete pod", field.M{"PodName": p.podName, "Namespace": p.pod.Namespace})
 		return err
 	}
 
@@ -166,6 +187,14 @@ func (p *podController) StopPod(ctx context.Context) error {
 	p.pod = nil
 
 	return nil
+}
+
+func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error) {
+	if p.podName == "" {
+		return nil, ErrPodControllerPodNotStarted
+	}
+
+	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, p.pod.Spec.Containers[0].Name)
 }
 
 func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
@@ -177,11 +206,16 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		return nil, ErrPodControllerPodNotReady
 	}
 
+	containerName := p.podOptions.ContainerName
+	if containerName == "" {
+		containerName = p.pod.Spec.Containers[0].Name
+	}
+
 	pce := &podCommandExecutor{
 		cli:           p.cli,
 		namespace:     p.podOptions.Namespace,
 		podName:       p.podName,
-		containerName: p.podOptions.ContainerName,
+		containerName: containerName,
 	}
 
 	pce.pcep = pce
@@ -216,8 +250,13 @@ func (p *podController) createPod(ctx context.Context, cli kubernetes.Interface,
 }
 
 // This is wrapped for unit testing.
-func (p *podController) waitForPodReady(ctx context.Context, podName string) error {
-	return WaitForPodReady(ctx, p.cli, p.podOptions.Namespace, podName)
+func (p *podController) waitForPodReady(ctx context.Context, namespace, podName string) error {
+	return WaitForPodReady(ctx, p.cli, namespace, podName)
+}
+
+// This is wrapped for unit testing
+func (p *podController) waitForPodCompletion(ctx context.Context, namespace, podName string) error {
+	return WaitForPodCompletion(ctx, p.cli, namespace, podName)
 }
 
 // This is wrapped for unit testing.

@@ -39,7 +39,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.1.0-1793
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2-691
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
@@ -49,7 +49,7 @@ LABEL name="kanister-tools" \
     maintainer="Tom Manville<tom@kasten.io>" \
     description="Kanister tools for application-specific data management"
 
-COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
+COPY --from=restic/restic:0.15.2 /usr/bin/restic /usr/local/bin/restic
 COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 

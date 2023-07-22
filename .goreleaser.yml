@@ -37,6 +37,13 @@ builds:
   env: *env
   goos: *goos
   goarch: *goarch
+- id: repo-server-controller
+  binary: repo-server-controller
+  main: cmd/reposervercontroller/main.go
+  ldflags: *ldflags
+  env: *env
+  goos: *goos
+  goarch: *goarch
 dockers:
 - ids:
   - controller
@@ -44,14 +51,19 @@ dockers:
   - 'ghcr.io/kanisterio/controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
 - ids:
+  - repo-server-controller
+  image_templates:
+  - 'ghcr.io/kanisterio/repo-server-controller:{{ .Tag }}'
+  dockerfile: 'docker/repo-server-controller/Dockerfile'
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
-# Refers to https://github.com/kopia/kopia/commit/5c901abc90857d4b85e6694ef4eeb86de7e5e89b
-  - "--build-arg=kopiaBuildCommit=5c901ab"
+# Refers to https://github.com/kopia/kopia/commit/a1eeeeadb3759fb94184f5c83d0f54e4cbc91f72
+  - "--build-arg=kopiaBuildCommit=a1eeeea"
   - "--build-arg=kopiaRepoOrg=kopia"
   extra_files:
   - 'LICENSE'
@@ -85,16 +97,6 @@ dockers:
 - ids:
   - kando
   image_templates:
-  - 'ghcr.io/kanisterio/mongo-sidecar:{{ .Tag }}'
-  dockerfile: 'docker/kanister-mongodb-replicaset/image/Dockerfile'
-  extra_files:
-  - 'docker/kanister-mongodb-replicaset/image/install.sh'
-  - 'docker/kanister-mongodb-replicaset/image/90forceyes'
-  - 'docker/kanister-mongodb-replicaset/image/config'
-  - 'docker/kanister-mongodb-replicaset/image/gbl_env.sh'
-- ids:
-  - kando
-  image_templates:
   - 'ghcr.io/kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
 - ids:
@@ -102,16 +104,6 @@ dockers:
   image_templates:
   - 'ghcr.io/kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
-- ids:
-  - kando
-  image_templates:
-  - 'ghcr.io/kanisterio/couchbase-tools:{{ .Tag }}'
-  dockerfile: 'docker/couchbase-tools/Dockerfile'
-- ids:
-  - kando
-  image_templates:
-  - 'ghcr.io/kanisterio/foundationdb:{{ .Tag }}'
-  dockerfile: 'docker/foundationdb/Dockerfile'
 - image_templates:
   - 'ghcr.io/kanisterio/kafka-adobe-s3-source-connector:{{ .Tag }}'
   dockerfile: 'docker/kafka-adobes3Connector/image/adobeSource.Dockerfile'

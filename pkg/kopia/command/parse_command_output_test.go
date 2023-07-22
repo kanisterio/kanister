@@ -16,6 +16,7 @@ package command
 
 import (
 	"encoding/json"
+
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
 	. "gopkg.in/check.v1"
@@ -136,6 +137,12 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput
 		{
 			output: `ERROR: unable to get local filesystem entry: resolveSymlink: stat: lstat /tmp/aaa2: no such file or directory
 			`,
+			checker:        NotNil,
+			expectedSnapID: "",
+			expectedRootID: "",
+		},
+		{
+			output:         `{"id":"1b6639b9797dc77dd4ddf57723918187","source":{"host":"da","userName":"kk","path":"/mnt/nfspvc"},"description":"","startTime":"2023-07-13T00:08:08.049239555Z","endTime":"2023-07-13T00:08:08.054904252Z","incomplete":"canceled","rootEntry":{"name":"nfspvc","type":"d","mode":"0755","mtime":"2023-07-11T20:33:41.386653643Z","obj":"k453085aaf775ecb9018a3fa8e276ca5d","summ":{"size":0,"files":0,"symlinks":0,"dirs":2,"maxTime":"2023-07-11T20:33:27.628326361Z","incomplete":"canceled","numFailed":1,"errors":[{"path":"for1001","error":"permission denied"}]}}}`,
 			checker:        NotNil,
 			expectedSnapID: "",
 			expectedRootID: "",
@@ -620,6 +627,34 @@ func (kParse *KopiaParseUtilsTestSuite) TestIsEqualSnapshotCreateStats(c *C) {
 	} {
 		result := IsEqualSnapshotCreateStats(tc.a, tc.b)
 		c.Check(result, Equals, tc.expResult)
+	}
+}
+
+func (kParse *KopiaParseUtilsTestSuite) TestErrorsFromOutput(c *C) {
+	for caseIdx, tc := range []struct {
+		log            string
+		expectedErrors []string
+	}{
+		// Some real error case
+		{"ERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/"}},
+		// The same as previous but with coloured ERROR word
+		{string([]byte{27, 91, 51, 49, 109, 69, 82, 82, 79, 82, 27, 91, 48, 109, 32, 111, 112, 101, 110, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 58, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 32, 105, 115, 32, 110, 111, 116, 32, 99, 111, 110, 110, 101, 99, 116, 101, 100, 46}), []string{"open repository: repository is not connected."}},
+		// Multiple error lines (seems not possible in real life, but just to cover this possibility)
+		{"ERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/\r\nERROR another error", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/", "another error"}},
+		// Error surrounded by other output
+		{"some text\r\nERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/\r\nanother text line", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/"}},
+		// No error in output
+		{"some text\r\nanother text line", []string{}},
+		{"  2009-11-10 23:00:00 UTC <ERROR> some error\n", []string{"some error"}},
+		{"error setting attributes: could not change owner/group", []string{"setting attributes: could not change owner/group"}},
+		{"error restoring: restore error: error copying: copy file: error creating file:", []string{"restoring: restore error: error copying: copy file: error creating file:"}},
+	} {
+		errs := ErrorsFromOutput(tc.log)
+		fc := Commentf("Failed for case #%v. Log: %s", caseIdx, tc.log)
+		c.Check(len(errs), Equals, len(tc.expectedErrors), fc)
+		for i, e := range errs {
+			c.Check(e.Error(), Equals, tc.expectedErrors[i], fc)
+		}
 	}
 }
 

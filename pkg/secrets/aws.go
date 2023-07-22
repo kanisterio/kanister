@@ -1,3 +1,17 @@
+// Copyright 2023 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package secrets
 
 import (
@@ -5,12 +19,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/pkg/errors"
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 const (
@@ -40,7 +55,7 @@ const (
 // - session_token
 func ValidateAWSCredentials(secret *v1.Secret) error {
 	if string(secret.Type) != AWSSecretType {
-		return errors.New("Secret is not AWS secret")
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AWSSecretType, secret.Namespace, secret.Name)
 	}
 	count := 0
 	if _, ok := secret.Data[AWSAccessKeyID]; ok {

@@ -12,7 +12,7 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 
 - Kubernetes 1.20+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.90.0 installed in your cluster
+- Kanister controller version 0.93.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Installing the Chart
@@ -34,7 +34,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.90.0
+$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.93.0
 ```
 
 ## Integrating with Kanister

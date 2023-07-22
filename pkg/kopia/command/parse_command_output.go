@@ -105,6 +105,9 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		snapID = string(snapManifest.ID)
 		if snapManifest.RootEntry != nil {
 			rootID = snapManifest.RootEntry.ObjectID.String()
+			if snapManifest.RootEntry.DirSummary != nil && snapManifest.RootEntry.DirSummary.FatalErrorCount > 0 {
+				return "", "", errors.New(fmt.Sprintf("Error occurred during snapshot creation. Output %s", output))
+			}
 		}
 	}
 	if snapID == "" {
@@ -388,4 +391,27 @@ func IsEqualSnapshotCreateStats(a, b *SnapshotCreateStats) bool {
 		a.SizeUploadedB == b.SizeUploadedB &&
 		a.SizeEstimatedB == b.SizeEstimatedB &&
 		a.ProgressPercent == b.ProgressPercent
+}
+
+var ANSIEscapeCode = regexp.MustCompile(`\x1b[^m]*?m`)
+var kopiaErrorPattern = regexp.MustCompile(`(?:ERROR\s+|.*\<ERROR\>\s*|error\s+)(.*)`)
+
+// ErrorFromOutput parses the output of a kopia and returns an error, if found
+func ErrorsFromOutput(output string) []error {
+	if output == "" {
+		return nil
+	}
+
+	var err []error
+
+	lines := regexp.MustCompile("[\r\n]").Split(output, -1)
+	for _, l := range lines {
+		clean := ANSIEscapeCode.ReplaceAllString(l, "") // Strip all ANSI escape codes from line
+		match := kopiaErrorPattern.FindAllStringSubmatch(clean, 1)
+		if len(match) > 0 {
+			err = append(err, errors.New(match[0][1]))
+		}
+	}
+
+	return err
 }

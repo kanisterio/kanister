@@ -41,7 +41,7 @@ type RepositoryCommandArgs struct {
 
 // RepositoryConnectCommand returns the kopia command for connecting to an existing repo
 func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
 
 	if cmdArgs.ReadOnly {
@@ -75,7 +75,7 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 
 // RepositoryCreateCommand returns the kopia command for creation of a repo
 func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
 	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
@@ -122,7 +122,7 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 		RepoPassword:   cmdArgs.UserPassword,
 		ConfigFilePath: cmdArgs.ConfigFilePath,
 		LogDirectory:   cmdArgs.LogDirectory,
-	}, false)
+	})
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
 
 	if cmdArgs.ReadOnly {
@@ -147,11 +147,24 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 
 type RepositoryStatusCommandArgs struct {
 	*CommandArgs
+	GetJsonOutput bool
 }
 
 // RepositoryStatusCommand returns the kopia command for checking status of the Kopia repository
 func RepositoryStatusCommand(cmdArgs RepositoryStatusCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, true)
+	// Default to info log level unless specified otherwise.
+	if cmdArgs.LogLevel == "" {
+		// Make a copy of the common command args, set the log level to info.
+		common := *cmdArgs.CommandArgs
+		common.LogLevel = LogLevelInfo
+		cmdArgs.CommandArgs = &common
+	}
+
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, statusSubCommand)
+	if cmdArgs.GetJsonOutput {
+		args = args.AppendLoggable(jsonFlag)
+	}
+
 	return stringSliceCommand(args)
 }
