@@ -36,14 +36,14 @@ jobs:
         column: To Be Triaged
   pull-requests-comment:
     name: Triage Pull Request
-    if: github.repository == 'kanisterio/kanister' && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot'
+    if: github.repository == 'kanisterio/kanister' && github.event_name == 'pull_request' &&  github.actor != 'dependabot'
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
     - uses: actions-ecosystem/action-create-comment@v1.0.2
       # Avoid adding a comment when the PR is on the same repo.
-      if: github.event.action == 'opened'
+      if: github.event.action == 'opened' && github.event.pull_request.head.repo.fork
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         body: |
