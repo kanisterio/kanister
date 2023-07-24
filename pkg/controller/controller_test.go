@@ -46,6 +46,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	dto "github.com/prometheus/client_model/go"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -60,6 +61,7 @@ type ControllerSuite struct {
 	deployment *appsv1.Deployment
 	confimap   *v1.ConfigMap
 	recorder   record.EventRecorder
+	ctrl       *Controller
 }
 
 var _ = Suite(&ControllerSuite{})
@@ -136,8 +138,9 @@ func (s *ControllerSuite) SetUpTest(c *C) {
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	ctlr := New(config) // TODO: save this and pass in custom registry
-	err = ctlr.StartWatch(ctx, s.namespace)
+	testPrometheusRegistry := prometheus.NewRegistry()
+	s.ctrl = New(config, testPrometheusRegistry) // TODO: save this and pass in custom registry
+	err = s.ctrl.StartWatch(ctx, s.namespace)
 	c.Assert(err, IsNil)
 	s.cancel = cancel
 }
@@ -452,6 +455,14 @@ func newBPForProgressRunningPhase() *crv1alpha1.Blueprint {
 	}
 }
 
+func getCounterVec2(metric prometheus.CounterVec, metricLabels []string) float64 {
+	m := &dto.Metric{}
+	if err := metric.WithLabelValues(metricLabels...).Write(m); err != nil {
+		return 0
+	}
+	return m.Counter.GetValue()
+}
+
 func getCounterVec(c *C, gatherer prometheus.Gatherer, name string, metricLabels []string) float64 {
 	metrics, _ := gatherer.Gather()
 	for _, family := range metrics {
@@ -536,7 +547,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				name:             "WaitFunc",
 				version:          kanister.DefaultVersion,
 				metricResolution: "success",
-				// NISHANT: keep action set resolution as a variable
+				// NISHANT: keep action set resolution as a variable - DONE
 			},
 			{
 				funcNames:        []string{testutil.WaitFuncName, testutil.WaitFuncName},
@@ -619,9 +630,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 		} {
 			var err error
 			// Add a blueprint with a mocked kanister function.
-			//oldValue := getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"success"})
-			oldValue := getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{tc.metricResolution})
-			// oldFailureValue := getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"failure"})
+			oldValue := getCounterVec2(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution})
 			bp := testutil.NewTestBlueprint(pok, tc.funcNames...)
 			bp = testutil.BlueprintWithConfigMap(bp)
 			ctx := context.Background()
@@ -646,37 +655,30 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 
 			final := crv1alpha1.StateComplete
 			cancel := false
-			success := true
 		Loop:
 			for _, fn := range tc.funcNames {
 				switch fn {
 				case testutil.FailFuncName:
 					final = crv1alpha1.StateFailed
 					c.Assert(testutil.FailFuncError().Error(), DeepEquals, "Kanister function failed", Commentf("Failed case: %s", tc.name))
-					success = success && false
 					break Loop
 				// success
 				case testutil.WaitFuncName:
 					testutil.ReleaseWaitFunc()
-					success = success && true
 				// success
 				case testutil.ArgFuncName:
 					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
-					success = success && true
 				// success
 				case testutil.OutputFuncName:
 					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
-					success = success && true
 				case testutil.CancelFuncName:
 					testutil.CancelFuncStarted()
 					err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 					c.Assert(err, IsNil)
 					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
-					success = success && false
 					cancel = true
 				case testutil.VersionMismatchFuncName:
 					final = crv1alpha1.StateFailed
-					success = success && false
 					c.Assert(err, IsNil)
 				}
 			}
@@ -684,15 +686,8 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			if !cancel {
 				err = s.waitOnActionSetState(c, as, final)
 				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
-				c.Assert(getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{tc.metricResolution}), Equals, oldValue+1, Commentf("Failed case: %s", tc.name))
-				// if success {
-
-				// } else {
-				// 	c.Assert(getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"failure"}), Equals, oldFailureValue+1, Commentf("Failed case: %s", tc.name))
-				// }
-				// NISHANT: pass the labels as inputs to the table driven test
-				//c.Assert(getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"success"}), Equals, oldValue+1)
-				//fmt.Printf("NISHANT: assert succeeded")
+				c.Assert(getCounterVec2(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution}), Equals, oldValue+1, Commentf("Failed case: %s", tc.name))
+				// c.Assert(getCounterVec(c, s.ctrl.metrics.actionSetResolutionCounterVec.WithLabelValues(tc.metricResolution), "action_set_resolutions_total", []string{tc.metricResolution}), Equals, oldValue+1, Commentf("Failed case: %s", tc.name))
 			}
 			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
 			c.Assert(err, IsNil)
@@ -739,7 +734,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)
-	ctlr := New(config)
+	ctlr := New(config, nil)
 	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), as, nilAs, bp)
 
 	// Test ActionSet error event logging

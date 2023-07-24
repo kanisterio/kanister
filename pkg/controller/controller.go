@@ -83,20 +83,20 @@ func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
 	return bl
 }
 
-func newMetrics() *metrics {
+func newMetrics(reg prometheus.Registerer) *metrics {
 	actionSetCounterOpts := prometheus.CounterOpts{
 		Name: "action_set_resolutions_total",
 		Help: "Total number of action set resolutions",
 	}
-	actionSetResolutionCounterVec := kanistermetrics.InitCounterVec(prometheus.DefaultRegisterer, actionSetCounterOpts, getActionSetCounterVecLabels())
+	actionSetResolutionCounterVec := kanistermetrics.InitCounterVec(reg, actionSetCounterOpts, getActionSetCounterVecLabels())
 	return &metrics{actionSetResolutionCounterVec: *actionSetResolutionCounterVec}
 }
 
 // New create controller for watching kanister custom resources created
-func New(c *rest.Config) *Controller {
+func New(c *rest.Config, reg prometheus.Registerer) *Controller {
 	return &Controller{
 		config:  c,
-		metrics: newMetrics(),
+		metrics: newMetrics(reg),
 	}
 }
 
