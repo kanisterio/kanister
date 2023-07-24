@@ -495,8 +495,8 @@ func CreateTestKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.Repository
 	)
 }
 
-func GetTestKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryServer {
-	repositoryServer := &crv1alpha1.RepositoryServer{
+func GetTestKopiaRepositoryServerCR(namespace string) crv1alpha1.RepositoryServer {
+	repositoryServer := crv1alpha1.RepositoryServer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-kopia-repo-server-",
 			Namespace:    namespace,

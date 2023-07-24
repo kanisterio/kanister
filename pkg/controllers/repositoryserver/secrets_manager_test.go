@@ -25,13 +25,13 @@ import (
 func (s *RepoServerControllerSuite) TestFetchSecretsForRepositoryServer(c *C) {
 	// Test getSecretsFromCR is successfull
 	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
 
 	repoServerHandler := RepoServerHandler{
 		Req:              reconcile.Request{},
 		Reconciler:       s.DefaultRepoServerReconciler,
 		KubeCli:          s.kubeCli,
-		RepositoryServer: repositoryServer,
+		RepositoryServer: &repositoryServer,
 	}
 
 	err := repoServerHandler.getSecretsFromCR(context.Background())
