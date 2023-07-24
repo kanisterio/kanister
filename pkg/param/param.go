@@ -254,6 +254,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	return &tp, nil
 }
 
+// NISHANT: use this
 func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*Profile, error) {
 	if ref == nil {
 		log.Debug().Print("Executing the action without a profile")

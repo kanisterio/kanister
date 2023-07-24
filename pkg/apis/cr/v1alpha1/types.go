@@ -81,17 +81,18 @@ type ObjectReference struct {
 // ActionSetSpec is the specification for the actionset.
 type ActionSetSpec struct {
 	// Actions represents a list of Actions that need to be performed by the actionset.
+	// NISHANT: just reference the first ActionSpec
 	Actions []ActionSpec `json:"actions,omitempty"`
 }
 
 // ActionSpec is the specification for a single Action.
 type ActionSpec struct {
 	// Name is the action we'll perform. For example: `backup` or `restore`.
-	Name string `json:"name"`
+	Name string `json:"name"` // NISHANT: action name
 	// Object refers to the thing we'll perform this action on.
-	Object ObjectReference `json:"object"`
+	Object ObjectReference `json:"object"` // NISHANT: type of subject
 	// Blueprint with instructions on how to execute this action.
-	Blueprint string `json:"blueprint,omitempty"`
+	Blueprint string `json:"blueprint,omitempty"` // NISHANT: blueprint name
 	// Artifacts will be passed as inputs into this phase.
 	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
 	// ConfigMaps that we'll get and pass into the blueprint.
@@ -100,7 +101,9 @@ type ActionSpec struct {
 	Secrets map[string]ObjectReference `json:"secrets,omitempty"`
 	// Profile is use to specify the location where store artifacts and the
 	// credentials authorized to access them.
-	Profile *ObjectReference `json:"profile,omitempty"`
+	Profile *ObjectReference `json:"profile,omitempty"` // NISHANT: type of profile
+	// NISHANT: you may need to make a client call using object reference to get the actual profile
+	// object
 	// RepositoryServer is used to specify the CR reference
 	// of the kopia repository server
 	RepositoryServer *ObjectReference `json:"repositoryServer,omitempty"`

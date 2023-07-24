@@ -73,8 +73,7 @@ type Controller struct {
 }
 
 const (
-	ACTION_SET_COUNTER_VEC_LABEL_RES     = "resolution"
-	ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE = "operation_type"
+	ACTION_SET_COUNTER_VEC_LABEL_RES = "resolution"
 )
 
 func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
@@ -460,12 +459,18 @@ func (c *Controller) LoadOrStoreTomb(ctx context.Context, asName string) (*tomb.
 func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet, aIDX int, bp *crv1alpha1.Blueprint) error {
 	action := as.Spec.Actions[aIDX]
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
+	// NISHANT: extract profile from tp
 	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, c.osClient, action)
+
 	if err != nil {
+		c.metrics.actionSetResolutionCounterVec.WithLabelValues("failure").Inc()
+		fmt.Printf("NISHANT: INCREMENTED FAILURE! - 1")
 		return err
 	}
 	phases, err := kanister.GetPhases(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
+		c.metrics.actionSetResolutionCounterVec.WithLabelValues("failure").Inc()
+		fmt.Printf("NISHANT: INCREMENTED FAILURE! - 2")
 		return err
 	}
 
@@ -473,6 +478,8 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	// can be specified in blueprint using actions[name].deferPhase
 	deferPhase, err := kanister.GetDeferPhase(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
+		c.metrics.actionSetResolutionCounterVec.WithLabelValues("failure").Inc()
+		fmt.Printf("NISHANT: INCREMENTED FAILURE! - 3")
 		return err
 	}
 
@@ -540,14 +547,26 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 				}
 				c.logAndErrorEvent(ctx, msg, reason, err, as, bp)
 				coreErr = err
+				fmt.Printf("NISHANT: INCREMENTED FAILURE! - 4")
+				c.metrics.actionSetResolutionCounterVec.WithLabelValues("failure").Inc()
 				return nil
 			}
 			param.UpdatePhaseParams(ctx, tp, p.Name(), output)
 			c.logAndSuccessEvent(ctx, fmt.Sprintf("Completed phase %s", p.Name()), "Ended Phase", as)
 		}
 		c.metrics.actionSetResolutionCounterVec.WithLabelValues("success").Inc()
-		fmt.Printf("NISHANT:INCREMENTED SUCCESS!")
+		/*
+				err = c.client.Get().
+			Namespace(c.ns).
+			Resource("actionsets").
+			Name(name).
+			VersionedParams(&options, scheme.ParameterCodec).
+			Do(ctx).
+			Into(result)
+		*/
+		fmt.Printf("NISHANT: INCREMENTED SUCCESS!")
 		// NISHANT: should add metrics here?
+		// NISHANT: add helm feature flag for the metric
 		return nil
 	})
 	return nil

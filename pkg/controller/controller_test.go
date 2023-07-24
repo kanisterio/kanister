@@ -136,7 +136,7 @@ func (s *ControllerSuite) SetUpTest(c *C) {
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	ctlr := New(config)
+	ctlr := New(config) // TODO: save this and pass in custom registry
 	err = ctlr.StartWatch(ctx, s.namespace)
 	c.Assert(err, IsNil)
 	s.cancel = cancel
@@ -524,86 +524,104 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 func (s *ControllerSuite) TestExecActionSet(c *C) {
 	for _, pok := range []string{"StatefulSet", "Deployment"} {
 		for _, tc := range []struct {
-			funcNames   []string
-			args        [][]string
-			name        string
-			version     string
-			description string
+			funcNames        []string
+			args             [][]string
+			name             string
+			version          string
+			description      string
+			metricResolution string
 		}{
 			{
-				funcNames: []string{testutil.WaitFuncName},
-				name:      "WaitFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.WaitFuncName},
+				name:             "WaitFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "success",
+				// NISHANT: keep action set resolution as a variable
 			},
-			// {
-			// 	funcNames: []string{testutil.WaitFuncName, testutil.WaitFuncName},
-			// 	name:      "WaitWait",
-			// 	version:   kanister.DefaultVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.FailFuncName},
-			// 	name:      "FailFunc",
-			// 	version:   kanister.DefaultVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.WaitFuncName, testutil.FailFuncName},
-			// 	name:      "WaitFail",
-			// 	version:   kanister.DefaultVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.FailFuncName, testutil.WaitFuncName},
-			// 	name:      "FailWait",
-			// 	version:   kanister.DefaultVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.ArgFuncName},
-			// 	name:      "ArgFunc",
-			// 	version:   kanister.DefaultVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.ArgFuncName, testutil.FailFuncName},
-			// 	name:      "ArgFail",
-			// 	version:   kanister.DefaultVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.OutputFuncName},
-			// 	name:      "OutputFunc",
-			// 	version:   kanister.DefaultVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.CancelFuncName},
-			// 	name:      "CancelFunc",
-			// 	version:   kanister.DefaultVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.ArgFuncName},
-			// 	name:      "ArgFuncVersion",
-			// 	version:   testutil.TestVersion,
-			// },
-			// {
-			// 	funcNames: []string{testutil.ArgFuncName},
-			// 	name:      "ArgFuncVersionFallback",
-			// 	version:   "v1.2.3",
-			// },
-			// {
-			// 	funcNames: []string{testutil.ArgFuncName},
-			// 	name:      "ArgFuncNoActionSetVersion",
-			// 	version:   "",
-			// },
-			// {
-			// 	funcNames: []string{testutil.VersionMismatchFuncName},
-			// 	name:      "VersionMismatchFunc",
-			// 	version:   "v1.2.3",
-			// },
-			// {
-			// 	funcNames: []string{testutil.ArgFuncName, testutil.OutputFuncName},
-			// 	name:      "ArgOutputFallbackOnlyOutput",
-			// 	version:   testutil.TestVersion,
-			// },
+			{
+				funcNames:        []string{testutil.WaitFuncName, testutil.WaitFuncName},
+				name:             "WaitWait",
+				version:          kanister.DefaultVersion,
+				metricResolution: "success",
+			},
+			{
+				funcNames:        []string{testutil.FailFuncName},
+				name:             "FailFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
+			},
+			{
+				funcNames:        []string{testutil.WaitFuncName, testutil.FailFuncName},
+				name:             "WaitFail",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
+			},
+			{
+				funcNames:        []string{testutil.FailFuncName, testutil.WaitFuncName},
+				name:             "FailWait",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
+			},
+			{
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "success",
+			},
+			{
+				funcNames:        []string{testutil.ArgFuncName, testutil.FailFuncName},
+				name:             "ArgFail",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
+			},
+			{
+				funcNames:        []string{testutil.OutputFuncName},
+				name:             "OutputFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "success",
+			},
+			{
+				funcNames:        []string{testutil.CancelFuncName},
+				name:             "CancelFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
+			},
+			{
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncVersion",
+				version:          testutil.TestVersion,
+				metricResolution: "success",
+			},
+			{
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncVersionFallback",
+				version:          "v1.2.3",
+				metricResolution: "success",
+			},
+			{
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncNoActionSetVersion",
+				version:          "",
+				metricResolution: "success",
+			},
+			{
+				funcNames:        []string{testutil.VersionMismatchFuncName},
+				name:             "VersionMismatchFunc",
+				version:          "v1.2.3",
+				metricResolution: "failure",
+			},
+			{
+				funcNames:        []string{testutil.ArgFuncName, testutil.OutputFuncName},
+				name:             "ArgOutputFallbackOnlyOutput",
+				version:          testutil.TestVersion,
+				metricResolution: "success",
+			},
 		} {
 			var err error
 			// Add a blueprint with a mocked kanister function.
-			oldValue := getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"success"})
+			//oldValue := getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"success"})
+			oldValue := getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{tc.metricResolution})
+			// oldFailureValue := getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"failure"})
 			bp := testutil.NewTestBlueprint(pok, tc.funcNames...)
 			bp = testutil.BlueprintWithConfigMap(bp)
 			ctx := context.Background()
@@ -628,30 +646,37 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 
 			final := crv1alpha1.StateComplete
 			cancel := false
+			success := true
 		Loop:
 			for _, fn := range tc.funcNames {
 				switch fn {
 				case testutil.FailFuncName:
 					final = crv1alpha1.StateFailed
 					c.Assert(testutil.FailFuncError().Error(), DeepEquals, "Kanister function failed", Commentf("Failed case: %s", tc.name))
+					success = success && false
 					break Loop
 				// success
 				case testutil.WaitFuncName:
 					testutil.ReleaseWaitFunc()
+					success = success && true
 				// success
 				case testutil.ArgFuncName:
 					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
+					success = success && true
 				// success
 				case testutil.OutputFuncName:
 					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
+					success = success && true
 				case testutil.CancelFuncName:
 					testutil.CancelFuncStarted()
 					err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 					c.Assert(err, IsNil)
 					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
+					success = success && false
 					cancel = true
 				case testutil.VersionMismatchFuncName:
 					final = crv1alpha1.StateFailed
+					success = success && false
 					c.Assert(err, IsNil)
 				}
 			}
@@ -659,7 +684,15 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			if !cancel {
 				err = s.waitOnActionSetState(c, as, final)
 				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
-				c.Assert(getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"success"}), Equals, oldValue+1)
+				c.Assert(getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{tc.metricResolution}), Equals, oldValue+1, Commentf("Failed case: %s", tc.name))
+				// if success {
+
+				// } else {
+				// 	c.Assert(getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"failure"}), Equals, oldFailureValue+1, Commentf("Failed case: %s", tc.name))
+				// }
+				// NISHANT: pass the labels as inputs to the table driven test
+				//c.Assert(getCounterVec(c, prometheus.DefaultGatherer, "action_set_resolutions_total", []string{"success"}), Equals, oldValue+1)
+				//fmt.Printf("NISHANT: assert succeeded")
 			}
 			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
 			c.Assert(err, IsNil)
