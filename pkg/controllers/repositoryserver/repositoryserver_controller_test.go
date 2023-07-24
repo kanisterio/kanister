@@ -256,7 +256,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 	err = testutil.CreateTestKopiaRepository(s.kubeCli, repoServerCRCreated, testutil.GetDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
 
-	err = s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	_, err = s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
@@ -271,14 +271,9 @@ func (s *RepoServerControllerSuite) TestRepositoryServerCRStateWithoutSecrets(c 
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
-	err = s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
 	c.Assert(err, NotNil)
-
-	// Get repository server CR with the updated server information
-	repoServerCRCreated, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Name, metav1.GetOptions{})
-	c.Assert(err, IsNil)
-
-	c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.Failed)
+	c.Assert(state, Equals, v1alpha1.Failed)
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
@@ -367,14 +362,9 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 		repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &invalidCR, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
-		err = s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+		state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
 		c.Assert(err, NotNil)
-
-		//Get repository server CR with the updated server information
-		repoServerCRCreated, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Name, metav1.GetOptions{})
-		c.Assert(err, IsNil)
-
-		c.Assert(repoServerCRCreated.Status.Progress, Equals, v1alpha1.Failed)
+		c.Assert(state, Equals, v1alpha1.Failed)
 	}
 }
 
@@ -405,15 +395,18 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 	return err
 }
 
-func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerverName string) error {
+func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerverName string) (v1alpha1.RepositoryServerProgress, error) {
 	ctxTimeout := 15 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
+	var repoServerState v1alpha1.RepositoryServerProgress
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		repoServerCR, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, reposerverName, metav1.GetOptions{})
 		if err != nil {
+			repoServerState = ""
 			return false, err
 		}
+		repoServerState = repoServerCR.Status.Progress
 		if repoServerCR.Status.Progress == "" || repoServerCR.Status.Progress == v1alpha1.Pending {
 			return false, nil
 		}
@@ -425,7 +418,7 @@ func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerver
 		}
 		return false, errors.New(fmt.Sprintf("Unexpected Repository server state: %s", repoServerCR.Status.Progress))
 	})
-	return err
+	return repoServerState, err
 }
 
 func setRepositoryServerSecretsInCR(secrets *repositoryServerSecrets, repoServerCR *crv1alpha1.RepositoryServer) {
