@@ -241,7 +241,7 @@ func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Se
 			return nil, errors.New("Claim name not set for file store location secret, failed to retrieve PVC")
 		}
 		claimNameString := string(claimName)
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, string(claimNameString), metav1.GetOptions{}); err != nil {
+		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, claimNameString, metav1.GetOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "Failed to validate if PVC %s:%s exists", namespace, claimName)
 		}
 		vols[claimNameString] = storage.DefaultFSMountPath
