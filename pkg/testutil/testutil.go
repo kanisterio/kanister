@@ -536,3 +536,10 @@ func GetTestKopiaRepositoryServerCR(namespace string) crv1alpha1.RepositoryServe
 	}
 	return repositoryServer
 }
+
+func GetFileStoreLocationSecretData(claimName string) map[string][]byte {
+	return map[string][]byte{
+		reposerver.TypeKey:      []byte(reposerver.LocTypeFilestore),
+		reposerver.ClaimNameKey: []byte(claimName),
+	}
+}
