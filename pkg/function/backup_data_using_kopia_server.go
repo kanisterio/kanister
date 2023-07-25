@@ -229,26 +229,26 @@ func backupDataUsingKopiaServer(
 	return kopiacmd.ParseSnapshotCreateOutput(stdout, stderr)
 }
 
-func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostName string) (string, string, error) {
+func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostname string) (string, string, error) {
 	var userAccessMap map[string]string
 	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
 		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
 	}
 
-	// Check if HostName Provided Exists in User Access Map
-	if hostName != "" {
-		err := checkHostnameExistsInUserAccessMap(userAccessMap, hostName)
+	// Check if hostname provided exists in the User Access Map
+	if hostname != "" {
+		err := checkHostnameExistsInUserAccessMap(userAccessMap, hostname)
 		if err != nil {
-			return "", "", errors.Wrap(err, "Failed to find Hostname in User Access Map")
+			return "", "", errors.Wrap(err, "Failed to find hostname in the User Access Map")
 		}
 	}
 
-	// Set First Value of HostName and Passphrase from User Access Map
-	// Or if HostName provided by the user, set the HostName and Password for HostName provided
+	// Set First Value of hostname and passphrase from the User Access Map
+	// Or if hostname provided by the user, set the hostname and password for hostname provided
 	var userPassPhrase string
 	for key, val := range userAccessMap {
-		if hostName == "" || hostName == key {
-			hostName = key
+		if hostname == "" || hostname == key {
+			hostname = key
 			userPassPhrase = val
 			break
 		}
@@ -258,7 +258,7 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostName string) (string
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
 	}
-	return hostName, string(decodedUserPassPhrase), nil
+	return hostname, string(decodedUserPassPhrase), nil
 }
 
 func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
