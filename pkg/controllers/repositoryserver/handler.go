@@ -319,7 +319,7 @@ func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progre
 	return nil
 }
 
-func (h *RepoServerHandler) performRepositoryServerActions(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
+func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
 	logger.Info("Start Kopia Repository Server")
 	if err := h.startRepoProxyServer(ctx); err != nil {
 		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
