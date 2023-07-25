@@ -17,13 +17,9 @@ package kando
 import (
 	"encoding/json"
 
-	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/datamover"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -98,10 +94,6 @@ func dataMoverFromCMD(cmd *cobra.Command, kopiaSnapshot, outputName string) (dat
 		if err != nil {
 			return nil, err
 		}
-		err = checkKopiaRepositoryServerReady(cmd, repositoryServerRef)
-		if err != nil {
-			return nil, err
-		}
 		return datamover.NewRepositoryServerDataMover(repositoryServerRef, outputName, kopiaSnapshot, cmd.Flag(repositoryServerUserHostnameFlagName).Value.String()), nil
 	default:
 		return nil, errors.New("Could not initialize DataMover.")
@@ -132,23 +124,4 @@ func dataMoverTypeFromCMD(c *cobra.Command) DataMoverType {
 		return DataMoverTypeRepositoryServer
 	}
 	return ""
-}
-
-func checkKopiaRepositoryServerReady(c *cobra.Command, rs *param.RepositoryServer) error {
-	cfg, err := kube.LoadConfig()
-	if err != nil {
-		return err
-	}
-	crCli, err := crclient.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	repoServer, err := crCli.RepositoryServers(rs.Namespace).Get(c.Context(), rs.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	if repoServer.Status.Progress == crv1alpha1.Ready {
-		return nil
-	}
-	return errors.Errorf("Repository Server %s/%s is Not Ready", rs.Namespace, rs.Name)
 }
