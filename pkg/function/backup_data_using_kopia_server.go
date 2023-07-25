@@ -245,20 +245,20 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostname string) (string
 
 	// Set First Value of hostname and passphrase from the User Access Map
 	// Or if hostname provided by the user, set the hostname and password for hostname provided
-	var userPassPhrase string
+	var userPassphrase string
 	for key, val := range userAccessMap {
 		if hostname == "" || hostname == key {
 			hostname = key
-			userPassPhrase = val
+			userPassphrase = val
 			break
 		}
 	}
 
-	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassPhrase)
+	decodedUserPassphrase, err := base64.StdEncoding.DecodeString(userPassphrase)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
 	}
-	return hostname, string(decodedUserPassPhrase), nil
+	return hostname, string(decodedUserPassphrase), nil
 }
 
 func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
