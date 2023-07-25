@@ -235,7 +235,7 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostName string) (string
 		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
 	}
 
-	// Check if Hostname Provided Exists in User Access Map
+	// Check if HostName Provided Exists in User Access Map
 	if hostName != "" {
 		err := checkHostnameExistsInUserAccessMap(userAccessMap, hostName)
 		if err != nil {
@@ -243,8 +243,8 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostName string) (string
 		}
 	}
 
-	// Set First Value of Hostname and Passphrase from User Access Map
-	// Or if Hostname provided by the user, set the Hostname and Password for hostName provided
+	// Set First Value of HostName and Passphrase from User Access Map
+	// Or if HostName provided by the user, set the HostName and Password for HostName provided
 	var userPassPhrase string
 	for key, val := range userAccessMap {
 		if hostName == "" || hostName == key {
