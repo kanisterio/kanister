@@ -17,14 +17,17 @@ package repositoryserver
 import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/testutil"
 	. "gopkg.in/check.v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (s *RepoServerControllerSuite) TestCacheSettingsConfiguration(c *C) {
-	repositoryServer := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
+func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
+	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
+
 	defaultcontentCacheMB, defaultmetadataCacheMB := command.GetGeneralCacheSizeSettings()
+
 	repoServerHandler := RepoServerHandler{
 		Req:              reconcile.Request{},
 		Reconciler:       s.DefaultRepoServerReconciler,
