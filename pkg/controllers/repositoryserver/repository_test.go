@@ -32,7 +32,7 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Req:              reconcile.Request{},
 		Reconciler:       s.DefaultRepoServerReconciler,
 		KubeCli:          s.kubeCli,
-		RepositoryServer: repositoryServer,
+		RepositoryServer: &repositoryServer,
 	}
 
 	//Test if Default cache size settings are set
@@ -76,14 +76,14 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 }
 
 func (s *RepoServerControllerSuite) TestConfigFileAndLogDirectoryConfiguration(c *C) {
-	repositoryServer := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
+	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
 
 	repoServerHandler := RepoServerHandler{
 		Req:              reconcile.Request{},
 		Reconciler:       s.DefaultRepoServerReconciler,
 		KubeCli:          s.kubeCli,
-		RepositoryServer: repositoryServer,
+		RepositoryServer: &repositoryServer,
 	}
 
 	// Check if default Log directory and config file path is set

@@ -41,12 +41,9 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/consts"
-<<<<<<< HEAD
-=======
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/secrets"
->>>>>>> master
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
@@ -374,14 +371,11 @@ func CreateSecret(cli kubernetes.Interface, namespace, name string, secrettype v
 	}
 
 	se, err = cli.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
-<<<<<<< HEAD
-=======
 	// Since CLI doesnt return gvk of the object created, setting it manually
 	if err == nil {
 		se.APIVersion = "v1"
 		se.Kind = "Secret"
 	}
->>>>>>> master
 	return
 }
 
@@ -454,8 +448,6 @@ func GetKopiaTLSSecretData() (map[string][]byte, error) {
 		"tls.key": caPrivKeyPEM.Bytes(),
 	}, nil
 }
-<<<<<<< HEAD
-=======
 
 func GetDefaultS3StorageCreds(c *check.C) map[string][]byte {
 	key := GetEnvOrSkip(c, s3CompliantAccessKeyIDEnv)
@@ -551,4 +543,3 @@ func GetFileStoreLocationSecretData(claimName string) map[string][]byte {
 		reposerver.ClaimNameKey: []byte(claimName),
 	}
 }
->>>>>>> master
