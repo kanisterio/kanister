@@ -217,7 +217,13 @@ func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace s
 	if err != nil {
 		return nil, nil, err
 	}
-	podOptions := getPodOptions(repoServerNamespace, podOverride, svc)
+
+	vols, err := getVolumes(ctx, h.KubeCli, h.RepositoryServerSecrets.storage, repoServerNamespace)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	podOptions := getPodOptions(repoServerNamespace, podOverride, svc, vols)
 	pod, envVars, err := h.setCredDataFromSecretInPod(ctx, podOptions)
 	if err != nil {
 		return nil, nil, err
