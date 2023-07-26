@@ -34,6 +34,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/poll"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
@@ -56,6 +57,7 @@ const (
 	selectorNamespaceFlag    = "selector-namespace"
 	namespaceTargetsFlagName = "namespacetargets"
 	objectsFlagName          = "objects"
+	waitForReadyFlagName     = "wait"
 )
 
 var (
@@ -105,6 +107,7 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().StringSliceP(namespaceTargetsFlagName, "T", []string{}, "namespaces for the action set, comma separated list of namespaces (eg: --namespacetargets namespace1,namespace2)")
 	cmd.Flags().StringSliceP(objectsFlagName, "O", []string{}, "objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)")
+	cmd.Flags().BoolP(waitForReadyFlagName, "w", false, "wait for resources to get in ready state")
 	return cmd
 }
 
@@ -121,7 +124,7 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	valFlag, _ := cmd.Flags().GetBool(skipValidationFlag)
 	if !valFlag {
-		err = verifyParams(ctx, params, cli, crCli, osCli)
+		err = verifyParams(cmd, ctx, params, cli, crCli, osCli)
 		if err != nil {
 			return err
 		}
@@ -643,7 +646,7 @@ func parseName(k string, r string) (namespace, name string, err error) {
 	return m[1], m[2], nil
 }
 
-func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
+func verifyParams(cmd *cobra.Command, ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
@@ -674,7 +677,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	// RepositoryServer
 	go func() {
 		defer wg.Done()
-		err := verifyRepositoryServerParams(p.RepositoryServer, crCli, ctx)
+		err := verifyRepositoryServerParams(cmd, p.RepositoryServer, crCli, ctx)
 		if err != nil {
 			msgs <- err
 		}
@@ -755,7 +758,7 @@ func generateActionSetName(p *PerformParams) (string, error) {
 	return "", errMissingFieldActionName
 }
 
-func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli versioned.Interface, ctx context.Context) error {
+func verifyRepositoryServerParams(cmd *cobra.Command, repoServer *crv1alpha1.ObjectReference, crCli versioned.Interface, ctx context.Context) error {
 	if repoServer != nil {
 		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
 		if err != nil {
@@ -764,10 +767,34 @@ func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli 
 			}
 			return errors.New("error while fetching repo server")
 		}
-		if rs.Status.Progress != crv1alpha1.Ready {
-			err = errors.New("Repository Server Not Ready")
-			return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
+		wait, _ := cmd.Flags().GetBool(waitForReadyFlagName)
+		if wait {
+			err = waitForKopiaRepositoryServerReady(ctx, crCli, rs)
+			if err != nil {
+				return err
+			}
+		} else {
+			if rs.Status.Progress != crv1alpha1.Ready {
+				err = errors.New("Repository Server Not Ready")
+				return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
+			}
 		}
+	}
+	return nil
+}
+
+func waitForKopiaRepositoryServerReady(ctx context.Context, crCli versioned.Interface, rs *crv1alpha1.RepositoryServer) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
+	defer waitCancel()
+	pollErr := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
+		if repositoryServer.Status.Progress == crv1alpha1.Ready && err == nil {
+			return true, nil
+		}
+		return false, err
+	})
+	if pollErr != nil {
+		return errors.Wrapf(pollErr, "Repository Server %s/%s could not become Ready", rs.GetNamespace(), rs.GetName())
 	}
 	return nil
 }
