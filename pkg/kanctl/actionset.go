@@ -768,17 +768,12 @@ func verifyRepositoryServerParams(waitForRepoServerReady bool, repoServer *crv1a
 			}
 			return errors.New("error while fetching repo server")
 		}
-		wait, _ := cmd.Flags().GetBool(waitForReadyFlagName)
-		if wait {
-			err = waitForKopiaRepositoryServerReady(ctx, crCli, rs)
-			if err != nil {
-				return err
-			}
-		} else {
-			if rs.Status.Progress != crv1alpha1.Ready {
-				err = errors.New("Repository Server Not Ready")
-				return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
-			}
+		if waitForRepoServerReady {
+			return waitForKopiaRepositoryServerReady(ctx, crCli, rs)
+		}
+		if rs.Status.Progress != crv1alpha1.Ready {
+			err = errors.New("Repository Server Not Ready")
+			return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
 		}
 	}
 	return nil
@@ -789,10 +784,7 @@ func waitForKopiaRepositoryServerReady(ctx context.Context, crCli versioned.Inte
 	defer waitCancel()
 	pollErr := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
-		if repositoryServer.Status.Progress == crv1alpha1.Ready && err == nil {
-			return true, nil
-		}
-		return false, err
+		return repositoryServer.Status.Progress == crv1alpha1.Ready, err
 	})
 	if pollErr != nil {
 		return errors.Wrapf(pollErr, "Repository Server %s/%s could not become Ready", rs.GetNamespace(), rs.GetName())
