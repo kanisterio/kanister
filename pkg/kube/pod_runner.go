@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
@@ -42,11 +42,27 @@ type podRunner struct {
 	pc PodController
 }
 
+// Need to establish relationship between podRunnerOption and PodControllerOption
+type PodRunnerOptions func(p *podRunner) // PodControllerOption
+
+// func PodControllerProcessorToPodRunOptions(processor podControllerProcessor) PodRunnerOptions {
+// 	return WithPodControllerProcessor(processor)
+// }
+
 // NewPodRunner returns a new PodRunner given Kubernetes Client and PodOptions
-func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
-	return &podRunner{
+func NewPodRunner(cli kubernetes.Interface, options *PodOptions, prOpts ...PodRunnerOptions) PodRunner {
+	// how to pass PodControllerOption here?
+	// assumption: the controllerOptions can be replaced with fake ones in
+	// the unit test on K10 side
+	r := &podRunner{
 		pc: NewPodController(cli, options),
 	}
+
+	for _, opt := range prOpts {
+		opt(r)
+	}
+
+	return r
 }
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
