@@ -10,6 +10,12 @@ updates:
     ignore:
       # Dependabot opens PRs for older versions of openshift that would downgrade the version in use.
       - dependency-name: "github.com/openshift/api"
+      - dependency-name: "k8s.io/*"
+        # only allow patch updates
+        update-types: ["version-update:semver-major","version-update:semver-minor"]
+      - dependency-name: "sigs.k8s.io/*"
+        # only allow patch updates
+        update-types: ["version-update:semver-major","version-update:semver-minor"]
     groups:
       # create large PR upgrading multiple infrastructure dependencies in one shot,
       # only include upstream dependencies that are stable and have somewhat
@@ -17,7 +23,7 @@ updates:
       common-golang:
         patterns:
         - "cloud.google.com/*"
-        - "github.com/aws/aws-sdk-go/*"
+        - "github.com/aws/aws-sdk-go"
         - "github.com/Azure/azure-sdk-for-go/sdk/*"
         - "github.com/minio/minio-go/*"
         - "golang.org/x/*"

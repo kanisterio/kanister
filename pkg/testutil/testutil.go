@@ -495,8 +495,8 @@ func CreateTestKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.Repository
 	)
 }
 
-func GetTestKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryServer {
-	repositoryServer := &crv1alpha1.RepositoryServer{
+func GetTestKopiaRepositoryServerCR(namespace string) crv1alpha1.RepositoryServer {
+	repositoryServer := crv1alpha1.RepositoryServer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-kopia-repo-server-",
 			Namespace:    namespace,
@@ -535,4 +535,11 @@ func GetTestKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryServ
 		},
 	}
 	return repositoryServer
+}
+
+func GetFileStoreLocationSecretData(claimName string) map[string][]byte {
+	return map[string][]byte{
+		reposerver.TypeKey:      []byte(reposerver.LocTypeFilestore),
+		reposerver.ClaimNameKey: []byte(claimName),
+	}
 }
