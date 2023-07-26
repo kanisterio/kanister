@@ -39,25 +39,25 @@ import (
 )
 
 const (
-	actionFlagName           = "action"
-	actionSetFlagName        = "action-set"
-	blueprintFlagName        = "blueprint"
-	configMapsFlagName       = "config-maps"
-	deploymentFlagName       = "deployment"
-	optionsFlagName          = "options"
-	profileFlagName          = "profile"
-	repositoryServerFlagName = "repository-server"
-	pvcFlagName              = "pvc"
-	secretsFlagName          = "secrets"
-	statefulSetFlagName      = "statefulset"
-	deploymentConfigFlagName = "deploymentconfig"
-	sourceFlagName           = "from"
-	selectorFlagName         = "selector"
-	selectorKindFlag         = "kind"
-	selectorNamespaceFlag    = "selector-namespace"
-	namespaceTargetsFlagName = "namespacetargets"
-	objectsFlagName          = "objects"
-	waitForReadyFlagName     = "wait"
+	actionFlagName                       = "action"
+	actionSetFlagName                    = "action-set"
+	blueprintFlagName                    = "blueprint"
+	configMapsFlagName                   = "config-maps"
+	deploymentFlagName                   = "deployment"
+	optionsFlagName                      = "options"
+	profileFlagName                      = "profile"
+	repositoryServerFlagName             = "repository-server"
+	pvcFlagName                          = "pvc"
+	secretsFlagName                      = "secrets"
+	statefulSetFlagName                  = "statefulset"
+	deploymentConfigFlagName             = "deploymentconfig"
+	sourceFlagName                       = "from"
+	selectorFlagName                     = "selector"
+	selectorKindFlag                     = "kind"
+	selectorNamespaceFlag                = "selector-namespace"
+	namespaceTargetsFlagName             = "namespacetargets"
+	objectsFlagName                      = "objects"
+	waitForRepositoryServerReadyFlagName = "wait-for-repository-server"
 )
 
 var (
@@ -107,7 +107,7 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().StringSliceP(namespaceTargetsFlagName, "T", []string{}, "namespaces for the action set, comma separated list of namespaces (eg: --namespacetargets namespace1,namespace2)")
 	cmd.Flags().StringSliceP(objectsFlagName, "O", []string{}, "objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)")
-	cmd.Flags().BoolP(waitForReadyFlagName, "w", false, "wait for resources to get in ready state")
+	cmd.Flags().BoolP(waitForRepositoryServerReadyFlagName, "w", false, "wait for repository server to be ready before creating actionset")
 	return cmd
 }
 
@@ -124,7 +124,8 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	valFlag, _ := cmd.Flags().GetBool(skipValidationFlag)
 	if !valFlag {
-		err = verifyParams(cmd, ctx, params, cli, crCli, osCli)
+		repoServerReady, _ := cmd.Flags().GetBool(waitForRepositoryServerReadyFlagName)
+		err = verifyParams(ctx, params, cli, crCli, osCli, repoServerReady)
 		if err != nil {
 			return err
 		}
@@ -646,7 +647,7 @@ func parseName(k string, r string) (namespace, name string, err error) {
 	return m[1], m[2], nil
 }
 
-func verifyParams(cmd *cobra.Command, ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
+func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface, waitForRepoServerReady bool) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
@@ -677,7 +678,7 @@ func verifyParams(cmd *cobra.Command, ctx context.Context, p *PerformParams, cli
 	// RepositoryServer
 	go func() {
 		defer wg.Done()
-		err := verifyRepositoryServerParams(cmd, p.RepositoryServer, crCli, ctx)
+		err := verifyRepositoryServerParams(waitForRepoServerReady, p.RepositoryServer, crCli, ctx)
 		if err != nil {
 			msgs <- err
 		}
@@ -758,7 +759,7 @@ func generateActionSetName(p *PerformParams) (string, error) {
 	return "", errMissingFieldActionName
 }
 
-func verifyRepositoryServerParams(cmd *cobra.Command, repoServer *crv1alpha1.ObjectReference, crCli versioned.Interface, ctx context.Context) error {
+func verifyRepositoryServerParams(waitForRepoServerReady bool, repoServer *crv1alpha1.ObjectReference, crCli versioned.Interface, ctx context.Context) error {
 	if repoServer != nil {
 		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
 		if err != nil {
