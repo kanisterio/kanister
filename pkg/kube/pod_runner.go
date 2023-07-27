@@ -44,11 +44,9 @@ type podRunner struct {
 
 // NewPodRunner returns a new PodRunner given Kubernetes Client and PodOptions
 func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
-	r := &podRunner{
+	return &podRunner{
 		pc: NewPodController(cli, options),
 	}
-
-	return r
 }
 
 // NewPodRunnerWithPodController returns a new PodRunner given PodController object
