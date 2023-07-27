@@ -787,7 +787,7 @@ func waitForKopiaRepositoryServerReady(ctx context.Context, crCli versioned.Inte
 		return repositoryServer.Status.Progress == crv1alpha1.Ready, err
 	})
 	if pollErr != nil {
-		return errors.Wrapf(pollErr, "Repository Server %s/%s could not become Ready", rs.GetNamespace(), rs.GetName())
+		return errors.Wrapf(pollErr, "Failed while waiting for Repository Server %s/%s to be Ready", rs.GetNamespace(), rs.GetName())
 	}
 	return nil
 }
