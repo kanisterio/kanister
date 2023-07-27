@@ -188,7 +188,7 @@ func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServerDataM
 	err = kopiaLocationPull(rss.ctx, snapInfo.ID, defaultKopiaRepositoryPath, targetDir, testKopiaRepoServerAdminPassword)
 	c.Assert(err, IsNil)
 
-	// TODO: Verify Data is Pulled from the Location (Issue #2230)
+	// TODO : Verify Data is Pulled from the Location (Issue #2230)
 
 	// Test Kopia Repository Location Delete
 	err = kopiaLocationDelete(rss.ctx, snapInfo.ID, defaultKopiaRepositoryPath, testKopiaRepoServerAdminPassword)
