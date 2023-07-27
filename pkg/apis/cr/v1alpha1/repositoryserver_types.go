@@ -81,18 +81,25 @@ type Repository struct {
 	// PasswordSecretRef has the password required to connect to kopia repository
 	PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef"`
 	CacheSizeSettings CacheSizeSettings      `json:"cacheSizeSettings,omitempty"`
+	Configuration     Configuration          `json:"configuration,omitempty"`
+}
+
+// Configuration can be used to specify the optional fields used
+// for repository operations
+type Configuration struct {
+	// CacheDirectory is an optional field to specify kopia cache directory
+	CacheDirectory string `json:"cacheDirectory,omitempty"`
 	// LogDirectory is an optional field to specify kopia log directory
 	LogDirectory string `json:"logDirectory,omitempty"`
-	// ConfigDirectory is an optional field to specify kopia config directory
+	// configFilePath is an optional field to specify kopia config file path
 	ConfigFilePath string `json:"configFilePath,omitempty"`
 }
 
 // CacheSizeSettings are the metadata/content cache size details
 // that can be used while establishing connection to the kopia repository
 type CacheSizeSettings struct {
-	Metadata       string `json:"metadata"`
-	Content        string `json:"content"`
-	CacheDirectory string `json:"cacheDirectory,omitempty"`
+	Metadata string `json:"metadata"`
+	Content  string `json:"content"`
 }
 
 // Server details required for starting the repository proxy server and initializing the repository client users

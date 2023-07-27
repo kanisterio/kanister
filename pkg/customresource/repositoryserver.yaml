@@ -43,8 +43,6 @@ spec:
                       size details that can be used while establishing connection
                       to the kopia repository
                     properties:
-                      cacheDirectory:
-                        type: string
                       content:
                         type: string
                       metadata:
@@ -53,18 +51,27 @@ spec:
                     - content
                     - metadata
                     type: object
-                  configFilePath:
-                    description: ConfigDirectory is an optional field to specify kopia
-                      config directory
-                    type: string
+                  configuration:
+                    description: Configuration can be used to specify the optional
+                      fields used for repository operations
+                    properties:
+                      cacheDirectory:
+                        description: CacheDirectory is an optional field to specify
+                          kopia cache directory
+                        type: string
+                      configFilePath:
+                        description: configFilePath is an optional field to specify
+                          kopia config file path
+                        type: string
+                      logDirectory:
+                        description: LogDirectory is an optional field to specify
+                          kopia log directory
+                        type: string
+                    type: object
                   hostname:
                     description: If specified, these values will be used by the controller
                       to override default hostname when connecting to the repository
                       from the server.
-                    type: string
-                  logDirectory:
-                    description: LogDirectory is an optional field to specify kopia
-                      log directory
                     type: string
                   passwordSecretRef:
                     description: PasswordSecretRef has the password required to connect

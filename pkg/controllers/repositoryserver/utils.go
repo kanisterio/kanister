@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/jpillora/backoff"
@@ -247,4 +248,13 @@ func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Se
 		vols[claimNameString] = storage.DefaultFSMountPath
 	}
 	return vols, nil
+}
+
+func GetIntOrDefault(value string, defaultValue int) (int, error) {
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		v = defaultValue
+		return v, errors.New("conversion to integer failed, using default value for the field")
+	}
+	return v, nil
 }

@@ -15,26 +15,24 @@
 package repositoryserver
 
 import (
-	"strconv"
-
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
-	contentCacheMB, metadataCacheMB, cacheDirectory, err := h.getRepositoryCacheSettings()
-	if err != nil {
-		return err
-	}
-	configFilePath, logDirectory := h.getRepositoryCommonArguments()
+	contentCacheMB, metadataCacheMB := h.getRepositoryCacheSettings()
+
+	repoConfiguration := h.getRepositoryConfiguration()
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
 			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[reposerver.RepoPasswordKey]),
-			ConfigFilePath: configFilePath,
-			LogDirectory:   logDirectory,
+			ConfigFilePath: repoConfiguration.ConfigFilePath,
+			LogDirectory:   repoConfiguration.LogDirectory,
 		},
-		CacheDirectory:  cacheDirectory,
+		CacheDirectory:  repoConfiguration.CacheDirectory,
 		Hostname:        h.RepositoryServer.Spec.Repository.Hostname,
 		ContentCacheMB:  contentCacheMB,
 		MetadataCacheMB: metadataCacheMB,
@@ -53,35 +51,42 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 	)
 }
 
-func (h *RepoServerHandler) getRepositoryCommonArguments() (configFilePath, logDirectory string) {
-	configFilePath = command.DefaultConfigFilePath
-	logDirectory = command.DefaultLogDirectory
-	if h.RepositoryServer.Spec.Repository.ConfigFilePath != "" {
-		configFilePath = h.RepositoryServer.Spec.Repository.ConfigFilePath
+func (h *RepoServerHandler) getRepositoryConfiguration() v1alpha1.Configuration {
+	configuration := v1alpha1.Configuration{
+		ConfigFilePath: command.DefaultConfigFilePath,
+		LogDirectory:   command.DefaultLogDirectory,
+		CacheDirectory: command.DefaultCacheDirectory,
 	}
-	if h.RepositoryServer.Spec.Repository.LogDirectory != "" {
-		logDirectory = h.RepositoryServer.Spec.Repository.LogDirectory
+
+	if h.RepositoryServer.Spec.Repository.Configuration.ConfigFilePath != "" {
+		configuration.ConfigFilePath = h.RepositoryServer.Spec.Repository.Configuration.ConfigFilePath
 	}
-	return
+	if h.RepositoryServer.Spec.Repository.Configuration.LogDirectory != "" {
+		configuration.LogDirectory = h.RepositoryServer.Spec.Repository.Configuration.LogDirectory
+	}
+	if h.RepositoryServer.Spec.Repository.Configuration.CacheDirectory != "" {
+		configuration.CacheDirectory = h.RepositoryServer.Spec.Repository.Configuration.CacheDirectory
+	}
+	return configuration
 }
 
-func (h *RepoServerHandler) getRepositoryCacheSettings() (contentCacheMB, metadataCacheMB int, cacheDirectory string, err error) {
-	contentCacheMB, metadataCacheMB = command.GetGeneralCacheSizeSettings()
-	cacheDirectory = command.DefaultCacheDirectory
+func (h *RepoServerHandler) getRepositoryCacheSettings() (int, int) {
+	defaultContentCacheMB, defaultMetadataCacheMB := command.GetGeneralCacheSizeSettings()
+	contentCacheMB := defaultContentCacheMB
+	metadataCacheMB := defaultMetadataCacheMB
+	var err error
 	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content != "" {
-		contentCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content)
+		contentCacheMB, err = GetIntOrDefault(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content, defaultContentCacheMB)
 		if err != nil {
-			return
+			h.Logger.Error(err, "cache content size should be an integer, using default value", field.M{"contentSize": h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content, "default_value": defaultContentCacheMB})
 		}
 	}
 	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata != "" {
-		metadataCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata)
+		metadataCacheMB, err = GetIntOrDefault(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata, defaultMetadataCacheMB)
 		if err != nil {
-			return
+			h.Logger.Error(err, "cache metadata size should be an integer, using default value", field.M{"metadataSize": h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata, "default_value": defaultMetadataCacheMB})
 		}
 	}
-	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.CacheDirectory != "" {
-		cacheDirectory = h.RepositoryServer.Spec.Repository.CacheSizeSettings.CacheDirectory
-	}
-	return
+
+	return contentCacheMB, metadataCacheMB
 }
