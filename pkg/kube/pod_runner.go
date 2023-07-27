@@ -42,24 +42,20 @@ type podRunner struct {
 	pc PodController
 }
 
-// Need to establish relationship between podRunnerOption and PodControllerOption
-type PodRunnerOptions func(p *podRunner) // PodControllerOption
-
-// func PodControllerProcessorToPodRunOptions(processor podControllerProcessor) PodRunnerOptions {
-// 	return WithPodControllerProcessor(processor)
-// }
-
 // NewPodRunner returns a new PodRunner given Kubernetes Client and PodOptions
-func NewPodRunner(cli kubernetes.Interface, options *PodOptions, prOpts ...PodRunnerOptions) PodRunner {
-	// how to pass PodControllerOption here?
-	// assumption: the controllerOptions can be replaced with fake ones in
-	// the unit test on K10 side
+func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
 	r := &podRunner{
 		pc: NewPodController(cli, options),
 	}
 
-	for _, opt := range prOpts {
-		opt(r)
+	return r
+}
+
+// NewPodRunnerWithPodController returns a new PodRunner given PodController object
+// This provides mechanism for passing fake podControllerProcessor through PodController for testing purposes.
+func NewPodRunnerWithPodController(pc PodController) PodRunner {
+	r := &podRunner{
+		pc: pc,
 	}
 
 	return r
