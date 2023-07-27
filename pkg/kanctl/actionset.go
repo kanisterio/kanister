@@ -678,7 +678,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	// RepositoryServer
 	go func() {
 		defer wg.Done()
-		err := verifyRepositoryServerParams(waitForRepoServerReady, p.RepositoryServer, crCli, ctx)
+		err := verifyRepositoryServerParams(ctx, crCli, p.RepositoryServer, waitForRepoServerReady)
 		if err != nil {
 			msgs <- err
 		}
@@ -759,7 +759,7 @@ func generateActionSetName(p *PerformParams) (string, error) {
 	return "", errMissingFieldActionName
 }
 
-func verifyRepositoryServerParams(waitForRepoServerReady bool, repoServer *crv1alpha1.ObjectReference, crCli versioned.Interface, ctx context.Context) error {
+func verifyRepositoryServerParams(ctx context.Context, crCli versioned.Interface, repoServer *crv1alpha1.ObjectReference, waitForRepoServerReady bool) error {
 	if repoServer != nil {
 		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
 		if err != nil {
