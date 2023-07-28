@@ -8,49 +8,49 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// FakePodControllerProcessor is a fake pod controller processor
+// FakePodControllerProcessor implements podControllerProcessor
 type FakePodControllerProcessor struct {
-	inWaitForPodReadyNamespace string
-	inWaitForPodReadyPodName   string
-	waitForPodReadyErr         error
+	InWaitForPodReadyNamespace string
+	InWaitForPodReadyPodName   string
+	WaitForPodReadyErr         error
 
-	inWaitForPodCompletionNamespace string
-	inWaitForPodCompletionPodName   string
-	waitForPodCompletionErr         error
+	InWaitForPodCompletionNamespace string
+	InWaitForPodCompletionPodName   string
+	WaitForPodCompletionErr         error
 
-	inDeletePodNamespace string
-	inDeletePodPodName   string
-	inDeletePodOptions   metav1.DeleteOptions
-	deletePodErr         error
+	InDeletePodNamespace string
+	InDeletePodPodName   string
+	InDeletePodOptions   metav1.DeleteOptions
+	DeletePodErr         error
 
-	inCreatePodCli     kubernetes.Interface
-	inCreatePodOptions *PodOptions
-	createPodRet       *corev1.Pod
-	createPodErr       error
+	InCreatePodCli     kubernetes.Interface
+	InCreatePodOptions *PodOptions
+	CreatePodRet       *corev1.Pod
+	CreatePodErr       error
 }
 
-func (f *FakePodControllerProcessor) createPod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
-	f.inCreatePodCli = cli
-	f.inCreatePodOptions = options
-	return f.createPodRet, f.createPodErr
+func (f *FakePodControllerProcessor) CreatePod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
+	f.InCreatePodCli = cli
+	f.InCreatePodOptions = options
+	return f.CreatePodRet, f.CreatePodErr
 }
 
-func (f *FakePodControllerProcessor) waitForPodCompletion(ctx context.Context, namespace, podName string) error {
-	f.inWaitForPodCompletionNamespace = namespace
-	f.inWaitForPodCompletionPodName = podName
-	return f.waitForPodCompletionErr
+func (f *FakePodControllerProcessor) WaitForPodCompletionPCP(ctx context.Context, namespace, podName string) error {
+	f.InWaitForPodCompletionNamespace = namespace
+	f.InWaitForPodCompletionPodName = podName
+	return f.WaitForPodCompletionErr
 }
 
-func (f *FakePodControllerProcessor) waitForPodReady(ctx context.Context, namespace, podName string) error {
-	f.inWaitForPodReadyPodName = podName
-	f.inWaitForPodReadyNamespace = namespace
-	return f.waitForPodReadyErr
+func (f *FakePodControllerProcessor) WaitForPodReadyPCP(ctx context.Context, namespace, podName string) error {
+	f.InWaitForPodReadyPodName = podName
+	f.InWaitForPodReadyNamespace = namespace
+	return f.WaitForPodReadyErr
 }
 
-func (f *FakePodControllerProcessor) deletePod(_ context.Context, namespace string, podName string, opts metav1.DeleteOptions) error {
-	f.inDeletePodNamespace = namespace
-	f.inDeletePodPodName = podName
-	f.inDeletePodOptions = opts
+func (f *FakePodControllerProcessor) DeletePod(_ context.Context, namespace string, podName string, opts metav1.DeleteOptions) error {
+	f.InDeletePodNamespace = namespace
+	f.InDeletePodPodName = podName
+	f.InDeletePodOptions = opts
 
-	return f.deletePodErr
+	return f.DeletePodErr
 }
