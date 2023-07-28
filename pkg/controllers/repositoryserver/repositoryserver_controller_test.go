@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -366,6 +367,56 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 		c.Assert(err, NotNil)
 		c.Assert(state, Equals, v1alpha1.Failed)
 	}
+}
+
+func (s *RepoServerControllerSuite) TestFilestoreLocationVolumeMountOnRepoServerPod(c *C) {
+	var err error
+	ctx := context.Background()
+	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-pvc-",
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+	pvc, err = s.kubeCli.CoreV1().PersistentVolumeClaims(s.repoServerControllerNamespace).Create(ctx, pvc, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	storageSecret, err := s.CreateStorageLocationSecret(testutil.GetFileStoreLocationSecretData(pvc.Name))
+	c.Assert(err, IsNil)
+
+	repoServerCR.Spec.Storage.SecretRef.Name = storageSecret.Name
+
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
+	c.Assert(err, IsNil)
+
+	//Get repository server CR with the updated server information
+	repoServerCRCreated, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	pod, err := s.kubeCli.CoreV1().Pods(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Status.ServerInfo.PodName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	c.Assert(len(pod.Spec.Volumes), Equals, 3)
+
+	var volumeattached bool
+	for _, vol := range pod.Spec.Volumes {
+		if vol.PersistentVolumeClaim != nil && vol.PersistentVolumeClaim.ClaimName == pvc.Name {
+			volumeattached = true
+		}
+	}
+	c.Assert(volumeattached, Equals, true)
 }
 
 func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
