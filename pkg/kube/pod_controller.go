@@ -223,6 +223,33 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 	return pce, nil
 }
 
+// created for unit testing
+func (p *podController) GetCommandExecutor2() (*podCommandExecutor, error) {
+	if p.podName == "" {
+		return &podCommandExecutor{}, ErrPodControllerPodNotStarted
+	}
+
+	if !p.podReady {
+		return &podCommandExecutor{}, ErrPodControllerPodNotReady
+	}
+
+	containerName := p.podOptions.ContainerName
+	if containerName == "" {
+		containerName = p.pod.Spec.Containers[0].Name
+	}
+
+	pce := &podCommandExecutor{
+		cli:           p.cli,
+		namespace:     p.podOptions.Namespace,
+		podName:       p.podName,
+		containerName: containerName,
+	}
+
+	pce.Pcep = pce
+
+	return pce, nil
+}
+
 func (p *podController) GetFileWriter() (PodFileWriter, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
