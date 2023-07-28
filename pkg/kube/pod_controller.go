@@ -218,7 +218,7 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		containerName: containerName,
 	}
 
-	pce.pcep = pce
+	pce.Pcep = pce
 
 	return pce, nil
 }

@@ -240,7 +240,7 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			namespace:     podCommandExecutorNS,
 			podName:       podCommandExecutorPodName,
 			containerName: podCommandExecutorContainerName,
-			pcep:          prp,
+			Pcep:          prp,
 		}
 
 		tc(ctx, pr, prp)
