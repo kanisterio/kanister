@@ -20,6 +20,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
@@ -76,13 +77,13 @@ func (h *RepoServerHandler) getRepositoryCacheSettings() (int, int) {
 	metadataCacheMB := defaultMetadataCacheMB
 	var err error
 	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content != "" {
-		contentCacheMB, err = GetIntOrDefault(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content, defaultContentCacheMB)
+		contentCacheMB, err = utils.GetIntOrDefault(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content, defaultContentCacheMB)
 		if err != nil {
 			h.Logger.Error(err, "cache content size should be an integer, using default value", field.M{"contentSize": h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content, "default_value": defaultContentCacheMB})
 		}
 	}
 	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata != "" {
-		metadataCacheMB, err = GetIntOrDefault(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata, defaultMetadataCacheMB)
+		metadataCacheMB, err = utils.GetIntOrDefault(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata, defaultMetadataCacheMB)
 		if err != nil {
 			h.Logger.Error(err, "cache metadata size should be an integer, using default value", field.M{"metadataSize": h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata, "default_value": defaultMetadataCacheMB})
 		}

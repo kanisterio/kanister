@@ -91,7 +91,7 @@ type Configuration struct {
 	CacheDirectory string `json:"cacheDirectory,omitempty"`
 	// LogDirectory is an optional field to specify kopia log directory
 	LogDirectory string `json:"logDirectory,omitempty"`
-	// configFilePath is an optional field to specify kopia config file path
+	// ConfigFilePath is an optional field to specify kopia config file path
 	ConfigFilePath string `json:"configFilePath,omitempty"`
 }
 

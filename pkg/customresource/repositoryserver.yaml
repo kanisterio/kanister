@@ -60,7 +60,7 @@ spec:
                           kopia cache directory
                         type: string
                       configFilePath:
-                        description: configFilePath is an optional field to specify
+                        description: ConfigFilePath is an optional field to specify
                           kopia config file path
                         type: string
                       logDirectory:
