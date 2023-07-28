@@ -41,7 +41,8 @@ func (s *PodControllerTestSuite) SetUpSuite(c *C) {
 	os.Setenv("POD_NAMESPACE", podControllerNS)
 }
 
-type fakePodControllerProcessor struct {
+// FakePodControllerProcessor is a fake pod controller processor
+type FakePodControllerProcessor struct {
 	inWaitForPodReadyNamespace string
 	inWaitForPodReadyPodName   string
 	waitForPodReadyErr         error
@@ -61,25 +62,25 @@ type fakePodControllerProcessor struct {
 	createPodErr       error
 }
 
-func (f *fakePodControllerProcessor) createPod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
+func (f *FakePodControllerProcessor) createPod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
 	f.inCreatePodCli = cli
 	f.inCreatePodOptions = options
 	return f.createPodRet, f.createPodErr
 }
 
-func (f *fakePodControllerProcessor) waitForPodCompletion(ctx context.Context, namespace, podName string) error {
+func (f *FakePodControllerProcessor) waitForPodCompletion(ctx context.Context, namespace, podName string) error {
 	f.inWaitForPodCompletionNamespace = namespace
 	f.inWaitForPodCompletionPodName = podName
 	return f.waitForPodCompletionErr
 }
 
-func (f *fakePodControllerProcessor) waitForPodReady(ctx context.Context, namespace, podName string) error {
+func (f *FakePodControllerProcessor) waitForPodReady(ctx context.Context, namespace, podName string) error {
 	f.inWaitForPodReadyPodName = podName
 	f.inWaitForPodReadyNamespace = namespace
 	return f.waitForPodReadyErr
 }
 
-func (f *fakePodControllerProcessor) deletePod(_ context.Context, namespace string, podName string, opts metav1.DeleteOptions) error {
+func (f *FakePodControllerProcessor) deletePod(_ context.Context, namespace string, podName string, opts metav1.DeleteOptions) error {
 	f.inDeletePodNamespace = namespace
 	f.inDeletePodPodName = podName
 	f.inDeletePodOptions = opts
@@ -93,8 +94,8 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 
 	simulatedError := errors.New("SimulatedError")
 
-	cases := map[string]func(prp *fakePodControllerProcessor, pr PodController){
-		"Pod creation failure": func(pcp *fakePodControllerProcessor, pc PodController) {
+	cases := map[string]func(prp *FakePodControllerProcessor, pr PodController){
+		"Pod creation failure": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.createPodErr = simulatedError
 			err := pc.StartPod(ctx)
 			c.Assert(err, Not(IsNil))
@@ -105,7 +106,7 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 				Name:      podControllerPodName,
 			})
 		},
-		"Pod successfully started": func(prp *fakePodControllerProcessor, pr PodController) {
+		"Pod successfully started": func(prp *FakePodControllerProcessor, pr PodController) {
 			prp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
@@ -115,7 +116,7 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 			c.Assert(err, IsNil)
 			c.Assert(pr.PodName(), Equals, podControllerPodName)
 		},
-		"Pod already created": func(prp *fakePodControllerProcessor, pr PodController) {
+		"Pod already created": func(prp *FakePodControllerProcessor, pr PodController) {
 			prp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
@@ -142,7 +143,7 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 	for l, tc := range cases {
 		c.Log(l)
 
-		pcp := &fakePodControllerProcessor{}
+		pcp := &FakePodControllerProcessor{}
 
 		pc := NewPodController(cli, &PodOptions{
 			Namespace: podControllerNS,
@@ -159,15 +160,15 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 
 	simulatedError := errors.New("SimulatedError")
 
-	cases := map[string]func(pcp *fakePodControllerProcessor, pc PodController){
-		"Waiting failed because pod not started yet": func(pcp *fakePodControllerProcessor, pc PodController) {
+	cases := map[string]func(pcp *FakePodControllerProcessor, pc PodController){
+		"Waiting failed because pod not started yet": func(pcp *FakePodControllerProcessor, pc PodController) {
 			err := pc.WaitForPodReady(ctx)
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), Equals, true)
 			c.Assert(pcp.inCreatePodOptions, IsNil)
 			c.Assert(pcp.inCreatePodCli, IsNil)
 		},
-		"Waiting failed due to timeout": func(pcp *fakePodControllerProcessor, pc PodController) {
+		"Waiting failed due to timeout": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      podControllerPodName,
@@ -186,7 +187,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			c.Assert(err.Error(), Equals, fmt.Sprintf("Pod failed to become ready in time: %s", simulatedError.Error()))
 			// Check that POD deletion was also invoked with expected arguments
 		},
-		"Waiting succeeded": func(pcp *fakePodControllerProcessor, pc PodController) {
+		"Waiting succeeded": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
@@ -202,7 +203,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 	for l, tc := range cases {
 		c.Log(l)
 
-		pcp := &fakePodControllerProcessor{}
+		pcp := &FakePodControllerProcessor{}
 
 		pc := NewPodController(cli, &PodOptions{
 			Namespace: podControllerNS,
@@ -220,15 +221,15 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 	untouchedStr := "DEADBEEF"
 	simulatedError := errors.New("SimulatedError")
 
-	cases := map[string]func(pcp *fakePodControllerProcessor, pc PodController){
-		"Pod not started yet": func(pcp *fakePodControllerProcessor, pc PodController) {
+	cases := map[string]func(pcp *FakePodControllerProcessor, pc PodController){
+		"Pod not started yet": func(pcp *FakePodControllerProcessor, pc PodController) {
 			err := pc.StopPod(ctx, 30*time.Second, int64(0))
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), Equals, true)
 			c.Assert(pcp.inDeletePodPodName, Equals, untouchedStr)
 			c.Assert(pcp.inDeletePodNamespace, Equals, untouchedStr)
 		},
-		"Pod deletion error": func(pcp *fakePodControllerProcessor, pc PodController) {
+		"Pod deletion error": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      podControllerPodName,
@@ -243,7 +244,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, simulatedError), Equals, true)
 		},
-		"Pod successfully deleted": func(pcp *fakePodControllerProcessor, pc PodController) {
+		"Pod successfully deleted": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      podControllerPodName,
@@ -265,7 +266,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 	for l, tc := range cases {
 		c.Log(l)
 
-		pcp := &fakePodControllerProcessor{
+		pcp := &FakePodControllerProcessor{
 			inDeletePodNamespace: untouchedStr,
 			inDeletePodPodName:   untouchedStr,
 			inDeletePodOptions:   metav1.DeleteOptions{},
@@ -283,8 +284,8 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
-	cases := map[string]func(pcp *fakePodControllerProcessor, pc PodController){
-		"Pod not started yet": func(_ *fakePodControllerProcessor, pc PodController) {
+	cases := map[string]func(pcp *FakePodControllerProcessor, pc PodController){
+		"Pod not started yet": func(_ *FakePodControllerProcessor, pc PodController) {
 			pce, err := pc.GetCommandExecutor()
 			c.Assert(pce, IsNil)
 			c.Assert(err, Not(IsNil))
@@ -295,7 +296,7 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), Equals, true)
 		},
-		"Pod not ready yet": func(pcp *fakePodControllerProcessor, pc PodController) {
+		"Pod not ready yet": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
@@ -314,7 +315,7 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, ErrPodControllerPodNotReady), Equals, true)
 		},
-		"CommandExecutor successfully returned": func(pcp *fakePodControllerProcessor, pc PodController) {
+		"CommandExecutor successfully returned": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
@@ -346,7 +347,7 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 	for l, tc := range cases {
 		c.Log(l)
 
-		pcp := &fakePodControllerProcessor{}
+		pcp := &FakePodControllerProcessor{}
 
 		pc := NewPodController(cli, &PodOptions{
 			Namespace: podControllerNS,
