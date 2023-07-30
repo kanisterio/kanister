@@ -173,7 +173,7 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 
 func (h *RepoServerHandler) handleEvent(ctx context.Context, eventType, reason, eventMessage, conditionMsg, conditionType string, progress crv1alpha1.RepositoryServerProgress, status metav1.ConditionStatus) error {
 	condition := getCondition(status, reason, conditionMsg, conditionType)
-	if uerr := h.updateProgressInCRStatus(ctx, progress, condition); uerr != nil {
+	if uerr := h.updateRepoServerProgress(ctx, progress, condition); uerr != nil {
 		return uerr
 	}
 	h.Reconciler.Recorder.Event(h.RepositoryServer, eventType, reason, eventMessage)
@@ -319,7 +319,7 @@ func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod
 	return nil
 }
 
-func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progress crv1alpha1.RepositoryServerProgress) error {
+func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progress crv1alpha1.RepositoryServerProgress, condition metav1.Condition) error {
 	repoServerName := h.RepositoryServer.Name
 	repoServerNamespace := h.RepositoryServer.Namespace
 	rs := crv1alpha1.RepositoryServer{}
@@ -342,26 +342,38 @@ func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progre
 func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
 	logger.Info("Start Kopia Repository Server")
 	if err := h.startRepoProxyServer(ctx); err != nil {
-		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		if uerr := h.handleEvent(ctx, corev1.EventTypeWarning, serverInitializedErrReason, err.Error(), err.Error(), crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: false}, err
+	}
+
+	if uerr := h.handleEvent(ctx, corev1.EventTypeNormal, serverInitializedSuccessReason, serverInitializedEventMsg, "", crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Add/Update users in Kopia Repository Server")
 	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		if uerr := h.handleEvent(ctx, corev1.EventTypeWarning, clientsInitializedErrReason, err.Error(), err.Error(), crkanisteriov1alpha1.ClientUserInitialized, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
+	if uerr := h.handleEvent(ctx, corev1.EventTypeNormal, clientsInitializedSuccessReason, clientsInitializedEventMsg, "", crkanisteriov1alpha1.ClientUserInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+		return ctrl.Result{}, uerr
+	}
+
 	logger.Info("Refresh Kopia Repository Server")
 	if err := h.refreshServer(ctx); err != nil {
-		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		if uerr := h.handleEvent(ctx, corev1.EventTypeWarning, serverRefreshedErrReason, err.Error(), err.Error(), crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: false}, err
+	}
+
+	if uerr := h.handleEvent(ctx, corev1.EventTypeNormal, serverInitializedSuccessReason, serverRefreshedEventMsg, "", crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Ready, metav1.ConditionTrue); uerr != nil {
+		return ctrl.Result{}, uerr
 	}
 	return ctrl.Result{}, nil
 }
