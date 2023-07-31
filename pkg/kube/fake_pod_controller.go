@@ -10,27 +10,27 @@ import (
 )
 
 type FakeKubePodController struct {
-	podName string
-	pod     *corev1.Pod
+	Podname string
+	PodObj  *corev1.Pod
 
-	startPodCalled bool
+	StartPodCalled bool
 	startPodErr    error
 
-	waitForPodReadyCalled bool
-	waitForPodReadyErr    error
+	WaitForPodReadyCalled bool
+	WaitForPodReadyErr    error
 
 	// getCommandExecutorCalled bool
-	getCommandExecutorRet PodCommandExecutor
-	getCommandExecutorErr error
+	GetCommandExecutorRet PodCommandExecutor
+	GetCommandExecutorErr error
 
-	getFileWriterCalled bool
-	getFileWriterRet    *FakeKubePodFileWriter
-	getFileWriterErr    error
+	GetFileWriterCalled bool
+	GetFileWriterRet    *FakeKubePodFileWriter
+	GetFileWriterErr    error
 
-	stopPodCalled        bool
-	stopPodErr           error
-	inStopPodStopTimeout time.Duration
-	inStopPodGracePeriod int64
+	StopPodCalled        bool
+	StopPodErr           error
+	InStopPodStopTimeout time.Duration
+	InStopPodGracePeriod int64
 }
 
 func (fkpr *FakeKubePodController) Pod() *corev1.Pod {
@@ -38,7 +38,7 @@ func (fkpr *FakeKubePodController) Pod() *corev1.Pod {
 }
 
 func (fkpr *FakeKubePodController) PodName() string {
-	return fkpr.podName
+	return fkpr.Podname
 }
 
 func (fkpr *FakeKubePodController) Run(ctx context.Context, fn func(context.Context, *corev1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
@@ -46,13 +46,13 @@ func (fkpr *FakeKubePodController) Run(ctx context.Context, fn func(context.Cont
 }
 
 func (fkpr *FakeKubePodController) StartPod(_ context.Context) error {
-	fkpr.startPodCalled = true
+	fkpr.StartPodCalled = true
 	return fkpr.startPodErr
 }
 
 func (fkpr *FakeKubePodController) WaitForPodReady(_ context.Context) error {
-	fkpr.waitForPodReadyCalled = true
-	return fkpr.waitForPodReadyErr
+	fkpr.WaitForPodReadyCalled = true
+	return fkpr.WaitForPodReadyErr
 }
 
 func (fkpr *FakeKubePodController) WaitForPodCompletion(_ context.Context) error {
@@ -64,19 +64,19 @@ func (fkpr *FakeKubePodController) StreamPodLogs(_ context.Context) (io.ReadClos
 }
 
 func (fkpr *FakeKubePodController) GetCommandExecutor() (PodCommandExecutor, error) {
-	return fkpr.getCommandExecutorRet, fkpr.getCommandExecutorErr
+	return fkpr.GetCommandExecutorRet, fkpr.GetCommandExecutorErr
 }
 
 func (fkpr *FakeKubePodController) GetFileWriter() (PodFileWriter, error) {
-	fkpr.getFileWriterCalled = true
-	return fkpr.getFileWriterRet, fkpr.getFileWriterErr
+	fkpr.GetFileWriterCalled = true
+	return fkpr.GetFileWriterRet, fkpr.GetFileWriterErr
 }
 
 func (fkpr *FakeKubePodController) StopPod(ctx context.Context, stopTimeout time.Duration, gracePeriodSeconds int64) error {
-	fkpr.stopPodCalled = true
-	fkpr.inStopPodStopTimeout = stopTimeout
-	fkpr.inStopPodGracePeriod = gracePeriodSeconds
-	return fkpr.stopPodErr
+	fkpr.StopPodCalled = true
+	fkpr.InStopPodStopTimeout = stopTimeout
+	fkpr.InStopPodGracePeriod = gracePeriodSeconds
+	return fkpr.StopPodErr
 }
 
 type FakeKubePodFileWriter struct {
