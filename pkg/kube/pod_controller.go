@@ -69,7 +69,8 @@ type podController struct {
 	podReady bool
 	podName  string
 
-	pcp podControllerProcessor
+	pcp  podControllerProcessor
+	pcep podCommandExecutorProcessor
 }
 
 type PodControllerOption func(p *podController)
@@ -78,6 +79,13 @@ type PodControllerOption func(p *podController)
 func WithPodControllerProcessor(processor podControllerProcessor) PodControllerOption {
 	return func(p *podController) {
 		p.pcp = processor
+	}
+}
+
+// WithPodControllerProcessor provides mechanism for passing fake podControllerProcessor for testing purposes.
+func WithPodCommandExecutorProcessor(processor podCommandExecutorProcessor) PodControllerOption {
+	return func(p *podController) {
+		p.pcep = processor
 	}
 }
 
@@ -204,33 +212,6 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 
 	if !p.podReady {
 		return nil, ErrPodControllerPodNotReady
-	}
-
-	containerName := p.podOptions.ContainerName
-	if containerName == "" {
-		containerName = p.pod.Spec.Containers[0].Name
-	}
-
-	pce := &podCommandExecutor{
-		cli:           p.cli,
-		namespace:     p.podOptions.Namespace,
-		podName:       p.podName,
-		containerName: containerName,
-	}
-
-	pce.Pcep = pce
-
-	return pce, nil
-}
-
-// created for unit testing
-func (p *podController) GetCommandExecutor2() (*podCommandExecutor, error) {
-	if p.podName == "" {
-		return &podCommandExecutor{}, ErrPodControllerPodNotStarted
-	}
-
-	if !p.podReady {
-		return &podCommandExecutor{}, ErrPodControllerPodNotReady
 	}
 
 	containerName := p.podOptions.ContainerName
