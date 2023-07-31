@@ -61,6 +61,7 @@ type podControllerProcessor interface {
 }
 
 // podController specifies Kubernetes Client and PodOptions needed for creating Pod
+// implements podControllerProcessor interface
 type podController struct {
 	cli        kubernetes.Interface
 	podOptions *PodOptions
@@ -69,7 +70,9 @@ type podController struct {
 	podReady bool
 	podName  string
 
-	pcp  podControllerProcessor
+	pcp podControllerProcessor
+	// To do: podController needs to implement podCommandExecutorProcessor interface
+	// export execWithOptions,..
 	pcep podCommandExecutorProcessor
 }
 

@@ -1,0 +1,111 @@
+package kube
+
+import (
+	"context"
+	"io"
+	"time"
+
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+)
+
+type FakeKubePodController struct {
+	podName string
+	pod     *corev1.Pod
+
+	startPodCalled bool
+	startPodErr    error
+
+	waitForPodReadyCalled bool
+	waitForPodReadyErr    error
+
+	// getCommandExecutorCalled bool
+	getCommandExecutorRet PodCommandExecutor
+	getCommandExecutorErr error
+
+	getFileWriterCalled bool
+	getFileWriterRet    *FakeKubePodFileWriter
+	getFileWriterErr    error
+
+	stopPodCalled        bool
+	stopPodErr           error
+	inStopPodStopTimeout time.Duration
+	inStopPodGracePeriod int64
+}
+
+func (fkpr *FakeKubePodController) Pod() *corev1.Pod {
+	return nil
+}
+
+func (fkpr *FakeKubePodController) PodName() string {
+	return fkpr.podName
+}
+
+func (fkpr *FakeKubePodController) Run(ctx context.Context, fn func(context.Context, *corev1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
+	return nil, errors.New("Not implemented")
+}
+
+func (fkpr *FakeKubePodController) StartPod(_ context.Context) error {
+	fkpr.startPodCalled = true
+	return fkpr.startPodErr
+}
+
+func (fkpr *FakeKubePodController) WaitForPodReady(_ context.Context) error {
+	fkpr.waitForPodReadyCalled = true
+	return fkpr.waitForPodReadyErr
+}
+
+func (fkpr *FakeKubePodController) WaitForPodCompletion(_ context.Context) error {
+	return errors.New("Not implemented")
+}
+
+func (fkpr *FakeKubePodController) StreamPodLogs(_ context.Context) (io.ReadCloser, error) {
+	return nil, errors.New("Not implemented")
+}
+
+func (fkpr *FakeKubePodController) GetCommandExecutor() (PodCommandExecutor, error) {
+	return fkpr.getCommandExecutorRet, fkpr.getCommandExecutorErr
+}
+
+func (fkpr *FakeKubePodController) GetFileWriter() (PodFileWriter, error) {
+	fkpr.getFileWriterCalled = true
+	return fkpr.getFileWriterRet, fkpr.getFileWriterErr
+}
+
+func (fkpr *FakeKubePodController) StopPod(ctx context.Context, stopTimeout time.Duration, gracePeriodSeconds int64) error {
+	fkpr.stopPodCalled = true
+	fkpr.inStopPodStopTimeout = stopTimeout
+	fkpr.inStopPodGracePeriod = gracePeriodSeconds
+	return fkpr.stopPodErr
+}
+
+type FakeKubePodFileWriter struct {
+	writeCalled     bool
+	writeErr        error
+	writeRet        *FakeKubePodFileRemover
+	inWriteFilePath string
+	inWriteContent  io.Reader
+}
+
+func (fkpfw *FakeKubePodFileWriter) Write(_ context.Context, filePath string, content io.Reader) (PodFileRemover, error) {
+	fkpfw.writeCalled = true
+	fkpfw.inWriteFilePath = filePath
+	fkpfw.inWriteContent = content
+
+	return PodFileRemover(fkpfw.writeRet), fkpfw.writeErr
+}
+
+type FakeKubePodFileRemover struct {
+	removeCalled bool
+	removeErr    error
+	path         string
+}
+
+func (fr *FakeKubePodFileRemover) Remove(_ context.Context) error {
+	fr.removeCalled = true
+	return fr.removeErr
+}
+
+func (fr *FakeKubePodFileRemover) Path() string {
+	return fr.path
+}
