@@ -56,7 +56,7 @@ type podCommandExecutor struct {
 	podName       string
 	containerName string
 
-	Pcep podCommandExecutorProcessor
+	pcep podCommandExecutorProcessor
 }
 
 // Exec runs the command and logs stdout and stderr.
@@ -86,7 +86,7 @@ func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin i
 	}
 
 	go func() {
-		_, _, err = p.Pcep.execWithOptions(p.cli, opts)
+		_, _, err = p.pcep.execWithOptions(p.cli, opts)
 		close(cmdDone)
 	}()
 

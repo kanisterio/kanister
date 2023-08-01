@@ -71,9 +71,6 @@ type podController struct {
 	podName  string
 
 	pcp podControllerProcessor
-	// To do: podController needs to implement podCommandExecutorProcessor interface
-	// export execWithOptions,..
-	pcep podCommandExecutorProcessor
 }
 
 type PodControllerOption func(p *podController)
@@ -82,13 +79,6 @@ type PodControllerOption func(p *podController)
 func WithPodControllerProcessor(processor podControllerProcessor) PodControllerOption {
 	return func(p *podController) {
 		p.pcp = processor
-	}
-}
-
-// WithPodControllerProcessor provides mechanism for passing fake podControllerProcessor for testing purposes.
-func WithPodCommandExecutorProcessor(processor podCommandExecutorProcessor) PodControllerOption {
-	return func(p *podController) {
-		p.pcep = processor
 	}
 }
 
@@ -229,7 +219,7 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		containerName: containerName,
 	}
 
-	pce.Pcep = pce
+	pce.pcep = pce
 
 	return pce, nil
 }

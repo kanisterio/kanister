@@ -5,17 +5,6 @@ import (
 	"io"
 )
 
-// // FakePodCommandExecutor allows us to execute command within the pod
-// type FakePodCommandExecutor struct {
-// 	InExecWithOptionsCli  kubernetes.Interface
-// 	InExecWithOptionsOpts *ExecOptions
-// 	ExecWithOptionsStdout string
-// 	ExecWithOptionsStderr string
-// 	ExecWithOptionsRet1   string
-// 	ExecWithOptionsRet2   string
-// 	ExecWithOptionsErr    error
-// }
-
 type FakeKubePodCommandExecutor struct {
 	ExecErr       error
 	inExecCommand []string
@@ -24,12 +13,7 @@ type FakeKubePodCommandExecutor struct {
 	ExecStderr string
 }
 
-// Exec runs the command and logs stdout and stderr.
-// func (p *FakeKubePodCommandExecutor) Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
-
-// 	return errors.New("")
-// }
-
+// Exec
 func (fce *FakeKubePodCommandExecutor) Exec(_ context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	fce.inExecCommand = make([]string, len(command))
 	copy(fce.inExecCommand, command)
