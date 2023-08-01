@@ -19,13 +19,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
-	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -41,43 +36,18 @@ func newLocationPullCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			return runLocationPull(c, args)
+			if err := validateCommandArgs(c); err != nil {
+				return err
+			}
+			dataMover, err := dataMoverForKopiaSnapshotFlag(c)
+			if err != nil {
+				return err
+			}
+			return dataMover.Pull(c.Context(), args[0], pathFlag(c))
 		},
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
 	return cmd
-}
-
-func kopiaSnapshotFlag(cmd *cobra.Command) string {
-	return cmd.Flag(kopiaSnapshotFlagName).Value.String()
-}
-
-func runLocationPull(cmd *cobra.Command, args []string) error {
-	p, err := unmarshalProfileFlag(cmd)
-	if err != nil {
-		return err
-	}
-	s := pathFlag(cmd)
-	ctx := context.Background()
-	if p.Location.Type == crv1alpha1.LocationTypeKopia {
-		snapJSON := kopiaSnapshotFlag(cmd)
-		if snapJSON == "" {
-			return errors.New("kopia snapshot information is required to pull data using kopia")
-		}
-		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(snapJSON)
-		if err != nil {
-			return err
-		}
-		if err = connectToKopiaServer(ctx, p); err != nil {
-			return err
-		}
-		return kopiaLocationPull(ctx, kopiaSnap.ID, s, args[0], p.Credential.KopiaServerSecret.Password)
-	}
-	target, err := targetWriter(args[0])
-	if err != nil {
-		return err
-	}
-	return locationPull(ctx, p, s, target)
 }
 
 func targetWriter(target string) (io.Writer, error) {
@@ -89,30 +59,4 @@ func targetWriter(target string) (io.Writer, error) {
 
 func locationPull(ctx context.Context, p *param.Profile, path string, target io.Writer) error {
 	return location.Read(ctx, target, *p, path)
-}
-
-// kopiaLocationPull pulls the data from a kopia snapshot into the given target
-func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password string) error {
-	switch targetPath {
-	case usePipeParam:
-		return snapshot.Read(ctx, os.Stdout, backupID, path, password)
-	default:
-		return snapshot.ReadFile(ctx, backupID, targetPath, password)
-	}
-}
-
-// connectToKopiaServer connects to the kopia server with given creds
-func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
-	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	return repository.ConnectToAPIServer(
-		ctx,
-		kp.Credential.KopiaServerSecret.Cert,
-		kp.Credential.KopiaServerSecret.Password,
-		kp.Credential.KopiaServerSecret.Hostname,
-		kp.Location.Endpoint,
-		kp.Credential.KopiaServerSecret.Username,
-		contentCacheSize,
-		metadataCacheSize,
-	)
 }
