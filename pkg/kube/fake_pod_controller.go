@@ -14,7 +14,7 @@ type FakeKubePodController struct {
 	PodObj  *corev1.Pod
 
 	StartPodCalled bool
-	startPodErr    error
+	StartPodErr    error
 
 	WaitForPodReadyCalled bool
 	WaitForPodReadyErr    error
@@ -47,7 +47,7 @@ func (fkpr *FakeKubePodController) Run(ctx context.Context, fn func(context.Cont
 
 func (fkpr *FakeKubePodController) StartPod(_ context.Context) error {
 	fkpr.StartPodCalled = true
-	return fkpr.startPodErr
+	return fkpr.StartPodErr
 }
 
 func (fkpr *FakeKubePodController) WaitForPodReady(_ context.Context) error {
