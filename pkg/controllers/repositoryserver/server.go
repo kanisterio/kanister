@@ -48,43 +48,34 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 		return nil
 	}
 
-	maxRetries := 5
-	for retries := 1; retries <= maxRetries; retries++ {
-		cmd := command.ServerStart(
-			command.ServerStartCommandArgs{
-				CommandArgs: &command.CommandArgs{
-					RepoPassword:   "",
-					ConfigFilePath: command.DefaultConfigFilePath,
-					LogDirectory:   command.DefaultLogDirectory,
-				},
-				ServerAddress:    repoServerAddress,
-				TLSCertFile:      tlsCertPath,
-				TLSKeyFile:       tlsKeyPath,
-				ServerUsername:   serverAdminUserName,
-				ServerPassword:   serverAdminPassword,
-				AutoGenerateCert: false,
-				Background:       true,
+	cmd := command.ServerStart(
+		command.ServerStartCommandArgs{
+			CommandArgs: &command.CommandArgs{
+				RepoPassword:   "",
+				ConfigFilePath: command.DefaultConfigFilePath,
+				LogDirectory:   command.DefaultLogDirectory,
 			},
-		)
-		stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
-		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
-		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
-		if err == nil {
-			// Server started successfully, wait for it to be ready
-			err = h.waitForServerReady(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
-			if err == nil {
-				return nil
-			}
-		}
-
-		// Retry after a delay
-		if retries < maxRetries {
-			delay := time.Second * 5
-			h.Logger.Info("Retrying server start...")
-			time.Sleep(delay)
-		}
+			ServerAddress:    repoServerAddress,
+			TLSCertFile:      tlsCertPath,
+			TLSKeyFile:       tlsKeyPath,
+			ServerUsername:   serverAdminUserName,
+			ServerPassword:   serverAdminPassword,
+			AutoGenerateCert: false,
+			Background:       true,
+		},
+	)
+	stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
+	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
+	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
+	if err != nil {
+		return errors.Wrap(err, "Failed to start Kopia API server")
 	}
-	return errors.New("Failed to start Kopia API server after maximum retries")
+
+	err = h.waitForServerReady(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
+	if err != nil {
+		return errors.Wrap(err, "Failed to check Kopia API server status")
+	}
+	return nil
 }
 
 func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, string, string, error) {
@@ -212,36 +203,25 @@ func (h *RepoServerHandler) refreshServer(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
 	}
 
-	maxRetries := 5
-	for retries := 1; retries <= maxRetries; retries++ {
-		cmd := command.ServerRefresh(
-			command.ServerRefreshCommandArgs{
-				CommandArgs: &command.CommandArgs{
-					RepoPassword:   repoPassword,
-					ConfigFilePath: command.DefaultConfigFilePath,
-					LogDirectory:   command.DefaultLogDirectory,
-				},
-				ServerAddress:  serverAddress,
-				ServerUsername: username,
-				ServerPassword: password,
-				Fingerprint:    fingerprint,
-			})
-		stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
-		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
-		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
-		if err == nil {
-			return nil
-		}
-
-		// Retry after a delay
-		if retries < maxRetries {
-			delay := time.Second * 5
-			h.Logger.Info("Retrying server refresh...")
-			time.Sleep(delay)
-		}
+	cmd := command.ServerRefresh(
+		command.ServerRefreshCommandArgs{
+			CommandArgs: &command.CommandArgs{
+				RepoPassword:   repoPassword,
+				ConfigFilePath: command.DefaultConfigFilePath,
+				LogDirectory:   command.DefaultLogDirectory,
+			},
+			ServerAddress:  serverAddress,
+			ServerUsername: username,
+			ServerPassword: password,
+			Fingerprint:    fingerprint,
+		})
+	stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
+	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
+	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
+	if err != nil {
+		return errors.Wrap(err, "Failed to refresh Kopia API server")
 	}
-
-	return errors.New("Failed to refresh Kopia API server after maximum retries")
+	return nil
 }
 
 func (h *RepoServerHandler) getRepositoryServerStartTimeout() time.Duration {

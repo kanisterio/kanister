@@ -74,7 +74,6 @@ const (
 
 	serverRefreshedErrReason     string = "ServerRefreshFailed"
 	serverRefreshedSuccessReason string = "ServerRefreshed"
-
 )
 
 func getRepoServerService(namespace string) corev1.Service {

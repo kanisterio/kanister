@@ -344,7 +344,7 @@ func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logg
 		if uerr := h.setCondition(ctx, serverInitializedErrReason, err.Error(), crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
-		return ctrl.Result{Requeue: false}, err
+		return ctrl.Result{}, err
 	}
 
 	if uerr := h.setCondition(ctx, serverInitializedSuccessReason, "", crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
@@ -368,7 +368,7 @@ func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logg
 		if uerr := h.setCondition(ctx, serverRefreshedErrReason, err.Error(), crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
-		return ctrl.Result{Requeue: false}, err
+		return ctrl.Result{}, err
 	}
 
 	if uerr := h.setCondition(ctx, serverInitializedSuccessReason, "", crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Ready, metav1.ConditionTrue); uerr != nil {
