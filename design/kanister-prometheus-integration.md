@@ -18,11 +18,19 @@ This document proposes the changes required within Kanister to integrate
 of action sets. 
 
 ## Motivation
-Kanister controller already has a registered metrics endpoint `/metrics`. There are no metrics exported other than the default Prometheus metrics that the default handler provides. Adding metrics to track the 
+
+Kanister controller already has a registered metrics endpoint `/metrics`. 
+There are no metrics exported other than the default Prometheus metrics 
+that the default handler provides. Adding metrics to track the 
 ActionSets and Blueprints workflow will help improve the overall observability. 
 
 To achieve this, we need to build a framework for exporting metrics from the Kanister controller, and to 
 start with, export some metrics to Prometheus. 
+
+This framework simplifies the common need for Prometheus counters to
+publish 0 values at startup for all permutations of labels and label values.
+This ensures that Kanister controller restarts are recognized by Prometheus
+and that the PromQL rate() and increase() functions work properly across restarts.
 
 Some example metrics include:
 ActionSets succeeded
@@ -32,8 +40,9 @@ Phase duration, etc.
 
 
 ## Scope
+
 1. Design a framework that allows us to export new
-Kanister metrics to Prometheus easily. 
+   Kanister metrics to Prometheus easily. 
 2. Add a few fundamental metrics related to ActionSets and Blueprints to start with.
 
 
@@ -44,26 +53,42 @@ Kanister metrics to Prometheus easily.
 ![Alt text](Metrics_design.png?raw=true "Prometheus Integration Design")
 
 #### Text description
-1. The initializer of the consumer package calls new_metrics, a helper method that talks to Kanister’s metrics package. The result is a new metrics struct that owns all the prometheus collectors.
 
-2. In order to initialize all the required prometheus collectors, the new_metrics method calls the InitCounterVec, InitGaugeVec, InitHistogramVec in the metrics package. It passes the metric names and the specific label names and label values, aka, BoundedLabels, to the metrics package. Once it initializes all the prometheus collectors successfully, it returns an struct that wraps all the collectors, which the consumer package can then use. 
+1. The initializer of the consumer package calls newMetrics, a helper method 
+   that talks to Kanister’s metrics package. The result is a new metrics struct
+   that owns all the Prometheus metrics.
 
-3. The metrics package internally attempts to initialize the collectors and register the specific collectors with prometheus. If the registration fails because the specific metric with label header already exists, the collector will simply be returned to the caller. If the registration fails due to other reasons, then the metrics package will cause a panic, signalling programmer error. In case of the CounterVec, the InitCounterVec attempts to generate all possible permutations of label values and sets each counter 
-within the CounterVec to 0. 
+2. In order to initialize all the required Prometheus metrics, the new_metrics 
+   method calls the InitCounterVec, InitGaugeVec, InitHistogramVec in the 
+   metrics package. It passes the metric names and the specific label names 
+   and label values as BoundedLabels to the metrics package. Once it 
+   initializes all the Prometheus metrics successfully, it returns a struct that 
+   wraps all the metrics and that the consumer package can then use. 
 
-4. Once the collector is created in the metrics package, it will be returned to the consumer package’s new_metrics helper method.
+3. The metrics package internally initializes the Prometheus metrics and 
+   registers them Prometheus. If the registration fails because the specific 
+   metric with label header already exists, the metric will simply be returned 
+   to the caller. If the registration fails due to other reasons, then the 
+   metrics package will cause a panic, signaling programmer error. 
+   In case of the CounterVec, the InitCounterVec function generates all 
+   possible permutations of label values and initializes each counter 
+   within the CounterVec with a value of 0.
 
-5. Once the initialization of all collectors are complete, a new metrics struct will be returned to the consumer’s package initializer. 
+4. Once the collector is created in the metrics package, it will be returned 
+   to the consumer package’s newMetrics helper method.
 
-6. Suppose the consumer package wants to increment a specific counter in a counter vec, it constructs a prometheus.Labels mapping using a helper method to retrieve the specific counter from the counter vec and performs an increment operation. 
+5. Once the initialization of all Prometheus metrics are complete, a new 
+   metrics struct will be returned to the consumer’s package initializer. 
+
+6. The consumer package may find it useful to implement a helper method that constructs
+   a prometheus.Labels mapping to access a specific counter from a CounterVec 
+   and perform an increment operation.
 
 
 
 ### Low Level APIs
 
 #### Metrics Package
-
-
 
 ```golang
 // BoundedLabel is a type that represents a label and its associated 
@@ -73,99 +98,63 @@ type BoundedLabel struct {
 	LabelValues []string
 }
 ```
+
 An example of a BoundedLabel is in the scenario of ActionSet resolutions.
 Suppose we want to track these resolutions across different blueprints, 
 we would create the bounded labels in the following way:
+
+##### BoundedLabel example
 ```golang
-BoundedLabel{
+BoundedLabel {
   LabelName: "operation_type"
   LabelValues: ["backup", "restore"]
 }
 
-BoundedLabel{
+BoundedLabel {
   LabelName: "action_set_resolution"
   LabelValues: ["success", "failure"]
 }
 ``` 
-
+##### Initialization methods
 ```golang
-
-// generateCombinations generates a list of combinations of labels values, 
-// which can be used by InitCounterVec to initialize all the counters within
-// the CounterVec to 0
-
-// For instance, in the above "ActionSet resolutions" example, we will
-// generate the following combinations:
-// [ {"operation_type": "backup", "action_set_resolution": "success"}, 
-// {"operation_type": "backup", "action_set_resolution": "failure"},
-// {"operation_type": "restore", "action_set_resolution": "success"}, 
-// {"operation_type": "restore", "action_set_resolution": "failure"}]
-func generateLabelCombinations([] BoundedLabel) ([]prometheus.Labels, error)
  
-
 // InitCounterVec initializes and registers the counter metrics vector. It takes a list of 
 // BoundedLabel objects - if any label value or label name is nil, then this method will panic. 
 // Based on the combinations returned by generateCombinations, it will set each counter value to 0.
-// If a nil counter is returned during registeration, the method will
+// If a nil counter is returned during registration, the method will
 // panic
 func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, boundedLabels []BoundedLabel) *prometheus.CounterVec
 
 // InitGaugeVec initializes the gauge metrics vector. It takes a list of BoundedLabels, but the 
 // LabelValue field of each BoundedLabel will be ignored.
-// If a nil counter is returned during registeration, the method will
+// If a nil counter is returned during registration, the method will
 // panic
 func InitGaugeVec(r prometheus.Registerer, opts prometheus.CounterOpts, boundedLabels []BoundedLabel) *prometheus.GaugeVec
 
 // InitHistogramVec initializes the histogram metrics vector. It takes a list of BoundedLabels, but the 
 // LabelValue field of each BoundedLabel will be ignored.
-// If a nil counter is returned during registeration, the method will
+// If a nil counter is returned during registration, the method will
 // panic
 func InitHistogramVec(r prometheus.Registerer, opts prometheus.CounterOpts, boundedLabels []BoundedLabel) *prometheus.HistogramVec
 
 // InitCounter initializes a new counter.
-// If a nil counter is returned during registeration, the method will
+// If a nil counter is returned during registration, the method will
 // panic
 func InitCounter(r prometheus.Registerer, opts prometheus.CounterOpts) prometheus.Counter
 
 // InitGauge initializes a new gauge.
-// If a nil counter is returned during registeration, the method will
+// If a nil counter is returned during registration, the method will
 // panic
 func InitGauge(r prometheus.Registerer, opts prometheus.GaugeOpts) prometheus.Gauge
 
 // InitHistogram initializes a new histogram.
-// If a nil counter is returned during registeration, the method will
+// If a nil counter is returned during registration, the method will
 // panic
 func InitHistogram(r prometheus.Registerer, opts prometheus.HistogramOpts) prometheus.Histogram
-
-// registerCounterVec registers the CounterVec with the provided Registerer. If the
-// CounterVec has already been registered, the existing metric will be returned.
-func registerCounterVec(r prometheus.Registerer, g *prometheus.CounterVec) (*prometheus.CounterVec, error) 
-
-// registerHistogramVec registers the Histogram with the provided Registerer. If the
-// HistogramVec has already been registered, the existing metric will be returned.
-func registerHistogramVec(r prometheus.Registerer, g *prometheus.HistogramVec) (*prometheus.HistogramVec, error) 
-
-// registerGaugeVec registers the GaugeVec with the provided Registerer. If the
-// GaugeVec has already been registered, the existing GaugeVec will be returned.
-func registerGaugeVec(r prometheus.Registerer, g *prometheus.GaugeVec) (*prometheus.GaugeVec, error) 
-
-// registerGauge registers the Gauge with the provided Registerer. If the
-// gauge has already been registered, the existing metric will be returned.
-func registerGauge(r prometheus.Registerer, g *prometheus.Gauge) (*prometheus.Gauge, error) 
-
-// registerCounter registers the Counter with the provided Registerer. If the
-// counter has already been registered, the existing metric will be returned.
-func registerCounter(r prometheus.Registerer, g *prometheus.Counter) (*prometheus.Counter, error) 
-
-// registerHistogram registers the Histogram with the provided Registerer. If the
-// histogram has already been registered, the existing metric will be returned.
-func registerHistogram(r prometheus.Registerer, g *prometheus.Counter) (*prometheus.Histogram, error) 
-
-// registerCollector is an helper to register a metric and log registration errors
-func registerCollector(r prometheus.Registerer, c prometheus.Collector) (prometheus.Collector, error)
 ```
 
 ##### Example Initialization Steps for a new CounterVec metric
+
 1. Initialize a new CounterVec with relevant options and label names 
 
 2. Attempt to register the new CounterVec
@@ -183,12 +172,18 @@ func registerCollector(r prometheus.Registerer, c prometheus.Collector) (prometh
 
        ii. If no, return a nil CounterVec and the received error. 
 
-3. If received a nil CounterVec from regitration, interrupt with a panic, because an interrupt would suggest a failure in the created CounterVec, which should be fixed by the programmer. 
+3. If received a nil CounterVec from registration, interrupt with a panic, 
+   because an interrupt would suggest a failure in the created 
+   CounterVec, which should be fixed by the programmer. 
+
 #### Consumer Package
 
-The below example change will walk through how a consumer package will be integrated with the metrics package:
+The below example change will walk through how a consumer package 
+will be integrated with the metrics package:
 
-Each consumer package in Kanister will have a main struct and a "metrics.go” file . An example of this would be the controller package: 
+Each consumer package in Kanister will have a main struct and a "metrics.go" file . 
+
+An example of this would be the controller package: 
 
 controller/controller.go
 
@@ -206,7 +201,7 @@ type Controller struct {
 ```
 
 ```golang
-// New create controller for watching kanister custom resources created
+// New create controller for watching Kanister custom resources created
 func New(c *rest.Config) *Controller {
 	return &Controller{
 		config:  c,
@@ -259,15 +254,16 @@ func newMetrics(gatherer prometheus.Gatherer) *metrics {
 }
 ```
 
-The below example will show how the above created ActionSetCounterVec will be incremented in a method:
+The below example will show how the above created ActionSetCounterVec 
+will be incremented in a method:
 
 ```golang
 func (c *Controller) handleActionSet(ctx context.Context) {
-  c.metrics.ActionSetCounterVec.With(constructActionSetCounterVecLabels(  "backup", "success")).Inc()
+  c.metrics.ActionSetCounterVec.With(constructActionSetCounterVecLabels("backup", "success")).Inc()
 }
 ```
 
-Alternatively, one can also directly call the prometheus API with 
+Alternatively, one can also directly call the Prometheus API with 
 positional arguments:
 
 ```golang
@@ -279,8 +275,16 @@ func (c *Controller) handleActionSet(ctx context.Context) {
 
 ## Testing
 
-1. The testing will include manual testing of whether the metrics added are successfully getting exported to kanister. 
+1. The testing will include manual testing of whether the metrics added are 
+   successfully getting exported to Kanister. 
 
-2. The interfaces listed above in the metrics package, apart from InitCounterVec and generateLabelCombinations, will not be unit-tested, since they would be testing the behavior of the Prometheus API itself, which breaks the chain of trust principle with dependencies in unit testing.  
+2. The interfaces listed above in the metrics package, apart from InitCounterVec 
+   and generateLabelCombinations, will not be unit-tested, since they would be 
+   testing the behavior of the Prometheus API itself, which breaks the chain 
+   of trust principle with dependencies in unit testing.  
+   InitCounterVec will be unit tested using the test_util 
+   package: https://pkg.go.dev/github.com/prometheus/client_golang/prometheus/testutil 
+   in Prometheus.
 
-3. Integration tests will be added for code that exports new metrics, to ensure that the behavior of exporting metrics is correct. 
+3. Integration tests will be added for code that exports new metrics, 
+   to ensure that the behavior of exporting metrics is correct. 
