@@ -88,25 +88,25 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Create or update owned resources by Repository Server CR")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
-		if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeWarning, serverSetupErrReason, err.Error(), err.Error(), crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
+		if uerr := repoServerHandler.setCondition(ctx, serverSetupErrReason, err.Error(), crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, serverSetupSuccessReason, serverSetupEventMsg, "", crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	if uerr := repoServerHandler.setCondition(ctx, serverSetupSuccessReason, "", crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
-		if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeWarning, repositoryConnectedErrReason, err.Error(), err.Error(), crkanisteriov1alpha1.RepositoryConnected, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
+		if uerr := repoServerHandler.setCondition(ctx, repositoryConnectedErrReason, err.Error(), crkanisteriov1alpha1.RepositoryConnected, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	if uerr := repoServerHandler.handleEvent(ctx, corev1.EventTypeNormal, repositoryConnectedSuccessReason, repositoryConnectedEventMsg, "", crkanisteriov1alpha1.RepositoryConnected, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	if uerr := repoServerHandler.setCondition(ctx, repositoryConnectedSuccessReason, "", crkanisteriov1alpha1.RepositoryConnected, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
