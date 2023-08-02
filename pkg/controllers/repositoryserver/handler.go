@@ -296,7 +296,7 @@ func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, podN
 	if err != nil {
 		return err
 	}
-	h.Logger.Info("Update pod name in RepositoryServer /status")
+
 	info := crv1alpha1.ServerInfo{
 		PodName:     podName,
 		ServiceName: serviceName,
