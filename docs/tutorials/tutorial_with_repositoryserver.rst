@@ -2,7 +2,7 @@ Using Kopia Repository Server as Data Mover in Blueprint
 ********************************************************
 
 This tutorial will demonstrate the use of Kopia to copy/restore backups
-to a kopia repository. We will be using kanister functions
+to a Kopia repository. We will be using kanister functions
 that use Kopia repository Server as data mover in the blueprint.
 For additional documentation on kanister functions and blueprints
 refer to the :ref:`architecture` and :ref:`kanister functions<functions>`
@@ -87,7 +87,7 @@ Starting Kopia Repository Server
 ================================
 
 To copy or restore backups to the location storage using the Kopia data mover,
-it is necessary to start the Kopia repository server. To learn more about kopia
+it is necessary to start the Kopia repository server. To learn more about Kopia
 repository server, refer to :ref:`architecture <architecture>`.
 
 The repository server controller requires the creation of a Repository Server
@@ -116,7 +116,7 @@ You can create it as shown below:
     --secret-access-key=<SECRET_ACCESS_KEY>
 
 To learn more about how to create repository and gain further insight into the Kopia
-repository refer to `kopia documentation <https://kopia.io/docs/reference/command-line/>`_
+repository refer to `Kopia documentation <https://kopia.io/docs/reference/command-line/>`_
 
 
 Creating Secrets
@@ -346,10 +346,10 @@ and ``restore``. The ``backup`` action comprises of a single phase named as
 ``backupToS3``.
 
 ``backupToS3`` invokes the Kanister function ``BackupDataUsingKopiaServer``
-that uses kopia repository server to copy backup data to s3 storage. The action
+that uses Kopia repository server to copy backup data to s3 storage. The action
 ``restore`` uses two kanister functions ``ScaleWorkload`` and ``RestoreDataUsingKopiaServer``.
 ``ScaleWorkload`` function scales down the ``timelog`` application before restoring the data.
-``RestoreDataUsingKopiaServer`` restores data using kopia repository server form
+``RestoreDataUsingKopiaServer`` restores data using Kopia repository server form
 s3 storage.
 
 To learn more about the Kanister function, refer to the documentation on
