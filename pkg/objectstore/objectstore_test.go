@@ -421,7 +421,7 @@ func (s *ObjectStoreProviderSuite) createBucketName(c *C) string {
 	}
 
 	// GCS bucket names cannot contain '.' (except for recognized top-level domains)
-	bucketName = strings.Replace(bucketName, ".", "-", -1)
+	bucketName = strings.ReplaceAll(bucketName, ".", "-")
 
 	return bucketName
 }

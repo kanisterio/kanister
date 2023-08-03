@@ -25,13 +25,9 @@ func newOutputCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "output <key> <value>",
 		Short: "Create phase output with given key:value",
-		Args: func(c *cobra.Command, args []string) error {
-			return validateArguments(c, args)
-		},
+		Args:  validateArguments,
 		// TODO: Example invocations
-		RunE: func(c *cobra.Command, args []string) error {
-			return runOutputCommand(c, args)
-		},
+		RunE: runOutputCommand,
 	}
 	return cmd
 }

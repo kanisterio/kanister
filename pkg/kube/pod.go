@@ -393,8 +393,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 			return true, err
 		}
 		containerForLogs = p.Spec.Containers[0].Name
-		switch p.Status.Phase {
-		case v1.PodFailed:
+		if p.Status.Phase == v1.PodFailed {
 			return false, errors.Errorf("Pod %s failed. Pod status: %s", name, p.Status.String())
 		}
 		return p.Status.Phase == v1.PodSucceeded, nil

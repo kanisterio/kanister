@@ -565,7 +565,7 @@ func (e *Efs) SnapshotsListWLimit(ctx context.Context, tags map[string]string, l
 	req := &backup.ListRecoveryPointsByBackupVaultInput{}
 	req.SetBackupVaultName(e.backupVaultName)
 	req.SetMaxResults(limit)
-	resp, err := e.ListRecoveryPointsByBackupVaultWithContext(ctx, req) //backup API
+	resp, err := e.ListRecoveryPointsByBackupVaultWithContext(ctx, req) // backup API
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to list recovery points by vault")
 	}

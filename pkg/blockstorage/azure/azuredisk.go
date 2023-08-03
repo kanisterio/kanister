@@ -270,10 +270,10 @@ func isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey strin
 	return migrateStorageAccount == "" || migrateStorageKey == ""
 }
 
-func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
+func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, id string) {
 	_, err := s.azCli.SnapshotsClient.RevokeAccess(ctx, rg, name)
 	if err != nil {
-		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": ID})
+		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": id})
 	}
 }
 
@@ -545,7 +545,7 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 }
 
 func (s *AdStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
-	//check if current node region is zoned or not
+	// check if current node region is zoned or not
 	kubeCli, err := kube.NewClient()
 	if err != nil {
 		return "", "", err

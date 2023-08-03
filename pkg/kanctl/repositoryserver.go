@@ -64,9 +64,7 @@ func newRepositoryServerCommand() *cobra.Command {
 		Use:   "repository-server",
 		Short: "Create a new RepositoryServer",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return createNewRepositoryServer(cmd, args)
-		},
+		RunE:  createNewRepositoryServer,
 	}
 
 	cmd.PersistentFlags().StringP(tlsSecretFlag, "t", "", "name of the tls secret needed for secure kopia client and kopia repository server communication")

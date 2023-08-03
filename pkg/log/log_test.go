@@ -174,14 +174,14 @@ func (s *LogSuite) TestLogLevel(c *C) {
 	log.SetOutput(&output)
 	ctx := field.Context(context.Background(), "key", "value")
 	var entry map[string]interface{}
-	//Check if debug level log is printed when log level is info
+	// Check if debug level log is printed when log level is info
 	Debug().WithContext(ctx).Print("Testing debug level")
 	err := json.Unmarshal(output.Bytes(), &entry)
 
 	c.Assert(err, NotNil)
 	c.Assert(output.String(), HasLen, 0)
 
-	//Check if debug level log is printed when log level is debug
+	// Check if debug level log is printed when log level is debug
 	os.Setenv(LevelEnvName, "debug")
 	defer func() {
 		os.Unsetenv(LevelEnvName)

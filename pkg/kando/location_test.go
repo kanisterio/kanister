@@ -55,7 +55,7 @@ func (s *LocationSuite) TestLocationObjectStore(c *C) {
 	err = locationDelete(ctx, p, path)
 	c.Assert(err, IsNil)
 
-	//test deleting dir with multiple artifacts
+	// test deleting dir with multiple artifacts
 	source = bytes.NewBufferString(testContent)
 	err = locationPush(ctx, p, path, source)
 	c.Assert(err, IsNil)

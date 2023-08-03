@@ -298,7 +298,7 @@ func (d *directory) absPathName(name string) string {
 func sanitizeTags(tags map[string]string) map[string]interface{} {
 	cTags := make(map[string]interface{})
 	for key, val := range tags {
-		cKey := strings.Replace(key, "/", "-", -1)
+		cKey := strings.ReplaceAll(key, "/", "-")
 		cTags[cKey] = val
 	}
 	return cTags

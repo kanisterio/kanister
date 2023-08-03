@@ -47,7 +47,7 @@ func (s *JobSuite) SetUpSuite(c *C) {
 }
 
 func (s *JobSuite) SetUpTest(c *C) {
-	testJobName = testJobName + rand.String(5)
+	testJobName += rand.String(5)
 }
 
 // Verifies that the Job object is not created if the job name is not specified.

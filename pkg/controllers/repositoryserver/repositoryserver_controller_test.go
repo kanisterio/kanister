@@ -247,7 +247,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
 
-	//Get repository server CR with the updated server information
+	// Get repository server CR with the updated server information
 	repoServerCRCreated, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
@@ -294,7 +294,7 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
 
-	//Get repository server CR with the updated server information
+	// Get repository server CR with the updated server information
 	repoServerCRCreated, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
@@ -401,7 +401,7 @@ func (s *RepoServerControllerSuite) TestFilestoreLocationVolumeMountOnRepoServer
 	err = s.waitForRepoServerInfoUpdateInCR(repoServerCRCreated.Name)
 	c.Assert(err, IsNil)
 
-	//Get repository server CR with the updated server information
+	// Get repository server CR with the updated server information
 	repoServerCRCreated, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Get(ctx, repoServerCRCreated.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 

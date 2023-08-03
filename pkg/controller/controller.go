@@ -232,11 +232,12 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 		return err
 	}
 	if newAS.Status == nil || newAS.Status.State != crv1alpha1.StateRunning {
-		if newAS.Status == nil {
+		switch {
+		case newAS.Status == nil:
 			log.WithContext(ctx).Print("Updated ActionSet", field.M{"Status": "nil"})
-		} else if newAS.Status.State == crv1alpha1.StateComplete {
+		case newAS.Status.State == crv1alpha1.StateComplete:
 			c.logAndSuccessEvent(ctx, fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
-		} else {
+		default:
 			log.WithContext(ctx).Print("Updated ActionSet", field.M{"Status": newAS.Status.State})
 		}
 		return nil

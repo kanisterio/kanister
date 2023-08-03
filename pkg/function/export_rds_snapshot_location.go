@@ -278,8 +278,7 @@ func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction,
 		dbList = filterRestrictedDB(dbList)
 	}
 
-	switch dbEngine {
-	case PostgrSQLEngine:
+	if dbEngine == PostgrSQLEngine {
 		switch action {
 		case BackupAction:
 			command, err := postgresBackupCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJson)

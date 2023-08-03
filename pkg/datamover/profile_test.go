@@ -64,7 +64,7 @@ func (ps *ProfileSuite) TestLocationOperationsForProfileDataMover(c *C) {
 	err = locationDelete(ps.ctx, p, path)
 	c.Assert(err, IsNil)
 
-	//test deleting dir with multiple artifacts
+	// test deleting dir with multiple artifacts
 	source = bytes.NewBufferString(testContent)
 	err = locationPush(ps.ctx, p, path, source)
 	c.Assert(err, IsNil)

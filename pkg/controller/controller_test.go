@@ -664,7 +664,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	msg := "Unit testing event logs"
 	reason := "Test Logs"
 
-	//Create nil ActionSet
+	// Create nil ActionSet
 	var nilAs = (*crv1alpha1.ActionSet)(nil)
 
 	// Create Blueprint
@@ -672,7 +672,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
-	//Test the logAndErrorEvent function
+	// Test the logAndErrorEvent function
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)
@@ -686,19 +686,19 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	c.Assert(len(events.Items) > 0, Equals, true)
 	c.Assert(events.Items[0].Message, Equals, msg)
 
-	//Testing nil ActionSet error event logging
+	// Testing nil ActionSet error event logging
 	events, err = s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, nilAs)
 	c.Assert(err, NotNil)
 	c.Assert(len(events.Items), Equals, 0)
 
-	//Testing Blueprint error event logging
+	// Testing Blueprint error event logging
 	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, bp)
 	c.Assert(err, IsNil)
 	c.Assert(events, NotNil)
 	c.Assert(len(events.Items) > 0, Equals, true)
 	c.Assert(events.Items[0].Message, Equals, msg)
 
-	//Testing empty Blueprint
+	// Testing empty Blueprint
 	testbp := &crv1alpha1.Blueprint{}
 	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), testbp)
 	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, testbp)

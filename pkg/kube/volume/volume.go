@@ -309,6 +309,6 @@ func labelSelector(labels map[string]string) string {
 
 // zoneToRegion removes -latter or just last latter from provided zone.
 func zoneToRegion(zone string) string {
-	r, _ := regexp.Compile("-?[a-z]$")
+	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
 	return r.ReplaceAllString(zone, "")
 }

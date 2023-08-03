@@ -84,9 +84,7 @@ func newActionSetCmd() *cobra.Command {
 		Use:   "actionset",
 		Short: "Create a new ActionSet or override a <parent> ActionSet",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(c *cobra.Command, args []string) error {
-			return initializeAndPerform(c, args)
-		},
+		RunE:  initializeAndPerform,
 	}
 	cmd.Flags().StringP(sourceFlagName, "f", "", "specify name of the action set")
 
