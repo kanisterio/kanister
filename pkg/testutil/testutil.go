@@ -376,7 +376,7 @@ func CreateSecret(cli kubernetes.Interface, namespace, name string, secrettype v
 		se.APIVersion = "v1"
 		se.Kind = "Secret"
 	}
-	return
+	return se, err
 }
 
 func GetRepoPasswordSecretData(password string) map[string][]byte {

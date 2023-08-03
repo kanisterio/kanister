@@ -142,23 +142,21 @@ func readArtifactPathFile(path string) (string, error) {
 	return t, errors.Wrap(err, "Could not read artifact path file")
 }
 
-func readProfile(path string) (p param.Profile, ok bool, err error) {
+func readProfile(path string) (param.Profile, bool, error) {
 	var buf []byte
-	buf, err = os.ReadFile(path)
+	buf, err := os.ReadFile(path)
+	var p param.Profile
 	switch {
 	case os.IsNotExist(err):
 		err = nil
-		return
+		return p, false, err
 	case err != nil:
-		err = errors.Wrap(err, "Failed to read profile")
-		return
+		return p, false, errors.Wrap(err, "Failed to read profile")
 	}
 	if err = json.Unmarshal(buf, &p); err != nil {
-		err = errors.Wrap(err, "Failed to unmarshal profile")
-	} else {
-		ok = true
+		return p, false, errors.Wrap(err, "Failed to unmarshal profile")
 	}
-	return
+	return p, true, nil
 }
 
 func writeProfile(path string, p param.Profile) error {

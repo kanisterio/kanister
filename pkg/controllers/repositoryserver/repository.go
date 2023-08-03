@@ -52,19 +52,19 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 	)
 }
 
-func (h *RepoServerHandler) getRepositoryCacheSettings() (contentCacheMB, metadataCacheMB int, err error) {
+func (h *RepoServerHandler) getRepositoryCacheSettings() (contentCacheMB int, metadataCacheMB int, err error) {
 	contentCacheMB, metadataCacheMB = command.GetGeneralCacheSizeSettings()
 	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content != "" {
 		contentCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content)
 		if err != nil {
-			return
+			return contentCacheMB, metadataCacheMB, err
 		}
 	}
 	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata != "" {
 		metadataCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata)
 		if err != nil {
-			return
+			return contentCacheMB, metadataCacheMB, err
 		}
 	}
-	return
+	return contentCacheMB, metadataCacheMB, err
 }
