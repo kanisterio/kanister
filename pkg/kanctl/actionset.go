@@ -501,7 +501,7 @@ func parseGenericObjectReference(s string) (crv1alpha1.ObjectReference, error) {
 	}, nil
 }
 
-func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interface, osCli osversioned.Interface, parsed map[string]bool) ([]crv1alpha1.ObjectReference, error) {
+func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interface, osCli osversioned.Interface, parsed map[string]bool) ([]crv1alpha1.ObjectReference, error) { //nolint:gocyclo
 	ctx := context.Background()
 	var objects []crv1alpha1.ObjectReference
 	appendObj := func(kind, namespace, name string) {

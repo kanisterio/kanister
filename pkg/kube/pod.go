@@ -146,6 +146,10 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		return patchedSpecs.Containers[i].Name == defaultContainerName
 	})
 
+	return createPodSpec(opts, patchedSpecs, ns), nil
+}
+
+func createPodSpec(opts *PodOptions, patchedSpecs v1.PodSpec, ns string) *v1.Pod {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
@@ -195,8 +199,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 	}
 
 	pod.Namespace = ns
-
-	return pod, nil
+	return pod
 }
 
 // CreatePod creates a pod with a single container based on the specified image

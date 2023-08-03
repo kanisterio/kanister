@@ -32,6 +32,6 @@ issues:
       linters:
         - unparam
 
-linter-settings:
+linters-settings:
   gocyclo:
     min-complexity: 20
