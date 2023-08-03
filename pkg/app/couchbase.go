@@ -80,7 +80,7 @@ func (cb *CouchbaseDB) Init(ctx context.Context) error {
 	return err
 }
 
-func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error {
+func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error { //nolint:dupl
 	log.Info().Print("Installing couchbase operator and cluster helm chart.", field.M{"app": cb.name})
 	cb.namespace = ns
 

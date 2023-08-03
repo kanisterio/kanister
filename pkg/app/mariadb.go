@@ -74,7 +74,7 @@ func (m *MariaDB) Init(context.Context) error {
 	return nil
 }
 
-func (m *MariaDB) Install(ctx context.Context, namespace string) error {
+func (m *MariaDB) Install(ctx context.Context, namespace string) error { //nolint:dupl
 	m.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {

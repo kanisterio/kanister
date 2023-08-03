@@ -57,7 +57,7 @@ func (c *CockroachDB) Init(context.Context) error {
 	return err
 }
 
-func (c *CockroachDB) Install(ctx context.Context, namespace string) error {
+func (c *CockroachDB) Install(ctx context.Context, namespace string) error { //nolint:dupl
 	log.Info().Print("Installing cockroachdb cluster helm chart.", field.M{"app": c.name})
 	c.namespace = namespace
 

@@ -16,6 +16,11 @@ linters:
     - gocritic
     - lll
     - nakedret
+    - asciicheck
+    - depguard
+    - dogsled
+    - dupl
+
 
 run:
   timeout: 10m                          # golangci-lint run's timeout.
@@ -30,6 +35,7 @@ issues:
         - errcheck                      # Errors may be ignored in tests.
         - unparam                       # Tests might have unused function parameters.
         - lll
+        - dupl
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
