@@ -204,7 +204,10 @@ func (m *MariaDB) Reset(ctx context.Context) error {
 
 func (m *MariaDB) Initialize(ctx context.Context) error {
 	// create the database and a pets table
-	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MARIADB_ROOT_PASSWORD -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
+	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MARIADB_ROOT_PASSWORD " +
+		"-e 'create database testdb; use testdb; " +
+		"CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), " +
+		"birth DATE, death DATE);'"}
 	_, stderr, err := m.execCommand(ctx, createTableCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while creating the maria table: %s", stderr)

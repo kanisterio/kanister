@@ -14,6 +14,7 @@ linters:
     - unparam
     - gocyclo
     - gocritic
+    - lll
 
 run:
   timeout: 10m                          # golangci-lint run's timeout.
@@ -27,6 +28,7 @@ issues:
       linters:
         - errcheck                      # Errors may be ignored in tests.
         - unparam                       # Tests might have unused function parameters.
+        - lll
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
@@ -35,3 +37,5 @@ issues:
 linters-settings:
   gocyclo:
     min-complexity: 20
+  lll:
+    line-length: 240

@@ -99,7 +99,8 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringSliceP(pvcFlagName, "v", []string{}, "pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(secretsFlagName, "s", []string{}, "secrets for the action set, comma separated ref=namespace/name pairs (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)")
 	cmd.Flags().StringSliceP(statefulSetFlagName, "t", []string{}, "statefulset for the action set, comma separated namespace/name pairs (eg: --statefulset namespace1/name1,namespace2/name2)")
-	cmd.Flags().StringSliceP(deploymentConfigFlagName, "D", []string{}, "deploymentconfig for action set, comma separated namespace/name pairs (e.g. --deploymentconfig namespace1/name1,namespace2/name2). Will ideally be used on openshift clusters.")
+	cmd.Flags().StringSliceP(deploymentConfigFlagName, "D", []string{}, "deploymentconfig for action set, comma separated namespace/name pairs "+
+		"(e.g. --deploymentconfig namespace1/name1,namespace2/name2). Will ideally be used on openshift clusters.")
 	cmd.Flags().StringP(selectorFlagName, "l", "", "k8s selector for objects")
 	cmd.Flags().StringP(selectorKindFlag, "k", "all", "resource kind to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")

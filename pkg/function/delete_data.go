@@ -65,7 +65,19 @@ func (*deleteDataFunc) Name() string {
 	return DeleteDataFuncName
 }
 
-func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func deleteData(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	reclaimSpace bool,
+	namespace,
+	encryptionKey string,
+	targetPaths,
+	deleteTags,
+	deleteIdentifiers []string,
+	jobPrefix string,
+	podOverride crv1alpha1.JSONMap,
+) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
@@ -79,7 +91,16 @@ func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.Template
 }
 
 //nolint:gocognit
-func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func deleteDataPodFunc(
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	reclaimSpace bool,
+	namespace,
+	encryptionKey string,
+	targetPaths,
+	deleteTags,
+	deleteIdentifiers []string,
+) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {

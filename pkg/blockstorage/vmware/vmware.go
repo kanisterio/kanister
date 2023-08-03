@@ -357,10 +357,14 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 			if soap.IsVimFault(lerr) {
 				switch soap.ToVimFault(lerr).(type) {
 				case *types.InvalidArgument:
-					log.Error().WithError(lerr).Print("Disk doesn't have given snapshot due to the snapshot stamp being removed in the previous DeleteSnapshot operation which failed with an InvalidState fault. It will be resolved by the next snapshot operation on the same VM. Will NOT retry")
+					log.Error().WithError(lerr).Print("Disk doesn't have given snapshot due to the snapshot stamp being " +
+						"removed in the previous DeleteSnapshot operation which failed with an InvalidState fault. It " +
+						"will be resolved by the next snapshot operation on the same VM. Will NOT retry")
 					return true, nil
 				case *types.NotFound:
-					log.Error().WithError(lerr).Print("There is a temporary catalog mismatch due to a race condition with one another concurrent DeleteSnapshot operation. It will be resolved by the next consolidateDisks operation on the same VM. Will NOT retry")
+					log.Error().WithError(lerr).Print("There is a temporary catalog mismatch due to a race condition with " +
+						"one another concurrent DeleteSnapshot operation. It will be resolved by the next " +
+						"consolidateDisks operation on the same VM. Will NOT retry")
 					return true, nil
 				case *types.InvalidState:
 					log.Error().WithError(lerr).Print("There is some operation, other than this DeleteSnapshot invocation, on the same VM still being protected by its VM state. Will retry")

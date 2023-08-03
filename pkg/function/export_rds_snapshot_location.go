@@ -76,7 +76,20 @@ func (*exportRDSSnapshotToLocationFunc) Name() string {
 	return ExportRDSSnapshotToLocFuncName
 }
 
-func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password string, databases []string, dbSubnetGroup, backupPrefix string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
+func exportRDSSnapshotToLoc(
+	ctx context.Context,
+	namespace,
+	instanceID,
+	snapshotID,
+	username,
+	password string,
+	databases []string,
+	dbSubnetGroup,
+	backupPrefix string,
+	dbEngine RDSDBEngine,
+	sgIDs []string,
+	profile *param.Profile,
+) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -217,7 +230,20 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 	}
 }
 
-func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile, dbEngineVersion string) (map[string]interface{}, error) {
+func execDumpCommand(
+	ctx context.Context,
+	dbEngine RDSDBEngine,
+	action RDSAction,
+	namespace,
+	dbEndpoint,
+	username,
+	password string,
+	databases []string,
+	backupPrefix,
+	backupID string,
+	profile *param.Profile,
+	dbEngineVersion string,
+) (map[string]interface{}, error) {
 	// Trim "\n" from creds
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)
@@ -250,7 +276,19 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
 }
 
-func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile *param.Profile, dbEngineVersion string) ([]string, string, error) {
+func prepareCommand(
+	ctx context.Context,
+	dbEngine RDSDBEngine,
+	action RDSAction,
+	dbEndpoint,
+	username,
+	password string,
+	dbList []string,
+	backupPrefix,
+	backupID string,
+	profile *param.Profile,
+	dbEngineVersion string,
+) ([]string, string, error) {
 	// Convert profile object into json
 	profileJson, err := json.Marshal(profile)
 	if err != nil {

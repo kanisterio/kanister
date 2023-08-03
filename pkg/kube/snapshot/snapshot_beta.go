@@ -83,7 +83,18 @@ func (sna *SnapshotBeta) Create(ctx context.Context, name, namespace, volumeName
 	return createSnapshot(ctx, sna.dynCli, sna.kubeCli, v1beta1.VolSnapGVR, name, namespace, volumeName, snapshotClass, waitForReady, labels)
 }
 
-func createSnapshot(ctx context.Context, dynCli dynamic.Interface, kubeCli kubernetes.Interface, snapGVR schema.GroupVersionResource, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) error {
+func createSnapshot(
+	ctx context.Context,
+	dynCli dynamic.Interface,
+	kubeCli kubernetes.Interface,
+	snapGVR schema.GroupVersionResource,
+	name,
+	namespace,
+	volumeName string,
+	snapshotClass *string,
+	waitForReady bool,
+	labels map[string]string,
+) error {
 	if _, err := kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeName, metav1.GetOptions{}); err != nil {
 		if k8errors.IsNotFound(err) {
 			return errors.Errorf("Failed to find PVC %s, Namespace %s", volumeName, namespace)

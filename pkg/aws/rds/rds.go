@@ -48,7 +48,19 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess *bool, restoredClusterID *string, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(
+	ctx context.Context,
+	storage *int64,
+	instanceClass,
+	instanceID,
+	engine,
+	username,
+	password string,
+	sgIDs []string,
+	publicAccess *bool,
+	restoredClusterID *string,
+	dbSubnetGroup string,
+) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
 		DBInstanceClass:      &instanceClass,
 		DBInstanceIdentifier: &instanceID,
@@ -74,7 +86,18 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, dbSubnetGroup, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
+func (r RDS) CreateDBCluster(
+	ctx context.Context,
+	storage int64,
+	instanceClass,
+	instanceID,
+	dbSubnetGroup,
+	engine,
+	dbName,
+	username,
+	password string,
+	sgIDs []string,
+) (*rds.CreateDBClusterOutput, error) {
 	dbi := &rds.CreateDBClusterInput{
 		DBClusterIdentifier: &instanceID,
 		DatabaseName:        &dbName,

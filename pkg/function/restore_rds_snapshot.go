@@ -145,7 +145,20 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	return restoreRDSSnapshot(ctx, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile)
 }
 
-func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
+func restoreRDSSnapshot(
+	ctx context.Context,
+	namespace,
+	instanceID,
+	subnetGroup,
+	snapshotID,
+	backupArtifactPrefix,
+	backupID,
+	username,
+	password string,
+	dbEngine RDSDBEngine,
+	sgIDs []string,
+	profile *param.Profile,
+) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Error validating profile")
@@ -206,7 +219,16 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup,
 }
 
 //nolint:unparam
-func postgresRestoreCommand(pgHost, username, password string, dbList []string, backupArtifactPrefix, backupID string, profile []byte, dbEngineVersion string) ([]string, error) {
+func postgresRestoreCommand(
+	pgHost,
+	username,
+	password string,
+	dbList []string,
+	backupArtifactPrefix,
+	backupID string,
+	profile []byte,
+	dbEngineVersion string,
+) ([]string, error) {
 	replaceCommand := ""
 	if len(dbList) == 0 {
 		return nil, errors.New("No database found. Atleast one db needed to connect")
@@ -308,7 +330,19 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 
 	log.WithContext(ctx).Print("Creating DB instance in the cluster")
 	// After Aurora cluster is created, we will have to explictly create the DB instance
-	dbInsOp, err := rdsCli.CreateDBInstance(ctx, nil, defaultAuroraInstanceClass, fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix), dbEngine, "", "", nil, nil, aws.String(*op.DBCluster.DBClusterIdentifier), subnetGroup)
+	dbInsOp, err := rdsCli.CreateDBInstance(
+		ctx,
+		nil,
+		defaultAuroraInstanceClass,
+		fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix),
+		dbEngine,
+		"",
+		"",
+		nil,
+		nil,
+		aws.String(*op.DBCluster.DBClusterIdentifier),
+		subnetGroup,
+	)
 	if err != nil {
 		return errors.Wrap(err, "Error while creating Aurora DB instance in the cluster.")
 	}
