@@ -67,29 +67,37 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			phases = append(phases, *a.DeferPhase)
 		}
 
-		for _, ap := range phases {
-			if ap.Name != p.name {
-				continue
-			}
-
-			args, err := renderFuncArgs(ap.Func, ap.Args, tp)
-			if err != nil {
-				return nil, err
-			}
-
-			if err = checkRequiredArgs(p.f.RequiredArgs(), args); err != nil {
-				return nil, errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
-			}
-
-			if err = checkSupportedArgs(p.f.Arguments(), args); err != nil {
-				return nil, errors.Wrapf(err, "Checking supported args for function %s.", p.f.Name())
-			}
-
-			p.args = args
+		err := p.setPhaseArgs(phases, tp)
+		if err != nil {
+			return nil, err
 		}
 	}
 	// Execute the function
 	return p.f.Exec(ctx, tp, p.args)
+}
+
+func (p *Phase) setPhaseArgs(phases []crv1alpha1.BlueprintPhase, tp param.TemplateParams) error {
+	for _, ap := range phases {
+		if ap.Name != p.name {
+			continue
+		}
+
+		args, err := renderFuncArgs(ap.Func, ap.Args, tp)
+		if err != nil {
+			return err
+		}
+
+		if err = checkRequiredArgs(p.f.RequiredArgs(), args); err != nil {
+			return errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
+		}
+
+		if err = checkSupportedArgs(p.f.Arguments(), args); err != nil {
+			return errors.Wrapf(err, "Checking supported args for function %s.", p.f.Name())
+		}
+
+		p.args = args
+	}
+	return nil
 }
 
 func renderFuncArgs(

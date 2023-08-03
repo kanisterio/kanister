@@ -180,11 +180,7 @@ func restoreRDSSnapshot(
 		// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
 		// Find security group ids
 		if sgIDs == nil {
-			if !isAuroraCluster(string(dbEngine)) {
-				sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
-			} else {
-				sgIDs, err = findAuroraSecurityGroups(ctx, rdsCli, instanceID)
-			}
+			sgIDs, err = findSecurityGroupIDs(ctx, rdsCli, instanceID, string(dbEngine))
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
 			}
@@ -216,6 +212,12 @@ func restoreRDSSnapshot(
 	return map[string]interface{}{
 		RestoreRDSSnapshotEndpoint: dbEndpoint,
 	}, nil
+}
+func findSecurityGroupIDs(ctx context.Context, rdsCli *rds.RDS, instanceID, dbEngine string) ([]string, error) {
+	if !isAuroraCluster(dbEngine) {
+		return findSecurityGroups(ctx, rdsCli, instanceID)
+	}
+	return findAuroraSecurityGroups(ctx, rdsCli, instanceID)
 }
 
 //nolint:unparam

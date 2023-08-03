@@ -89,30 +89,9 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 	// Create Snapshot
 	snapshotID := fmt.Sprintf("%s-%s", instanceID, rand.String(10))
 
-	log.WithContext(ctx).Print("Creating RDS snapshot", field.M{"SnapshotID": snapshotID})
-	if !isAuroraCluster(string(dbEngine)) {
-		dbSnapshotOutput, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID)
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to create snapshot")
-		}
-
-		// Wait until snapshot becomes available
-		log.WithContext(ctx).Print("Waiting for RDS snapshot to be available", field.M{"SnapshotID": snapshotID})
-		if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
-			return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
-		}
-		if dbSnapshotOutput.DBSnapshot != nil && dbSnapshotOutput.DBSnapshot.AllocatedStorage != nil {
-			allocatedStorage = *(dbSnapshotOutput.DBSnapshot.AllocatedStorage)
-		}
-	} else {
-		if _, err := rdsCli.CreateDBClusterSnapshot(ctx, instanceID, snapshotID); err != nil {
-			return nil, errors.Wrap(err, "Failed to create cluster snapshot")
-		}
-
-		log.WithContext(ctx).Print("Waiting for RDS Aurora snapshot to be available", field.M{"SnapshotID": snapshotID})
-		if err := rdsCli.WaitUntilDBClusterSnapshotAvailable(ctx, snapshotID); err != nil {
-			return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
-		}
+	allocatedStorage, err = createSnapshot(ctx, rdsCli, snapshotID, instanceID, string(dbEngine))
+	if err != nil {
+		return nil, err
 	}
 
 	// Find security group ids
@@ -152,6 +131,36 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		CreateRDSSnapshotDBSubnetGroup:    &dbSubnetGroup,
 	}
 	return output, nil
+}
+
+func createSnapshot(ctx context.Context, rdsCli *rds.RDS, snapshotID, dbEngine, instanceID string) (int64, error) {
+	log.WithContext(ctx).Print("Creating RDS snapshot", field.M{"SnapshotID": snapshotID})
+	var allocatedStorage int64
+	if !isAuroraCluster(dbEngine) {
+		dbSnapshotOutput, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID)
+		if err != nil {
+			return allocatedStorage, errors.Wrap(err, "Failed to create snapshot")
+		}
+
+		// Wait until snapshot becomes available
+		log.WithContext(ctx).Print("Waiting for RDS snapshot to be available", field.M{"SnapshotID": snapshotID})
+		if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
+			return allocatedStorage, errors.Wrap(err, "Error while waiting snapshot to be available")
+		}
+		if dbSnapshotOutput.DBSnapshot != nil && dbSnapshotOutput.DBSnapshot.AllocatedStorage != nil {
+			allocatedStorage = *(dbSnapshotOutput.DBSnapshot.AllocatedStorage)
+		}
+		return allocatedStorage, nil
+	}
+	if _, err := rdsCli.CreateDBClusterSnapshot(ctx, instanceID, snapshotID); err != nil {
+		return allocatedStorage, errors.Wrap(err, "Failed to create cluster snapshot")
+	}
+
+	log.WithContext(ctx).Print("Waiting for RDS Aurora snapshot to be available", field.M{"SnapshotID": snapshotID})
+	if err := rdsCli.WaitUntilDBClusterSnapshotAvailable(ctx, snapshotID); err != nil {
+		return allocatedStorage, errors.Wrap(err, "Error while waiting snapshot to be available")
+	}
+	return allocatedStorage, nil
 }
 
 func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
