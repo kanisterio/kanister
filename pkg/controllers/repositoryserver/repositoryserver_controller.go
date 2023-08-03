@@ -82,6 +82,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
 	repoServerHandler.RepositoryServer = repositoryServer
 	repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
+	repoServerHandler.RepositoryServer.Status.Conditions = nil
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
