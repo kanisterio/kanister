@@ -12,6 +12,7 @@ linters:
     - whitespace
     - gocognit
     - unparam
+    - gocyclo
 
 run:
   timeout: 10m                          # golangci-lint run's timeout.
@@ -29,3 +30,7 @@ issues:
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
         - unparam
+
+linter-settings:
+  gocyclo:
+    min-complexity: 20
