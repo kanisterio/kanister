@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/kanisterio/kanister/pkg/log"
@@ -29,7 +28,8 @@ func getLabelNames(bl []BoundedLabel) []string {
 // a list of label permutations and add them to the reference list
 // passed as an argument
 func fillLabelCombinations(
-	bl []BoundedLabel, labelIndex int,
+	bl []BoundedLabel,
+	labelIndex int,
 	workingSlice [][]string,
 	resultCombinations *[][][]string,
 ) (bool, error) {
@@ -99,15 +99,12 @@ func setDefaultCounterWithLabels(cv *prometheus.CounterVec, l []prometheus.Label
 // InitCounterVec initializes and registers the counter metrics vector. It takes a list of
 // BoundedLabel objects - if any label value or label name is nil, then this method will panic.
 // Based on the combinations returned by generateCombinations, it will set each counter value to 0.
-// If a nil counter is returned during registeration, the method will
+// If a nil counter is returned during registration, the method will
 // panic
 func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, bl []BoundedLabel) *prometheus.CounterVec {
 	labels := getLabelNames(bl)
 	v := prometheus.NewCounterVec(opts, labels)
-	gv, err := registerCounterVec(r, v)
-	if err != nil {
-		panic(fmt.Sprintf("failed to register CounterVec. error: %v", err))
-	}
+	gv := registerCounterVec(r, v)
 	combinations, err := getLabelCombinations(bl)
 	if err != nil {
 		panic(fmt.Sprintf("failed to register CounterVec. error: %v", err))
@@ -117,160 +114,127 @@ func InitCounterVec(r prometheus.Registerer, opts prometheus.CounterOpts, bl []B
 }
 
 // InitGaugeVec initializes the gauge metrics vector. It takes a list of BoundedLabels, but the
-// LabelValue field of each BoundedLabel will be ignored.
-// If a nil counter is returned during registeration, the method will
-// panic
+// LabelValue field of each BoundedLabel will be ignored. The method panics if there are any
+// errors (except for AlreadyRegisteredError) during registration of the metric.
 func InitGaugeVec(r prometheus.Registerer, opts prometheus.GaugeOpts, bl []BoundedLabel) *prometheus.GaugeVec {
 	labels := getLabelNames(bl)
 	v := prometheus.NewGaugeVec(opts, labels)
-	gv, err := registerGaugeVec(r, v)
-	if err != nil {
-		panic(fmt.Sprintf("failed to register GaugeVec. error: %v", err))
-	}
+	gv := registerGaugeVec(r, v)
 	return gv
 }
 
 // InitHistogramVec initializes the histogram metrics vector. It takes a list of BoundedLabels, but the
-// LabelValue field of each BoundedLabel will be ignored.
-// If a nil counter is returned during registeration, the method will
-// panic
+// LabelValue field of each BoundedLabel will be ignored. The method panics if there are any
+// errors (except for AlreadyRegisteredError) during registration of the metric.
 func InitHistogramVec(r prometheus.Registerer, opts prometheus.HistogramOpts, bl []BoundedLabel) *prometheus.HistogramVec {
 	labels := getLabelNames(bl)
 	v := prometheus.NewHistogramVec(opts, labels)
-	h, err := registerHistogramVec(r, v)
-	if err != nil {
-		panic(fmt.Sprintf("failed to register HistogramVec. error: %v", err))
-	}
+	h := registerHistogramVec(r, v)
 	return h
 }
 
-// InitCounter initializes a new counter.
-// If a nil counter is returned during registeration, the method will
-// panic
+// InitCounter initializes a new counter. The method panics if there are any
+// errors (except for AlreadyRegisteredError) during registration of the metric.
 func InitCounter(r prometheus.Registerer, opts prometheus.CounterOpts) prometheus.Counter {
 	c := prometheus.NewCounter(opts)
-	rc, err := registerCounter(r, c)
-	if err != nil {
-		panic(fmt.Sprintf("failed to register counter. error: %v", err))
-	}
+	rc := registerCounter(r, c)
 	return rc
 }
 
-// InitGauge initializes the histogram metrics vector
-// If a nil counter is returned during registeration, the method will
-// panic
+// InitGauge initializes a new gauge metric. The method panics if there are any
+// errors (except for AlreadyRegisteredError) during registration of the metric.
 func InitGauge(r prometheus.Registerer, opts prometheus.GaugeOpts) prometheus.Gauge {
 	g := prometheus.NewGauge(opts)
-	rg, err := registerGauge(r, g)
-	if err != nil {
-		panic(fmt.Sprintf("failed to register gauge. error: %v", err))
+	rg := registerGauge(r, g)
+	return rg
+}
+
+// InitHistogram initializes a new histogram metric. The method panics if there are any
+// errors (except for AlreadyRegisteredError) during registration of the metric.
+func InitHistogram(r prometheus.Registerer, opts prometheus.HistogramOpts) prometheus.Histogram {
+	h := prometheus.NewHistogram(opts)
+	rh := registerHistogram(r, h)
+	return rh
+}
+
+// registerCounterVec registers the CounterVec with the provided Registerer. It panics if the
+// type check fails
+func registerCounterVec(r prometheus.Registerer, g *prometheus.CounterVec) *prometheus.CounterVec {
+	c := registerMetricOrDie(r, g)
+	gv, ok := c.(*prometheus.CounterVec)
+	if !ok {
+		panic("failed type check for CounterVec")
+	}
+	return gv
+}
+
+// registerHistogramVec registers the HistogramVec with the provided Registerer. It panics if the
+// type check fails
+func registerHistogramVec(r prometheus.Registerer, h *prometheus.HistogramVec) *prometheus.HistogramVec {
+	c := registerMetricOrDie(r, h)
+	v, ok := c.(*prometheus.HistogramVec)
+	if !ok {
+		panic("failed type check for HistogramVec")
+	}
+	return v
+}
+
+// registerGaugeVec registers the GaugeVec with the provided Registerer. It panics if the
+// type check fails.
+func registerGaugeVec(r prometheus.Registerer, g *prometheus.GaugeVec) *prometheus.GaugeVec {
+	c := registerMetricOrDie(r, g)
+	gv, ok := c.(*prometheus.GaugeVec)
+	if !ok {
+		panic("failed type check for GaugeVec")
+	}
+	return gv
+}
+
+// registerCounter registers the Counter with the provided Registerer. It panics if the
+// type check fails
+func registerCounter(r prometheus.Registerer, ctr prometheus.Counter) prometheus.Counter {
+	c := registerMetricOrDie(r, ctr)
+	rg, ok := c.(prometheus.Counter)
+	if !ok {
+		panic("failed type check for Counter")
 	}
 	return rg
 }
 
-// InitHistogram initializes a new histogram.
-// If a nil counter is returned during registeration, the method will
-// panic
-func InitHistogram(r prometheus.Registerer, opts prometheus.HistogramOpts) prometheus.Histogram {
-	h := prometheus.NewHistogram(opts)
-
-	rh, err := registerHistogram(r, h)
-	if err != nil {
-		panic(fmt.Sprintf("failed to register histogram. error: %v", err))
+// registerHistogram registers the Histogram with the provided Registerer. It panics if the
+// type check fails
+func registerHistogram(r prometheus.Registerer, g prometheus.Histogram) prometheus.Histogram {
+	c := registerMetricOrDie(r, g)
+	rg, ok := c.(prometheus.Histogram)
+	if !ok {
+		panic("failed type check for Histogram")
 	}
-
-	return rh
+	return rg
 }
 
-// registerCounterVec registers the CounterVec with the provided Registerer. If the
-// CounterVec has already been registered, the existing metric will be returned.
-func registerCounterVec(r prometheus.Registerer, g *prometheus.CounterVec) (*prometheus.CounterVec, error) {
-	c, err := registerCollector(r, g)
-	if err != nil {
-		return nil, err
+// registerGauge registers the Gauge with the provided Registerer. It panics if the
+// type check fails
+func registerGauge(r prometheus.Registerer, g prometheus.Gauge) prometheus.Gauge {
+	c := registerMetricOrDie(r, g)
+	rg, ok := c.(prometheus.Gauge)
+	if !ok {
+		panic("failed type check for Gauge")
 	}
-	if gv, ok := c.(*prometheus.CounterVec); ok {
-		return gv, nil
-	}
-	return nil, errors.New("failed to register counter vec")
+	return rg
 }
 
-// registerHistogramVec registers the Histogram with the provided Registerer. If the
-// HistogramVec has already been registered, the existing metric will be returned.
-func registerHistogramVec(r prometheus.Registerer, h *prometheus.HistogramVec) (*prometheus.HistogramVec, error) {
-	c, err := registerCollector(r, h)
-	if err != nil {
-		return nil, err
-	}
-	if v, ok := c.(*prometheus.HistogramVec); ok {
-		return v, nil
-	}
-	return nil, errors.New("failed to register historgram vec")
-}
-
-// registerGaugeVec registers the GaugeVec with the provided Registerer. If the
-// GaugeVec has already been registered, the existing GaugeVec will be returned.
-func registerGaugeVec(r prometheus.Registerer, g *prometheus.GaugeVec) (*prometheus.GaugeVec, error) {
-	c, err := registerCollector(r, g)
-	if err != nil {
-		return nil, err
-	}
-	if gv, ok := c.(*prometheus.GaugeVec); ok {
-		return gv, nil
-	}
-	return nil, errors.New("failed to register gauge vec")
-}
-
-// registerCounter registers the Counter with the provided Registerer. If the
-// counter has already been registered, the existing metric will be returned.
-func registerCounter(r prometheus.Registerer, cntr prometheus.Counter) (prometheus.Counter, error) {
-	c, err := registerCollector(r, cntr)
-	if err != nil {
-		return nil, err
-	}
-	if rc, ok := c.(prometheus.Counter); ok {
-		return rc, nil
-	}
-	return nil, errors.New("failed to register counter")
-}
-
-// registerHistogram registers the Histogram with the provided Registerer. If the
-// histogram has already been registered, the existing metric will be returned.
-func registerHistogram(r prometheus.Registerer, h prometheus.Histogram) (prometheus.Histogram, error) {
-	c, err := registerCollector(r, h)
-	if err != nil {
-		return nil, err
-	}
-
-	if rh, ok := c.(prometheus.Histogram); ok {
-		return rh, nil
-	}
-
-	return nil, errors.New("failed to register histogram")
-}
-
-// registerGauge registers the Gauge with the provided Registerer. If the
-// gauge has already been registered, the existing metric will be returned.
-func registerGauge(r prometheus.Registerer, g prometheus.Gauge) (prometheus.Gauge, error) {
-	c, err := registerCollector(r, g)
-	if err != nil {
-		return nil, err
-	}
-	if rg, ok := c.(prometheus.Gauge); ok {
-		return rg, nil
-	}
-	return nil, errors.New("failed to register gauge")
-}
-
-// registerCollector is an helper to register a metric and log registration errors
-func registerCollector(r prometheus.Registerer, c prometheus.Collector) (prometheus.Collector, error) {
+// registerMetricOrDie is a helper to register a metric and log registration errors. If the metric
+// already exists, then it will be logged and the metric is returned. For other errors, the method
+// panics.
+func registerMetricOrDie(r prometheus.Registerer, c prometheus.Collector) prometheus.Collector {
 	if err := r.Register(c); err != nil {
-		if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
-			// Use already registered metric
-			log.Debug().Print("Metric already registered")
-			return are.ExistingCollector, nil
+		are, ok := err.(prometheus.AlreadyRegisteredError)
+		if !ok {
+			panic(fmt.Sprintf("failed to register metric. error: %v", err))
 		}
-		return nil, err
+		// Use already registered metric
+		log.Debug().Print("Metric already registered")
+		return are.ExistingCollector
 	}
-	return c, nil
+	return c
 }
