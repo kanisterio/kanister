@@ -60,11 +60,12 @@ func (*backupDataAllUsingKopiaServerFunc) Arguments() []string {
 		BackupDataAllContainerArg,
 		BackupDataAllIncludePathArg,
 		BackupDataAllPodsArg,
+		KopiaRepositoryServerUserHostname,
 	}
 }
 
 func (*backupDataAllUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, pods, container, includePath string
+	var namespace, pods, container, includePath, userHostname string
 	var err error
 	if err = Arg(args, BackupDataAllNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -76,6 +77,9 @@ func (*backupDataAllUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Tem
 		return nil, err
 	}
 	if err = OptArg(args, BackupDataAllPodsArg, &pods, ""); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +111,7 @@ func (*backupDataAllUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Tem
 		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
-	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
 	}

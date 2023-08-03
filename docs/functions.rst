@@ -1785,6 +1785,7 @@ Arguments:
    `pods`, No, `string`, pods in which you want to backup the data of (by default runs on all the pods)
    `container`, Yes, `string`, name of the kanister sidecar container
    `includePath`, Yes, `string`, path of the data to be backed up
+   `repositoryServerUserHostname`, No, `string`, user's hostname to access the kopia repository server. Hostname would be available in the user access credential secret
 
 Outputs:
 
