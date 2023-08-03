@@ -16,6 +16,7 @@ package command
 
 import (
 	"encoding/json"
+
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
 	. "gopkg.in/check.v1"
@@ -136,6 +137,12 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput
 		{
 			output: `ERROR: unable to get local filesystem entry: resolveSymlink: stat: lstat /tmp/aaa2: no such file or directory
 			`,
+			checker:        NotNil,
+			expectedSnapID: "",
+			expectedRootID: "",
+		},
+		{
+			output:         `{"id":"1b6639b9797dc77dd4ddf57723918187","source":{"host":"da","userName":"kk","path":"/mnt/nfspvc"},"description":"","startTime":"2023-07-13T00:08:08.049239555Z","endTime":"2023-07-13T00:08:08.054904252Z","incomplete":"canceled","rootEntry":{"name":"nfspvc","type":"d","mode":"0755","mtime":"2023-07-11T20:33:41.386653643Z","obj":"k453085aaf775ecb9018a3fa8e276ca5d","summ":{"size":0,"files":0,"symlinks":0,"dirs":2,"maxTime":"2023-07-11T20:33:27.628326361Z","incomplete":"canceled","numFailed":1,"errors":[{"path":"for1001","error":"permission denied"}]}}}`,
 			checker:        NotNil,
 			expectedSnapID: "",
 			expectedRootID: "",

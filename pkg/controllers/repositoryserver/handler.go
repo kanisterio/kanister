@@ -32,6 +32,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -47,13 +48,15 @@ type RepoServerHandler struct {
 }
 
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
+	if err := h.getSecretsFromCR(ctx); err != nil {
+		return errors.Wrap(err, "Failed to get Kopia API server secrets")
+	}
+
 	svc, err := h.reconcileService(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile service")
 	}
-	if err = h.getSecretsFromCR(ctx); err != nil {
-		return errors.Wrap(err, "Failed to get Kopia API server secrets")
-	}
+
 	envVars, pod, err := h.reconcilePod(ctx, svc)
 	if err != nil {
 		return errors.Wrap(err, "Failed to reconcile Kopia API server pod")
@@ -69,18 +72,6 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 		if err != nil {
 			return err
 		}
-	}
-
-	if err := h.connectToKopiaRepository(); err != nil {
-		return errors.Wrap(err, "Failed to connect to Kopia repository")
-	}
-
-	if err := h.startRepoProxyServer(ctx); err != nil {
-		return errors.Wrap(err, "Failed to start Kopia API server")
-	}
-
-	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		return errors.Wrap(err, "Failed to create/update kopia API server access users")
 	}
 	return nil
 }
@@ -222,10 +213,17 @@ func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *c
 
 func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, []corev1.EnvVar, error) {
 	podOverride, err := h.preparePodOverride(ctx)
+
 	if err != nil {
 		return nil, nil, err
 	}
-	podOptions := getPodOptions(repoServerNamespace, podOverride, svc)
+
+	vols, err := getVolumes(ctx, h.KubeCli, h.RepositoryServerSecrets.storage, repoServerNamespace)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	podOptions := getPodOptions(repoServerNamespace, podOverride, svc, vols)
 	pod, envVars, err := h.setCredDataFromSecretInPod(ctx, podOptions)
 	if err != nil {
 		return nil, nil, err
@@ -311,4 +309,48 @@ func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod
 		return errors.Wrap(err, fmt.Sprintf("Failed while waiting for pod %s to be ready", pod.Name))
 	}
 	return nil
+}
+
+func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progress crv1alpha1.RepositoryServerProgress) error {
+	repoServerName := h.RepositoryServer.Name
+	repoServerNamespace := h.RepositoryServer.Namespace
+	rs := crv1alpha1.RepositoryServer{}
+	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: repoServerName, Namespace: repoServerNamespace}, &rs)
+	if err != nil {
+		return err
+	}
+	rs.Status.Progress = progress
+	err = h.Reconciler.Status().Update(ctx, &rs)
+	if err != nil {
+		return err
+	}
+	h.RepositoryServer = &rs
+	return nil
+}
+
+func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
+	logger.Info("Start Kopia Repository Server")
+	if err := h.startRepoProxyServer(ctx); err != nil {
+		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Add/Update users in Kopia Repository Server")
+	if err := h.createOrUpdateClientUsers(ctx); err != nil {
+		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Refresh Kopia Repository Server")
+	if err := h.refreshServer(ctx); err != nil {
+		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{}, nil
 }
