@@ -19,7 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	core_v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -231,7 +231,7 @@ type VolumeSnapshotContentSpec struct {
 	// VolumeSnapshot object MUST be provided for binding to happen.
 	// This field is immutable after creation.
 	// Required.
-	VolumeSnapshotRef core_v1.ObjectReference `json:"volumeSnapshotRef" protobuf:"bytes,1,opt,name=volumeSnapshotRef"`
+	VolumeSnapshotRef corev1.ObjectReference `json:"volumeSnapshotRef" protobuf:"bytes,1,opt,name=volumeSnapshotRef"`
 
 	// deletionPolicy determines whether this VolumeSnapshotContent and its physical snapshot on
 	// the underlying storage system should be deleted when its bound VolumeSnapshot is deleted.

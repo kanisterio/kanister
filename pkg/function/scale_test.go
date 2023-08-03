@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -61,7 +61,7 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 	err = resource.CreateCustomResources(context.Background(), config)
 	c.Assert(err, IsNil)
 
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanister-scale-test-",
 		},
@@ -134,9 +134,9 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	ctx := context.Background()
 	d := testutil.NewTestDeployment(1)
-	d.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-		PreStop: &v1.LifecycleHandler{
-			Exec: &v1.ExecAction{
+	d.Spec.Template.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
+		PreStop: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{
 				Command: []string{"sleep", "30"},
 			},
 		},
@@ -183,9 +183,9 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	ctx := context.Background()
 	ss := testutil.NewTestStatefulSet(1)
-	ss.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-		PreStop: &v1.LifecycleHandler{
-			Exec: &v1.ExecAction{
+	ss.Spec.Template.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
+		PreStop: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{
 				Command: []string{"sleep", "30"},
 			},
 		},

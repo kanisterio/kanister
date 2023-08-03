@@ -20,7 +20,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -85,7 +85,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 		fakeCli := fake.NewSimpleClientset()
 		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
 
-		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
+		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
 		scheme := runtime.NewScheme()
@@ -123,7 +123,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 
 func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 	for _, scenario := range []struct {
-		Arg         v1.PersistentVolumeMode
+		Arg         corev1.PersistentVolumeMode
 		ExpectedErr Checker
 	}{
 		{
@@ -131,7 +131,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 			ExpectedErr: NotNil,
 		},
 		{
-			Arg:         v1.PersistentVolumeFilesystem,
+			Arg:         corev1.PersistentVolumeFilesystem,
 			ExpectedErr: IsNil,
 		},
 	} {
@@ -142,15 +142,15 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 
 func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
 	for _, scenario := range []struct {
-		Arg         []v1.PersistentVolumeAccessMode
+		Arg         []corev1.PersistentVolumeAccessMode
 		ExpectedErr Checker
 	}{
 		{
-			Arg:         []v1.PersistentVolumeAccessMode{"test"},
+			Arg:         []corev1.PersistentVolumeAccessMode{"test"},
 			ExpectedErr: NotNil,
 		},
 		{
-			Arg:         []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			Arg:         []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			ExpectedErr: IsNil,
 		},
 	} {
@@ -159,24 +159,24 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
 	}
 }
 
-func createPVC(c *C, namespace string, pvc *v1.PersistentVolumeClaim, fakeCli *fake.Clientset) {
+func createPVC(c *C, namespace string, pvc *corev1.PersistentVolumeClaim, fakeCli *fake.Clientset) {
 	_, err := fakeCli.CoreV1().PersistentVolumeClaims(namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
-func getOriginalPVCManifest(pvcName, storageClassName string) *v1.PersistentVolumeClaim {
-	volumeMode := v1.PersistentVolumeFilesystem
-	return &v1.PersistentVolumeClaim{
+func getOriginalPVCManifest(pvcName, storageClassName string) *corev1.PersistentVolumeClaim {
+	volumeMode := corev1.PersistentVolumeFilesystem
+	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvcName,
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
+		Spec: corev1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,
-			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			VolumeMode:       &volumeMode,
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("1Gi"),
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("1Gi"),
 				},
 			},
 		},

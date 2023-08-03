@@ -20,9 +20,9 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
@@ -62,7 +62,7 @@ func locationType(m map[string][]byte) repositoryserver.LocType {
 
 // GenerateEnvSpecFromCredentialSecret parses the secret and returns
 // list of EnvVar based on secret type
-func GenerateEnvSpecFromCredentialSecret(s *v1.Secret, assumeRoleDurationS3 time.Duration) ([]v1.EnvVar, error) {
+func GenerateEnvSpecFromCredentialSecret(s *corev1.Secret, assumeRoleDurationS3 time.Duration) ([]corev1.EnvVar, error) {
 	if s == nil {
 		return nil, errors.New("Secret cannot be nil")
 	}
@@ -78,9 +78,9 @@ func GenerateEnvSpecFromCredentialSecret(s *v1.Secret, assumeRoleDurationS3 time
 	return nil, nil
 }
 
-func getEnvSpecForAWSCredentialSecret(s *v1.Secret, assumeRoleDuration time.Duration) ([]v1.EnvVar, error) {
+func getEnvSpecForAWSCredentialSecret(s *corev1.Secret, assumeRoleDuration time.Duration) ([]corev1.EnvVar, error) {
 	var err error
-	envVars := []v1.EnvVar{}
+	envVars := []corev1.EnvVar{}
 	envVars = append(
 		envVars,
 		getEnvVarWithSecretRef(aws.AccessKeyID, s.Name, secrets.AWSAccessKeyID),
@@ -96,8 +96,8 @@ func getEnvSpecForAWSCredentialSecret(s *v1.Secret, assumeRoleDuration time.Dura
 	return envVars, nil
 }
 
-func getEnvSpecForAzureCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
-	envVars := []v1.EnvVar{}
+func getEnvSpecForAzureCredentialSecret(s *corev1.Secret) ([]corev1.EnvVar, error) {
+	envVars := []corev1.EnvVar{}
 	envVars = append(
 		envVars,
 		getEnvVarWithSecretRef(azureStorageAccountEnv, s.Name, secrets.AzureStorageAccountID),
@@ -120,13 +120,13 @@ func getEnvSpecForAzureCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
 	return envVars, nil
 }
 
-func getEnvVarWithSecretRef(varName, secretName, secretKey string) v1.EnvVar {
-	return v1.EnvVar{
+func getEnvVarWithSecretRef(varName, secretName, secretKey string) corev1.EnvVar {
+	return corev1.EnvVar{
 		Name: varName,
-		ValueFrom: &v1.EnvVarSource{
-			SecretKeyRef: &v1.SecretKeySelector{
+		ValueFrom: &corev1.EnvVarSource{
+			SecretKeyRef: &corev1.SecretKeySelector{
 				Key: secretKey,
-				LocalObjectReference: v1.LocalObjectReference{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: secretName,
 				},
 			},
@@ -134,8 +134,8 @@ func getEnvVarWithSecretRef(varName, secretName, secretKey string) v1.EnvVar {
 	}
 }
 
-func getEnvVar(varName, value string) v1.EnvVar {
-	return v1.EnvVar{
+func getEnvVar(varName, value string) corev1.EnvVar {
+	return corev1.EnvVar{
 		Name:  varName,
 		Value: value,
 	}
@@ -169,7 +169,7 @@ func GetMapForLocationValues(
 	}
 	if locType != "" {
 		m[repositoryserver.TypeKey] = []byte(locType)
-		if locType == repositoryserver.LocType(v1alpha1.LocationTypeS3Compliant) {
+		if locType == repositoryserver.LocType(crv1alpha1.LocationTypeS3Compliant) {
 			m[repositoryserver.TypeKey] = []byte(repositoryserver.LocTypeS3)
 		}
 	}

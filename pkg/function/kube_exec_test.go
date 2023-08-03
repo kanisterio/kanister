@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -64,7 +64,7 @@ func (s *KubeExecTest) SetUpSuite(c *C) {
 	s.osCli = osCli
 
 	ctx := context.Background()
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterkubeexectest-",
 		},

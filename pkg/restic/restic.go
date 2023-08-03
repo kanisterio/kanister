@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -235,7 +235,7 @@ func resticS3CredentialArgs(creds param.Credential) ([]string, error) {
 	}
 }
 
-func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
+func resticS3CredentialSecretArgs(secret *corev1.Secret) ([]string, error) {
 	creds, err := secrets.ExtractAWSCredentials(context.Background(), secret, aws.AssumeRoleDurationDefault)
 	if err != nil {
 		return nil, err

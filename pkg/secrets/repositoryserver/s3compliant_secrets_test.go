@@ -17,7 +17,7 @@ package repositoryserver
 import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -34,8 +34,8 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 		expectedError error
 	}{
 		{ // Valid S3 Compatible Secret
-			secret: NewS3CompliantLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypes3Compliant),
+			secret: NewS3CompliantLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypes3Compliant),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -49,8 +49,8 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 			errChecker: IsNil,
 		},
 		{ // Missing required field - Bucket Key
-			secret: NewS3CompliantLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypes3Compliant),
+			secret: NewS3CompliantLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypes3Compliant),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -64,8 +64,8 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
 		},
 		{ // Missing required field - Region Key
-			secret: NewS3CompliantLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypes3Compliant),
+			secret: NewS3CompliantLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypes3Compliant),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -79,8 +79,8 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, "ns", "sec"),
 		},
 		{ // Missing required field - Endpoint Key
-			secret: NewS3CompliantLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypes3Compliant),
+			secret: NewS3CompliantLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypes3Compliant),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -94,8 +94,8 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, EndpointKey, "ns", "sec"),
 		},
 		{ // Empty Secret
-			secret: NewS3CompliantLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypes3Compliant),
+			secret: NewS3CompliantLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypes3Compliant),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",

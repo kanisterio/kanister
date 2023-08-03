@@ -24,7 +24,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -32,7 +32,7 @@ import (
 type FIPSSuite struct {
 	cli       kubernetes.Interface
 	namespace string
-	pod       *v1.Pod
+	pod       *corev1.Pod
 }
 
 var _ = Suite(&FIPSSuite{})
@@ -42,7 +42,7 @@ func (s *FIPSSuite) SetUpSuite(c *C) {
 	var err error
 	s.cli, err = NewClient()
 	c.Assert(err, IsNil)
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "fipstest-",
 		},
@@ -50,10 +50,10 @@ func (s *FIPSSuite) SetUpSuite(c *C) {
 	ns, err = s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
-	pod := &v1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{
 					Name:    "testcontainer",
 					Image:   "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",

@@ -17,7 +17,7 @@ package repositoryserver
 import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -34,8 +34,8 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 		expectedError error
 	}{
 		{ // Valid AWS Secret
-			secret: NewAWSLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypeS3),
+			secret: NewAWSLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypeS3),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -48,8 +48,8 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 			errChecker: IsNil,
 		},
 		{ // Missing required field - Region Key
-			secret: NewAWSLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypeS3),
+			secret: NewAWSLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypeS3),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -62,8 +62,8 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, "ns", "sec"),
 		},
 		{ // Missing required field - Bucket Key
-			secret: NewAWSLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypeS3),
+			secret: NewAWSLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypeS3),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -76,8 +76,8 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
 		},
 		{ // Empty Secret
-			secret: NewAWSLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypeS3),
+			secret: NewAWSLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypeS3),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",

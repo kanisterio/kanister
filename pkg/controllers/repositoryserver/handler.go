@@ -32,7 +32,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -331,7 +330,7 @@ func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progre
 func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
 	logger.Info("Start Kopia Repository Server")
 	if err := h.startRepoProxyServer(ctx); err != nil {
-		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		if uerr := h.updateRepoServerProgress(ctx, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
@@ -339,7 +338,7 @@ func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logg
 
 	logger.Info("Add/Update users in Kopia Repository Server")
 	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		if uerr := h.updateRepoServerProgress(ctx, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
@@ -347,7 +346,7 @@ func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logg
 
 	logger.Info("Refresh Kopia Repository Server")
 	if err := h.refreshServer(ctx); err != nil {
-		if uerr := h.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		if uerr := h.updateRepoServerProgress(ctx, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err

@@ -26,7 +26,7 @@ import (
 
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -66,17 +66,17 @@ type PodOptions struct {
 	// You can still use podOverride to set the pod security context, but these fields will take precedence.
 	// We chose these fields to specify security context instead of just using podOverride because
 	// the merge behaviour of the pods spec is confusing in case of podOverride, and this is more readable.
-	PodSecurityContext       *v1.PodSecurityContext
-	ContainerSecurityContext *v1.SecurityContext
+	PodSecurityContext       *corev1.PodSecurityContext
+	ContainerSecurityContext *corev1.SecurityContext
 	PodOverride              crv1alpha1.JSONMap
-	Resources                v1.ResourceRequirements
-	RestartPolicy            v1.RestartPolicy
+	Resources                corev1.ResourceRequirements
+	RestartPolicy            corev1.RestartPolicy
 	OwnerReferences          []metav1.OwnerReference
-	EnvironmentVariables     []v1.EnvVar
-	Lifecycle                *v1.Lifecycle
+	EnvironmentVariables     []corev1.EnvVar
+	Lifecycle                *corev1.Lifecycle
 }
 
-func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*corev1.Pod, error) {
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()
 	if err != nil {
@@ -98,7 +98,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 	}
 
 	if opts.RestartPolicy == "" {
-		opts.RestartPolicy = v1.RestartPolicyNever
+		opts.RestartPolicy = corev1.RestartPolicyNever
 	}
 
 	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(opts.Volumes)
@@ -110,13 +110,13 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		return nil, errors.Wrapf(err, "Failed to create raw block volume spec")
 	}
 	podVolumes = append(podVolumes, blockVolumes...)
-	defaultSpecs := v1.PodSpec{
-		Containers: []v1.Container{
+	defaultSpecs := corev1.PodSpec{
+		Containers: []corev1.Container{
 			{
 				Name:            defaultContainerName,
 				Image:           opts.Image,
 				Command:         opts.Command,
-				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+				ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 				VolumeMounts:    volumeMounts,
 				VolumeDevices:   volumeDevices,
 				Resources:       opts.Resources,
@@ -149,8 +149,8 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 	return createPodSpec(opts, patchedSpecs, ns), nil
 }
 
-func createPodSpec(opts *PodOptions, patchedSpecs v1.PodSpec, ns string) *v1.Pod {
-	pod := &v1.Pod{
+func createPodSpec(opts *PodOptions, patchedSpecs corev1.PodSpec, ns string) *corev1.Pod {
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
 			Labels: map[string]string{
@@ -203,7 +203,7 @@ func createPodSpec(opts *PodOptions, patchedSpecs v1.PodSpec, ns string) *v1.Pod
 }
 
 // CreatePod creates a pod with a single container based on the specified image
-func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*corev1.Pod, error) {
 	pod, err := GetPodObjectFromPodOptions(cli, opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
@@ -217,7 +217,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 }
 
 // DeletePod deletes the specified pod
-func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error {
+func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *corev1.Pod) error {
 	if err := cli.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}); err != nil {
 		log.WithError(err).Print("DeletePod failed")
 	}
@@ -225,7 +225,7 @@ func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error
 }
 
 func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string) (io.ReadCloser, error) {
-	plo := &v1.PodLogOptions{
+	plo := &corev1.PodLogOptions{
 		Follow:    true,
 		Container: containerName,
 	}
@@ -234,7 +234,7 @@ func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, pod
 
 // GetPodLogs fetches the logs from the given pod
 func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string) (string, error) {
-	reader, err := cli.CoreV1().Pods(namespace).GetLogs(podName, &v1.PodLogOptions{Container: containerName}).Stream(ctx)
+	reader, err := cli.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{Container: containerName}).Stream(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -284,7 +284,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		}
 
 		// check for memory or resource issues
-		if p.Status.Phase == v1.PodPending {
+		if p.Status.Phase == corev1.PodPending {
 			if p.Status.Reason == "OutOfmemory" || p.Status.Reason == "OutOfcpu" {
 				attachLog = false
 				return false, errors.Errorf("Pod stuck in pending state, reason: %s", p.Status.Reason)
@@ -297,7 +297,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 			return false, err
 		}
 
-		return p.Status.Phase != v1.PodPending && p.Status.Phase != "", nil
+		return p.Status.Phase != corev1.PodPending && p.Status.Phase != "", nil
 	})
 
 	if err == nil {
@@ -312,7 +312,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 	return errors.Wrap(err, errorMessage)
 }
 
-func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
+func checkNodesStatus(p *corev1.Pod, cli kubernetes.Interface) error {
 	n := strings.Split(p.Spec.NodeName, "/")
 	if n[0] != "" {
 		node, err := cli.CoreV1().Nodes().Get(context.TODO(), n[0], metav1.GetOptions{})
@@ -330,7 +330,7 @@ func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
 //   - if PVC is present then check the status of PVC
 //   - if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
 //   - if PVC not present then wait for timeout
-func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
+func getVolStatus(ctx context.Context, p *corev1.Pod, cli kubernetes.Interface, namespace string) error {
 	for _, vol := range p.Spec.Volumes {
 		if err := checkPVCAndPVStatus(ctx, vol, p, cli, namespace); err != nil {
 			return err
@@ -343,7 +343,7 @@ func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, name
 //   - if PVC is present then check the status of PVC
 //   - if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
 //   - if PVC not present then wait for timeout
-func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
+func checkPVCAndPVStatus(ctx context.Context, vol corev1.Volume, p *corev1.Pod, cli kubernetes.Interface, namespace string) error {
 	if vol.VolumeSource.PersistentVolumeClaim == nil {
 		// wait for timeout
 		return nil
@@ -360,9 +360,9 @@ func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kube
 	}
 
 	switch pvc.Status.Phase {
-	case v1.ClaimLost:
-		return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, p.Name, v1.ClaimLost)
-	case v1.ClaimPending:
+	case corev1.ClaimLost:
+		return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, p.Name, corev1.ClaimLost)
+	case corev1.ClaimPending:
 		pvName := pvc.Spec.VolumeName
 		if pvName == "" {
 			// wait for timeout
@@ -377,8 +377,8 @@ func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kube
 				return errors.Wrapf(err, "Failed to get PV %s", pvName)
 			}
 		}
-		if pv.Status.Phase == v1.VolumeFailed {
-			return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
+		if pv.Status.Phase == corev1.VolumeFailed {
+			return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, corev1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
 		}
 	}
 
@@ -396,10 +396,10 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 			return true, err
 		}
 		containerForLogs = p.Spec.Containers[0].Name
-		if p.Status.Phase == v1.PodFailed {
+		if p.Status.Phase == corev1.PodFailed {
 			return false, errors.Errorf("Pod %s failed. Pod status: %s", name, p.Status.String())
 		}
-		return p.Status.Phase == v1.PodSucceeded, nil
+		return p.Status.Phase == corev1.PodSucceeded, nil
 	})
 
 	errorMessage := "Pod failed or did not transition into complete state"
@@ -410,15 +410,15 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 }
 
 // use Strategic Merge to patch default pod specs with the passed specs
-func patchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override crv1alpha1.JSONMap) (v1.PodSpec, error) {
+func patchDefaultPodSpecs(defaultPodSpecs corev1.PodSpec, override crv1alpha1.JSONMap) (corev1.PodSpec, error) {
 	// Merge default specs and override specs with StrategicMergePatch
 	mergedPatch, err := strategicMergeJsonPatch(defaultPodSpecs, override)
 	if err != nil {
-		return v1.PodSpec{}, err
+		return corev1.PodSpec{}, err
 	}
 
-	// Convert merged json to v1.PodSPec object
-	podSpec := v1.PodSpec{}
+	// Convert merged json to corev1.PodSPec object
+	podSpec := corev1.PodSpec{}
 	err = json.Unmarshal(mergedPatch, &podSpec)
 	if err != nil {
 		return podSpec, err
@@ -457,7 +457,7 @@ func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
 	}
 
 	// Merge json specs with StrategicMerge
-	mergedPatch, err := sp.StrategicMergePatch(originalJson, overrideJson, v1.PodSpec{})
+	mergedPatch, err := sp.StrategicMergePatch(originalJson, overrideJson, corev1.PodSpec{})
 	if err != nil {
 		return nil, err
 	}

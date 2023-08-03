@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -56,12 +56,12 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
 	cli := fake.NewSimpleClientset()
 	// fake doesn't handle generated names for PVs, so ...
 	var i int
-	pvl := &v1.PersistentVolumeList{}
+	pvl := &corev1.PersistentVolumeList{}
 	// kube.CreatePV() calls create() and list() which is to be handled for fake client
 	cli.PrependReactor("create", "persistentvolumes",
 		func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 			ca := action.(testing.CreateAction)
-			pv := ca.GetObject().(*v1.PersistentVolume)
+			pv := ca.GetObject().(*corev1.PersistentVolume)
 			pvl.Items = append(pvl.Items, *pv)
 			if pv.ObjectMeta.Name == "" && pv.ObjectMeta.GenerateName != "" {
 				pv.ObjectMeta.Name = fmt.Sprintf("%s%d", pv.ObjectMeta.GenerateName, i)

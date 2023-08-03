@@ -21,7 +21,6 @@ import (
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	pkglabels "k8s.io/apimachinery/pkg/labels"
@@ -96,7 +95,7 @@ func createSnapshot(
 	labels map[string]string,
 ) error {
 	if _, err := kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeName, metav1.GetOptions{}); err != nil {
-		if k8errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return errors.Errorf("Failed to find PVC %s, Namespace %s", volumeName, namespace)
 		}
 		return errors.Wrapf(err, "Failed to query PVC %s, Namespace %s", volumeName, namespace)
@@ -198,7 +197,7 @@ func (sna *SnapshotBeta) Clone(ctx context.Context, name, namespace, cloneName, 
 	if err == nil {
 		return errors.Errorf("Target snapshot already exists in target namespace, Volumesnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
 	}
-	if !k8errors.IsNotFound(err) {
+	if !apierrors.IsNotFound(err) {
 		return errors.Errorf("Failed to query target Volumesnapshot: %s, Namespace: %s: %v", cloneName, cloneNamespace, err)
 	}
 

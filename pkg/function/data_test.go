@@ -21,7 +21,7 @@ import (
 	"os"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -316,7 +316,7 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.Te
 		pvcs = append(pvcs, pvc.GetName())
 	}
 
-	secret := &v1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "secret-datatest-",
 			Namespace:    s.namespace,
@@ -572,7 +572,7 @@ func runAction(c *C, bp crv1alpha1.Blueprint, action string, tp *param.TemplateP
 	return out
 }
 
-func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, options map[string]string) *param.TemplateParams {
+func (s *DataSuite) initPVCTemplateParams(c *C, pvc *corev1.PersistentVolumeClaim, options map[string]string) *param.TemplateParams {
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
 			Kind:      param.PVCKind,

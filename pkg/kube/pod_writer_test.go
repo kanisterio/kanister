@@ -24,7 +24,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -32,7 +32,7 @@ import (
 type PodWriteSuite struct {
 	cli       kubernetes.Interface
 	namespace string
-	pod       *v1.Pod
+	pod       *corev1.Pod
 }
 
 var _ = Suite(&PodWriteSuite{})
@@ -42,7 +42,7 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 	ctx := context.Background()
 	p.cli, err = NewClient()
 	c.Assert(err, IsNil)
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "podwritertest-",
 		},
@@ -50,10 +50,10 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 	ns, err = p.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	p.namespace = ns.Name
-	pod := &v1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{
 					Name:    "testcontainer",
 					Image:   "busybox",
@@ -80,7 +80,7 @@ func (p *PodWriteSuite) TearDownSuite(c *C) {
 }
 func (p *PodWriteSuite) TestPodWriter(c *C) {
 	path := "/tmp/test.txt"
-	c.Assert(p.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(p.pod.Status.Phase, Equals, corev1.PodRunning)
 	c.Assert(len(p.pod.Status.ContainerStatuses) > 0, Equals, true)
 	for _, cs := range p.pod.Status.ContainerStatuses {
 		pw := NewPodWriter(p.cli, path, bytes.NewBufferString("badabing"))

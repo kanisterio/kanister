@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -72,8 +72,8 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 	}{
 		{
 			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type:     v1alpha1.LocationTypeS3Compliant,
+				Location: crv1alpha1.Location{
+					Type:     crv1alpha1.LocationTypeS3Compliant,
 					Endpoint: "endpoint",
 				},
 				Credential: param.Credential{
@@ -96,8 +96,8 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 		},
 		{
 			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type:     v1alpha1.LocationTypeS3Compliant,
+				Location: crv1alpha1.Location{
+					Type:     crv1alpha1.LocationTypeS3Compliant,
 					Endpoint: "endpoint/", // Remove trailing slash
 				},
 				Credential: param.Credential{
@@ -120,8 +120,8 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 		},
 		{
 			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type:     v1alpha1.LocationTypeS3Compliant,
+				Location: crv1alpha1.Location{
+					Type:     crv1alpha1.LocationTypeS3Compliant,
 					Endpoint: "endpoint/////////", // Also remove all of the trailing slashes
 				},
 				Credential: param.Credential{
@@ -144,13 +144,13 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 		},
 		{
 			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type:     v1alpha1.LocationTypeS3Compliant,
+				Location: crv1alpha1.Location{
+					Type:     crv1alpha1.LocationTypeS3Compliant,
 					Endpoint: "endpoint", // Also remove all of the trailing slashes
 				},
 				Credential: param.Credential{
 					Type: param.CredentialTypeSecret,
-					Secret: &v1.Secret{
+					Secret: &corev1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
 							secrets.AWSAccessKeyID:     []byte("id"),
@@ -171,13 +171,13 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 		},
 		{
 			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type: v1alpha1.LocationTypeAzure,
+				Location: crv1alpha1.Location{
+					Type: crv1alpha1.LocationTypeAzure,
 				},
 				Credential: param.Credential{
 					Type: param.CredentialTypeSecret,
-					Secret: &v1.Secret{
-						Type: v1.SecretType(secrets.AzureSecretType),
+					Secret: &corev1.Secret{
+						Type: corev1.SecretType(secrets.AzureSecretType),
 						Data: map[string][]byte{
 							secrets.AzureStorageAccountID:  []byte("id"),
 							secrets.AzureStorageAccountKey: []byte("secret"),
@@ -197,13 +197,13 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 		},
 		{
 			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type: v1alpha1.LocationTypeAzure,
+				Location: crv1alpha1.Location{
+					Type: crv1alpha1.LocationTypeAzure,
 				},
 				Credential: param.Credential{
 					Type: param.CredentialTypeKeyPair,
-					Secret: &v1.Secret{
-						Type: v1.SecretType(secrets.AzureSecretType),
+					Secret: &corev1.Secret{
+						Type: corev1.SecretType(secrets.AzureSecretType),
 						Data: map[string][]byte{
 							secrets.AzureStorageAccountID:  []byte("id"),
 							secrets.AzureStorageAccountKey: []byte("secret"),
@@ -239,13 +239,13 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 	}{
 		{
 			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type:     v1alpha1.LocationTypeS3Compliant,
+				Location: crv1alpha1.Location{
+					Type:     crv1alpha1.LocationTypeS3Compliant,
 					Endpoint: "endpoint", // Also remove all of the trailing slashes
 				},
 				Credential: param.Credential{
 					Type: param.CredentialTypeSecret,
-					Secret: &v1.Secret{
+					Secret: &corev1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
 							secrets.AWSAccessKeyID:     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
@@ -259,13 +259,13 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 		},
 		{
 			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type:     v1alpha1.LocationTypeS3Compliant,
+				Location: crv1alpha1.Location{
+					Type:     crv1alpha1.LocationTypeS3Compliant,
 					Endpoint: "endpoint", // Also remove all of the trailing slashes
 				},
 				Credential: param.Credential{
 					Type: param.CredentialTypeSecret,
-					Secret: &v1.Secret{
+					Secret: &corev1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
 							secrets.AWSAccessKeyID:     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),

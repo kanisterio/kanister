@@ -25,7 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -200,7 +200,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	pdb.host = *dbInstance.DBInstances[0].Endpoint.Address
 
 	// Create configmap
-	dbconfig := &v1.ConfigMap{
+	dbconfig := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "ConfigMap",
@@ -222,7 +222,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create secret
-	dbsecret := &v1.Secret{
+	dbsecret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Secret",

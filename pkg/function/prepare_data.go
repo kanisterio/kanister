@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -98,8 +98,8 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 	return pr.Run(ctx, podFunc)
 }
 
-func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *corev1.Pod) (map[string]interface{}, error) {
+	return func(ctx context.Context, pod *corev1.Pod) (map[string]interface{}, error) {
 		// Wait for pod completion
 		if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)

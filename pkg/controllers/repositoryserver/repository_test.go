@@ -15,7 +15,7 @@
 package repositoryserver
 
 import (
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/testutil"
 	. "gopkg.in/check.v1"
@@ -42,7 +42,7 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	c.Assert(metadataCacheMB, Equals, defaultmetadataCacheMB)
 
 	// Test if configfured cache size settings are set
-	repositoryServer.Spec.Repository.CacheSizeSettings = v1alpha1.CacheSizeSettings{
+	repositoryServer.Spec.Repository.CacheSizeSettings = crv1alpha1.CacheSizeSettings{
 		Metadata: "1000",
 		Content:  "1100",
 	}
@@ -52,7 +52,7 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	c.Assert(metadataCacheMB, Equals, 1000)
 
 	// Check if default Content Cache size is set
-	repositoryServer.Spec.Repository.CacheSizeSettings = v1alpha1.CacheSizeSettings{
+	repositoryServer.Spec.Repository.CacheSizeSettings = crv1alpha1.CacheSizeSettings{
 		Metadata: "1000",
 		Content:  "",
 	}
@@ -62,7 +62,7 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	c.Assert(metadataCacheMB, Equals, 1000)
 
 	// Check if default Metadata Cache size is set
-	repositoryServer.Spec.Repository.CacheSizeSettings = v1alpha1.CacheSizeSettings{
+	repositoryServer.Spec.Repository.CacheSizeSettings = crv1alpha1.CacheSizeSettings{
 		Metadata: "",
 		Content:  "1100",
 	}

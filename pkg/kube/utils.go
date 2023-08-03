@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -107,11 +107,11 @@ func GetPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interfac
 // As of kubernetes 1.17 the "failure.domain" annotation
 // has been deprecated in favor of the "topology" annotation
 
-func GetZoneFromNode(node v1.Node) string {
+func GetZoneFromNode(node corev1.Node) string {
 	return GetZoneFromLabels(node.Labels)
 }
 
-func GetZoneFromPV(pv v1.PersistentVolume) string {
+func GetZoneFromPV(pv corev1.PersistentVolume) string {
 	return GetZoneFromLabels(pv.Labels)
 }
 
@@ -124,11 +124,11 @@ func GetZoneFromLabels(labels map[string]string) string {
 	return ""
 }
 
-func GetRegionFromNode(node v1.Node) string {
+func GetRegionFromNode(node corev1.Node) string {
 	return GetRegionFromLabels(node.Labels)
 }
 
-func GetRegionFromPV(pv v1.PersistentVolume) string {
+func GetRegionFromPV(pv corev1.PersistentVolume) string {
 	return GetRegionFromLabels(pv.Labels)
 }
 
@@ -143,7 +143,7 @@ func GetRegionFromLabels(labels map[string]string) string {
 
 // IsNodeSchedulable returns true if it doesn't have "unschedulable" field set
 // Derived from "k8s.io/kubernetes/test/e2e/framework/node"
-func IsNodeSchedulable(node *v1.Node) bool {
+func IsNodeSchedulable(node *corev1.Node) bool {
 	if node == nil {
 		return false
 	}
@@ -152,9 +152,9 @@ func IsNodeSchedulable(node *v1.Node) bool {
 
 // IsNodeReady returns true if it's Ready condition is set to true
 // Derived from "k8s.io/kubernetes/test/e2e/framework/node"
-func IsNodeReady(node *v1.Node) bool {
+func IsNodeReady(node *corev1.Node) bool {
 	for _, cond := range node.Status.Conditions {
-		if cond.Type == v1.NodeReady && cond.Status == v1.ConditionTrue {
+		if cond.Type == corev1.NodeReady && cond.Status == corev1.ConditionTrue {
 			return true
 		}
 	}

@@ -18,7 +18,7 @@ import (
 	"context"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -54,16 +54,16 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 		},
 	}
 	cli := fake.NewSimpleClientset(
-		&v1.PersistentVolumeClaim{
+		&corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pvc-test-1",
 				Namespace: ns,
 			},
-			Spec: v1.PersistentVolumeClaimSpec{
+			Spec: corev1.PersistentVolumeClaimSpec{
 				VolumeName: "pv-test-1",
 			},
 		},
-		&v1.PersistentVolume{
+		&corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pv-test-1",
 				Labels: map[string]string{
@@ -71,60 +71,60 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 					kube.FDRegionLabelName: "us-west-2",
 				},
 			},
-			Spec: v1.PersistentVolumeSpec{
-				Capacity: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
+			Spec: corev1.PersistentVolumeSpec{
+				Capacity: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
-				PersistentVolumeSource: v1.PersistentVolumeSource{
-					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
+				PersistentVolumeSource: corev1.PersistentVolumeSource{
+					AWSElasticBlockStore: &corev1.AWSElasticBlockStoreVolumeSource{
 						VolumeID: "vol-abc123",
 					},
 				},
 			},
 		},
-		&v1.PersistentVolumeClaim{
+		&corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pvc-test-2",
 				Namespace: ns,
 			},
-			Spec: v1.PersistentVolumeClaimSpec{
+			Spec: corev1.PersistentVolumeClaimSpec{
 				VolumeName: "pv-test-2",
 			},
 		},
-		&v1.PersistentVolume{
+		&corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pv-test-2",
 			},
-			Spec: v1.PersistentVolumeSpec{
-				Capacity: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
+			Spec: corev1.PersistentVolumeSpec{
+				Capacity: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
-				PersistentVolumeSource: v1.PersistentVolumeSource{
-					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
+				PersistentVolumeSource: corev1.PersistentVolumeSource{
+					AWSElasticBlockStore: &corev1.AWSElasticBlockStoreVolumeSource{
 						VolumeID: "vol-abc123",
 					},
 				},
 			},
 		},
-		&v1.PersistentVolumeClaim{
+		&corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pvc-test-3",
 				Namespace: ns,
 			},
-			Spec: v1.PersistentVolumeClaimSpec{
+			Spec: corev1.PersistentVolumeClaimSpec{
 				VolumeName: "pv-test-3",
 			},
 		},
-		&v1.PersistentVolume{
+		&corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pv-test-3",
 				Labels: map[string]string{
 					kube.FDZoneLabelName: "us-west-2a",
 				},
 			},
-			Spec: v1.PersistentVolumeSpec{
-				Capacity: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
+			Spec: corev1.PersistentVolumeSpec{
+				Capacity: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
 			},
 		},

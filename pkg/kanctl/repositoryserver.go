@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -194,7 +194,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 	}, nil
 }
 
-func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParams) (*v1alpha1.RepositoryServer, error) {
+func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParams) (*crv1alpha1.RepositoryServer, error) {
 	// Fetch and Validate Secrets
 	ctx := context.Background()
 	config, err := kube.LoadConfig()
@@ -230,12 +230,12 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 		return nil, err
 	}
 
-	return &v1alpha1.RepositoryServer{
+	return &crv1alpha1.RepositoryServer{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: `kopia-repo-server-`,
 		},
-		Spec: v1alpha1.RepositoryServerSpec{
-			Storage: v1alpha1.Storage{
+		Spec: crv1alpha1.RepositoryServerSpec{
+			Storage: crv1alpha1.Storage{
 				SecretRef: corev1.SecretReference{
 					Name:      locationSecret.GetName(),
 					Namespace: locationSecret.GetNamespace(),
@@ -245,7 +245,7 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 					Namespace: locationCredsSecret.GetNamespace(),
 				},
 			},
-			Repository: v1alpha1.Repository{
+			Repository: crv1alpha1.Repository{
 				RootPath: rsParams.prefix,
 				Username: rsParams.repositoryUser,
 				Hostname: defaultRepositoryServerHost,
@@ -254,8 +254,8 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 					Namespace: repositoryPasswordSecret.GetNamespace(),
 				},
 			},
-			Server: v1alpha1.Server{
-				UserAccess: v1alpha1.UserAccess{
+			Server: crv1alpha1.Server{
+				UserAccess: crv1alpha1.UserAccess{
 					UserAccessSecretRef: corev1.SecretReference{
 						Name:      repositoryServerUserAccessSecret.GetName(),
 						Namespace: repositoryServerUserAccessSecret.GetNamespace(),
@@ -275,12 +275,12 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 	}, nil
 }
 
-func waitForRepositoryServerReady(ctx context.Context, cli *kubernetes.Clientset, crCli *versioned.Clientset, rs *v1alpha1.RepositoryServer) error {
+func waitForRepositoryServerReady(ctx context.Context, cli *kubernetes.Clientset, crCli *versioned.Clientset, rs *crv1alpha1.RepositoryServer) error {
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
 	defer waitCancel()
 	pollErr := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
-		if repositoryServer.Status.Progress == v1alpha1.Ready && err == nil {
+		if repositoryServer.Status.Progress == crv1alpha1.Ready && err == nil {
 			return true, nil
 		}
 		return false, err

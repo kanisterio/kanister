@@ -26,9 +26,8 @@ import (
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	scv1 "k8s.io/api/storage/v1"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -871,7 +870,7 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 func findSnapshotClassName(c *C, ctx context.Context, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
 	// Find alpha VolumeSnapshotClass name
 	us, err := dynCli.Resource(gvr).List(ctx, metav1.ListOptions{})
-	if err != nil && !k8errors.IsNotFound(err) {
+	if err != nil && !apierrors.IsNotFound(err) {
 		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 		c.Fail()
 	}
@@ -1198,8 +1197,8 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 	}
 }
 
-func fakePVC(name, namespace string) *v1.PersistentVolumeClaim {
-	return &v1.PersistentVolumeClaim{
+func fakePVC(name, namespace string) *corev1.PersistentVolumeClaim {
+	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,

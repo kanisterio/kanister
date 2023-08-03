@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -194,14 +194,14 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 // 2) Needs to be ready.
 // Derived from "k8s.io/kubernetes/test/e2e/framework/node"
 // TODO: check for taints as well
-func GetReadySchedulableNodes(cli kubernetes.Interface) ([]v1.Node, error) {
+func GetReadySchedulableNodes(cli kubernetes.Interface) ([]corev1.Node, error) {
 	ns, err := cli.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 	total := len(ns.Items)
 	var unschedulable, notReady int
-	var l []v1.Node
+	var l []corev1.Node
 	for _, node := range ns.Items {
 		switch {
 		case !kube.IsNodeReady(&node):

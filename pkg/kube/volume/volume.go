@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,8 +56,8 @@ func CreatePVC(
 	sizeInBytes int64,
 	targetVolID string,
 	annotations map[string]string,
-	accessmodes []v1.PersistentVolumeAccessMode,
-	volumemode *v1.PersistentVolumeMode,
+	accessmodes []corev1.PersistentVolumeAccessMode,
+	volumemode *corev1.PersistentVolumeMode,
 ) (string, error) {
 	sizeFmt := fmt.Sprintf("%d", sizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
@@ -66,18 +66,18 @@ func CreatePVC(
 		return "", errors.Wrapf(err, "Unable to parse sizeFmt %s", sizeFmt)
 	}
 	if len(accessmodes) == 0 {
-		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+		accessmodes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
-	pvc := v1.PersistentVolumeClaim{
+	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: annotations,
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
+		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: accessmodes,
 			VolumeMode:  volumemode,
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): size,
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): size,
 				},
 			},
 		},
@@ -124,8 +124,8 @@ type CreatePVCFromSnapshotArgs struct {
 	RestoreSize      string
 	Labels           map[string]string
 	Annotations      map[string]string
-	VolumeMode       *v1.PersistentVolumeMode
-	AccessModes      []v1.PersistentVolumeAccessMode
+	VolumeMode       *corev1.PersistentVolumeMode
+	AccessModes      []corev1.PersistentVolumeAccessMode
 }
 
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
@@ -137,26 +137,26 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 	}
 
 	if len(args.AccessModes) == 0 {
-		args.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+		args.AccessModes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
 	snapshotKind := "VolumeSnapshot"
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
-	pvc := &v1.PersistentVolumeClaim{
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      args.Labels,
 			Annotations: args.Annotations,
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
+		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: args.AccessModes,
 			VolumeMode:  args.VolumeMode,
-			DataSource: &v1.TypedLocalObjectReference{
+			DataSource: &corev1.TypedLocalObjectReference{
 				APIGroup: &snapshotAPIGroup,
 				Kind:     snapshotKind,
 				Name:     args.SnapshotName,
 			},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: *storageSize,
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: *storageSize,
 				},
 			},
 		},
@@ -224,8 +224,8 @@ func CreatePV(
 	vol *blockstorage.Volume,
 	volType blockstorage.Type,
 	annotations map[string]string,
-	accessmodes []v1.PersistentVolumeAccessMode,
-	volumemode *v1.PersistentVolumeMode,
+	accessmodes []corev1.PersistentVolumeAccessMode,
+	volumemode *corev1.PersistentVolumeMode,
 ) (string, error) {
 	sizeFmt := fmt.Sprintf("%d", vol.SizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
@@ -243,33 +243,33 @@ func CreatePV(
 	}
 
 	if len(accessmodes) == 0 {
-		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+		accessmodes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
 
-	pv := v1.PersistentVolume{
+	pv := corev1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanister-pv-",
 			Labels:       matchLabels,
 			Annotations:  annotations,
 		},
-		Spec: v1.PersistentVolumeSpec{
-			Capacity: v1.ResourceList{
-				v1.ResourceName(v1.ResourceStorage): size,
+		Spec: corev1.PersistentVolumeSpec{
+			Capacity: corev1.ResourceList{
+				corev1.ResourceName(corev1.ResourceStorage): size,
 			},
 			AccessModes:                   accessmodes,
 			VolumeMode:                    volumemode,
-			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 		},
 	}
 	switch volType {
 	case blockstorage.TypeEBS:
-		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &v1.AWSElasticBlockStoreVolumeSource{
+		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &corev1.AWSElasticBlockStoreVolumeSource{
 			VolumeID: vol.ID,
 		}
 		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
 		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
 	case blockstorage.TypeGPD:
-		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &v1.GCEPersistentDiskVolumeSource{
+		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &corev1.GCEPersistentDiskVolumeSource{
 			PDName: vol.ID,
 		}
 		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az

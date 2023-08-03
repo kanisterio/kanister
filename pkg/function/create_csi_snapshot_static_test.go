@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -78,7 +78,7 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynCli)
 		c.Assert(err, IsNil)
 
-		namespace := &v1.Namespace{
+		namespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespace,
 			},

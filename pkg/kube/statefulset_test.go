@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -40,7 +40,7 @@ func (s *StatefulSetSuite) SetUpSuite(c *C) {
 	cli, err := NewClient()
 	c.Assert(err, IsNil)
 	s.cli = cli
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "statefulsettest-",
 		},

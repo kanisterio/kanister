@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -68,9 +68,9 @@ type restoreCSISnapshotArgs struct {
 	Namespace    string
 	StorageClass string
 	RestoreSize  *resource.Quantity
-	AccessModes  []v1.PersistentVolumeAccessMode
+	AccessModes  []corev1.PersistentVolumeAccessMode
 	Labels       map[string]string
-	VolumeMode   v1.PersistentVolumeMode
+	VolumeMode   corev1.PersistentVolumeMode
 }
 
 func (*restoreCSISnapshotFunc) Name() string {
@@ -95,13 +95,13 @@ func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	if err := Arg(args, RestoreCSISnapshotRestoreSizeArg, &restoreSize); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, RestoreCSISnapshotAccessModesArg, &restoreArgs.AccessModes, []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}); err != nil {
+	if err := OptArg(args, RestoreCSISnapshotAccessModesArg, &restoreArgs.AccessModes, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}); err != nil {
 		return nil, err
 	}
 	if err := validateVolumeAccessModesArg(restoreArgs.AccessModes); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, RestoreCSISnapshotVolumeModeArg, &restoreArgs.VolumeMode, v1.PersistentVolumeFilesystem); err != nil {
+	if err := OptArg(args, RestoreCSISnapshotVolumeModeArg, &restoreArgs.VolumeMode, corev1.PersistentVolumeFilesystem); err != nil {
 		return nil, err
 	}
 	if err := validateVolumeModeArg(restoreArgs.VolumeMode); err != nil {
@@ -157,7 +157,7 @@ func getClient() (kubernetes.Interface, error) {
 	return kubeCli, err
 }
 
-func restoreCSISnapshot(ctx context.Context, kubeCli kubernetes.Interface, args restoreCSISnapshotArgs) (*v1.PersistentVolumeClaim, error) {
+func restoreCSISnapshot(ctx context.Context, kubeCli kubernetes.Interface, args restoreCSISnapshotArgs) (*corev1.PersistentVolumeClaim, error) {
 	pvc := newPVCManifest(args)
 	if _, err := kubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(ctx, pvc, metav1.CreateOptions{}); err != nil {
 		return nil, err
@@ -165,25 +165,25 @@ func restoreCSISnapshot(ctx context.Context, kubeCli kubernetes.Interface, args 
 	return pvc, nil
 }
 
-func newPVCManifest(args restoreCSISnapshotArgs) *v1.PersistentVolumeClaim {
+func newPVCManifest(args restoreCSISnapshotArgs) *corev1.PersistentVolumeClaim {
 	snapshotAPIGroup := SnapshotAPIGroup
-	pvc := &v1.PersistentVolumeClaim{
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      args.PVC,
 			Namespace: args.Namespace,
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
+		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: args.AccessModes,
 			VolumeMode:  &args.VolumeMode,
-			DataSource: &v1.TypedLocalObjectReference{
+			DataSource: &corev1.TypedLocalObjectReference{
 				APIGroup: &snapshotAPIGroup,
 				Kind:     "VolumeSnapshot",
 				Name:     args.Name,
 			},
 			StorageClassName: &args.StorageClass,
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: *args.RestoreSize,
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: *args.RestoreSize,
 				},
 			},
 		},
@@ -194,22 +194,22 @@ func newPVCManifest(args restoreCSISnapshotArgs) *v1.PersistentVolumeClaim {
 	return pvc
 }
 
-func validateVolumeModeArg(volumeMode v1.PersistentVolumeMode) error {
+func validateVolumeModeArg(volumeMode corev1.PersistentVolumeMode) error {
 	switch volumeMode {
-	case v1.PersistentVolumeFilesystem,
-		v1.PersistentVolumeBlock:
+	case corev1.PersistentVolumeFilesystem,
+		corev1.PersistentVolumeBlock:
 	default:
 		return errors.New("Given volumeMode " + string(volumeMode) + " is invalid")
 	}
 	return nil
 }
 
-func validateVolumeAccessModesArg(accessModes []v1.PersistentVolumeAccessMode) error {
+func validateVolumeAccessModesArg(accessModes []corev1.PersistentVolumeAccessMode) error {
 	for _, accessModeInArg := range accessModes {
 		switch accessModeInArg {
-		case v1.ReadOnlyMany,
-			v1.ReadWriteMany,
-			v1.ReadWriteOnce:
+		case corev1.ReadOnlyMany,
+			corev1.ReadWriteMany,
+			corev1.ReadWriteOnce:
 		default:
 			return errors.New("Given accessMode " + string(accessModeInArg) + " is invalid")
 		}

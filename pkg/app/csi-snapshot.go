@@ -19,7 +19,7 @@ import (
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -36,7 +36,7 @@ type TimeLogCSI struct {
 	namespace  string
 	name       string
 	deployment appsv1.Deployment
-	pvc        v1.PersistentVolumeClaim
+	pvc        corev1.PersistentVolumeClaim
 }
 
 // NewTimeLogCSI instantiates the TimeLogCSI integration test app
@@ -184,18 +184,18 @@ func (tlc TimeLogCSI) getAppDeploymentObj() *appsv1.Deployment {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": tlc.name},
 			},
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": tlc.name},
 				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Name:    "test-container",
 							Image:   "ghcr.io/kanisterio/kanister-tools:0.93.0",
 							Command: []string{"sh", "-c"},
 							Args:    []string{"while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"},
-							VolumeMounts: []v1.VolumeMount{
+							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "data",
 									MountPath: "/var/log",
@@ -203,11 +203,11 @@ func (tlc TimeLogCSI) getAppDeploymentObj() *appsv1.Deployment {
 							},
 						},
 					},
-					Volumes: []v1.Volume{
+					Volumes: []corev1.Volume{
 						{
 							Name: "data",
-							VolumeSource: v1.VolumeSource{
-								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							VolumeSource: corev1.VolumeSource{
+								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 									ClaimName: "time-log-pvc",
 								},
 							},
@@ -220,19 +220,19 @@ func (tlc TimeLogCSI) getAppDeploymentObj() *appsv1.Deployment {
 	return deployment
 }
 
-func (tlc TimeLogCSI) getAppPersistentVolumeClaimObj() *v1.PersistentVolumeClaim {
+func (tlc TimeLogCSI) getAppPersistentVolumeClaimObj() *corev1.PersistentVolumeClaim {
 	storageClassName := "csi-hostpath-sc"
-	pvc := &v1.PersistentVolumeClaim{
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "time-log-pvc",
 			Labels: map[string]string{"app": tlc.name},
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
+		Spec: corev1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,
-			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: *resource.NewQuantity(1073741824, resource.BinarySI),
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: *resource.NewQuantity(1073741824, resource.BinarySI),
 				},
 			},
 		},

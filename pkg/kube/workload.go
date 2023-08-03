@@ -22,7 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,8 +44,8 @@ const (
 )
 
 // CreateConfigMap creates a configmap set from a yaml spec.
-func CreateConfigMap(ctx context.Context, cli kubernetes.Interface, namespace string, spec string) (*v1.ConfigMap, error) {
-	cm := &v1.ConfigMap{}
+func CreateConfigMap(ctx context.Context, cli kubernetes.Interface, namespace string, spec string) (*corev1.ConfigMap, error) {
+	cm := &corev1.ConfigMap{}
 	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 	if _, _, err := d.Decode([]byte(spec), nil, cm); err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespa
 }
 
 // StatefulSetPods returns list of running and notrunning pods created by the deployment.
-func StatefulSetPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
+func StatefulSetPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]corev1.Pod, []corev1.Pod, error) {
 	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
@@ -160,7 +160,7 @@ func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli
 	// are not. To handle that we are not considering `Completed` pods to be NotRunning pods here
 	failedPodsCount := 0
 	for _, v := range notRunningPods {
-		if v.Status.Phase == v1.PodSucceeded {
+		if v.Status.Phase == corev1.PodSucceeded {
 			continue
 		}
 		failedPodsCount++
@@ -229,7 +229,7 @@ func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespac
 }
 
 // DeploymentConfigPods return list of running and not running pod created by this/name deployment config
-func DeploymentConfigPods(ctx context.Context, osCli osversioned.Interface, kubeCli kubernetes.Interface, namespace, name string) ([]v1.Pod, []v1.Pod, error) {
+func DeploymentConfigPods(ctx context.Context, osCli osversioned.Interface, kubeCli kubernetes.Interface, namespace, name string) ([]corev1.Pod, []corev1.Pod, error) {
 	depConf, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not get DeploymentConfig{Namespace: %s, Name: %s}", namespace, name)
@@ -243,7 +243,7 @@ func DeploymentConfigPods(ctx context.Context, osCli osversioned.Interface, kube
 }
 
 // DeploymentPods returns list of running and notrunning pods created by the deployment.
-func DeploymentPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
+func DeploymentPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]corev1.Pod, []corev1.Pod, error) {
 	d, err := kubeCli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
@@ -286,7 +286,7 @@ func WaitOnDeploymentConfigReady(ctx context.Context, osCli osversioned.Interfac
 }
 
 // FetchReplicationController fetches the replication controller that has owner with UID provided uid
-func FetchReplicationController(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*v1.ReplicationController, error) {
+func FetchReplicationController(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*corev1.ReplicationController, error) {
 	repCtrls, err := cli.CoreV1().ReplicationControllers(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not list ReplicationControllers")
@@ -338,7 +338,7 @@ func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, 
 
 // FetchPods fetches the pods matching the specified owner UID and splits them
 // into 2 groups (running/not-running)
-func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runningPods []v1.Pod, notRunningPods []v1.Pod, err error) {
+func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runningPods []corev1.Pod, notRunningPods []corev1.Pod, err error) {
 	pods, err := cli.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Could not list Pods")
@@ -348,7 +348,7 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runni
 			pod.OwnerReferences[0].UID != uid {
 			continue
 		}
-		if pod.Status.Phase != v1.PodRunning {
+		if pod.Status.Phase != corev1.PodRunning {
 			notRunningPods = append(notRunningPods, pod)
 			continue
 		}
@@ -419,7 +419,7 @@ func DeploymentVolumes(cli kubernetes.Interface, d *appsv1.Deployment) (volNameT
 }
 
 // PodContainers returns list of containers specified by the pod
-func PodContainers(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Container, error) {
+func PodContainers(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]corev1.Container, error) {
 	p, err := kubeCli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get Pod{Namespace: %s, Name: %s}", namespace, name)
@@ -449,7 +449,7 @@ func getOrdinal(pod string) int {
 }
 
 // StatefulSetVolumes returns the PVCs referenced by a pod in this statefulset as a [pod spec volume name]->[PVC name] map
-func StatefulSetVolumes(cli kubernetes.Interface, sset *appsv1.StatefulSet, pod *v1.Pod) (volNameToPvc map[string]string) {
+func StatefulSetVolumes(cli kubernetes.Interface, sset *appsv1.StatefulSet, pod *corev1.Pod) (volNameToPvc map[string]string) {
 	ordinal := getOrdinal(pod.Name)
 	if ordinal == -1 {
 		// Pod not created through the statefulset?
@@ -482,7 +482,7 @@ func StatefulSetVolumes(cli kubernetes.Interface, sset *appsv1.StatefulSet, pod 
 
 // DeploymentConfigVolumes returns the PVCs references by a pod in this deployment config as a [pod spec volume name]-> [PVC name] map
 // will mostly be used for the applications running in open shift clusters
-func DeploymentConfigVolumes(osCli osversioned.Interface, depConfig *osAppsv1.DeploymentConfig, pod *v1.Pod) (volNameToPvc map[string]string) {
+func DeploymentConfigVolumes(osCli osversioned.Interface, depConfig *osAppsv1.DeploymentConfig, pod *corev1.Pod) (volNameToPvc map[string]string) {
 	volNameToPvc = make(map[string]string)
 	for _, v := range depConfig.Spec.Template.Spec.Volumes {
 		if v.PersistentVolumeClaim == nil {

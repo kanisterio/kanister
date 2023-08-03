@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
@@ -28,7 +28,7 @@ import (
 
 // PodRunner allows us to start / stop pod, write file to pod and execute command within it
 type PodRunner interface {
-	Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error)
+	Run(ctx context.Context, fn func(context.Context, *corev1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error)
 	// RunEx utilizes the PodController interface and forwards it to the functor, simplifying the manipulation with
 	// particular pod from the functor.
 	// TODO: Since significant number of functions are currently using PodRunner, we'll keep Run for now.
@@ -50,7 +50,7 @@ func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
 }
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
-func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
+func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *corev1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	return p.RunEx(ctx, func(innerCtx context.Context, pc PodController) (map[string]interface{}, error) {
 		return fn(innerCtx, pc.Pod())
 	})

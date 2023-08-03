@@ -23,7 +23,7 @@ import (
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -99,7 +99,7 @@ func (pgres *PostgreSQLDepConfig) Install(ctx context.Context, namespace string)
 }
 
 func (pgres *PostgreSQLDepConfig) createPostgreSQLSecret(ctx context.Context) error {
-	postgreSQLSecret := &v1.Secret{
+	postgreSQLSecret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
 			APIVersion: "v1",

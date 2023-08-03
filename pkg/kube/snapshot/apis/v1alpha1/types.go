@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	core_v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,7 +77,7 @@ type VolumeSnapshotSpec struct {
 	// Source has the information about where the snapshot is created from.
 	// In Alpha version, only PersistentVolumeClaim is supported as the source.
 	// If not specified, user can create VolumeSnapshotContent and bind it with VolumeSnapshot manually.
-	Source *core_v1.TypedLocalObjectReference `json:"source" protobuf:"bytes,1,opt,name=source"`
+	Source *corev1.TypedLocalObjectReference `json:"source" protobuf:"bytes,1,opt,name=source"`
 
 	// SnapshotContentName binds the VolumeSnapshot object with the VolumeSnapshotContent
 	SnapshotContentName string `json:"snapshotContentName" protobuf:"bytes,2,opt,name=snapshotContentName"`
@@ -170,11 +170,11 @@ type VolumeSnapshotContentSpec struct {
 
 	// VolumeSnapshotRef is part of bi-directional binding between VolumeSnapshot
 	// and VolumeSnapshotContent. It becomes non-nil when bound.
-	VolumeSnapshotRef *core_v1.ObjectReference `json:"volumeSnapshotRef" protobuf:"bytes,2,opt,name=volumeSnapshotRef"`
+	VolumeSnapshotRef *corev1.ObjectReference `json:"volumeSnapshotRef" protobuf:"bytes,2,opt,name=volumeSnapshotRef"`
 
 	// PersistentVolumeRef represents the PersistentVolume that the snapshot has been
 	// taken from. It becomes non-nil when VolumeSnapshot and VolumeSnapshotContent are bound.
-	PersistentVolumeRef *core_v1.ObjectReference `json:"persistentVolumeRef" protobuf:"bytes,3,opt,name=persistentVolumeRef"`
+	PersistentVolumeRef *corev1.ObjectReference `json:"persistentVolumeRef" protobuf:"bytes,3,opt,name=persistentVolumeRef"`
 
 	// Name of the VolumeSnapshotClass used by the VolumeSnapshot. If not specified, a default snapshot class will
 	// be used if it is available.

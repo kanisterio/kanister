@@ -21,7 +21,7 @@ import (
 
 	ibmprov "github.com/IBM/ibmcloud-storage-volume-lib/lib/provider"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -43,7 +43,7 @@ func AuthorizeSoftLayerFileHosts(ctx context.Context, vol *ibmprov.Volume, slCli
 
 	for _, node := range nodes.Items {
 		for _, ip := range node.Status.Addresses {
-			if ip.Type == v1.NodeInternalIP {
+			if ip.Type == corev1.NodeInternalIP {
 				nodeips = append(nodeips, ip.Address)
 			}
 		}

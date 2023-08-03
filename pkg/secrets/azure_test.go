@@ -17,7 +17,7 @@ package secrets
 import (
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type AzureSecretSuite struct{}
@@ -26,13 +26,13 @@ var _ = Suite(&AzureSecretSuite{})
 
 func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
 	for i, tc := range []struct {
-		secret     *v1.Secret
+		secret     *corev1.Secret
 		expected   *objectstore.SecretAzure
 		errChecker Checker
 	}{
 		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(AzureSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AzureSecretType),
 				Data: map[string][]byte{
 					AzureStorageAccountID:   []byte("key_id"),
 					AzureStorageAccountKey:  []byte("secret_key"),
@@ -47,8 +47,8 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
 			errChecker: IsNil,
 		},
 		{ // bad type
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AWSSecretType),
 				Data: map[string][]byte{
 					AzureStorageAccountID:   []byte("key_id"),
 					AzureStorageAccountKey:  []byte("secret_key"),
@@ -59,8 +59,8 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
 			errChecker: NotNil,
 		},
 		{ // missing field
-			secret: &v1.Secret{
-				Type: v1.SecretType(AzureSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AzureSecretType),
 				Data: map[string][]byte{
 					AzureStorageAccountID:   []byte("key_id"),
 					AzureStorageEnvironment: []byte("env"),
@@ -70,8 +70,8 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
 			errChecker: NotNil,
 		},
 		{ // additional field
-			secret: &v1.Secret{
-				Type: v1.SecretType(AzureSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AzureSecretType),
 				Data: map[string][]byte{
 					AzureStorageAccountID:   []byte("key_id"),
 					AzureStorageAccountKey:  []byte("secret_key"),

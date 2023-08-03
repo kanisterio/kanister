@@ -23,7 +23,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -189,7 +189,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 	}
 	pvLabels := pv.GetObjectMeta().GetLabels()
 	var size int64
-	if cap, ok := pv.Spec.Capacity[v1.ResourceStorage]; ok {
+	if cap, ok := pv.Spec.Capacity[corev1.ResourceStorage]; ok {
 		size = cap.Value()
 	}
 	// Check to see which provider is the source. Spec mandates only one of the provider

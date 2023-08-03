@@ -21,6 +21,7 @@ linters:
     - dogsled
     - dupl
     - exportloopref
+    - importas
 
 run:
   timeout: 10m                          # golangci-lint run's timeout.
@@ -48,3 +49,14 @@ linters-settings:
     line-length: 240
   nakedret:
     max-func-lines: 2
+  importas:
+    no-unaliased: true
+    alias:
+      - pkg: k8s.io/apimachinery/pkg/api/errors
+        alias: apierrors
+      - pkg: k8s.io/api/core/v1
+        alias: corev1
+      - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+        alias: metav1
+      - pkg: github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1
+        alias: crv1alpha1

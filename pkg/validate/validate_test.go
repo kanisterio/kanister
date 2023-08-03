@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -622,8 +622,8 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *C) {
 				},
 			},
 			pType: objectstore.ProviderTypeAzure,
-			cli: fake.NewSimpleClientset(&v1.Secret{
-				Type: v1.SecretType(secrets.AzureSecretType),
+			cli: fake.NewSimpleClientset(&corev1.Secret{
+				Type: corev1.SecretType(secrets.AzureSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secname",
 					Namespace: "secnamespace",
@@ -659,8 +659,8 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *C) {
 				},
 			},
 			pType: objectstore.ProviderTypeAzure,
-			cli: fake.NewSimpleClientset(&v1.Secret{
-				Type: v1.SecretType(secrets.AzureSecretType),
+			cli: fake.NewSimpleClientset(&corev1.Secret{
+				Type: corev1.SecretType(secrets.AzureSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secname",
 					Namespace: "secnamespace",
@@ -696,8 +696,8 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *C) {
 				},
 			},
 			pType: objectstore.ProviderTypeAzure,
-			cli: fake.NewSimpleClientset(&v1.Secret{
-				Type: v1.SecretType(secrets.AzureSecretType),
+			cli: fake.NewSimpleClientset(&corev1.Secret{
+				Type: corev1.SecretType(secrets.AzureSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secname",
 					Namespace: "secnamespace",
@@ -726,8 +726,8 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *C) {
 				},
 			},
 			pType: objectstore.ProviderTypeAzure,
-			cli: fake.NewSimpleClientset(&v1.Secret{
-				Type: v1.SecretType(secrets.AzureSecretType),
+			cli: fake.NewSimpleClientset(&corev1.Secret{
+				Type: corev1.SecretType(secrets.AzureSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secname",
 					Namespace: "secnamespace",

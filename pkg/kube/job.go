@@ -21,7 +21,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -86,26 +86,26 @@ func (job *Job) Create() error {
 			APIVersion: "v1",
 		},
 		Spec: batch.JobSpec{
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   defautlJobPodName,
 					Labels: make(map[string]string),
 				},
-				Spec: v1.PodSpec{
+				Spec: corev1.PodSpec{
 					ServiceAccountName: job.sa,
-					Containers: []v1.Container{
+					Containers: []corev1.Container{
 						{
 							Name:    defaultJobPodContainer,
 							Image:   job.image,
 							Command: job.command,
-							SecurityContext: &v1.SecurityContext{
+							SecurityContext: &corev1.SecurityContext{
 								Privileged: &falseVal,
 							},
-							ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+							ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 							VolumeMounts:    volumeMounts,
 						},
 					},
-					RestartPolicy: v1.RestartPolicyOnFailure,
+					RestartPolicy: corev1.RestartPolicyOnFailure,
 					Volumes:       podVolumes,
 				},
 			},
@@ -125,7 +125,7 @@ func (job *Job) Create() error {
 	return nil
 }
 
-func createFilesystemModeVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, podVolumes []v1.Volume, error error) {
+func createFilesystemModeVolumeSpecs(vols map[string]string) (volumeMounts []corev1.VolumeMount, podVolumes []corev1.Volume, error error) {
 	// Build filesystem mode volume specs
 	for pvc, mountPath := range vols {
 		id, err := uuid.NewV1()
@@ -133,12 +133,12 @@ func createFilesystemModeVolumeSpecs(vols map[string]string) (volumeMounts []v1.
 			return nil, nil, err
 		}
 		podVolName := fmt.Sprintf("vol-%s", id.String())
-		volumeMounts = append(volumeMounts, v1.VolumeMount{Name: podVolName, MountPath: mountPath})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{Name: podVolName, MountPath: mountPath})
 		podVolumes = append(podVolumes,
-			v1.Volume{
+			corev1.Volume{
 				Name: podVolName,
-				VolumeSource: v1.VolumeSource{
-					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 						ClaimName: pvc,
 					},
 				},
@@ -148,7 +148,7 @@ func createFilesystemModeVolumeSpecs(vols map[string]string) (volumeMounts []v1.
 	return volumeMounts, podVolumes, nil
 }
 
-func createBlockModeVolumeSpecs(blockVols map[string]string) (volumeDevices []v1.VolumeDevice, podVolumes []v1.Volume, error error) {
+func createBlockModeVolumeSpecs(blockVols map[string]string) (volumeDevices []corev1.VolumeDevice, podVolumes []corev1.Volume, error error) {
 	// Build block mode volume specs
 	for pvc, devicePath := range blockVols {
 		id, err := uuid.NewV1()
@@ -156,12 +156,12 @@ func createBlockModeVolumeSpecs(blockVols map[string]string) (volumeDevices []v1
 			return nil, nil, err
 		}
 		podBlockVolName := fmt.Sprintf("block-%s", id.String())
-		volumeDevices = append(volumeDevices, v1.VolumeDevice{Name: podBlockVolName, DevicePath: devicePath})
+		volumeDevices = append(volumeDevices, corev1.VolumeDevice{Name: podBlockVolName, DevicePath: devicePath})
 		podVolumes = append(podVolumes,
-			v1.Volume{
+			corev1.Volume{
 				Name: podBlockVolName,
-				VolumeSource: v1.VolumeSource{
-					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 						ClaimName: pvc,
 					},
 				},

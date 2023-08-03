@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
@@ -55,7 +55,7 @@ type ControllerSuite struct {
 	cancel     func()
 	ss         *appsv1.StatefulSet
 	deployment *appsv1.Deployment
-	confimap   *v1.ConfigMap
+	confimap   *corev1.ConfigMap
 	recorder   record.EventRecorder
 }
 
@@ -81,7 +81,7 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 
 	s.recorder = eventer.NewEventRecorder(s.cli, "Controller Test")
 
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanistercontrollertest-",
 		},
@@ -558,7 +558,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			{
 				funcNames: []string{testutil.ArgFuncName},
 				name:      "ArgFuncVersionFallback",
-				version:   "v1.2.3",
+				version:   "corev1.2.3",
 			},
 			{
 				funcNames: []string{testutil.ArgFuncName},
@@ -568,7 +568,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			{
 				funcNames: []string{testutil.VersionMismatchFuncName},
 				name:      "VersionMismatchFunc",
-				version:   "v1.2.3",
+				version:   "corev1.2.3",
 			},
 			{
 				funcNames: []string{testutil.ArgFuncName, testutil.OutputFuncName},

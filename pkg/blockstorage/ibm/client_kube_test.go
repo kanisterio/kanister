@@ -22,7 +22,7 @@ import (
 	"os"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -36,7 +36,7 @@ const (
 )
 
 type KubeTestIBMClient struct {
-	k8sSec *v1.Secret
+	k8sSec *corev1.Secret
 	k8scli kubernetes.Interface
 }
 
@@ -57,11 +57,11 @@ func (s *KubeTestIBMClient) SetUpSuite(c *C) {
 
 	s.k8scli, err = kube.NewClient()
 	c.Assert(err, IsNil)
-	k8sSec := v1.Secret{
+	k8sSec := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testSecretName,
 		},
-		Type: v1.SecretTypeOpaque,
+		Type: corev1.SecretTypeOpaque,
 		Data: secretData,
 	}
 	s.k8sSec, err = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Create(context.TODO(), &k8sSec, metav1.CreateOptions{})
@@ -103,11 +103,11 @@ func (s KubeTestIBMClient) TestIBMOldSecret(c *C) {
 
 	s.k8scli, err = kube.NewClient()
 	c.Assert(err, IsNil)
-	k8sSec := v1.Secret{
+	k8sSec := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testOldSecretName,
 		},
-		Type: v1.SecretTypeOpaque,
+		Type: corev1.SecretTypeOpaque,
 		Data: secretData,
 	}
 	s.k8sSec, err = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Create(context.TODO(), &k8sSec, metav1.CreateOptions{})

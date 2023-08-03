@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
@@ -32,9 +32,9 @@ type MssqlDB struct {
 	namespace  string
 	name       string
 	deployment *appsv1.Deployment
-	service    *v1.Service
-	pvc        *v1.PersistentVolumeClaim
-	secret     *v1.Secret
+	service    *corev1.Service
+	pvc        *corev1.PersistentVolumeClaim
+	secret     *corev1.Secret
 }
 
 func NewMssqlDB(name string) App {
@@ -298,7 +298,7 @@ spec:
 	return deployment, err
 }
 
-func (m *MssqlDB) getPVCObj() (*v1.PersistentVolumeClaim, error) {
+func (m *MssqlDB) getPVCObj() (*corev1.PersistentVolumeClaim, error) {
 	pvcmaniFest :=
 		`kind: PersistentVolumeClaim
 apiVersion: v1
@@ -311,12 +311,12 @@ spec:
     requests:
       storage: 4Gi`
 
-	var pvc *v1.PersistentVolumeClaim
+	var pvc *corev1.PersistentVolumeClaim
 	err := yaml.Unmarshal([]byte(pvcmaniFest), &pvc)
 	return pvc, err
 }
 
-func (m *MssqlDB) getServiceObj() (*v1.Service, error) {
+func (m *MssqlDB) getServiceObj() (*corev1.Service, error) {
 	serviceManifest :=
 		`apiVersion: v1
 kind: Service
@@ -331,13 +331,13 @@ spec:
       targetPort: 1433
   type: ClusterIP`
 
-	var service *v1.Service
+	var service *corev1.Service
 	err := yaml.Unmarshal([]byte(serviceManifest), &service)
 	return service, err
 }
 
-func (m MssqlDB) getSecretObj() *v1.Secret {
-	return &v1.Secret{
+func (m MssqlDB) getSecretObj() *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: m.name,
 		},

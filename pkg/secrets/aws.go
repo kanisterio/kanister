@@ -20,7 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -53,7 +53,7 @@ const (
 //
 // Optional field:
 // - session_token
-func ValidateAWSCredentials(secret *v1.Secret) error {
+func ValidateAWSCredentials(secret *corev1.Secret) error {
 	if string(secret.Type) != AWSSecretType {
 		return errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AWSSecretType, secret.Namespace, secret.Name)
 	}
@@ -91,7 +91,7 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 // of the IAM role - The setting can be viewed using instructions here
 // https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html#id_roles_use_view-role-max-session.
 // The IAM role's max duration setting can be modified between 1h to 12h.
-func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret, assumeRoleDuration time.Duration) (*credentials.Value, error) {
+func ExtractAWSCredentials(ctx context.Context, secret *corev1.Secret, assumeRoleDuration time.Duration) (*credentials.Value, error) {
 	if err := ValidateAWSCredentials(secret); err != nil {
 		return nil, err
 	}

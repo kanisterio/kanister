@@ -16,7 +16,7 @@ package function
 
 import (
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -134,8 +134,8 @@ func newValidProfileWithSecretCredentials() *param.Profile {
 		},
 		Credential: param.Credential{
 			Type: param.CredentialTypeSecret,
-			Secret: &v1.Secret{
-				Type: v1.SecretType(secrets.AWSSecretType),
+			Secret: &corev1.Secret{
+				Type: corev1.SecretType(secrets.AWSSecretType),
 				Data: map[string][]byte{
 					secrets.AWSAccessKeyID:     []byte("key-id"),
 					secrets.AWSSecretAccessKey: []byte("access-key"),
@@ -177,8 +177,8 @@ func newInvalidProfileWithSecretCredentials() *param.Profile {
 		},
 		Credential: param.Credential{
 			Type: param.CredentialTypeSecret,
-			Secret: &v1.Secret{
-				Type: v1.SecretType(secrets.AWSSecretType),
+			Secret: &corev1.Secret{
+				Type: corev1.SecretType(secrets.AWSSecretType),
 				Data: map[string][]byte{
 					secrets.AWSAccessKeyID:     []byte("key-id"),
 					secrets.AWSSecretAccessKey: []byte("access-key"),

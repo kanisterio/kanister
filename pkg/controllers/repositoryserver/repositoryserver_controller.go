@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
 // RepositoryServerReconciler reconciles a RepositoryServer object
@@ -71,12 +71,12 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, errors.Wrap(err, "Failed to get a k8s client")
 	}
 
-	repositoryServer := &crkanisteriov1alpha1.RepositoryServer{}
+	repositoryServer := &crv1alpha1.RepositoryServer{}
 	if err = r.Get(ctx, req.NamespacedName, repositoryServer); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
+	repositoryServer.Status.Progress = crv1alpha1.Pending
 
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
 	repoServerHandler.RepositoryServer = repositoryServer
@@ -88,7 +88,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger.Info("Create or update owned resources by Repository Server CR")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
-		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
@@ -97,7 +97,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
-		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
@@ -107,7 +107,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return result, err
 	}
 
-	if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Ready); uerr != nil {
+	if uerr := repoServerHandler.updateRepoServerProgress(ctx, crv1alpha1.Ready); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
@@ -120,7 +120,7 @@ func newRepositoryServerHandler(
 	logger logr.Logger,
 	reconciler *RepositoryServerReconciler,
 	kubeCli kubernetes.Interface,
-	repositoryServer *crkanisteriov1alpha1.RepositoryServer) RepoServerHandler {
+	repositoryServer *crv1alpha1.RepositoryServer) RepoServerHandler {
 	return RepoServerHandler{
 		Req:              req,
 		Logger:           logger,
@@ -136,7 +136,7 @@ func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// child resources and run the same reconcile loop for all events on child resources
 	r.Recorder = mgr.GetEventRecorderFor("RepositoryServer")
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&crkanisteriov1alpha1.RepositoryServer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(&crv1alpha1.RepositoryServer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&corev1.Service{}).
 		Owns(&networkingv1.NetworkPolicy{}).
 		Owns(&corev1.Pod{}).

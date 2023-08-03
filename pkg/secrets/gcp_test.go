@@ -20,7 +20,7 @@ import (
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,13 +32,13 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 	serviceAccountJson := make([]byte, base64.StdEncoding.EncodedLen(len([]byte("service_account_json"))))
 	base64.StdEncoding.Encode(serviceAccountJson, []byte("service_account_json"))
 	for i, tc := range []struct {
-		secret      *v1.Secret
+		secret      *corev1.Secret
 		errChecker  Checker
 		expectedErr error
 	}{
 		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(GCPSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(GCPSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -52,8 +52,8 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 			expectedErr: nil,
 		},
 		{ // Incompatible secret type
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AWSSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -67,8 +67,8 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, "ns", "sec"),
 		},
 		{ // missing field - GCPServiceKey
-			secret: &v1.Secret{
-				Type: v1.SecretType(GCPSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(GCPSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -81,8 +81,8 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 			errChecker:  NotNil,
 		},
 		{ // missing field - GCPProjectID
-			secret: &v1.Secret{
-				Type: v1.SecretType(GCPSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(GCPSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -95,8 +95,8 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 			errChecker:  NotNil,
 		},
 		{ // secret is Empty
-			secret: &v1.Secret{
-				Type: v1.SecretType(GCPSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(GCPSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",

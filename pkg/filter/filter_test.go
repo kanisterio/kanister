@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -503,7 +503,7 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 		{
 			// Match a specific resource
 			m: ResourceMatcher{
-				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "pvc1"}, ResourceTypeRequirement: pvcTypeRequirement},
+				ResourceRequirement{LocalObjectReference: corev1.LocalObjectReference{Name: "pvc1"}, ResourceTypeRequirement: pvcTypeRequirement},
 			},
 			resources: []Resource{ss1, ss2, pvc1, pvc2},
 			include:   []Resource{pvc1},
@@ -512,7 +512,7 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 		{
 			// Match a specific resource name only (no GVR), matches only one object
 			m: ResourceMatcher{
-				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "pvc1"}},
+				ResourceRequirement{LocalObjectReference: corev1.LocalObjectReference{Name: "pvc1"}},
 			},
 			resources: []Resource{ss1, ss2, pvc1, pvc2},
 			include:   []Resource{pvc1},
@@ -521,7 +521,7 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 		{
 			// Match a specific resource name only (no GVR), matches mulitple resources
 			m: ResourceMatcher{
-				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"}},
+				ResourceRequirement{LocalObjectReference: corev1.LocalObjectReference{Name: "specificname"}},
 			},
 			resources: []Resource{ss1, ss2, pvc1, pvc2},
 			include:   []Resource{ss2, pvc2},
@@ -530,7 +530,7 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 		{
 			// Match a specific resource name with different GVR, matches only one object
 			m: ResourceMatcher{
-				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"},
+				ResourceRequirement{LocalObjectReference: corev1.LocalObjectReference{Name: "specificname"},
 					ResourceTypeRequirement: ssTypeRequirement,
 				},
 			},
@@ -541,7 +541,7 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 		{
 			// Match by GVR and labels
 			m: ResourceMatcher{
-				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"},
+				ResourceRequirement{LocalObjectReference: corev1.LocalObjectReference{Name: "specificname"},
 					LabelSelector: metav1.LabelSelector{MatchLabels: map[string]string{
 						"testkey2": "testval2", // Include only the labels with 2
 					}}},
@@ -629,7 +629,7 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 }
 
 func (s *FilterSuite) TestResourceRequirementDeepCopyInto(c *C) {
-	rr := ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"},
+	rr := ResourceRequirement{LocalObjectReference: corev1.LocalObjectReference{Name: "specificname"},
 		ResourceTypeRequirement: ResourceTypeRequirement{Group: "apps", Resource: "statefulsets"},
 		LabelSelector: metav1.LabelSelector{
 			MatchLabels: map[string]string{
