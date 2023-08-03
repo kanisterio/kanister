@@ -71,35 +71,44 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, errors.Wrap(err, "Failed to get a k8s client")
 	}
 
-	logger.Info("Fetch RepositoryServer CR. If not found end reconcile loop")
 	repositoryServer := &crkanisteriov1alpha1.RepositoryServer{}
 	if err = r.Get(ctx, req.NamespacedName, repositoryServer); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	logger.Info("Setting the CR status as 'ServerPending' since a create or update event is in progress")
-	repositoryServer.Status.Progress = crkanisteriov1alpha1.ServerPending
+	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
 
-	logger.Info("Found RepositoryServer CR. Create or update owned resources")
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
 	repoServerHandler.RepositoryServer = repositoryServer
 
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
+
+	logger.Info("Create or update owned resources by Repository Server CR")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
-		logger.Info("Setting the CR status as 'ServerStopped' since an error occurred in create/update event")
-		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerStopped
-		if uerr := r.Status().Update(ctx, repoServerHandler.RepositoryServer); uerr != nil {
+		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
+		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
 		return ctrl.Result{}, err
 	}
-	logger.Info("Setting the CR status as 'ServerReady' after completing the create/update event\n\n\n\n")
-	repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerReady
-	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
+
+	logger.Info("Connect to Kopia Repository")
+	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
+		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Failed); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
 		return ctrl.Result{}, err
+	}
+
+	if result, err := repoServerHandler.setupKopiaRepositoryServer(ctx, logger); err != nil {
+		return result, err
+	}
+
+	if uerr := repoServerHandler.updateRepoServerProgress(ctx, crkanisteriov1alpha1.Ready); uerr != nil {
+		return ctrl.Result{}, uerr
 	}
 
 	return ctrl.Result{}, nil
