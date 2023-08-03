@@ -22,6 +22,8 @@ linters:
     - dupl
     - exportloopref
     - importas
+    # - stylecheck It needs a log of changes
+    - misspell
 
 run:
   timeout: 10m                          # golangci-lint run's timeout.
@@ -37,6 +39,7 @@ issues:
         - unparam                       # Tests might have unused function parameters.
         - lll
         - dupl
+        - misspell
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:

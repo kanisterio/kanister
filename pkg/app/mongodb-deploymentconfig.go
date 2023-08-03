@@ -184,7 +184,7 @@ func (mongo *MongoDBDepConfig) execCommand(ctx context.Context, command []string
 		return "", "", err
 	}
 	stdout, stderr, err := kube.Exec(mongo.cli, mongo.namespace, podName, containerName, command, nil)
-	log.Print("Executing the command in pod and contianer", field.M{"pod": podName, "container": containerName, "cmd": command})
+	log.Print("Executing the command in pod and container", field.M{"pod": podName, "container": containerName, "cmd": command})
 
 	return stdout, stderr, errors.Wrapf(err, "Error executing command in the pod")
 }

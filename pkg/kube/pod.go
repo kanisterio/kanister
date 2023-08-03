@@ -361,7 +361,7 @@ func checkPVCAndPVStatus(ctx context.Context, vol corev1.Volume, p *corev1.Pod, 
 
 	switch pvc.Status.Phase {
 	case corev1.ClaimLost:
-		return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, p.Name, corev1.ClaimLost)
+		return errors.Errorf("PVC %s associated with pod %s has status: %s", pvcName, p.Name, corev1.ClaimLost)
 	case corev1.ClaimPending:
 		pvName := pvc.Spec.VolumeName
 		if pvName == "" {

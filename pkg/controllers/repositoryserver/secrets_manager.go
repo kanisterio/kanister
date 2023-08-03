@@ -35,7 +35,7 @@ type repositoryServerSecrets struct {
 // getSecretsFromCR fetches all the secrets in the RepositoryServer CR
 func (h *RepoServerHandler) getSecretsFromCR(ctx context.Context) error {
 	// TODO: For now, users should make sure all the secrets and the RepositoryServer CR are present in the
-	//  same namespace. This namespace field can be overriden when we start creating secrets using 'kanctl' utility
+	//  same namespace. This namespace field can be overridden when we start creating secrets using 'kanctl' utility
 	repositoryServer := h.RepositoryServer
 	h.Logger.Info("Fetching secrets from all the secret references in the CR")
 	storage, err := h.fetchSecret(ctx, &repositoryServer.Spec.Storage.SecretRef)

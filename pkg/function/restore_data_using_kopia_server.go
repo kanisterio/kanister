@@ -34,7 +34,7 @@ import (
 
 const (
 	RestoreDataUsingKopiaServerFuncName = "RestoreDataUsingKopiaServer"
-	// SparseRestoreOption is the key for specifiying whether to do a sparse restore
+	// SparseRestoreOption is the key for specifying whether to do a sparse restore
 	SparseRestoreOption = "sparseRestore"
 )
 

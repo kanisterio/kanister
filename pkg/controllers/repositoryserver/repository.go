@@ -38,7 +38,7 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 		ContentCacheMB:  contentCacheMB,
 		MetadataCacheMB: metadataCacheMB,
 		Username:        h.RepositoryServer.Spec.Repository.Username,
-		// TODO(Amruta): Generate path for respository
+		// TODO(Amruta): Generate path for repository
 		RepoPathPrefix: h.RepositoryServer.Spec.Repository.RootPath,
 		Location:       h.RepositoryServerSecrets.storage.Data,
 	}

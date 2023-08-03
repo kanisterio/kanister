@@ -146,7 +146,7 @@ func createCRD(context Context, resource CustomResource) error {
 }
 
 func rawCRDFromFile(path string) ([]byte, error) {
-	// yamls is the variable that has embeded custom resource manifest. More at `embed.go`
+	// yamls is the variable that has embedded custom resource manifest. More at `embed.go`
 	return yamls.ReadFile(path)
 }
 

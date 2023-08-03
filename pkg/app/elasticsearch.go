@@ -174,7 +174,7 @@ func (esi *ElasticsearchInstance) Insert(ctx context.Context) error {
 	addDocumentToIndexCMD := []string{"sh", "-c", esi.curlCommandWithPayload("POST", esi.indexname+"/_doc/?refresh=true", "'{\"appname\": \"kanister\" }'")}
 	_, stderr, err := esi.execCommand(ctx, addDocumentToIndexCMD)
 	if err != nil {
-		// even one insert failed we will have to return becasue
+		// even one insert failed we will have to return because
 		// the count wont  match anyway and the test will fail
 		return errors.Wrapf(err, "Error %s inserting document to an index %s.", stderr, esi.indexname)
 	}

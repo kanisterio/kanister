@@ -147,7 +147,7 @@ func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.
 			VPC:       &vpcCfg,
 		}, nil
 	}
-	// Final attemp to get Config, by using default lib code path
+	// Final attempt to get Config, by using default lib code path
 	defPath := ibmcfg.GetConfPath()
 	return ibmcfg.ReadConfig(defPath, zaplog)
 }

@@ -57,7 +57,7 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, kubeCli kubernetes.Inte
 		}
 	}
 	if len(newZones) == 0 {
-		return nil, errors.Errorf("Unable to find valid availabilty zones for region (%s)", sourceRegion)
+		return nil, errors.Errorf("Unable to find valid availability zones for region (%s)", sourceRegion)
 	}
 	var zones []string
 	for z := range newZones {

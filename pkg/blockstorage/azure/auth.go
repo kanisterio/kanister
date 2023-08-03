@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// currently avaialble types: https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization
+// currently available types: https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization
 // to be available with azidentity: https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azidentity#readme-credential-types
 // determine if the combination of creds are client secret creds
 func isClientCredsAvailable(config map[string]string) bool {
