@@ -587,7 +587,8 @@ func (s *SnapshotTestSuite) TestNewSnapshotter(c *C) {
 			check:    IsNil,
 		},
 	} {
-		fakeCli.Resources = []*metav1.APIResourceList{&tc.apiResources}
+		apiRes := tc.apiResources
+		fakeCli.Resources = []*metav1.APIResourceList{&apiRes}
 		ss, err := snapshot.NewSnapshotter(fakeCli, nil)
 		c.Assert(err, tc.check)
 		c.Assert(reflect.TypeOf(ss).String(), Equals, tc.expected)

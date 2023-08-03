@@ -342,7 +342,8 @@ func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, dbS
 func convertSGIDs(sgIDs []string) []*string {
 	var refSGIDs []*string
 	for _, ID := range sgIDs {
-		refSGIDs = append(refSGIDs, &ID)
+		idPtr := &ID
+		refSGIDs = append(refSGIDs, idPtr)
 	}
 	return refSGIDs
 }
