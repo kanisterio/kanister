@@ -49,9 +49,9 @@ import (
 
 const (
 	testBPArg                      = "key"
-	s3CompliantAccessKeyIDEnv      = "S3_COMPLIANT_AWS_ACCESS_KEY_ID"
-	s3CompliantSecretAccessKeyEnv  = "S3_COMPLIANT_AWS_SECRET_ACCESS_KEY"
-	s3CompliantLocationEndpointEnv = "S3_COMPLIANT_LOCATION_ENDPOINT"
+	S3CompliantAccessKeyIDEnv      = "S3_COMPLIANT_AWS_ACCESS_KEY_ID"
+	S3CompliantSecretAccessKeyEnv  = "S3_COMPLIANT_AWS_SECRET_ACCESS_KEY"
+	S3CompliantLocationEndpointEnv = "S3_COMPLIANT_LOCATION_ENDPOINT"
 )
 
 // NewTestPVC function returns a pointer to a new PVC test object
@@ -450,8 +450,8 @@ func GetKopiaTLSSecretData() (map[string][]byte, error) {
 }
 
 func GetDefaultS3StorageCreds(c *check.C) map[string][]byte {
-	key := GetEnvOrSkip(c, s3CompliantAccessKeyIDEnv)
-	val := GetEnvOrSkip(c, s3CompliantSecretAccessKeyEnv)
+	key := GetEnvOrSkip(c, S3CompliantAccessKeyIDEnv)
+	val := GetEnvOrSkip(c, S3CompliantSecretAccessKeyEnv)
 
 	return map[string][]byte{
 		secrets.AWSAccessKeyID:     []byte(key),
@@ -465,7 +465,7 @@ func GetDefaultS3CompliantStorageLocation() map[string][]byte {
 		reposerver.BucketKey:   []byte(TestS3BucketName),
 		reposerver.PrefixKey:   []byte(KopiaRepositoryPath),
 		reposerver.RegionKey:   []byte(TestS3Region),
-		reposerver.EndpointKey: []byte(os.Getenv(s3CompliantLocationEndpointEnv)),
+		reposerver.EndpointKey: []byte(os.Getenv(S3CompliantLocationEndpointEnv)),
 	}
 }
 
@@ -535,4 +535,11 @@ func GetTestKopiaRepositoryServerCR(namespace string) crv1alpha1.RepositoryServe
 		},
 	}
 	return repositoryServer
+}
+
+func GetFileStoreLocationSecretData(claimName string) map[string][]byte {
+	return map[string][]byte{
+		reposerver.TypeKey:      []byte(reposerver.LocTypeFilestore),
+		reposerver.ClaimNameKey: []byte(claimName),
+	}
 }

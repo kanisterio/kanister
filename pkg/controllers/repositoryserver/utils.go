@@ -31,8 +31,11 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 const (
@@ -181,7 +184,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	return nil
 }
 
-func getPodOptions(namespace string, podOverride map[string]interface{}, svc *corev1.Service) *kube.PodOptions {
+func getPodOptions(namespace string, podOverride map[string]interface{}, svc *corev1.Service, vols map[string]string) *kube.PodOptions {
 	uidguid := int64(0)
 	nonRootBool := false
 	return &kube.PodOptions{
@@ -196,6 +199,7 @@ func getPodOptions(namespace string, podOverride map[string]interface{}, svc *co
 			RunAsUser:    &uidguid,
 			RunAsNonRoot: &nonRootBool,
 		},
+		Volumes: vols,
 	}
 }
 
@@ -224,4 +228,23 @@ func WaitTillCommandSucceed(ctx context.Context, cli kubernetes.Interface, cmd [
 		return true, nil
 	})
 	return err
+}
+
+func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Secret, namespace string) (map[string]string, error) {
+	vols := make(map[string]string, 0)
+	var claimName []byte
+	if len(secret.Data) == 0 {
+		return nil, errors.Errorf(secerrors.EmptySecretErrorMessage, secret.Namespace, secret.Name)
+	}
+	if locationType, ok := (secret.Data[reposerver.TypeKey]); ok && reposerver.LocType(string(locationType)) == reposerver.LocTypeFilestore {
+		if claimName, ok = secret.Data[reposerver.ClaimNameKey]; !ok {
+			return nil, errors.New("Claim name not set for file store location secret, failed to retrieve PVC")
+		}
+		claimNameString := string(claimName)
+		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, claimNameString, metav1.GetOptions{}); err != nil {
+			return nil, errors.Wrapf(err, "Failed to validate if PVC %s:%s exists", namespace, claimName)
+		}
+		vols[claimNameString] = storage.DefaultFSMountPath
+	}
+	return vols, nil
 }

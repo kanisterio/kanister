@@ -68,16 +68,18 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 		RestoreDataVolsArg,
 		RestoreDataPodOverrideArg,
 		RestoreDataImageArg,
+		KopiaRepositoryServerUserHostname,
 	}
 }
 
 func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	var (
-		err         error
-		image       string
-		namespace   string
-		restorePath string
-		snapID      string
+		err          error
+		image        string
+		namespace    string
+		restorePath  string
+		snapID       string
+		userHostname string
 	)
 	if err = Arg(args, RestoreDataBackupIdentifierArg, &snapID); err != nil {
 		return nil, err
@@ -89,6 +91,9 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		return nil, err
 	}
 	if err = Arg(args, RestoreDataImageArg, &image); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
 		return nil, err
 	}
 
@@ -115,8 +120,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		}
 	}
 
-	username := tp.RepositoryServer.Username
-	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
 	}
@@ -139,7 +143,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		tp.RepositoryServer.Address,
 		fingerprint,
 		snapID,
-		username,
+		tp.RepositoryServer.Username,
 		userAccessPassphrase,
 		sparseRestore,
 		vols,
