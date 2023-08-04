@@ -196,7 +196,7 @@ type Phase struct {
 type PhaseProgress struct {
 	// ProgressPercent represents the execution progress in percentage.
 	ProgressPercent string `json:"progressPercent,omitempty"`
-	// SizeUploadedB represents the size of data uploaded in Bytes till now as a part of phase execution.
+	// SizeUploadedB represents the size of data uploaded in Bytes at a given time during phase execution.
 	// This field will be empty for phases which do not involve data movement.
 	SizeUploadedB int64 `json:"sizeUploadedB,omitempty"`
 	// EstimatedUploadSizeB represents the total estimated size of data in Bytes
