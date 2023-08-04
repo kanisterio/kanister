@@ -328,7 +328,6 @@ func getKopiaRepositoryCacheSize(rs *crv1alpha1.RepositoryServer) v1alpha1.Cache
 		cacheSizeSettings.Metadata = rs.Spec.Repository.CacheSizeSettings.Metadata
 	}
 	return cacheSizeSettings
-
 }
 
 func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1.Credential) (*Credential, error) {
