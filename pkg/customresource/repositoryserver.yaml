@@ -44,9 +44,9 @@ spec:
                       to the kopia repository
                     properties:
                       content:
-                        type: string
+                        type: integer
                       metadata:
-                        type: string
+                        type: integer
                     required:
                     - content
                     - metadata
