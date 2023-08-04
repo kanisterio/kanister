@@ -47,9 +47,6 @@ spec:
                         type: integer
                       metadata:
                         type: integer
-                    required:
-                    - content
-                    - metadata
                     type: object
                   configuration:
                     description: Configuration can be used to specify the optional

@@ -98,8 +98,8 @@ type Configuration struct {
 // CacheSizeSettings are the metadata/content cache size details
 // that can be used while establishing connection to the kopia repository
 type CacheSizeSettings struct {
-	Metadata *int `json:"metadata"`
-	Content  *int `json:"content"`
+	Metadata *int `json:"metadata,omitempty"`
+	Content  *int `json:"content,omitempty"`
 }
 
 // Server details required for starting the repository proxy server and initializing the repository client users
