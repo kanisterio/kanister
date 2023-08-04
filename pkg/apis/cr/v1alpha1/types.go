@@ -147,8 +147,8 @@ type ActionStatus struct {
 	DeferPhase Phase `json:"deferPhase,omitempty"`
 }
 
-// ActionProgress provides information on the progress of an action.
-// Combined progress of all the phases.
+// ActionProgress provides information on the combined progress
+// of all the phases in the action.
 type ActionProgress struct {
 	// RunningPhase represents which phase of the action is being run
 	RunningPhase string `json:"runningPhase,omitempty"`
