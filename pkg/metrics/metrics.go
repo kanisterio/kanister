@@ -27,6 +27,8 @@ func getLabelNames(bl []BoundedLabel) []string {
 	return ln
 }
 
+// verifyBoundedLabels checks if the BoundedLabel list is valid
+// returns true if valid, and false if invalid
 func verifyBoundedLabels(bl []BoundedLabel) bool {
 	if len(bl) == 0 {
 		return false
