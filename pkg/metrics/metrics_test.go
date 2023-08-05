@@ -68,11 +68,8 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 	c.Assert(err, IsNil)
 
 	boundedLabels = make([]BoundedLabel, 0)
-	expectedPrometheusLabels = []prometheus.Labels{}
 	receivedCombinations, err = getLabelCombinations(boundedLabels)
-
-	isEqual = reflect.DeepEqual(receivedCombinations, expectedPrometheusLabels)
-	c.Assert(isEqual, Equals, true)
+	c.Assert(receivedCombinations, IsNil)
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
 
@@ -95,9 +92,16 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 	boundedLabels[0] = BoundedLabel{LabelName: "resolution", LabelValues: nil}
 
 	receivedCombinations, err = getLabelCombinations(boundedLabels)
-	c.Assert(len(receivedCombinations), Equals, 0)
+	c.Assert(receivedCombinations, IsNil)
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
+
+	boundedLabels = make([]BoundedLabel, 1)
+	boundedLabels[0] = BoundedLabel{LabelName: "resolution", LabelValues: []string{}}
+	c.Assert(receivedCombinations, IsNil)
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
+
 }
 
 func (m *MetricsSuite) TestInitCounterVec(c *C) {

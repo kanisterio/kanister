@@ -32,7 +32,7 @@ func verifyBoundedLabels(bl []BoundedLabel) bool {
 		return false
 	}
 	for _, l := range bl {
-		if l.LabelValues == nil {
+		if len(l.LabelValues) == 0 {
 			return false
 		}
 	}
@@ -58,10 +58,10 @@ func getLabelCombinations(bl []BoundedLabel) ([]prometheus.Labels, error) {
 		{"operation_type": "restore", "action_set_resolution": "success"},
 		{"operation_type": "restore", "action_set_resolution": "failure"}]
 	*/
-	resultPrometheusLabels := make([]prometheus.Labels, 0)
 	if !verifyBoundedLabels(bl) {
-		return resultPrometheusLabels, errors.New("invalid BoundedLabel list")
+		return nil, errors.New("invalid BoundedLabel list")
 	}
+	resultPrometheusLabels := make([]prometheus.Labels, 0)
 	labelLens := make([]int, 0)
 	for _, l := range bl {
 		labelLens = append(labelLens, len(l.LabelValues))
