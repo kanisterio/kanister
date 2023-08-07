@@ -60,20 +60,20 @@ const (
 	tlsKeyPath              = "/mnt/secrets/tlscert/tls.key"
 	tlsCertPath             = "/mnt/secrets/tlscert/tls.crt"
 
-	serverSetupErrReason     string = "KopiaRepositoryServerSetupFailed"
-	serverSetupSuccessReason string = "KopiaRepositoryServerSetupSucceeded"
+	conditionReasonServerSetupErr     string = "KopiaRepositoryServerSetupFailed"
+	conditionReasonServerSetupSuccess string = "KopiaRepositoryServerSetupSucceeded"
 
-	repositoryConnectedErrReason     string = "KopiaRepositoryConnectionFailed"
-	repositoryConnectedSuccessReason string = "KopiaRepositoryConnectionSucceeded"
+	conditionReasonRepositoryConnectedErr     string = "KopiaRepositoryConnectionFailed"
+	conditionReasonRepositoryConnectedSuccess string = "KopiaRepositoryConnectionSucceeded"
 
-	serverInitializedErrReason     string = "KopiaRepositoryServerInitializationFailed"
-	serverInitializedSuccessReason string = "KopiaRepositoryServerInitializationSucceeded"
+	conditionReasonServerInitializedErr     string = "KopiaRepositoryServerInitializationFailed"
+	conditionReasonServerInitializedSuccess string = "KopiaRepositoryServerInitializationSucceeded"
 
-	clientsInitializedErrReason     string = "ClientInitializationFailed"
-	clientsInitializedSuccessReason string = "ClientInitializationSucceeded"
+	conditionReasonClientInitializedErr     string = "ClientInitializationFailed"
+	conditionReasonClientInitializedSuccess string = "ClientInitializationSucceeded"
 
-	serverRefreshedErrReason     string = "ServerRefreshFailed"
-	serverRefreshedSuccessReason string = "ServerRefreshed"
+	conditionReasonServerRefreshedErr     string = "ServerRefreshFailed"
+	conditionReasonServerRefreshedSuccess string = "ServerRefreshed"
 )
 
 func getRepoServerService(namespace string) corev1.Service {

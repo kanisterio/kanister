@@ -168,7 +168,7 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 		return nil, nil, err
 	}
 	h.Logger.Info("Pod resource not found. Creating new pod")
-	return h.createPodUpdateStatus(ctx, repoServerNamespace, svc)
+	return h.createPodAndUpdateStatus(ctx, repoServerNamespace, svc)
 }
 
 func (h *RepoServerHandler) setCondition(ctx context.Context, reason, conditionMsg, conditionType string, progress crv1alpha1.RepositoryServerProgress, status metav1.ConditionStatus) error {
@@ -179,7 +179,7 @@ func (h *RepoServerHandler) setCondition(ctx context.Context, reason, conditionM
 	return nil
 }
 
-func (h *RepoServerHandler) createPodUpdateStatus(ctx context.Context, repoServerNamespace string, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
+func (h *RepoServerHandler) createPodAndUpdateStatus(ctx context.Context, repoServerNamespace string, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
 	var envVars []corev1.EnvVar
 	pod, envVars, err := h.createPod(ctx, repoServerNamespace, svc)
 	if err != nil {
@@ -341,37 +341,37 @@ func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progre
 func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
 	logger.Info("Start Kopia Repository Server")
 	if err := h.startRepoProxyServer(ctx); err != nil {
-		if uerr := h.setCondition(ctx, serverInitializedErrReason, err.Error(), crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
+		if uerr := h.setCondition(ctx, conditionReasonServerInitializedErr, err.Error(), crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	if uerr := h.setCondition(ctx, serverInitializedSuccessReason, "", crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	if uerr := h.setCondition(ctx, conditionReasonServerInitializedSuccess, "", crkanisteriov1alpha1.ServerInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Add/Update users in Kopia Repository Server")
 	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		if uerr := h.setCondition(ctx, clientsInitializedErrReason, err.Error(), crkanisteriov1alpha1.ClientUserInitialized, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
+		if uerr := h.setCondition(ctx, conditionReasonClientInitializedErr, err.Error(), crkanisteriov1alpha1.ClientUserInitialized, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	if uerr := h.setCondition(ctx, clientsInitializedSuccessReason, "", crkanisteriov1alpha1.ClientUserInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	if uerr := h.setCondition(ctx, conditionReasonClientInitializedSuccess, "", crkanisteriov1alpha1.ClientUserInitialized, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Refresh Kopia Repository Server")
 	if err := h.refreshServer(ctx); err != nil {
-		if uerr := h.setCondition(ctx, serverRefreshedErrReason, err.Error(), crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
+		if uerr := h.setCondition(ctx, conditionReasonServerRefreshedErr, err.Error(), crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	if uerr := h.setCondition(ctx, serverInitializedSuccessReason, "", crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Ready, metav1.ConditionTrue); uerr != nil {
+	if uerr := h.setCondition(ctx, conditionReasonServerRefreshedSuccess, "", crkanisteriov1alpha1.ServerRefreshed, crkanisteriov1alpha1.Ready, metav1.ConditionTrue); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 	return ctrl.Result{}, nil
