@@ -242,7 +242,7 @@ func constructActionSetCounterVecLabels(operation_type string, resolution string
   ACTION_SET_COUNTER_VEC_LABEL_RES: resolution}
 }
 
-// helper method to create a Metrics interface
+// newMetrics is a helper method to create a Metrics interface.
 func newMetrics(gatherer prometheus.Gatherer) *metrics {
     actionSetCounterOpts := prometheus.CounterOpts{
         Name: "action_set_resolutions_total",
