@@ -24,8 +24,8 @@ There are no metrics exported other than the default Prometheus metrics
 that the default handler provides. Adding metrics to track the 
 ActionSets and Blueprints workflow will help improve the overall observability. 
 
-To achieve this, we need to build a framework for exporting metrics from the Kanister controller, and to 
-start with, export some metrics to Prometheus. 
+To achieve this, we need to build a framework for exporting metrics from the
+Kanister controller, and to start with, export some metrics to Prometheus. 
 
 This framework simplifies the common need for Prometheus counters to publish 0
 values at startup for all permutations of labels and label values. This ensures
