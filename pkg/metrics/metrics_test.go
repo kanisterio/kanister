@@ -101,7 +101,6 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 	c.Assert(receivedCombinations, IsNil)
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
-
 }
 
 func (m *MetricsSuite) TestInitCounterVec(c *C) {

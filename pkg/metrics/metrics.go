@@ -8,7 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"gonum.org/v1/gonum/stat/combin"
+	combine "gonum.org/v1/gonum/stat/combin"
 )
 
 // BoundedLabel is a type that represents a label and its associated
@@ -68,7 +68,7 @@ func getLabelCombinations(bl []BoundedLabel) ([]prometheus.Labels, error) {
 	for _, l := range bl {
 		labelLens = append(labelLens, len(l.LabelValues))
 	}
-	idxPermutations := combin.Cartesian(labelLens)
+	idxPermutations := combine.Cartesian(labelLens)
 
 	// generate the actual label permutations from the index permutations
 	// obtained
