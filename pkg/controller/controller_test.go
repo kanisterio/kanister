@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -43,6 +44,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	dto "github.com/prometheus/client_model/go"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -57,6 +59,7 @@ type ControllerSuite struct {
 	deployment *appsv1.Deployment
 	confimap   *v1.ConfigMap
 	recorder   record.EventRecorder
+	ctrl       *Controller
 }
 
 var _ = Suite(&ControllerSuite{})
@@ -133,8 +136,9 @@ func (s *ControllerSuite) SetUpTest(c *C) {
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	ctlr := New(config)
-	err = ctlr.StartWatch(ctx, s.namespace)
+	testPrometheusRegistry := prometheus.NewRegistry()
+	s.ctrl = New(config, testPrometheusRegistry)
+	err = s.ctrl.StartWatch(ctx, s.namespace)
 	c.Assert(err, IsNil)
 	s.cancel = cancel
 }
@@ -449,6 +453,14 @@ func newBPForProgressRunningPhase() *crv1alpha1.Blueprint {
 	}
 }
 
+func getCounterVecValue(metric prometheus.CounterVec, metricLabels []string) float64 {
+	m := &dto.Metric{}
+	if err := metric.WithLabelValues(metricLabels...).Write(m); err != nil {
+		return 0
+	}
+	return m.Counter.GetValue()
+}
+
 func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -500,80 +512,95 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 func (s *ControllerSuite) TestExecActionSet(c *C) {
 	for _, pok := range []string{"StatefulSet", "Deployment"} {
 		for _, tc := range []struct {
-			funcNames []string
-			args      [][]string
-			name      string
-			version   string
+			funcNames        []string
+			args             [][]string
+			name             string
+			version          string
+			metricResolution string
 		}{
 			{
-				funcNames: []string{testutil.WaitFuncName},
-				name:      "WaitFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.WaitFuncName},
+				name:             "WaitFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "success",
 			},
 			{
-				funcNames: []string{testutil.WaitFuncName, testutil.WaitFuncName},
-				name:      "WaitWait",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.WaitFuncName, testutil.WaitFuncName},
+				name:             "WaitWait",
+				version:          kanister.DefaultVersion,
+				metricResolution: "success",
 			},
 			{
-				funcNames: []string{testutil.FailFuncName},
-				name:      "FailFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.FailFuncName},
+				name:             "FailFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
 			},
 			{
-				funcNames: []string{testutil.WaitFuncName, testutil.FailFuncName},
-				name:      "WaitFail",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.WaitFuncName, testutil.FailFuncName},
+				name:             "WaitFail",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
 			},
 			{
-				funcNames: []string{testutil.FailFuncName, testutil.WaitFuncName},
-				name:      "FailWait",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.FailFuncName, testutil.WaitFuncName},
+				name:             "FailWait",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName},
-				name:      "ArgFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "success",
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName, testutil.FailFuncName},
-				name:      "ArgFail",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.ArgFuncName, testutil.FailFuncName},
+				name:             "ArgFail",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
 			},
 			{
-				funcNames: []string{testutil.OutputFuncName},
-				name:      "OutputFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.OutputFuncName},
+				name:             "OutputFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "success",
 			},
 			{
-				funcNames: []string{testutil.CancelFuncName},
-				name:      "CancelFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.CancelFuncName},
+				name:             "CancelFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: "failure",
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName},
-				name:      "ArgFuncVersion",
-				version:   testutil.TestVersion,
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncVersion",
+				version:          testutil.TestVersion,
+				metricResolution: "success",
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName},
-				name:      "ArgFuncVersionFallback",
-				version:   "v1.2.3",
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncVersionFallback",
+				version:          "v1.2.3",
+				metricResolution: "success",
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName},
-				name:      "ArgFuncNoActionSetVersion",
-				version:   "",
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncNoActionSetVersion",
+				version:          "",
+				metricResolution: "success",
 			},
 			{
-				funcNames: []string{testutil.VersionMismatchFuncName},
-				name:      "VersionMismatchFunc",
-				version:   "v1.2.3",
+				funcNames:        []string{testutil.VersionMismatchFuncName},
+				name:             "VersionMismatchFunc",
+				version:          "v1.2.3",
+				metricResolution: "failure",
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName, testutil.OutputFuncName},
-				name:      "ArgOutputFallbackOnlyOutput",
-				version:   testutil.TestVersion,
+				funcNames:        []string{testutil.ArgFuncName, testutil.OutputFuncName},
+				name:             "ArgOutputFallbackOnlyOutput",
+				version:          testutil.TestVersion,
+				metricResolution: "success",
 			},
 		} {
 			var err error
@@ -583,6 +610,8 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			ctx := context.Background()
 			bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 			c.Assert(err, IsNil)
+
+			oldValue := getCounterVecValue(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution})
 
 			var n string
 			switch pok {
@@ -630,6 +659,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			if !cancel {
 				err = s.waitOnActionSetState(c, as, final)
 				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
+				c.Assert(getCounterVecValue(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution}), Equals, oldValue+1, Commentf("Failed case: %s", tc.name))
 			}
 			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
 			c.Assert(err, IsNil)
@@ -676,7 +706,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)
-	ctlr := New(config)
+	ctlr := New(config, nil)
 	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), as, nilAs, bp)
 
 	// Test ActionSet error event logging
