@@ -19,10 +19,10 @@ observability of action sets.
 
 ## Motivation
 
-Kanister controller already has a registered metrics endpoint `/metrics`. 
-There are no metrics exported other than the default Prometheus metrics 
-that the default handler provides. Adding metrics to track the 
-ActionSets and Blueprints workflow will help improve the overall observability. 
+Kanister controller already has a registered metrics endpoint `/metrics`.
+There are no metrics exported other than the default Prometheus metrics that
+the default handler provides. Adding metrics to track the ActionSets and
+Blueprints workflow will help improve the overall observability.
 
 To achieve this, we need to build a framework for exporting metrics from the
 Kanister controller, and to start with, export some metrics to Prometheus. 
