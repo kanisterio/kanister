@@ -509,6 +509,13 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 	c.Assert(err, IsNil)
 }
 
+func (s *ControllerSuite) TestNilPrometheusRegistry(c *C) {
+	config, _ := kube.LoadConfig()
+	ctrl := New(config, nil)
+	c.Assert(ctrl, NotNil)
+	c.Assert(ctrl.metrics, IsNil)
+}
+
 func (s *ControllerSuite) TestExecActionSet(c *C) {
 	for _, pok := range []string{"StatefulSet", "Deployment"} {
 		for _, tc := range []struct {
