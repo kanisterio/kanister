@@ -263,8 +263,8 @@ func (c *Controller) handleActionSet(ctx context.Context) {
 }
 ```
 
-Alternatively, one can also directly call the Prometheus API with 
-positional arguments:
+Alternatively, one can also directly call the Prometheus API with positional
+arguments:
 
 ```golang
 func (c *Controller) handleActionSet(ctx context.Context) {
