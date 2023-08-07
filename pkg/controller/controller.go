@@ -70,9 +70,13 @@ type Controller struct {
 
 // New create controller for watching kanister custom resources created
 func New(c *rest.Config, reg prometheus.Registerer) *Controller {
+	var m *metrics
+	if reg != nil {
+		m = newMetrics(reg)
+	}
 	return &Controller{
 		config:  c,
-		metrics: newMetrics(reg),
+		metrics: m,
 	}
 }
 
@@ -403,7 +407,9 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 			// part of running the action.
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", a.Name)
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
-			c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
+			if c.metrics != nil {
+				c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
+			}
 			a.Phases[0].State = crv1alpha1.StateFailed
 			break
 		}
@@ -464,9 +470,13 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			// render artifacts only if all the phases are run successfully
 			if deferErr == nil && coreErr == nil {
 				c.renderActionsetArtifacts(ctx, as, aIDX, as.Namespace, as.Name, action.Name, bp, tp, coreErr, deferErr)
-				c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS).Inc()
+				if c.metrics != nil {
+					c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS).Inc()
+				}
 			} else {
-				c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
+				if c.metrics != nil {
+					c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
+				}
 			}
 		}()
 
