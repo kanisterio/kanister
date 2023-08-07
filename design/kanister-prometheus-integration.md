@@ -14,8 +14,8 @@
 <!-- /toc -->
 
 This document proposes the changes required within Kanister to integrate
-[Prometheus](https://github.com/prometheus/prometheus) and enhance the observability 
-of action sets. 
+[Prometheus](https://github.com/prometheus/prometheus) and enhance the
+observability of action sets.
 
 ## Motivation
 
