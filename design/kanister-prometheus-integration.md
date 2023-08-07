@@ -236,7 +236,8 @@ func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabels {
 }
 
 
-// helper method to construct the labels correctly. 
+// constructActionSetCounterVecLabels is a helper method to construct the
+// labels correctly.
 func constructActionSetCounterVecLabels(operation_type string, resolution string) prometheus.Labels {
 	return prometheus.Labels{ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE: operation_type, 
   ACTION_SET_COUNTER_VEC_LABEL_RES: resolution}
