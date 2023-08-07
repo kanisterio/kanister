@@ -29,6 +29,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,12 +65,14 @@ type Controller struct {
 	osClient         osversioned.Interface
 	recorder         record.EventRecorder
 	actionSetTombMap sync.Map
+	metrics          *metrics
 }
 
 // New create controller for watching kanister custom resources created
-func New(c *rest.Config) *Controller {
+func New(c *rest.Config, reg prometheus.Registerer) *Controller {
 	return &Controller{
-		config: c,
+		config:  c,
+		metrics: newMetrics(reg),
 	}
 }
 
@@ -400,6 +403,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 			// part of running the action.
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", a.Name)
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
+			c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
 			a.Phases[0].State = crv1alpha1.StateFailed
 			break
 		}
@@ -460,6 +464,9 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			// render artifacts only if all the phases are run successfully
 			if deferErr == nil && coreErr == nil {
 				c.renderActionsetArtifacts(ctx, as, aIDX, as.Namespace, as.Name, action.Name, bp, tp, coreErr, deferErr)
+				c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS).Inc()
+			} else {
+				c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
 			}
 		}()
 
