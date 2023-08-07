@@ -254,8 +254,8 @@ func newMetrics(gatherer prometheus.Gatherer) *metrics {
 }
 ```
 
-The below example will show how the above created ActionSetCounterVec 
-will be incremented in a method:
+The below example will show how the above created `ActionSetCounterVec` will
+be incremented in a method:
 
 ```golang
 func (c *Controller) handleActionSet(ctx context.Context) {
