@@ -70,7 +70,7 @@ const (
 	serverInitializedSuccessReason string = "KopiaRepositoryServerInitializationSucceeded"
 
 	clientsInitializedErrReason     string = "ClientInitializationFailed"
-	clientsInitializedSuccessReason string = "ClientInitializationSuccessful"
+	clientsInitializedSuccessReason string = "ClientInitializationSucceeded"
 
 	serverRefreshedErrReason     string = "ServerRefreshFailed"
 	serverRefreshedSuccessReason string = "ServerRefreshed"
