@@ -275,16 +275,16 @@ func (c *Controller) handleActionSet(ctx context.Context) {
 
 ## Testing
 
-1. The testing will include manual testing of whether the metrics added are 
-   successfully getting exported to Kanister. 
+1. The testing will include manual testing of whether the metrics added are
+   successfully getting exported to Kanister.
 
-2. The interfaces listed above in the metrics package, apart from InitCounterVec 
-   and generateLabelCombinations, will not be unit-tested, since they would be 
-   testing the behavior of the Prometheus API itself, which breaks the chain 
-   of trust principle with dependencies in unit testing.  
-   InitCounterVec will be unit tested using the test_util 
-   package: https://pkg.go.dev/github.com/prometheus/client_golang/prometheus/testutil 
-   in Prometheus.
+2. The interfaces listed above in the metrics package, apart from
+   `InitCounterVec` and `generateLabelCombinations`, will not be unit-tested,
+   since they would be testing the behavior of the Prometheus API itself, which
+   breaks the chain of trust principle with dependencies in unit testing.
+   `InitCounterVec` will be unit tested using the
+   [test_util](https://pkg.go.dev/github.com/prometheus/client_golang/prometheus/testutil)
+   package in Prometheus.
 
-3. Integration tests will be added for code that exports new metrics, 
-   to ensure that the behavior of exporting metrics is correct. 
+3. Integration tests will be added for code that exports new metrics, to ensure
+   that the behavior of exporting metrics is correct. 
