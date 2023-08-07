@@ -41,9 +41,10 @@ Phase duration, etc.
 
 ## Scope
 
-1. Design a framework that allows us to export new
-   Kanister metrics to Prometheus easily. 
-2. Add a few fundamental metrics related to ActionSets and Blueprints to start with.
+1. Design a framework that allows us to export new Kanister metrics to
+   Prometheus easily. 
+2. Add a few fundamental metrics related to ActionSets and Blueprints to start
+   with.
 
 
 ## Detailed Design
