@@ -27,10 +27,10 @@ ActionSets and Blueprints workflow will help improve the overall observability.
 To achieve this, we need to build a framework for exporting metrics from the Kanister controller, and to 
 start with, export some metrics to Prometheus. 
 
-This framework simplifies the common need for Prometheus counters to
-publish 0 values at startup for all permutations of labels and label values.
-This ensures that Kanister controller restarts are recognized by Prometheus
-and that the PromQL rate() and increase() functions work properly across restarts.
+This framework simplifies the common need for Prometheus counters to publish 0
+values at startup for all permutations of labels and label values. This ensures
+that Kanister controller restarts are recognized by Prometheus and that the
+PromQL rate() and increase() functions work properly across restarts.
 
 Some example metrics include:
 ActionSets succeeded
