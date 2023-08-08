@@ -98,6 +98,40 @@ func NewPodController(cli kubernetes.Interface, options *PodOptions, opts ...Pod
 	return r
 }
 
+// NewPodControllerForExistingPod returns a new PodController given Kubernetes Client and existing pod details
+func NewPodControllerForExistingPod(cli kubernetes.Interface, podName, containerName, namespace string) PodController {
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      podName,
+			Namespace: namespace,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name: containerName,
+				},
+			},
+		},
+	}
+
+	r := &podController{
+		cli:     cli,
+		pod:     pod,
+		podName: pod.Name,
+	}
+
+	// Used in GetCommandExecutor
+	options := &PodOptions{
+		ContainerName: containerName,
+		Namespace:     namespace,
+	}
+	r.podOptions = options
+
+	r.pcp = r
+
+	return r
+}
+
 func (p *podController) PodName() string {
 	return p.podName
 }
