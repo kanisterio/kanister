@@ -114,14 +114,13 @@ func Execute() {
 	// Create and start the watcher.
 	ctx, cancel := context.WithCancel(ctx)
 
-	var reg *prometheus.Registry
+	var c *controller.Controller
 
 	if metricsEnabled() {
-		reg = prometheus.NewRegistry()
-
+		c = controller.New(config, prometheus.DefaultRegisterer)
+	} else {
+		c = controller.New(config, nil)
 	}
-
-	c := controller.New(config, reg)
 	err = c.StartWatch(ctx, ns)
 	if err != nil {
 		log.WithError(err).Print("Failed to start controller.")
