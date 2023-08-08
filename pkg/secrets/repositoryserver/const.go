@@ -22,20 +22,17 @@ type LocType string
 
 const (
 	LocTypeS3          LocType = "s3"
+	LocTypes3Compliant LocType = "s3Compliant"
 	LocTypeGCS         LocType = "gcs"
 	LocTypeAzure       LocType = "azure"
 	LocTypeFilestore   LocType = "filestore"
-	LocTypeS3Compliant LocType = "s3Compliant"
 
 	// Location represents the storage location secret type for kopia repository server
 	Location corev1.SecretType = "secrets.kanister.io/storage-location"
-	// RepositoryPasswordSecretType represents the kopia repository passowrd secret type
-	RepositoryPassword corev1.SecretType = "secrets.kanister.io/kopia-repository/password"
-	// RepositoryServerAdminCredentialsSecretType represents the kopia server admin credentials secret type
-	RepositoryServerAdminCredentials corev1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
-	// LocationTypeKey represents the key used to define the location type in
-	// the kopia repository server location secret
-	LocationTypeKey string = "type"
+	// RepositoryPasswordSecret represents the kopia repository passowrd secret type
+	RepositoryPasswordSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/password"
+	// AdminCredentialsSecret represents the kopia server admin credentials secret type
+	AdminCredentialsSecret corev1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
 )
 
 const (
@@ -46,6 +43,11 @@ const (
 	RegionKey        = "region"
 	SkipSSLVerifyKey = "skipSSLVerify"
 	TypeKey          = "type"
-	// Kopia Repository password secret key
-	RepoPasswordKey = "repo-password"
+	// Location secret key to be used only for filestore location type
+	ClaimNameKey = "claimName"
+
+	// Kopia Repository Server secret keys
+	RepoPasswordKey  = "repo-password"
+	AdminUsernameKey = "username"
+	AdminPasswordKey = "password"
 )
