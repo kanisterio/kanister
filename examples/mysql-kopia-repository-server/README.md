@@ -198,6 +198,7 @@ $ kubectl create -f repo-server-cr.yaml -n kanister
 
 Make Sure the Repository Server is in ServerReady State before creating actionsets.
 You could check the status of the Repository Server CR by running following command
+
 ```bash
 $ kubectl get repositoryservers.cr.kanister.io kopia-repo-server-1 -n kanister -o yaml
 ```
