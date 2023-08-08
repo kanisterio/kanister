@@ -28,6 +28,11 @@ controller:
   # true : CRDs would be created by kanister controller
   updateCRDs: true
   parallelism: 8
+  metrics:
+    # metrics.enabled specified if the kanister-prometheus framework has been enabled
+    # false : kanister-prometheus framework has been disabled
+    # true: kanister-prometheus framework has been enabled
+    enabled: false
 bpValidatingWebhook:
   enabled: true
   tls:
