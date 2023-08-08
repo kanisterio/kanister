@@ -407,9 +407,6 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 			// part of running the action.
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", a.Name)
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
-			if c.metrics != nil {
-				c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
-			}
 			a.Phases[0].State = crv1alpha1.StateFailed
 			break
 		}
@@ -444,10 +441,16 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
 	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, c.osClient, action)
 	if err != nil {
+		if c.metrics != nil {
+			c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
+		}
 		return err
 	}
 	phases, err := kanister.GetPhases(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
+		if c.metrics != nil {
+			c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
+		}
 		return err
 	}
 
@@ -455,6 +458,9 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	// can be specified in blueprint using actions[name].deferPhase
 	deferPhase, err := kanister.GetDeferPhase(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
+		if c.metrics != nil {
+			c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
+		}
 		return err
 	}
 
