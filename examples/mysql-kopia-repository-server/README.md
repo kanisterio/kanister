@@ -222,7 +222,7 @@ Create Blueprint in the same namespace as the Kanister controller
 $ kubectl create -f ./examples/mysql-kopia-repository-server/mysql-blueprint.yaml -n kanister
 ```
 
-Once MySQL is running, you can populate it with some data. Let's add a table called "pets" to a test database:
+Once MySQL is running, you can populate it with some data. Let's add a table called `pets` to a `test` database:
 
 ```bash
 # Connect to MySQL by running a shell inside MySQL's pod
