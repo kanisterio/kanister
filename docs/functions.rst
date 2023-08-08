@@ -1763,7 +1763,7 @@ For this phase, we will use the ``backupIdentifier`` Artifact provided by backup
 BackupDataAllUsingKopiaServer
 -----------------------------
 
-This function concurrently backs up data from one or more pods into an any
+This function concurrently backs up data from one or more pods into an
 object store supported by Kanister using Kopia Repository Server as a data mover.
 
 .. note::
