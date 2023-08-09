@@ -19,7 +19,7 @@ import (
 	"io"
 )
 
-type FakeKubePodCommandExecutor struct {
+type FakePodCommandExecutor struct {
 	ExecErr       error
 	inExecCommand []string
 
@@ -28,7 +28,7 @@ type FakeKubePodCommandExecutor struct {
 }
 
 // Exec
-func (fce *FakeKubePodCommandExecutor) Exec(_ context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
+func (fce *FakePodCommandExecutor) Exec(_ context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	fce.inExecCommand = make([]string, len(command))
 	copy(fce.inExecCommand, command)
 	if stdout != nil && len(fce.ExecStdout) > 0 {
