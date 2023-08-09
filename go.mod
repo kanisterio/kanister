@@ -36,6 +36,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.5.0
+	gonum.org/v1/gonum v0.13.0
 
 	//pinned openshift to release-4.5 branch
 	github.com/openshift/api v0.0.0-20230406152840-ce21e3fe5da2
@@ -196,8 +197,6 @@ require (
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
-
-require gonum.org/v1/gonum v0.13.0
 
 require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20230706204954-ccb25ca9f130 // indirect
