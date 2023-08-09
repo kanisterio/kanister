@@ -11,11 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package controller
 
 import (
-	kanistermetrics "github.com/kanisterio/kanister/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+
+	kanistermetrics "github.com/kanisterio/kanister/pkg/metrics"
 )
 
 // metrics encapsulates all the prometheus metrics that controller

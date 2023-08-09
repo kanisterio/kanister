@@ -143,6 +143,12 @@ func checkCRAccess(ctx context.Context, cli versioned.Interface, ns string) erro
 	return nil
 }
 
+func (c *Controller) incrementActionSetResolutionCounterVec(resolution string) {
+	if c.metrics != nil {
+		c.metrics.actionSetResolutionCounterVec.WithLabelValues(resolution).Inc()
+	}
+}
+
 func (c *Controller) onAdd(obj interface{}) {
 	o, ok := obj.(runtime.Object)
 	if !ok {
@@ -441,16 +447,12 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
 	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, c.osClient, action)
 	if err != nil {
-		if c.metrics != nil {
-			c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
-		}
+		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
 		return err
 	}
 	phases, err := kanister.GetPhases(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
-		if c.metrics != nil {
-			c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
-		}
+		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
 		return err
 	}
 
@@ -458,9 +460,7 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	// can be specified in blueprint using actions[name].deferPhase
 	deferPhase, err := kanister.GetDeferPhase(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
-		if c.metrics != nil {
-			c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
-		}
+		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
 		return err
 	}
 
@@ -476,13 +476,9 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			// render artifacts only if all the phases are run successfully
 			if deferErr == nil && coreErr == nil {
 				c.renderActionsetArtifacts(ctx, as, aIDX, as.Namespace, as.Name, action.Name, bp, tp, coreErr, deferErr)
-				if c.metrics != nil {
-					c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS).Inc()
-				}
+				c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS)
 			} else {
-				if c.metrics != nil {
-					c.metrics.actionSetResolutionCounterVec.WithLabelValues(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE).Inc()
-				}
+				c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
 			}
 		}()
 
