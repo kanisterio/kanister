@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/rest"
 
 	"github.com/kanisterio/kanister/pkg/controller"
@@ -38,7 +39,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (

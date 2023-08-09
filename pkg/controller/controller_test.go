@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -44,7 +45,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
-	dto "github.com/prometheus/client_model/go"
 )
 
 // Hook up gocheck into the "go test" runner.
