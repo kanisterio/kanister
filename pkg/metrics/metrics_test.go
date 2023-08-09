@@ -63,9 +63,9 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 		},
 	}
 	receivedCombinations, err := getLabelCombinations(boundedLabels)
+	c.Assert(err, IsNil)
 	isEqual := reflect.DeepEqual(receivedCombinations, expectedPrometheusLabels)
 	c.Assert(isEqual, Equals, true)
-	c.Assert(err, IsNil)
 
 	boundedLabels = make([]BoundedLabel, 0)
 	receivedCombinations, err = getLabelCombinations(boundedLabels)
@@ -85,22 +85,22 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 	}
 	receivedCombinations, err = getLabelCombinations(boundedLabels)
 	isEqual = reflect.DeepEqual(receivedCombinations, expectedPrometheusLabels)
-	c.Assert(isEqual, Equals, true)
 	c.Assert(err, IsNil)
+	c.Assert(isEqual, Equals, true)
 
 	boundedLabels = make([]BoundedLabel, 1)
 	boundedLabels[0] = BoundedLabel{LabelName: "resolution", LabelValues: nil}
 
 	receivedCombinations, err = getLabelCombinations(boundedLabels)
-	c.Assert(receivedCombinations, IsNil)
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
+	c.Assert(receivedCombinations, IsNil)
 
 	boundedLabels = make([]BoundedLabel, 1)
 	boundedLabels[0] = BoundedLabel{LabelName: "resolution", LabelValues: []string{}}
-	c.Assert(receivedCombinations, IsNil)
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
+	c.Assert(receivedCombinations, IsNil)
 }
 
 func (m *MetricsSuite) TestInitCounterVec(c *C) {
@@ -112,13 +112,15 @@ func (m *MetricsSuite) TestInitCounterVec(c *C) {
 		Help: "Total number of action set resolutions",
 	}
 	registry := prometheus.NewRegistry()
-	metrics, _ := registry.Gather()
+	metrics, err := registry.Gather()
 	c.Assert(metrics, IsNil)
+	c.Assert(err, IsNil)
 
 	actionSetCounterVec := InitCounterVec(registry, actionSetCounterOpts, boundedLabels)
 
-	metrics, _ = registry.Gather()
+	metrics, err = registry.Gather()
 	c.Assert(metrics, NotNil)
+	c.Assert(err, IsNil)
 	c.Assert(len(metrics), Equals, 1)
 
 	expectedOperationTypes := map[string]int{"backup": 0, "restore": 0}
