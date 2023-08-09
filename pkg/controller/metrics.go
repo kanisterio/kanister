@@ -24,7 +24,7 @@ func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
 
 func newMetrics(reg prometheus.Registerer) *metrics {
 	actionSetCounterOpts := prometheus.CounterOpts{
-		Name: "action_set_resolutions_total",
+		Name: "kanister_action_set_resolutions_total",
 		Help: "Total number of action set resolutions",
 	}
 	actionSetResolutionCounterVec := kanistermetrics.InitCounterVec(reg, actionSetCounterOpts, getActionSetCounterVecLabels())
