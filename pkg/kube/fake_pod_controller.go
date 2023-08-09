@@ -19,7 +19,6 @@ type FakeKubePodController struct {
 	WaitForPodReadyCalled bool
 	WaitForPodReadyErr    error
 
-	// getCommandExecutorCalled bool
 	GetCommandExecutorRet PodCommandExecutor
 	GetCommandExecutorErr error
 
@@ -33,50 +32,50 @@ type FakeKubePodController struct {
 	InStopPodGracePeriod int64
 }
 
-func (fkpr *FakeKubePodController) Pod() *corev1.Pod {
+func (fkpc *FakeKubePodController) Pod() *corev1.Pod {
 	return nil
 }
 
-func (fkpr *FakeKubePodController) PodName() string {
-	return fkpr.Podname
+func (fkpc *FakeKubePodController) PodName() string {
+	return fkpc.Podname
 }
 
-func (fkpr *FakeKubePodController) Run(ctx context.Context, fn func(context.Context, *corev1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
+func (fkpc *FakeKubePodController) Run(ctx context.Context, fn func(context.Context, *corev1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (fkpr *FakeKubePodController) StartPod(_ context.Context) error {
-	fkpr.StartPodCalled = true
-	return fkpr.StartPodErr
+func (fkpc *FakeKubePodController) StartPod(_ context.Context) error {
+	fkpc.StartPodCalled = true
+	return fkpc.StartPodErr
 }
 
-func (fkpr *FakeKubePodController) WaitForPodReady(_ context.Context) error {
-	fkpr.WaitForPodReadyCalled = true
-	return fkpr.WaitForPodReadyErr
+func (fkpc *FakeKubePodController) WaitForPodReady(_ context.Context) error {
+	fkpc.WaitForPodReadyCalled = true
+	return fkpc.WaitForPodReadyErr
 }
 
-func (fkpr *FakeKubePodController) WaitForPodCompletion(_ context.Context) error {
+func (fkpc *FakeKubePodController) WaitForPodCompletion(_ context.Context) error {
 	return errors.New("Not implemented")
 }
 
-func (fkpr *FakeKubePodController) StreamPodLogs(_ context.Context) (io.ReadCloser, error) {
+func (fkpc *FakeKubePodController) StreamPodLogs(_ context.Context) (io.ReadCloser, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (fkpr *FakeKubePodController) GetCommandExecutor() (PodCommandExecutor, error) {
-	return fkpr.GetCommandExecutorRet, fkpr.GetCommandExecutorErr
+func (fkpc *FakeKubePodController) GetCommandExecutor() (PodCommandExecutor, error) {
+	return fkpc.GetCommandExecutorRet, fkpc.GetCommandExecutorErr
 }
 
-func (fkpr *FakeKubePodController) GetFileWriter() (PodFileWriter, error) {
-	fkpr.GetFileWriterCalled = true
-	return fkpr.GetFileWriterRet, fkpr.GetFileWriterErr
+func (fkpc *FakeKubePodController) GetFileWriter() (PodFileWriter, error) {
+	fkpc.GetFileWriterCalled = true
+	return fkpc.GetFileWriterRet, fkpc.GetFileWriterErr
 }
 
-func (fkpr *FakeKubePodController) StopPod(ctx context.Context, stopTimeout time.Duration, gracePeriodSeconds int64) error {
-	fkpr.StopPodCalled = true
-	fkpr.InStopPodStopTimeout = stopTimeout
-	fkpr.InStopPodGracePeriod = gracePeriodSeconds
-	return fkpr.StopPodErr
+func (fkpc *FakeKubePodController) StopPod(ctx context.Context, stopTimeout time.Duration, gracePeriodSeconds int64) error {
+	fkpc.StopPodCalled = true
+	fkpc.InStopPodStopTimeout = stopTimeout
+	fkpc.InStopPodGracePeriod = gracePeriodSeconds
+	return fkpc.StopPodErr
 }
 
 type FakeKubePodFileWriter struct {
