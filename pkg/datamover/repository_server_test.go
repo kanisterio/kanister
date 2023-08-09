@@ -124,6 +124,7 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 
 	// Create Test ConfigMap
 	rss.envSecret, err = createRepositoryServerTestPodEnvSecret(rss.ctx, rss.cli, rss.namespace.GetName())
+	c.Assert(err, IsNil)
 
 	// Create Test Pod
 	rss.pod, err = createRepositoryServerTestPod(rss.ctx, rss.cli, rss.namespace.GetName(), rss.envSecret.GetName(), repositoryServerAddressPort, rss.tlsSecret)
@@ -215,5 +216,4 @@ func (rss *RepositoryServerSuite) TearDownSuite(c *C) {
 		err := rss.cli.CoreV1().Namespaces().Delete(rss.ctx, rss.namespace.GetName(), metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
-
 }
