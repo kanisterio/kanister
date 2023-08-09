@@ -201,32 +201,10 @@ func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServerDataM
 }
 
 func (rss *RepositoryServerSuite) TearDownSuite(c *C) {
-	// Delete Secrets
-	rss.cleanupTestSecrets(c)
-
-	// Delete Service
-	err := rss.cli.CoreV1().Services(rss.namespace.GetName()).Delete(rss.ctx, rss.service.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
-	// Delete Test Pod
-	err = rss.cli.CoreV1().Pods(rss.namespace.GetName()).Delete(rss.ctx, rss.pod.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
 	// Delete Namespace
-	err = rss.cli.CoreV1().Namespaces().Delete(rss.ctx, rss.namespace.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-}
+	if rss.namespace.GetName() != "" {
+		err := rss.cli.CoreV1().Namespaces().Delete(rss.ctx, rss.namespace.GetName(), metav1.DeleteOptions{})
+		c.Assert(err, IsNil)
+	}
 
-func (rss *RepositoryServerSuite) cleanupTestSecrets(c *C) {
-	err := rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.tlsSecret.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
-	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.userAccessSecret.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
-	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.s3Creds.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
-	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.s3Location.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
 }
