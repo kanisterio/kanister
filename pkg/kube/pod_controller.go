@@ -60,8 +60,8 @@ type podControllerProcessor interface {
 	DeletePod(ctx context.Context, namespace string, podName string, opts metav1.DeleteOptions) error
 }
 
-// podController specifies Kubernetes Client and PodOptions needed for creating Pod
-// implements podControllerProcessor interface
+// podController specifies Kubernetes Client and PodOptions needed for creating
+// a Pod. It implements the podControllerProcessor interface.
 type podController struct {
 	cli        kubernetes.Interface
 	podOptions *PodOptions
@@ -98,7 +98,8 @@ func NewPodController(cli kubernetes.Interface, options *PodOptions, opts ...Pod
 	return r
 }
 
-// NewPodControllerForExistingPod returns a new PodController given Kubernetes Client and existing pod details
+// NewPodControllerForExistingPod returns a new PodController given Kubernetes
+// Client and existing pod details.
 func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) PodController {
 	r := &podController{
 		cli:     cli,
