@@ -49,14 +49,6 @@ type RepoServerHandler struct {
 	RepositoryServerSecrets repositoryServerSecrets
 }
 
-type ConditionStatus struct {
-	Reason        string
-	ConditionMsg  string
-	ConditionType string
-	Progress      crv1alpha1.RepositoryServerProgress
-	Status        metav1.ConditionStatus
-}
-
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
 	if err := h.getSecretsFromCR(ctx); err != nil {
 		return errors.Wrap(err, "Failed to get Kopia API server secrets")
@@ -179,9 +171,8 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 	return h.createPodAndUpdateStatus(ctx, repoServerNamespace, svc)
 }
 
-func (h *RepoServerHandler) setCondition(ctx context.Context, conditionStatus ConditionStatus) error {
-	condition := getCondition(conditionStatus.Status, conditionStatus.Reason, conditionStatus.ConditionMsg, conditionStatus.ConditionType)
-	if uerr := h.updateRepoServerProgress(ctx, conditionStatus.Progress, condition); uerr != nil {
+func (h *RepoServerHandler) setCondition(ctx context.Context, condition metav1.Condition, progress crkanisteriov1alpha1.RepositoryServerProgress) error {
+	if uerr := h.updateRepoServerProgress(ctx, progress, condition); uerr != nil {
 		return uerr
 	}
 	return nil
@@ -349,79 +340,43 @@ func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progre
 func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
 	logger.Info("Start Kopia Repository Server")
 	if err := h.startRepoProxyServer(ctx); err != nil {
-		conditionStatus := ConditionStatus{
-			Reason:        conditionReasonServerInitializedErr,
-			ConditionMsg:  err.Error(),
-			ConditionType: crkanisteriov1alpha1.ServerInitialized,
-			Progress:      crkanisteriov1alpha1.Pending,
-			Status:        metav1.ConditionFalse,
-		}
-		if uerr := h.setCondition(ctx, conditionStatus); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonServerInitializedErr, "", crkanisteriov1alpha1.ServerInitialized)
+		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	conditionStatus := ConditionStatus{
-		Reason:        conditionReasonServerInitializedSuccess,
-		ConditionMsg:  "",
-		ConditionType: crkanisteriov1alpha1.ServerInitialized,
-		Progress:      crkanisteriov1alpha1.Pending,
-		Status:        metav1.ConditionTrue,
-	}
-	if uerr := h.setCondition(ctx, conditionStatus); uerr != nil {
+	condition := getCondition(metav1.ConditionTrue, conditionReasonServerInitializedSuccess, "", crkanisteriov1alpha1.ServerInitialized)
+	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Pending); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Add/Update users in Kopia Repository Server")
 	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		conditionStatus := ConditionStatus{
-			Reason:        conditionReasonClientInitializedErr,
-			ConditionMsg:  err.Error(),
-			ConditionType: crkanisteriov1alpha1.ClientUserInitialized,
-			Progress:      crkanisteriov1alpha1.Failed,
-			Status:        metav1.ConditionFalse,
-		}
-		if uerr := h.setCondition(ctx, conditionStatus); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonClientInitializedErr, err.Error(), crkanisteriov1alpha1.ClientUserInitialized)
+		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	conditionStatus = ConditionStatus{
-		Reason:        conditionReasonClientInitializedSuccess,
-		ConditionMsg:  "",
-		ConditionType: crkanisteriov1alpha1.ClientUserInitialized,
-		Progress:      crkanisteriov1alpha1.Pending,
-		Status:        metav1.ConditionTrue,
-	}
-	if uerr := h.setCondition(ctx, conditionStatus); uerr != nil {
+	condition = getCondition(metav1.ConditionTrue, conditionReasonClientInitializedSuccess, "", crkanisteriov1alpha1.ClientUserInitialized)
+	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Pending); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Refresh Kopia Repository Server")
 	if err := h.refreshServer(ctx); err != nil {
-		conditionStatus := ConditionStatus{
-			Reason:        conditionReasonServerRefreshedErr,
-			ConditionMsg:  err.Error(),
-			ConditionType: crkanisteriov1alpha1.ServerRefreshed,
-			Progress:      crkanisteriov1alpha1.Failed,
-			Status:        metav1.ConditionFalse,
-		}
-		if uerr := h.setCondition(ctx, conditionStatus); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonServerRefreshedErr, err.Error(), crkanisteriov1alpha1.ServerRefreshed)
+		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	conditionStatus = ConditionStatus{
-		Reason:        conditionReasonServerRefreshedSuccess,
-		ConditionMsg:  "",
-		ConditionType: crkanisteriov1alpha1.ServerRefreshed,
-		Progress:      crkanisteriov1alpha1.Ready,
-		Status:        metav1.ConditionTrue,
-	}
-	if uerr := h.setCondition(ctx, conditionStatus); uerr != nil {
+	condition = getCondition(metav1.ConditionTrue, conditionReasonServerRefreshedSuccess, "", crkanisteriov1alpha1.ServerRefreshed)
+	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Ready); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 	return ctrl.Result{}, nil
