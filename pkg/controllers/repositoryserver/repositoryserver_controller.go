@@ -89,25 +89,52 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Create or update owned resources by Repository Server CR")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
-		if uerr := repoServerHandler.setCondition(ctx, conditionReasonServerSetupErr, err.Error(), crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
+		conditionStatus := ConditionStatus{
+			Reason:        conditionReasonServerSetupErr,
+			ConditionMsg:  err.Error(),
+			ConditionType: crkanisteriov1alpha1.ServerSetup,
+			Progress:      crkanisteriov1alpha1.Failed,
+			Status:        metav1.ConditionFalse,
+		}
+		if uerr := repoServerHandler.setCondition(ctx, conditionStatus); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
-
-	if uerr := repoServerHandler.setCondition(ctx, conditionReasonServerSetupSuccess, "", crkanisteriov1alpha1.ServerSetup, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	conditionStatus := ConditionStatus{
+		Reason:        conditionReasonServerSetupSuccess,
+		ConditionMsg:  "",
+		ConditionType: crkanisteriov1alpha1.ServerSetup,
+		Progress:      crkanisteriov1alpha1.Pending,
+		Status:        metav1.ConditionTrue,
+	}
+	if uerr := repoServerHandler.setCondition(ctx, conditionStatus); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
-		if uerr := repoServerHandler.setCondition(ctx, conditionReasonRepositoryConnectedErr, err.Error(), crkanisteriov1alpha1.RepositoryConnected, crkanisteriov1alpha1.Failed, metav1.ConditionFalse); uerr != nil {
+		conditionStatus := ConditionStatus{
+			Reason:        conditionReasonRepositoryConnectedErr,
+			ConditionMsg:  err.Error(),
+			ConditionType: crkanisteriov1alpha1.RepositoryConnected,
+			Progress:      crkanisteriov1alpha1.Failed,
+			Status:        metav1.ConditionFalse,
+		}
+		if uerr := repoServerHandler.setCondition(ctx, conditionStatus); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	if uerr := repoServerHandler.setCondition(ctx, conditionReasonRepositoryConnectedSuccess, "", crkanisteriov1alpha1.RepositoryConnected, crkanisteriov1alpha1.Pending, metav1.ConditionTrue); uerr != nil {
+	conditionStatus = ConditionStatus{
+		Reason:        conditionReasonRepositoryConnectedSuccess,
+		ConditionMsg:  "",
+		ConditionType: crkanisteriov1alpha1.RepositoryConnected,
+		Progress:      crkanisteriov1alpha1.Pending,
+		Status:        metav1.ConditionTrue,
+	}
+	if uerr := repoServerHandler.setCondition(ctx, conditionStatus); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
