@@ -59,6 +59,21 @@ const (
 	tlsCertDefaultMountPath = "/mnt/secrets/tlscert"
 	tlsKeyPath              = "/mnt/secrets/tlscert/tls.key"
 	tlsCertPath             = "/mnt/secrets/tlscert/tls.crt"
+
+	conditionReasonServerSetupErr     string = "KopiaRepositoryServerSetupFailed"
+	conditionReasonServerSetupSuccess string = "KopiaRepositoryServerSetupSucceeded"
+
+	conditionReasonRepositoryConnectedErr     string = "KopiaRepositoryConnectionFailed"
+	conditionReasonRepositoryConnectedSuccess string = "KopiaRepositoryConnectionSucceeded"
+
+	conditionReasonServerInitializedErr     string = "KopiaRepositoryServerInitializationFailed"
+	conditionReasonServerInitializedSuccess string = "KopiaRepositoryServerInitializationSucceeded"
+
+	conditionReasonClientInitializedErr     string = "ClientInitializationFailed"
+	conditionReasonClientInitializedSuccess string = "ClientInitializationSucceeded"
+
+	conditionReasonServerRefreshedErr     string = "ServerRefreshFailed"
+	conditionReasonServerRefreshedSuccess string = "ServerRefreshed"
 )
 
 func getRepoServerService(namespace string) corev1.Service {
@@ -228,6 +243,15 @@ func WaitTillCommandSucceed(ctx context.Context, cli kubernetes.Interface, cmd [
 		return true, nil
 	})
 	return err
+}
+
+func getCondition(status metav1.ConditionStatus, reason string, message string, conditionType string) metav1.Condition {
+	return metav1.Condition{
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+		Type:    conditionType,
+	}
 }
 
 func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Secret, namespace string) (map[string]string, error) {
