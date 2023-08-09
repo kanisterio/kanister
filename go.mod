@@ -36,7 +36,6 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.5.0
-	gonum.org/v1/gonum v0.13.0
 
 	//pinned openshift to release-4.5 branch
 	github.com/openshift/api v0.0.0-20230406152840-ce21e3fe5da2
@@ -48,6 +47,7 @@ require (
 	github.com/vmware/govmomi v0.30.7
 	go.uber.org/zap v1.25.0
 	golang.org/x/oauth2 v0.11.0
+	gonum.org/v1/gonum v0.13.0
 	google.golang.org/api v0.135.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
