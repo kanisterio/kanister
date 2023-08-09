@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +40,7 @@ import (
 
 type RepositoryServerSuite struct {
 	namespace        *corev1.Namespace
+	envSecret        *corev1.Secret
 	pod              *corev1.Pod
 	service          *corev1.Service
 	ctx              context.Context
@@ -116,15 +118,22 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	var err error
 
+	// Setup Repository Server Address dynamically
+	repositoryServerAddressPort := rand.IntnRange(50000, 60000)
+	serverAddress := fmt.Sprintf("https://0.0.0.0:%s", strconv.Itoa(repositoryServerAddressPort))
+
+	// Create Test ConfigMap
+	rss.envSecret, err = createRepositoryServerTestPodEnvSecret(rss.ctx, rss.cli, rss.namespace.GetName())
+
 	// Create Test Pod
-	rss.pod, err = createRepositoryServerTestPod(rss.ctx, rss.cli, rss.namespace.GetName(), rss.tlsSecret)
+	rss.pod, err = createRepositoryServerTestPod(rss.ctx, rss.cli, rss.namespace.GetName(), rss.envSecret.GetName(), repositoryServerAddressPort, rss.tlsSecret)
 	c.Assert(err, IsNil)
 
 	// Wait for Test Pod to get Ready
 	c.Assert(kube.WaitForPodReady(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod.Name), IsNil)
 
 	// Create Test Service
-	rss.service, err = createRepositoryServerTestService(rss.ctx, rss.cli, rss.namespace.GetName())
+	rss.service, err = createRepositoryServerTestService(rss.ctx, rss.cli, rss.namespace.GetName(), repositoryServerAddressPort)
 	c.Assert(err, IsNil)
 
 	// Configure and Create Kopia Repository
@@ -132,11 +141,11 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	c.Assert(err, IsNil)
 
 	// Start Kopia Repository Server
-	err = startTestKopiaRepositoryServer(rss.cli, rss.namespace.GetName(), rss.pod)
+	err = startTestKopiaRepositoryServer(rss.cli, rss.namespace.GetName(), serverAddress, rss.pod)
 	c.Assert(err, IsNil)
 
 	// Wait for Kopia Repository Server To Get Ready
-	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod, rss.tlsSecret)
+	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), serverAddress, rss.pod, rss.tlsSecret)
 	c.Assert(err, IsNil)
 
 	// Add Test Client User in Kopia Repository
@@ -144,11 +153,11 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	c.Assert(err, IsNil)
 
 	// Refresh Kopia Repository Server
-	err = refreshTestKopiaRepositoryServer(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod, rss.tlsSecret)
+	err = refreshTestKopiaRepositoryServer(rss.ctx, rss.cli, rss.namespace.GetName(), serverAddress, rss.pod, rss.tlsSecret)
 	c.Assert(err, IsNil)
 
 	// Wait for Kopia Repository Server To Get Ready
-	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod, rss.tlsSecret)
+	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), serverAddress, rss.pod, rss.tlsSecret)
 	c.Assert(err, IsNil)
 }
 
