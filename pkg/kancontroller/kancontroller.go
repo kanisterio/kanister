@@ -45,6 +45,9 @@ const (
 	kanisterMetricsEnv = "KANISTER_METRICS_ENABLED"
 )
 
+// metricsEnabled checks if the feature flag for kanister metrics is enabled
+// If the environment variable is not set, then it returns a default
+// "false" value.
 func metricsEnabled() bool {
 	metricsEnabled, ok := os.LookupEnv(kanisterMetricsEnv)
 	if !ok {
@@ -116,6 +119,8 @@ func Execute() {
 
 	var c *controller.Controller
 
+	// pass a new prometheus registry or nil depending on
+	// the kanister prometheus metrics feature flag
 	if metricsEnabled() {
 		c = controller.New(config, prometheus.DefaultRegisterer)
 	} else {
