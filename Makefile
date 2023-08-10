@@ -47,7 +47,7 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 vm-driver ?= "kvm"
 
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.12"
+ocp_version ?= "4.13"
 ###
 ### These variables should not need tweaking.
 ###
@@ -62,7 +62,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.23
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.24
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -320,8 +320,8 @@ stop-kind:
 check:
 	@./build/check.sh
 
-gomod:
-	@$(MAKE) run CMD='-c "./build/gomod.sh"'
+go-mod-tidy:
+	@$(MAKE) run CMD='-c "./build/gomodtidy.sh"'
 
 
 install-crds: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
