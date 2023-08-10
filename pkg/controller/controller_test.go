@@ -23,7 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	promtest "github.com/prometheus/client_model/go"
+	promgomodel "github.com/prometheus/client_model/go"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -454,7 +454,7 @@ func newBPForProgressRunningPhase() *crv1alpha1.Blueprint {
 }
 
 func getCounterVecValue(metric prometheus.CounterVec, metricLabels []string) float64 {
-	m := &promtest.Metric{}
+	m := &promgomodel.Metric{}
 	if err := metric.WithLabelValues(metricLabels...).Write(m); err != nil {
 		return 0
 	}
