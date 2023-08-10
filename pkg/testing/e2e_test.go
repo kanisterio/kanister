@@ -70,7 +70,7 @@ func (s *E2ESuite) SetUpSuite(c *C) {
 	ctx, s.cancel = context.WithCancel(ctx)
 	err = resource.CreateCustomResources(ctx, cfg)
 	c.Assert(err, IsNil)
-	ctlr := controller.New(cfg)
+	ctlr := controller.New(cfg, nil)
 	err = ctlr.StartWatch(ctx, s.namespace)
 	c.Assert(err, IsNil)
 }
