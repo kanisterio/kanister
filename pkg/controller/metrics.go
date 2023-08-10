@@ -32,6 +32,39 @@ const (
 	ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE = "failure"
 )
 
+func getActionTypeBucket(actionType string) string {
+	actionTypeBucket := ""
+	switch actionType {
+	case "backup":
+		actionTypeBucket = "backup"
+	case "restore":
+		actionTypeBucket = "restore"
+	case "delete":
+		actionTypeBucket = "delete"
+	case "pre-backup":
+		actionTypeBucket = "pre-backup"
+	case "post-backup-success":
+		actionTypeBucket = "post-backup-success"
+	case "post-backup-failure":
+		actionTypeBucket = "post-backup-failure"
+	case "pre-restore":
+		actionTypeBucket = "pre-restore"
+	case "post-restore-success":
+		actionTypeBucket = "post-restore-success"
+	case "post-restore-failure":
+		actionTypeBucket = "post-restore-failure"
+	case "pre-delete":
+		actionTypeBucket = "pre-delete"
+	case "post-delete-success":
+		actionTypeBucket = "post-delete-success"
+	case "post-delete-failure":
+		actionTypeBucket = "post-delete-failure"
+	default:
+		actionTypeBucket = "other"
+	}
+	return actionTypeBucket
+}
+
 // getActionSetCounterVecLabels builds a new BoundedLabel list to construct
 // the labels permutations for the prometheus metric.
 func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
