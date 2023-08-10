@@ -24,7 +24,7 @@ cluster.
 on you cluster.
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.93.0 with `profiles.cr.kanister.io` CRD installed.
+* Kanister version 0.94.0 with `profiles.cr.kanister.io` CRD installed.
 * Docker CLI installed
 * A docker image containing the required tools to back up FoundationDB.
 The Dockerfile for the image can be found [here](https://raw.githubusercontent.com/kanisterio/kanister/master/docker/foundationdb/Dockerfile).
