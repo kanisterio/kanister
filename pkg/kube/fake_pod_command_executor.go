@@ -12,15 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datamover
+package kube
 
 import (
-	"testing"
-
-	. "gopkg.in/check.v1"
+	"context"
+	"io"
 )
 
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) {
-	TestingT(t)
+type FakePodCommandExecutor struct {
+	ExecErr       error
+	inExecCommand []string
+
+	ExecStdout string
+	ExecStderr string
+}
+
+// Exec
+func (fce *FakePodCommandExecutor) Exec(_ context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	fce.inExecCommand = make([]string, len(command))
+	copy(fce.inExecCommand, command)
+	if stdout != nil && len(fce.ExecStdout) > 0 {
+		stdout.Write([]byte(fce.ExecStdout)) //nolint: errcheck
+	}
+	if stderr != nil && len(fce.ExecStderr) > 0 {
+		stderr.Write([]byte(fce.ExecStderr)) //nolint: errcheck
+	}
+
+	return fce.ExecErr
 }

@@ -52,8 +52,7 @@ func (rs *repositoryServer) Push(ctx context.Context, sourcePath, destinationPat
 	if err != nil {
 		return err
 	}
-	_, err = kopiaLocationPush(ctx, destinationPath, rs.outputName, sourcePath, password)
-	return err
+	return kopiaLocationPush(ctx, destinationPath, rs.outputName, sourcePath, password)
 }
 
 func (rs *repositoryServer) Delete(ctx context.Context, destinationPath string) error {

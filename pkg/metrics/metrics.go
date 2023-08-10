@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	combine "gonum.org/v1/gonum/stat/combin"
+	"gonum.org/v1/gonum/stat/combin"
 
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -31,9 +31,9 @@ type BoundedLabel struct {
 
 // getLabelNames gets the all the `LabelName` fields from each BoundedLabel struct.
 func getLabelNames(bl []BoundedLabel) []string {
-	ln := make([]string, 0)
-	for _, l := range bl {
-		ln = append(ln, l.LabelName)
+	ln := make([]string, len(bl))
+	for idx, l := range bl {
+		ln[idx] = l.LabelName
 	}
 	return ln
 }
@@ -74,21 +74,22 @@ func getLabelCombinations(bl []BoundedLabel) ([]prometheus.Labels, error) {
 	if !verifyBoundedLabels(bl) {
 		return nil, errors.New("invalid BoundedLabel list")
 	}
-	resultPrometheusLabels := make([]prometheus.Labels, 0)
-	labelLens := make([]int, 0)
-	for _, l := range bl {
-		labelLens = append(labelLens, len(l.LabelValues))
+	labelLens := make([]int, len(bl))
+	for idx, l := range bl {
+		labelLens[idx] = len(l.LabelValues)
 	}
-	idxPermutations := combine.Cartesian(labelLens)
+	idxPermutations := combin.Cartesian(labelLens)
+
+	resultPrometheusLabels := make([]prometheus.Labels, len(idxPermutations))
 
 	// generate the actual label permutations from the index permutations
 	// obtained
-	for _, perm := range idxPermutations {
+	for idx, perm := range idxPermutations {
 		labelSet := make(prometheus.Labels)
 		for idx, p := range perm {
 			labelSet[bl[idx].LabelName] = bl[idx].LabelValues[p]
 		}
-		resultPrometheusLabels = append(resultPrometheusLabels, labelSet)
+		resultPrometheusLabels[idx] = labelSet
 	}
 	return resultPrometheusLabels, nil
 }
@@ -238,8 +239,8 @@ func registerGauge(r prometheus.Registerer, g prometheus.Gauge) prometheus.Gauge
 // is returned. For other errors, the method panics.
 func registerMetricOrDie(r prometheus.Registerer, c prometheus.Collector) prometheus.Collector {
 	if err := r.Register(c); err != nil {
-		are, ok := err.(prometheus.AlreadyRegisteredError)
-		if !ok {
+		are := prometheus.AlreadyRegisteredError{}
+		if !errors.As(err, &are) {
 			panic(fmt.Sprintf("failed to register metric. error: %v", err))
 		}
 		// Use already registered metric
