@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +40,7 @@ import (
 
 type RepositoryServerSuite struct {
 	namespace        *corev1.Namespace
+	envSecret        *corev1.Secret
 	pod              *corev1.Pod
 	service          *corev1.Service
 	ctx              context.Context
@@ -116,15 +118,23 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	var err error
 
+	// Setup Repository Server Address dynamically
+	repositoryServerAddressPort := rand.IntnRange(50000, 60000)
+	serverAddress := fmt.Sprintf("https://0.0.0.0:%s", strconv.Itoa(repositoryServerAddressPort))
+
+	// Create Test ConfigMap
+	rss.envSecret, err = createRepositoryServerTestPodEnvSecret(rss.ctx, rss.cli, rss.namespace.GetName())
+	c.Assert(err, IsNil)
+
 	// Create Test Pod
-	rss.pod, err = createRepositoryServerTestPod(rss.ctx, rss.cli, rss.namespace.GetName(), rss.tlsSecret)
+	rss.pod, err = createRepositoryServerTestPod(rss.ctx, rss.cli, rss.namespace.GetName(), rss.envSecret.GetName(), repositoryServerAddressPort, rss.tlsSecret)
 	c.Assert(err, IsNil)
 
 	// Wait for Test Pod to get Ready
 	c.Assert(kube.WaitForPodReady(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod.Name), IsNil)
 
 	// Create Test Service
-	rss.service, err = createRepositoryServerTestService(rss.ctx, rss.cli, rss.namespace.GetName())
+	rss.service, err = createRepositoryServerTestService(rss.ctx, rss.cli, rss.namespace.GetName(), repositoryServerAddressPort)
 	c.Assert(err, IsNil)
 
 	// Configure and Create Kopia Repository
@@ -132,11 +142,11 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	c.Assert(err, IsNil)
 
 	// Start Kopia Repository Server
-	err = startTestKopiaRepositoryServer(rss.cli, rss.namespace.GetName(), rss.pod)
+	err = startTestKopiaRepositoryServer(rss.cli, rss.namespace.GetName(), serverAddress, rss.pod)
 	c.Assert(err, IsNil)
 
 	// Wait for Kopia Repository Server To Get Ready
-	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod, rss.tlsSecret)
+	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), serverAddress, rss.pod, rss.tlsSecret)
 	c.Assert(err, IsNil)
 
 	// Add Test Client User in Kopia Repository
@@ -144,11 +154,11 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	c.Assert(err, IsNil)
 
 	// Refresh Kopia Repository Server
-	err = refreshTestKopiaRepositoryServer(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod, rss.tlsSecret)
+	err = refreshTestKopiaRepositoryServer(rss.ctx, rss.cli, rss.namespace.GetName(), serverAddress, rss.pod, rss.tlsSecret)
 	c.Assert(err, IsNil)
 
 	// Wait for Kopia Repository Server To Get Ready
-	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), rss.pod, rss.tlsSecret)
+	err = waitForServerReady(rss.ctx, rss.cli, rss.namespace.GetName(), serverAddress, rss.pod, rss.tlsSecret)
 	c.Assert(err, IsNil)
 }
 
@@ -201,32 +211,9 @@ func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServerDataM
 }
 
 func (rss *RepositoryServerSuite) TearDownSuite(c *C) {
-	// Delete Secrets
-	rss.cleanupTestSecrets(c)
-
-	// Delete Service
-	err := rss.cli.CoreV1().Services(rss.namespace.GetName()).Delete(rss.ctx, rss.service.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
-	// Delete Test Pod
-	err = rss.cli.CoreV1().Pods(rss.namespace.GetName()).Delete(rss.ctx, rss.pod.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
 	// Delete Namespace
-	err = rss.cli.CoreV1().Namespaces().Delete(rss.ctx, rss.namespace.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-}
-
-func (rss *RepositoryServerSuite) cleanupTestSecrets(c *C) {
-	err := rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.tlsSecret.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
-	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.userAccessSecret.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
-	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.s3Creds.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
-
-	err = rss.cli.CoreV1().Secrets(rss.namespace.GetName()).Delete(rss.ctx, rss.s3Location.GetName(), metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
+	if rss.namespace.GetName() != "" {
+		err := rss.cli.CoreV1().Namespaces().Delete(rss.ctx, rss.namespace.GetName(), metav1.DeleteOptions{})
+		c.Assert(err, IsNil)
+	}
 }
