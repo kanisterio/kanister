@@ -331,8 +331,8 @@ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
-github.com/kastenhq/stow v0.2.6-kasten.1.0.20220726203146-8a90401257d4 h1:MuAfIUYqmW0bIxyltt4EIAgKSV3GxvEwZzlqBqGLQko=
-github.com/kastenhq/stow v0.2.6-kasten.1.0.20220726203146-8a90401257d4/go.mod h1:6+N3Bn9Whpb+bnRFQ2A2kAyAUiYvYM0+N5bArNd4K8s=
+github.com/kastenhq/stow v0.2.6-kasten.1.0.20230810051814-7e1569eac69b h1:51DAOiKCC7FGxrzFTDaKnj08DCJ4ATffgVg9a2lIP2A=
+github.com/kastenhq/stow v0.2.6-kasten.1.0.20230810051814-7e1569eac69b/go.mod h1:KCDpsGiySXiaIruvOquULdT8u/7GssXDte2PiqSjDF0=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
