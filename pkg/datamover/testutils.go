@@ -40,7 +40,6 @@ import (
 
 const (
 	repositoryServerTestNamespace    = "repository-server-test-namespace-"
-	repositoryServerTestPodEnvSecret = "repository-server-test-pod-env-secret-"
 	repositoryServerTestPod          = "repository-server-test-pod-"
 	repositoryServerTestService      = "repository-server-test-service-"
 	defaultKopiaRepositoryPassword   = "test1234"
@@ -69,24 +68,7 @@ func createRepositoryServerTestNamespace(ctx context.Context, cli kubernetes.Int
 	return nsCreated, nil
 }
 
-func createRepositoryServerTestPodEnvSecret(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Secret, error) {
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: repositoryServerTestPodEnvSecret,
-			Namespace:    namespace,
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: map[string][]byte{
-			awsconfig.AccessKeyID:     []byte(os.Getenv(testutil.S3CompliantAccessKeyIDEnv)),
-			awsconfig.SecretAccessKey: []byte(os.Getenv(testutil.S3CompliantSecretAccessKeyEnv)),
-			awsconfig.Region:          []byte(testutil.TestS3Region),
-			"LOCATION_ENDPOINT":       []byte(os.Getenv(testutil.S3CompliantLocationEndpointEnv)),
-		},
-	}
-	return cli.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
-}
-
-func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface, namespace, envSecret string, port int, secret *corev1.Secret) (*corev1.Pod, error) {
+func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface, namespace string, secret *corev1.Secret) (*corev1.Pod, error) {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: repositoryServerTestPod,
@@ -100,17 +82,26 @@ func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface
 					Image: consts.LatestKanisterToolsImage,
 					Ports: []corev1.ContainerPort{
 						{
-							HostPort:      int32(port),
-							ContainerPort: int32(port),
+							HostPort:      51515,
+							ContainerPort: 51515,
 						},
 					},
-					EnvFrom: []corev1.EnvFromSource{
+					Env: []corev1.EnvVar{
 						{
-							SecretRef: &corev1.SecretEnvSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: envSecret,
-								},
-							},
+							Name:  awsconfig.AccessKeyID,
+							Value: os.Getenv(testutil.S3CompliantAccessKeyIDEnv),
+						},
+						{
+							Name:  awsconfig.SecretAccessKey,
+							Value: os.Getenv(testutil.S3CompliantSecretAccessKeyEnv),
+						},
+						{
+							Name:  awsconfig.Region,
+							Value: testutil.TestS3Region,
+						},
+						{
+							Name:  "LOCATION_ENDPOINT",
+							Value: os.Getenv(testutil.S3CompliantLocationEndpointEnv),
 						},
 					},
 					VolumeMounts: []corev1.VolumeMount{
@@ -142,7 +133,7 @@ func createRepositoryServerTestPod(ctx context.Context, cli kubernetes.Interface
 	return podCreated, nil
 }
 
-func createRepositoryServerTestService(ctx context.Context, cli kubernetes.Interface, namespace string, port int) (*corev1.Service, error) {
+func createRepositoryServerTestService(ctx context.Context, cli kubernetes.Interface, namespace string) (*corev1.Service, error) {
 	name := fmt.Sprintf("%s%s", repositoryServerTestService, rand.String(5))
 
 	service := &corev1.Service{
@@ -161,7 +152,7 @@ func createRepositoryServerTestService(ctx context.Context, cli kubernetes.Inter
 					Port:     51515,
 					// Selects Random Port from NodePort Range
 					NodePort:   int32(rand.IntnRange(30000, 32767)),
-					TargetPort: intstr.FromInt(port),
+					TargetPort: intstr.FromInt(51515),
 				},
 			},
 		},
@@ -201,7 +192,7 @@ func createTestKopiaRepository(location *corev1.Secret, cli kubernetes.Interface
 	)
 }
 
-func startTestKopiaRepositoryServer(cli kubernetes.Interface, namespace, serverAddress string, pod *corev1.Pod) error {
+func startTestKopiaRepositoryServer(cli kubernetes.Interface, namespace string, pod *corev1.Pod) error {
 	cmd := kopiacmd.ServerStart(
 		kopiacmd.ServerStartCommandArgs{
 			CommandArgs: &kopiacmd.CommandArgs{
@@ -209,7 +200,7 @@ func startTestKopiaRepositoryServer(cli kubernetes.Interface, namespace, serverA
 				ConfigFilePath: kopiacmd.DefaultConfigFilePath,
 				LogDirectory:   kopiacmd.DefaultLogDirectory,
 			},
-			ServerAddress:    serverAddress,
+			ServerAddress:    "https://0.0.0.0:51515",
 			TLSCertFile:      testTLSCertPath,
 			TLSKeyFile:       testTLSKeyPath,
 			ServerUsername:   testKopiaRepoServerAdminUsername,
@@ -227,7 +218,7 @@ func startTestKopiaRepositoryServer(cli kubernetes.Interface, namespace, serverA
 	return nil
 }
 
-func getServerStatusCommand(ctx context.Context, cli kubernetes.Interface, namespace, serverAddress string, tlsSecret *corev1.Secret) ([]string, error) {
+func getServerStatusCommand(ctx context.Context, cli kubernetes.Interface, namespace string, tlsSecret *corev1.Secret) ([]string, error) {
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, cli, tlsSecret.GetName(), namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Extracting Fingerprint from the TLS Certificates")
@@ -240,7 +231,7 @@ func getServerStatusCommand(ctx context.Context, cli kubernetes.Interface, names
 				ConfigFilePath: kopiacmd.DefaultConfigFilePath,
 				LogDirectory:   kopiacmd.DefaultLogDirectory,
 			},
-			ServerAddress:  serverAddress,
+			ServerAddress:  "https://0.0.0.0:51515",
 			ServerUsername: testKopiaRepoServerAdminUsername,
 			ServerPassword: testKopiaRepoServerAdminPassword,
 			Fingerprint:    fingerprint,
@@ -248,8 +239,8 @@ func getServerStatusCommand(ctx context.Context, cli kubernetes.Interface, names
 	return cmd, nil
 }
 
-func waitForServerReady(ctx context.Context, cli kubernetes.Interface, namespace, serverAddress string, pod *corev1.Pod, tlsSecret *corev1.Secret) error {
-	cmd, err := getServerStatusCommand(ctx, cli, namespace, serverAddress, tlsSecret)
+func waitForServerReady(ctx context.Context, cli kubernetes.Interface, namespace string, pod *corev1.Pod, tlsSecret *corev1.Secret) error {
+	cmd, err := getServerStatusCommand(ctx, cli, namespace, tlsSecret)
 	if err != nil {
 		return errors.Wrap(err, "Error Getting Server Status Command")
 	}
@@ -281,7 +272,7 @@ func addTestUserInKopiaRepositoryServer(cli kubernetes.Interface, namespace stri
 	return nil
 }
 
-func refreshTestKopiaRepositoryServer(ctx context.Context, cli kubernetes.Interface, namespace, serverAddress string, pod *corev1.Pod, tlsSecret *corev1.Secret) error {
+func refreshTestKopiaRepositoryServer(ctx context.Context, cli kubernetes.Interface, namespace string, pod *corev1.Pod, tlsSecret *corev1.Secret) error {
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, cli, tlsSecret.GetName(), namespace)
 	if err != nil {
 		return errors.Wrap(err, "Error Extracting Fingerprint from the TLS Certificates")
@@ -294,7 +285,7 @@ func refreshTestKopiaRepositoryServer(ctx context.Context, cli kubernetes.Interf
 				ConfigFilePath: kopiacmd.DefaultConfigFilePath,
 				LogDirectory:   kopiacmd.DefaultLogDirectory,
 			},
-			ServerAddress:  serverAddress,
+			ServerAddress:  "https://0.0.0.0:51515",
 			ServerUsername: testKopiaRepoServerAdminUsername,
 			ServerPassword: testKopiaRepoServerAdminPassword,
 			Fingerprint:    fingerprint,
