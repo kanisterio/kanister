@@ -53,7 +53,7 @@ func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
-func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, password string) (*snapshot.SnapshotInfo, error) {
+func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, password string) error {
 	var snapInfo *snapshot.SnapshotInfo
 	var err error
 	switch sourcePath {
@@ -63,14 +63,14 @@ func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, passwo
 		snapInfo, err = snapshot.WriteFile(ctx, path, sourcePath, password)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to push data using kopia")
+		return errors.Wrap(err, "Failed to push data using kopia")
 	}
 	snapInfoJSON, err := snapshot.MarshalKopiaSnapshot(snapInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return snapInfo, output.PrintOutput(outputName, snapInfoJSON)
+	return output.PrintOutput(outputName, snapInfoJSON)
 }
 
 func sourceReader(source string) (io.Reader, error) {
