@@ -1022,3 +1022,78 @@ func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(runningPhases, HasLen, 0)
 }
+
+func (s *ControllerSuite) TestGetActionTypeBucket(c *C) {
+	for _, tc := range []struct {
+		actionType string
+	}{
+		{
+			actionType: "backup",
+		},
+		{
+			actionType: "restore",
+		},
+		{
+			actionType: "delete",
+		},
+		{
+			actionType: "pre-backup",
+		},
+		{
+			actionType: "post-backup-success",
+		},
+		{
+			actionType: "post-backup-failure",
+		},
+		{
+			actionType: "pre-restore",
+		},
+		{
+			actionType: "post-restore-success",
+		},
+		{
+			actionType: "post-restore-failure",
+		},
+		{
+			actionType: "pre-delete",
+		},
+		{
+			actionType: "post-delete-success",
+		},
+		{
+			actionType: "post-delete-failure",
+		},
+		{
+			actionType: "random-action",
+		},
+	} {
+		switch tc.actionType {
+		case "backup":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "backup")
+		case "restore":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "restore")
+		case "delete":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "delete")
+		case "pre-backup":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "pre-backup")
+		case "post-backup-success":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-backup-success")
+		case "post-backup-failure":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-backup-failure")
+		case "pre-restore":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "pre-restore")
+		case "post-restore-success":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-restore-success")
+		case "post-restore-failure":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-restore-failure")
+		case "pre-delete":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "pre-delete")
+		case "post-delete-success":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-delete-success")
+		case "post-delete-failure":
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-delete-failure")
+		default:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, "other")
+		}
+	}
+}
