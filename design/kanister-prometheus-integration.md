@@ -95,8 +95,8 @@ Phase duration, etc.
 // BoundedLabel is a type that represents a label and its associated 
 // valid values
 type BoundedLabel struct {
-	LabelName   string
-	LabelValues []string
+   LabelName string
+   LabelValues[] string
 }
 ```
 
@@ -107,13 +107,13 @@ we would create the bounded labels in the following way:
 ##### BoundedLabel example
 ```golang
 BoundedLabel {
-  LabelName: "operation_type"
-  LabelValues: ["backup", "restore"]
+   LabelName: "operation_type"
+   LabelValues: ["backup", "restore"]
 }
 
 BoundedLabel {
-  LabelName: "action_set_resolution"
-  LabelValues: ["success", "failure"]
+   LabelName: "action_set_resolution"
+   LabelValues: ["success", "failure"]
 }
 ``` 
 ##### Initialization methods
@@ -159,23 +159,16 @@ func InitHistogram(r prometheus.Registerer, opts prometheus.HistogramOpts) prome
 1. Initialize a new CounterVec with relevant options and label names 
 
 2. Attempt to register the new CounterVec
+   * If Successful,
+      * Generate combinations of label names.
+      * Create counters for each combination and set the counter 
+        to 0.
+   * If not successful, check if the error is an *AlreadyRegisteredError*
+      * If yes, return the CounterVec and ignore the error
+      * If no, then panic, signalling programmer error 
 
-   a. If successful,
-
-       i. Generate combinations of label names
-
-       ii. Create counters for each combination and set the counter 
-           to 0.
-
-   b. If not successful, check if the error is an AlreadyRegisteredError
-
-       i. If yes, return the CounterVec and ignore the error
-
-       ii. If no, return a nil CounterVec and the received error. 
-
-3. If received a nil CounterVec from registration, interrupt with a panic, 
-   because an interrupt would suggest a failure in the created 
-   CounterVec, which should be fixed by the programmer. 
+3. If received a CounterVec from registration, it is guaranteed that
+   the registration is successful. 
 
 #### Consumer Package
 
@@ -190,24 +183,24 @@ controller/controller.go
 
 ```golang
 type Controller struct {
-    config           *rest.Config
-    crClient         versioned.Interface
-    clientset        kubernetes.Interface
-    dynClient        dynamic.Interface
-    osClient         osversioned.Interface
-    recorder         record.EventRecorder
-    actionSetTombMap sync.Map
-    metrics          *metrics // add a new member to the existing struct
+   config           *rest.Config
+   crClient         versioned.Interface
+   clientset        kubernetes.Interface
+   dynClient        dynamic.Interface
+   osClient         osversioned.Interface
+   recorder         record.EventRecorder
+   actionSetTombMap sync.Map
+   metrics          *metrics // add a new member to the existing struct
 }
 ```
 
 ```golang
 // New create controller for watching Kanister custom resources created
 func New(c *rest.Config) *Controller {
-	return &Controller{
-		config:  c,
-		metrics: newMetrics(prometheus.DefaultRegistry), // this helper method call will be made during init
-	}
+   return &Controller{
+      config:  c,
+      metrics: newMetrics(prometheus.DefaultRegistry), // this helper method call will be made during init
+   }
 }
 ```
 
@@ -216,43 +209,55 @@ controller/metrics.go
 
 ```golang
 const (
-    ACTION_SET_COUNTER_VEC_LABEL_RES = "resolution"
-    ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE = "operation_type"
+   ACTION_SET_COUNTER_VEC_LABEL_RES = "resolution"
+   ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE = "operation_type"
 )
 
 type metrics struct {
-    ActionSetCounterVec *prometheus.CounterVec
+   ActionSetCounterVec * prometheus.CounterVec
 }
 
 // helper method to construct the correct "LabelHeaders":"LabelValues" mapping
 // to ensure type safety
-func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabels {
-    bl := make([]kanistermetrics.BoundedLabel, 2)
-	  bl[0] = kanistermetrics.BoundedLabel{LabelName: ACTION_SET_COUNTER_VEC_LABEL_RES,
-		LabelValues: []string{"success", "failure"}}
-    bl[1] = kanistermetrics.BoundedLabel{LabelName:
-    ACTION_SET_COUNTER_VEC_LABEL_BLUEPRINT, 
-    LabelValues: []string{"backup", "restore"}}
-    return bl
+func getActionSetCounterVecLabels()[] kanistermetrics.BoundedLabels {
+   bl: = make([] kanistermetrics.BoundedLabel, 2)
+   bl[0] = kanistermetrics.BoundedLabel {
+       LabelName: ACTION_SET_COUNTER_VEC_LABEL_RES,
+       LabelValues: [] string {
+           "success", "failure"
+       }
+   }
+   bl[1] = kanistermetrics.BoundedLabel {
+       LabelName: ACTION_SET_COUNTER_VEC_LABEL_BLUEPRINT,
+       LabelValues: [] string {
+           "backup", "restore"
+       }
+   }
+   return bl
 }
 
 
 // constructActionSetCounterVecLabels is a helper method to construct the
 // labels correctly.
-func constructActionSetCounterVecLabels(operation_type string, resolution string) prometheus.Labels {
-	return prometheus.Labels{ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE: operation_type, 
-  ACTION_SET_COUNTER_VEC_LABEL_RES: resolution}
+func constructActionSetCounterVecLabels(operation_type string,
+    resolution string) prometheus.Labels {
+    return prometheus.Labels {
+        ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE: operation_type,
+        ACTION_SET_COUNTER_VEC_LABEL_RES: resolution
+    }
 }
 
 // newMetrics is a helper method to create a Metrics interface.
-func newMetrics(gatherer prometheus.Gatherer) *metrics {
-    actionSetCounterOpts := prometheus.CounterOpts{
+func newMetrics(gatherer prometheus.Gatherer) * metrics {
+    actionSetCounterOpts: = prometheus.CounterOpts {
         Name: "action_set_resolutions_total",
         Help: "Total number of action set resolutions",
     }
-    actionSetCounterVec := kanistermetrics.InitCounterVec(gatherer,
-		actionSetCounterOpts, getActionSetCounterVecLabels())
-    return &metrics{ActionSetCounterVec: actionSetCounterVec}
+    actionSetCounterVec: = kanistermetrics.InitCounterVec(gatherer,
+        actionSetCounterOpts, getActionSetCounterVecLabels())
+    return &metrics {
+        ActionSetCounterVec: actionSetCounterVec
+    }
 }
 ```
 
@@ -260,8 +265,9 @@ The below example will show how the above created `ActionSetCounterVec` will
 be incremented in a method:
 
 ```golang
-func (c *Controller) handleActionSet(ctx context.Context) {
-  c.metrics.ActionSetCounterVec.With(constructActionSetCounterVecLabels("backup", "success")).Inc()
+func(c * Controller) handleActionSet(ctx context.Context) {
+   labels: = constructActionSetCounterVecLabels("backup", "success")
+   c.metrics.ActionSetCounterVec.With(labels).Inc()
 }
 ```
 
@@ -269,8 +275,8 @@ Alternatively, one can also directly call the Prometheus API with positional
 arguments:
 
 ```golang
-func (c *Controller) handleActionSet(ctx context.Context) {
-  c.metrics.ActionSetCounterVec.WithLabelValues("backup", "success").Inc()
+func(c * Controller) handleActionSet(ctx context.Context) {
+   c.metrics.ActionSetCounterVec.WithLabelValues("backup", "success").Inc()
 }
 ```
 
