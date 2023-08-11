@@ -13,7 +13,7 @@ repositoryServerControllerImage:
 kanisterToolsImage:
   override: false
   image: ghcr.io/kanisterio/kanister-tools
-  tag: 0.93.0
+  tag: 0.94.0
 rbac:
   create: true
 serviceAccount:
