@@ -43,7 +43,7 @@ const RepositoryServerResourceName = "repositoryserver"
 const RepositoryServerResourceNamePlural = "repositoryservers"
 
 const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
-const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.93.0"
+const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.94.0"
 
 // KanisterToolsImageEnvName is used to set up a custom kanister-tools image
 const KanisterToolsImageEnvName = "KANISTER_TOOLS"
