@@ -3,7 +3,6 @@ package function
 import (
 	"bytes"
 	"context"
-	"os"
 	"path"
 	"strings"
 
@@ -27,17 +26,8 @@ import (
 
 const (
 	// FunctionOutputVersion returns version
-	FunctionOutputVersion     = "version"
-	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.94.0"
-	kanisterToolsImageEnvName = "KANISTER_TOOLS"
+	FunctionOutputVersion = "version"
 )
-
-func getKanisterToolsImage() string {
-	if val, ok := os.LookupEnv(kanisterToolsImageEnvName); ok {
-		return val
-	}
-	return kanisterToolsImage
-}
 
 // ValidateCredentials verifies if the given credentials have appropriate values set
 func ValidateCredentials(creds *param.Credential) error {
