@@ -140,6 +140,8 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 		// We need to set this up since we are not creating controller in a pod
 		os.Setenv("HOSTNAME", controllerPodName)
 		os.Setenv("POD_SERVICE_ACCOUNT", defaultServiceAccount)
+		// Set KANISTER_TOOLS env to override and use dev image
+		os.Setenv(consts.KanisterToolsImageEnvName, consts.LatestKanisterToolsImage)
 		err = mgr.Start(ctx)
 		c.Assert(err, IsNil)
 	}(ctx)
@@ -447,7 +449,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 }
 
 func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerverName string) (v1alpha1.RepositoryServerProgress, error) {
-	ctxTimeout := 15 * time.Minute
+	ctxTimeout := 5 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 	var repoServerState v1alpha1.RepositoryServerProgress
@@ -517,6 +519,8 @@ func getTestKanisterToolsPod(podName string) (pod *v1.Pod) {
 }
 
 func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
+	err := os.Unsetenv(consts.KanisterToolsImageEnvName)
+	c.Assert(err, IsNil)
 	if s.repoServerControllerNamespace != "" {
 		err := s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.repoServerControllerNamespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)

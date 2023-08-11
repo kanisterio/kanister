@@ -83,3 +83,10 @@ on the value of bpValidatingWebhook.enabled
     {{ .Values.controller.service.insecuredPort }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Define a custom kanister-tools image
+*/}}
+{{- define "kanister-tools.image" -}}
+    {{- printf "%s:%s" (.Values.kanisterToolsImage.image) (.Values.kanisterToolsImage.tag) -}}
+{{- end -}}
