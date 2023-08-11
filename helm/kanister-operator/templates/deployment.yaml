@@ -60,7 +60,7 @@ spec:
           value: {{ .Values.controller.updateCRDs | quote }}
 {{- if .Values.kanisterToolsImage.override }}
         - name: KANISTER_TOOLS
-          value: {{ include kanister-tools.image . }}
+          value: {{ include "kanister-tools.image" . }}
 {{- end }}
 {{- if .Values.resources }}
         resources:
