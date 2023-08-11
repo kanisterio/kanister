@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -49,17 +48,17 @@ const (
 // If the environment variable is not set, then it returns a default
 // "false" value.
 func metricsEnabled() bool {
-	metricsEnabled, ok := os.LookupEnv(kanisterMetricsEnv)
-	if !ok {
-		log.Error().Print("KANISTER_METRICS_ENABLED env variable not set")
-		return false
-	}
-	enabled, err := strconv.ParseBool(metricsEnabled)
-	if err != nil {
-		log.Error().Print("Error parsing KANISTER_METRICS_ENABLED env variable to bool")
-		return false
-	}
-	return enabled
+	// metricsEnabled, ok := os.LookupEnv(kanisterMetricsEnv)
+	// if !ok {
+	// 	log.Error().Print("KANISTER_METRICS_ENABLED env variable not set")
+	// 	return false
+	// }
+	// enabled, err := strconv.ParseBool(metricsEnabled)
+	// if err != nil {
+	// 	log.Error().Print("Error parsing KANISTER_METRICS_ENABLED env variable to bool")
+	// 	return false
+	// }
+	return true
 }
 
 func Execute() {
