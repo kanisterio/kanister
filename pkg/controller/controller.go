@@ -446,7 +446,7 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 		defer func() {
 			var deferErr error
 			if deferPhase != nil {
-				c.updateActionSetRunningPhase(ctx, as, deferPhase.Name())
+				c.updateActionSetRunningPhase(ctx, aIDX, as, deferPhase.Name())
 				deferErr = c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
 			}
 			// render artifacts only if all the phases are run successfully
@@ -462,13 +462,13 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			var output map[string]interface{}
 			var msg string
 			if err == nil {
-				c.updateActionSetRunningPhase(ctx, as, p.Name())
+				c.updateActionSetRunningPhase(ctx, aIDX, as, p.Name())
 				progressTrackCtx, doneProgressTrack := context.WithCancel(ctx)
 				defer doneProgressTrack()
 				go func() {
 					// progress update is computed on a best-effort basis.
 					// if it exits with error, we will just log it.
-					if err := progress.UpdateActionSetsProgress(progressTrackCtx, c.crClient, as.GetName(), as.GetNamespace(), p); err != nil {
+					if err := progress.UpdateActionSetsProgress(progressTrackCtx, aIDX, c.crClient, as.GetName(), as.GetNamespace(), p); err != nil {
 						log.Error().WithError(err)
 					}
 				}()
@@ -537,12 +537,13 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 // updateActionSetRunningPhase updates the actionset's `status.Progress.RunningPhase` with the phase name
 // that is being run currently. It doesn't fail if there was a problem updating the actionset. It just logs
 // the failure.
-func (c *Controller) updateActionSetRunningPhase(ctx context.Context, as *crv1alpha1.ActionSet, phase string) {
+func (c *Controller) updateActionSetRunningPhase(ctx context.Context, aIDX int, as *crv1alpha1.ActionSet, phase string) {
 	err := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), as.Namespace, as.Name, func(as *crv1alpha1.ActionSet) error {
 		as.Status.Progress.RunningPhase = phase
-		for i := 0; i < len(as.Status.Actions[0].Phases); i++ {
-			if as.Status.Actions[0].Phases[i].Name == phase {
-				as.Status.Actions[0].Phases[i].State = crv1alpha1.StateRunning
+		// Iterate through all the phases and set current phase state to running
+		for i := 0; i < len(as.Status.Actions[aIDX].Phases); i++ {
+			if as.Status.Actions[aIDX].Phases[i].Name == phase {
+				as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateRunning
 			}
 		}
 		return nil

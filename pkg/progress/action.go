@@ -34,6 +34,7 @@ const (
 // iteration will be skipped with no further retries, until the next tick.
 func UpdateActionSetsProgress(
 	ctx context.Context,
+	aIDX int,
 	client versioned.Interface,
 	actionSetName string,
 	namespace string,
@@ -48,7 +49,7 @@ func UpdateActionSetsProgress(
 			return ctx.Err()
 
 		case <-ticker.C:
-			retry, err := updateActionProgress(ctx, client, actionSetName, namespace, p)
+			retry, err := updateActionProgress(ctx, aIDX, client, actionSetName, namespace, p)
 			if err != nil {
 				fields := field.M{
 					"actionSet":      actionSetName,
@@ -66,6 +67,7 @@ func UpdateActionSetsProgress(
 
 func updateActionProgress(
 	ctx context.Context,
+	aIDX int,
 	client versioned.Interface,
 	actionSetName string,
 	namespace string,
@@ -81,7 +83,7 @@ func updateActionProgress(
 		return true, nil
 	}
 
-	if completedOrFailed(actionSet, p.Name()) {
+	if completedOrFailed(aIDX, actionSet, p.Name()) {
 		return false, nil
 	}
 
@@ -132,15 +134,13 @@ func updateActionSetStatus(
 	return nil
 }
 
-func completedOrFailed(actionSet *crv1alpha1.ActionSet, phaseName string) bool {
-	for _, actions := range actionSet.Status.Actions {
-		for _, phase := range actions.Phases {
-			if phase.Name != phaseName {
-				continue
-			}
-			return phase.State == crv1alpha1.StateFailed ||
-				phase.State == crv1alpha1.StateComplete
+func completedOrFailed(aIDX int, actionSet *crv1alpha1.ActionSet, phaseName string) bool {
+	for _, phase := range actionSet.Status.Actions[aIDX].Phases {
+		if phase.Name != phaseName {
+			continue
 		}
+		return phase.State == crv1alpha1.StateFailed ||
+			phase.State == crv1alpha1.StateComplete
 	}
 	return false
 }

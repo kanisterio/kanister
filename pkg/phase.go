@@ -46,6 +46,7 @@ func (p *Phase) Name() string {
 	return p.name
 }
 
+// Progress return execution progress of the phase.
 func (p *Phase) Progress() (crv1alpha1.PhaseProgress, error) {
 	return p.f.ExecutionProgress()
 }
