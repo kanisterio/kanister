@@ -58,6 +58,10 @@ spec:
           value: {{ .Values.repositoryServerController.logLevel }}
         - name: CREATEORUPDATE_CRDS
           value: {{ .Values.controller.updateCRDs | quote }}
+{{- if .Values.kanisterToolsImage.override }}
+        - name: KANISTER_TOOLS
+          value: {{ include "kanister-tools.image" . }}
+{{- end }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}

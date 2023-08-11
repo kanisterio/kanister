@@ -205,7 +205,7 @@ func getPodOptions(namespace string, podOverride map[string]interface{}, svc *co
 	return &kube.PodOptions{
 		Namespace:     namespace,
 		GenerateName:  fmt.Sprintf("%s-", repoServerPod),
-		Image:         consts.KanisterToolsImage,
+		Image:         consts.GetKanisterToolsImage(),
 		ContainerName: repoServerPodContainerName,
 		Command:       []string{"bash", "-c", "tail -f /dev/null"},
 		PodOverride:   podOverride,
