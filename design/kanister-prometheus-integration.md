@@ -51,7 +51,7 @@ Phase duration, etc.
 
 ### Architecture
 
-![Alt text](images/prometheus-metrics-design.png?raw=true "Prometheus Integration Design")
+![Alt text](Prometheus_Metrics_Design.png?raw=true "Prometheus Integration Design")
 
 #### Text description
 
