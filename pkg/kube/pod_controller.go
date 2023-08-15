@@ -107,6 +107,12 @@ func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) P
 		podName: pod.Name,
 	}
 
+	options := &PodOptions{
+		Name:          pod.Name,
+		ContainerName: pod.Spec.Containers[0].Name,
+	}
+	r.podOptions = options
+
 	r.pcp = r
 
 	return r
