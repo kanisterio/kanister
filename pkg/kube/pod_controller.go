@@ -233,16 +233,11 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		return nil, ErrPodControllerPodNotReady
 	}
 
-	containerName := p.podOptions.ContainerName
-	if containerName == "" {
-		containerName = p.pod.Spec.Containers[0].Name
-	}
-
 	pce := &podCommandExecutor{
 		cli:           p.cli,
 		namespace:     p.podOptions.Namespace,
 		podName:       p.podName,
-		containerName: containerName,
+		containerName: p.getContainerName(),
 	}
 
 	pce.pcep = pce
@@ -263,7 +258,7 @@ func (p *podController) GetFileWriter() (PodFileWriter, error) {
 		cli:           p.cli,
 		namespace:     p.podOptions.Namespace,
 		podName:       p.podName,
-		containerName: p.podOptions.ContainerName,
+		containerName: p.getContainerName(),
 	}
 
 	pfw.fileWriterProcessor = pfw
