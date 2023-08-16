@@ -51,6 +51,23 @@ spec:
                     - content
                     - metadata
                     type: object
+                  configuration:
+                    description: Configuration can be used to specify the optional
+                      fields used for repository operations
+                    properties:
+                      cacheDirectory:
+                        description: CacheDirectory is an optional field to specify
+                          kopia cache directory
+                        type: string
+                      configFilePath:
+                        description: ConfigFilePath is an optional field to specify
+                          kopia config file path
+                        type: string
+                      logDirectory:
+                        description: LogDirectory is an optional field to specify
+                          kopia log directory
+                        type: string
+                    type: object
                   hostname:
                     description: If specified, these values will be used by the controller
                       to override default hostname when connecting to the repository
