@@ -242,7 +242,7 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 
 	pce := &podCommandExecutor{
 		cli:           p.cli,
-		namespace:     p.podOptions.Namespace,
+		namespace:     p.pod.Namespace,
 		podName:       p.podName,
 		containerName: p.getContainerName(),
 	}
