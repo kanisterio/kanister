@@ -211,10 +211,12 @@ func (p *podController) StopPod(ctx context.Context, stopTimeout time.Duration, 
 	return nil
 }
 
-// getContainerName returns container name, which should be passed to operations which requires it
-// if container name was specified in podOptions, it will be used.
-// Otherwise, the first container name from specs will be taken as best effort (when pods are created with sidecars
-// sidecar containers are placed after main container).
+// getContainerName returns container name, which should be passed to
+// operations that require it.
+// If the container name was specified in podOptions, it will be used.
+// Otherwise, the first container name from specs will be taken as best effort
+// (when pods are created with sidecars, sidecar containers are placed after
+// main container).
 func (p *podController) getContainerName() string {
 	if p.podOptions.ContainerName != "" {
 		return p.podOptions.ContainerName
