@@ -107,6 +107,13 @@ func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) P
 		podName: pod.Name,
 	}
 
+	options := &PodOptions{
+		Name:          pod.Name,
+		Namespace:     pod.Namespace,
+		ContainerName: pod.Spec.Containers[0].Name,
+	}
+	r.podOptions = options
+
 	r.pcp = r
 
 	return r
@@ -204,12 +211,26 @@ func (p *podController) StopPod(ctx context.Context, stopTimeout time.Duration, 
 	return nil
 }
 
+// getContainerName returns container name, which should be passed to
+// operations that require it.
+// If the container name was specified in podOptions, it will be used.
+// Otherwise, the first container name from specs will be taken as best effort
+// (when pods are created with sidecars, sidecar containers are placed after
+// main container).
+func (p *podController) getContainerName() string {
+	if p.podOptions.ContainerName != "" {
+		return p.podOptions.ContainerName
+	}
+
+	return p.pod.Spec.Containers[0].Name
+}
+
 func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
 	}
 
-	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, p.pod.Spec.Containers[0].Name)
+	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, p.getContainerName())
 }
 
 func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
@@ -221,16 +242,11 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		return nil, ErrPodControllerPodNotReady
 	}
 
-	containerName := p.podOptions.ContainerName
-	if containerName == "" {
-		containerName = p.pod.Spec.Containers[0].Name
-	}
-
 	pce := &podCommandExecutor{
 		cli:           p.cli,
-		namespace:     p.podOptions.Namespace,
+		namespace:     p.pod.Namespace,
 		podName:       p.podName,
-		containerName: containerName,
+		containerName: p.getContainerName(),
 	}
 
 	pce.pcep = pce
@@ -251,7 +267,7 @@ func (p *podController) GetFileWriter() (PodFileWriter, error) {
 		cli:           p.cli,
 		namespace:     p.podOptions.Namespace,
 		podName:       p.podName,
-		containerName: p.podOptions.ContainerName,
+		containerName: p.getContainerName(),
 	}
 
 	pfw.fileWriterProcessor = pfw
