@@ -239,6 +239,10 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		return nil, ErrPodControllerPodNotReady
 	}
 
+	if p.getContainerName() == "" {
+		return nil, errors.New("container name is empty")
+	}
+
 	pce := &podCommandExecutor{
 		cli:           p.cli,
 		namespace:     p.podOptions.Namespace,
