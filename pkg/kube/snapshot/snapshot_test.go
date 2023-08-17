@@ -998,6 +998,48 @@ func (s *SnapshotTestSuite) TestCreateFromSourceBeta(c *C) {
 	c.Assert(err, NotNil)
 }
 
+func (s *SnapshotTestSuite) TestCreateFromSource(c *C) {
+	ctx := context.Background()
+	namespace := "namespace"
+	existingSnapshotName := "existingSnapname"
+	snapshotName := "snapname"
+	snapshotClass := "volSnapClass"
+	driver := "driver"
+	labels := map[string]string{"Label": "1/"}
+	source := &snapshot.Source{
+		Handle:                  namespace,
+		Driver:                  driver,
+		VolumeSnapshotClassName: snapshotClass,
+	}
+	scheme := runtime.NewScheme()
+
+	volSnap := snapshot.UnstructuredVolumeSnapshot(v1alpha1.VolSnapGVR, existingSnapshotName, namespace, "pvcName", "content", snapshotClass, nil)
+	volSnapClass := snapshot.UnstructuredVolumeSnapshotClass(v1alpha1.VolSnapClassGVR, snapshotClass, "driver", "DELETE", nil)
+	dynCli := dynfake.NewSimpleDynamicClient(scheme, volSnap, volSnapClass)
+	kubeCli := fake.NewSimpleClientset()
+	snapshoterAlpha := snapshot.NewSnapshotAlpha(kubeCli, dynCli)
+
+	volSnap = snapshot.UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, existingSnapshotName, namespace, "pvcName", "content", snapshotClass, nil)
+	volSnapClass = snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, snapshotClass, "driver", "DELETE", nil)
+	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap, volSnapClass)
+	kubeCli = fake.NewSimpleClientset()
+	snapshoterBeta := snapshot.NewSnapshotBeta(kubeCli, dynCli)
+
+	volSnap = snapshot.UnstructuredVolumeSnapshot(snapshot.VolSnapGVR, existingSnapshotName, namespace, "pvcName", "content", snapshotClass, nil)
+	volSnapClass = snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, snapshotClass, "driver", "DELETE", nil)
+	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap, volSnapClass)
+	kubeCli = fake.NewSimpleClientset()
+	snapshoterStable := snapshot.NewSnapshotStable(kubeCli, dynCli)
+
+	for _, snapshoter := range []snapshot.Snapshotter{snapshoterAlpha, snapshoterBeta, snapshoterStable} {
+		err := snapshoter.CreateFromSource(ctx, source, snapshotName, namespace, false, labels)
+		foundSns, err := snapshoter.List(ctx, namespace, labels)
+		c.Assert(err, IsNil)
+		c.Assert(foundSns.Items, HasLen, 1)
+		c.Assert(foundSns.Items[0].Name, Equals, snapshotName)
+	}
+}
+
 func (s *SnapshotTestSuite) TestCreateFromSourceStable(c *C) {
 	ctx := context.Background()
 	namespace := "namespace"

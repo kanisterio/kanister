@@ -17,6 +17,7 @@ package snapshot
 import (
 	"context"
 
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -126,7 +127,7 @@ func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source,
 		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
-	snap := UnstructuredVolumeSnapshot(VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, labels)
+	snap := UnstructuredVolumeSnapshot(VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, blockstorage.SanitizeTags(labels))
 
 	if err := sna.CreateContentFromSource(ctx, source, contentName, snapshotName, namespace, deletionPolicy); err != nil {
 		return err
