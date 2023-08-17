@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -29,11 +30,15 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
+	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -41,6 +46,12 @@ var (
 	scheme          = runtime.NewScheme()
 	setupLog        = ctrl.Log.WithName("setup")
 	defaultLogLevel = zapcore.InfoLevel
+)
+
+const (
+	WHCertsDir        = "/var/run/webhook/serving-cert"
+	whHandlePath      = "/validate/v1alpha1/repositoryserver"
+	webhookServerPort = 8443
 )
 
 func init() {
@@ -70,7 +81,6 @@ func main() {
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         false,
 	})
@@ -105,6 +115,15 @@ func main() {
 		}
 	}
 
+	if isCACertMounted() {
+		hookServer := mgr.GetWebhookServer()
+		webhook := admission.WithCustomValidator(&v1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerWebhook{})
+		//webhook := admission.ValidatingWebhookFor(&v1alpha1.RepositoryServer{})
+		hookServer.Register(whHandlePath, webhook)
+		hookServer.CertDir = WHCertsDir
+		hookServer.Port = webhookServerPort
+	}
+
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -122,4 +141,12 @@ func getLogLevel() zapcore.Level {
 		return defaultLogLevel
 	}
 	return level
+}
+
+func isCACertMounted() bool {
+	if _, err := os.Stat(fmt.Sprintf("%s/%s", handler.WHCertsDir, "tls.crt")); err != nil {
+		return false
+	}
+
+	return true
 }

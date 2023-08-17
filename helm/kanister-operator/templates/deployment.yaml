@@ -51,6 +51,11 @@ spec:
       - name: {{ template "repository-server-controller.name" . }}
         image: {{ .Values.repositoryServerControllerImage.registry }}/{{ .Values.repositoryServerControllerImage.name }}:{{ .Values.repositoryServerControllerImage.tag }}
         imagePullPolicy: {{ .Values.repositoryServerControllerImage.pullPolicy }}
+{{- if .Values.repositoryServerController.validatingWebhook.enabled }}
+        volumeMounts:
+          - name: webhook-certs
+            mountPath: /var/run/webhook/serving-cert
+{{- end }}
         env:
         - name: KOPIA_SERVER_START_TIMEOUT
           value: {{ .Values.repositoryServerController.serverStartTimeout | quote }}

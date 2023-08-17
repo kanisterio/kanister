@@ -10,6 +10,13 @@ spec:
   - port: {{ template "kanister-operator.servicePort" . }}
     protocol: TCP
     targetPort: {{ template "kanister-operator.targetPort" . }}
+    name: controller
+{{- if .Values.repositoryServerController.validatingWebhook.enabled }}
+  - port:  {{ template "reposerver-controller.servicePort" . }}
+    protocol: TCP
+    targetPort: {{ template "reposerver-controller.targetPort" . }}
+    name: reposerver-controller
+{{- end }}
   selector:
     app: {{ template "kanister-operator.name" . }}
 status:
