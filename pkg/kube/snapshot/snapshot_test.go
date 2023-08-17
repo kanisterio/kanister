@@ -1033,6 +1033,7 @@ func (s *SnapshotTestSuite) TestCreateFromSource(c *C) {
 
 	for _, snapshoter := range []snapshot.Snapshotter{snapshoterAlpha, snapshoterBeta, snapshoterStable} {
 		err := snapshoter.CreateFromSource(ctx, source, snapshotName, namespace, false, labels)
+		c.Assert(err, IsNil)
 		foundSns, err := snapshoter.List(ctx, namespace, labels)
 		c.Assert(err, IsNil)
 		c.Assert(foundSns.Items, HasLen, 1)
