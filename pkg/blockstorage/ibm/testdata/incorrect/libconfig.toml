@@ -1,6 +1,0 @@
-[bluemix]
-iam_url = "https://iam.stage1.ng.bluemix.net"
-iam_client_id = "bx"
-iam_client_secret = "bx"
-iam_api_key = "free"
-refresh_token = ""
