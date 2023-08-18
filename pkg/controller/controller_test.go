@@ -510,7 +510,9 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 }
 
 func (s *ControllerSuite) TestNilPrometheusRegistry(c *C) {
-	config, _ := kube.LoadConfig()
+	config, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+	c.Assert(config, NotNil)
 	ctrl := New(config, nil)
 	c.Assert(ctrl, NotNil)
 	c.Assert(ctrl.metrics, IsNil)
@@ -529,85 +531,85 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				funcNames:        []string{testutil.WaitFuncName},
 				name:             "WaitFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: "success",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
 				funcNames:        []string{testutil.WaitFuncName, testutil.WaitFuncName},
 				name:             "WaitWait",
 				version:          kanister.DefaultVersion,
-				metricResolution: "success",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
 				funcNames:        []string{testutil.FailFuncName},
 				name:             "FailFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: "failure",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
 				funcNames:        []string{testutil.WaitFuncName, testutil.FailFuncName},
 				name:             "WaitFail",
 				version:          kanister.DefaultVersion,
-				metricResolution: "failure",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
 				funcNames:        []string{testutil.FailFuncName, testutil.WaitFuncName},
 				name:             "FailWait",
 				version:          kanister.DefaultVersion,
-				metricResolution: "failure",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName},
 				name:             "ArgFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: "success",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName, testutil.FailFuncName},
 				name:             "ArgFail",
 				version:          kanister.DefaultVersion,
-				metricResolution: "failure",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
 				funcNames:        []string{testutil.OutputFuncName},
 				name:             "OutputFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: "success",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
 				funcNames:        []string{testutil.CancelFuncName},
 				name:             "CancelFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: "failure",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName},
 				name:             "ArgFuncVersion",
 				version:          testutil.TestVersion,
-				metricResolution: "success",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName},
 				name:             "ArgFuncVersionFallback",
 				version:          "v1.2.3",
-				metricResolution: "success",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName},
 				name:             "ArgFuncNoActionSetVersion",
 				version:          "",
-				metricResolution: "success",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
 				funcNames:        []string{testutil.VersionMismatchFuncName},
 				name:             "VersionMismatchFunc",
 				version:          "v1.2.3",
-				metricResolution: "failure",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName, testutil.OutputFuncName},
 				name:             "ArgOutputFallbackOnlyOutput",
 				version:          testutil.TestVersion,
-				metricResolution: "success",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 		} {
 			var err error

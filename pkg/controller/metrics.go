@@ -36,8 +36,13 @@ const (
 // the labels permutations for the prometheus metric.
 func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
 	bl := make([]kanistermetrics.BoundedLabel, 1)
-	bl[0] = kanistermetrics.BoundedLabel{LabelName: ACTION_SET_COUNTER_VEC_LABEL_RES,
-		LabelValues: []string{ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS, ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE}}
+	bl[0] = kanistermetrics.BoundedLabel{
+		LabelName: ACTION_SET_COUNTER_VEC_LABEL_RES,
+		LabelValues: []string{
+			ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+			ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
+		},
+	}
 	return bl
 }
 
