@@ -27,11 +27,14 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -72,18 +75,6 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 			return err
 		}
 	}
-
-	if err := h.connectToKopiaRepository(); err != nil {
-		return errors.Wrap(err, "Failed to connect to Kopia repository")
-	}
-
-	if err := h.startRepoProxyServer(ctx); err != nil {
-		return errors.Wrap(err, "Failed to start Kopia API server")
-	}
-
-	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		return errors.Wrap(err, "Failed to create/update kopia API server access users")
-	}
 	return nil
 }
 
@@ -104,12 +95,7 @@ func (h *RepoServerHandler) reconcileService(ctx context.Context) (*corev1.Servi
 	if err != nil {
 		return nil, err
 	}
-	h.Logger.Info("Update service name in RepositoryServer /status")
-	serverInfo := crv1alpha1.ServerInfo{
-		PodName:     h.RepositoryServer.Status.ServerInfo.PodName,
-		ServiceName: svc.Name,
-	}
-	if err := h.updateServerInfoInCRStatus(ctx, serverInfo); err != nil {
+	if err := h.updateServerInfoInCRStatus(ctx, h.RepositoryServer.Status.ServerInfo.PodName, svc.Name); err != nil {
 		return nil, errors.Wrap(err, "Failed to update service name in RepositoryServer /status")
 	}
 	return svc, err
@@ -182,20 +168,25 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 		return nil, nil, err
 	}
 	h.Logger.Info("Pod resource not found. Creating new pod")
+	return h.createPodAndUpdateStatus(ctx, repoServerNamespace, svc)
+}
+
+func (h *RepoServerHandler) setCondition(ctx context.Context, condition metav1.Condition, progress crkanisteriov1alpha1.RepositoryServerProgress) error {
+	if uerr := h.updateRepoServerProgress(ctx, progress, condition); uerr != nil {
+		return uerr
+	}
+	return nil
+}
+
+func (h *RepoServerHandler) createPodAndUpdateStatus(ctx context.Context, repoServerNamespace string, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
 	var envVars []corev1.EnvVar
-	pod, envVars, err = h.createPod(ctx, repoServerNamespace, svc)
+	pod, envVars, err := h.createPod(ctx, repoServerNamespace, svc)
 	if err != nil {
 		return nil, nil, err
 	}
-	h.Logger.Info("Update pod name in RepositoryServer /status")
-	serverInfo := crv1alpha1.ServerInfo{
-		PodName:     pod.Name,
-		ServiceName: h.RepositoryServer.Status.ServerInfo.ServiceName,
-	}
-	if err := h.updateServerInfoInCRStatus(ctx, serverInfo); err != nil {
+	if err := h.updateServerInfoInCRStatus(ctx, pod.Name, h.RepositoryServer.Status.ServerInfo.ServiceName); err != nil {
 		return nil, nil, errors.Wrap(err, "Failed to update pod name in RepositoryServer /status")
 	}
-
 	return envVars, pod, nil
 }
 
@@ -228,7 +219,13 @@ func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace s
 	if err != nil {
 		return nil, nil, err
 	}
-	podOptions := getPodOptions(repoServerNamespace, podOverride, svc)
+
+	vols, err := getVolumes(ctx, h.KubeCli, h.RepositoryServerSecrets.storage, repoServerNamespace)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	podOptions := getPodOptions(repoServerNamespace, podOverride, svc, vols)
 	pod, envVars, err := h.setCredDataFromSecretInPod(ctx, podOptions)
 	if err != nil {
 		return nil, nil, err
@@ -289,7 +286,7 @@ func (h *RepoServerHandler) preparePodOverride(ctx context.Context) (map[string]
 	return podOverride, nil
 }
 
-func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, info crv1alpha1.ServerInfo) error {
+func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, podName string, serviceName string) error {
 	h.Logger.Info("Fetch latest version of RepositoryServer to update the ServerInfo in its status")
 	repoServerName := h.RepositoryServer.Name
 	repoServerNamespace := h.RepositoryServer.Namespace
@@ -298,7 +295,11 @@ func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, info
 	if err != nil {
 		return err
 	}
-	h.Logger.Info("Update the ServerInfo")
+
+	info := crv1alpha1.ServerInfo{
+		PodName:     podName,
+		ServiceName: serviceName,
+	}
 	rs.Status.ServerInfo = info
 	err = h.Reconciler.Status().Update(ctx, &rs)
 	if err != nil {
@@ -314,4 +315,69 @@ func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod
 		return errors.Wrap(err, fmt.Sprintf("Failed while waiting for pod %s to be ready", pod.Name))
 	}
 	return nil
+}
+
+func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progress crv1alpha1.RepositoryServerProgress, condition metav1.Condition) error {
+	repoServerName := h.RepositoryServer.Name
+	repoServerNamespace := h.RepositoryServer.Namespace
+	rs := crv1alpha1.RepositoryServer{}
+	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: repoServerName, Namespace: repoServerNamespace}, &rs)
+	if err != nil {
+		return err
+	}
+	apimeta.SetStatusCondition(&rs.Status.Conditions, condition)
+	if progress != "" {
+		rs.Status.Progress = progress
+	}
+	err = h.Reconciler.Status().Update(ctx, &rs)
+	if err != nil {
+		return err
+	}
+	h.RepositoryServer = &rs
+	return nil
+}
+
+func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
+	logger.Info("Start Kopia Repository Server")
+	if err := h.startRepoProxyServer(ctx); err != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonServerInitializedErr, "", crkanisteriov1alpha1.ServerInitialized)
+		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+		return ctrl.Result{}, err
+	}
+
+	condition := getCondition(metav1.ConditionTrue, conditionReasonServerInitializedSuccess, "", crkanisteriov1alpha1.ServerInitialized)
+	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Pending); uerr != nil {
+		return ctrl.Result{}, uerr
+	}
+
+	logger.Info("Add/Update users in Kopia Repository Server")
+	if err := h.createOrUpdateClientUsers(ctx); err != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonClientInitializedErr, err.Error(), crkanisteriov1alpha1.ClientUserInitialized)
+		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+		return ctrl.Result{}, err
+	}
+
+	condition = getCondition(metav1.ConditionTrue, conditionReasonClientInitializedSuccess, "", crkanisteriov1alpha1.ClientUserInitialized)
+	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Pending); uerr != nil {
+		return ctrl.Result{}, uerr
+	}
+
+	logger.Info("Refresh Kopia Repository Server")
+	if err := h.refreshServer(ctx); err != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonServerRefreshedErr, err.Error(), crkanisteriov1alpha1.ServerRefreshed)
+		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
+			return ctrl.Result{}, uerr
+		}
+		return ctrl.Result{}, err
+	}
+
+	condition = getCondition(metav1.ConditionTrue, conditionReasonServerRefreshedSuccess, "", crkanisteriov1alpha1.ServerRefreshed)
+	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Ready); uerr != nil {
+		return ctrl.Result{}, uerr
+	}
+	return ctrl.Result{}, nil
 }

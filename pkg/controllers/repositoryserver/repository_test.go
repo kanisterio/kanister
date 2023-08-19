@@ -24,7 +24,7 @@ import (
 
 func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repositoryServer)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
 
 	defaultcontentCacheMB, defaultmetadataCacheMB := command.GetGeneralCacheSizeSettings()
 
@@ -32,12 +32,11 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Req:              reconcile.Request{},
 		Reconciler:       s.DefaultRepoServerReconciler,
 		KubeCli:          s.kubeCli,
-		RepositoryServer: repositoryServer,
+		RepositoryServer: &repositoryServer,
 	}
 
 	// Test if Default cache size settings are set
-	contentCacheMB, metadataCacheMB, err := repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(err, IsNil)
+	contentCacheMB, metadataCacheMB := repoServerHandler.getRepositoryCacheSettings()
 	c.Assert(contentCacheMB, Equals, defaultcontentCacheMB)
 	c.Assert(metadataCacheMB, Equals, defaultmetadataCacheMB)
 
@@ -46,8 +45,7 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Metadata: "1000",
 		Content:  "1100",
 	}
-	contentCacheMB, metadataCacheMB, err = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(err, IsNil)
+	contentCacheMB, metadataCacheMB = repoServerHandler.getRepositoryCacheSettings()
 	c.Assert(contentCacheMB, Equals, 1100)
 	c.Assert(metadataCacheMB, Equals, 1000)
 
@@ -56,8 +54,7 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Metadata: "1000",
 		Content:  "",
 	}
-	contentCacheMB, metadataCacheMB, err = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(err, IsNil)
+	contentCacheMB, metadataCacheMB = repoServerHandler.getRepositoryCacheSettings()
 	c.Assert(contentCacheMB, Equals, defaultcontentCacheMB)
 	c.Assert(metadataCacheMB, Equals, 1000)
 
@@ -66,8 +63,35 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Metadata: "",
 		Content:  "1100",
 	}
-	contentCacheMB, metadataCacheMB, err = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(err, IsNil)
+	contentCacheMB, metadataCacheMB = repoServerHandler.getRepositoryCacheSettings()
 	c.Assert(contentCacheMB, Equals, 1100)
 	c.Assert(metadataCacheMB, Equals, defaultmetadataCacheMB)
+}
+
+func (s *RepoServerControllerSuite) TestConfigFileAndLogDirectoryConfiguration(c *C) {
+	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
+
+	repoServerHandler := RepoServerHandler{
+		Req:              reconcile.Request{},
+		Reconciler:       s.DefaultRepoServerReconciler,
+		KubeCli:          s.kubeCli,
+		RepositoryServer: &repositoryServer,
+	}
+
+	// Check if default values for log directory,config file path and cache directory are set
+	configuration := repoServerHandler.getRepositoryConfiguration()
+	c.Assert(configuration.ConfigFilePath, Equals, command.DefaultConfigFilePath)
+	c.Assert(configuration.LogDirectory, Equals, command.DefaultLogDirectory)
+	c.Assert(configuration.CacheDirectory, Equals, command.DefaultCacheDirectory)
+
+	// Check if custom values for log directory,config file path and cache directory are set
+	repositoryServer.Spec.Repository.Configuration.ConfigFilePath = "/tmp/test-config"
+	repositoryServer.Spec.Repository.Configuration.LogDirectory = "/tmp/test-log-directory"
+	repositoryServer.Spec.Repository.Configuration.CacheDirectory = "/tmp/test-cache-directory"
+
+	configuration = repoServerHandler.getRepositoryConfiguration()
+	c.Assert(configuration.ConfigFilePath, Equals, "/tmp/test-config")
+	c.Assert(configuration.LogDirectory, Equals, "/tmp/test-log-directory")
+	c.Assert(configuration.CacheDirectory, Equals, "/tmp/test-cache-directory")
 }
