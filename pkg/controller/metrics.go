@@ -32,35 +32,43 @@ const (
 	ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE = "failure"
 )
 
-func getActionTypeBucket(actionType string) string {
-	actionTypeBucket := ""
-	switch actionType {
-	case "backup":
-		actionTypeBucket = "backup"
-	case "restore":
-		actionTypeBucket = "restore"
-	case "delete":
-		actionTypeBucket = "delete"
-	case "pre-backup":
-		actionTypeBucket = "pre-backup"
-	case "post-backup-success":
-		actionTypeBucket = "post-backup-success"
-	case "post-backup-failure":
-		actionTypeBucket = "post-backup-failure"
-	case "pre-restore":
-		actionTypeBucket = "pre-restore"
-	case "post-restore-success":
-		actionTypeBucket = "post-restore-success"
-	case "post-restore-failure":
-		actionTypeBucket = "post-restore-failure"
-	case "pre-delete":
-		actionTypeBucket = "pre-delete"
-	case "post-delete-success":
-		actionTypeBucket = "post-delete-success"
-	case "post-delete-failure":
-		actionTypeBucket = "post-delete-failure"
-	default:
-		actionTypeBucket = "other"
+const (
+	ACTION_TYPE_BACKUP              = "backup"
+	ACTION_TYPE_RESTORE             = "restore"
+	ACTION_TYPE_DELETE              = "delete"
+	ACTION_TYPE_BACKUP_TO_SERVER    = "backupToServer"
+	ACTION_TYPE_RESTORE_FROM_SERVER = "restoreFromServer"
+	ACTION_TYPE_BEFORE_BACKUP       = "before-backup"
+	ACTION_TYPE_ON_SUCCESS          = "on-success"
+	ACTION_TYPE_ON_FAILURE          = "on-failure"
+	ACTION_TYPE_PRE_RESTORE         = "pre-restore"
+	ACTION_TYPE_POST_RESTORE        = "post-restore"
+	ACTION_TYPE_POST_RESTORE_FAILED = "post-restore-failed"
+	ACTION_TYPE_BACKUP_PREHOOK      = "backupPrehook"
+	ACTION_TYPE_BACKUP_POSTHOOK     = "backupPosthook"
+)
+
+func getActionTypeBucket(aType string) string {
+	actionTypes := []string{
+		ACTION_TYPE_BACKUP,
+		ACTION_TYPE_RESTORE,
+		ACTION_TYPE_DELETE,
+		ACTION_TYPE_BACKUP_TO_SERVER,
+		ACTION_TYPE_RESTORE_FROM_SERVER,
+		ACTION_TYPE_BEFORE_BACKUP,
+		ACTION_TYPE_ON_SUCCESS,
+		ACTION_TYPE_ON_FAILURE,
+		ACTION_TYPE_PRE_RESTORE,
+		ACTION_TYPE_POST_RESTORE,
+		ACTION_TYPE_POST_RESTORE_FAILED,
+		ACTION_TYPE_BACKUP_PREHOOK,
+		ACTION_TYPE_BACKUP_POSTHOOK,
+	}
+	actionTypeBucket := "other"
+	for _, actionType := range actionTypes {
+		if actionType == aType {
+			actionTypeBucket = actionType
+		}
 	}
 	return actionTypeBucket
 }

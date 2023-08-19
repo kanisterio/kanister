@@ -1028,70 +1028,75 @@ func (s *ControllerSuite) TestGetActionTypeBucket(c *C) {
 		actionType string
 	}{
 		{
-			actionType: "backup",
+			actionType: ACTION_TYPE_BACKUP,
 		},
 		{
-			actionType: "restore",
+			actionType: ACTION_TYPE_RESTORE,
 		},
 		{
-			actionType: "delete",
+			actionType: ACTION_TYPE_DELETE,
 		},
 		{
-			actionType: "pre-backup",
+			actionType: ACTION_TYPE_BACKUP_TO_SERVER,
 		},
 		{
-			actionType: "post-backup-success",
+			actionType: ACTION_TYPE_RESTORE_FROM_SERVER,
 		},
 		{
-			actionType: "post-backup-failure",
+			actionType: ACTION_TYPE_BEFORE_BACKUP,
 		},
 		{
-			actionType: "pre-restore",
+			actionType: ACTION_TYPE_ON_SUCCESS,
 		},
 		{
-			actionType: "post-restore-success",
+			actionType: ACTION_TYPE_ON_FAILURE,
 		},
 		{
-			actionType: "post-restore-failure",
+			actionType: ACTION_TYPE_PRE_RESTORE,
 		},
 		{
-			actionType: "pre-delete",
+			actionType: ACTION_TYPE_POST_RESTORE,
 		},
 		{
-			actionType: "post-delete-success",
+			actionType: ACTION_TYPE_POST_RESTORE_FAILED,
 		},
 		{
-			actionType: "post-delete-failure",
+			actionType: ACTION_TYPE_BACKUP_PREHOOK,
+		},
+		{
+			actionType: ACTION_TYPE_BACKUP_POSTHOOK,
 		},
 		{
 			actionType: "random-action",
 		},
 	} {
 		switch tc.actionType {
-		case "backup":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "backup")
-		case "restore":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "restore")
-		case "delete":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "delete")
-		case "pre-backup":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "pre-backup")
-		case "post-backup-success":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-backup-success")
-		case "post-backup-failure":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-backup-failure")
-		case "pre-restore":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "pre-restore")
-		case "post-restore-success":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-restore-success")
-		case "post-restore-failure":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-restore-failure")
-		case "pre-delete":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "pre-delete")
-		case "post-delete-success":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-delete-success")
-		case "post-delete-failure":
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "post-delete-failure")
+		case ACTION_TYPE_BACKUP:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP)
+		case ACTION_TYPE_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_RESTORE)
+		case ACTION_TYPE_DELETE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_DELETE)
+		case ACTION_TYPE_BACKUP_TO_SERVER:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_TO_SERVER)
+		case ACTION_TYPE_RESTORE_FROM_SERVER:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_RESTORE_FROM_SERVER)
+		case ACTION_TYPE_BEFORE_BACKUP:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BEFORE_BACKUP)
+		case ACTION_TYPE_ON_SUCCESS:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_ON_SUCCESS)
+		case ACTION_TYPE_ON_FAILURE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_ON_FAILURE)
+		case ACTION_TYPE_PRE_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_PRE_RESTORE)
+		case ACTION_TYPE_POST_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_POST_RESTORE)
+		case ACTION_TYPE_POST_RESTORE_FAILED:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_POST_RESTORE_FAILED)
+		case ACTION_TYPE_BACKUP_PREHOOK:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_PREHOOK)
+		case ACTION_TYPE_BACKUP_POSTHOOK:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_POSTHOOK)
 		default:
 			c.Assert(getActionTypeBucket(tc.actionType), Equals, "other")
 		}
