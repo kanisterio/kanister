@@ -115,6 +115,7 @@ minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
 - [Kanister Overview 2021 ](https://www.youtube.com/watch?v=wFD42Zpbfts&t=1s)
 - [SIG Apps Demo](https://youtu.be/uzIp-CjsX1c?t=82)
 - [Percona Live 2018](https://www.youtube.com/watch?v=dS0kv0k8D_E)
+- [AWS cloud Practisioner level](https://www.udemy.com/course/aws-certified-cloud-practitioner-new/)
 
 ## License
 
