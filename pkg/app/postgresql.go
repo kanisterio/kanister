@@ -49,12 +49,16 @@ func NewPostgresDB(name string, subPath string) App {
 			RepoName: helm.BitnamiRepoName,
 			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "postgresql",
-			Version:  "12.6.0", // TODO: Revert once #2155 is addressed
+			// Version:  "12.6.0", // TODO: Revert once #2155 is addressed
 			Values: map[string]string{
-				"image.pullPolicy":          "Always",
-				"auth.postgresPassword":     "test@54321",
-				"volumePermissions.enabled": "true",
-				"persistence.subPath":       subPath,
+				"image.pullPolicy":                                     "Always",
+				"auth.postgresPassword":                                "test@54321",
+				"volumePermissions.enabled":                            "true",
+				"persistence.subPath":                                  subPath,
+				"primary.containerSecurityContext.seccompProfile.type": "Unconfined",
+				"primary.containerSecurityContext.capabilities.add[0]": "CHOWN",
+				"primary.containerSecurityContext.capabilities.add[1]": "FOWNER",
+				"primary.containerSecurityContext.capabilities.add[2]": "DAC_OVERRIDE",
 			},
 		},
 	}
