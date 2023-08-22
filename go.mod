@@ -20,13 +20,13 @@ require (
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/aws/aws-sdk-go v1.44.323
+	github.com/aws/aws-sdk-go v1.44.328
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-logr/logr v1.2.4
 	github.com/go-openapi/strfmt v0.21.7
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jpillora/backoff v1.0.0
@@ -47,8 +47,8 @@ require (
 	github.com/vmware/govmomi v0.30.7
 	go.uber.org/zap v1.25.0
 	golang.org/x/oauth2 v0.11.0
-	gonum.org/v1/gonum v0.13.0
-	google.golang.org/api v0.137.0
+	gonum.org/v1/gonum v0.14.0
+	google.golang.org/api v0.138.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
