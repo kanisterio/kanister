@@ -59,6 +59,8 @@ repositoryServerController:
   # The TLS certificates for blueprint validating webhook server and 
   # repositoryserver validing webhook server are same and can be provided
   # under field `bpValidatingWebhook.tls` 
+  # Webhook can only be enabled for k8s server versions < 1.25
+  # For versions > 1.25 we will be using k8s CEL validation rules -https://kubernetes.io/blog/2022/09/23/crd-validation-rules-beta/
   validatingWebhook:
     enabled: false
 resources:

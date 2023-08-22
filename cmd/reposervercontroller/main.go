@@ -19,12 +19,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/discovery"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -52,6 +54,8 @@ const (
 	WHCertsDir        = "/var/run/webhook/serving-cert"
 	whHandlePath      = "/validate/v1alpha1/repositoryserver"
 	webhookServerPort = 8443
+	MajorK8sVersion   = 1
+	MinorK8sVersion   = 25
 )
 
 func init() {
@@ -115,12 +119,35 @@ func main() {
 		}
 	}
 
-	if isCACertMounted() {
-		hookServer := mgr.GetWebhookServer()
-		webhook := admission.WithCustomValidator(&v1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerWebhook{})
-		hookServer.Register(whHandlePath, webhook)
-		hookServer.CertDir = WHCertsDir
-		hookServer.Port = webhookServerPort
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		setupLog.Error(err, "Failed to get discovery client ")
+		os.Exit(1)
+	}
+
+	k8sserverVersion, err := discoveryClient.ServerVersion()
+	if err != nil {
+		setupLog.Error(err, "Failed to get server version using discovery client ")
+		os.Exit(1)
+	}
+
+	minorVersion, err := strconv.Atoi(k8sserverVersion.Minor)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	// We are using CEL validation rules for k8s server version > 1.25.
+	// More information about CEL can be found here - https://kubernetes.io/blog/2022/09/23/crd-validation-rules-beta/
+	// CEL is not supported for k8s server versions below 1.25. Hence for backward compatibility
+	// we can use validating webhook for k8s server versions < 1.25
+	if k8sserverVersion.Major == "1" && minorVersion < 25 {
+		if isCACertMounted() {
+			hookServer := mgr.GetWebhookServer()
+			webhook := admission.WithCustomValidator(&v1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerWebhook{})
+			hookServer.Register(whHandlePath, webhook)
+			hookServer.CertDir = WHCertsDir
+			hookServer.Port = webhookServerPort
+		}
 	}
 
 	setupLog.Info("starting manager")
