@@ -26,7 +26,7 @@ require (
 	github.com/go-openapi/strfmt v0.21.7
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jpillora/backoff v1.0.0
