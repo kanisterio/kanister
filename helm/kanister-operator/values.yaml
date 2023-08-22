@@ -55,6 +55,10 @@ repositoryServerController:
     # port is used as the secured service port if the validating
     # webhook is enabled.
     port: 444
+  # This flag is used to enable validating webhook for repository server CR
+  # The TLS certificates for blueprint validating webhook server and 
+  # repositoryserver validing webhook server are same and can be provided
+  # under field `bpValidatingWebhook.tls` 
   validatingWebhook:
     enabled: false
 resources:
