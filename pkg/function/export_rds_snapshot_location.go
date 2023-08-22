@@ -291,7 +291,6 @@ func prepareCommand(
 }
 
 func findDBList(ctx context.Context, dbEndpoint, username, password string) ([]string, error) {
-	// Find list of dbs
 	pg, err := postgres.NewClient(dbEndpoint, username, password, postgres.DefaultConnectDatabase, "disable")
 	if err != nil {
 		return nil, errors.Wrap(err, "Error in creating postgres client")
