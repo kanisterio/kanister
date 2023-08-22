@@ -250,46 +250,63 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
 }
 
-func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile *param.Profile, dbEngineVersion string) ([]string, string, error) {
+func prepareCommand(
+	ctx context.Context,
+	dbEngine RDSDBEngine,
+	action RDSAction,
+	dbEndpoint,
+	username,
+	password string,
+	dbList []string,
+	backupPrefix,
+	backupID string,
+	profile *param.Profile,
+	dbEngineVersion string,
+) ([]string, string, error) {
 	// Convert profile object into json
 	profileJson, err := json.Marshal(profile)
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Find list of dbs
-	// For backup operation, if database arg is not set, we take backup of all databases
-	if dbList == nil {
-		// If no database is passed, we find list of all the existing databases
-		pg, err := postgres.NewClient(dbEndpoint, username, password, "postgres", "disable")
-		if err != nil {
-			return nil, "", errors.Wrap(err, "Error in creating postgres client")
-		}
-
-		// Test DB connection
-		if err := pg.PingDB(ctx); err != nil {
-			return nil, "", errors.Wrap(err, "Failed to ping postgres database")
-		}
-
-		dbList, err = pg.ListDatabases(ctx)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "Error while listing databases")
-		}
-		dbList = filterRestrictedDB(dbList)
-	}
-
 	switch dbEngine {
 	case PostgrSQLEngine:
 		switch action {
 		case BackupAction:
+			// For backup operation, if database arg is not set, we take backup of all databases
+			if dbList == nil {
+				dbList, err = findDBList(ctx, dbEndpoint, username, password)
+				if err != nil {
+					return nil, "", err
+				}
+			}
 			command, err := postgresBackupCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJson)
 			return command, postgresToolsImage, err
 		case RestoreAction:
-			command, err := postgresRestoreCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJson, dbEngineVersion)
+			command, err := postgresRestoreCommand(dbEndpoint, username, password, backupPrefix, backupID, profileJson, dbEngineVersion)
 			return command, postgresToolsImage, err
 		}
 	}
 	return nil, "", errors.New("Invalid RDSDBEngine or RDSAction")
+}
+
+func findDBList(ctx context.Context, dbEndpoint, username, password string) ([]string, error) {
+	// Find list of dbs
+	pg, err := postgres.NewClient(dbEndpoint, username, password, postgres.DefaultConnectDatabase, "disable")
+	if err != nil {
+		return nil, errors.Wrap(err, "Error in creating postgres client")
+	}
+
+	// Test DB connection
+	if err := pg.PingDB(ctx); err != nil {
+		return nil, errors.Wrap(err, "Failed to ping postgres database")
+	}
+
+	dbList, err := pg.ListDatabases(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error while listing databases")
+	}
+	return filterRestrictedDB(dbList), nil
 }
 
 //nolint:unparam
