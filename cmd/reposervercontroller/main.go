@@ -118,7 +118,6 @@ func main() {
 	if isCACertMounted() {
 		hookServer := mgr.GetWebhookServer()
 		webhook := admission.WithCustomValidator(&v1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerWebhook{})
-		//webhook := admission.ValidatingWebhookFor(&v1alpha1.RepositoryServer{})
 		hookServer.Register(whHandlePath, webhook)
 		hookServer.CertDir = WHCertsDir
 		hookServer.Port = webhookServerPort

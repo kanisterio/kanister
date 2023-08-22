@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 image:
-  repository:  ghcr.io/kanisterio/controller
+  repository: ghcr.io/kanisterio/controller
   tag: 0.94.0
   pullPolicy: IfNotPresent
 repositoryServerControllerImage:
@@ -44,7 +44,7 @@ bpValidatingWebhook:
     secretName: '' # An already created Secret in kanister controller namespace having tls cert details
     caBundle: '' # A valid, CA bundle which is a PEM-encoded CA bundle for validating the webhook's server certificate
 repositoryServerController:
-  enabled: true
+  enabled: false
   # startTimeout is used to specify the time in seconds to wait for starting the kopia repository server
   # Default timeout is 600 seconds
   serverStartTimeout: 600
@@ -53,10 +53,10 @@ repositoryServerController:
     name: 'repository-server-controller'
   service:
     # port is used as the secured service port if the validating
-    # webhook is enabled. Otherwise, insecuredPort is used.
+    # webhook is enabled.
     port: 444
   validatingWebhook:
-    enabled: true
+    enabled: false
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little

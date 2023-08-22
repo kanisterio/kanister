@@ -28,15 +28,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
-
-// maximum concurrent reconcilations that can be triggered by the controller
-const maxConcurrentReconciles = 3
 
 // RepositoryServerReconciler reconciles a RepositoryServer object
 type RepositoryServerReconciler struct {
@@ -143,13 +139,10 @@ func newRepositoryServerHandler(
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	opts := controller.Options{
-		MaxConcurrentReconciles: maxConcurrentReconciles,
-	}
 	// The 'Owns' function allows the controller to set owner refs on
 	// child resources and run the same reconcile loop for all events on child resources
 	r.Recorder = mgr.GetEventRecorderFor("RepositoryServer")
-	return ctrl.NewControllerManagedBy(mgr).WithOptions(opts).
+	return ctrl.NewControllerManagedBy(mgr).
 		For(&crkanisteriov1alpha1.RepositoryServer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&corev1.Service{}).
 		Owns(&networkingv1.NetworkPolicy{}).

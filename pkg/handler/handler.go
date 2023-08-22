@@ -70,7 +70,6 @@ func RunWebhookServer(c *rest.Config) error {
 
 	hookServer := mgr.GetWebhookServer()
 	hookServer.Register(whHandlePath, &webhook.Admission{Handler: &validatingwebhook.BlueprintValidator{}})
-
 	hookServer.Register(healthCheckPath, &healthCheckHandler{})
 	hookServer.Register(metricsPath, promhttp.Handler())
 
