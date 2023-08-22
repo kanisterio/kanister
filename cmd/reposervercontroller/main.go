@@ -121,18 +121,19 @@ func main() {
 
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
-		setupLog.Error(err, "Failed to get discovery client ")
+		setupLog.Error(err, "Failed to get discovery client")
 		os.Exit(1)
 	}
 
 	k8sserverVersion, err := discoveryClient.ServerVersion()
 	if err != nil {
-		setupLog.Error(err, "Failed to get server version using discovery client ")
+		setupLog.Error(err, "Failed to get server version using discovery client")
 		os.Exit(1)
 	}
 
 	minorVersion, err := strconv.Atoi(k8sserverVersion.Minor)
 	if err != nil {
+		setupLog.Error(err, "Failed to convert to integer")
 		os.Exit(1)
 	}
 
