@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -73,7 +74,7 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: CopyVolumeDataJobPrefix,
-		Image:        getKanisterToolsImage(),
+		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      map[string]string{pvc: mountPoint},
 		PodOverride:  podOverride,
