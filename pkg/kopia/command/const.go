@@ -83,6 +83,7 @@ const (
 	overrideUsernameFlag      = "--override-username"
 	pointInTimeConnectionFlag = "--point-in-time"
 	urlFlag                   = "--url"
+	readOnlyFlag              = "--readonly"
 )
 
 // List of possible modifications to a policy, expressed as the kopia flag that will modify it

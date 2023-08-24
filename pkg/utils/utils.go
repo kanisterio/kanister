@@ -80,6 +80,15 @@ func GetEnvAsStringOrDefault(envKey string, def string) string {
 	return def
 }
 
+func GetIntOrDefault(value string, defaultValue int) (int, error) {
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		v = defaultValue
+		return v, errors.New("conversion to integer failed, using default value for the field")
+	}
+	return v, nil
+}
+
 // DurationToString formats the given duration into a short format which eludes trailing zero units in the string.
 func DurationToString(d time.Duration) string {
 	s := d.String()
