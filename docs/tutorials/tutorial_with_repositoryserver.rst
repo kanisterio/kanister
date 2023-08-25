@@ -24,7 +24,7 @@ Prerequisites
 
 * docker
 
-* The Kopia repository server controller should be deployed along with Kanister
+* The Kopia repository server controller should be deployed along with the Kanister
   controller.
   Refer
   :ref:`Deploying Kopia Repository server controller <deploying_repo_server_controller>`
