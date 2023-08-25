@@ -1022,3 +1022,83 @@ func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(runningPhases, HasLen, 0)
 }
+
+func (s *ControllerSuite) TestGetActionTypeBucket(c *C) {
+	for _, tc := range []struct {
+		actionType string
+	}{
+		{
+			actionType: ACTION_TYPE_BACKUP,
+		},
+		{
+			actionType: ACTION_TYPE_RESTORE,
+		},
+		{
+			actionType: ACTION_TYPE_DELETE,
+		},
+		{
+			actionType: ACTION_TYPE_BACKUP_TO_SERVER,
+		},
+		{
+			actionType: ACTION_TYPE_RESTORE_FROM_SERVER,
+		},
+		{
+			actionType: ACTION_TYPE_BEFORE_BACKUP,
+		},
+		{
+			actionType: ACTION_TYPE_ON_SUCCESS,
+		},
+		{
+			actionType: ACTION_TYPE_ON_FAILURE,
+		},
+		{
+			actionType: ACTION_TYPE_PRE_RESTORE,
+		},
+		{
+			actionType: ACTION_TYPE_POST_RESTORE,
+		},
+		{
+			actionType: ACTION_TYPE_POST_RESTORE_FAILED,
+		},
+		{
+			actionType: ACTION_TYPE_BACKUP_PREHOOK,
+		},
+		{
+			actionType: ACTION_TYPE_BACKUP_POSTHOOK,
+		},
+		{
+			actionType: "random-action",
+		},
+	} {
+		switch tc.actionType {
+		case ACTION_TYPE_BACKUP:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP)
+		case ACTION_TYPE_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_RESTORE)
+		case ACTION_TYPE_DELETE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_DELETE)
+		case ACTION_TYPE_BACKUP_TO_SERVER:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_TO_SERVER)
+		case ACTION_TYPE_RESTORE_FROM_SERVER:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_RESTORE_FROM_SERVER)
+		case ACTION_TYPE_BEFORE_BACKUP:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BEFORE_BACKUP)
+		case ACTION_TYPE_ON_SUCCESS:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_ON_SUCCESS)
+		case ACTION_TYPE_ON_FAILURE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_ON_FAILURE)
+		case ACTION_TYPE_PRE_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_PRE_RESTORE)
+		case ACTION_TYPE_POST_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_POST_RESTORE)
+		case ACTION_TYPE_POST_RESTORE_FAILED:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_POST_RESTORE_FAILED)
+		case ACTION_TYPE_BACKUP_PREHOOK:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_PREHOOK)
+		case ACTION_TYPE_BACKUP_POSTHOOK:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_POSTHOOK)
+		default:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_OTHER)
+		}
+	}
+}

@@ -32,6 +32,47 @@ const (
 	ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE = "failure"
 )
 
+const (
+	ACTION_TYPE_BACKUP              = "backup"
+	ACTION_TYPE_RESTORE             = "restore"
+	ACTION_TYPE_DELETE              = "delete"
+	ACTION_TYPE_BACKUP_TO_SERVER    = "backupToServer"
+	ACTION_TYPE_RESTORE_FROM_SERVER = "restoreFromServer"
+	ACTION_TYPE_BEFORE_BACKUP       = "before-backup"
+	ACTION_TYPE_ON_SUCCESS          = "on-success"
+	ACTION_TYPE_ON_FAILURE          = "on-failure"
+	ACTION_TYPE_PRE_RESTORE         = "pre-restore"
+	ACTION_TYPE_POST_RESTORE        = "post-restore"
+	ACTION_TYPE_POST_RESTORE_FAILED = "post-restore-failed"
+	ACTION_TYPE_BACKUP_PREHOOK      = "backupPrehook"
+	ACTION_TYPE_BACKUP_POSTHOOK     = "backupPosthook"
+	ACTION_TYPE_BACKUP_OTHER        = "other"
+)
+
+var knownActionsList = map[string]bool{
+	ACTION_TYPE_BACKUP:              true,
+	ACTION_TYPE_RESTORE:             true,
+	ACTION_TYPE_DELETE:              true,
+	ACTION_TYPE_BACKUP_TO_SERVER:    true,
+	ACTION_TYPE_RESTORE_FROM_SERVER: true,
+	ACTION_TYPE_BEFORE_BACKUP:       true,
+	ACTION_TYPE_ON_SUCCESS:          true,
+	ACTION_TYPE_ON_FAILURE:          true,
+	ACTION_TYPE_PRE_RESTORE:         true,
+	ACTION_TYPE_POST_RESTORE:        true,
+	ACTION_TYPE_POST_RESTORE_FAILED: true,
+	ACTION_TYPE_BACKUP_PREHOOK:      true,
+	ACTION_TYPE_BACKUP_POSTHOOK:     true,
+}
+
+func getActionTypeBucket(aType string) string {
+	actionTypeBucket := ACTION_TYPE_BACKUP_OTHER
+	if _, ok := knownActionsList[aType]; ok {
+		actionTypeBucket = aType
+	}
+	return actionTypeBucket
+}
+
 // getActionSetCounterVecLabels builds a new BoundedLabel list to construct
 // the labels permutations for the prometheus metric.
 func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
