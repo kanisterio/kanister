@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 
@@ -37,7 +36,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
-	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
@@ -51,11 +49,9 @@ var (
 )
 
 const (
-	WHCertsDir        = "/var/run/webhook/serving-cert"
 	whHandlePath      = "/validate/v1alpha1/repositoryserver"
 	webhookServerPort = 8443
-	MajorK8sVersion   = 1
-	MinorK8sVersion   = 25
+	minorK8sVersion   = 25
 )
 
 func init() {
@@ -141,12 +137,12 @@ func main() {
 	// More information about CEL can be found here - https://kubernetes.io/blog/2022/09/23/crd-validation-rules-beta/
 	// CEL is not supported for k8s server versions below 1.25. Hence for backward compatibility
 	// we can use validating webhook for k8s server versions < 1.25
-	if k8sserverVersion.Major == "1" && minorVersion < 25 {
-		if isCACertMounted() {
+	if k8sserverVersion.Major == "1" && minorVersion < minorK8sVersion {
+		if validatingwebhook.IsCACertMounted() {
 			hookServer := mgr.GetWebhookServer()
-			webhook := admission.WithCustomValidator(&v1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerWebhook{})
+			webhook := admission.WithCustomValidator(&v1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
 			hookServer.Register(whHandlePath, webhook)
-			hookServer.CertDir = WHCertsDir
+			hookServer.CertDir = validatingwebhook.WHCertsDir
 			hookServer.Port = webhookServerPort
 		}
 	}
@@ -168,12 +164,4 @@ func getLogLevel() zapcore.Level {
 		return defaultLogLevel
 	}
 	return level
-}
-
-func isCACertMounted() bool {
-	if _, err := os.Stat(fmt.Sprintf("%s/%s", handler.WHCertsDir, "tls.crt")); err != nil {
-		return false
-	}
-
-	return true
 }

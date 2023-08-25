@@ -24,23 +24,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-const errValidate = "Validation Error"
+type RepositoryServerValidator struct{}
 
-type RepositoryServerWebhook struct {
-}
-
-var _ webhook.CustomValidator = &RepositoryServerWebhook{}
+var _ webhook.CustomValidator = &RepositoryServerValidator{}
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate/v1alpha1/repositoryserver,mutating=false,failurePolicy=fail,sideEffects=None,groups=cr.kanister.io,resources=repositoryservers,verbs=update,versions=v1alpha1,name=repositoryserver.cr.kanister.io,admissionReviewVersions=v1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *RepositoryServerWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+func (r *RepositoryServerValidator) ValidateCreate(ctx context.Context, obj runtime.Object) error {
 	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *RepositoryServerWebhook) ValidateUpdate(ctx context.Context, old runtime.Object, new runtime.Object) error {
+func (r *RepositoryServerValidator) ValidateUpdate(ctx context.Context, old runtime.Object, new runtime.Object) error {
 	oldrs, ook := old.(*v1alpha1.RepositoryServer)
 	newrs, nok := old.(*v1alpha1.RepositoryServer)
 	if !ook || !nok {
@@ -54,6 +51,6 @@ func (r *RepositoryServerWebhook) ValidateUpdate(ctx context.Context, old runtim
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *RepositoryServerWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) error {
+func (r *RepositoryServerValidator) ValidateDelete(ctx context.Context, obj runtime.Object) error {
 	return nil
 }
