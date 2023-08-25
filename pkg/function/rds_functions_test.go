@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/postgres"
 	. "gopkg.in/check.v1"
 )
 
@@ -59,7 +60,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 				fmt.Sprintf(`
 		export PGHOST=%s
 		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | sed 's/"LOCALE"/"LC_COLLATE"/' | psql -q -U "${PGUSER}" %s
-		`, "db-endpoint", "null", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), []string{"template1"}[0]),
+		`, "db-endpoint", "null", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), postgres.DefaultConnectDatabase),
 			},
 		},
 		{
@@ -78,7 +79,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 				fmt.Sprintf(`
 		export PGHOST=%s
 		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" %s
-		`, "db-endpoint", "null", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), []string{"template1"}[0]),
+		`, "db-endpoint", "null", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), postgres.DefaultConnectDatabase),
 			},
 		},
 		{
