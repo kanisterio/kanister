@@ -551,8 +551,8 @@ RepositoryServers
 -----------------
 
 RepositoryServers are a Kanister CustomResource that contain information about storage,
-repository, and server details. These details are required to run a Kopia repository server
-instance, which can then be further used for data operation artifacts.
+repository, and server details. These details are required to run a Kopia repository
+server instance, which can then be further used for data operation artifacts.
 
 In contrast to Secrets and ConfigMaps, an ActionSet can optionally reference only a
 single repository server, eliminating the need to name the RepositoryServer in the

@@ -1,10 +1,10 @@
 Using Kopia Repository Server as Data Mover in Blueprint
 ********************************************************
 
-This tutorial will demonstrate the use of Kopia to copy/restore backups
+This tutorial will demonstrate the use of Kopia to copy or restore backups
 to a Kopia repository. We will be using kanister functions
 that use Kopia repository Server as data mover in the blueprint.
-For additional documentation on kanister functions and blueprints
+For additional documentation on kanister functions and blueprints,
 refer to the :ref:`architecture` and :ref:`kanister functions<functions>`
 sections respectively
 
@@ -24,7 +24,8 @@ Prerequisites
 
 * docker
 
-* Kopia repository server controller should be deployed along with Kanister controller
+* The Kopia repository server controller should be deployed along with Kanister
+  controller.
   Refer
   :ref:`Deploying Kopia Repository server controller <deploying_repo_server_controller>`
 
@@ -33,11 +34,11 @@ Prerequisites
 Example Application
 ===================
 
-This tutorial begins by deploying a sample application. The application is
-contrived, but useful for demonstrating Kanister's features. The application
-appends the current time to a log file every second. The application's container
-includes the aws command-line client which we'll use later in the tutorial. The
-application is installed in the ``default`` namespace.
+This tutorial begins by deploying a sample application. While this application is
+intentionally simplified, it serves the purpose of demonstrating Kanister's features.
+The application appends the current time to a log file every second. The application's
+container includes the aws command-line client which we will use in later sections of
+this tutorial. This application is installed in the ``default`` namespace.
 
 .. code-block:: yaml
 
@@ -356,8 +357,8 @@ To learn more about the Kanister function, refer to the documentation on
 :doc:`Kanister's parameter templating </functions>`.
 
 Output artifacts are used in this scenario to store the data path in s3 and
-the corresponding snapshot ID that which will serve as the ``backupIdentifier``
-during restoration process.
+the corresponding snapshot ID, which which will serve as the ``backupIdentifier``
+during the restoration process.
 
 To know more about artifacts, refer to the :ref:`tutorials` section.
 
@@ -461,9 +462,9 @@ ActionSet
 
 The ``--repository-server`` flag is used to provide the reference to the repository server
 CR created in step :ref:`Creating Repository Server custom resource <creating_repo_server_CR>`.
-As the CR contains the details related to the Kopia repository server and the associated secrets,
+As the CR contains details related to the Kopia repository server and the associated secrets,
 the blueprint can access these details using template parameters. This enables the blueprint to
-execute backup operation using the Kopia repository server.
+execute backup operations using the Kopia repository server.
 
 
 .. code-block:: bash

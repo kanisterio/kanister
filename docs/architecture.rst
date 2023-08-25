@@ -620,9 +620,9 @@ As a reference, below is an example of a Repository Server
 Repository Server Secrets
 =========================
 
-The repository server controller needs the following secrets to be created for starting the Kopia
-repository server successfully. The secrets are referenced in the ``RepositoryServer``
-CR, as described in  :ref:`RepositoryServer<repository_servers>`.
+The repository server controller needs the following secrets to be created for starting
+the Kopia repository server successfully. The secrets are referenced in the
+``RepositoryServer`` CR, as described in  :ref:`RepositoryServer<repository_servers>`.
 
 Location Storage Secret
 -----------------------
@@ -663,8 +663,8 @@ Location Credentials Secret
 ---------------------------
 
 The following secret should be used for Azure, AWS and GCS storage credentials.
-This secret is referenced by the ``spec.storage.credentialSecretRef`` in the repository server
-CR:
+This secret is referenced by the ``spec.storage.credentialSecretRef`` in the
+repository server CR:
 
 - ``AWS S3``
 
@@ -745,8 +745,8 @@ is referenced by the ``spec.repository.passwordSecretRef`` in the repository ser
 Repository Server Admin User Secret
 -----------------------------------
 This secret is used for storing admin credentials that are used by the controller
-to start the Kopia repository server. It is referenced by the ``spec.server.accessSecretRef``
-in the repository server CR.
+to start the Kopia repository server. It is referenced by the
+``spec.server.accessSecretRef`` in the repository server CR.
 
 .. code-block:: yaml
   :linenos:
@@ -790,7 +790,7 @@ Repository Server User Access Password Secret
 The Kopia repository client needs an access username and password for authentication to
 connect to Kopia repository server.
 
-The Kopia client needs a user in the format of ``<username>@<hostname>``. The username is 
+The Kopia client needs a user in the format of ``<username>@<hostname>``. The username is
 the same for all the clients, which is specified in ``spec.server.UserAccess.username`` of
 the ``RepositoryServer`` CR. The password and host name are provided in the form of
 a secret, as shown below
