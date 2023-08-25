@@ -63,7 +63,6 @@ var knownActionsList = map[string]bool{
 	ACTION_TYPE_POST_RESTORE_FAILED: true,
 	ACTION_TYPE_BACKUP_PREHOOK:      true,
 	ACTION_TYPE_BACKUP_POSTHOOK:     true,
-	ACTION_TYPE_BACKUP_OTHER:        true,
 }
 
 func getActionTypeBucket(aType string) string {
