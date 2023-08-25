@@ -1098,7 +1098,7 @@ func (s *ControllerSuite) TestGetActionTypeBucket(c *C) {
 		case ACTION_TYPE_BACKUP_POSTHOOK:
 			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_POSTHOOK)
 		default:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, "other")
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_OTHER)
 		}
 	}
 }

@@ -46,29 +46,30 @@ const (
 	ACTION_TYPE_POST_RESTORE_FAILED = "post-restore-failed"
 	ACTION_TYPE_BACKUP_PREHOOK      = "backupPrehook"
 	ACTION_TYPE_BACKUP_POSTHOOK     = "backupPosthook"
+	ACTION_TYPE_BACKUP_OTHER        = "other"
 )
 
+var knownActionsList = map[string]bool{
+	ACTION_TYPE_BACKUP:              true,
+	ACTION_TYPE_RESTORE:             true,
+	ACTION_TYPE_DELETE:              true,
+	ACTION_TYPE_BACKUP_TO_SERVER:    true,
+	ACTION_TYPE_RESTORE_FROM_SERVER: true,
+	ACTION_TYPE_BEFORE_BACKUP:       true,
+	ACTION_TYPE_ON_SUCCESS:          true,
+	ACTION_TYPE_ON_FAILURE:          true,
+	ACTION_TYPE_PRE_RESTORE:         true,
+	ACTION_TYPE_POST_RESTORE:        true,
+	ACTION_TYPE_POST_RESTORE_FAILED: true,
+	ACTION_TYPE_BACKUP_PREHOOK:      true,
+	ACTION_TYPE_BACKUP_POSTHOOK:     true,
+	ACTION_TYPE_BACKUP_OTHER:        true,
+}
+
 func getActionTypeBucket(aType string) string {
-	actionTypes := []string{
-		ACTION_TYPE_BACKUP,
-		ACTION_TYPE_RESTORE,
-		ACTION_TYPE_DELETE,
-		ACTION_TYPE_BACKUP_TO_SERVER,
-		ACTION_TYPE_RESTORE_FROM_SERVER,
-		ACTION_TYPE_BEFORE_BACKUP,
-		ACTION_TYPE_ON_SUCCESS,
-		ACTION_TYPE_ON_FAILURE,
-		ACTION_TYPE_PRE_RESTORE,
-		ACTION_TYPE_POST_RESTORE,
-		ACTION_TYPE_POST_RESTORE_FAILED,
-		ACTION_TYPE_BACKUP_PREHOOK,
-		ACTION_TYPE_BACKUP_POSTHOOK,
-	}
-	actionTypeBucket := "other"
-	for _, actionType := range actionTypes {
-		if actionType == aType {
-			actionTypeBucket = actionType
-		}
+	actionTypeBucket := ACTION_TYPE_BACKUP_OTHER
+	if _, ok := knownActionsList[aType]; ok {
+		actionTypeBucket = aType
 	}
 	return actionTypeBucket
 }
