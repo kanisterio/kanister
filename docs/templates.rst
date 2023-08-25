@@ -490,7 +490,7 @@ Unlike Secrets and ConfigMaps, only a single profile can optionally be
 referenced by an ActionSet. As a result, there it is not necessary to
 name the Profiles in the Blueprint.
 
-The following examples should be helpful.
+The following examples should be helpful:
 
 .. code-block:: yaml
 
@@ -551,8 +551,8 @@ RepositoryServers
 -----------------
 
 RepositoryServers are a Kanister CustomResource that contain information about storage,
-repository, and server details which are required for running a Kopia repository server
-instance, which can be further used for data operation artifacts.
+repository, and server details. These details are required to run a Kopia repository server
+instance, which can then be further used for data operation artifacts.
 
 In contrast to Secrets and ConfigMaps, an ActionSet can optionally reference only a
 single repository server, eliminating the need to name the RepositoryServer in the
