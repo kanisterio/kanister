@@ -9,7 +9,7 @@ replace (
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
-// Direct and indirect dependencies are grouped together
+// Direct and indirect dependencies are in separate require sections
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.29
