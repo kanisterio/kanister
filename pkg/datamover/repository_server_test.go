@@ -64,7 +64,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 
 	// Check if kopia binary exists in PATH
 	if !CommandExists("kopia") {
-		c.Skip("Skipping kopia integration tests. Couldn't find kopia binary in the path.")
+		c.Skip("Skipping repository server datamover unit test. Couldn't find kopia binary in the path.")
 	}
 
 	// Setting Up Repository Server Address
