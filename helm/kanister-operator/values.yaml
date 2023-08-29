@@ -39,10 +39,20 @@ controller:
     enabled: false
 bpValidatingWebhook:
   enabled: true
+  # `tls` field is used to specify TLS information for both blueprint and repositoryserver validating webhook server 
   tls:
     mode: auto # If set to `custom` then secretName and caBundle should be provided
     secretName: '' # An already created Secret in kanister controller namespace having tls cert details
     caBundle: '' # A valid, CA bundle which is a PEM-encoded CA bundle for validating the webhook's server certificate
+validatingWebhook:
+  # This flag is used to enable validating webhook for repository server CR
+  # The TLS certificates for blueprint validating webhook server and 
+  # repositoryserver validing webhook server are same and can be provided
+  # under field `bpValidatingWebhook.tls` 
+  # Webhook can only be enabled for k8s server versions < 1.25
+  # For versions > 1.25 we will be using k8s CEL validation rules -https://kubernetes.io/blog/2022/09/23/crd-validation-rules-beta/
+  repositoryserver:
+    enabled: false
 repositoryServerController:
   enabled: false
   # startTimeout is used to specify the time in seconds to wait for starting the kopia repository server
@@ -55,14 +65,6 @@ repositoryServerController:
     # port is used as the secured service port if the validating
     # webhook is enabled.
     port: 444
-  # This flag is used to enable validating webhook for repository server CR
-  # The TLS certificates for blueprint validating webhook server and 
-  # repositoryserver validing webhook server are same and can be provided
-  # under field `bpValidatingWebhook.tls` 
-  # Webhook can only be enabled for k8s server versions < 1.25
-  # For versions > 1.25 we will be using k8s CEL validation rules -https://kubernetes.io/blog/2022/09/23/crd-validation-rules-beta/
-  validatingWebhook:
-    enabled: false
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little

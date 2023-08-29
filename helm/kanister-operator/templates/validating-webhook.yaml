@@ -1,4 +1,4 @@
-{{- if or .Values.bpValidatingWebhook.enabled .Values.repositoryServerController.validatingWebhook.enabled }}
+{{- if or .Values.bpValidatingWebhook.enabled .Values.validatingWebhook.repositoryserver.enabled }}
 # generate ca cert with 365 days of validity
 {{ $ca := genCA ( printf "%s-ca" ( include "kanister-operator.fullname" . ) ) 365 }}
 {{- if eq (.Values.bpValidatingWebhook.tls.mode) "auto" }}
@@ -44,7 +44,7 @@ webhooks:
   timeoutSeconds: 5
 ---
 {{- end -}}
-{{- if .Values.repositoryServerController.validatingWebhook.enabled -}}
+{{- if .Values.validatingWebhook.repositoryserver.enabled -}}
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
