@@ -27,7 +27,6 @@ import (
 	. "gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/testutil"
@@ -44,7 +43,6 @@ type RepositoryServerSuite struct {
 	kopiaLogDir        string
 	kopiaConfigDir     string
 	tlsDir             string
-	location           *crv1alpha1.Location
 	serverHost         string
 	serverUsername     string
 	serverPassword     string
@@ -76,11 +74,14 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	rss.serverUsername = "user@localhost"
 	rss.serverPassword = "testPassword"
 	rss.serverHost = "localhost"
-	rss.repositoryUser = "repositoryUser"
 	rss.testUsername = "testuser"
 	rss.testUserPassword = rand.String(8)
+
+	// Setting Up Repository Access
+	rss.repositoryUser = "repositoryUser"
 	rss.repositoryPassword = rand.String(8)
 	rss.repoPathPrefix = path.Join("kopia-int", time.Now().UTC().Format(time.RFC3339), rand.String(5))
+
 	rss.ctx = context.Background()
 
 	// Setting Up Kopia Cache, Log and Config Dir
@@ -91,12 +92,6 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	// Setting Up TLS Dir
 	temp := c.MkDir()
 	rss.tlsDir = filepath.Join(temp, "tls-"+rand.String(5))
-
-	// Setting Up Location
-	rss.location = &crv1alpha1.Location{
-		Type:   crv1alpha1.LocationTypeS3Compliant,
-		Bucket: testutil.TestS3BucketName,
-	}
 }
 
 func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
