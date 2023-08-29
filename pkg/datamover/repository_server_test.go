@@ -17,7 +17,6 @@ package datamover
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -30,10 +29,6 @@ import (
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/testutil"
-)
-
-const (
-	kopiaExeEnv = "KOPIA_EXE"
 )
 
 type RepositoryServerSuite struct {
@@ -57,11 +52,6 @@ type RepositoryServerSuite struct {
 var _ = Suite(&RepositoryServerSuite{})
 
 func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
-	// Check if KOPIA_EXE environment variable is set
-	if _, ok := os.LookupEnv(kopiaExeEnv); !ok {
-		c.Skip("Skipping kopia integration tests. KOPIA_EXE env var not set.")
-	}
-
 	// Check if kopia binary exists in PATH
 	if !CommandExists("kopia") {
 		c.Skip("Skipping repository server datamover unit test. Couldn't find kopia binary in the path.")
