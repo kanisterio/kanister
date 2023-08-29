@@ -58,8 +58,7 @@ func (p *profile) Push(ctx context.Context, sourcePath, destinationPath string) 
 		if err := p.connectToKopiaRepositoryServer(ctx); err != nil {
 			return err
 		}
-		_, err := kopiaLocationPush(ctx, destinationPath, p.outputName, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
-		return err
+		return kopiaLocationPush(ctx, destinationPath, p.outputName, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
 	}
 	source, err := sourceReader(sourcePath)
 	if err != nil {

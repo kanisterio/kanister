@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	promgomodel "github.com/prometheus/client_model/go"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -57,6 +59,7 @@ type ControllerSuite struct {
 	deployment *appsv1.Deployment
 	confimap   *v1.ConfigMap
 	recorder   record.EventRecorder
+	ctrl       *Controller
 }
 
 var _ = Suite(&ControllerSuite{})
@@ -133,8 +136,9 @@ func (s *ControllerSuite) SetUpTest(c *C) {
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	ctlr := New(config)
-	err = ctlr.StartWatch(ctx, s.namespace)
+	testPrometheusRegistry := prometheus.NewRegistry()
+	s.ctrl = New(config, testPrometheusRegistry)
+	err = s.ctrl.StartWatch(ctx, s.namespace)
 	c.Assert(err, IsNil)
 	s.cancel = cancel
 }
@@ -449,6 +453,14 @@ func newBPForProgressRunningPhase() *crv1alpha1.Blueprint {
 	}
 }
 
+func getCounterVecValue(metric prometheus.CounterVec, metricLabels []string) float64 {
+	m := &promgomodel.Metric{}
+	if err := metric.WithLabelValues(metricLabels...).Write(m); err != nil {
+		return 0
+	}
+	return m.Counter.GetValue()
+}
+
 func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -497,83 +509,107 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 	c.Assert(err, IsNil)
 }
 
+func (s *ControllerSuite) TestNilPrometheusRegistry(c *C) {
+	config, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+	c.Assert(config, NotNil)
+	ctrl := New(config, nil)
+	c.Assert(ctrl, NotNil)
+	c.Assert(ctrl.metrics, IsNil)
+}
+
 func (s *ControllerSuite) TestExecActionSet(c *C) {
 	for _, pok := range []string{"StatefulSet", "Deployment"} {
 		for _, tc := range []struct {
-			funcNames []string
-			args      [][]string
-			name      string
-			version   string
+			funcNames        []string
+			args             [][]string
+			name             string
+			version          string
+			metricResolution string
 		}{
 			{
-				funcNames: []string{testutil.WaitFuncName},
-				name:      "WaitFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.WaitFuncName},
+				name:             "WaitFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
-				funcNames: []string{testutil.WaitFuncName, testutil.WaitFuncName},
-				name:      "WaitWait",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.WaitFuncName, testutil.WaitFuncName},
+				name:             "WaitWait",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
-				funcNames: []string{testutil.FailFuncName},
-				name:      "FailFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.FailFuncName},
+				name:             "FailFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
-				funcNames: []string{testutil.WaitFuncName, testutil.FailFuncName},
-				name:      "WaitFail",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.WaitFuncName, testutil.FailFuncName},
+				name:             "WaitFail",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
-				funcNames: []string{testutil.FailFuncName, testutil.WaitFuncName},
-				name:      "FailWait",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.FailFuncName, testutil.WaitFuncName},
+				name:             "FailWait",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName},
-				name:      "ArgFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName, testutil.FailFuncName},
-				name:      "ArgFail",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.ArgFuncName, testutil.FailFuncName},
+				name:             "ArgFail",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
-				funcNames: []string{testutil.OutputFuncName},
-				name:      "OutputFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.OutputFuncName},
+				name:             "OutputFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
-				funcNames: []string{testutil.CancelFuncName},
-				name:      "CancelFunc",
-				version:   kanister.DefaultVersion,
+				funcNames:        []string{testutil.CancelFuncName},
+				name:             "CancelFunc",
+				version:          kanister.DefaultVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName},
-				name:      "ArgFuncVersion",
-				version:   testutil.TestVersion,
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncVersion",
+				version:          testutil.TestVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName},
-				name:      "ArgFuncVersionFallback",
-				version:   "v1.2.3",
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncVersionFallback",
+				version:          "v1.2.3",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName},
-				name:      "ArgFuncNoActionSetVersion",
-				version:   "",
+				funcNames:        []string{testutil.ArgFuncName},
+				name:             "ArgFuncNoActionSetVersion",
+				version:          "",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 			{
-				funcNames: []string{testutil.VersionMismatchFuncName},
-				name:      "VersionMismatchFunc",
-				version:   "v1.2.3",
+				funcNames:        []string{testutil.VersionMismatchFuncName},
+				name:             "VersionMismatchFunc",
+				version:          "v1.2.3",
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName, testutil.OutputFuncName},
-				name:      "ArgOutputFallbackOnlyOutput",
-				version:   testutil.TestVersion,
+				funcNames:        []string{testutil.ArgFuncName, testutil.OutputFuncName},
+				name:             "ArgOutputFallbackOnlyOutput",
+				version:          testutil.TestVersion,
+				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
 			},
 		} {
 			var err error
@@ -583,6 +619,8 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			ctx := context.Background()
 			bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 			c.Assert(err, IsNil)
+
+			oldValue := getCounterVecValue(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution})
 
 			var n string
 			switch pok {
@@ -630,6 +668,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			if !cancel {
 				err = s.waitOnActionSetState(c, as, final)
 				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
+				c.Assert(getCounterVecValue(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution}), Equals, oldValue+1, Commentf("Failed case: %s", tc.name))
 			}
 			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
 			c.Assert(err, IsNil)
@@ -676,7 +715,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)
-	ctlr := New(config)
+	ctlr := New(config, nil)
 	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), as, nilAs, bp)
 
 	// Test ActionSet error event logging
@@ -982,4 +1021,84 @@ func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
 	err = s.waitOnActionSetCompleteWithRunningPhases(as, &runningPhases)
 	c.Assert(err, IsNil)
 	c.Assert(runningPhases, HasLen, 0)
+}
+
+func (s *ControllerSuite) TestGetActionTypeBucket(c *C) {
+	for _, tc := range []struct {
+		actionType string
+	}{
+		{
+			actionType: ACTION_TYPE_BACKUP,
+		},
+		{
+			actionType: ACTION_TYPE_RESTORE,
+		},
+		{
+			actionType: ACTION_TYPE_DELETE,
+		},
+		{
+			actionType: ACTION_TYPE_BACKUP_TO_SERVER,
+		},
+		{
+			actionType: ACTION_TYPE_RESTORE_FROM_SERVER,
+		},
+		{
+			actionType: ACTION_TYPE_BEFORE_BACKUP,
+		},
+		{
+			actionType: ACTION_TYPE_ON_SUCCESS,
+		},
+		{
+			actionType: ACTION_TYPE_ON_FAILURE,
+		},
+		{
+			actionType: ACTION_TYPE_PRE_RESTORE,
+		},
+		{
+			actionType: ACTION_TYPE_POST_RESTORE,
+		},
+		{
+			actionType: ACTION_TYPE_POST_RESTORE_FAILED,
+		},
+		{
+			actionType: ACTION_TYPE_BACKUP_PREHOOK,
+		},
+		{
+			actionType: ACTION_TYPE_BACKUP_POSTHOOK,
+		},
+		{
+			actionType: "random-action",
+		},
+	} {
+		switch tc.actionType {
+		case ACTION_TYPE_BACKUP:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP)
+		case ACTION_TYPE_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_RESTORE)
+		case ACTION_TYPE_DELETE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_DELETE)
+		case ACTION_TYPE_BACKUP_TO_SERVER:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_TO_SERVER)
+		case ACTION_TYPE_RESTORE_FROM_SERVER:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_RESTORE_FROM_SERVER)
+		case ACTION_TYPE_BEFORE_BACKUP:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BEFORE_BACKUP)
+		case ACTION_TYPE_ON_SUCCESS:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_ON_SUCCESS)
+		case ACTION_TYPE_ON_FAILURE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_ON_FAILURE)
+		case ACTION_TYPE_PRE_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_PRE_RESTORE)
+		case ACTION_TYPE_POST_RESTORE:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_POST_RESTORE)
+		case ACTION_TYPE_POST_RESTORE_FAILED:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_POST_RESTORE_FAILED)
+		case ACTION_TYPE_BACKUP_PREHOOK:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_PREHOOK)
+		case ACTION_TYPE_BACKUP_POSTHOOK:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_POSTHOOK)
+		default:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_OTHER)
+		}
+	}
 }

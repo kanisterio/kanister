@@ -29,6 +29,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +49,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	_ "github.com/kanisterio/kanister/pkg/metrics"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/reconcile"
@@ -64,12 +66,18 @@ type Controller struct {
 	osClient         osversioned.Interface
 	recorder         record.EventRecorder
 	actionSetTombMap sync.Map
+	metrics          *metrics
 }
 
 // New create controller for watching kanister custom resources created
-func New(c *rest.Config) *Controller {
+func New(c *rest.Config, reg prometheus.Registerer) *Controller {
+	var m *metrics
+	if reg != nil {
+		m = newMetrics(reg)
+	}
 	return &Controller{
-		config: c,
+		config:  c,
+		metrics: m,
 	}
 }
 
@@ -134,6 +142,12 @@ func checkCRAccess(ctx context.Context, cli versioned.Interface, ns string) erro
 		return errors.Wrap(err, "Could not list Profiles")
 	}
 	return nil
+}
+
+func (c *Controller) incrementActionSetResolutionCounterVec(resolution string) {
+	if c.metrics != nil {
+		c.metrics.actionSetResolutionCounterVec.WithLabelValues(resolution).Inc()
+	}
 }
 
 func (c *Controller) onAdd(obj interface{}) {
@@ -434,10 +448,12 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
 	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, c.osClient, action)
 	if err != nil {
+		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
 		return err
 	}
 	phases, err := kanister.GetPhases(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
+		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
 		return err
 	}
 
@@ -445,6 +461,7 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	// can be specified in blueprint using actions[name].deferPhase
 	deferPhase, err := kanister.GetDeferPhase(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
+		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
 		return err
 	}
 
@@ -460,6 +477,9 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			// render artifacts only if all the phases are run successfully
 			if deferErr == nil && coreErr == nil {
 				c.renderActionsetArtifacts(ctx, as, aIDX, as.Namespace, as.Name, action.Name, bp, tp, coreErr, deferErr)
+				c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS)
+			} else {
+				c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
 			}
 		}()
 

@@ -70,7 +70,7 @@ func (s *E2ESuite) SetUpSuite(c *C) {
 	ctx, s.cancel = context.WithCancel(ctx)
 	err = resource.CreateCustomResources(ctx, cfg)
 	c.Assert(err, IsNil)
-	ctlr := controller.New(cfg)
+	ctlr := controller.New(cfg, nil)
 	err = ctlr.StartWatch(ctx, s.namespace)
 	c.Assert(err, IsNil)
 }
@@ -228,7 +228,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 						Func: function.KubeTaskFuncName,
 						Name: "test-kube-task",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.93.0",
+							"image":     "ghcr.io/kanisterio/kanister-tools:0.94.0",
 							"namespace": "{{ .Deployment.Namespace }}",
 							"command":   []string{"echo", "default specs"},
 							"podOverride": map[string]interface{}{

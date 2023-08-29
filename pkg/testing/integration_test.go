@@ -99,7 +99,7 @@ func integrationSetup(t *test.T) {
 	if err = resource.CreateCustomResources(ctx, cfg); err != nil {
 		t.Fatalf("Integration test setup failure: Error createing custom resources; err=%v", err)
 	}
-	ctlr := controller.New(cfg)
+	ctlr := controller.New(cfg, nil)
 	if err = ctlr.StartWatch(ctx, ns); err != nil {
 		t.Fatalf("Integration test setup failure: Error starting controller; err=%v", err)
 	}

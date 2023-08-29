@@ -27,8 +27,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/rest"
 
 	"github.com/kanisterio/kanister/pkg/controller"
@@ -38,6 +40,27 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 )
+
+const (
+	kanisterMetricsEnv = "KANISTER_METRICS_ENABLED"
+)
+
+// metricsEnabled checks if the feature flag for kanister metrics is enabled
+// If the environment variable is not set, then it returns a default
+// "false" value.
+func metricsEnabled() bool {
+	metricsEnabled, ok := os.LookupEnv(kanisterMetricsEnv)
+	if !ok {
+		log.Error().Print("KANISTER_METRICS_ENABLED env variable not set")
+		return false
+	}
+	enabled, err := strconv.ParseBool(metricsEnabled)
+	if err != nil {
+		log.Error().Print("Error parsing KANISTER_METRICS_ENABLED env variable to bool")
+		return false
+	}
+	return enabled
+}
 
 func Execute() {
 	ctx := context.Background()
@@ -93,7 +116,16 @@ func Execute() {
 
 	// Create and start the watcher.
 	ctx, cancel := context.WithCancel(ctx)
-	c := controller.New(config)
+
+	var c *controller.Controller
+
+	// pass a new prometheus registry or nil depending on
+	// the kanister prometheus metrics feature flag
+	if metricsEnabled() {
+		c = controller.New(config, prometheus.DefaultRegisterer)
+	} else {
+		c = controller.New(config, nil)
+	}
 	err = c.StartWatch(ctx, ns)
 	if err != nil {
 		log.WithError(err).Print("Failed to start controller.")
