@@ -39,7 +39,7 @@ func (r *RepositoryServerValidator) ValidateCreate(ctx context.Context, obj runt
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *RepositoryServerValidator) ValidateUpdate(ctx context.Context, old runtime.Object, new runtime.Object) error {
 	oldrs, ook := old.(*v1alpha1.RepositoryServer)
-	newrs, nok := old.(*v1alpha1.RepositoryServer)
+	newrs, nok := new.(*v1alpha1.RepositoryServer)
 	if !ook || !nok {
 		return errors.New("RepositoryServer.cr.kanister.io object expected")
 	}
