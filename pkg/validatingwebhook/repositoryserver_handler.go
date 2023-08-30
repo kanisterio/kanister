@@ -1,4 +1,4 @@
-// Copyright 2022 The Kanister Authors.
+// Copyright 2023 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ type RepositoryServerValidator struct{}
 
 var _ webhook.CustomValidator = &RepositoryServerValidator{}
 
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate/v1alpha1/repositoryserver,mutating=false,failurePolicy=fail,sideEffects=None,groups=cr.kanister.io,resources=repositoryservers,verbs=update,versions=v1alpha1,name=repositoryserver.cr.kanister.io,admissionReviewVersions=v1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
@@ -41,7 +40,7 @@ func (r *RepositoryServerValidator) ValidateUpdate(ctx context.Context, old runt
 	oldrs, ook := old.(*v1alpha1.RepositoryServer)
 	newrs, nok := new.(*v1alpha1.RepositoryServer)
 	if !ook || !nok {
-		return errors.New("RepositoryServer.cr.kanister.io object expected")
+		return errors.New("Either updated object or the old object is not of type RepositoryServer.cr.kanister.io")
 	}
 	errMsg := fmt.Sprintf("RepositoryServer.cr.kanister.io \"%s\" is invalid: spec.repository.rootPath: Invalid value, Value is immutable", newrs.Name)
 	if oldrs.Spec.Repository.RootPath != newrs.Spec.Repository.RootPath {
