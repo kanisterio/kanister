@@ -117,7 +117,7 @@ type CreatePVCFromSnapshotArgs struct {
 	Annotations      map[string]string
 	VolumeMode       *v1.PersistentVolumeMode
 	AccessModes      []v1.PersistentVolumeAccessMode
-	GroupVersion     *schema.GroupVersion
+	GroupVersion     schema.GroupVersion
 }
 
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
@@ -133,7 +133,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 	}
 	snapshotKind := "VolumeSnapshot"
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
-	if args.GroupVersion != nil {
+	if !args.GroupVersion.Empty() {
 		snapshotAPIGroup = args.GroupVersion.String()
 	}
 
