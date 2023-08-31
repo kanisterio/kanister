@@ -35,7 +35,8 @@ func fingerprintFromTLSCert(c *check.C, tlsCert string) string {
 	args = append(args, "-sha256")
 	args = append(args, "-in")
 	args = append(args, tlsCert)
-	output := Command(c, args...)
+	output, err := Command(c, args...)
+	c.Assert(err, check.IsNil)
 	output = strings.TrimPrefix(output, "sha256 Fingerprint=")
 	output = strings.ReplaceAll(output, ":", "")
 	output = strings.ReplaceAll(output, "\n", "")
@@ -46,17 +47,17 @@ func readTLSCert(c *check.C, tlsCert string) string {
 	var args []string
 	args = append(args, "cat")
 	args = append(args, tlsCert)
-	output := Command(c, args...)
+	output, err := Command(c, args...)
+	c.Assert(err, check.IsNil)
 	return output
 }
 
-func Command(c *check.C, args ...string) string {
+func Command(c *check.C, args ...string) (string, error) {
 	c.Log(redactArgs(splitArgs(args)))
 	out, err := exec.Command(args[0], args[1:]...).CombinedOutput()
 	c.Log(string(out))
-	c.Check(err, check.IsNil)
 
-	return string(out)
+	return string(out), err
 }
 
 func redactArgs(args []string) []string {

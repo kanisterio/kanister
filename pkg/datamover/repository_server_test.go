@@ -17,14 +17,13 @@ package datamover
 import (
 	"context"
 	"fmt"
+	. "gopkg.in/check.v1"
+	"k8s.io/apimachinery/pkg/util/rand"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
-	"time"
-
-	. "gopkg.in/check.v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
@@ -49,6 +48,10 @@ type RepositoryServerSuite struct {
 	fingerprint        string
 }
 
+const (
+	TestRepositoryEncryptionKey = "TEST_REPOSITORY_ENCRYPTION_KEY"
+)
+
 var _ = Suite(&RepositoryServerSuite{})
 
 func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
@@ -69,8 +72,8 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 
 	// Setting Up Repository Access
 	rss.repositoryUser = "repositoryUser"
-	rss.repositoryPassword = rand.String(8)
-	rss.repoPathPrefix = path.Join("kopia-int", time.Now().UTC().Format(time.RFC3339), rand.String(5))
+	rss.repositoryPassword = os.Getenv(TestRepositoryEncryptionKey)
+	rss.repoPathPrefix = path.Join("kopia-int", "repository-server-datamover-test")
 
 	rss.ctx = context.Background()
 
@@ -87,8 +90,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	// Setting Up Kopia Repository
 	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
-	c.Log("Creating Kopia Repository...")
-	repoCreateCommandArgs := kopiacmd.RepositoryCommandArgs{
+	repoCommandArgs := kopiacmd.RepositoryCommandArgs{
 		CommandArgs: &kopiacmd.CommandArgs{
 			RepoPassword:   rss.repositoryPassword,
 			ConfigFilePath: rss.kopiaConfigDir,
@@ -102,9 +104,18 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		Username:        rss.repositoryUser,
 		Location:        testutil.GetDefaultS3CompliantStorageLocation(),
 	}
-	repoCreateCmd, err := kopiacmd.RepositoryCreateCommand(repoCreateCommandArgs)
+
+	c.Log("Connecting with Kopia Repository...")
+	repoConnectCmd, err := kopiacmd.RepositoryConnectCommand(repoCommandArgs)
 	c.Assert(err, IsNil)
-	Command(c, repoCreateCmd...)
+	_, err = Command(c, repoConnectCmd...)
+	if err != nil {
+		c.Log("Creating Kopia Repository...")
+		repoCreateCmd, err := kopiacmd.RepositoryCreateCommand(repoCommandArgs)
+		c.Assert(err, IsNil)
+		_, err = Command(c, repoCreateCmd...)
+		c.Assert(err, IsNil)
+	}
 
 	// Setting Up Kopia Repository Server
 	tlsCertFile := rss.tlsDir + ".cert"
@@ -124,7 +135,8 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		Background:       true,
 	}
 	serverStartCmd := kopiacmd.ServerStart(serverStartCommandArgs)
-	Command(c, serverStartCmd...)
+	_, err = Command(c, serverStartCmd...)
+	c.Assert(err, IsNil)
 
 	// Adding Users to Kopia Repository Server
 	serverAddUserCommandArgs := kopiacmd.ServerAddUserCommandArgs{
@@ -137,7 +149,8 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		UserPassword: rss.testUserPassword,
 	}
 	serverAddUserCmd := kopiacmd.ServerAddUser(serverAddUserCommandArgs)
-	Command(c, serverAddUserCmd...)
+	_, err = Command(c, serverAddUserCmd...)
+	c.Assert(err, IsNil)
 
 	// Getting Fingerprint of Kopia Repository Server
 	rss.fingerprint = fingerprintFromTLSCert(c, tlsCertFile)
@@ -156,7 +169,8 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		Fingerprint:    rss.fingerprint,
 	}
 	serverRefreshCmd := kopiacmd.ServerRefresh(serverRefreshCommandArgs)
-	Command(c, serverRefreshCmd...)
+	_, err = Command(c, serverRefreshCmd...)
+	c.Assert(err, IsNil)
 
 	// Check Server Status
 	serverStatusCommandArgs := kopiacmd.ServerStatusCommandArgs{
@@ -171,8 +185,9 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		Fingerprint:    rss.fingerprint,
 	}
 	serverStatusCmd := kopiacmd.ServerStatus(serverStatusCommandArgs)
-	out := Command(c, serverStatusCmd...)
+	out, err := Command(c, serverStatusCmd...)
 	c.Assert(out, Equals, "")
+	c.Assert(err, IsNil)
 }
 
 func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer(c *C) error {
