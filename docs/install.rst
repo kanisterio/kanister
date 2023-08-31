@@ -117,6 +117,8 @@ and annotations can be separated via ``,``.
 
 .. substitution-code-block:: bash
 
+  # \ before , is used as escape sequence and it's not required if these helm fields are being
+  # provided using values file
   helm upgrade --install kanister kanister/kanister-operator --namespace kanister --create-namespace \
     --set controller.kanisterPodCustomLabels="key=value\,kyeone=valueone" \
     --set controller.kanisterPodCustomAnnotations="annone=valone"
