@@ -157,6 +157,22 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	}
 	serverRefreshCmd := kopiacmd.ServerRefresh(serverRefreshCommandArgs)
 	Command(c, serverRefreshCmd...)
+
+	// Check Server Status
+	serverStatusCommandArgs := kopiacmd.ServerStatusCommandArgs{
+		CommandArgs: &kopiacmd.CommandArgs{
+			RepoPassword:   rss.repositoryPassword,
+			ConfigFilePath: rss.kopiaConfigDir,
+			LogDirectory:   rss.kopiaLogDir,
+		},
+		ServerAddress:  rss.address,
+		ServerUsername: rss.serverUsername,
+		ServerPassword: rss.serverPassword,
+		Fingerprint:    rss.fingerprint,
+	}
+	serverStatusCmd := kopiacmd.ServerStatus(serverStatusCommandArgs)
+	out := Command(c, serverStatusCmd...)
+	c.Assert(out, Equals, "")
 }
 
 func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer(c *C) error {
