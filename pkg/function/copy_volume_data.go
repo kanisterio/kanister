@@ -79,6 +79,10 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 		Volumes:      map[string]string{pvc: mountPoint},
 		PodOverride:  podOverride,
 	}
+
+	SetLabelsToPodOptionsIfRequired(options)
+	SetAnnotationsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := copyVolumeDataPodFunc(cli, tp, namespace, mountPoint, targetPath, encryptionKey)
 	return pr.RunEx(ctx, podFunc)

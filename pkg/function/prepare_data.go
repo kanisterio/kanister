@@ -93,6 +93,10 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		ServiceAccountName: serviceAccount,
 		PodOverride:        podOverride,
 	}
+
+	SetLabelsToPodOptionsIfRequired(options)
+	SetAnnotationsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)
 	return pr.Run(ctx, podFunc)

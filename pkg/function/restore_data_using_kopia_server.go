@@ -183,6 +183,9 @@ func restoreDataFromServer(
 		PodOverride:  podOverride,
 	}
 
+	SetLabelsToPodOptionsIfRequired(options)
+	SetAnnotationsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataFromServerPodFunc(
 		cli,

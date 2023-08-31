@@ -124,6 +124,10 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 		Volumes:      vols,
 		PodOverride:  podOverride,
 	}
+
+	SetLabelsToPodOptionsIfRequired(options)
+	SetAnnotationsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataPodFunc(cli, tp, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID)
 	return pr.Run(ctx, podFunc)

@@ -72,6 +72,10 @@ func describeBackups(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 	}
+
+	SetLabelsToPodOptionsIfRequired(options)
+	SetAnnotationsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := describeBackupsPodFunc(cli, tp, namespace, encryptionKey, targetPaths)
 	return pr.Run(ctx, podFunc)

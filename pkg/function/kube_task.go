@@ -60,6 +60,9 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		PodOverride:  podOverride,
 	}
 
+	SetAnnotationsToPodOptionsIfRequired(options)
+	SetLabelsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := kubeTaskPodFunc()
 	return pr.RunEx(ctx, podFunc)

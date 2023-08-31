@@ -70,6 +70,10 @@ func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 	}
+
+	SetLabelsToPodOptionsIfRequired(options)
+	SetAnnotationsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := backupDataStatsPodFunc(cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, mode)
 	return pr.Run(ctx, podFunc)

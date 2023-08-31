@@ -140,6 +140,10 @@ func deleteDataFromServer(
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 	}
+
+	SetLabelsToPodOptionsIfRequired(options)
+	SetAnnotationsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataFromServerPodFunc(
 		cli,

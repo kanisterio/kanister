@@ -74,6 +74,10 @@ func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.Template
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 	}
+
+	SetLabelsToPodOptionsIfRequired(options)
+	SetAnnotationsToPodOptionsIfRequired(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataPodFunc(cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
 	return pr.Run(ctx, podFunc)
