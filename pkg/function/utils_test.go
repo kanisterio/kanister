@@ -15,10 +15,13 @@
 package function
 
 import (
+	"os"
+
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
@@ -251,5 +254,121 @@ func newValidStatefulSetTP() param.TemplateParams {
 				},
 			},
 		},
+	}
+}
+
+func (s *UtilsTestSuite) TestSetLabelsToPodOptionsIfRequired(c *C) {
+	for _, tc := range []struct {
+		envLabels        string
+		podOptionsLabels map[string]string
+		expLabels        map[string]string
+	}{
+		{
+			envLabels:        "key=value,keyone=valueone,keytwo=valuetwo",
+			podOptionsLabels: map[string]string{},
+			expLabels:        map[string]string{"key": "value", "keyone": "valueone", "keytwo": "valuetwo"},
+		},
+		{
+			envLabels: "",
+			expLabels: nil,
+		},
+		{
+			envLabels:        "",
+			podOptionsLabels: map[string]string{},
+			expLabels:        map[string]string{},
+		},
+		{
+			envLabels:        "",
+			podOptionsLabels: map[string]string{"key": "value"},
+			expLabels:        map[string]string{"key": "value"},
+		},
+		{
+			envLabels:        "key=value",
+			podOptionsLabels: map[string]string{},
+			expLabels:        map[string]string{"key": "value"},
+		},
+		{
+			envLabels:        "key=value",
+			podOptionsLabels: map[string]string{"pokey": "povalue", "pokeyone": "povalueone"},
+			expLabels:        map[string]string{"key": "value", "pokey": "povalue", "pokeyone": "povalueone"},
+		},
+		{
+			envLabels:        "key=  value,keyone =valueone,  keytwo=valuetwo",
+			podOptionsLabels: map[string]string{},
+			expLabels:        map[string]string{"key": "value", "keyone": "valueone", "keytwo": "valuetwo"},
+		},
+		{
+			envLabels:        " key=  value ,keyone =   valueone,  keytwo =  valuetwo",
+			podOptionsLabels: map[string]string{"abc": "def"},
+			expLabels:        map[string]string{"key": "value", "keyone": "valueone", "keytwo": "valuetwo", "abc": "def"},
+		},
+	} {
+		os.Setenv(KanisterPodCustomLabelsEnv, tc.envLabels)
+
+		options := &kube.PodOptions{
+			Labels: tc.podOptionsLabels,
+		}
+		SetLabelsToPodOptionsIfRequired(options)
+		c.Check(options.Labels, DeepEquals, tc.expLabels)
+
+		os.Unsetenv(KanisterPodCustomLabelsEnv)
+	}
+}
+
+func (s *UtilsTestSuite) TestSetAnnotationsToPodOptionsIfRequired(c *C) {
+	for _, tc := range []struct {
+		envAnnotations        string
+		podOptionsAnnotations map[string]string
+		expAnnotations        map[string]string
+	}{
+		{
+			envAnnotations:        "key=value,keyone=valueone,keytwo=valuetwo",
+			podOptionsAnnotations: map[string]string{},
+			expAnnotations:        map[string]string{"key": "value", "keyone": "valueone", "keytwo": "valuetwo"},
+		},
+		{
+			envAnnotations: "",
+			expAnnotations: nil,
+		},
+		{
+			envAnnotations:        "",
+			podOptionsAnnotations: map[string]string{},
+			expAnnotations:        map[string]string{},
+		},
+		{
+			envAnnotations:        "",
+			podOptionsAnnotations: map[string]string{"key": "value"},
+			expAnnotations:        map[string]string{"key": "value"},
+		},
+		{
+			envAnnotations:        "key=value",
+			podOptionsAnnotations: map[string]string{},
+			expAnnotations:        map[string]string{"key": "value"},
+		},
+		{
+			envAnnotations:        "key=value",
+			podOptionsAnnotations: map[string]string{"pokey": "povalue", "pokeyone": "povalueone"},
+			expAnnotations:        map[string]string{"key": "value", "pokey": "povalue", "pokeyone": "povalueone"},
+		},
+		{
+			envAnnotations:        "key=  value,keyone =valueone,  keytwo=valuetwo",
+			podOptionsAnnotations: map[string]string{},
+			expAnnotations:        map[string]string{"key": "value", "keyone": "valueone", "keytwo": "valuetwo"},
+		},
+		{
+			envAnnotations:        " key=  value ,keyone =   valueone,  keytwo =  valuetwo",
+			podOptionsAnnotations: map[string]string{"abc": "def"},
+			expAnnotations:        map[string]string{"key": "value", "keyone": "valueone", "keytwo": "valuetwo", "abc": "def"},
+		},
+	} {
+		os.Setenv(KanisterPodCustomAnnotationsEnv, tc.envAnnotations)
+
+		options := &kube.PodOptions{
+			Annotations: tc.podOptionsAnnotations,
+		}
+		SetAnnotationsToPodOptionsIfRequired(options)
+		c.Check(options.Annotations, DeepEquals, tc.expAnnotations)
+
+		os.Unsetenv(KanisterPodCustomAnnotationsEnv)
 	}
 }

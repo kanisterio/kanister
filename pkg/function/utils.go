@@ -3,6 +3,7 @@ package function
 import (
 	"bytes"
 	"context"
+	"os"
 	"path"
 	"strings"
 
@@ -27,7 +28,56 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion = "version"
+
+	KanisterPodCustomLabelsEnv      = "KANISTER_POD_CUSTOM_LABELS"
+	KanisterPodCustomAnnotationsEnv = "KANISTER_POD_CUSTOM_ANNOTATIONS"
 )
+
+func parseToLabelSelector(envKey string) (bool, *map[string]string) {
+	val, ok := os.LookupEnv(envKey)
+	if !ok || val == "" {
+		return false, nil
+	}
+	ls, err := metav1.ParseToLabelSelector(val)
+	if err != nil {
+		return false, nil
+	}
+	return true, &ls.MatchLabels
+}
+
+func getKanisterPodLabels() (bool, *map[string]string) {
+	return parseToLabelSelector(KanisterPodCustomLabelsEnv)
+}
+
+func getKanisterPodAnnotations() (bool, *map[string]string) {
+	return parseToLabelSelector(KanisterPodCustomAnnotationsEnv)
+}
+
+// SetLabelsToPodOptionsIfRequired sets labels to PodOptions
+func SetLabelsToPodOptionsIfRequired(options *kube.PodOptions) {
+	updateNeeded, labels := getKanisterPodLabels()
+	if updateNeeded {
+		if options.Labels == nil {
+			options.Labels = make(map[string]string)
+		}
+		for k, v := range *labels {
+			options.Labels[k] = v
+		}
+	}
+}
+
+// SetAnnotationsToPodOptionsIfRequired sets annotations to PodOptions
+func SetAnnotationsToPodOptionsIfRequired(options *kube.PodOptions) {
+	updateNeeded, annotations := getKanisterPodAnnotations()
+	if updateNeeded {
+		if options.Annotations == nil {
+			options.Annotations = make(map[string]string)
+		}
+		for k, v := range *annotations {
+			options.Annotations[k] = v
+		}
+	}
+}
 
 // ValidateCredentials verifies if the given credentials have appropriate values set
 func ValidateCredentials(creds *param.Credential) error {
