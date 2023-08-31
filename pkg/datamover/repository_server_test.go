@@ -104,12 +104,13 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		Username:        rss.repositoryUser,
 		Location:        testutil.GetDefaultS3CompliantStorageLocation(),
 	}
-
+	// First try to connect with Kopia Repository
 	c.Log("Connecting with Kopia Repository...")
 	repoConnectCmd, err := kopiacmd.RepositoryConnectCommand(repoCommandArgs)
 	c.Assert(err, IsNil)
 	_, err = Command(c, repoConnectCmd...)
 	if err != nil {
+		// If connection fails, create Kopia Repository
 		c.Log("Creating Kopia Repository...")
 		repoCreateCmd, err := kopiacmd.RepositoryCreateCommand(repoCommandArgs)
 		c.Assert(err, IsNil)
