@@ -43,6 +43,10 @@ spec:
           value: {{ .Values.controller.parallelism | quote }}
         - name: KANISTER_METRICS_ENABLED
           value: {{ .Values.controller.metrics.enabled | quote }}
+        - name: KANISTER_POD_CUSTOM_LABELS
+          value: {{ .Values.controller.kanisterPodCustomLabels | quote }}
+        - name: KANISTER_POD_CUSTOM_ANNOTATIONS
+          value: {{ .Values.controller.kanisterPodCustomAnnotations | quote }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
