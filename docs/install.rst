@@ -104,6 +104,23 @@ like below:
     --set bpValidatingWebhook.tls.secretName=tls-secret
 
 
+Setting labels and annotations to Kanister function pods
+========================================================
+
+Kanister pods launched during the Kanister actionset operations can be
+configured to have custom labels and annotations, through helm fields.
+
+Helm fields ``controller.kanisterPodCustomLabels`` and
+``controller.kanisterPodCustomAnnotations`` can be used to set the custom
+labels and annotations respectively using the below command. Multiple labels
+and annotations can be separated via ``,``.
+
+.. substitution-code-block:: bash
+
+  helm upgrade --install kanister kanister/kanister-operator --namespace kanister --create-namespace \
+    --set controller.kanisterPodCustomLabels="key=value\,kyeone=valueone" \
+    --set controller.kanisterPodCustomAnnotations="annone=valone"
+
 Building and Deploying from Source
 ==================================
 
