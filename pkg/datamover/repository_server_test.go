@@ -18,12 +18,13 @@ import (
 	"context"
 	"fmt"
 	. "gopkg.in/check.v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
+	
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
