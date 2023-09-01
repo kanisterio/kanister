@@ -53,11 +53,6 @@ type PodCommandExecutor interface {
 	Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error
 }
 
-// podCommandExecutorProcessor aids in unit testing
-type podCommandExecutorProcessor interface {
-	execWithOptions(cli kubernetes.Interface, opts ExecOptions) (string, string, error)
-}
-
 // podCommandExecutor keeps everything required to execute command within a pod
 type podCommandExecutor struct {
 	cli           kubernetes.Interface
@@ -65,7 +60,7 @@ type podCommandExecutor struct {
 	podName       string
 	containerName string
 
-	pcep podCommandExecutorProcessor
+	pcep PodCommandExecutorProcessor
 }
 
 // Exec runs the command and logs stdout and stderr.
@@ -95,7 +90,7 @@ func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin i
 	}
 
 	go func() {
-		_, _, err = p.pcep.execWithOptions(p.cli, opts)
+		_, _, err = p.pcep.ExecWithOptions(opts)
 		close(cmdDone)
 	}()
 
@@ -113,8 +108,4 @@ func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin i
 	}
 
 	return err
-}
-
-func (p *podCommandExecutor) execWithOptions(cli kubernetes.Interface, opts ExecOptions) (string, string, error) {
-	return ExecWithOptions(p.cli, opts)
 }
