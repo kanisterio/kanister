@@ -22,7 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// FakePodControllerProcessor implements podControllerProcessor
+// FakePodControllerProcessor implements PodControllerProcessor
 type FakePodControllerProcessor struct {
 	InWaitForPodReadyNamespace string
 	InWaitForPodReadyPodName   string
@@ -43,19 +43,18 @@ type FakePodControllerProcessor struct {
 	CreatePodErr       error
 }
 
-func (f *FakePodControllerProcessor) CreatePod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
-	f.InCreatePodCli = cli
+func (f *FakePodControllerProcessor) CreatePod(_ context.Context, options *PodOptions) (*corev1.Pod, error) {
 	f.InCreatePodOptions = options
 	return f.CreatePodRet, f.CreatePodErr
 }
 
-func (f *FakePodControllerProcessor) WaitForPodCompletionPCP(ctx context.Context, namespace, podName string) error {
+func (f *FakePodControllerProcessor) WaitForPodCompletion(_ context.Context, namespace, podName string) error {
 	f.InWaitForPodCompletionNamespace = namespace
 	f.InWaitForPodCompletionPodName = podName
 	return f.WaitForPodCompletionErr
 }
 
-func (f *FakePodControllerProcessor) WaitForPodReadyPCP(ctx context.Context, namespace, podName string) error {
+func (f *FakePodControllerProcessor) WaitForPodReady(_ context.Context, namespace, podName string) error {
 	f.InWaitForPodReadyPodName = podName
 	f.InWaitForPodReadyNamespace = namespace
 	return f.WaitForPodReadyErr
