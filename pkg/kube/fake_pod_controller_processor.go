@@ -19,7 +19,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 // FakePodControllerProcessor implements PodControllerProcessor
@@ -37,7 +36,6 @@ type FakePodControllerProcessor struct {
 	InDeletePodOptions   metav1.DeleteOptions
 	DeletePodErr         error
 
-	InCreatePodCli     kubernetes.Interface
 	InCreatePodOptions *PodOptions
 	CreatePodRet       *corev1.Pod
 	CreatePodErr       error

@@ -49,11 +49,6 @@ type PodFileWriter interface {
 	Write(ctx context.Context, filePath string, content io.Reader) (PodFileRemover, error)
 }
 
-// podFileWriterProcessor aids in unit testing.
-type podFileWriterProcessor interface {
-	newPodWriter(cli kubernetes.Interface, filePath string, content io.Reader) PodWriter
-}
-
 // podFileWriter keeps everything required to write a file to POD.
 type podFileWriter struct {
 	cli           kubernetes.Interface
@@ -61,13 +56,13 @@ type podFileWriter struct {
 	namespace     string
 	containerName string
 
-	fileWriterProcessor podFileWriterProcessor
+	fileWriterProcessor PodFileWriterProcessor
 }
 
 // WriteFileToPod writes specified file content to a file in the pod and returns an interface
 // with which the file can be removed.
 func (p *podFileWriter) Write(ctx context.Context, filePath string, content io.Reader) (PodFileRemover, error) {
-	pw := p.fileWriterProcessor.newPodWriter(p.cli, filePath, content)
+	pw := p.fileWriterProcessor.NewPodWriter(filePath, content)
 	if err := pw.Write(ctx, p.namespace, p.podName, p.containerName); err != nil {
 		return nil, errors.Wrap(err, "Write file to pod failed")
 	}
@@ -79,8 +74,4 @@ func (p *podFileWriter) Write(ctx context.Context, filePath string, content io.R
 		podWriter:     pw,
 		path:          filePath,
 	}, nil
-}
-
-func (p *podFileWriter) newPodWriter(cli kubernetes.Interface, filepath string, content io.Reader) PodWriter {
-	return NewPodWriter(cli, filepath, content)
 }
