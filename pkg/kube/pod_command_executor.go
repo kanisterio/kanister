@@ -21,6 +21,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// ExecError is an error returned by PodCommandExecutor.Exec
+// It contains not only error happened during an execution, but also keeps tails of stdout/stderr streams.
+// These tails could be used by the invoker to construct more precise error.
 type ExecError struct {
 	error
 	stdout LogTail
@@ -48,7 +51,8 @@ func (e *ExecError) Stderr() string {
 	return e.stderr.ToString()
 }
 
-// PodCommandExecutor allows us to execute command within the pod
+// PodCommandExecutor provides a way to execute a command within the pod.
+// Is intended to be returned by PodController and works with pod controlled by it.
 type PodCommandExecutor interface {
 	Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error
 }
@@ -64,6 +68,7 @@ type podCommandExecutor struct {
 }
 
 // Exec runs the command and logs stdout and stderr.
+// In case of execution error, ExecError will be returned
 func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	var (
 		stderrTail = NewLogTail(logTailDefaultLength)

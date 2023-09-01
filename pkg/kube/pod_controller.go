@@ -38,6 +38,9 @@ var (
 )
 
 // PodController specifies interface needed for starting, stopping pod and operations with it
+//
+// The purpose of this interface is to provide single mechanism of pod manipulation, reduce number of parameters which
+// caller needs to pass (since we keep pod related things internally) and eliminate human errors.
 type PodController interface {
 	PodName() string
 	Pod() *corev1.Pod
@@ -52,8 +55,9 @@ type PodController interface {
 	GetFileWriter() (PodFileWriter, error)
 }
 
-// podController specifies Kubernetes Client and PodOptions needed for creating
-// a Pod. It implements the podControllerProcessor interface.
+// podController keeps Kubernetes Client and PodOptions needed for creating a Pod.
+// It implements the PodControllerProcessor interface.
+// All communication with kubernetes API are done via PodControllerProcessor interface, which could be overriden for testing purposes.
 type podController struct {
 	cli        kubernetes.Interface
 	podOptions *PodOptions
@@ -67,7 +71,7 @@ type podController struct {
 
 type PodControllerOption func(p *podController)
 
-// WithPodControllerProcessor provides mechanism for passing fake podControllerProcessor for testing purposes.
+// WithPodControllerProcessor provides mechanism for passing fake implementation of PodControllerProcessor for testing purposes.
 func WithPodControllerProcessor(processor PodControllerProcessor) PodControllerOption {
 	return func(p *podController) {
 		p.pcp = processor
@@ -97,6 +101,7 @@ func NewPodController(cli kubernetes.Interface, options *PodOptions, opts ...Pod
 
 // NewPodControllerForExistingPod returns a new PodController given Kubernetes
 // Client and existing pod details.
+// Invocation of StartPod of returned PodController instance will fail, since the pod is already known.
 func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) PodController {
 	r := &podController{
 		cli: cli,
@@ -147,7 +152,8 @@ func (p *podController) StartPod(ctx context.Context) error {
 	return nil
 }
 
-// WaitForPod waits for pod readiness.
+// WaitForPodReady waits for pod readiness (actually it waits until pod exit the pending state)
+// Requires pod to be started otherwise will immediately fail.
 func (p *podController) WaitForPodReady(ctx context.Context) error {
 	if p.podName == "" {
 		return ErrPodControllerPodNotStarted
@@ -163,7 +169,7 @@ func (p *podController) WaitForPodReady(ctx context.Context) error {
 	return nil
 }
 
-// WaitForPodCompletion waits for a pod to reach a terminal state.
+// WaitForPodCompletion waits for a pod to reach a terminal (either succeeded or failed) state.
 func (p *podController) WaitForPodCompletion(ctx context.Context) error {
 	if p.podName == "" {
 		return ErrPodControllerPodNotStarted
@@ -223,6 +229,8 @@ func (p *podController) getContainerName() string {
 	return p.pod.Spec.Containers[0].Name
 }
 
+// StreamPodLogs returns io.ReadCloser which could be used to receive logs from pod
+// container will be decided basing on result of getContainerName function.
 func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
@@ -231,6 +239,10 @@ func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error
 	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, p.getContainerName())
 }
 
+// GetCommandExecutor returns PodCommandExecutor instance which is configured to execute commands within pod controlled
+// by this controller.
+// If pod is not created or not ready yet, it will fail with an appropriate error.
+// container will be decided basing on result of getContainerName function
 func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
@@ -254,6 +266,9 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 	return pce, nil
 }
 
+// GetFileWriter returns PodFileWriter instance which is configured to write file to pod controlled by this controller.
+// If pod is not created or not ready yet, it will fail with an appropriate error.
+// container will be decided basing on result of getContainerName function
 func (p *podController) GetFileWriter() (PodFileWriter, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
