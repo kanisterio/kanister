@@ -109,13 +109,13 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	c.Log("Connecting with Kopia Repository...")
 	repoConnectCmd, err := kopiacmd.RepositoryConnectCommand(repoCommandArgs)
 	c.Assert(err, IsNil)
-	_, err = Command(c, repoConnectCmd...)
+	_, err = ExecCommand(c, repoConnectCmd...)
 	if err != nil {
 		// If connection fails, create Kopia Repository
 		c.Log("Creating Kopia Repository...")
 		repoCreateCmd, err := kopiacmd.RepositoryCreateCommand(repoCommandArgs)
 		c.Assert(err, IsNil)
-		_, err = Command(c, repoCreateCmd...)
+		_, err = ExecCommand(c, repoCreateCmd...)
 		c.Assert(err, IsNil)
 	}
 
@@ -137,7 +137,7 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		Background:       true,
 	}
 	serverStartCmd := kopiacmd.ServerStart(serverStartCommandArgs)
-	_, err = Command(c, serverStartCmd...)
+	_, err = ExecCommand(c, serverStartCmd...)
 	c.Assert(err, IsNil)
 
 	// Adding Users to Kopia Repository Server
@@ -151,7 +151,7 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		UserPassword: rss.testUserPassword,
 	}
 	serverAddUserCmd := kopiacmd.ServerAddUser(serverAddUserCommandArgs)
-	_, err = Command(c, serverAddUserCmd...)
+	_, err = ExecCommand(c, serverAddUserCmd...)
 	c.Assert(err, IsNil)
 
 	// Getting Fingerprint of Kopia Repository Server
@@ -171,7 +171,7 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		Fingerprint:    rss.fingerprint,
 	}
 	serverRefreshCmd := kopiacmd.ServerRefresh(serverRefreshCommandArgs)
-	_, err = Command(c, serverRefreshCmd...)
+	_, err = ExecCommand(c, serverRefreshCmd...)
 	c.Assert(err, IsNil)
 
 	// Check Server Status
@@ -187,7 +187,7 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 		Fingerprint:    rss.fingerprint,
 	}
 	serverStatusCmd := kopiacmd.ServerStatus(serverStatusCommandArgs)
-	out, err := Command(c, serverStatusCmd...)
+	out, err := ExecCommand(c, serverStatusCmd...)
 	c.Assert(out, Equals, "")
 	c.Assert(err, IsNil)
 }
