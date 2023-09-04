@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -68,7 +69,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	rss.serverUsername = "user@localhost"
 	rss.serverPassword = "testPassword"
 	rss.serverHost = "localhost"
-	rss.testUsername = "testuser"
+	rss.testUsername = fmt.Sprintf("%s-%s", "testuser", rand.String(5))
 	rss.testUserPassword = rand.String(8)
 
 	// Setting Up Repository Access
@@ -110,7 +111,7 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	repoConnectCmd, err := kopiacmd.RepositoryConnectCommand(repoCommandArgs)
 	c.Assert(err, IsNil)
 	_, err = ExecCommand(c, repoConnectCmd...)
-	if err != nil {
+	if err != nil && strings.Contains(err.Error(), "error connecting to repository") {
 		// If connection fails, create Kopia Repository
 		c.Log("Creating Kopia Repository...")
 		repoCreateCmd, err := kopiacmd.RepositoryCreateCommand(repoCommandArgs)
