@@ -37,9 +37,9 @@ controller:
     # false : kanister-prometheus framework has been disabled
     # true: kanister-prometheus framework has been enabled
     enabled: false
-  # labels to set on the pods created by kanister functions
+  # labels to set on the pods created by kanister functions, labels (key=value) are separated by ,
   kanisterPodCustomLabels : ""
-  # annotations to set on the pods created by kanister functions
+  # annotations to set on the pods created by kanister functions, annotations (key=value) are separated by ,
   kanisterPodCustomAnnotations : ""
 bpValidatingWebhook:
   enabled: true
