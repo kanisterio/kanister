@@ -15,7 +15,7 @@ spec:
 {{ include "kanister-operator.helmLabels" . | indent 8}}
     spec:
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
-{{- if .Values.bpValidatingWebhook.enabled }}
+{{- if or .Values.bpValidatingWebhook.enabled .Values.validatingWebhook.repositoryserver.enabled }}
       volumes:
         - name: webhook-certs
           secret:
@@ -51,6 +51,11 @@ spec:
       - name: {{ template "repository-server-controller.name" . }}
         image: {{ .Values.repositoryServerControllerImage.registry }}/{{ .Values.repositoryServerControllerImage.name }}:{{ .Values.repositoryServerControllerImage.tag }}
         imagePullPolicy: {{ .Values.repositoryServerControllerImage.pullPolicy }}
+{{- if .Values.validatingWebhook.repositoryserver.enabled }}
+        volumeMounts:
+          - name: webhook-certs
+            mountPath: /var/run/webhook/serving-cert
+{{- end }}
         env:
         - name: KOPIA_SERVER_START_TIMEOUT
           value: {{ .Values.repositoryServerController.serverStartTimeout | quote }}

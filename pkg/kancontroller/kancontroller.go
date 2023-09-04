@@ -39,6 +39,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
+	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 )
 
 const (
@@ -78,7 +79,7 @@ func Execute() {
 
 	// Run HTTPS webhook server if webhook certificates are mounted in the pod
 	// otherwise normal HTTP server for health and prom endpoints
-	if isCACertMounted() {
+	if validatingwebhook.IsCACertMounted() {
 		go func(config *rest.Config) {
 			err := handler.RunWebhookServer(config)
 			if err != nil {
@@ -141,12 +142,4 @@ func Execute() {
 	<-signalChan
 	log.Print("shutdown signal received, exiting...")
 	cancel()
-}
-
-func isCACertMounted() bool {
-	if _, err := os.Stat(fmt.Sprintf("%s/%s", handler.WHCertsDir, "tls.crt")); err != nil {
-		return false
-	}
-
-	return true
 }

@@ -1,4 +1,4 @@
-{{- if .Values.bpValidatingWebhook.enabled -}}
+{{- if or .Values.bpValidatingWebhook.enabled .Values.validatingWebhook.repositoryserver.enabled }}
 # generate ca cert with 365 days of validity
 {{ $ca := genCA ( printf "%s-ca" ( include "kanister-operator.fullname" . ) ) 365 }}
 {{- if eq (.Values.bpValidatingWebhook.tls.mode) "auto" }}
@@ -15,6 +15,7 @@ data:
   tls.key: {{ $cert.Key | b64enc }}
 ---
 {{- end }}
+{{- if or .Values.bpValidatingWebhook.enabled }}
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -41,4 +42,35 @@ webhooks:
   admissionReviewVersions: ["v1", "v1beta1"]
   sideEffects: None
   timeoutSeconds: 5
+---
+{{- end -}}
+{{- if .Values.validatingWebhook.repositoryserver.enabled -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "repositoryservers.cr.kanister.io"
+webhooks:
+- name: repositoryserver.cr.kanister.io
+  admissionReviewVersions: ["v1"]
+  clientConfig:
+    service:
+      namespace: {{ .Release.Namespace }}
+      name: {{ template "kanister-operator.fullname" . }}
+      path: /validate/v1alpha1/repositoryserver
+      port: {{ .Values.repositoryServerController.service.port }}
+    # use same certificate used for blueprint validating webhook 
+    {{- if eq (.Values.bpValidatingWebhook.tls.mode) "custom" }}
+    caBundle: {{ .Values.bpValidatingWebhook.tls.caBundle | required "Missing required caBundle, bpValidatingWebhook.tls.caBundle" }}
+    {{- else if eq (.Values.bpValidatingWebhook.tls.mode) "auto" }}
+    caBundle: {{ b64enc $ca.Cert }}    
+    {{- end }}
+  failurePolicy: Fail
+  rules:
+  - apiGroups: ["cr.kanister.io"]
+    apiVersions: ["v1alpha1"]
+    operations: ["UPDATE"]
+    resources: ["repositoryservers"]
+    scope: "Namespaced"
+  sideEffects: None
+{{- end -}}
 {{- end -}}
