@@ -33,30 +33,30 @@ const (
 	KanisterPodCustomAnnotationsEnv = "KANISTER_POD_CUSTOM_ANNOTATIONS"
 )
 
-func parseToLabelSelector(envKey string) (bool, *map[string]string) {
+func parseToLabelSelector(envKey string) *map[string]string {
 	val, ok := os.LookupEnv(envKey)
 	if !ok || val == "" {
-		return false, nil
+		return nil
 	}
 	ls, err := metav1.ParseToLabelSelector(val)
 	if err != nil {
-		return false, nil
+		return nil
 	}
-	return true, &ls.MatchLabels
+	return &ls.MatchLabels
 }
 
-func getKanisterPodLabels() (bool, *map[string]string) {
+func getKanisterPodLabels() *map[string]string {
 	return parseToLabelSelector(KanisterPodCustomLabelsEnv)
 }
 
-func getKanisterPodAnnotations() (bool, *map[string]string) {
+func getKanisterPodAnnotations() *map[string]string {
 	return parseToLabelSelector(KanisterPodCustomAnnotationsEnv)
 }
 
 // SetLabelsToPodOptionsIfRequired sets labels to PodOptions
 func SetLabelsToPodOptionsIfRequired(options *kube.PodOptions) {
-	updateNeeded, labels := getKanisterPodLabels()
-	if updateNeeded {
+	labels := getKanisterPodLabels()
+	if labels != nil {
 		if options.Labels == nil {
 			options.Labels = make(map[string]string)
 		}
@@ -68,8 +68,8 @@ func SetLabelsToPodOptionsIfRequired(options *kube.PodOptions) {
 
 // SetAnnotationsToPodOptionsIfRequired sets annotations to PodOptions
 func SetAnnotationsToPodOptionsIfRequired(options *kube.PodOptions) {
-	updateNeeded, annotations := getKanisterPodAnnotations()
-	if updateNeeded {
+	annotations := getKanisterPodAnnotations()
+	if annotations != nil {
 		if options.Annotations == nil {
 			options.Annotations = make(map[string]string)
 		}
