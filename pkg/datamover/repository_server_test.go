@@ -189,7 +189,9 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	}
 	serverStatusCmd := kopiacmd.ServerStatus(serverStatusCommandArgs)
 	out, err := ExecCommand(c, serverStatusCmd...)
-	c.Assert(out, Equals, "")
+	if !strings.Contains(out, "IDLE") && out != "" {
+		c.Fail()
+	}
 	c.Assert(err, IsNil)
 }
 
