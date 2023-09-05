@@ -17,14 +17,13 @@ package datamover
 import (
 	"context"
 	"fmt"
-	. "gopkg.in/check.v1"
-	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	. "gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
@@ -74,7 +73,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 
 	// Setting Up Repository Access
 	rss.repositoryUser = "repositoryUser"
-	rss.repositoryPassword = os.Getenv(TestRepositoryEncryptionKey)
+	rss.repositoryPassword = testutil.GetEnvOrSkip(c, TestRepositoryEncryptionKey)
 	rss.repoPathPrefix = path.Join("kopia-int", "repository-server-datamover-test")
 
 	rss.ctx = context.Background()
