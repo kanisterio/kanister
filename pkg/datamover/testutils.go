@@ -64,14 +64,20 @@ func redactArgs(args []string) []string {
 	const redacted = "<redacted>"
 	var redactNext bool
 	r := make([]string, 0, len(args))
+	redactMap := map[string]bool{
+		"--access-key":        true,
+		"--secret-access-key": true,
+		"--password":          true,
+		"--storage-account":   true,
+		"--storage-key":       true,
+	}
 	for _, a := range args {
 		if redactNext {
 			r = append(r, redacted)
 			redactNext = false
 			continue
 		}
-		switch a {
-		case "--access-key", "--secret-access-key", "--password", "--storage-account", "--storage-key":
+		if _, ok := redactMap[a]; ok {
 			redactNext = true
 		}
 		if strings.HasPrefix(a, "--access-key=") ||
