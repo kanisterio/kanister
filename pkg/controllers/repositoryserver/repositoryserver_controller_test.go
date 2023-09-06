@@ -334,7 +334,6 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
-
 }
 
 func (s *RepoServerControllerSuite) TestInvalidStorageLocation(c *C) {
@@ -360,7 +359,6 @@ func (s *RepoServerControllerSuite) TestInvalidStorageLocation(c *C) {
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
-
 }
 
 func (s *RepoServerControllerSuite) TestInvalidStorageLocationCredentials(c *C) {
@@ -386,7 +384,6 @@ func (s *RepoServerControllerSuite) TestInvalidStorageLocationCredentials(c *C) 
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
-
 }
 
 func (s *RepoServerControllerSuite) TestFilestoreLocationVolumeMountOnRepoServerPod(c *C) {
