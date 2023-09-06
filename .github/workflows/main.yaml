@@ -9,7 +9,7 @@ jobs:
   gomod:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: make go-mod-tidy
     - run: make go-mod-download
     - run: tar -cvf ./src.tar.gz ./ # preserve file permissions
