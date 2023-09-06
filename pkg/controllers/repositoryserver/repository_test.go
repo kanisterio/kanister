@@ -36,38 +36,64 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 	}
 
 	// Test if Default cache size settings are set
-	contentCacheMB, metadataCacheMB, err := repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(err, IsNil)
-	c.Assert(contentCacheMB, Equals, defaultcontentCacheMB)
-	c.Assert(metadataCacheMB, Equals, defaultmetadataCacheMB)
+	cacheSizeSettings := repoServerHandler.getRepositoryCacheSettings()
+	c.Assert(*cacheSizeSettings.Content, Equals, defaultcontentCacheMB)
+	c.Assert(*cacheSizeSettings.Metadata, Equals, defaultmetadataCacheMB)
 
+	customCacheMetadataSize := 1000
+	customCacheContentSize := 1100
 	// Test if configfured cache size settings are set
 	repositoryServer.Spec.Repository.CacheSizeSettings = v1alpha1.CacheSizeSettings{
-		Metadata: "1000",
-		Content:  "1100",
+		Metadata: &customCacheMetadataSize,
+		Content:  &customCacheContentSize,
 	}
-	contentCacheMB, metadataCacheMB, err = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(err, IsNil)
-	c.Assert(contentCacheMB, Equals, 1100)
-	c.Assert(metadataCacheMB, Equals, 1000)
+	cacheSizeSettings = repoServerHandler.getRepositoryCacheSettings()
+	c.Assert(*cacheSizeSettings.Content, Equals, 1100)
+	c.Assert(*cacheSizeSettings.Metadata, Equals, 1000)
 
 	// Check if default Content Cache size is set
 	repositoryServer.Spec.Repository.CacheSizeSettings = v1alpha1.CacheSizeSettings{
-		Metadata: "1000",
-		Content:  "",
+		Metadata: &customCacheMetadataSize,
+		Content:  nil,
 	}
-	contentCacheMB, metadataCacheMB, err = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(err, IsNil)
-	c.Assert(contentCacheMB, Equals, defaultcontentCacheMB)
-	c.Assert(metadataCacheMB, Equals, 1000)
+	cacheSizeSettings = repoServerHandler.getRepositoryCacheSettings()
+	c.Assert(*cacheSizeSettings.Content, Equals, defaultcontentCacheMB)
+	c.Assert(*cacheSizeSettings.Metadata, Equals, 1000)
 
 	// Check if default Metadata Cache size is set
 	repositoryServer.Spec.Repository.CacheSizeSettings = v1alpha1.CacheSizeSettings{
-		Metadata: "",
-		Content:  "1100",
+		Metadata: nil,
+		Content:  &customCacheContentSize,
 	}
-	contentCacheMB, metadataCacheMB, err = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(err, IsNil)
-	c.Assert(contentCacheMB, Equals, 1100)
-	c.Assert(metadataCacheMB, Equals, defaultmetadataCacheMB)
+	cacheSizeSettings = repoServerHandler.getRepositoryCacheSettings()
+	c.Assert(*cacheSizeSettings.Content, Equals, 1100)
+	c.Assert(*cacheSizeSettings.Metadata, Equals, defaultmetadataCacheMB)
+}
+
+func (s *RepoServerControllerSuite) TestConfigFileAndLogDirectoryConfiguration(c *C) {
+	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
+
+	repoServerHandler := RepoServerHandler{
+		Req:              reconcile.Request{},
+		Reconciler:       s.DefaultRepoServerReconciler,
+		KubeCli:          s.kubeCli,
+		RepositoryServer: &repositoryServer,
+	}
+
+	// Check if default values for log directory,config file path and cache directory are set
+	configuration := repoServerHandler.getRepositoryConfiguration()
+	c.Assert(configuration.ConfigFilePath, Equals, command.DefaultConfigFilePath)
+	c.Assert(configuration.LogDirectory, Equals, command.DefaultLogDirectory)
+	c.Assert(configuration.CacheDirectory, Equals, command.DefaultCacheDirectory)
+
+	// Check if custom values for log directory,config file path and cache directory are set
+	repositoryServer.Spec.Repository.Configuration.ConfigFilePath = "/tmp/test-config"
+	repositoryServer.Spec.Repository.Configuration.LogDirectory = "/tmp/test-log-directory"
+	repositoryServer.Spec.Repository.Configuration.CacheDirectory = "/tmp/test-cache-directory"
+
+	configuration = repoServerHandler.getRepositoryConfiguration()
+	c.Assert(configuration.ConfigFilePath, Equals, "/tmp/test-config")
+	c.Assert(configuration.LogDirectory, Equals, "/tmp/test-log-directory")
+	c.Assert(configuration.CacheDirectory, Equals, "/tmp/test-cache-directory")
 }

@@ -15,28 +15,25 @@
 package repositoryserver
 
 import (
-	"strconv"
-
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
-	contentCacheMB, metadataCacheMB, err := h.getRepositoryCacheSettings()
-	if err != nil {
-		return err
-	}
+	repoConfiguration := h.getRepositoryConfiguration()
+	cacheSizeSettings := h.getRepositoryCacheSettings()
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
 			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[reposerver.RepoPasswordKey]),
-			ConfigFilePath: command.DefaultConfigFilePath,
-			LogDirectory:   command.DefaultLogDirectory,
+			ConfigFilePath: repoConfiguration.ConfigFilePath,
+			LogDirectory:   repoConfiguration.LogDirectory,
 		},
-		CacheDirectory:  command.DefaultCacheDirectory,
+		CacheDirectory:  repoConfiguration.CacheDirectory,
 		Hostname:        h.RepositoryServer.Spec.Repository.Hostname,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
+		ContentCacheMB:  *cacheSizeSettings.Content,
+		MetadataCacheMB: *cacheSizeSettings.Metadata,
 		Username:        h.RepositoryServer.Spec.Repository.Username,
 		// TODO(Amruta): Generate path for respository
 		RepoPathPrefix: h.RepositoryServer.Spec.Repository.RootPath,
@@ -52,19 +49,36 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 	)
 }
 
-func (h *RepoServerHandler) getRepositoryCacheSettings() (contentCacheMB, metadataCacheMB int, err error) {
-	contentCacheMB, metadataCacheMB = command.GetGeneralCacheSizeSettings()
-	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content != "" {
-		contentCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content)
-		if err != nil {
-			return
-		}
+func (h *RepoServerHandler) getRepositoryConfiguration() v1alpha1.Configuration {
+	configuration := v1alpha1.Configuration{
+		ConfigFilePath: command.DefaultConfigFilePath,
+		LogDirectory:   command.DefaultLogDirectory,
+		CacheDirectory: command.DefaultCacheDirectory,
 	}
-	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata != "" {
-		metadataCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata)
-		if err != nil {
-			return
-		}
+
+	if h.RepositoryServer.Spec.Repository.Configuration.ConfigFilePath != "" {
+		configuration.ConfigFilePath = h.RepositoryServer.Spec.Repository.Configuration.ConfigFilePath
 	}
-	return
+	if h.RepositoryServer.Spec.Repository.Configuration.LogDirectory != "" {
+		configuration.LogDirectory = h.RepositoryServer.Spec.Repository.Configuration.LogDirectory
+	}
+	if h.RepositoryServer.Spec.Repository.Configuration.CacheDirectory != "" {
+		configuration.CacheDirectory = h.RepositoryServer.Spec.Repository.Configuration.CacheDirectory
+	}
+	return configuration
+}
+
+func (h *RepoServerHandler) getRepositoryCacheSettings() v1alpha1.CacheSizeSettings {
+	defaultContentCacheMB, defaultMetadataCacheMB := command.GetGeneralCacheSizeSettings()
+	cacheSizeSettings := v1alpha1.CacheSizeSettings{
+		Metadata: &defaultMetadataCacheMB,
+		Content:  &defaultContentCacheMB,
+	}
+	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content != nil {
+		cacheSizeSettings.Content = h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content
+	}
+	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata != nil {
+		cacheSizeSettings.Metadata = h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata
+	}
+	return cacheSizeSettings
 }
