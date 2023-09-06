@@ -15,11 +15,11 @@
 package function
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -185,9 +185,7 @@ func restoreDataFromServer(
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataFromServerPodFunc(
-		cli,
 		hostname,
-		namespace,
 		restorePath,
 		serverAddress,
 		fingerprint,
@@ -196,13 +194,11 @@ func restoreDataFromServer(
 		userPassphrase,
 		sparseRestore,
 	)
-	return pr.Run(ctx, podFunc)
+	return pr.RunEx(ctx, podFunc)
 }
 
 func restoreDataFromServerPodFunc(
-	cli kubernetes.Interface,
 	hostname,
-	namespace,
 	restorePath,
 	serverAddress,
 	fingerprint,
@@ -210,10 +206,13 @@ func restoreDataFromServerPodFunc(
 	username,
 	userPassphrase string,
 	sparseRestore bool,
-) func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
-	return func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrap(err, "Failed while waiting for Pod: "+pod.Name+" to be ready")
+) func(ctx context.Context, pc kube.PodController) (map[string]any, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]any, error) {
+		pod := pc.Pod()
+
+		// Wait for pod to reach running state
+		if err := pc.WaitForPodReady(ctx); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
 
 		contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
@@ -232,11 +231,18 @@ func restoreDataFromServerPodFunc(
 				ContentCacheMB:  contentCacheMB,
 				MetadataCacheMB: metadataCacheMB,
 			})
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		commandExecutor, err := pc.GetCommandExecutor()
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to connect to Kopia API server")
+			return nil, errors.Wrap(err, "Unable to get pod command executor")
+		}
+
+		var stdout, stderr bytes.Buffer
+		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to connect to Kopia Repository server")
 		}
 
 		cmd = kopiacmd.SnapshotRestore(
@@ -251,9 +257,13 @@ func restoreDataFromServerPodFunc(
 				SparseRestore:          sparseRestore,
 				IgnorePermissionErrors: true,
 			})
-		stdout, stderr, err = kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		stdout.Reset()
+		stderr.Reset()
+		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+
 		return nil, errors.Wrap(err, "Failed to restore backup from Kopia API server")
 	}
 }
