@@ -67,6 +67,10 @@ func (*deleteDataFunc) Name() string {
 }
 
 func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+	if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
+		return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
+	}
+
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
@@ -85,9 +89,6 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
-		}
-		if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
-			return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
 		}
 		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
 		if err != nil {
