@@ -222,7 +222,7 @@ func (p *podController) getContainerName() string {
 		return p.podOptions.ContainerName
 	}
 
-	return p.pod.Spec.Containers[0].Name
+	return defaultContainerName
 }
 
 func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error) {
