@@ -15,11 +15,11 @@
 package function
 
 import (
+	"bytes"
 	"context"
 	"strings"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -73,22 +73,28 @@ func describeBackups(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := describeBackupsPodFunc(cli, tp, namespace, encryptionKey, targetPaths)
-	return pr.Run(ctx, podFunc)
+	podFunc := describeBackupsPodFunc(cli, tp, encryptionKey, targetPaths)
+	return pr.RunEx(ctx, podFunc)
 }
 
-func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, targetPath string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPath string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+		pod := pc.Pod()
+
 		// Wait for pod to reach running state
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
+		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
-		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+
+		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
 			return nil, err
 		}
-		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
-		err = restic.CheckIfRepoIsReachable(tp.Profile, targetPath, encryptionKey, cli, namespace, pod.Name, pod.Spec.Containers[0].Name)
+
+		// Parent context could already be dead, so removing file within new context
+		defer remover.Remove(context.Background()) //nolint:errcheck
+
+		err = restic.CheckIfRepoIsReachable(tp.Profile, targetPath, encryptionKey, cli, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		switch {
 		case err == nil:
 			break
@@ -114,18 +120,27 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 		default:
 			return nil, err
 		}
+
 		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, RawDataStatsMode, encryptionKey)
 		if err != nil {
 			return nil, err
 		}
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		ex, err := pc.GetCommandExecutor()
+		if err != nil {
+			return nil, err
+		}
+
+		var stdout, stderr bytes.Buffer
+		err = ex.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to get backup stats")
 		}
+
 		// Get File Count and Size from Stats
-		_, fc, size := restic.SnapshotStatsFromStatsLog(stdout)
+		_, fc, size := restic.SnapshotStatsFromStatsLog(stdout.String())
 		if fc == "" || size == "" {
 			return nil, errors.New("Failed to parse snapshot stats from logs")
 		}
