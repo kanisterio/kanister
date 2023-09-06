@@ -15,10 +15,10 @@
 package function
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -125,21 +125,27 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := restoreDataPodFunc(cli, tp, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID)
-	return pr.Run(ctx, podFunc)
+	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID)
+	return pr.RunEx(ctx, podFunc)
 }
 
-func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func restoreDataPodFunc(tp param.TemplateParams, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+		pod := pc.Pod()
+
 		// Wait for pod to reach running state
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
+		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
-		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+
+		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
 		}
-		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+
+		// Parent context could already be dead, so removing file within new context
+		defer remover.Remove(context.Background()) //nolint:errcheck
+
 		var cmd []string
 		// Generate restore command based on the identifier passed
 		if backupTag != "" {
@@ -150,13 +156,19 @@ func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 		if err != nil {
 			return nil, err
 		}
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		ex, err := pc.GetCommandExecutor()
+		if err != nil {
+			return nil, err
+		}
+		var stdout, stderr bytes.Buffer
+		err = ex.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to restore backup")
 		}
-		out, err := parseLogAndCreateOutput(stdout)
+		out, err := parseLogAndCreateOutput(stdout.String())
 		return out, errors.Wrap(err, "Failed to parse phase output")
 	}
 }
