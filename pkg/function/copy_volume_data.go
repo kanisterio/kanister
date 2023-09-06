@@ -15,11 +15,11 @@
 package function
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap/buffer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -90,12 +90,8 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
 		}
-		pw1, err := pc.GetFileWriter()
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
-		}
 
-		remover, err := WriteCredsToPod(ctx, pw1, tp.Profile)
+		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
 		}
@@ -118,8 +114,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if err != nil {
 			return nil, err
 		}
-		var stdout buffer.Buffer
-		var stderr buffer.Buffer
+		var stdout, stderr bytes.Buffer
 		err = ex.Exec(ctx, cmd, nil, &stdout, &stderr)
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())

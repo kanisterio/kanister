@@ -102,16 +102,22 @@ func (nr nopRemover) Path() string {
 	return ""
 }
 
-// WriteCredsToPod creates a file with Google credentials if the given profile points to a GCS location
-func WriteCredsToPod(ctx context.Context, writer kube.PodFileWriter, profile *param.Profile) (kube.PodFileRemover, error) {
+// MaybeWriteProfileCredentials creates a file with Google credentials if the given profile points to a GCS location, otherwise does nothing
+func MaybeWriteProfileCredentials(ctx context.Context, pc kube.PodController, profile *param.Profile) (kube.PodFileRemover, error) {
 	if profile.Location.Type == crv1alpha1.LocationTypeGCS {
-		remover, err := writer.Write(ctx, consts.GoogleCloudCredsFilePath, bytes.NewBufferString(profile.Credential.KeyPair.Secret))
+		pfw, err := pc.GetFileWriter()
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to write Google credentials to the pod.")
+			return nil, errors.Wrap(err, "Unable to write Google credentials")
+		}
+
+		remover, err := pfw.Write(ctx, consts.GoogleCloudCredsFilePath, bytes.NewBufferString(profile.Credential.KeyPair.Secret))
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to write Google credentials")
 		}
 
 		return remover, nil
 	}
+
 	return nopRemover{}, nil
 }
 
