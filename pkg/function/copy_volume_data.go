@@ -80,11 +80,11 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := copyVolumeDataPodFunc(cli, tp, namespace, mountPoint, targetPath, encryptionKey)
+	podFunc := copyVolumeDataPodFunc(cli, tp, mountPoint, targetPath, encryptionKey)
 	return pr.RunEx(ctx, podFunc)
 }
 
-func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint, targetPath, encryptionKey string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, mountPoint, targetPath, encryptionKey string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
@@ -101,7 +101,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 
 		pod := pc.Pod()
 		// Get restic repository
-		if err := restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
+		if err := restic.GetOrCreateRepository(cli, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
 			return nil, err
 		}
 		// Copy data to object store
