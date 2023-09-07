@@ -309,3 +309,27 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 		tc(pcp, pc)
 	}
 }
+
+func (s *PodControllerTestSuite) TestContainerNameFromPodOpts(c *C) {
+	for _, tc := range []struct {
+		podOptsContainerName  string
+		expectedContainerName string
+	}{
+		{
+			podOptsContainerName:  "conone",
+			expectedContainerName: "conone",
+		},
+		{
+			podOptsContainerName:  "",
+			expectedContainerName: defaultContainerName,
+		},
+	} {
+		name := containerNameFromPodOpts(&PodOptions{
+			ContainerName: tc.podOptsContainerName,
+		})
+		c.Assert(name, Equals, tc.expectedContainerName)
+	}
+
+	name := containerNameFromPodOpts(&PodOptions{})
+	c.Assert(name, Equals, defaultContainerName)
+}
