@@ -113,7 +113,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
-				Name:            containerNameFromPodOpts(opts),
+				Name:            ContainerNameFromPodOpts(opts),
 				Image:           opts.Image,
 				Command:         opts.Command,
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
@@ -143,7 +143,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 
 	// Always put the main container the first
 	sort.Slice(patchedSpecs.Containers, func(i, j int) bool {
-		return patchedSpecs.Containers[i].Name == containerNameFromPodOpts(opts)
+		return patchedSpecs.Containers[i].Name == ContainerNameFromPodOpts(opts)
 	})
 
 	pod := &v1.Pod{

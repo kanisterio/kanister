@@ -324,12 +324,12 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOpts(c *C) {
 			expectedContainerName: defaultContainerName,
 		},
 	} {
-		name := containerNameFromPodOpts(&PodOptions{
+		name := ContainerNameFromPodOpts(&PodOptions{
 			ContainerName: tc.podOptsContainerName,
 		})
 		c.Assert(name, Equals, tc.expectedContainerName)
 	}
 
-	name := containerNameFromPodOpts(&PodOptions{})
+	name := ContainerNameFromPodOpts(&PodOptions{})
 	c.Assert(name, Equals, defaultContainerName)
 }

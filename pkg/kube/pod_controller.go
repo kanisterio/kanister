@@ -211,7 +211,7 @@ func (p *podController) StopPod(ctx context.Context, stopTimeout time.Duration, 
 	return nil
 }
 
-func containerNameFromPodOpts(po *PodOptions) string {
+func ContainerNameFromPodOpts(po *PodOptions) string {
 	if po.ContainerName != "" {
 		return po.ContainerName
 	}
@@ -224,7 +224,7 @@ func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error
 		return nil, ErrPodControllerPodNotStarted
 	}
 
-	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, containerNameFromPodOpts(p.podOptions))
+	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, ContainerNameFromPodOpts(p.podOptions))
 }
 
 func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
@@ -240,7 +240,7 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		cli:           p.cli,
 		namespace:     p.pod.Namespace,
 		podName:       p.podName,
-		containerName: containerNameFromPodOpts(p.podOptions),
+		containerName: ContainerNameFromPodOpts(p.podOptions),
 	}
 
 	pce.pcep = pce
@@ -261,7 +261,7 @@ func (p *podController) GetFileWriter() (PodFileWriter, error) {
 		cli:           p.cli,
 		namespace:     p.podOptions.Namespace,
 		podName:       p.podName,
-		containerName: containerNameFromPodOpts(p.podOptions),
+		containerName: ContainerNameFromPodOpts(p.podOptions),
 	}
 
 	pfw.fileWriterProcessor = pfw
