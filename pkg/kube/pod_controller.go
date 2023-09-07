@@ -211,14 +211,6 @@ func (p *podController) StopPod(ctx context.Context, stopTimeout time.Duration, 
 	return nil
 }
 
-func ContainerNameFromPodOpts(po *PodOptions) string {
-	if po.ContainerName != "" {
-		return po.ContainerName
-	}
-
-	return defaultContainerName
-}
-
 func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
