@@ -224,7 +224,7 @@ func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error
 		return nil, ErrPodControllerPodNotStarted
 	}
 
-	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, ContainerNameFromPodOpts(p.podOptions))
+	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, ContainerNameFromPodOptsOrDefault(p.podOptions))
 }
 
 func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
@@ -240,7 +240,7 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		cli:           p.cli,
 		namespace:     p.pod.Namespace,
 		podName:       p.podName,
-		containerName: ContainerNameFromPodOpts(p.podOptions),
+		containerName: ContainerNameFromPodOptsOrDefault(p.podOptions),
 	}
 
 	pce.pcep = pce
@@ -261,7 +261,7 @@ func (p *podController) GetFileWriter() (PodFileWriter, error) {
 		cli:           p.cli,
 		namespace:     p.podOptions.Namespace,
 		podName:       p.podName,
-		containerName: ContainerNameFromPodOpts(p.podOptions),
+		containerName: ContainerNameFromPodOptsOrDefault(p.podOptions),
 	}
 
 	pfw.fileWriterProcessor = pfw

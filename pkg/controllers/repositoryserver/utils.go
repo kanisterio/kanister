@@ -178,7 +178,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 
 	if len(podOverrideSpec.Containers) == 0 {
 		podOverrideSpec.Containers = append(podOverrideSpec.Containers, corev1.Container{
-			Name: kube.ContainerNameFromPodOpts(po),
+			Name: kube.ContainerNameFromPodOptsOrDefault(po),
 		})
 	}
 
