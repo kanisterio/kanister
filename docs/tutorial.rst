@@ -44,6 +44,9 @@ application is installed in the ``default`` namespace.
   metadata:
     name: time-logger
   spec:
+    selector:
+      matchLabels:
+        app: time-logger
     replicas: 1
     template:
       metadata:
