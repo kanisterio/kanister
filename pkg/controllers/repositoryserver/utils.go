@@ -156,7 +156,7 @@ func volumeSpecForName(podSpec corev1.PodSpec, podOverride map[string]interface{
 	}
 }
 
-func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, tlsCertSecretName string) error {
+func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, tlsCertSecretName string, po *kube.PodOptions) error {
 	podSpecBytes, err := json.Marshal(*podOverride)
 	if err != nil {
 		return errors.Wrap(err, "Failed to marshal Pod Override")
@@ -178,7 +178,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 
 	if len(podOverrideSpec.Containers) == 0 {
 		podOverrideSpec.Containers = append(podOverrideSpec.Containers, corev1.Container{
-			Name: "container",
+			Name: kube.ContainerNameFromPodOpts(po),
 		})
 	}
 
@@ -199,7 +199,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	return nil
 }
 
-func getPodOptions(namespace string, podOverride map[string]interface{}, svc *corev1.Service, vols map[string]string) *kube.PodOptions {
+func getPodOptions(namespace string, svc *corev1.Service, vols map[string]string) *kube.PodOptions {
 	uidguid := int64(0)
 	nonRootBool := false
 	return &kube.PodOptions{
@@ -208,7 +208,6 @@ func getPodOptions(namespace string, podOverride map[string]interface{}, svc *co
 		Image:         consts.GetKanisterToolsImage(),
 		ContainerName: repoServerPodContainerName,
 		Command:       []string{"bash", "-c", "tail -f /dev/null"},
-		PodOverride:   podOverride,
 		Labels:        map[string]string{repoServerServiceNameKey: svc.Name},
 		PodSecurityContext: &corev1.PodSecurityContext{
 			RunAsUser:    &uidguid,

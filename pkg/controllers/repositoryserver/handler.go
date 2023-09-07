@@ -214,18 +214,19 @@ func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *c
 }
 
 func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, []corev1.EnvVar, error) {
-	podOverride, err := h.preparePodOverride(ctx)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
 	vols, err := getVolumes(ctx, h.KubeCli, h.RepositoryServerSecrets.storage, repoServerNamespace)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	podOptions := getPodOptions(repoServerNamespace, podOverride, svc, vols)
+	podOptions := getPodOptions(repoServerNamespace, svc, vols)
+
+	podOverride, err := h.preparePodOverride(ctx, podOptions)
+	if err != nil {
+		return nil, nil, err
+	}
+	podOptions.PodOverride = podOverride
+
 	pod, envVars, err := h.setCredDataFromSecretInPod(ctx, podOptions)
 	if err != nil {
 		return nil, nil, err
@@ -273,14 +274,17 @@ func (h *RepoServerHandler) setCredDataFromSecretInPod(ctx context.Context, podO
 	return pod, envVars, nil
 }
 
-func (h *RepoServerHandler) preparePodOverride(ctx context.Context) (map[string]interface{}, error) {
+func (h *RepoServerHandler) preparePodOverride(ctx context.Context, po *kube.PodOptions) (map[string]interface{}, error) {
 	namespace := h.RepositoryServer.GetNamespace()
 	podOverride, err := getPodOverride(ctx, h.Reconciler, namespace)
 	if err != nil {
 		return nil, err
 	}
 	if err := addTLSCertConfigurationInPodOverride(
-		&podOverride, h.RepositoryServerSecrets.serverTLS.Name); err != nil {
+		&podOverride,
+		h.RepositoryServerSecrets.serverTLS.Name,
+		po,
+	); err != nil {
 		return nil, errors.Wrap(err, "Failed to attach TLS Certificate configuration")
 	}
 	return podOverride, nil
