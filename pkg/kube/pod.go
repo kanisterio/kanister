@@ -161,11 +161,6 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		pod.Name = opts.Name
 	}
 
-	// Override default container name if applicable
-	if opts.ContainerName != "" {
-		pod.Spec.Containers[0].Name = opts.ContainerName
-	}
-
 	// Add Annotations and Labels, if specified
 	if opts.Annotations != nil {
 		pod.ObjectMeta.Annotations = opts.Annotations
