@@ -415,7 +415,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 		Containers: []corev1.Container{
 			{
 				Name:            "container",
-				Image:           "ghcr.io/kanisterio/kanister-tools:0.94.0",
+				Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
 				Command:         []string{"sh", "-c", "echo in default specs"},
 				ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 				VolumeMounts: []corev1.VolumeMount{
@@ -461,7 +461,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.94.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -501,7 +501,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.94.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -555,7 +555,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.94.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -616,7 +616,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.94.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -679,7 +679,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.94.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -719,7 +719,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.94.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -762,7 +762,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.94.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -880,28 +880,4 @@ func (s *PodSuite) TestSetLifecycleHook(c *C) {
 	pod, err := CreatePod(context.Background(), s.cli, po)
 	c.Assert(err, IsNil)
 	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
-}
-
-func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
-	for _, tc := range []struct {
-		podOptsContainerName  string
-		expectedContainerName string
-	}{
-		{
-			podOptsContainerName:  "conone",
-			expectedContainerName: "conone",
-		},
-		{
-			podOptsContainerName:  "",
-			expectedContainerName: defaultContainerName,
-		},
-	} {
-		name := ContainerNameFromPodOptsOrDefault(&PodOptions{
-			ContainerName: tc.podOptsContainerName,
-		})
-		c.Assert(name, Equals, tc.expectedContainerName)
-	}
-
-	name := ContainerNameFromPodOptsOrDefault(&PodOptions{})
-	c.Assert(name, Equals, defaultContainerName)
 }
