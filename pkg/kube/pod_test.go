@@ -881,3 +881,27 @@ func (s *PodSuite) TestSetLifecycleHook(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
 }
+
+func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
+	for _, tc := range []struct {
+		podOptsContainerName  string
+		expectedContainerName string
+	}{
+		{
+			podOptsContainerName:  "conone",
+			expectedContainerName: "conone",
+		},
+		{
+			podOptsContainerName:  "",
+			expectedContainerName: defaultContainerName,
+		},
+	} {
+		name := ContainerNameFromPodOptsOrDefault(&PodOptions{
+			ContainerName: tc.podOptsContainerName,
+		})
+		c.Assert(name, Equals, tc.expectedContainerName)
+	}
+
+	name := ContainerNameFromPodOptsOrDefault(&PodOptions{})
+	c.Assert(name, Equals, defaultContainerName)
+}
