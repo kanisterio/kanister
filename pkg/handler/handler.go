@@ -34,7 +34,6 @@ const (
 	healthCheckPath = "/v0/healthz"
 	metricsPath     = "/metrics"
 	healthCheckAddr = ":8000"
-	WHCertsDir      = "/var/run/webhook/serving-cert"
 	whHandlePath    = "/validate/v1alpha1/blueprint"
 )
 
@@ -73,7 +72,7 @@ func RunWebhookServer(c *rest.Config) error {
 	hookServer.Register(healthCheckPath, &healthCheckHandler{})
 	hookServer.Register(metricsPath, promhttp.Handler())
 
-	hookServer.CertDir = WHCertsDir
+	hookServer.CertDir = validatingwebhook.WHCertsDir
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		return err
