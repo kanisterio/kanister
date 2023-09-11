@@ -62,8 +62,8 @@ dockers:
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
-# Refers to https://github.com/kopia/kopia/commit/3551f743d762f2ffe669523272d1c8d734120b79
-  - "--build-arg=kopiaBuildCommit=3551f74"
+# Refers to https://github.com/kopia/kopia/commit/cde557b0bf6d45cfa117f7aa9b21ef89597e4fe6
+  - "--build-arg=kopiaBuildCommit=cde557b"
   - "--build-arg=kopiaRepoOrg=kopia"
   extra_files:
   - 'LICENSE'
