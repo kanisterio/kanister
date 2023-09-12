@@ -14,7 +14,8 @@ The goal of this proposal is to
 
 ### Changes in ActionSet `status` Field
 
-In order to inform progress of each phase execution while performing action, the progress field can be added to status.phase
+In order to show the progress of each phase execution while performing an
+action, a progress field can be added to the `status.phase`.
 
 ```
 // ActionStatus is updated as we execute phases.
@@ -51,19 +52,27 @@ type ActionStatus struct {
 +}
 ```
 
-### Action progress tracking
+### Action Progress Tracking
 
-Action can consists of multiple phases. These all phases can take consume different duration for completion based on the operations it performs. All phases for the action can be given equal weight-age and to calculate action progress completion %, average of all phase completion %ge can be calculated
+An Action consists of multiple phases. The phases consume different duration
+for completion based on the operations they perform. All the phases in an
+action can be given equal weightage, and to calculate the action completion
+progress %, the average of all phase completion % can be calculated.
 
 ```
-% completion of action = sum(% Phase completion of all the phases)/ no. of phases
+% completion of action = sum(% completion of all the phases)/ no. of phases
 ```
 
-### Phase progress tracking
+### Phase Progress Tracking
 
-Each function is designed to perform different operations in different ways. Since the operation execution is specific to function, each function can be different ways to calculate and provide info about the progress. E.g datamover functions can leverage kopia stats to track progress. So it makes sense to delegate progress tracking to function implementation.
+Each Kanister function performs its operations in different ways. Since the
+operation execution is specific to a function, each function has a specific way
+to calculate and provide info about the progress. For example, datamover
+functions can leverage Kopia stats to track progress. So, the progress tracking
+can be delegated to the function implementation.
 
-Each Kanister function implements Progress interface. The Kanister function implementation calculates and returns the progress stats.
+Each Kanister function calculates and returns the progress stats by
+implementing the `Progress` interface.
 
 **Progress interface**
 
@@ -91,9 +100,10 @@ type Func interface {
  }
 ```
 
-The PhaseProgress.ProgressPercent would be the of progress the functions it consists of.
+The `PhaseProgress.ProgressPercent` is the progress of its Kanister function.
 
-The following is the example ActionSet status of BP action consists of 3 phases. Out of which first phase is completed and second one is running
+The following ActionSet example shows the status of an action with 3 phases.
+The first phase is complete and the second one is running.
 
 ```
 status:
@@ -133,15 +143,17 @@ status:
     state: running
 ```
 
-### Kanister functions progress tracking
+### Kanister Functions Progress Tracking
 
-On high level we can divide the Kanister functions into two groups
+At a high level, we can divide the Kanister functions into two groups.
 
-### Datamover Kanister functions
+#### Datamover Kanister Functions
 
-Kanister data mover functions (like BackupData, CopyVolumeData, RestoreData, etc) use Kopia to snapshot filesystem and move data to/from objects.
+Kanister data mover functions (like `BackupData`, `CopyVolumeData`,
+`RestoreData`, etc.) use Kopia to snapshot the filesystem and move data to/from
+external storage.
 
-While snapshotting, kopia provides the info about progress on the terminal
+While snapshotting, Kopia provides the info about progress on stdout.
 
 ```
 $ kopia --log-level=error --config-file=/tmp/kopia-repository.config --log-dir=/tmp/kopia-log snapshot --progress-update-interval=5s /data
@@ -151,25 +163,42 @@ $ kopia --log-level=error --config-file=/tmp/kopia-repository.config --log-dir=/
 
 The command output can be parsed to get the progress metadata.
 
-### Non-datamover Kanister functions
+#### Non-datamover Kanister Functions
 
-Non-datamover Kanister functions like `KubeTask`, `KubeExec`, `KubeOps`, `ScaleWorkload`, etc allow users to perform operations like executing scripts on a Pod or managing K8s resources. The duration it takes to execute these functions depends on different factors like the type of operations, function arguments, and types of commands listed in BP in the case of KubeExec or KubeTask functions. We can roughly divide these function execution into 3 steps.
+Non-datamover Kanister functions like `KubeTask`, `KubeExec`, `KubeOps`,
+`ScaleWorkload`, etc., allow users to perform operations like executing scripts
+on a Pod or managing K8s resources. The duration it takes to execute these
+functions depends on different factors like the type of operations, the
+commands defined, and the function arguments. We can roughly divide the
+function execution into 3 steps.
 
-- Prerequisites - which include steps to perform before running actual operations like setting up env, preparing Pod specs, creating the K8s resources and waiting for them to be ready.
-- Execution - This is the step where the function performs operations.
-- Cleanup - Operations like deleting pods or cleaning up resources
+- Prerequisites - includes steps to perform before running actual operations,
+  e.g., setting up env, preparing Pod specs, creating the K8s resources, and
+  waiting for them to be ready.
+- Execution - this is the step where the function performs its operations.
+- Cleanup - operations like deleting pods or cleaning up resources.
 
-Since there is no standard way to check the progress of these functions, we can divide the progress equally into 3 giving each step equal weightage i.e 33.33%. E.g once the prerequisite step is completed, the progress can be set to 33.33%. And 66.66% once the specified operations are completed.
+Since there is no standard way to check the progress of these functions, we can
+divide the progress equally into 3 giving each step equal weightage, i.e.,
+33.33%. For example, once the prerequisite step is completed, the progress can
+be set to 33.33%, and 66.66% once the specified operations are completed.
 
-A few functions like `ScaleWorkload` may not have any prerequisite step. In that case, the progress can be set to 0 till the operation completes.
+A few functions like `ScaleWorkload` may not have any prerequisite step. In
+that case, the progress can be set to 0 till the operation completes.
 
-### Updating actionset status
+### Updating ActionSet `status`
 
-[TrackActionProgress](https://github.com/kanisterio/kanister/blob/master/pkg/progress/action.go#L47) function is responsible for periodically updating progress for the action in ActionSet resource status.
+The following changes are required to update the ActionSet `status`.
 
-Refactor TrackActionsProgress to remove weight based progress calculation to use Progress interface implemented by functions.
-
-Pass additional parameter Phase to the TrackActionsProgress which can be used to get progress of the function in execution.
+- [TrackActionProgress](https://github.com/kanisterio/kanister/blob/master/pkg/progress/action.go#L47)
+  function is currently responsible for periodically updating the progress of an
+  action in the ActionSet resource `status`.
+  
+  Refactor `TrackActionsProgress` to remove the weight-based progress calculation
+  and use the `Progress` interface implemented by functions.
+  
+  Pass an additional `Phase` parameter to the `TrackActionsProgress`` that can be
+  used to get the progress of the Kanister function being executed.
 
 ```
 +                               go func() {
@@ -183,7 +212,8 @@ Pass additional parameter Phase to the TrackActionsProgress which can be used to
 
 ```
 
-Implement Progress() function on Phase type to return Progress of the Kanister function
+- Implement `Progress()` function on the `Phase`` type to return the progress
+  of the Kanister function.
 
 ```
 +func (p *Phase) Progress() (crv1alpha1.PhaseProgress, error) {
@@ -191,4 +221,6 @@ Implement Progress() function on Phase type to return Progress of the Kanister f
 +}
 ```
 
-Once we have information about Progress of current function, the Phase ProgressPercent and Action ProgressPercent in the ActionSet status can be updated by computing the average.
+- Use the progress of the current function to compute the average values and
+  update the `Phase.ProgressPercent` and `Action.ProgressPercent` in the
+  ActionSet `status`.
