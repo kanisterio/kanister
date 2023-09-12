@@ -27,6 +27,15 @@ type ExecError struct {
 	stderr LogTail
 }
 
+// NewExecError creates an instance of ExecError
+func NewExecError(err error, stdout, stderr LogTail) *ExecError {
+	return &ExecError{
+		error:  err,
+		stdout: stdout,
+		stderr: stderr,
+	}
+}
+
 func (e *ExecError) Unwrap() error {
 	return e.error
 }
