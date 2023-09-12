@@ -84,6 +84,27 @@ on the value of bpValidatingWebhook.enabled
 {{- end -}}
 {{- end -}}
 
+
+{{/*
+Figure out the target port of service, this depends
+on the value of validatingWebhook.repositoryserver.enabled
+*/}}
+{{- define "reposerver-controller.targetPort" -}}
+{{- if .Values.validatingWebhook.repositoryserver.enabled -}}
+    {{ 8443 }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Figure out the port of service, this depends
+on the value of validatingWebhook.repositoryserver.enabled
+*/}}
+{{- define "reposerver-controller.servicePort" -}}
+{{- if .Values.validatingWebhook.repositoryserver.enabled -}}
+    {{ .Values.repositoryServerController.service.port }}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Define a custom kanister-tools image
 */}}
