@@ -5,7 +5,7 @@ field in the ActionSet CR represents the status of a Kanister operation. The
 action completion percentage is set by calculating the weights given on phases
 ([https://github.com/kanisterio/kanister/blob/master/design/progress-tracking.md](https://github.com/kanisterio/kanister/blob/master/design/progress-tracking.md)).
 
-The goal of this proposal is
+The goal of this proposal is to
 
 - Have progress tracking per phase
 - Improve action progress tracking mechanism by removing hard coded weights
