@@ -16,6 +16,7 @@ package blockstorage
 
 import (
 	"bytes"
+	azto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 )
@@ -104,4 +105,43 @@ func FilterSnapshotsWithTags(snapshots []*Snapshot, tags map[string]string) []*S
 		}
 	}
 	return result
+}
+
+// utility functions equivalent to old functions from package `go-autorest/autorest/to`
+
+// StringMapPtr returns a pointer to a map of string pointers built from the passed map of strings.
+func StringMapPtr(ms map[string]string) *map[string]*string {
+	msp := make(map[string]*string, len(ms))
+	for k, s := range ms {
+		msp[k] = azto.Ptr(s)
+	}
+	return &msp
+}
+
+// StringMap returns a map of strings built from the map of string pointers. The empty string is
+// used for nil pointers.
+func StringMap(msp map[string]*string) map[string]string {
+	ms := make(map[string]string, len(msp))
+	for k, sp := range msp {
+		if sp != nil {
+			ms[k] = *sp
+		} else {
+			ms[k] = ""
+		}
+	}
+	return ms
+}
+
+// StringSlice returns a string slice value for the passed string slice pointer. It returns a nil
+// slice if the pointer is nil.
+func StringSlice(s *[]string) []string {
+	if s != nil {
+		return *s
+	}
+	return nil
+}
+
+// StringSlicePtr returns a pointer to the passed string slice.
+func StringSlicePtr(s []string) *[]string {
+	return azto.Ptr(s)
 }

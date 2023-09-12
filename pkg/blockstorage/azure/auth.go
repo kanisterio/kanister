@@ -2,9 +2,10 @@ package azure
 
 import (
 	"context"
-
-	"github.com/Azure/go-autorest/autorest/adal"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/pkg/errors"
 )
@@ -46,22 +47,19 @@ type MsiAuthenticator struct{}
 
 func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	// check if MSI endpoint is available
-	if !adal.MSIAvailable(context.Background(), nil) {
-		return errors.New("MSI endpoint is not supported")
+
+	clientID, ok := creds[blockstorage.AzureClientID]
+	if !ok || clientID == "" {
+		return errors.New("Failed to fetch azure clientID")
 	}
-	// create a service principal token
-	msiConfig := auth.NewMSIConfig()
-	if clientID, ok := creds[blockstorage.AzureClientID]; ok && clientID != "" {
-		msiConfig.ClientID = clientID
-	}
-	spt, err := msiConfig.ServicePrincipalToken()
+	azClientID := azidentity.ClientID(clientID)
+	opts := azidentity.ManagedIdentityCredentialOptions{ID: azClientID}
+	cred, err := azidentity.NewManagedIdentityCredential(&opts)
+
+	_, err = cred.GetToken(context.Background(), policy.TokenRequestOptions{})
+
 	if err != nil {
 		return errors.Wrap(err, "Failed to create a service principal token")
-	}
-	// network call to check for token
-	err = spt.Refresh()
-	if err != nil {
-		return errors.Wrap(err, "Failed to refresh token")
 	}
 	// creds passed authentication
 	return nil
@@ -75,15 +73,11 @@ func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error 
 	if err != nil {
 		return errors.Wrap(err, "Failed to get Client Secret config")
 	}
-	// create a service principal token
-	spt, err := credConfig.ServicePrincipalToken()
+	cred, err := azidentity.NewClientSecretCredential(credConfig.TenantID, credConfig.ClientID, credConfig.ClientSecret, nil)
+	_, err = cred.GetToken(context.Background(), policy.TokenRequestOptions{})
+
 	if err != nil {
 		return errors.Wrap(err, "Failed to create a service principal token")
-	}
-	// network call to check for token
-	err = spt.Refresh()
-	if err != nil {
-		return errors.Wrap(err, "Failed to refresh token")
 	}
 	// creds passed authentication
 	return nil
