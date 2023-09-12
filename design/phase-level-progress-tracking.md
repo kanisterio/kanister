@@ -8,7 +8,7 @@ action completion percentage is set by calculating the weights given on phases
 The goal of this proposal is to
 
 - Have progress tracking per phase
-- Improve action progress tracking mechanism by removing hard coded weights
+- Improve action progress tracking mechanism by removing hard-coded weights
 
 ## High Level Design
 
