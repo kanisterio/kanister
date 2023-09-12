@@ -12,7 +12,7 @@ The goal of this proposal is to
 
 ## High Level Design
 
-### Changes in ActionSet status field
+### Changes in ActionSet `status` Field
 
 In order to inform progress of each phase execution while performing action, the progress field can be added to status.phase
 
