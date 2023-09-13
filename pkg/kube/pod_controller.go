@@ -230,7 +230,7 @@ func (p *podController) getContainerName() string {
 }
 
 // StreamPodLogs returns io.ReadCloser which could be used to receive logs from pod
-// container will be decided basing on result of getContainerName function.
+// Container will be decided based on the result of getContainerName function.
 func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
@@ -242,7 +242,7 @@ func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error
 // GetCommandExecutor returns PodCommandExecutor instance which is configured to execute commands within pod controlled
 // by this controller.
 // If pod is not created or not ready yet, it will fail with an appropriate error.
-// container will be decided basing on result of getContainerName function
+// Container will be decided based on the result of getContainerName function
 func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
@@ -268,7 +268,7 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 
 // GetFileWriter returns PodFileWriter instance which is configured to write file to pod controlled by this controller.
 // If pod is not created or not ready yet, it will fail with an appropriate error.
-// container will be decided basing on result of getContainerName function
+// Container will be decided based on the result of getContainerName function
 func (p *podController) GetFileWriter() (PodFileWriter, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
