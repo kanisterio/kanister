@@ -8,6 +8,8 @@ updates:
     commit-message:
       prefix: "deps(go):"
     ignore:
+      # kopia requires explicit updates
+      - dependency-name: "github.com/kopia/kopia"
       # Dependabot opens PRs for older versions of openshift that would downgrade the version in use.
       - dependency-name: "github.com/openshift/api"
       - dependency-name: "k8s.io/*"
