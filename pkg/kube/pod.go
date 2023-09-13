@@ -198,11 +198,11 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 // the passed `podOptions` value. If not, it's returns the default container
 // name. This should be used whenever we create pods for Kanister functions.
 func ContainerNameFromPodOptsOrDefault(po *PodOptions) string {
-	if po.ContainerName != "" {
-		return po.ContainerName
+	if po == nil || po.ContainerName == "" {
+		return defaultContainerName
 	}
 
-	return defaultContainerName
+	return po.ContainerName
 }
 
 // CreatePod creates a pod with a single container based on the specified image

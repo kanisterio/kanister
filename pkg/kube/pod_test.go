@@ -904,4 +904,7 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 
 	name := ContainerNameFromPodOptsOrDefault(&PodOptions{})
 	c.Assert(name, Equals, defaultContainerName)
+
+	name = ContainerNameFromPodOptsOrDefault(nil)
+	c.Assert(name, Equals, defaultContainerName)
 }
