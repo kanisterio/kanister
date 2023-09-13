@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
@@ -47,6 +47,16 @@ func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
 	return &podRunner{
 		pc: NewPodController(cli, options),
 	}
+}
+
+// NewPodRunnerWithPodController returns a new PodRunner given PodController object
+// This provides mechanism for passing fake podControllerProcessor through PodController for testing purposes.
+func NewPodRunnerWithPodController(pc PodController) PodRunner {
+	r := &podRunner{
+		pc: pc,
+	}
+
+	return r
 }
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
