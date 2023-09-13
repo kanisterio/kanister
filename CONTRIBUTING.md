@@ -77,6 +77,10 @@ styling and safety rules.
 See the [BUILD.md](BUILD.md) document for instructions on how to build, test and
 run Kanister locally.
 
+### Updating the API types
+
+If your changes involve the Kanister API types, generate the API documentation using the `make crd_docs` command and push the updated `API.md` file along with any other changes.
+
 ### Commit messages
 
 The basic idea is that we ask all contributors to practice

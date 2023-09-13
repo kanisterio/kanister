@@ -13,4 +13,5 @@ import "embed"
 //go:embed actionset.yaml
 //go:embed blueprint.yaml
 //go:embed profile.yaml
+//go:embed repositoryserver.yaml
 var yamls embed.FS

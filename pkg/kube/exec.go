@@ -16,6 +16,7 @@ package kube
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/url"
 	"strings"
@@ -147,7 +148,8 @@ func execute(method string, url *url.URL, config *restclient.Config, stdin io.Re
 	if err != nil {
 		return err
 	}
-	return exec.Stream(remotecommand.StreamOptions{
+	// Get context from a caller function. Issue to track: https://github.com/kanisterio/kanister/issues/1930
+	return exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
 		Stdin:  stdin,
 		Stdout: stdout,
 		Stderr: stderr,

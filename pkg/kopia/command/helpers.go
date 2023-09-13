@@ -59,6 +59,14 @@ func GetCacheSizeSettingsForRestore() (contentCacheMB, metadataCacheMB int) {
 		utils.GetEnvAsIntOrDefault(dataStoreRestoreMetadataCacheSizeMBVarName, defaultDataStoreRestoreMetadataCacheSizeMB)
 }
 
+// GetGeneralCacheSizeSettings returns the feature setting cache size values to be used
+// for initializing repositories that will be performing general command workloads that benefit from
+// cacheing metadata only.
+func GetGeneralCacheSizeSettings() (contentCacheMB, metadataCacheMB int) {
+	return utils.GetEnvAsIntOrDefault(dataStoreGeneralContentCacheSizeMBVarName, defaultDataStoreGeneralContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(dataStoreGeneralMetadataCacheSizeMBVarName, defaultDataStoreGeneralMetadataCacheSizeMB)
+}
+
 type GeneralCommandArgs struct {
 	*CommandArgs
 	SubCommands      []string
@@ -72,7 +80,7 @@ type GeneralCommandArgs struct {
 // contains subcommands, loggable flags, loggable key value pairs and
 // redacted key value pairs
 func GeneralCommand(cmdArgs GeneralCommandArgs) logsafe.Cmd {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	for _, subCmd := range cmdArgs.SubCommands {
 		args = args.AppendLoggable(subCmd)
 	}

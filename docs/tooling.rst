@@ -40,6 +40,7 @@ kanctl create
   Available Commands:
     actionset   Create a new ActionSet or override a <parent> ActionSet
     profile     Create a new profile
+    repository-server   Create a new kopia repository server
 
   Flags:
         --dry-run           if set, resource YAML will be printed but not created
@@ -228,6 +229,37 @@ A new S3Compliant profile can be created using the s3compliant subcommand
                                       --namespace kanister
   secret 's3-secret-chst2' created
   profile 's3-profile-5mmkj' created
+
+
+Kopia Repository Server resource creation using ``kanctl create``
+
+.. code-block:: bash
+
+    $ kanctl create repository-server --help
+    Create a new RepositoryServer
+
+    Usage:
+      kanctl create repository-server [flags]
+
+    Flags:
+      -a, --admin-user-access-secret string           name of the secret having admin credentials to connect to connect to kopia repository server
+      -r, --kopia-repository-password-secret string   name of the secret containing password for the kopia repository
+      -k, --kopia-repository-user string              name of the user for accessing the kopia repository
+      -c, --location-creds-secret string              name of the secret containing kopia repository storage credentials
+      -l, --location-secret string                    name of the secret containing kopia repository storage location details
+      -p, --prefix string                             prefix to be set in kopia repository
+      -t, --tls-secret string                         name of the tls secret needed for secure kopia client and kopia repository server communication
+      -u, --user string                               name of the user to be created for the kopia repository server
+      -s, --user-access-secret string                 name of the secret having access credentials of the users that can connect to kopia repository server
+      -w, --wait                                      wait for the kopia repository server to be in ready state after creation
+      -h, --help                                      help for repository-server
+
+    Global Flags:
+          --dry-run            if set, resource YAML will be printed but not created
+      -n, --namespace string   Override namespace obtained from kubectl context
+          --skip-validation    if set, resource is not validated before creation
+          --verbose            Display verbose output
+
 
 .. _kanctlvalidate:
 

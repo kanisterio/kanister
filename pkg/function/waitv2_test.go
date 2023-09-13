@@ -155,11 +155,11 @@ func waitV2StatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 		Name: "waitV2StsReady",
 		Func: WaitV2FuncName,
 		Args: map[string]interface{}{
-			WaitV2TimeoutArg: "1m",
+			WaitV2TimeoutArg: "5m",
 			WaitV2ConditionsArg: map[string]interface{}{
 				"allOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq .spec.replicas .status.availableReplicas )}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .spec.replicas .status.currentReplicas )}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",

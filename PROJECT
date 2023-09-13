@@ -1,0 +1,15 @@
+domain: cr.kanister.io
+layout:
+- go.kubebuilder.io/v3
+projectName: kanister
+repo: kanister
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: cr.kanister.io
+  kind: RepositoryServer
+  path: kanister/pkg/apis/cr/v1alpha1
+  version: v1alpha1
+version: "3"

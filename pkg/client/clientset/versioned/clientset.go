@@ -33,8 +33,7 @@ type Interface interface {
 	CrV1alpha1() crv1alpha1.CrV1alpha1Interface
 }
 
-// Clientset contains the clients for groups. Each group has exactly one
-// version included in a Clientset.
+// Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
 	crV1alpha1 *crv1alpha1.CrV1alpha1Client

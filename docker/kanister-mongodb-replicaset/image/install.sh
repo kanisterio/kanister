@@ -19,7 +19,7 @@ mv 90forceyes /etc/apt/apt.conf.d/
 
 echo "================= Installing basic packages ==================="
 apt-get update && \
-apt-get install curl wget musl-dev python3 rsync -y
+apt-get install curl wget musl-dev python3 rsync libdigest-sha-perl -y
 
 echo "================= Installing Python packages ==================="
 wget --progress=dot:mega https://bootstrap.pypa.io/pip/3.5/get-pip.py
@@ -31,6 +31,9 @@ pip install awscli
 echo "================= Install Mongo Tools ==================="
 wget --progress=dot:mega https://github.com/Percona-Lab/mongodb_consistent_backup/releases/download/1.1.0/${mongo_deb}
 dpkg -i ./${mongo_deb}
+
+echo "================= Install Kanister Tools ==================="
+curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
 
 echo "================= Cleaning package lists ==================="
 apt-get clean

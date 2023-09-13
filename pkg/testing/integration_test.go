@@ -99,7 +99,7 @@ func integrationSetup(t *test.T) {
 	if err = resource.CreateCustomResources(ctx, cfg); err != nil {
 		t.Fatalf("Integration test setup failure: Error createing custom resources; err=%v", err)
 	}
-	ctlr := controller.New(cfg)
+	ctlr := controller.New(cfg, nil)
 	if err = ctlr.StartWatch(ctx, ns); err != nil {
 		t.Fatalf("Integration test setup failure: Error starting controller; err=%v", err)
 	}
@@ -169,7 +169,7 @@ func newSecretProfile() *secretProfile {
 
 func (s *IntegrationSuite) SetUpSuite(c *C) {
 	ctx := context.Background()
-	ctx, s.cancel = context.WithCancel(ctx)
+	_, s.cancel = context.WithCancel(ctx)
 
 	// Instantiate Client SDKs
 	cfg, err := kube.LoadConfig()

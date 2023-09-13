@@ -232,5 +232,6 @@ func (*restoreDataFunc) Arguments() []string {
 		RestoreDataVolsArg,
 		RestoreDataBackupTagArg,
 		RestoreDataBackupIdentifierArg,
+		RestoreDataPodOverrideArg,
 	}
 }

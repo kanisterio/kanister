@@ -19,7 +19,6 @@ const (
 	createSubCommand      = "create"
 	deleteSubCommand      = "delete"
 	expireSubCommand      = "expire"
-	gcSubCommand          = "gc"
 	infoSubCommand        = "info"
 	kopiaCommand          = "kopia"
 	listSubCommand        = "list"
@@ -40,8 +39,9 @@ const (
 	globalFlag                 = "--global"
 	jsonFlag                   = "--json"
 	logDirectoryFlag           = "--log-dir"
-	logLevelErrorFlag          = "--log-level=error"
-	logLevelInfoFlag           = "--log-level=info"
+	logLevelFlag               = "--log-level"
+	LogLevelError              = "error"
+	LogLevelInfo               = "info"
 	noGrpcFlag                 = "--no-grpc"
 	parallelFlag               = "--parallel"
 	passwordFlag               = "--password"
@@ -83,6 +83,7 @@ const (
 	overrideUsernameFlag      = "--override-username"
 	pointInTimeConnectionFlag = "--point-in-time"
 	urlFlag                   = "--url"
+	readOnlyFlag              = "--readonly"
 )
 
 // List of possible modifications to a policy, expressed as the kopia flag that will modify it

@@ -1,0 +1,31 @@
+linters:
+  disable-all: false                    # This enabled 7 default linters as of golangci-lint@v1.50.0:
+                                        #   1. errcheck
+                                        #   2. gosimple
+                                        #   3. govet
+                                        #   4. ineffassign
+                                        #   5. staticcheck
+                                        #   6. typecheck
+                                        #   7. unused
+  enable:
+    - gofmt
+    - whitespace
+    - gocognit
+    - unparam
+
+run:
+  timeout: 10m                          # golangci-lint run's timeout.
+
+  build-tags:                           # All linters will run with below mentioned build tags.
+    - "integration"
+
+issues:
+  exclude-rules:
+    - path: '_test.go'
+      linters:
+        - errcheck                      # Errors may be ignored in tests.
+        - unparam                       # Tests might have unused function parameters.
+
+    - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
+      linters:
+        - unparam

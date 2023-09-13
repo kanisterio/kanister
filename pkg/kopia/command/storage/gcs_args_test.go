@@ -18,19 +18,21 @@ import (
 	"fmt"
 
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func (s *StorageUtilsSuite) TestGCSArgsUtil(c *check.C) {
 	locSecret := map[string][]byte{
-		prefixKey: []byte("test-prefix"),
-		bucketKey: []byte("test-bucket"),
+		repositoryserver.PrefixKey: []byte("test-prefix"),
+		repositoryserver.BucketKey: []byte("test-bucket"),
 	}
 	repoPathPrefix := "dir/sub-dir"
 	cmd := gcsArgs(locSecret, repoPathPrefix)
 	c.Assert(cmd.String(), check.Equals, fmt.Sprint(
 		gcsSubCommand,
-		fmt.Sprintf(" --%s=%s", bucketKey, locSecret[bucketKey]),
+		fmt.Sprintf(" --%s=%s", repositoryserver.BucketKey, locSecret[repositoryserver.BucketKey]),
 		fmt.Sprintf(" %s=/tmp/creds.txt", credentialsFileFlag),
-		fmt.Sprintf(" --%s=%s/%s/", prefixKey, locSecret[prefixKey], repoPathPrefix),
+		fmt.Sprintf(" --%s=%s/%s/", repositoryserver.PrefixKey, locSecret[repositoryserver.PrefixKey], repoPathPrefix),
 	))
 }

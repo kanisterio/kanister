@@ -20,6 +20,7 @@ package kube
 import (
 	"bytes"
 	"context"
+	"path/filepath"
 	"time"
 
 	. "gopkg.in/check.v1"
@@ -85,7 +86,7 @@ func (p *PodWriteSuite) TestPodWriter(c *C) {
 		pw := NewPodWriter(p.cli, path, bytes.NewBufferString("badabing"))
 		err := pw.Write(context.Background(), p.pod.Namespace, p.pod.Name, cs.Name)
 		c.Assert(err, IsNil)
-		cmd := []string{"sh", "-c", "cat " + pw.path}
+		cmd := []string{"sh", "-c", "cat " + filepath.Clean(path)}
 		stdout, stderr, err := Exec(p.cli, p.pod.Namespace, p.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, IsNil)
 		c.Assert(stdout, Equals, "badabing")

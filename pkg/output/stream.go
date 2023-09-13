@@ -65,11 +65,3 @@ func LogAndParse(ctx context.Context, r io.ReadCloser) (map[string]interface{}, 
 	})
 	return out, err
 }
-
-func Log(ctx context.Context, r io.ReadCloser) error {
-	err := splitLines(ctx, r, func(ctx context.Context, l string) error {
-		log.Info().Print("", field.M{"Pod_Out": l})
-		return nil
-	})
-	return err
-}

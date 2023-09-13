@@ -74,6 +74,26 @@ func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 			},
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance run",
 		},
+		{
+			f: func() []string {
+				args := MaintenanceRunCommandArgs{
+					CommandArgs: commandArgs,
+				}
+				args.CommandArgs.LogLevel = LogLevelInfo
+				return MaintenanceRunCommand(args)
+			},
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance run",
+		},
+		{
+			f: func() []string {
+				args := MaintenanceRunCommandArgs{
+					CommandArgs: commandArgs,
+				}
+				args.CommandArgs.LogLevel = LogLevelError
+				return MaintenanceRunCommand(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance run",
+		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, Equals, tc.expectedLog)

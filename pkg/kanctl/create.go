@@ -30,6 +30,7 @@ func newCreateCommand() *cobra.Command {
 	}
 	cmd.AddCommand(newActionSetCmd())
 	cmd.AddCommand(newProfileCommand())
+	cmd.AddCommand(newRepositoryServerCommand())
 	cmd.PersistentFlags().Bool(dryRunFlag, false, "if set, resource YAML will be printed but not created")
 	cmd.PersistentFlags().Bool(skipValidationFlag, false, "if set, resource is not validated before creation")
 	return cmd

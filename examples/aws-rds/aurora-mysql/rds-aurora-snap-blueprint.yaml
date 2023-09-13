@@ -11,6 +11,7 @@ actions:
           instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
           securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
           allocatedStorage: "{{ .Phases.createSnapshot.Output.allocatedStorage }}"
+          dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
     phases:
     - func: CreateRDSSnapshot
       name: createSnapshot
@@ -28,6 +29,7 @@ actions:
         snapshotID:  "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
         securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
         dbEngine: "aurora-mysql"
+        dbSubnetGroup: "{{ .ArtifactsIn.backupInfo.KeyValue.dbSubnetGroup }}"
   delete:
     inputArtifactNames:
     - backupInfo

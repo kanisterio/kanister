@@ -23,7 +23,7 @@ type RestoreCommandArgs struct {
 
 // Restore returns the kopia command for restoring root of a snapshot with given root ID
 func Restore(cmdArgs RestoreCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(restoreSubCommand, cmdArgs.RootID, cmdArgs.TargetPath)
 	if cmdArgs.IgnorePermissionErrors {
 		args = args.AppendLoggable(ignorePermissionsError)

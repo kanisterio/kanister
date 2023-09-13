@@ -1,7 +1,8 @@
-{{- if .Values.bpValidatingWebhook.enabled -}}
-{{ $altNames := list  ( printf "%s.%s" ( include "kanister-operator.fullname" . ) .Release.Namespace )  ( printf "%s.%s.svc" ( include "kanister-operator.fullname" . ) .Release.Namespace ) }}
+{{- if or .Values.bpValidatingWebhook.enabled .Values.validatingWebhook.repositoryserver.enabled }}
 # generate ca cert with 365 days of validity
 {{ $ca := genCA ( printf "%s-ca" ( include "kanister-operator.fullname" . ) ) 365 }}
+{{- if eq (.Values.bpValidatingWebhook.tls.mode) "auto" }}
+{{ $altNames := list  ( printf "%s.%s" ( include "kanister-operator.fullname" . ) .Release.Namespace )  ( printf "%s.%s.svc" ( include "kanister-operator.fullname" . ) .Release.Namespace ) }}
 # generate cert with CN="component-svc", SAN=$altNames and with 365 days of validity
 {{ $cert := genSignedCert ( printf "%s" ( include "kanister-operator.fullname" . ) ) nil $altNames 365 $ca }}
 apiVersion: v1
@@ -13,6 +14,8 @@ data:
   tls.crt: {{ $cert.Cert | b64enc }}
   tls.key: {{ $cert.Key | b64enc }}
 ---
+{{- end }}
+{{- if or .Values.bpValidatingWebhook.enabled }}
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -31,8 +34,43 @@ webhooks:
       name: {{ template "kanister-operator.fullname" . }}
       path: "/validate/v1alpha1/blueprint"
       port: {{ .Values.controller.service.port }}
-    caBundle: {{ b64enc $ca.Cert }}
+    {{- if eq (.Values.bpValidatingWebhook.tls.mode) "custom" }}
+    caBundle: {{ .Values.bpValidatingWebhook.tls.caBundle | required "Missing required caBundle, bpValidatingWebhook.tls.caBundle" }}
+    {{- else if eq (.Values.bpValidatingWebhook.tls.mode) "auto" }}
+    caBundle: {{ b64enc $ca.Cert }}    
+    {{- end }}
   admissionReviewVersions: ["v1", "v1beta1"]
   sideEffects: None
   timeoutSeconds: 5
+---
+{{- end -}}
+{{- if .Values.validatingWebhook.repositoryserver.enabled -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "repositoryservers.cr.kanister.io"
+webhooks:
+- name: repositoryserver.cr.kanister.io
+  admissionReviewVersions: ["v1"]
+  clientConfig:
+    service:
+      namespace: {{ .Release.Namespace }}
+      name: {{ template "kanister-operator.fullname" . }}
+      path: /validate/v1alpha1/repositoryserver
+      port: {{ .Values.repositoryServerController.service.port }}
+    # use same certificate used for blueprint validating webhook 
+    {{- if eq (.Values.bpValidatingWebhook.tls.mode) "custom" }}
+    caBundle: {{ .Values.bpValidatingWebhook.tls.caBundle | required "Missing required caBundle, bpValidatingWebhook.tls.caBundle" }}
+    {{- else if eq (.Values.bpValidatingWebhook.tls.mode) "auto" }}
+    caBundle: {{ b64enc $ca.Cert }}    
+    {{- end }}
+  failurePolicy: Fail
+  rules:
+  - apiGroups: ["cr.kanister.io"]
+    apiVersions: ["v1alpha1"]
+    operations: ["UPDATE"]
+    resources: ["repositoryservers"]
+    scope: "Namespaced"
+  sideEffects: None
+{{- end -}}
 {{- end -}}

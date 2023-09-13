@@ -105,7 +105,7 @@ func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod 
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
 		}
 		// Fetch logs from the pod
-		logs, err := kube.GetPodLogs(ctx, cli, pod.Namespace, pod.Name)
+		logs, err := kube.GetPodLogs(ctx, cli, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}

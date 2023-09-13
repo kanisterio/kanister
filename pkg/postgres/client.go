@@ -23,6 +23,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const DefaultConnectDatabase = "postgres"
+
 // Client is postgres client to access postgres instance
 type Client struct {
 	*sql.DB

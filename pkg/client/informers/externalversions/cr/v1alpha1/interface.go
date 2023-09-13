@@ -30,6 +30,8 @@ type Interface interface {
 	Blueprints() BlueprintInformer
 	// Profiles returns a ProfileInformer.
 	Profiles() ProfileInformer
+	// RepositoryServers returns a RepositoryServerInformer.
+	RepositoryServers() RepositoryServerInformer
 }
 
 type version struct {
@@ -56,4 +58,9 @@ func (v *version) Blueprints() BlueprintInformer {
 // Profiles returns a ProfileInformer.
 func (v *version) Profiles() ProfileInformer {
 	return &profileInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// RepositoryServers returns a RepositoryServerInformer.
+func (v *version) RepositoryServers() RepositoryServerInformer {
+	return &repositoryServerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

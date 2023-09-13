@@ -69,6 +69,9 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
+	if projectID, ok := config[blockstorage.GoogleProjectID]; ok {
+		gCli.ProjectID = projectID
+	}
 	return &GpdStorage{
 		service: gCli.Service,
 		project: gCli.ProjectID}, nil
@@ -632,7 +635,7 @@ func isMultiZone(az string) bool {
 
 func getRegionFromZones(az string) (string, error) {
 	zones := splitZones(az)
-	regions := sets.String{}
+	regions := sets.Set[string]{}
 	if len(zones) < 1 {
 		return "", errors.Errorf("no zones specified, zone: %s", az)
 	}
