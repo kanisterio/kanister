@@ -51,8 +51,6 @@ const (
 	DefaultKopiaRepositoryServerAccessPassword = "test1234"
 	// DefaultKopiaRepositoryServerAdminPassword is the default password for the kopia repository server admin user.
 	DefaultKopiaRepositoryServerAdminPassword = "admin1234"
-	// DefaultKopiaRepositoryServerContainer is the default container for the kopia repository server.
-	DefaultKopiaRepositoryServerContainer = "repo-server-container"
 )
 
 func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
@@ -89,7 +87,7 @@ func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
 	return s3Creds, s3Location
 }
 
-func KopiaRepositoryPassword() *v1.Secret {
+func KopiaRepositoryPasswordSecret() *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-repo-pass-",
@@ -100,7 +98,7 @@ func KopiaRepositoryPassword() *v1.Secret {
 	}
 }
 
-func KopiaRepositoryServerAdminUser() *v1.Secret {
+func KopiaRepositoryServerAdminUserSecret() *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-repository-admin-user-",

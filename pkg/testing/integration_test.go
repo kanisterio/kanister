@@ -189,8 +189,8 @@ func newSecretRepositoryServer() *secretRepositoryServer {
 	return &secretRepositoryServer{
 		s3Creds:            s3Creds,
 		s3Location:         s3Location,
-		repositoryPassword: testutil.KopiaRepositoryPassword(),
-		serverAdminUser:    testutil.KopiaRepositoryServerAdminUser(),
+		repositoryPassword: testutil.KopiaRepositoryPasswordSecret(),
+		serverAdminUser:    testutil.KopiaRepositoryServerAdminUserSecret(),
 		userAccess:         testutil.KopiaRepositoryServerUserAccess(),
 		tls:                tls,
 		repositoryServer:   testutil.NewKopiaRepositoryServer(),
@@ -508,7 +508,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	defer waitCancel()
 	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
-		if rs.Status.Progress == crv1alpha1.ServerReady && err == nil {
+		if rs.Status.Progress == crv1alpha1.Ready && err == nil {
 			return true, nil
 		}
 		return false, nil
