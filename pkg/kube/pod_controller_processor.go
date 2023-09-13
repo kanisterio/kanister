@@ -17,7 +17,7 @@ import (
 	"context"
 
 	"k8s.io/api/core/v1"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -27,7 +27,7 @@ type PodControllerProcessor interface {
 	CreatePod(ctx context.Context, options *PodOptions) (*v1.Pod, error)
 	WaitForPodReady(ctx context.Context, namespace, podName string) error
 	WaitForPodCompletion(ctx context.Context, namespace, podName string) error
-	DeletePod(ctx context.Context, namespace string, podName string, opts v12.DeleteOptions) error
+	DeletePod(ctx context.Context, namespace string, podName string, opts metav1.DeleteOptions) error
 }
 
 type podControllerProcessor struct {
@@ -46,6 +46,6 @@ func (p *podControllerProcessor) WaitForPodCompletion(ctx context.Context, names
 	return WaitForPodCompletion(ctx, p.cli, namespace, podName)
 }
 
-func (p *podControllerProcessor) DeletePod(ctx context.Context, namespace string, podName string, opts v12.DeleteOptions) error {
+func (p *podControllerProcessor) DeletePod(ctx context.Context, namespace string, podName string, opts metav1.DeleteOptions) error {
 	return p.cli.CoreV1().Pods(namespace).Delete(ctx, podName, opts)
 }
