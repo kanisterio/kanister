@@ -25,7 +25,7 @@ import (
 	"os"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -53,10 +53,10 @@ const (
 	DefaultKopiaRepositoryServerAdminPassword = "admin1234"
 )
 
-func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
+func S3CredsLocationSecret() (*corev1.Secret, *corev1.Secret) {
 	key := os.Getenv(awsconfig.AccessKeyID)
 	val := os.Getenv(awsconfig.SecretAccessKey)
-	s3Creds := &v1.Secret{
+	s3Creds := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-s3-creds-",
 			Labels: map[string]string{
@@ -69,7 +69,7 @@ func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
 			"aws_secret_access_key": []byte(val),
 		},
 	}
-	s3Location := &v1.Secret{
+	s3Location := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-s3-location-",
 			Labels: map[string]string{
@@ -87,8 +87,8 @@ func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
 	return s3Creds, s3Location
 }
 
-func KopiaRepositoryPasswordSecret() *v1.Secret {
-	return &v1.Secret{
+func KopiaRepositoryPasswordSecret() *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-repo-pass-",
 		},
@@ -98,8 +98,8 @@ func KopiaRepositoryPasswordSecret() *v1.Secret {
 	}
 }
 
-func KopiaRepositoryServerAdminUserSecret() *v1.Secret {
-	return &v1.Secret{
+func KopiaRepositoryServerAdminUserSecret() *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-repository-admin-user-",
 		},
@@ -110,8 +110,8 @@ func KopiaRepositoryServerAdminUserSecret() *v1.Secret {
 	}
 }
 
-func KopiaRepositoryServerUserAccess() *v1.Secret {
-	return &v1.Secret{
+func KopiaRepositoryServerUserAccess() *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-repository-server-user-access-",
 		},
@@ -121,7 +121,7 @@ func KopiaRepositoryServerUserAccess() *v1.Secret {
 	}
 }
 
-func KopiaTLSCertificate() (*v1.Secret, error) {
+func KopiaTLSCertificate() (*corev1.Secret, error) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(2019),
 		Subject: pkix.Name{
@@ -166,7 +166,7 @@ func KopiaTLSCertificate() (*v1.Secret, error) {
 		return nil, err
 	}
 
-	return &v1.Secret{
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-repository-server-tls-cert-",
 		},
@@ -185,11 +185,11 @@ func NewKopiaRepositoryServer() *crv1alpha1.RepositoryServer {
 		},
 		Spec: crv1alpha1.RepositoryServerSpec{
 			Storage: crv1alpha1.Storage{
-				SecretRef: v1.SecretReference{
+				SecretRef: corev1.SecretReference{
 					Name:      "",
 					Namespace: "",
 				},
-				CredentialSecretRef: v1.SecretReference{
+				CredentialSecretRef: corev1.SecretReference{
 					Name:      "",
 					Namespace: "",
 				},
@@ -198,24 +198,24 @@ func NewKopiaRepositoryServer() *crv1alpha1.RepositoryServer {
 				RootPath: DefaultKopiaRepositoryPath,
 				Username: DefaultKopiaRepositoryUser,
 				Hostname: DefaultKopiaRepositoryServerHost,
-				PasswordSecretRef: v1.SecretReference{
+				PasswordSecretRef: corev1.SecretReference{
 					Name:      "",
 					Namespace: "",
 				},
 			},
 			Server: crv1alpha1.Server{
 				UserAccess: crv1alpha1.UserAccess{
-					UserAccessSecretRef: v1.SecretReference{
+					UserAccessSecretRef: corev1.SecretReference{
 						Name:      "",
 						Namespace: "",
 					},
 					Username: DefaultKopiaRepositoryServerAccessUser,
 				},
-				AdminSecretRef: v1.SecretReference{
+				AdminSecretRef: corev1.SecretReference{
 					Name:      "",
 					Namespace: "",
 				},
-				TLSSecretRef: v1.SecretReference{
+				TLSSecretRef: corev1.SecretReference{
 					Name:      "",
 					Namespace: "",
 				},
