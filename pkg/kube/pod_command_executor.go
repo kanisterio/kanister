@@ -21,6 +21,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// ExecError is an error returned by PodCommandExecutor.Exec
+// It contains not only error happened during an execution, but also keeps tails of stdout/stderr streams.
+// These tails could be used by the invoker to construct more precise error.
 type ExecError struct {
 	error
 	stdout LogTail
@@ -48,14 +51,10 @@ func (e *ExecError) Stderr() string {
 	return e.stderr.ToString()
 }
 
-// PodCommandExecutor allows us to execute command within the pod
+// PodCommandExecutor provides a way to execute a command within the pod.
+// Is intended to be returned by PodController and works with pod controlled by it.
 type PodCommandExecutor interface {
 	Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error
-}
-
-// podCommandExecutorProcessor aids in unit testing
-type podCommandExecutorProcessor interface {
-	execWithOptions(cli kubernetes.Interface, opts ExecOptions) (string, string, error)
 }
 
 // podCommandExecutor keeps everything required to execute command within a pod
@@ -65,10 +64,11 @@ type podCommandExecutor struct {
 	podName       string
 	containerName string
 
-	pcep podCommandExecutorProcessor
+	pcep PodCommandExecutorProcessor
 }
 
 // Exec runs the command and logs stdout and stderr.
+// In case of execution error, ExecError will be returned
 func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	var (
 		stderrTail = NewLogTail(logTailDefaultLength)
@@ -95,7 +95,7 @@ func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin i
 	}
 
 	go func() {
-		_, _, err = p.pcep.execWithOptions(p.cli, opts)
+		_, _, err = p.pcep.ExecWithOptions(opts)
 		close(cmdDone)
 	}()
 
@@ -113,8 +113,4 @@ func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin i
 	}
 
 	return err
-}
-
-func (p *podCommandExecutor) execWithOptions(cli kubernetes.Interface, opts ExecOptions) (string, string, error) {
-	return ExecWithOptions(p.cli, opts)
 }

@@ -22,7 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -44,7 +43,7 @@ type fakePodFileWriterProcessor struct {
 	podWriter *fakePodWriter
 }
 
-func (p *fakePodFileWriterProcessor) newPodWriter(cli kubernetes.Interface, filepath string, content io.Reader) PodWriter {
+func (p *fakePodFileWriterProcessor) NewPodWriter(filepath string, content io.Reader) PodWriter {
 	return p.podWriter
 }
 
