@@ -132,6 +132,11 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		args.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
 	}
 	snapshotKind := "VolumeSnapshot"
+
+	// Group version is not specified here, it is figured out automatically
+	// while the PVC is being created, which can cause issues. Hence we should explicitly
+	// check if group api version is passed in the args, and use that
+	// to create the PVC
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
 	if !args.GroupVersion.Empty() {
 		snapshotAPIGroup = args.GroupVersion.String()
