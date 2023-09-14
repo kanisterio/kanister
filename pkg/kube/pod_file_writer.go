@@ -22,7 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// PodFileRemover provides the mechanism to remove written file from the pod.
+// PodFileRemover provides mechanism for removing particular file written to the pod by PodFileWriter.
 type PodFileRemover interface {
 	Remove(ctx context.Context) error
 	Path() string
@@ -36,15 +36,18 @@ type podFileRemover struct {
 	path          string
 }
 
+// Remove deletes file from the pod.
 func (pfr *podFileRemover) Remove(ctx context.Context) error {
 	return pfr.podWriter.Remove(ctx, pfr.namespace, pfr.podName, pfr.containerName)
 }
 
+// Path returns path of the file within pod to be removed.
 func (pfr *podFileRemover) Path() string {
 	return pfr.path
 }
 
-// PodFileWriter allows us to write file to the pod.
+// PodFileWriter provides a way to write a file to the pod.
+// Is intended to be returned by PodController and works with pod controlled by it.
 type PodFileWriter interface {
 	Write(ctx context.Context, filePath string, content io.Reader) (PodFileRemover, error)
 }
@@ -59,8 +62,8 @@ type podFileWriter struct {
 	fileWriterProcessor PodFileWriterProcessor
 }
 
-// WriteFileToPod writes specified file content to a file in the pod and returns an interface
-// with which the file can be removed.
+// Write writes specified file content to a file in the pod and returns PodFileRemover
+// which should be used to remove written file.
 func (p *podFileWriter) Write(ctx context.Context, filePath string, content io.Reader) (PodFileRemover, error) {
 	pw := p.fileWriterProcessor.NewPodWriter(filePath, content)
 	if err := pw.Write(ctx, p.namespace, p.podName, p.containerName); err != nil {
