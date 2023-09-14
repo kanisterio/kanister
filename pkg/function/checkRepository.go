@@ -58,7 +58,12 @@ func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	return pr.RunEx(ctx, podFunc)
 }
 
-func CheckRepositoryPodFunc(cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPath string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+func CheckRepositoryPodFunc(
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	encryptionKey,
+	targetPath string,
+) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		pod := pc.Pod()
 
@@ -75,7 +80,15 @@ func CheckRepositoryPodFunc(cli kubernetes.Interface, tp param.TemplateParams, e
 		// Parent context could already be dead, so removing file within new context
 		defer remover.Remove(context.Background()) //nolint:errcheck
 
-		err = restic.CheckIfRepoIsReachable(tp.Profile, targetPath, encryptionKey, cli, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+		err = restic.CheckIfRepoIsReachable(
+			tp.Profile,
+			targetPath,
+			encryptionKey,
+			cli,
+			pod.Namespace,
+			pod.Name,
+			pod.Spec.Containers[0].Name,
+		)
 		switch {
 		case err == nil:
 			break

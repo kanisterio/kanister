@@ -129,7 +129,14 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 	return pr.RunEx(ctx, podFunc)
 }
 
-func restoreDataPodFunc(tp param.TemplateParams, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+func restoreDataPodFunc(
+	tp param.TemplateParams,
+	encryptionKey,
+	backupArtifactPrefix,
+	restorePath,
+	backupTag,
+	backupID string,
+) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		pod := pc.Pod()
 

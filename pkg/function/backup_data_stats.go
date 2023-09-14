@@ -75,7 +75,13 @@ func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	return pr.RunEx(ctx, podFunc)
 }
 
-func backupDataStatsPodFunc(tp param.TemplateParams, encryptionKey, backupArtifactPrefix, backupID, mode string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+func backupDataStatsPodFunc(
+	tp param.TemplateParams,
+	encryptionKey,
+	backupArtifactPrefix,
+	backupID,
+	mode string,
+) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		pod := pc.Pod()
 

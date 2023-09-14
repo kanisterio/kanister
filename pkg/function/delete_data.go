@@ -67,7 +67,19 @@ func (*deleteDataFunc) Name() string {
 	return DeleteDataFuncName
 }
 
-func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func deleteData(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	reclaimSpace bool,
+	namespace,
+	encryptionKey string,
+	targetPaths,
+	deleteTags,
+	deleteIdentifiers []string,
+	jobPrefix string,
+	podOverride crv1alpha1.JSONMap,
+) (map[string]interface{}, error) {
 	if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
 		return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
 	}
@@ -85,7 +97,15 @@ func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.Template
 }
 
 //nolint:gocognit
-func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+func deleteDataPodFunc(
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	reclaimSpace bool,
+	encryptionKey string,
+	targetPaths,
+	deleteTags,
+	deleteIdentifiers []string,
+) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		pod := pc.Pod()
 
@@ -156,7 +176,13 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 	}
 }
 
-func pruneData(tp param.TemplateParams, pod *v1.Pod, podCommandExecutor kube.PodCommandExecutor, encryptionKey, targetPath string) (string, error) {
+func pruneData(
+	tp param.TemplateParams,
+	pod *v1.Pod,
+	podCommandExecutor kube.PodCommandExecutor,
+	encryptionKey,
+	targetPath string,
+) (string, error) {
 	cmd, err := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
 	if err != nil {
 		return "", err
