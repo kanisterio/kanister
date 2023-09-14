@@ -38,6 +38,9 @@ var (
 )
 
 // PodController specifies interface needed for starting, stopping pod and operations with it
+//
+// The purpose of this interface is to provide single mechanism of pod manipulation, reduce number of parameters which
+// caller needs to pass (since we keep pod related things internally) and eliminate human errors.
 type PodController interface {
 	PodName() string
 	Pod() *corev1.Pod
@@ -52,16 +55,9 @@ type PodController interface {
 	GetFileWriter() (PodFileWriter, error)
 }
 
-// podControllerProcessor aids in unit testing
-type podControllerProcessor interface {
-	CreatePod(ctx context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error)
-	WaitForPodReadyPCP(ctx context.Context, namespace, podName string) error
-	WaitForPodCompletionPCP(ctx context.Context, namespace, podName string) error
-	DeletePod(ctx context.Context, namespace string, podName string, opts metav1.DeleteOptions) error
-}
-
-// podController specifies Kubernetes Client and PodOptions needed for creating
-// a Pod. It implements the podControllerProcessor interface.
+// podController keeps Kubernetes Client and PodOptions needed for creating a Pod.
+// It implements the PodControllerProcessor interface.
+// All communication with kubernetes API are done via PodControllerProcessor interface, which could be overriden for testing purposes.
 type podController struct {
 	cli        kubernetes.Interface
 	podOptions *PodOptions
@@ -70,13 +66,13 @@ type podController struct {
 	podReady bool
 	podName  string
 
-	pcp podControllerProcessor
+	pcp PodControllerProcessor
 }
 
 type PodControllerOption func(p *podController)
 
-// WithPodControllerProcessor provides mechanism for passing fake podControllerProcessor for testing purposes.
-func WithPodControllerProcessor(processor podControllerProcessor) PodControllerOption {
+// WithPodControllerProcessor provides mechanism for passing fake implementation of PodControllerProcessor for testing purposes.
+func WithPodControllerProcessor(processor PodControllerProcessor) PodControllerOption {
 	return func(p *podController) {
 		p.pcp = processor
 	}
@@ -89,10 +85,15 @@ func NewPodController(cli kubernetes.Interface, options *PodOptions, opts ...Pod
 		podOptions: options,
 	}
 
-	r.pcp = r
-
 	for _, opt := range opts {
 		opt(r)
+	}
+
+	// If pod controller processor has not been set by PodControllerOption, we create default implementation here
+	if r.pcp == nil {
+		r.pcp = &podControllerProcessor{
+			cli: cli,
+		}
 	}
 
 	return r
@@ -100,9 +101,13 @@ func NewPodController(cli kubernetes.Interface, options *PodOptions, opts ...Pod
 
 // NewPodControllerForExistingPod returns a new PodController given Kubernetes
 // Client and existing pod details.
+// Invocation of StartPod of returned PodController instance will fail, since the pod is already known.
 func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) PodController {
 	r := &podController{
-		cli:     cli,
+		cli: cli,
+		pcp: &podControllerProcessor{
+			cli: cli,
+		},
 		pod:     pod,
 		podName: pod.Name,
 	}
@@ -113,8 +118,6 @@ func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) P
 		ContainerName: pod.Spec.Containers[0].Name,
 	}
 	r.podOptions = options
-
-	r.pcp = r
 
 	return r
 }
@@ -137,7 +140,7 @@ func (p *podController) StartPod(ctx context.Context) error {
 		return errors.Wrap(ErrPodControllerNotInitialized, "Failed to create pod")
 	}
 
-	pod, err := p.pcp.CreatePod(ctx, p.cli, p.podOptions)
+	pod, err := p.pcp.CreatePod(ctx, p.podOptions)
 	if err != nil {
 		log.WithError(err).Print("Failed to create pod", field.M{"PodName": p.podOptions.Name, "Namespace": p.podOptions.Namespace})
 		return errors.Wrap(err, "Failed to create pod")
@@ -149,13 +152,14 @@ func (p *podController) StartPod(ctx context.Context) error {
 	return nil
 }
 
-// WaitForPod waits for pod readiness.
+// WaitForPodReady waits for pod readiness (actually it waits until pod exit the pending state)
+// Requires pod to be started otherwise will immediately fail.
 func (p *podController) WaitForPodReady(ctx context.Context) error {
 	if p.podName == "" {
 		return ErrPodControllerPodNotStarted
 	}
 
-	if err := p.pcp.WaitForPodReadyPCP(ctx, p.pod.Namespace, p.pod.Name); err != nil {
+	if err := p.pcp.WaitForPodReady(ctx, p.pod.Namespace, p.pod.Name); err != nil {
 		log.WithError(err).Print("Pod failed to become ready in time", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
 		return errors.Wrap(err, "Pod failed to become ready in time")
 	}
@@ -165,7 +169,7 @@ func (p *podController) WaitForPodReady(ctx context.Context) error {
 	return nil
 }
 
-// WaitForPodCompletion waits for a pod to reach a terminal state.
+// WaitForPodCompletion waits for a pod to reach a terminal (either succeeded or failed) state.
 func (p *podController) WaitForPodCompletion(ctx context.Context) error {
 	if p.podName == "" {
 		return ErrPodControllerPodNotStarted
@@ -175,7 +179,7 @@ func (p *podController) WaitForPodCompletion(ctx context.Context) error {
 		return ErrPodControllerPodNotReady
 	}
 
-	if err := p.pcp.WaitForPodCompletionPCP(ctx, p.pod.Namespace, p.pod.Name); err != nil {
+	if err := p.pcp.WaitForPodCompletion(ctx, p.pod.Namespace, p.pod.Name); err != nil {
 		log.WithError(err).Print("Pod failed to complete in time", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
 		return errors.Wrap(err, "Pod failed to complete in time")
 	}
@@ -225,6 +229,8 @@ func (p *podController) getContainerName() string {
 	return p.pod.Spec.Containers[0].Name
 }
 
+// StreamPodLogs returns io.ReadCloser which could be used to receive logs from pod
+// Container will be decided based on the result of getContainerName function.
 func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
@@ -233,6 +239,10 @@ func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error
 	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, p.getContainerName())
 }
 
+// GetCommandExecutor returns PodCommandExecutor instance which is configured to execute commands within pod controlled
+// by this controller.
+// If pod is not created or not ready yet, it will fail with an appropriate error.
+// Container will be decided based on the result of getContainerName function
 func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
@@ -249,11 +259,16 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		containerName: p.getContainerName(),
 	}
 
-	pce.pcep = pce
+	pce.pcep = &podCommandExecutorProcessor{
+		cli: p.cli,
+	}
 
 	return pce, nil
 }
 
+// GetFileWriter returns PodFileWriter instance which is configured to write file to pod controlled by this controller.
+// If pod is not created or not ready yet, it will fail with an appropriate error.
+// Container will be decided based on the result of getContainerName function
 func (p *podController) GetFileWriter() (PodFileWriter, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
@@ -270,27 +285,9 @@ func (p *podController) GetFileWriter() (PodFileWriter, error) {
 		containerName: p.getContainerName(),
 	}
 
-	pfw.fileWriterProcessor = pfw
+	pfw.fileWriterProcessor = &podFileWriterProcessor{
+		cli: p.cli,
+	}
 
 	return pfw, nil
-}
-
-// This is wrapped for unit testing.
-func (p *podController) CreatePod(ctx context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
-	return CreatePod(ctx, cli, options)
-}
-
-// This is wrapped for unit testing.
-func (p *podController) WaitForPodReadyPCP(ctx context.Context, namespace, podName string) error {
-	return WaitForPodReady(ctx, p.cli, namespace, podName)
-}
-
-// This is wrapped for unit testing
-func (p *podController) WaitForPodCompletionPCP(ctx context.Context, namespace, podName string) error {
-	return WaitForPodCompletion(ctx, p.cli, namespace, podName)
-}
-
-// This is wrapped for unit testing.
-func (p *podController) DeletePod(ctx context.Context, namespace string, podName string, opts metav1.DeleteOptions) error {
-	return p.cli.CoreV1().Pods(namespace).Delete(ctx, podName, opts)
 }
