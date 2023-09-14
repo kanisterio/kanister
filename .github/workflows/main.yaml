@@ -9,7 +9,7 @@ jobs:
   gomod:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
     - run: make go-mod-tidy
     - run: make go-mod-download
     - run: tar -cvf ./src.tar.gz ./ # preserve file permissions
@@ -82,7 +82,7 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: src
-    - uses: docker/login-action@v2
+    - uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
