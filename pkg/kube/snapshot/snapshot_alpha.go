@@ -338,6 +338,12 @@ func (sna *SnapshotAlpha) WaitOnReadyToUse(ctx context.Context, snapshotName, na
 	})
 }
 
+func (sna *SnapshotAlpha) GroupVersion(ctx context.Context) schema.GroupVersion {
+	return schema.GroupVersion{
+		Group:   v1alpha1.GroupName,
+		Version: v1alpha1.Version,
+	}
+}
 func (sna *SnapshotAlpha) getContent(ctx context.Context, contentName string) (*v1alpha1.VolumeSnapshotContent, error) {
 	us, err := sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Get(ctx, contentName, metav1.GetOptions{})
 	if err != nil {
