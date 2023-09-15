@@ -4,6 +4,9 @@ on:
     - opened
     - reopened
 
+permissions:
+  contents: read
+
 jobs:
   pull-requests-comment:
     name: Triage Pull Request
