@@ -7,7 +7,7 @@ on:
 jobs:
   pull-requests-comment:
     name: Triage Pull Request
-    if: github.repository == 'kanisterio/kanister' && github.event_name == 'pull_request' &&  github.actor != 'dependabot'
+    if: github.repository == 'kanisterio/kanister' && github.actor != 'dependabot'
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
