@@ -145,3 +145,12 @@ func StringSlice(s *[]string) []string {
 func StringSlicePtr(s []string) *[]string {
 	return azto.Ptr(s)
 }
+
+// SliceStringPtr returns a slice of string pointers from the passed string slice.
+func SliceStringPtr(s []string) []*string {
+	ms := make([]*string, len(s))
+	for k, sp := range s {
+		ms[k] = azto.Ptr(sp)
+	}
+	return ms
+}

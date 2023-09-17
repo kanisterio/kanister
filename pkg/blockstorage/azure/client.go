@@ -20,13 +20,10 @@ package azure
 
 import (
 	"context"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
-
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
-	//"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/Azure/go-autorest/autorest/azure"
-	//"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/pkg/errors"
@@ -34,15 +31,25 @@ import (
 
 // Client is a wrapper for Client client
 type Client struct {
-	SubscriptionID  string
-	ResourceGroup   string
-	BaseURI         string
-	Authorizer      *autorest.BearerAuthorizer
-	DisksClient     *compute.DisksClient
-	SnapshotsClient *compute.SnapshotsClient
+	SubscriptionID string
+	ResourceGroup  string
+	BaseURI        string
+	//https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/main/sdk/resourcemanager/compute/disk/main.go
+	//https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/arm/compute#DisksClient
+	DisksClient *armcompute.DisksClient
+	//https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/main/sdk/resourcemanager/compute/snapshot/main.go
+	//https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/arm/compute#SnapshotsClient
+	SnapshotsClient     *armcompute.SnapshotsClient
+	SKUsClient          *armcompute.ResourceSKUsClient
+	SubscriptionsClient *armsubscriptions.Client
 }
 
 // NewClient returns a Client struct
+var (
+	computeClientFactory       *armcompute.ClientFactory
+	subscriptionsClientFactory *armsubscriptions.ClientFactory
+)
+
 func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	var resourceGroup string
 	var subscriptionID string
@@ -66,87 +73,69 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 			return nil, errors.Wrap(err, "Cannot get subscriptionID from instance metadata")
 		}
 	}
+	/*
+		if id, ok := config[blockstorage.AzureCloudEnvironmentID]; !ok || id == "" {
+			config[blockstorage.AzureCloudEnvironmentID] = azure.PublicCloud.Name
+		}
+	*/
+	/*
+		env, err := azure.EnvironmentFromName(config[blockstorage.AzureCloudEnvironmentID])
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
+		}
 
-	if id, ok := config[blockstorage.AzureCloudEnvironmentID]; !ok || id == "" {
-		config[blockstorage.AzureCloudEnvironmentID] = azure.PublicCloud.Name
-	}
+		authorizer, err := getAuthorizer(env, config)
+		if err != nil {
+			return nil, err
+		}
 
-	env, err := azure.EnvironmentFromName(config[blockstorage.AzureCloudEnvironmentID])
+		_, ok = config[blockstorage.AzureResurceMgrEndpoint]
+		if !ok {
+			config[blockstorage.AzureResurceMgrEndpoint] = env.ResourceManagerEndpoint
+		}
+	*/
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
+		return nil, err
 	}
-
-	authorizer, err := getAuthorizer(env, config)
+	computeClientFactory, err = armcompute.NewClientFactory(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	_, ok = config[blockstorage.AzureResurceMgrEndpoint]
-	if !ok {
-		config[blockstorage.AzureResurceMgrEndpoint] = env.ResourceManagerEndpoint
+	subscriptionsClientFactory, err = armsubscriptions.NewClientFactory(cred, nil)
+
+	if err != nil {
+		return nil, err
 	}
 
-	disksClient := compute.NewDisksClientWithBaseURI(config[blockstorage.AzureResurceMgrEndpoint], subscriptionID)
-	disksClient.Authorizer = authorizer
+	disksClient := computeClientFactory.NewDisksClient()
+	snapshotsClient := computeClientFactory.NewSnapshotsClient()
+	skusClient := computeClientFactory.NewResourceSKUsClient()
+	subscriptionsClient := subscriptionsClientFactory.NewClient()
 
-	snapshotsClient := compute.NewSnapshotsClientWithBaseURI(config[blockstorage.AzureResurceMgrEndpoint], subscriptionID)
-	snapshotsClient.Authorizer = authorizer
+	if err != nil {
+		return nil, err
+	}
 
 	return &Client{
-		BaseURI:         config[blockstorage.AzureResurceMgrEndpoint],
-		SubscriptionID:  subscriptionID,
-		Authorizer:      authorizer,
-		DisksClient:     &disksClient,
-		SnapshotsClient: &snapshotsClient,
-		ResourceGroup:   resourceGroup,
+		BaseURI:             config[blockstorage.AzureResurceMgrEndpoint],
+		SubscriptionID:      subscriptionID,
+		DisksClient:         disksClient,
+		SnapshotsClient:     snapshotsClient,
+		SKUsClient:          skusClient,
+		SubscriptionsClient: subscriptionsClient,
+		ResourceGroup:       resourceGroup,
 	}, nil
 }
 
-//nolint:unparam
-func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
-	if isClientCredsAvailable(config) {
-		return getClientCredsAuthorizer(env, config)
-	} else if isMSICredsAvailable(config) {
-		return getMSIsAuthorizer(config)
-	}
-	return nil, errors.New("Missing credentials, or credential type not supported")
-}
-
-func getClientCredsAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
-	credConfig, err := getCredConfig(env, config)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get Azure Client Credentials Config")
-	}
-	a, err := credConfig.Authorizer()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get Azure Client Credentials authorizer")
-	}
-	ba, ok := a.(*autorest.BearerAuthorizer)
-	if !ok {
-		return nil, errors.New("Failed to get Azure authorizer")
-	}
-	return ba, nil
-}
-
-func getMSIsAuthorizer(config map[string]string) (*autorest.BearerAuthorizer, error) {
-	msiConfig := auth.NewMSIConfig()
-	msiConfig.ClientID = config[blockstorage.AzureClientID]
-	a, err := msiConfig.Authorizer()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get Azure MSI authorizer")
-	}
-	ba, ok := a.(*autorest.BearerAuthorizer)
-	if !ok {
-		return nil, errors.New("Failed to get Azure authorizer")
-	}
-	return ba, nil
-}
-
-func getCredConfig(env azure.Environment, config map[string]string) (auth.ClientCredentialsConfig, error) {
+func getCredConfig(env azure.Environment, config map[string]string) (ClientCredentialsConfig, error) {
 	credConfig, err := getCredConfigForAuth(config)
 	if err != nil {
-		return auth.ClientCredentialsConfig{}, err
+		return ClientCredentialsConfig{}, err
 	}
+
+	//Todo: Find alternatives to azure.Environment
 	var ok bool
 	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok || credConfig.AADEndpoint == "" {
 		credConfig.AADEndpoint = env.ActiveDirectoryEndpoint

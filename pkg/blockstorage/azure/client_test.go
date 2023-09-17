@@ -17,14 +17,13 @@ package azure
 import (
 	"context"
 	"fmt"
-	"strings"
-	"testing"
-
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
 	. "gopkg.in/check.v1"
+	"strings"
+	"testing"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -50,10 +49,11 @@ func (s *ClientSuite) TestClient(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(azCli.SubscriptionID, NotNil)
-	c.Assert(azCli.Authorizer, NotNil)
 	c.Assert(azCli.DisksClient, NotNil)
 	c.Assert(azCli.SnapshotsClient, NotNil)
-	_, err = azCli.DisksClient.List(context.Background())
+	c.Assert(azCli.DisksClient.NewListPager(nil), NotNil)
+	c.Assert(azCli.SKUsClient, NotNil)
+	c.Assert(azCli.SubscriptionsClient, NotNil)
 	c.Assert(err, IsNil)
 }
 
