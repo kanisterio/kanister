@@ -31,6 +31,7 @@ import (
 
 // Client is a wrapper for Client client
 type Client struct {
+	Cred           *azidentity.DefaultAzureCredential
 	SubscriptionID string
 	ResourceGroup  string
 	BaseURI        string
@@ -119,6 +120,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	}
 
 	return &Client{
+		Cred:                cred,
 		BaseURI:             config[blockstorage.AzureResurceMgrEndpoint],
 		SubscriptionID:      subscriptionID,
 		DisksClient:         disksClient,
