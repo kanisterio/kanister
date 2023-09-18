@@ -15,9 +15,7 @@ import (
 
 	azto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/storage"
-	helper "github.com/kanisterio/kanister/pkg/blockstorage"
-
-	uuid "github.com/gofrs/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -38,6 +36,8 @@ const (
 	copyContainerName = "vhdscontainer"
 	copyBlobName      = "copy-blob-%s.vhd"
 )
+
+type LocationZoneMap map[string]struct{}
 
 // AdStorage describes the azure storage client
 type AdStorage struct {
@@ -91,7 +91,7 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 	// TODO(ilya): figure out how to create SKUed disks
 	createdDisk := armcompute.Disk{
 		Name:       azto.Ptr(diskName),
-		Tags:       *helper.StringMapPtr(tags),
+		Tags:       *blockstorage.StringMapPtr(tags),
 		Location:   azto.Ptr(region),
 		Properties: diskProperties,
 		SKU: &armcompute.DiskSKU{
@@ -99,7 +99,7 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 		},
 	}
 	if id != "" {
-		createdDisk.Zones = helper.SliceStringPtr([]string{id})
+		createdDisk.Zones = blockstorage.SliceStringPtr([]string{id})
 	}
 
 	pollerResp, err := s.azCli.DisksClient.BeginCreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createdDisk, nil)
@@ -217,7 +217,7 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	createSnap := armcompute.Snapshot{
 		Name:     azto.Ptr(snapName),
 		Location: azto.Ptr(to.Region),
-		Tags:     *helper.StringMapPtr(tags),
+		Tags:     *blockstorage.StringMapPtr(tags),
 		Properties: &armcompute.SnapshotProperties{
 			CreationData: &armcompute.CreationData{
 				CreateOption:     azto.Ptr(armcompute.DiskCreateOptionImport),
@@ -287,7 +287,7 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 	createSnap := armcompute.Snapshot{
 		Name:     azto.Ptr(snapName),
 		Location: azto.Ptr(region),
-		Tags:     *helper.StringMapPtr(tags),
+		Tags:     *blockstorage.StringMapPtr(tags),
 		Properties: &armcompute.SnapshotProperties{
 			CreationData: &armcompute.CreationData{
 				CreateOption:     azto.Ptr(armcompute.DiskCreateOptionCopy),
@@ -376,7 +376,7 @@ func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 	}
 	tags := map[string]string{"": ""}
 	if vol.Tags != nil {
-		tags = helper.StringMap(vol.Tags)
+		tags = blockstorage.StringMap(vol.Tags)
 	}
 	az := *vol.Location
 	if z := vol.Zones; len(z) > 0 {
@@ -417,7 +417,7 @@ func (s *AdStorage) snapshotParse(ctx context.Context, snap armcompute.Snapshot)
 	}
 	tags := map[string]string{}
 	if snap.Tags != nil {
-		tags = helper.StringMap(snap.Tags)
+		tags = blockstorage.StringMap(snap.Tags)
 	}
 	return &blockstorage.Snapshot{
 		Encrypted:    encrypted,
@@ -497,7 +497,7 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := armcompute.Disk{
 		Name:     azto.Ptr(diskName),
-		Tags:     *helper.StringMapPtr(tags),
+		Tags:     *blockstorage.StringMapPtr(tags),
 		Location: azto.Ptr(region),
 		Properties: &armcompute.DiskProperties{
 			CreationData: &armcompute.CreationData{
@@ -507,7 +507,7 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		},
 	}
 	if id != "" {
-		createDisk.Zones = helper.SliceStringPtr([]string{id})
+		createDisk.Zones = blockstorage.SliceStringPtr([]string{id})
 	}
 	for _, saType := range armcompute.PossibleDiskStorageAccountTypesValues() {
 		if string(saType) == snapshot.Volume.VolumeType {
@@ -581,9 +581,9 @@ func (s *AdStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 			if err != nil {
 				return errors.Wrapf(err, "SnapshotsClient.Get in SetTags, snapshotID: %s", res.ID)
 			}
-			tags = ktags.AddMissingTags(helper.StringMap(snap.Tags), ktags.GetTags(tags))
+			tags = ktags.AddMissingTags(blockstorage.StringMap(snap.Tags), ktags.GetTags(tags))
 			snapProperties := armcompute.SnapshotUpdate{
-				Tags: *helper.StringMapPtr(blockstorage.SanitizeTags(tags)),
+				Tags: *blockstorage.StringMapPtr(blockstorage.SanitizeTags(tags)),
 			}
 			poller, err := s.azCli.SnapshotsClient.BeginUpdate(ctx, rg, name, snapProperties, nil)
 			if err != nil {
@@ -602,10 +602,10 @@ func (s *AdStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 			if err != nil {
 				return errors.Wrapf(err, "DiskClient.Get in SetTags, volumeID: %s", volID)
 			}
-			tags = ktags.AddMissingTags(helper.StringMap(vol.Tags), ktags.GetTags(tags))
+			tags = ktags.AddMissingTags(blockstorage.StringMap(vol.Tags), ktags.GetTags(tags))
 
 			diskProperties := armcompute.DiskUpdate{
-				Tags: *helper.StringMapPtr(blockstorage.SanitizeTags(tags)),
+				Tags: *blockstorage.StringMapPtr(blockstorage.SanitizeTags(tags)),
 			}
 			poller, err := s.azCli.DisksClient.BeginUpdate(ctx, rg, volID, diskProperties, nil)
 			if err != nil {
@@ -661,9 +661,8 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 // dynamicRegionMapAzure derives a mapping from Regions to zones for Azure. Depends on subscriptionID
 func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]string, error) {
-
 	subscriptionsClient := s.azCli.SubscriptionsClient
-	regionMap := make(map[string]map[string]struct{})
+	regionMap := make(map[string]LocationZoneMap)
 
 	locationsPager := subscriptionsClient.NewListLocationsPager(s.azCli.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
 	for locationsPager.More() {
@@ -672,7 +671,7 @@ func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]str
 			return nil, errors.Wrap(err, "failed to advance page")
 		}
 		for _, location := range page.Value {
-			regionMap[*location.Name] = make(map[string]struct{})
+			regionMap[*location.Name] = make(LocationZoneMap)
 		}
 	}
 
@@ -686,14 +685,7 @@ func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]str
 		}
 		for _, skuResult := range skuResults.Value {
 			if skuResult.Name != nil && skuResult.ResourceType != nil && *skuResult.ResourceType == "disks" {
-				for _, locationInfo := range skuResult.LocationInfo {
-					if val, ok := regionMap[*locationInfo.Location]; ok {
-						for _, zone := range locationInfo.Zones {
-							val[*zone] = struct{}{}
-						}
-						regionMap[*locationInfo.Location] = val
-					}
-				}
+				s.mapLocationToZone(skuResult, &regionMap)
 			}
 		}
 	}
@@ -707,4 +699,16 @@ func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]str
 		regionMapResult[region] = zoneArray
 	}
 	return regionMapResult, nil
+}
+
+func (s *AdStorage) mapLocationToZone(skuResult *armcompute.ResourceSKU, regionMap *map[string]LocationZoneMap) {
+	var rm = *regionMap
+	for _, locationInfo := range skuResult.LocationInfo {
+		if val, ok := rm[*locationInfo.Location]; ok {
+			for _, zone := range locationInfo.Zones {
+				val[*zone] = struct{}{}
+			}
+			rm[*locationInfo.Location] = val
+		}
+	}
 }
