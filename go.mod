@@ -7,6 +7,7 @@ toolchain go1.21.1
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
 	github.com/graymeta/stow => github.com/kastenhq/stow v0.2.6-kasten.1.0.20230810051814-7e1569eac69b
+	github.com/kopia/kopia => github.com/kastenhq/kopia v0.0.0-20230919181354-663cbad41420
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
@@ -210,5 +211,3 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 )
-
-replace github.com/kopia/kopia => github.com/kastenhq/kopia v0.0.0-20230919181354-663cbad41420
