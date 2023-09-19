@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-20.04
     needs: gomod
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: src
     - run: tar -xvf ./src.tar.gz
@@ -34,7 +34,7 @@ jobs:
       matrix:
         testSuite: [test, integration-test, helm-test]
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: src
     - uses: helm/kind-action@v1.8.0
@@ -58,7 +58,7 @@ jobs:
       matrix:
         bin: [controller, kanctl, kando]
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: src
     - run: tar -xvf ./src.tar.gz
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-20.04
     needs: gomod
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: src
     - run: tar -xvf ./src.tar.gz
@@ -79,7 +79,7 @@ jobs:
     permissions:
       packages: write
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
       with:
         name: src
     - uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
