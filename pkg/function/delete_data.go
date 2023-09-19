@@ -92,13 +92,12 @@ func deleteData(
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := deleteDataPodFunc(cli, tp, reclaimSpace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
+	podFunc := deleteDataPodFunc(tp, reclaimSpace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
 	return pr.RunEx(ctx, podFunc)
 }
 
 //nolint:gocognit
 func deleteDataPodFunc(
-	cli kubernetes.Interface,
 	tp param.TemplateParams,
 	reclaimSpace bool,
 	encryptionKey string,
@@ -110,7 +109,7 @@ func deleteDataPodFunc(
 		pod := pc.Pod()
 
 		// Wait for pod to reach running state
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
+		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
 
