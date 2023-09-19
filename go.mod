@@ -43,7 +43,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
 	github.com/vmware/govmomi v0.30.7
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/oauth2 v0.12.0
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/api v0.140.0
