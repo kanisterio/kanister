@@ -205,5 +205,4 @@ func (b *backupDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 		ProgressPercent:    b.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
-
 }
