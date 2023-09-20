@@ -18,10 +18,10 @@ jobs:
     outputs:
       changed: ${{ steps.changed-files.outputs.any_changed }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
         with:
           fetch-depth: 0
-      - uses: tj-actions/changed-files@48566bbcc22ceb7c5809ebdd27377309f2c3de8c # v39
+      - uses: tj-actions/changed-files@8e79ba7ab9fee9984275219aeb2c8db47bcb8a2d # v39
         name: Get changed files
         id: changed-files
         with:
@@ -36,10 +36,10 @@ jobs:
     if: needs.check-files.outputs.changed == 'true'
     steps:
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
     - name: Image metadata
       id: meta
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
@@ -48,13 +48,13 @@ jobs:
           {{date 'YYYY.MM.DD-HHmm'}}
           ${{ inputs.tag }}
     - name: Login to GHCR
-      uses: docker/login-action@v2
+      uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and push
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
       with:
         context: "{{defaultContext}}:docker/mongodb-atlas"
         push: true
