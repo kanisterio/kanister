@@ -52,7 +52,6 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 			err := pc.StartPod(ctx)
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, simulatedError), Equals, true)
-			c.Assert(pcp.InCreatePodCli, Equals, cli)
 			c.Assert(pcp.InCreatePodOptions, DeepEquals, &PodOptions{
 				Namespace: podControllerNS,
 				Name:      podControllerPodName,
@@ -77,9 +76,7 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 
 			err := pr.StartPod(ctx)
 			c.Assert(err, IsNil)
-			c.Assert(prp.InCreatePodCli, Equals, cli)
 
-			prp.InCreatePodCli = nil
 			prp.InCreatePodOptions = nil
 			prp.CreatePodRet = nil
 			prp.CreatePodErr = errors.New("CreatePod should not be invoked")
@@ -87,7 +84,6 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 			err = pr.StartPod(ctx)
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, ErrPodControllerPodAlreadyStarted), Equals, true)
-			c.Assert(prp.InCreatePodCli, IsNil)
 			c.Assert(prp.InCreatePodOptions, IsNil)
 		},
 	}
@@ -118,7 +114,6 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), Equals, true)
 			c.Assert(pcp.InCreatePodOptions, IsNil)
-			c.Assert(pcp.InCreatePodCli, IsNil)
 		},
 		"Waiting failed due to timeout": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.CreatePodRet = &corev1.Pod{

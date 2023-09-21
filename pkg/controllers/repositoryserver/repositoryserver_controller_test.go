@@ -16,6 +16,7 @@ package repositoryserver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -28,6 +29,7 @@ import (
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
@@ -64,6 +66,13 @@ type RepoServerControllerSuite struct {
 	DefaultRepoServerReconciler   *RepositoryServerReconciler
 	cancel                        context.CancelFunc
 	k8sServerVersion              *version.Info
+}
+
+// patchStringValue specifies a patch operation for a string.
+type patchStringValue struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value string `json:"value"`
 }
 
 var _ = Suite(&RepoServerControllerSuite{})
@@ -214,17 +223,24 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 	if s.k8sServerVersion.Major == "1" && minorVersion < 25 {
 		c.Skip("skipping the test since CRD validation rules feature is enabled only after k8s version 1.25")
 	}
-	// Create a repository server CR.
+
+	ctx := context.Background()
+
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
 
-	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), &repoServerCR, metav1.CreateOptions{})
+	// Create a repository server CR
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
-	// Update the repository server CR's Immutable field.
-	repoServerCRCreated.Spec.Repository.RootPath = "/updated-test-path/"
-	_, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Update(context.Background(), repoServerCRCreated, metav1.UpdateOptions{})
-	// Expect an error.
+	//Update the repository server CR's Immutable field.
+	patch := []patchStringValue{{
+		Op:    "replace",
+		Path:  "/spec/repository/rootPath",
+		Value: "/updated-test-path/",
+	}}
+	patchBytes, _ := json.Marshal(patch)
+	_, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Patch(ctx, repoServerCRCreated.Name, types.JSONPatchType, patchBytes, metav1.PatchOptions{})
 	c.Assert(err, NotNil)
 
 	// Check Error Message
@@ -232,7 +248,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 	c.Assert(err.Error(), Equals, expectedErrorMessage)
 
 	// Delete the repository server CR.
-	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
+	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(ctx, repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
