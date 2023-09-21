@@ -1,3 +1,5 @@
+name: Manage Stale Issues and PRs
+
 on:
   schedule:
   - cron: "0 0 * * *"
