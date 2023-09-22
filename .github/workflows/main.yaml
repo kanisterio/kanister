@@ -49,7 +49,7 @@ jobs:
         skip-cache: true
   test:
     runs-on: ubuntu-20.04
-    needs: [gomod, lint]
+    needs: gomod
     strategy:
       fail-fast: false
       matrix:
@@ -84,7 +84,7 @@ jobs:
       run: make ${{ matrix.testSuite }}
   build:
     runs-on: ubuntu-20.04
-    needs: [gomod, lint, test]
+    needs: gomod
     strategy:
       matrix:
         bin: [controller, kanctl, kando]
@@ -112,7 +112,7 @@ jobs:
       run: make docs
   release:
     runs-on: ubuntu-20.04
-    needs: [test, build]
+    needs: [test, build, lint]
     if: github.ref_name == 'master' || startsWith(github.ref, 'refs/tags')
     permissions:
       packages: write
