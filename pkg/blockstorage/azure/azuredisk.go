@@ -63,11 +63,11 @@ func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 		return nil, errors.Wrapf(err, "Failed to get info for volume with ID %s", id)
 	}
 
-	disk, err := s.azCli.DisksClient.Get(ctx, rg, name, nil)
+	diskResponse, err := s.azCli.DisksClient.Get(ctx, rg, name, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get volume, volumeID: %s", id)
 	}
-	return s.VolumeParse(ctx, disk)
+	return s.VolumeParse(ctx, diskResponse.Disk)
 }
 
 func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
@@ -82,7 +82,7 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 		CreationData: &armcompute.CreationData{
 			CreateOption: azto.Ptr(armcompute.DiskCreateOptionEmpty),
 		},
-		DiskSizeGB: azto.Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
+		DiskSizeGB: blockstorage.Int32Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
 	}
 	region, id, err := getLocationInfo(volume.Az)
 	if err != nil {
@@ -90,9 +90,9 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 	}
 	// TODO(ilya): figure out how to create SKUed disks
 	createdDisk := armcompute.Disk{
-		Name:       azto.Ptr(diskName),
+		Name:       blockstorage.StringPtr(diskName),
 		Tags:       *blockstorage.StringMapPtr(tags),
-		Location:   azto.Ptr(region),
+		Location:   blockstorage.StringPtr(region),
 		Properties: diskProperties,
 		SKU: &armcompute.DiskSKU{
 			Name: azto.Ptr(armcompute.DiskStorageAccountTypesStandardLRS),
@@ -104,13 +104,13 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 
 	pollerResp, err := s.azCli.DisksClient.BeginCreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createdDisk, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Could not create volume %s", diskName)
 	}
 	resp, err := pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Volume create %s polling error", diskName)
 	}
-	return s.VolumeGet(ctx, *resp.ID, volume.Az)
+	return s.VolumeGet(ctx, blockstorage.String(resp.ID), volume.Az)
 }
 
 func (s *AdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
@@ -215,14 +215,14 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 
 	createSnap := armcompute.Snapshot{
-		Name:     azto.Ptr(snapName),
-		Location: azto.Ptr(to.Region),
+		Name:     blockstorage.StringPtr(snapName),
+		Location: blockstorage.StringPtr(to.Region),
 		Tags:     *blockstorage.StringMapPtr(tags),
 		Properties: &armcompute.SnapshotProperties{
 			CreationData: &armcompute.CreationData{
 				CreateOption:     azto.Ptr(armcompute.DiskCreateOptionImport),
-				StorageAccountID: azto.Ptr(storageAccountID),
-				SourceURI:        azto.Ptr(blobURI),
+				StorageAccountID: blockstorage.StringPtr(storageAccountID),
+				SourceURI:        blockstorage.StringPtr(blobURI),
 			},
 		},
 	}
@@ -239,7 +239,7 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	if err != nil {
 		return nil, errors.Wrap(err, "Poller failed to retrieve snapshot")
 	}
-	snap, err := s.SnapshotGet(ctx, *createSnapRes.ID)
+	snap, err := s.SnapshotGet(ctx, blockstorage.String(createSnapRes.ID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to Get Snapshot after create, snaphotName %s", snapName)
 	}
@@ -285,13 +285,13 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
 	}
 	createSnap := armcompute.Snapshot{
-		Name:     azto.Ptr(snapName),
-		Location: azto.Ptr(region),
+		Name:     blockstorage.StringPtr(snapName),
+		Location: blockstorage.StringPtr(region),
 		Tags:     *blockstorage.StringMapPtr(tags),
 		Properties: &armcompute.SnapshotProperties{
 			CreationData: &armcompute.CreationData{
 				CreateOption:     azto.Ptr(armcompute.DiskCreateOptionCopy),
-				SourceResourceID: azto.Ptr(volume.ID),
+				SourceResourceID: blockstorage.StringPtr(volume.ID),
 			},
 		},
 	}
@@ -367,7 +367,7 @@ func (s *AdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.S
 func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*blockstorage.Volume, error) {
 	vol, ok := volume.(armcompute.Disk)
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Volume is not of type *azcompute.Disk, volume: %v", volume))
+		return nil, errors.New(fmt.Sprintf("Volume is not of type *armcompute.Disk, volume: %v", volume))
 	}
 	encrypted := false
 	if vol.Properties.EncryptionSettingsCollection != nil &&
@@ -378,21 +378,21 @@ func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 	if vol.Tags != nil {
 		tags = blockstorage.StringMap(vol.Tags)
 	}
-	az := *vol.Location
+	az := blockstorage.String(vol.Location)
 	if z := vol.Zones; len(z) > 0 {
 		az = az + "-" + *(z[0])
 	}
 
 	return &blockstorage.Volume{
 		Type:         s.Type(),
-		ID:           *vol.ID,
+		ID:           blockstorage.String(vol.ID),
 		Encrypted:    encrypted,
-		SizeInBytes:  *vol.Properties.DiskSizeBytes,
+		SizeInBytes:  blockstorage.Int64(vol.Properties.DiskSizeBytes),
 		Az:           az,
 		Tags:         blockstorage.MapToKeyValue(tags),
 		VolumeType:   string(*vol.SKU.Name),
 		CreationTime: blockstorage.TimeStamp(*vol.Properties.TimeCreated),
-		Attributes:   map[string]string{"Users": *vol.ManagedBy},
+		Attributes:   map[string]string{"Users": blockstorage.String(vol.ManagedBy)},
 	}, nil
 }
 
@@ -496,13 +496,13 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := armcompute.Disk{
-		Name:     azto.Ptr(diskName),
+		Name:     blockstorage.StringPtr(diskName),
 		Tags:     *blockstorage.StringMapPtr(tags),
-		Location: azto.Ptr(region),
+		Location: blockstorage.StringPtr(region),
 		Properties: &armcompute.DiskProperties{
 			CreationData: &armcompute.CreationData{
 				CreateOption:     azto.Ptr(armcompute.DiskCreateOptionCopy),
-				SourceResourceID: azto.Ptr(snapshot.ID),
+				SourceResourceID: blockstorage.StringPtr(snapshot.ID),
 			},
 		},
 	}
@@ -524,7 +524,7 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	if err != nil {
 		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
 	}
-	return s.VolumeGet(ctx, *resp.ID, snapshot.Volume.Az)
+	return s.VolumeGet(ctx, blockstorage.String(resp.ID), snapshot.Volume.Az)
 }
 
 func (s *AdStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
