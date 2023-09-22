@@ -43,7 +43,7 @@ jobs:
         go-version-file: 'go.mod'
     -
       name: Lint
-      run: make golint
+      run: ./build/golint.sh
   test:
     runs-on: ubuntu-20.04
     needs: [gomod, lint]
