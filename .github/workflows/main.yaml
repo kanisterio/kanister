@@ -25,8 +25,8 @@ jobs:
     -
       name: Populate Go mod caches
       run: |
-        make go-mod-download
-        make go-mod-tidy
+        go mod download
+        go mod tidy
   lint:
     runs-on: ubuntu-20.04
     needs: gomod
