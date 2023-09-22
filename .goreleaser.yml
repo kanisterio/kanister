@@ -63,8 +63,8 @@ dockers:
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
 # Refers to https://github.com/kastenhq/kopia/commit/663cbad414207f077c666637fabfb22b47855959
-  - "--build-arg=kopiaBuildCommit=663cbad"
-  - "--build-arg=kopiaRepoOrg=kastenhq"
+  - "--build-arg=kopia_build_commit=663cbad"
+  - "--build-arg=kopia_repo_org=kastenhq"
   extra_files:
   - 'LICENSE'
 - ids:

@@ -50,7 +50,7 @@ func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
 }
 
 // NewPodRunnerWithPodController returns a new PodRunner given PodController object
-// This provides mechanism for passing fake podControllerProcessor through PodController for testing purposes.
+// This provides mechanism for passing fake PodControllerProcessor through PodController for testing purposes.
 func NewPodRunnerWithPodController(pc PodController) PodRunner {
 	r := &podRunner{
 		pc: pc,
