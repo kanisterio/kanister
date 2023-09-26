@@ -42,7 +42,7 @@ require (
 	github.com/prometheus/client_model v0.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
-	github.com/vmware/govmomi v0.30.7
+	github.com/vmware/govmomi v0.31.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/oauth2 v0.12.0
 	gonum.org/v1/gonum v0.14.0
@@ -151,7 +151,7 @@ require (
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/xlab/treeprint v1.1.0 // indirect
+	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
