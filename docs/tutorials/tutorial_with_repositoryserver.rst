@@ -6,7 +6,7 @@ to a Kopia repository. We will be using kanister functions
 that use Kopia repository Server as data mover in the blueprint.
 For additional documentation on kanister functions and blueprints,
 refer to the :ref:`architecture` and :ref:`kanister functions<functions>`
-sections respectively
+sections respectively.
 
 .. contents:: Tutorial Overview
   :local:
@@ -117,14 +117,14 @@ You can create it as shown below:
     --secret-access-key=<SECRET_ACCESS_KEY>
 
 To learn more about how to create repository and gain further insight into the Kopia
-repository refer to `Kopia documentation <https://kopia.io/docs/reference/command-line/>`_
+repository refer to `Kopia documentation <https://kopia.io/docs/reference/command-line/>`_.
 
 
 Creating Secrets
 ----------------
 
 To learn about the secrets that need to be created for the repository server,
-Please refer to :ref:`architecture` section
+Please refer to :ref:`architecture` section.
 
 - ``Creating TLS secret``
 
@@ -319,13 +319,13 @@ check the server's status.
          name: s3-location
          namespace: kanister
    status:
-     progress: ServerReady
+     progress: Ready
      serverInfo:
        podName: repo-server-pod-4tjcw
        serviceName: repo-server-service-rq2pq
 
 ``pod/repo-server-pod-4tjcw`` and ``service/repo-server-service-rq2pq`` populated in
-``status.serverInfo`` field  should be used by the client to connect to the server
+``status.serverInfo`` field  should be used by the client to connect to the server.
 
 Invoking Kanister Actions
 =========================
