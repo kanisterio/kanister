@@ -12,7 +12,8 @@ permissions:
 jobs:
   pull-requests-comment:
     name: Comment and Triage
-    if: github.repository == 'kanisterio/kanister' && github.actor != 'dependabot'
+    # The entire job is skipped for @dependabot
+    if: github.repository == 'kanisterio/kanister' && github.actor != 'dependabot[bot]'
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
@@ -33,7 +34,7 @@ jobs:
       uses: alex-page/github-project-automation-plus@v0.8.3
       # This only works for PRs opened in the same repo and not by dependabot.
       # Other PRs don't get the necessary credentials.
-      if: github.repository == 'kanisterio/kanister' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot'
+      if: github.repository == 'kanisterio/kanister' && !github.event.pull_request.head.repo.fork
       with:
         repo-token: ${{ secrets.GH_TOKEN }}
         project: Kanister
