@@ -19,6 +19,7 @@ import (
 
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
@@ -111,6 +112,8 @@ type Snapshotter interface {
 	// List will list the volumesnapshots in a namespace that match search. If labels aren't provided,
 	// it will list all the snapshots in the namespace
 	List(ctx context.Context, namespace string, labels map[string]string) (*v1.VolumeSnapshotList, error)
+	// GroupVersion returns the group and version according to snapshotter version
+	GroupVersion(ctx context.Context) schema.GroupVersion
 }
 
 // Source represents the CSI source of the Volumesnapshot.

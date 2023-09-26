@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
@@ -116,6 +117,7 @@ type CreatePVCFromSnapshotArgs struct {
 	Annotations      map[string]string
 	VolumeMode       *v1.PersistentVolumeMode
 	AccessModes      []v1.PersistentVolumeAccessMode
+	GroupVersion     schema.GroupVersion
 }
 
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
@@ -130,7 +132,16 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		args.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
 	}
 	snapshotKind := "VolumeSnapshot"
+
+	// Group version is not specified here, it is figured out automatically
+	// while the PVC is being created, which can cause issues. Hence we should explicitly
+	// check if group api version is passed in the args, and use that
+	// to create the PVC
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
+	if !args.GroupVersion.Empty() {
+		snapshotAPIGroup = args.GroupVersion.String()
+	}
+
 	pvc := &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      args.Labels,

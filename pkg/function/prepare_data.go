@@ -17,9 +17,11 @@ package function
 import (
 	"context"
 	"fmt"
+	"io"
 
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -95,20 +97,32 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)
-	return pr.Run(ctx, podFunc)
+	return pr.RunEx(ctx, podFunc)
 }
 
-func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-		// Wait for pod completion
-		if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
+func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+		pod := pc.Pod()
+
+		// Wait for pod to reach running state
+		if err := pc.WaitForPodReady(ctx); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
+
+		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
-		logs, err := kube.GetPodLogs(ctx, cli, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+		r, err := pc.StreamPodLogs(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}
+		defer r.Close()
+
+		bytes, err := io.ReadAll(r)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to read logs from the pod")
+		}
+		logs := string(bytes)
+
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, logs)
 		out, err := parseLogAndCreateOutput(logs)
 		return out, errors.Wrap(err, "Failed to parse phase output")
