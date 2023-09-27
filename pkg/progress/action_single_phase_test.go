@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 	. "gopkg.in/check.v1"
@@ -28,7 +27,6 @@ type TestSuiteSinglePhase struct {
 	blueprint *crv1alpha1.Blueprint
 	actionSet *crv1alpha1.ActionSet
 	clientset *fake.Clientset
-	mockPhase *kanister.Phase
 }
 
 var _ = Suite(&TestSuiteSinglePhase{})
