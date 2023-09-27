@@ -17,11 +17,14 @@ package kando
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"os"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/chronicle"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 func newChroniclePullCommand() *cobra.Command {
@@ -63,4 +66,13 @@ func runChroniclePull(cmd *cobra.Command, p locationParams, arg string) error {
 	}
 	ctx := context.Background()
 	return chronicle.Pull(ctx, target, *prof, p.suffix)
+}
+
+const usePipeParam = `-`
+
+func targetWriter(target string) (io.Writer, error) {
+	if target != usePipeParam {
+		return os.OpenFile(target, os.O_RDWR|os.O_CREATE, 0755)
+	}
+	return os.Stdout, nil
 }

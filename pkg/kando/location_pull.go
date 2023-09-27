@@ -15,14 +15,7 @@
 package kando
 
 import (
-	"context"
-	"io"
-	"os"
-
 	"github.com/spf13/cobra"
-
-	"github.com/kanisterio/kanister/pkg/location"
-	"github.com/kanisterio/kanister/pkg/param"
 )
 
 const (
@@ -48,15 +41,4 @@ func newLocationPullCommand() *cobra.Command {
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
 	return cmd
-}
-
-func targetWriter(target string) (io.Writer, error) {
-	if target != usePipeParam {
-		return os.OpenFile(target, os.O_RDWR|os.O_CREATE, 0755)
-	}
-	return os.Stdout, nil
-}
-
-func locationPull(ctx context.Context, p *param.Profile, path string, target io.Writer) error {
-	return location.Read(ctx, target, *p, path)
 }
