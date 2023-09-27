@@ -11,6 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	snapshot "github.com/kanisterio/kanister/pkg/kube/snapshot"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // MockSnapshotter is a mock of Snapshotter interface.
@@ -178,6 +179,20 @@ func (m *MockSnapshotter) GetVolumeSnapshotClass(arg0 context.Context, arg1, arg
 func (mr *MockSnapshotterMockRecorder) GetVolumeSnapshotClass(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolumeSnapshotClass", reflect.TypeOf((*MockSnapshotter)(nil).GetVolumeSnapshotClass), arg0, arg1, arg2, arg3)
+}
+
+// GroupVersion mocks base method.
+func (m *MockSnapshotter) GroupVersion(arg0 context.Context) schema.GroupVersion {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GroupVersion", arg0)
+	ret0, _ := ret[0].(schema.GroupVersion)
+	return ret0
+}
+
+// GroupVersion indicates an expected call of GroupVersion.
+func (mr *MockSnapshotterMockRecorder) GroupVersion(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GroupVersion", reflect.TypeOf((*MockSnapshotter)(nil).GroupVersion), arg0)
 }
 
 // List mocks base method.

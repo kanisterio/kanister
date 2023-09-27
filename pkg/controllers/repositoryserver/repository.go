@@ -16,17 +16,14 @@ package repositoryserver
 
 import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
-	contentCacheMB, metadataCacheMB := h.getRepositoryCacheSettings()
-
 	repoConfiguration := h.getRepositoryConfiguration()
+	cacheSizeSettings := h.getRepositoryCacheSettings()
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
 			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[reposerver.RepoPasswordKey]),
@@ -35,8 +32,8 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 		},
 		CacheDirectory:  repoConfiguration.CacheDirectory,
 		Hostname:        h.RepositoryServer.Spec.Repository.Hostname,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
+		ContentCacheMB:  *cacheSizeSettings.Content,
+		MetadataCacheMB: *cacheSizeSettings.Metadata,
 		Username:        h.RepositoryServer.Spec.Repository.Username,
 		// TODO(Amruta): Generate path for respository
 		RepoPathPrefix: h.RepositoryServer.Spec.Repository.RootPath,
@@ -71,23 +68,17 @@ func (h *RepoServerHandler) getRepositoryConfiguration() v1alpha1.Configuration 
 	return configuration
 }
 
-func (h *RepoServerHandler) getRepositoryCacheSettings() (int, int) {
+func (h *RepoServerHandler) getRepositoryCacheSettings() v1alpha1.CacheSizeSettings {
 	defaultContentCacheMB, defaultMetadataCacheMB := command.GetGeneralCacheSizeSettings()
-	contentCacheMB := defaultContentCacheMB
-	metadataCacheMB := defaultMetadataCacheMB
-	var err error
-	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content != "" {
-		contentCacheMB, err = utils.GetIntOrDefault(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content, defaultContentCacheMB)
-		if err != nil {
-			h.Logger.Error(err, "cache content size should be an integer, using default value", field.M{"contentSize": h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content, "default_value": defaultContentCacheMB})
-		}
+	cacheSizeSettings := v1alpha1.CacheSizeSettings{
+		Metadata: &defaultMetadataCacheMB,
+		Content:  &defaultContentCacheMB,
 	}
-	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata != "" {
-		metadataCacheMB, err = utils.GetIntOrDefault(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata, defaultMetadataCacheMB)
-		if err != nil {
-			h.Logger.Error(err, "cache metadata size should be an integer, using default value", field.M{"metadataSize": h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata, "default_value": defaultMetadataCacheMB})
-		}
+	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content != nil {
+		cacheSizeSettings.Content = h.RepositoryServer.Spec.Repository.CacheSizeSettings.Content
 	}
-
-	return contentCacheMB, metadataCacheMB
+	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata != nil {
+		cacheSizeSettings.Metadata = h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata
+	}
+	return cacheSizeSettings
 }
