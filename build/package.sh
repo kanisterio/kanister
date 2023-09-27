@@ -66,5 +66,5 @@ sed                                \
     -e "s|ARG_ARCH|${ARCH}|g"      \
     -e "s|ARG_SOURCE_BIN|${SOURCE_BIN}|g" \
     Dockerfile.in > .dockerfile-${ARCH}
-docker build --pull ${baseimagearg:-} --build-arg kanister_version=${VERSION} -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
+docker buildx build --push --pull --sbom=true ${baseimagearg:-} --build-arg kanister_version=${VERSION} -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
 docker images -q ${IMAGE}:${VERSION}
