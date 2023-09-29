@@ -184,10 +184,15 @@ func restoreDataFromServer(
 	vols map[string]string,
 	podOverride crv1alpha1.JSONMap,
 ) (map[string]any, error) {
-	for pvc := range vols {
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrap(err, "Failed to retrieve PVC from namespace: "+namespace+" name: "+pvc)
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	// Validate volumes
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
 		}
+
+		validatedVols[pvcName] = kube.VolumeMountOptions{MountPoint: mountPoint, ReadOnly: kube.IsAccessModesOfPVCContainReadOnly(pvc)}
 	}
 
 	options := &kube.PodOptions{
@@ -195,7 +200,7 @@ func restoreDataFromServer(
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
-		Volumes:      vols,
+		Volumes:      validatedVols,
 		PodOverride:  podOverride,
 	}
 

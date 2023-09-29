@@ -85,17 +85,22 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 
 func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, podOverride crv1alpha1.JSONMap, command ...string) (map[string]interface{}, error) {
 	// Validate volumes
-	for pvc := range vols {
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
 		}
+
+		validatedVols[pvcName] = kube.VolumeMountOptions{MountPoint: mountPoint, ReadOnly: kube.IsAccessModesOfPVCContainReadOnly(pvc)}
 	}
+
 	options := &kube.PodOptions{
 		Namespace:          namespace,
 		GenerateName:       prepareDataJobPrefix,
 		Image:              image,
 		Command:            command,
-		Volumes:            vols,
+		Volumes:            validatedVols,
 		ServiceAccountName: serviceAccount,
 		PodOverride:        podOverride,
 	}

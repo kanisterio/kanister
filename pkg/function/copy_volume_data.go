@@ -69,20 +69,25 @@ func (*copyVolumeDataFunc) Name() string {
 	return CopyVolumeDataFuncName
 }
 
-func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string, podOverride map[string]interface{}) (map[string]interface{}, error) {
+func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvcName, targetPath, encryptionKey string, podOverride map[string]interface{}) (map[string]interface{}, error) {
 	// Validate PVC exists
-	if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
 	}
+
 	// Create a pod with PVCs attached
-	mountPoint := fmt.Sprintf(CopyVolumeDataMountPoint, pvc)
+	mountPoint := fmt.Sprintf(CopyVolumeDataMountPoint, pvcName)
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: CopyVolumeDataJobPrefix,
 		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		Volumes:      map[string]string{pvc: mountPoint},
-		PodOverride:  podOverride,
+		Volumes: map[string]kube.VolumeMountOptions{pvcName: {
+			MountPoint: mountPoint,
+			ReadOnly:   kube.IsAccessModesOfPVCContainReadOnly(pvc),
+		}},
+		PodOverride: podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := copyVolumeDataPodFunc(cli, tp, mountPoint, targetPath, encryptionKey)

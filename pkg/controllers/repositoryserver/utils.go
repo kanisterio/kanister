@@ -199,7 +199,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	return nil
 }
 
-func getPodOptions(namespace string, svc *corev1.Service, vols map[string]string) *kube.PodOptions {
+func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.VolumeMountOptions) *kube.PodOptions {
 	uidguid := int64(0)
 	nonRootBool := false
 	return &kube.PodOptions{
@@ -253,8 +253,8 @@ func getCondition(status metav1.ConditionStatus, reason string, message string, 
 	}
 }
 
-func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Secret, namespace string) (map[string]string, error) {
-	vols := make(map[string]string, 0)
+func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Secret, namespace string) (map[string]kube.VolumeMountOptions, error) {
+	vols := make(map[string]kube.VolumeMountOptions, 0)
 	var claimName []byte
 	if len(secret.Data) == 0 {
 		return nil, errors.Errorf(secerrors.EmptySecretErrorMessage, secret.Namespace, secret.Name)
@@ -264,10 +264,17 @@ func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Se
 			return nil, errors.New("Claim name not set for file store location secret, failed to retrieve PVC")
 		}
 		claimNameString := string(claimName)
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, claimNameString, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to validate if PVC %s:%s exists", namespace, claimName)
+		}
 		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, claimNameString, metav1.GetOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "Failed to validate if PVC %s:%s exists", namespace, claimName)
 		}
-		vols[claimNameString] = storage.DefaultFSMountPath
+		vols[claimNameString] = kube.VolumeMountOptions{
+			MountPoint: storage.DefaultFSMountPath,
+			ReadOnly:   kube.IsAccessModesOfPVCContainReadOnly(pvc),
+		}
 	}
 	return vols, nil
 }
