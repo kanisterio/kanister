@@ -126,7 +126,7 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func restoreDataPodFunc(

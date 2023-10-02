@@ -74,7 +74,7 @@ func describeBackups(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := describeBackupsPodFunc(cli, tp, encryptionKey, targetPaths)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func describeBackupsPodFunc(

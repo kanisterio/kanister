@@ -194,7 +194,7 @@ func restoreDataFromServer(
 		userPassphrase,
 		sparseRestore,
 	)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func restoreDataFromServerPodFunc(

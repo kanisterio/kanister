@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
@@ -28,16 +27,12 @@ import (
 
 // PodRunner allows us to start / stop pod, write file to pod and execute command within it
 type PodRunner interface {
-	Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error)
-	// RunEx utilizes the PodController interface and forwards it to the functor, simplifying the manipulation with
-	// particular pod from the functor.
-	// TODO: Since significant number of functions are currently using PodRunner, we'll keep Run for now.
-	// However, once all these functions have been refactored to use PodController,
-	// Run should be removed and RunEx has to be renamed to Run.
-	RunEx(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error)
+	// Run creates pod using the PodController interface and forwards it to the functor.
+	// Pod will be deleted as soon as functor exits.
+	Run(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error)
 }
 
-// PodRunner specifies Kubernetes Client and PodOptions needed for creating Pod
+// podRunner implements PodRunner interface
 type podRunner struct {
 	pc PodController
 }
@@ -60,14 +55,7 @@ func NewPodRunnerWithPodController(pc PodController) PodRunner {
 }
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
-func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
-	return p.RunEx(ctx, func(innerCtx context.Context, pc PodController) (map[string]interface{}, error) {
-		return fn(innerCtx, pc.Pod())
-	})
-}
-
-// RunEx will create a new Pod based on PodRunner contents and execute the given function
-func (p *podRunner) RunEx(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error) {
+func (p *podRunner) Run(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
