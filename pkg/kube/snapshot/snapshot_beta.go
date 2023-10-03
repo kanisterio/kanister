@@ -276,6 +276,13 @@ func (sna *SnapshotBeta) UpdateVolumeSnapshotStatusBeta(ctx context.Context, nam
 	return updateVolumeSnapshotStatus(ctx, sna.dynCli, v1beta1.VolSnapGVR, namespace, snapshotName, readyToUse)
 }
 
+func (sna *SnapshotBeta) GroupVersion(ctx context.Context) schema.GroupVersion {
+	return schema.GroupVersion{
+		Group:   v1beta1.GroupName,
+		Version: v1beta1.Version,
+	}
+}
+
 func updateVolumeSnapshotStatus(ctx context.Context, dynCli dynamic.Interface, snapGVR schema.GroupVersionResource, namespace string, snapshotName string, readyToUse bool) error {
 	us, err := dynCli.Resource(snapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
 	if err != nil {

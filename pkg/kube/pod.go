@@ -113,7 +113,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
-				Name:            defaultContainerName,
+				Name:            ContainerNameFromPodOptsOrDefault(opts),
 				Image:           opts.Image,
 				Command:         opts.Command,
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
@@ -143,7 +143,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 
 	// Always put the main container the first
 	sort.Slice(patchedSpecs.Containers, func(i, j int) bool {
-		return patchedSpecs.Containers[i].Name == defaultContainerName
+		return patchedSpecs.Containers[i].Name == ContainerNameFromPodOptsOrDefault(opts)
 	})
 
 	return createPodSpec(opts, patchedSpecs, ns), nil
@@ -163,11 +163,6 @@ func createPodSpec(opts *PodOptions, patchedSpecs v1.PodSpec, ns string) *v1.Pod
 	// Override `GenerateName` if `Name` option is provided
 	if opts.Name != "" {
 		pod.Name = opts.Name
-	}
-
-	// Override default container name if applicable
-	if opts.ContainerName != "" {
-		pod.Spec.Containers[0].Name = opts.ContainerName
 	}
 
 	// Add Annotations and Labels, if specified
@@ -200,6 +195,17 @@ func createPodSpec(opts *PodOptions, patchedSpecs v1.PodSpec, ns string) *v1.Pod
 
 	pod.Namespace = ns
 	return pod
+}
+
+// ContainerNameFromPodOptsOrDefault returns the container name if it's set in
+// the passed `podOptions` value. If not, it's returns the default container
+// name. This should be used whenever we create pods for Kanister functions.
+func ContainerNameFromPodOptsOrDefault(po *PodOptions) string {
+	if po == nil || po.ContainerName == "" {
+		return defaultContainerName
+	}
+
+	return po.ContainerName
 }
 
 // CreatePod creates a pod with a single container based on the specified image

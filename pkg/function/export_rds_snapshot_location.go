@@ -61,7 +61,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.93.0"
+	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.96.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct{}
@@ -295,38 +295,42 @@ func prepareCommand(
 		return nil, "", err
 	}
 
-	// Find list of dbs
-	// For backup operation, if database arg is not set, we take backup of all databases
-	if dbList == nil {
-		// If no database is passed, we find list of all the existing databases
-		pg, err := postgres.NewClient(dbEndpoint, username, password, "postgres", "disable")
-		if err != nil {
-			return nil, "", errors.Wrap(err, "Error in creating postgres client")
-		}
-
-		// Test DB connection
-		if err := pg.PingDB(ctx); err != nil {
-			return nil, "", errors.Wrap(err, "Failed to ping postgres database")
-		}
-
-		dbList, err = pg.ListDatabases(ctx)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "Error while listing databases")
-		}
-		dbList = filterRestrictedDB(dbList)
-	}
-
 	if dbEngine == PostgrSQLEngine {
 		switch action {
 		case BackupAction:
+			// For backup operation, if database arg is not set, we take backup of all databases
+			if dbList == nil {
+				dbList, err = findDBList(ctx, dbEndpoint, username, password)
+				if err != nil {
+					return nil, "", err
+				}
+			}
 			command, err := postgresBackupCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJson)
 			return command, postgresToolsImage, err
 		case RestoreAction:
-			command, err := postgresRestoreCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJson, dbEngineVersion)
+			command, err := postgresRestoreCommand(dbEndpoint, username, password, backupPrefix, backupID, profileJson, dbEngineVersion)
 			return command, postgresToolsImage, err
 		}
 	}
 	return nil, "", errors.New("Invalid RDSDBEngine or RDSAction")
+}
+
+func findDBList(ctx context.Context, dbEndpoint, username, password string) ([]string, error) {
+	pg, err := postgres.NewClient(dbEndpoint, username, password, postgres.DefaultConnectDatabase, "disable")
+	if err != nil {
+		return nil, errors.Wrap(err, "Error in creating postgres client")
+	}
+
+	// Test DB connection
+	if err := pg.PingDB(ctx); err != nil {
+		return nil, errors.Wrap(err, "Failed to ping postgres database")
+	}
+
+	dbList, err := pg.ListDatabases(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error while listing databases")
+	}
+	return filterRestrictedDB(dbList), nil
 }
 
 //nolint:unparam
