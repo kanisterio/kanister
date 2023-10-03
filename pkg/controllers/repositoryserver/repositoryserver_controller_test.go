@@ -233,7 +233,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
-	//Update the repository server CR's Immutable field.
+	// Update the repository server CR's Immutable field.
 	patch := []patchStringValue{{
 		Op:    "replace",
 		Path:  "/spec/repository/rootPath",

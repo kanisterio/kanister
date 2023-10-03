@@ -320,6 +320,9 @@ func labelSelector(labels map[string]string) string {
 
 // zoneToRegion removes -latter or just last latter from provided zone.
 func zoneToRegion(zone string) string {
+	// TODO: gocritic rule below suggests to use regexp.MustCompile but it
+	// panics if regex cannot be compiled. We should add proper test before
+	// enabling this below so that no change to this regex results in a panic
 	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
 	return r.ReplaceAllString(zone, "")
 }
