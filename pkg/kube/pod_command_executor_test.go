@@ -25,7 +25,6 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -69,7 +68,6 @@ func (s *testBarrier) SyncWithController() { // background method
 }
 
 type fakePodCommandExecutorProcessor struct {
-	inExecWithOptionsCli  kubernetes.Interface
 	inExecWithOptionsOpts *ExecOptions
 	execWithOptionsStdout string
 	execWithOptionsStderr string
@@ -77,14 +75,13 @@ type fakePodCommandExecutorProcessor struct {
 	execWithOptionsRet2   string
 	execWithOptionsErr    error
 
-	// Signal to `execWithOptions` to start "executing" command.
+	// Signal to `ExecWithOptions` to start "executing" command.
 	// Command will remain "executing" until `execWithOptionsSyncEnd.Sync()`
 	execWithOptionsSyncStart testBarrier
 	execWithOptionsSyncEnd   testBarrier
 }
 
-func (fprp *fakePodCommandExecutorProcessor) execWithOptions(cli kubernetes.Interface, opts ExecOptions) (string, string, error) {
-	fprp.inExecWithOptionsCli = cli
+func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(opts ExecOptions) (string, string, error) {
 	fprp.inExecWithOptionsOpts = &opts
 	fprp.execWithOptionsSyncStart.SyncWithController()
 	if opts.Stdout != nil && len(fprp.execWithOptionsStdout) > 0 {
@@ -150,7 +147,7 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			}()
 			prp.execWithOptionsSyncStart.Sync() // Ensure ExecWithOptions is called
 			wg.Wait()
-			prp.execWithOptionsSyncEnd.Sync() // Release execWithOptions
+			prp.execWithOptionsSyncEnd.Sync() // Release ExecWithOptions
 
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, context.Canceled), Equals, true)
@@ -171,10 +168,9 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			}()
 			prp.execWithOptionsSyncStart.Sync() // Ensure ExecWithOptions is called
 			wg.Wait()
-			prp.execWithOptionsSyncEnd.Sync() // Release execWithOptions
+			prp.execWithOptionsSyncEnd.Sync() // Release ExecWithOptions
 
 			c.Assert(err, IsNil)
-			c.Assert(prp.inExecWithOptionsCli, Equals, cli)
 			c.Assert(prp.inExecWithOptionsOpts.Command, DeepEquals, command)
 			c.Assert(prp.inExecWithOptionsOpts.Namespace, Equals, podCommandExecutorNS)
 			c.Assert(prp.inExecWithOptionsOpts.PodName, Equals, podCommandExecutorPodName)
@@ -214,7 +210,7 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			}()
 			prp.execWithOptionsSyncStart.Sync() // Ensure ExecWithOptions is called
 			wg.Wait()
-			prp.execWithOptionsSyncEnd.Sync() // Release execWithOptions
+			prp.execWithOptionsSyncEnd.Sync() // Release ExecWithOptions
 
 			c.Assert(err, Not(IsNil))
 			c.Assert(prp.inExecWithOptionsOpts.Stdout, Not(IsNil))

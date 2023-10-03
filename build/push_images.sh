@@ -19,9 +19,9 @@ set -o nounset
 
 IMAGE_REGISTRY="ghcr.io/kanisterio"
 
-IMAGES_NAME_PATH="valid_images.json"
+IMAGES_NAME_PATH="build/valid_images.json"
 
-IMAGES=(`cat $IMAGES_NAME_PATH | jq -r .images[]`)
+IMAGES=(`cat ${IMAGES_NAME_PATH} | jq -r .images[]`)
 
 TAG=${1:-"v9.99.9-dev"}
 

@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2023 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kando
+package validatingwebhook
 
 import (
-	"testing"
-
-	. "gopkg.in/check.v1"
+	"fmt"
+	"os"
 )
 
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+const WHCertsDir = "/var/run/webhook/serving-cert"
+
+func IsCACertMounted() bool {
+	if _, err := os.Stat(fmt.Sprintf("%s/%s", WHCertsDir, "tls.crt")); err != nil {
+		return false
+	}
+
+	return true
+}

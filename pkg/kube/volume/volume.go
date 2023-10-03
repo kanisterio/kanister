@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
@@ -126,6 +127,7 @@ type CreatePVCFromSnapshotArgs struct {
 	Annotations      map[string]string
 	VolumeMode       *corev1.PersistentVolumeMode
 	AccessModes      []corev1.PersistentVolumeAccessMode
+	GroupVersion     schema.GroupVersion
 }
 
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
@@ -140,7 +142,16 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		args.AccessModes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
 	snapshotKind := "VolumeSnapshot"
+
+	// Group version is not specified here, it is figured out automatically
+	// while the PVC is being created, which can cause issues. Hence we should explicitly
+	// check if group api version is passed in the args, and use that
+	// to create the PVC
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
+	if !args.GroupVersion.Empty() {
+		snapshotAPIGroup = args.GroupVersion.String()
+	}
+
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      args.Labels,
@@ -327,6 +338,9 @@ func labelSelector(labels map[string]string) string {
 
 // zoneToRegion removes -latter or just last latter from provided zone.
 func zoneToRegion(zone string) string {
+	// TODO: gocritic rule below suggests to use regexp.MustCompile but it
+	// panics if regex cannot be compiled. We should add proper test before
+	// enabling this below so that no change to this regex results in a panic
 	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
 	return r.ReplaceAllString(zone, "")
 }

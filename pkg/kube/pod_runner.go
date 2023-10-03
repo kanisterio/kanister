@@ -49,6 +49,16 @@ func NewPodRunner(cli kubernetes.Interface, options *PodOptions) PodRunner {
 	}
 }
 
+// NewPodRunnerWithPodController returns a new PodRunner given PodController object
+// This provides mechanism for passing fake PodControllerProcessor through PodController for testing purposes.
+func NewPodRunnerWithPodController(pc PodController) PodRunner {
+	r := &podRunner{
+		pc: pc,
+	}
+
+	return r
+}
+
 // Run will create a new Pod based on PodRunner contents and execute the given function
 func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *corev1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	return p.RunEx(ctx, func(innerCtx context.Context, pc PodController) (map[string]interface{}, error) {
