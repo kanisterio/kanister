@@ -73,7 +73,6 @@ func updateActionProgress(
 	namespace string,
 	p *kanister.Phase,
 ) (bool, error) {
-
 	actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
 	if err != nil {
 		return false, errors.Wrap(err, "Failed to get actionset")
