@@ -19,8 +19,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/yaml"
 
@@ -32,6 +34,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/postgres"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -64,7 +67,9 @@ const (
 	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.96.0"
 )
 
-type exportRDSSnapshotToLocationFunc struct{}
+type exportRDSSnapshotToLocationFunc struct {
+	progressPercent string
+}
 
 // RDSDBEngine for RDS Engine types
 type RDSDBEngine string
@@ -151,6 +156,10 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 }
 
 func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	crs.progressPercent = progress.StartedPercent
+	defer func() { crs.progressPercent = progress.CompletedPercent }()
+
 	var namespace, instanceID, snapshotID, username, password, dbSubnetGroup, backupArtifact string
 	var dbEngine RDSDBEngine
 
@@ -215,6 +224,14 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 		ExportRDSSnapshotToLocSecGrpIDArg,
 		ExportRDSSnapshotToLocDBSubnetGroupArg,
 	}
+}
+
+func (d *exportRDSSnapshotToLocationFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    d.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile, dbEngineVersion string) (map[string]interface{}, error) {

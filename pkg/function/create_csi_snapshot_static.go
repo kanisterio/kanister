@@ -16,13 +16,17 @@ package function
 
 import (
 	"context"
+	"time"
 
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -59,13 +63,19 @@ const (
 	CreateCSISnapshotStaticOutputSnapshotContentName = "snapshotContent"
 )
 
-type createCSISnapshotStaticFunc struct{}
+type createCSISnapshotStaticFunc struct {
+	progressPercent string
+}
 
 func (*createCSISnapshotStaticFunc) Name() string {
 	return CreateCSISnapshotStaticFuncName
 }
 
-func (*createCSISnapshotStaticFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (c *createCSISnapshotStaticFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	c.progressPercent = progress.StartedPercent
+	defer func() { c.progressPercent = progress.CompletedPercent }()
+
 	var (
 		name, namespace                       string
 		driver, snapshotHandle, snapshotClass string
@@ -157,4 +167,12 @@ func createCSISnapshotStatic(
 	}
 
 	return snapshotter.Get(ctx, name, namespace)
+}
+
+func (c *createCSISnapshotStaticFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    c.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
