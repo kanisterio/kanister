@@ -29,7 +29,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
@@ -315,9 +314,9 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	}, nil
 }
 
-func getKopiaRepositoryCacheSize(rs *crv1alpha1.RepositoryServer) v1alpha1.CacheSizeSettings {
+func getKopiaRepositoryCacheSize(rs *crv1alpha1.RepositoryServer) crv1alpha1.CacheSizeSettings {
 	defaultContentCacheMB, defaultMetadataCacheMB := command.GetGeneralCacheSizeSettings()
-	cacheSizeSettings := v1alpha1.CacheSizeSettings{
+	cacheSizeSettings := crv1alpha1.CacheSizeSettings{
 		Metadata: &defaultMetadataCacheMB,
 		Content:  &defaultContentCacheMB,
 	}

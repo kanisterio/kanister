@@ -37,7 +37,6 @@ import (
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
@@ -346,7 +345,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 
 	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
 	c.Assert(err, NotNil)
-	c.Assert(state, Equals, v1alpha1.Failed)
+	c.Assert(state, Equals, crv1alpha1.Failed)
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
@@ -371,7 +370,7 @@ func (s *RepoServerControllerSuite) TestInvalidStorageLocation(c *C) {
 
 	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
 	c.Assert(err, NotNil)
-	c.Assert(state, Equals, v1alpha1.Failed)
+	c.Assert(state, Equals, crv1alpha1.Failed)
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
@@ -396,7 +395,7 @@ func (s *RepoServerControllerSuite) TestInvalidStorageLocationCredentials(c *C) 
 
 	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
 	c.Assert(err, NotNil)
-	c.Assert(state, Equals, v1alpha1.Failed)
+	c.Assert(state, Equals, crv1alpha1.Failed)
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
@@ -482,7 +481,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 	return err
 }
 
-func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerverName string) (v1alpha1.RepositoryServerProgress, error) {
+func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerverName string) (crv1alpha1.RepositoryServerProgress, error) {
 	ctxTimeout := 5 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()

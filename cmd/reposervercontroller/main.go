@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -140,7 +139,7 @@ func main() {
 	if k8sserverVersion.Major == "1" && minorVersion < minorK8sVersion {
 		if validatingwebhook.IsCACertMounted() {
 			hookServer := mgr.GetWebhookServer()
-			webhook := admission.WithCustomValidator(&v1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
+			webhook := admission.WithCustomValidator(&crv1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
 			hookServer.Register(whHandlePath, webhook)
 			hookServer.CertDir = validatingwebhook.WHCertsDir
 			hookServer.Port = webhookServerPort
