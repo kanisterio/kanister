@@ -17,8 +17,7 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
 	. "gopkg.in/check.v1"
@@ -87,13 +86,15 @@ func (s ClientSuite) TestGetRegions(c *C) {
 
 func (s *ClientSuite) TestGetCredConfig(c *C) {
 	for _, tc := range []struct {
-		env        azure.Environment
+		name       string
+		env        cloud.Configuration
 		config     map[string]string
 		errChecker Checker
-		expCCC     auth.ClientCredentialsConfig
+		expCCC     ClientCredentialsConfig
 	}{
 		{
-			env: azure.PublicCloud,
+			name: "TC1",
+			env:  cloud.AzurePublic,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
 				blockstorage.AzureClientID:            "acid",
@@ -101,7 +102,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 				blockstorage.AzureActiveDirEndpoint:   "aade",
 				blockstorage.AzureActiveDirResourceID: "aadrid",
 			},
-			expCCC: auth.ClientCredentialsConfig{
+			expCCC: ClientCredentialsConfig{
 				ClientID:     "acid",
 				ClientSecret: "acs",
 				TenantID:     "atid",
@@ -111,23 +112,25 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: IsNil,
 		},
 		{
-			env: azure.PublicCloud,
+			name: "TC2",
+			env:  cloud.AzurePublic,
 			config: map[string]string{
 				blockstorage.AzureTenantID:     "atid",
 				blockstorage.AzureClientID:     "acid",
 				blockstorage.AzureClientSecret: "acs",
 			},
-			expCCC: auth.ClientCredentialsConfig{
+			expCCC: ClientCredentialsConfig{
 				ClientID:     "acid",
 				ClientSecret: "acs",
 				TenantID:     "atid",
-				Resource:     azure.PublicCloud.ResourceManagerEndpoint,
-				AADEndpoint:  azure.PublicCloud.ActiveDirectoryEndpoint,
+				Resource:     cloud.AzurePublic.Services[cloud.ResourceManager].Endpoint,
+				AADEndpoint:  cloud.AzurePublic.ActiveDirectoryAuthorityHost,
 			},
 			errChecker: IsNil,
 		},
 		{
-			env: azure.USGovernmentCloud,
+			name: "TC3",
+			env:  cloud.AzureGovernment,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
 				blockstorage.AzureClientID:            "acid",
@@ -135,17 +138,18 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 				blockstorage.AzureActiveDirEndpoint:   "",
 				blockstorage.AzureActiveDirResourceID: "",
 			},
-			expCCC: auth.ClientCredentialsConfig{
+			expCCC: ClientCredentialsConfig{
 				ClientID:     "acid",
 				ClientSecret: "acs",
 				TenantID:     "atid",
-				Resource:     azure.USGovernmentCloud.ResourceManagerEndpoint,
-				AADEndpoint:  azure.USGovernmentCloud.ActiveDirectoryEndpoint,
+				Resource:     cloud.AzureGovernment.Services[cloud.ResourceManager].Endpoint,
+				AADEndpoint:  cloud.AzureGovernment.ActiveDirectoryAuthorityHost,
 			},
 			errChecker: IsNil,
 		},
 		{
-			env: azure.USGovernmentCloud,
+			name: "TC4",
+			env:  cloud.AzureGovernment,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
 				blockstorage.AzureClientID: "acid",
@@ -153,14 +157,16 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: NotNil,
 		},
 		{
-			env: azure.USGovernmentCloud,
+			name: "TC5",
+			env:  cloud.AzureGovernment,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
 			},
 			errChecker: NotNil,
 		},
 		{
-			env:        azure.USGovernmentCloud,
+			name:       "TC6",
+			env:        cloud.AzureGovernment,
 			config:     map[string]string{},
 			errChecker: NotNil,
 		},
