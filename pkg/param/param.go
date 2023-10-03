@@ -300,10 +300,8 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 		return nil, errors.Wrap(err, "Error Fetching Repository Server Service")
 	}
 	repositoryServerAddress := fmt.Sprintf("https://%s.%s.%s:%d", repositoryServerService.Name, repositoryServerService.Namespace, clusterLocalDomain, repositoryServerService.Spec.Ports[0].Port)
-	contentCacheMB, metadataCacheMB, err := getKopiaRepositoryCacheSize(r)
-	if err != nil {
-		return nil, err
-	}
+	cacheSizeSettings := getKopiaRepositoryCacheSize(r)
+
 	return &RepositoryServer{
 		Name:            r.Name,
 		Namespace:       r.Namespace,
@@ -311,27 +309,24 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 		Username:        r.Spec.Server.UserAccess.Username,
 		Credentials:     repoServerSecrets,
 		Address:         repositoryServerAddress,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
+		ContentCacheMB:  *cacheSizeSettings.Content,
+		MetadataCacheMB: *cacheSizeSettings.Metadata,
 	}, nil
 }
 
-func getKopiaRepositoryCacheSize(rs *crv1alpha1.RepositoryServer) (int, int, error) {
-	var err error
-	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
-	if rs.Spec.Repository.CacheSizeSettings.Content != "" {
-		contentCacheMB, err = strconv.Atoi(rs.Spec.Repository.CacheSizeSettings.Content)
-		if err != nil {
-			return 0, 0, errors.Wrap(err, "Error Parsing Content Cache Size")
-		}
+func getKopiaRepositoryCacheSize(rs *crv1alpha1.RepositoryServer) crv1alpha1.CacheSizeSettings {
+	defaultContentCacheMB, defaultMetadataCacheMB := command.GetGeneralCacheSizeSettings()
+	cacheSizeSettings := crv1alpha1.CacheSizeSettings{
+		Metadata: &defaultMetadataCacheMB,
+		Content:  &defaultContentCacheMB,
 	}
-	if rs.Spec.Repository.CacheSizeSettings.Metadata != "" {
-		metadataCacheMB, err = strconv.Atoi(rs.Spec.Repository.CacheSizeSettings.Metadata)
-		if err != nil {
-			return 0, 0, errors.Wrap(err, "Error Parsing Metadata Cache Size")
-		}
+	if rs.Spec.Repository.CacheSizeSettings.Content != nil {
+		cacheSizeSettings.Content = rs.Spec.Repository.CacheSizeSettings.Content
 	}
-	return contentCacheMB, metadataCacheMB, nil
+	if rs.Spec.Repository.CacheSizeSettings.Metadata != nil {
+		cacheSizeSettings.Metadata = rs.Spec.Repository.CacheSizeSettings.Metadata
+	}
+	return cacheSizeSettings
 }
 
 func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1.Credential) (*Credential, error) {

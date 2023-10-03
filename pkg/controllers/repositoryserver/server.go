@@ -75,7 +75,6 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 	if err != nil {
 		return errors.Wrap(err, "Failed to check Kopia API server status")
 	}
-
 	return nil
 }
 
@@ -230,7 +229,7 @@ func (h *RepoServerHandler) getRepositoryServerStartTimeout() time.Duration {
 	if serverStartTimeoutEnv != "" {
 		serverStartTimeout, err := time.ParseDuration(serverStartTimeoutEnv)
 		if err != nil {
-			h.Logger.Info("Error parsing env variable", err)
+			h.Logger.Info("Error parsing env variable", "error", err)
 			return DefaultServerStartTimeout
 		}
 		return serverStartTimeout * time.Second

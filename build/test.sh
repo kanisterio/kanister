@@ -58,6 +58,7 @@ check_dependencies() {
         export S3_COMPLIANT_AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
         export S3_COMPLIANT_AWS_REGION="us-west-2"
         export S3_COMPLIANT_LOCATION_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
+        export TEST_REPOSITORY_ENCRYPTION_KEY="testKopiaRepoPassword"
     else
         echo "Please install MinIO using 'make install-minio' and try again."
         exit 1

@@ -15,12 +15,7 @@
 package kando
 
 import (
-	"context"
-
 	"github.com/spf13/cobra"
-
-	"github.com/kanisterio/kanister/pkg/location"
-	"github.com/kanisterio/kanister/pkg/param"
 )
 
 func newLocationDeleteCommand() *cobra.Command {
@@ -41,8 +36,4 @@ func newLocationDeleteCommand() *cobra.Command {
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
 	return cmd
-}
-
-func locationDelete(ctx context.Context, p *param.Profile, path string) error {
-	return location.Delete(ctx, *p, path)
 }

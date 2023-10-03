@@ -29,6 +29,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/postgres"
 )
 
 func init() {
@@ -221,20 +222,8 @@ func findSecurityGroupIDs(ctx context.Context, rdsCli *rds.RDS, instanceID, dbEn
 }
 
 //nolint:unparam
-func postgresRestoreCommand(
-	pgHost,
-	username,
-	password string,
-	dbList []string,
-	backupArtifactPrefix,
-	backupID string,
-	profile []byte,
-	dbEngineVersion string,
-) ([]string, error) {
+func postgresRestoreCommand(pgHost, username, password string, backupArtifactPrefix, backupID string, profile []byte, dbEngineVersion string) ([]string, error) {
 	replaceCommand := ""
-	if len(dbList) == 0 {
-		return nil, errors.New("No database found. Atleast one db needed to connect")
-	}
 
 	// check if PostgresDB version < 13
 	v1, err := version.NewVersion(dbEngineVersion)
@@ -261,7 +250,7 @@ func postgresRestoreCommand(
 		fmt.Sprintf(`
 		export PGHOST=%s
 		kando location pull --profile '%s' --path "%s" - | gunzip -c -f |%s psql -q -U "${PGUSER}" %s
-		`, pgHost, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID), replaceCommand, dbList[0]),
+		`, pgHost, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID), replaceCommand, postgres.DefaultConnectDatabase),
 	}, nil
 }
 

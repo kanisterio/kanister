@@ -21,17 +21,22 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
+
+// maximum concurrent reconcilations that can be triggered by the controller
+const maxConcurrentReconciles = 3
 
 // RepositoryServerReconciler reconciles a RepositoryServer object
 type RepositoryServerReconciler struct {
@@ -80,35 +85,41 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
 	repoServerHandler.RepositoryServer = repositoryServer
-
+	repoServerHandler.RepositoryServer.Status.Progress = crv1alpha1.Pending
+	repoServerHandler.RepositoryServer.Status.Conditions = nil
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	logger.Info("Create or update owned resources by Repository Server CR")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
-		logger.Info("Setting the CR status as 'Failed' since an error occurred in create/update event")
-		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crv1alpha1.Failed); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonServerSetupErr, err.Error(), crv1alpha1.ServerSetup)
+		if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
-		r.Recorder.Event(repoServerHandler.RepositoryServer, corev1.EventTypeWarning, "Failed", err.Error())
 		return ctrl.Result{}, err
+	}
+	condition := getCondition(metav1.ConditionTrue, conditionReasonServerSetupSuccess, "", crv1alpha1.ServerSetup)
+	if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Pending); uerr != nil {
+		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
-		if uerr := repoServerHandler.updateRepoServerProgress(ctx, crv1alpha1.Failed); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonRepositoryConnectedErr, err.Error(), crv1alpha1.RepositoryConnected)
+		if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	if result, err := repoServerHandler.setupKopiaRepositoryServer(ctx, logger); err != nil {
-		return result, err
+	condition = getCondition(metav1.ConditionTrue, conditionReasonRepositoryConnectedSuccess, "", crv1alpha1.RepositoryConnected)
+	if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Pending); uerr != nil {
+		return ctrl.Result{}, uerr
 	}
 
-	if uerr := repoServerHandler.updateRepoServerProgress(ctx, crv1alpha1.Ready); uerr != nil {
-		return ctrl.Result{}, uerr
+	if result, err := repoServerHandler.setupKopiaRepositoryServer(ctx, logger); err != nil {
+		return result, err
 	}
 
 	return ctrl.Result{}, nil
@@ -132,10 +143,13 @@ func newRepositoryServerHandler(
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	opts := controller.Options{
+		MaxConcurrentReconciles: maxConcurrentReconciles,
+	}
 	// The 'Owns' function allows the controller to set owner refs on
 	// child resources and run the same reconcile loop for all events on child resources
 	r.Recorder = mgr.GetEventRecorderFor("RepositoryServer")
-	return ctrl.NewControllerManagedBy(mgr).
+	return ctrl.NewControllerManagedBy(mgr).WithOptions(opts).
 		For(&crv1alpha1.RepositoryServer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&corev1.Service{}).
 		Owns(&networkingv1.NetworkPolicy{}).
