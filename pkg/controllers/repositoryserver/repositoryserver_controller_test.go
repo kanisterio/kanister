@@ -16,6 +16,7 @@ package repositoryserver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -28,6 +29,7 @@ import (
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
@@ -64,6 +66,13 @@ type RepoServerControllerSuite struct {
 	DefaultRepoServerReconciler   *RepositoryServerReconciler
 	cancel                        context.CancelFunc
 	k8sServerVersion              *version.Info
+}
+
+// patchStringValue specifies a patch operation for a string.
+type patchStringValue struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value string `json:"value"`
 }
 
 var _ = Suite(&RepoServerControllerSuite{})
@@ -140,6 +149,8 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 		// We need to set this up since we are not creating controller in a pod
 		os.Setenv("HOSTNAME", controllerPodName)
 		os.Setenv("POD_SERVICE_ACCOUNT", defaultServiceAccount)
+		// Set KANISTER_TOOLS env to override and use dev image
+		os.Setenv(consts.KanisterToolsImageEnvName, consts.LatestKanisterToolsImage)
 		err = mgr.Start(ctx)
 		c.Assert(err, IsNil)
 	}(ctx)
@@ -212,17 +223,24 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 	if s.k8sServerVersion.Major == "1" && minorVersion < 25 {
 		c.Skip("skipping the test since CRD validation rules feature is enabled only after k8s version 1.25")
 	}
-	// Create a repository server CR.
+
+	ctx := context.Background()
+
 	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
 
-	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(context.Background(), &repoServerCR, metav1.CreateOptions{})
+	// Create a repository server CR
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
-	// Update the repository server CR's Immutable field.
-	repoServerCRCreated.Spec.Repository.RootPath = "/updated-test-path/"
-	_, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Update(context.Background(), repoServerCRCreated, metav1.UpdateOptions{})
-	// Expect an error.
+	//Update the repository server CR's Immutable field.
+	patch := []patchStringValue{{
+		Op:    "replace",
+		Path:  "/spec/repository/rootPath",
+		Value: "/updated-test-path/",
+	}}
+	patchBytes, _ := json.Marshal(patch)
+	_, err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Patch(ctx, repoServerCRCreated.Name, types.JSONPatchType, patchBytes, metav1.PatchOptions{})
 	c.Assert(err, NotNil)
 
 	// Check Error Message
@@ -230,7 +248,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerImmutability(c *C) {
 	c.Assert(err.Error(), Equals, expectedErrorMessage)
 
 	// Delete the repository server CR.
-	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
+	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(ctx, repoServerCRCreated.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
@@ -314,59 +332,74 @@ func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
 
 func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *C) {
 	ctx := context.Background()
-	originalrepoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
-	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &originalrepoServerCR)
-	for _, tc := range []struct {
-		description  string
-		testFunction func(rs *v1alpha1.RepositoryServer)
-	}{
-		{
-			description: "Invalid Repository Password",
-			testFunction: func(rs *v1alpha1.RepositoryServer) {
-				InvalidRepositoryPassword, err := s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData("invalidPassword"))
-				c.Assert(err, IsNil)
+	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
 
-				rs.Spec.Repository.PasswordSecretRef.Name = InvalidRepositoryPassword.Name
-				rs.Spec.Repository.PasswordSecretRef.Namespace = InvalidRepositoryPassword.Namespace
-			},
-		},
-		{
-			description: "Invalid Storage Location",
-			testFunction: func(rs *v1alpha1.RepositoryServer) {
-				storageLocationData := testutil.GetDefaultS3CompliantStorageLocation()
-				storageLocationData[repositoryserver.BucketKey] = []byte("invalidbucket")
+	InvalidRepositoryPassword, err := s.CreateRepositoryPasswordSecret(testutil.GetRepoPasswordSecretData("invalidPassword"))
+	c.Assert(err, IsNil)
 
-				InvalidStorageLocationSecret, err := s.CreateStorageLocationSecret(storageLocationData)
-				c.Assert(err, IsNil)
+	repoServerCR.Spec.Repository.PasswordSecretRef.Name = InvalidRepositoryPassword.Name
+	repoServerCR.Spec.Repository.PasswordSecretRef.Namespace = InvalidRepositoryPassword.Namespace
 
-				rs.Spec.Storage.SecretRef.Name = InvalidStorageLocationSecret.Name
-				rs.Spec.Storage.SecretRef.Namespace = InvalidStorageLocationSecret.Namespace
-			},
-		},
-		{
-			description: "Invalid Storage location credentials",
-			testFunction: func(rs *v1alpha1.RepositoryServer) {
-				storageLocationCredsData := testutil.GetDefaultS3StorageCreds(c)
-				storageLocationCredsData[secrets.AWSAccessKeyID] = []byte("testaccesskey")
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
 
-				InvalidStorageLocationCrdesSecret, err := s.CreateStorageLocationSecret(storageLocationCredsData)
-				c.Assert(err, IsNil)
+	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	c.Assert(err, NotNil)
+	c.Assert(state, Equals, v1alpha1.Failed)
 
-				rs.Spec.Storage.CredentialSecretRef.Name = InvalidStorageLocationCrdesSecret.Name
-				rs.Spec.Storage.CredentialSecretRef.Namespace = InvalidStorageLocationCrdesSecret.Namespace
-			},
-		},
-	} {
-		invalidCR := originalrepoServerCR
-		tc.testFunction(&invalidCR)
+	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+}
 
-		repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &invalidCR, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
+func (s *RepoServerControllerSuite) TestInvalidStorageLocation(c *C) {
+	ctx := context.Background()
+	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
 
-		state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
-		c.Assert(err, NotNil)
-		c.Assert(state, Equals, v1alpha1.Failed)
-	}
+	storageLocationData := testutil.GetDefaultS3CompliantStorageLocation()
+	storageLocationData[repositoryserver.BucketKey] = []byte("invalidbucket")
+
+	InvalidStorageLocationSecret, err := s.CreateStorageLocationSecret(storageLocationData)
+	c.Assert(err, IsNil)
+
+	repoServerCR.Spec.Storage.SecretRef.Name = InvalidStorageLocationSecret.Name
+	repoServerCR.Spec.Storage.SecretRef.Namespace = InvalidStorageLocationSecret.Namespace
+
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	c.Assert(err, NotNil)
+	c.Assert(state, Equals, v1alpha1.Failed)
+
+	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+}
+
+func (s *RepoServerControllerSuite) TestInvalidStorageLocationCredentials(c *C) {
+	ctx := context.Background()
+	repoServerCR := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repoServerCR)
+
+	storageLocationCredsData := testutil.GetDefaultS3StorageCreds(c)
+	storageLocationCredsData[secrets.AWSAccessKeyID] = []byte("testaccesskey")
+
+	InvalidStorageLocationCrdesSecret, err := s.CreateAWSStorageCredentialsSecret(storageLocationCredsData)
+	c.Assert(err, IsNil)
+
+	repoServerCR.Spec.Storage.CredentialSecretRef.Name = InvalidStorageLocationCrdesSecret.Name
+	repoServerCR.Spec.Storage.CredentialSecretRef.Namespace = InvalidStorageLocationCrdesSecret.Namespace
+
+	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	c.Assert(err, NotNil)
+	c.Assert(state, Equals, v1alpha1.Failed)
+
+	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
 }
 
 func (s *RepoServerControllerSuite) TestFilestoreLocationVolumeMountOnRepoServerPod(c *C) {
@@ -417,6 +450,9 @@ func (s *RepoServerControllerSuite) TestFilestoreLocationVolumeMountOnRepoServer
 		}
 	}
 	c.Assert(volumeattached, Equals, true)
+
+	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
 }
 
 func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerName string) error {
@@ -447,7 +483,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 }
 
 func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerverName string) (v1alpha1.RepositoryServerProgress, error) {
-	ctxTimeout := 15 * time.Minute
+	ctxTimeout := 5 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 	var repoServerState v1alpha1.RepositoryServerProgress
@@ -517,6 +553,8 @@ func getTestKanisterToolsPod(podName string) (pod *v1.Pod) {
 }
 
 func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
+	err := os.Unsetenv(consts.KanisterToolsImageEnvName)
+	c.Assert(err, IsNil)
 	if s.repoServerControllerNamespace != "" {
 		err := s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.repoServerControllerNamespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)

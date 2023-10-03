@@ -15,6 +15,7 @@
 package function
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -25,6 +26,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -65,46 +67,80 @@ func (*deleteDataFunc) Name() string {
 	return DeleteDataFuncName
 }
 
-func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func deleteData(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	reclaimSpace bool,
+	namespace,
+	encryptionKey string,
+	targetPaths,
+	deleteTags,
+	deleteIdentifiers []string,
+	jobPrefix string,
+	podOverride crv1alpha1.JSONMap,
+) (map[string]interface{}, error) {
+	if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
+		return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
+	}
+
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        getKanisterToolsImage(),
+		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := deleteDataPodFunc(cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
-	return pr.Run(ctx, podFunc)
+	podFunc := deleteDataPodFunc(tp, reclaimSpace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
+	return pr.RunEx(ctx, podFunc)
 }
 
 //nolint:gocognit
-func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func deleteDataPodFunc(
+	tp param.TemplateParams,
+	reclaimSpace bool,
+	encryptionKey string,
+	targetPaths,
+	deleteTags,
+	deleteIdentifiers []string,
+) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+		pod := pc.Pod()
+
 		// Wait for pod to reach running state
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
+		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
-		if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
-			return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
-		}
-		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+
+		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
 			return nil, err
 		}
-		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+
+		// Parent context could already be dead, so removing file within new context
+		defer remover.Remove(context.Background()) //nolint:errcheck
+
+		// Get command executor
+		podCommandExecutor, err := pc.GetCommandExecutor()
+		if err != nil {
+			return nil, err
+		}
+
 		for i, deleteTag := range deleteTags {
 			cmd, err := restic.SnapshotsCommandByTag(tp.Profile, targetPaths[i], deleteTag, encryptionKey)
 			if err != nil {
 				return nil, err
 			}
-			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+			var stdout, stderr bytes.Buffer
+			err = podCommandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
 			}
-			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout)
+			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout.String())
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
 			}
@@ -116,14 +152,16 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 			if err != nil {
 				return nil, err
 			}
-			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+			var stdout, stderr bytes.Buffer
+			err = podCommandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data")
 			}
 			if reclaimSpace {
-				spaceFreedStr, err := pruneData(cli, tp, pod, namespace, encryptionKey, targetPaths[i])
+				spaceFreedStr, err := pruneData(tp, pod, podCommandExecutor, encryptionKey, targetPaths[i])
 				if err != nil {
 					return nil, errors.Wrapf(err, "Error executing prune command")
 				}
@@ -137,15 +175,24 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 	}
 }
 
-func pruneData(cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, namespace, encryptionKey, targetPath string) (string, error) {
+func pruneData(
+	tp param.TemplateParams,
+	pod *v1.Pod,
+	podCommandExecutor kube.PodCommandExecutor,
+	encryptionKey,
+	targetPath string,
+) (string, error) {
 	cmd, err := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
 	if err != nil {
 		return "", err
 	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
-	spaceFreed := restic.SpaceFreedFromPruneLog(stdout)
+
+	var stdout, stderr bytes.Buffer
+	err = podCommandExecutor.Exec(context.Background(), cmd, nil, &stdout, &stderr)
+	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+
+	spaceFreed := restic.SpaceFreedFromPruneLog(stdout.String())
 	return spaceFreed, errors.Wrapf(err, "Failed to prune data after forget")
 }
 

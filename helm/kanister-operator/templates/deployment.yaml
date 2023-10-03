@@ -15,7 +15,7 @@ spec:
 {{ include "kanister-operator.helmLabels" . | indent 8}}
     spec:
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
-{{- if .Values.bpValidatingWebhook.enabled }}
+{{- if or .Values.bpValidatingWebhook.enabled .Values.validatingWebhook.repositoryserver.enabled }}
       volumes:
         - name: webhook-certs
           secret:
@@ -41,6 +41,8 @@ spec:
           value: {{ .Values.controller.logLevel }}
         - name: DATA_STORE_PARALLEL_UPLOAD
           value: {{ .Values.controller.parallelism | quote }}
+        - name: KANISTER_METRICS_ENABLED
+          value: {{ .Values.controller.metrics.enabled | quote }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
@@ -49,6 +51,11 @@ spec:
       - name: {{ template "repository-server-controller.name" . }}
         image: {{ .Values.repositoryServerControllerImage.registry }}/{{ .Values.repositoryServerControllerImage.name }}:{{ .Values.repositoryServerControllerImage.tag }}
         imagePullPolicy: {{ .Values.repositoryServerControllerImage.pullPolicy }}
+{{- if .Values.validatingWebhook.repositoryserver.enabled }}
+        volumeMounts:
+          - name: webhook-certs
+            mountPath: /var/run/webhook/serving-cert
+{{- end }}
         env:
         - name: KOPIA_SERVER_START_TIMEOUT
           value: {{ .Values.repositoryServerController.serverStartTimeout | quote }}
@@ -56,6 +63,10 @@ spec:
           value: {{ .Values.repositoryServerController.logLevel }}
         - name: CREATEORUPDATE_CRDS
           value: {{ .Values.controller.updateCRDs | quote }}
+{{- if .Values.kanisterToolsImage.override }}
+        - name: KANISTER_TOOLS
+          value: {{ include "kanister-tools.image" . }}
+{{- end }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}

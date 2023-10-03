@@ -59,6 +59,21 @@ const (
 	tlsCertDefaultMountPath = "/mnt/secrets/tlscert"
 	tlsKeyPath              = "/mnt/secrets/tlscert/tls.key"
 	tlsCertPath             = "/mnt/secrets/tlscert/tls.crt"
+
+	conditionReasonServerSetupErr     string = "KopiaRepositoryServerSetupFailed"
+	conditionReasonServerSetupSuccess string = "KopiaRepositoryServerSetupSucceeded"
+
+	conditionReasonRepositoryConnectedErr     string = "KopiaRepositoryConnectionFailed"
+	conditionReasonRepositoryConnectedSuccess string = "KopiaRepositoryConnectionSucceeded"
+
+	conditionReasonServerInitializedErr     string = "KopiaRepositoryServerInitializationFailed"
+	conditionReasonServerInitializedSuccess string = "KopiaRepositoryServerInitializationSucceeded"
+
+	conditionReasonClientInitializedErr     string = "ClientInitializationFailed"
+	conditionReasonClientInitializedSuccess string = "ClientInitializationSucceeded"
+
+	conditionReasonServerRefreshedErr     string = "ServerRefreshFailed"
+	conditionReasonServerRefreshedSuccess string = "ServerRefreshed"
 )
 
 func getRepoServerService(namespace string) corev1.Service {
@@ -141,7 +156,7 @@ func volumeSpecForName(podSpec corev1.PodSpec, podOverride map[string]interface{
 	}
 }
 
-func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, tlsCertSecretName string) error {
+func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, tlsCertSecretName string, po *kube.PodOptions) error {
 	podSpecBytes, err := json.Marshal(*podOverride)
 	if err != nil {
 		return errors.Wrap(err, "Failed to marshal Pod Override")
@@ -163,7 +178,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 
 	if len(podOverrideSpec.Containers) == 0 {
 		podOverrideSpec.Containers = append(podOverrideSpec.Containers, corev1.Container{
-			Name: "container",
+			Name: kube.ContainerNameFromPodOptsOrDefault(po),
 		})
 	}
 
@@ -184,16 +199,15 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	return nil
 }
 
-func getPodOptions(namespace string, podOverride map[string]interface{}, svc *corev1.Service, vols map[string]string) *kube.PodOptions {
+func getPodOptions(namespace string, svc *corev1.Service, vols map[string]string) *kube.PodOptions {
 	uidguid := int64(0)
 	nonRootBool := false
 	return &kube.PodOptions{
 		Namespace:     namespace,
 		GenerateName:  fmt.Sprintf("%s-", repoServerPod),
-		Image:         consts.KanisterToolsImage,
+		Image:         consts.GetKanisterToolsImage(),
 		ContainerName: repoServerPodContainerName,
 		Command:       []string{"bash", "-c", "tail -f /dev/null"},
-		PodOverride:   podOverride,
 		Labels:        map[string]string{repoServerServiceNameKey: svc.Name},
 		PodSecurityContext: &corev1.PodSecurityContext{
 			RunAsUser:    &uidguid,
@@ -228,6 +242,15 @@ func WaitTillCommandSucceed(ctx context.Context, cli kubernetes.Interface, cmd [
 		return true, nil
 	})
 	return err
+}
+
+func getCondition(status metav1.ConditionStatus, reason string, message string, conditionType string) metav1.Condition {
+	return metav1.Condition{
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+		Type:    conditionType,
+	}
 }
 
 func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Secret, namespace string) (map[string]string, error) {
