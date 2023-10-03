@@ -41,3 +41,11 @@ updates:
     open-pull-requests-limit: 3
     schedule:
       interval: daily
+    groups:
+      github-actions:
+        patterns:
+        - "^actions/*"
+        - "^github/codeql-action"
+      docker:
+        patterns:
+        - "docker/*"
