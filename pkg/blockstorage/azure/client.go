@@ -20,10 +20,10 @@ package azure
 
 import (
 	"context"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/pkg/errors"
@@ -131,7 +131,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	}, nil
 }
 
-func getCredConfig(env azure.Environment, config map[string]string) (ClientCredentialsConfig, error) {
+func getCredConfig(conf cloud.Configuration, config map[string]string) (ClientCredentialsConfig, error) {
 	credConfig, err := getCredConfigForAuth(config)
 	if err != nil {
 		return ClientCredentialsConfig{}, err
@@ -140,12 +140,12 @@ func getCredConfig(env azure.Environment, config map[string]string) (ClientCrede
 	//Todo: Find alternatives to azure.Environment
 	var ok bool
 	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok || credConfig.AADEndpoint == "" {
-		credConfig.AADEndpoint = env.ActiveDirectoryEndpoint
+		credConfig.AADEndpoint = conf.ActiveDirectoryAuthorityHost
 		config[blockstorage.AzureActiveDirEndpoint] = credConfig.AADEndpoint
 	}
 
 	if credConfig.Resource, ok = config[blockstorage.AzureActiveDirResourceID]; !ok || credConfig.Resource == "" {
-		credConfig.Resource = env.ResourceManagerEndpoint
+		credConfig.Resource = conf.Services[cloud.ResourceManager].Endpoint
 		config[blockstorage.AzureActiveDirResourceID] = credConfig.Resource
 	}
 
