@@ -55,7 +55,10 @@ func NewPodRunnerWithPodController(pc PodController) PodRunner {
 }
 
 // Run will create a new Pod based on PodRunner contents and execute the given function
-func (p *podRunner) Run(ctx context.Context, fn func(context.Context, PodController) (map[string]interface{}, error)) (map[string]interface{}, error) {
+func (p *podRunner) Run(
+	ctx context.Context,
+	fn func(context.Context, PodController) (map[string]interface{}, error),
+) (map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
