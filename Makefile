@@ -30,9 +30,6 @@ REGISTRY ?= kanisterio
 # Which architecture to build - see $(ALL_ARCH) for options.
 ARCH ?= amd64
 
-# Which platform to build.
-PLATFORM ?= linux/$(ARCH)
-
 # This version-strategy uses git tags to set the version string
 VERSION := $(shell git describe --tags --always --dirty)
 #
@@ -43,8 +40,6 @@ PWD := $$(pwd)
 
 # Whether to build inside a containerized build environment
 DOCKER_BUILD ?= "true"
-
-DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
@@ -64,11 +59,6 @@ ALL_ARCH := amd64 arm arm64 ppc64le
 IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
-
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.24
-
-# tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
-DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
@@ -103,40 +93,25 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 build: bin/$(ARCH)/$(BIN)
 
 build-controller:
-	@$(MAKE) run CMD='-c " \
+	@$(MAKE) run CMD=" \
 	goreleaser build --id $(BIN) --rm-dist --debug --snapshot \
 	&& cp dist/$(BIN)_linux_$(ARCH)_*/$(BIN) bin/$(ARCH)/$(BIN) \
-	"'
+	"
 
 bin/$(ARCH)/$(BIN):
 	@echo "building: $@"
-	@$(MAKE) run CMD='-c " \
+	@$(MAKE) run CMD=" \
 		GOARCH=$(ARCH)       \
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
 		BIN=$(BIN) \
 		GOBORING=$(GOBORING) \
 		./build/build.sh   \
-	"'
+	"
 # Example: make shell CMD="-c 'date > datefile'"
 shell: build-dirs
 	@echo "launching a shell in the containerized build environment"
-	@docker run                                      \
-		--platform $(PLATFORM)                       \
-		-ti                                          \
-		--rm                                         \
-		--privileged                                 \
-		--net host                                   \
-		-v "$(PWD)/.go/pkg:/go/pkg"                  \
-		-v "$(PWD)/.go/cache:/go/.cache"             \
-		-v "${HOME}/.kube:/root/.kube"               \
-		-v "$(PWD):/go/src/$(PKG)"                   \
-		-v "$(PWD)/bin/$(ARCH):/go/bin"              \
-		-v "$(DOCKER_CONFIG):/root/.docker"          \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-w /go/src/$(PKG)                            \
-		$(BUILD_IMAGE)                               \
-		/bin/sh
+	@PWD=$(PWD) ARCH=$(ARCH) PKG=$(PKG) GITHUB_TOKEN=$(GITHUB_TOKEN) CMD="/bin/bash $(CMD)" /bin/bash ./build/run_container.sh shell
 
 DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
 
@@ -180,22 +155,22 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 	@kubectl apply -f .deploy-$(DOTFILE_IMAGE)
 
 test: build-dirs
-	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
+	@$(MAKE) run CMD="./build/test.sh $(SRC_DIRS)"
 
 helm-test: build-dirs
-	@$(MAKE) run CMD='-c "./build/helm-test.sh $(SRC_DIRS)"'
+	@$(MAKE) run CMD="./build/helm-test.sh $(SRC_DIRS)"
 
 integration-test: build-dirs
-	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
+	@$(MAKE) run CMD="./build/integration-test.sh short"
 
 openshift-test:
 	@/bin/bash ./build/integration-test.sh openshift $(ocp_version)
 
 golint:
-	@$(MAKE) run CMD='-c "./build/golint.sh"'
+	@$(MAKE) run CMD="./build/golint.sh"
 
 codegen:
-	@$(MAKE) run CMD='-c "./build/codegen.sh"'
+	@$(MAKE) run CMD="./build/codegen.sh"
 
 DOCS_CMD = "cd docs && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
@@ -205,14 +180,7 @@ DOCS_CMD = "cd docs && make clean &&          \
 docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running DOCS_CMD in the containerized build environment"
-	@docker run             \
-		--platform $(PLATFORM) \
-		--entrypoint ''     \
-		--rm                \
-		-v "$(PWD):/repo"   \
-		-w /repo            \
-		$(DOCS_BUILD_IMAGE) \
-		/bin/bash -c $(DOCS_CMD)
+	PWD=$(PWD) ARCH=$(ARCH) CMD=$(DOCS_CMD) /bin/bash ./build/run_container.sh docs
 else
 	@/bin/bash -c $(DOCS_CMD)
 endif
@@ -227,14 +195,7 @@ API_DOCS_CMD = "gen-crd-api-reference-docs 			\
 crd_docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running API_DOCS_CMD in the containerized build environment"
-	@docker run             \
-		--platform $(PLATFORM) \
-		--entrypoint ''     \
-		--rm                \
-		-v "$(PWD):/repo"   \
-		-w /repo            \
-		$(BUILD_IMAGE) \
-		/bin/bash -c $(API_DOCS_CMD)
+	PWD=$(PWD) ARCH=$(ARCH) CMD=$(API_DOCS_CMD) /bin/bash ./build/run_container.sh crd_docs
 else
 	@/bin/bash -c $(API_DOCS_CMD)
 endif
@@ -246,22 +207,7 @@ build-dirs:
 run: build-dirs
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
-	@docker run                                                     \
-		--platform $(PLATFORM)                                      \
-		--rm                                                        \
-		--net host                                                  \
-		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                             \
-		-v "${HOME}/.kube:/root/.kube"                              \
-		-v "$(PWD)/.go/pkg:/go/pkg"                                 \
-		-v "$(PWD)/.go/cache:/go/.cache"                            \
-		-v "$(PWD):/go/src/$(PKG)"                                  \
-		-v "$(PWD)/bin/$(ARCH):/go/bin"                             \
-		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)" \
-		-v "$(DOCKER_CONFIG):/root/.docker"                         \
-		-v /var/run/docker.sock:/var/run/docker.sock                \
-		-w /go/src/$(PKG)                                           \
-		$(BUILD_IMAGE)                                              \
-		/bin/bash $(CMD)
+	@PWD=$(PWD) ARCH=$(ARCH) PKG=$(PKG) GITHUB_TOKEN=$(GITHUB_TOKEN) CMD="/bin/bash $(CMD)" /bin/bash ./build/run_container.sh build
 else
 	@/bin/bash $(CMD)
 endif
@@ -292,28 +238,28 @@ release-helm:
 	@/bin/bash ./build/release_helm.sh $(VERSION)
 
 gorelease:
-	@$(MAKE) run CMD='-c "./build/gorelease.sh"'
+	@$(MAKE) run CMD="./build/gorelease.sh"
 
 release-snapshot:
-	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot --timeout=60m0s"'
+	@$(MAKE) run CMD="GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot --timeout=60m0s"
 
 go-mod-download:
-	@$(MAKE) run CMD='-c "go mod download"'
+	@$(MAKE) run CMD="go mod download"
 
 start-kind:
-	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh start_localkube"'
+	@$(MAKE) run CMD="./build/local_kubernetes.sh start_localkube"
 
 tiller:
 	@/bin/bash ./build/init_tiller.sh
 
 install-minio:
-	@$(MAKE) run CMD='-c "./build/minio.sh install_minio"'
+	@$(MAKE) run CMD="./build/minio.sh install_minio"
 
 install-csi-hostpath-driver:
-	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh install_csi_hostpath_driver"'
+	@$(MAKE) run CMD="./build/local_kubernetes.sh install_csi_hostpath_driver"
 
 uninstall-minio:
-	@$(MAKE) run CMD='-c "./build/minio.sh uninstall_minio"'
+	@$(MAKE) run CMD="./build/minio.sh uninstall_minio"
 
 start-minishift:
 	@/bin/bash ./build/minishift.sh start_minishift $(vm-driver)
@@ -322,21 +268,21 @@ stop-minishift:
 	@/bin/bash ./build/minishift.sh stop_minishift
 
 stop-kind:
-	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
+	@$(MAKE) run CMD="./build/local_kubernetes.sh stop_localkube"
 
 check:
 	@./build/check.sh
 
 go-mod-tidy:
-	@$(MAKE) run CMD='-c "./build/gomodtidy.sh"'
+	@$(MAKE) run CMD="./build/gomodtidy.sh"
 
 
 install-crds: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	@$(MAKE) run CMD='-c "kubectl apply -f pkg/customresource/"'
+	@$(MAKE) run CMD="kubectl apply -f pkg/customresource/"
 
 uninstall-crds: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	@$(MAKE) run CMD='-c "kubectl delete -f pkg/customresource/"'
+	@$(MAKE) run CMD="kubectl delete -f pkg/customresource/"
 
 manifests: ## Generates CustomResourceDefinition objects.
-	@$(MAKE) run CMD='-c "./build/generate_crds.sh ${CONTROLLER_TOOLS_VERSION}"'
+	@$(MAKE) run CMD="./build/generate_crds.sh ${CONTROLLER_TOOLS_VERSION}"
 
