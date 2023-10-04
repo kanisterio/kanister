@@ -207,7 +207,7 @@ build-dirs:
 run: build-dirs
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
-	@PWD=$(PWD) ARCH=$(ARCH) PKG=$(PKG) GITHUB_TOKEN=$(GITHUB_TOKEN) CMD="/bin/bash $(CMD)" /bin/bash ./build/run_container.sh build
+	@PWD=$(PWD) ARCH=$(ARCH) PKG=$(PKG) GITHUB_TOKEN=$(GITHUB_TOKEN) CMD="$(CMD)" /bin/bash ./build/run_container.sh build
 else
 	@/bin/bash $(CMD)
 endif
