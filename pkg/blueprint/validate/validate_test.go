@@ -438,7 +438,9 @@ func blueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-type nonDefaultVersionFunc struct{}
+type nonDefaultVersionFunc struct {
+	progressPercent string
+}
 
 func (nd *nonDefaultVersionFunc) Name() string {
 	return "NonDefaultVersionFunc"
@@ -453,7 +455,13 @@ func (nd *nonDefaultVersionFunc) Arguments() []string {
 }
 
 func (nd *nonDefaultVersionFunc) Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error) {
+	nd.progressPercent = "0"
+	defer func() { nd.progressPercent = "100" }()
 	return nil, nil
+}
+
+func (nd *nonDefaultVersionFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	return crv1alpha1.PhaseProgress{ProgressPercent: nd.progressPercent}, nil
 }
 
 var _ kanister.Func = (*nonDefaultVersionFunc)(nil)

@@ -30,6 +30,9 @@ REGISTRY ?= kanisterio
 # Which architecture to build - see $(ALL_ARCH) for options.
 ARCH ?= amd64
 
+# Which platform to build.
+PLATFORM ?= linux/$(ARCH)
+
 # This version-strategy uses git tags to set the version string
 VERSION := $(shell git describe --tags --always --dirty)
 #
@@ -119,6 +122,7 @@ bin/$(ARCH)/$(BIN):
 shell: build-dirs
 	@echo "launching a shell in the containerized build environment"
 	@docker run                                      \
+		--platform $(PLATFORM)                       \
 		-ti                                          \
 		--rm                                         \
 		--privileged                                 \
@@ -202,6 +206,7 @@ docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running DOCS_CMD in the containerized build environment"
 	@docker run             \
+		--platform $(PLATFORM) \
 		--entrypoint ''     \
 		--rm                \
 		-v "$(PWD):/repo"   \
@@ -223,6 +228,7 @@ crd_docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running API_DOCS_CMD in the containerized build environment"
 	@docker run             \
+		--platform $(PLATFORM) \
 		--entrypoint ''     \
 		--rm                \
 		-v "$(PWD):/repo"   \
@@ -241,6 +247,7 @@ run: build-dirs
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
 	@docker run                                                     \
+		--platform $(PLATFORM)                                      \
 		--rm                                                        \
 		--net host                                                  \
 		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                             \
