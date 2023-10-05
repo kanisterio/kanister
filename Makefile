@@ -174,13 +174,12 @@ codegen:
 
 DOCS_CMD = "cd docs && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
-                make spelling && make html           \
-	   "
+                make spelling && make html"
 
 docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running DOCS_CMD in the containerized build environment"
-	PWD=$(PWD) ARCH=$(ARCH) CMD=$(DOCS_CMD) /bin/bash ./build/run_container.sh docs
+	@PWD=$(PWD) ARCH=$(ARCH) CMD=$(DOCS_CMD) /bin/bash ./build/run_container.sh docs
 else
 	@/bin/bash -c $(DOCS_CMD)
 endif
@@ -189,13 +188,12 @@ API_DOCS_CMD = "gen-crd-api-reference-docs 			\
 		-config docs/api_docs/config.json 	\
 		-api-dir ./pkg/apis/cr/v1alpha1 	\
 		-template-dir docs/api_docs/template 		\
-		-out-file API.md 	\
-"
+		-out-file API.md"
 
 crd_docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running API_DOCS_CMD in the containerized build environment"
-	PWD=$(PWD) ARCH=$(ARCH) CMD=$(API_DOCS_CMD) /bin/bash ./build/run_container.sh crd_docs
+	@PWD=$(PWD) ARCH=$(ARCH) CMD=$(API_DOCS_CMD) /bin/bash ./build/run_container.sh crd_docs
 else
 	@/bin/bash -c $(API_DOCS_CMD)
 endif

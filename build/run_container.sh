@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2019 The Kanister Authors.
 #
@@ -44,7 +44,11 @@ check_param() {
 run_build_container() {
   local github_token="${GITHUB_TOKEN:-}"
   local extra_params="${EXTRA_PARAMS:-}"
-  local cmd="${CMD:-command_is_not_set}"
+
+  local cmd=(/bin/bash -c "$CMD")
+  if [ -z "${CMD}" ]; then
+      cmd=(/bin/bash)
+  fi
 
   docker run                                                      \
       --platform ${PLATFORM}                                      \
@@ -58,25 +62,25 @@ run_build_container() {
       -v "${PWD}:/go/src/${PKG}"                                  \
       -v "${PWD}/bin/${ARCH}:/go/bin"                             \
       -v "${PWD}/.go/std/${ARCH}:/usr/local/go/pkg/linux_${ARCH}" \
-      -v "${HOME}/.docker:/root/.docker"                         \
+      -v "${HOME}/.docker:/root/.docker"                          \
       -v /var/run/docker.sock:/var/run/docker.sock                \
       -w /go/src/${PKG}                                           \
       ${BUILD_IMAGE}                                              \
-      ${cmd}
+      "${cmd[@]}"
 }
 
 run_docs_container() {
   check_param "IMAGE"
   check_param "CMD"
 
-  docker run             \
+  docker run                   \
     		--platform ${PLATFORM} \
-    		--entrypoint ''     \
-    		--rm                \
-    		-v "${PWD}:/repo"   \
-    		-w /repo            \
+    		--entrypoint ''        \
+    		--rm                   \
+    		-v "${PWD}:/repo"      \
+    		-w /repo               \
     		${IMAGE} \
-    		${CMD}
+    		/bin/bash -c "${CMD}"
 }
 
 build() {
@@ -88,7 +92,7 @@ build() {
 
 shell() {
   echo "Running build container in interactive shell mode..."
-  EXTRA_PARAMS="-ti" CMD="/bin/bash" run_build_container
+  EXTRA_PARAMS="-ti" run_build_container
 }
 
 docs() {
