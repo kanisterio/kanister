@@ -77,7 +77,7 @@ func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := backupDataStatsPodFunc(tp, encryptionKey, backupArtifactPrefix, backupID, mode)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func backupDataStatsPodFunc(
