@@ -74,27 +74,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 			return nil, errors.Wrap(err, "Cannot get subscriptionID from instance metadata")
 		}
 	}
-	/*
-		if id, ok := config[blockstorage.AzureCloudEnvironmentID]; !ok || id == "" {
-			config[blockstorage.AzureCloudEnvironmentID] = azure.PublicCloud.Name
-		}
-	*/
-	/*
-		env, err := azure.EnvironmentFromName(config[blockstorage.AzureCloudEnvironmentID])
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
-		}
 
-		authorizer, err := getAuthorizer(env, config)
-		if err != nil {
-			return nil, err
-		}
-
-		_, ok = config[blockstorage.AzureResurceMgrEndpoint]
-		if !ok {
-			config[blockstorage.AzureResurceMgrEndpoint] = env.ResourceManagerEndpoint
-		}
-	*/
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return nil, err
