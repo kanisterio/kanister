@@ -98,7 +98,7 @@ func deleteData(
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataPodFunc(tp, reclaimSpace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 //nolint:gocognit
