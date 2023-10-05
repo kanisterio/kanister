@@ -73,7 +73,6 @@ var (
 
 // EnvironmentFromName returns an Environment based on the common name specified.
 func EnvironmentFromName(name string) (Environment, error) {
-
 	name = strings.ToUpper(name)
 	env, ok := environments[name]
 	if !ok {
