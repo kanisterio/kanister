@@ -51,8 +51,8 @@ fi
 echo
 
 check_dependencies() {
-    # Check if minio is already deployed
-    if helm status minio -n minio > /dev/null 2>&1 ; then
+    # Check if minio is already deployed. We suppress only `stdout` and not `stderr` to make sure we catch errors if `helm status` fails
+    if helm status minio -n minio 1> /dev/null ; then
         # Setting env vars to access MinIO
         export S3_COMPLIANT_AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
         export S3_COMPLIANT_AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
