@@ -87,14 +87,14 @@ func (s ClientSuite) TestGetRegions(c *C) {
 func (s *ClientSuite) TestGetCredConfig(c *C) {
 	for _, tc := range []struct {
 		name       string
-		env        cloud.Configuration
+		env        Environment
 		config     map[string]string
 		errChecker Checker
 		expCCC     ClientCredentialsConfig
 	}{
 		{
 			name: "TC1",
-			env:  cloud.AzurePublic,
+			env:  PublicCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
 				blockstorage.AzureClientID:            "acid",
@@ -113,7 +113,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 		},
 		{
 			name: "TC2",
-			env:  cloud.AzurePublic,
+			env:  PublicCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:     "atid",
 				blockstorage.AzureClientID:     "acid",
@@ -130,7 +130,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 		},
 		{
 			name: "TC3",
-			env:  cloud.AzureGovernment,
+			env:  USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
 				blockstorage.AzureClientID:            "acid",
@@ -149,7 +149,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 		},
 		{
 			name: "TC4",
-			env:  cloud.AzureGovernment,
+			env:  USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
 				blockstorage.AzureClientID: "acid",
@@ -158,7 +158,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 		},
 		{
 			name: "TC5",
-			env:  cloud.AzureGovernment,
+			env:  USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
 			},
@@ -166,7 +166,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 		},
 		{
 			name:       "TC6",
-			env:        cloud.AzureGovernment,
+			env:        USGovernmentCloud,
 			config:     map[string]string{},
 			errChecker: NotNil,
 		},

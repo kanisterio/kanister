@@ -131,7 +131,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	}, nil
 }
 
-func getCredConfig(conf cloud.Configuration, config map[string]string) (ClientCredentialsConfig, error) {
+func getCredConfig(env Environment, config map[string]string) (ClientCredentialsConfig, error) {
 	credConfig, err := getCredConfigForAuth(config)
 	if err != nil {
 		return ClientCredentialsConfig{}, err
@@ -140,12 +140,12 @@ func getCredConfig(conf cloud.Configuration, config map[string]string) (ClientCr
 	//Todo: Find alternatives to azure.Environment
 	var ok bool
 	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok || credConfig.AADEndpoint == "" {
-		credConfig.AADEndpoint = conf.ActiveDirectoryAuthorityHost
+		credConfig.AADEndpoint = env.Configuration.ActiveDirectoryAuthorityHost
 		config[blockstorage.AzureActiveDirEndpoint] = credConfig.AADEndpoint
 	}
 
 	if credConfig.Resource, ok = config[blockstorage.AzureActiveDirResourceID]; !ok || credConfig.Resource == "" {
-		credConfig.Resource = conf.Services[cloud.ResourceManager].Endpoint
+		credConfig.Resource = env.Configuration.Services[cloud.ResourceManager].Endpoint
 		config[blockstorage.AzureActiveDirResourceID] = credConfig.Resource
 	}
 
