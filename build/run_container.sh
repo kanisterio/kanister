@@ -71,7 +71,6 @@ run_build_container() {
       -v "${PWD}:/go/src/${PKG}"                                  \
       -v "${PWD}/bin/${ARCH}:/go/bin"                             \
       -v "${PWD}/.go/std/${ARCH}:/usr/local/go/pkg/linux_${ARCH}" \
-      -v "${HOME}/.docker:/root/.docker"                          \
       -v /var/run/docker.sock:/var/run/docker.sock                \
       -w /go/src/${PKG}                                           \
       ${BUILD_IMAGE}                                              \
