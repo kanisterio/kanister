@@ -18,16 +18,20 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/yaml"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -61,7 +65,9 @@ const (
 	DBEngineAuroraPostgreSQL RDSDBEngine = "aurora-postgresql"
 )
 
-type createRDSSnapshotFunc struct{}
+type createRDSSnapshotFunc struct {
+	progressPercent string
+}
 
 func (*createRDSSnapshotFunc) Name() string {
 	return CreateRDSSnapshotFuncName
@@ -155,6 +161,10 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 }
 
 func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	crs.progressPercent = progress.StartedPercent
+	defer func() { crs.progressPercent = progress.CompletedPercent }()
+
 	var instanceID string
 	var dbEngine RDSDBEngine
 	if err := Arg(args, CreateRDSSnapshotInstanceIDArg, &instanceID); err != nil {
@@ -179,4 +189,12 @@ func (crs *createRDSSnapshotFunc) Arguments() []string {
 		CreateRDSSnapshotInstanceIDArg,
 		CreateRDSSnapshotDBEngine,
 	}
+}
+
+func (crs *createRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    crs.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

@@ -18,7 +18,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/aws/aws-sdk-go v1.45.16
+	github.com/aws/aws-sdk-go v1.45.21
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-logr/logr v1.2.4
 	github.com/go-openapi/strfmt v0.21.7
@@ -56,7 +56,7 @@ require (
 	k8s.io/apimachinery v0.26.3
 	k8s.io/cli-runtime v0.26.3
 	k8s.io/client-go v0.26.3
-	k8s.io/code-generator v0.26.3
+	k8s.io/code-generator v0.26.9
 	k8s.io/kubectl v0.26.3
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	sigs.k8s.io/controller-runtime v0.14.6

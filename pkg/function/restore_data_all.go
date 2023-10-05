@@ -19,13 +19,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -57,7 +60,9 @@ func init() {
 
 var _ kanister.Func = (*restoreDataAllFunc)(nil)
 
-type restoreDataAllFunc struct{}
+type restoreDataAllFunc struct {
+	progressPercent string
+}
 
 func (*restoreDataAllFunc) Name() string {
 	return RestoreDataAllFuncName
@@ -99,7 +104,11 @@ func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.Templ
 	return restorePath, encryptionKey, ps, podOverride, nil
 }
 
-func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	r.progressPercent = progress.StartedPercent
+	defer func() { r.progressPercent = progress.CompletedPercent }()
+
 	var namespace, image, backupArtifactPrefix, backupInfo string
 	var err error
 	if err = Arg(args, RestoreDataAllNamespaceArg, &namespace); err != nil {
@@ -189,4 +198,12 @@ func (*restoreDataAllFunc) Arguments() []string {
 		RestoreDataAllPodsArg,
 		RestoreDataAllPodOverrideArg,
 	}
+}
+
+func (r *restoreDataAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    r.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

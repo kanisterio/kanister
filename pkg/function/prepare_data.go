@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -30,6 +31,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -51,7 +53,9 @@ func init() {
 
 var _ kanister.Func = (*prepareDataFunc)(nil)
 
-type prepareDataFunc struct{}
+type prepareDataFunc struct {
+	progressPercent string
+}
 
 func (*prepareDataFunc) Name() string {
 	return PrepareDataFuncName
@@ -129,7 +133,11 @@ func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc k
 	}
 }
 
-func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	p.progressPercent = progress.StartedPercent
+	defer func() { p.progressPercent = progress.CompletedPercent }()
+
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
@@ -183,4 +191,12 @@ func (*prepareDataFunc) Arguments() []string {
 		PrepareDataServiceAccount,
 		PrepareDataPodOverrideArg,
 	}
+}
+
+func (p *prepareDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    p.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
