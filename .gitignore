@@ -7,3 +7,4 @@
 /bin
 /dist
 **/*.swp
+/.idea
