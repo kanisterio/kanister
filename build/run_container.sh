@@ -22,7 +22,6 @@ set -o nounset
 
 PWD="${PWD:-$(pwd)}"
 
-# tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE="${DOCS_BUILD_IMAGE:-ghcr.io/kanisterio/docker-sphinx:0.2.0}"
 BUILD_IMAGE="${BUILD_IMAGE:-ghcr.io/kanisterio/build:v0.0.24}"
 PKG="${PKG:-github.com/kanisterio/kanister}"
@@ -140,4 +139,3 @@ case "${1}" in
             usage
             exit 1
 esac
-
