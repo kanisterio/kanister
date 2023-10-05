@@ -67,7 +67,7 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := kubeTaskPodFunc()
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {

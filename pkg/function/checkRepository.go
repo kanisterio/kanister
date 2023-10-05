@@ -60,7 +60,7 @@ func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := CheckRepositoryPodFunc(cli, tp, encryptionKey, targetPaths)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func CheckRepositoryPodFunc(

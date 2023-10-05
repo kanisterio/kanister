@@ -167,7 +167,7 @@ func deleteDataFromServer(
 		username,
 		userPassphrase,
 	)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func deleteDataFromServerPodFunc(
