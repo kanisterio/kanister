@@ -73,19 +73,19 @@ run_docs_container() {
   check_param "CMD"
 
   docker run                   \
-    		--platform ${PLATFORM} \
-    		--entrypoint ''        \
-    		--rm                   \
-    		-v "${PWD}:/repo"      \
-    		-w /repo               \
-    		${IMAGE} \
-    		/bin/bash -c "${CMD}"
+        --platform ${PLATFORM} \
+        --entrypoint ''        \
+        --rm                   \
+        -v "${PWD}:/repo"      \
+        -w /repo               \
+        ${IMAGE} \
+        /bin/bash -c "${CMD}"
 }
 
-build() {
+run() {
   check_param "CMD"
 
-  echo "Running build container..."
+  echo "Running command within build container..."
   run_build_container
 }
 
@@ -123,14 +123,14 @@ EOM
 [ ${#@} -gt 0 ] || usage
 case "${1}" in
         # Alphabetically sorted
-        build)
-            time -p build
-            ;;
         crd_docs)
             time -p crd_docs
             ;;
         docs)
             time -p docs
+            ;;
+        run)
+            time -p run
             ;;
         shell)
             time -p shell
