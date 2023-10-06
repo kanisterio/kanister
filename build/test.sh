@@ -19,6 +19,7 @@
 set -o errexit
 set -o nounset
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 export CGO_ENABLED=0
 export GO111MODULE=on
@@ -63,9 +64,18 @@ check_dependencies() {
         echo "Please install MinIO using 'make install-minio' and try again."
         exit 1
     fi
+
+    # A test (CRDSuite) that runs as part of `make test` requires at least one CRD to
+    # be present on the cluster. That's why we are checking that `csi-hostpath-driver`
+    # installed before running tests.
+    if ! ${SCRIPT_DIR}/local_kubernetes.sh check_csi_hostpath_driver_installed ; then
+        echo "Please install CSI hostpath driver using 'make install-csi-hostpath-driver' and try again."
+        exit 1
+    fi
 }
 
 check_dependencies
+
 echo "Running tests:"
 go test -v -installsuffix "static" -i ${TARGETS}
 go test -v ${TARGETS} -list .
