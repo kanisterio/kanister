@@ -27,7 +27,7 @@ import (
 // creating or connecting to a Kopia repository
 type RepositoryCommandArgs struct {
 	*CommandArgs
-	CacheCommandArgs
+	CacheArgs
 	CacheDirectory string
 	Hostname       string
 	Username       string
