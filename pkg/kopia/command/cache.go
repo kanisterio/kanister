@@ -1,22 +1,23 @@
-// Copyright 2023 The Kanister Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package command
 
-// CacheArgs has fields that can be used to set
-// cache settings for different kopia repository operations
+import (
+	"strconv"
+
+	"github.com/kanisterio/kanister/pkg/logsafe"
+)
+
 type CacheArgs struct {
+	ContentCacheMB       int
+	MetadataCacheMB      int
 	ContentCacheLimitMB  int
 	MetadataCacheLimitMB int
+}
+
+func (c CacheArgs) kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string) logsafe.Cmd {
+	args = args.AppendLoggableKV(cacheDirectoryFlag, cacheDirectory)
+	args = args.AppendLoggableKV(contentCacheSizeMBFlag, strconv.Itoa(c.ContentCacheMB))
+	args = args.AppendLoggableKV(metadataCacheSizeMBFlag, strconv.Itoa(c.MetadataCacheMB))
+	args = args.AppendLoggableKV(contentCacheSizeLimitMBFlag, strconv.Itoa(c.ContentCacheLimitMB))
+	args = args.AppendLoggableKV(metadataCacheSizeLimitMBFlag, strconv.Itoa(c.MetadataCacheLimitMB))
+	return args
 }
