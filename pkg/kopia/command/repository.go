@@ -27,13 +27,12 @@ import (
 // creating or connecting to a Kopia repository
 type RepositoryCommandArgs struct {
 	*CommandArgs
-	CacheDirectory  string
-	Hostname        string
-	ContentCacheMB  int
-	MetadataCacheMB int
-	Username        string
-	RepoPathPrefix  string
-	ReadOnly        bool
+	CacheCommandArgs
+	CacheDirectory string
+	Hostname       string
+	Username       string
+	RepoPathPrefix string
+	ReadOnly       bool
 	// PITFlag is only effective if set while repository connect
 	PITFlag  strfmt.DateTime
 	Location map[string][]byte
@@ -48,7 +47,7 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		args = args.AppendLoggable(readOnlyFlag)
 	}
 
-	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
+	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
 
 	if cmdArgs.Hostname != "" {
 		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
@@ -78,7 +77,7 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
-	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
+	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
 
 	if cmdArgs.Hostname != "" {
 		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
