@@ -23,7 +23,7 @@ set -o nounset
 PWD="${PWD:-$(pwd)}"
 
 DOCS_BUILD_IMAGE="${DOCS_BUILD_IMAGE:-ghcr.io/kanisterio/docker-sphinx:0.2.0}"
-BUILD_IMAGE="${BUILD_IMAGE:-ghcr.io/kanisterio/build:v0.0.24}"
+BUILD_IMAGE="${BUILD_IMAGE:-ghcr.io/kanisterio/build:v0.0.25}"
 PKG="${PKG:-github.com/kanisterio/kanister}"
 
 ARCH="${ARCH:-amd64}"
