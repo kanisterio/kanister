@@ -15,13 +15,7 @@
 package kando
 
 import (
-	"context"
-	"io"
-
 	"github.com/spf13/cobra"
-
-	"github.com/kanisterio/kanister/pkg/location"
-	"github.com/kanisterio/kanister/pkg/param"
 )
 
 const (
@@ -49,10 +43,4 @@ func newLocationPushCommand() *cobra.Command {
 	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")
 
 	return cmd
-}
-
-const usePipeParam = `-`
-
-func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
-	return location.Write(ctx, source, *p, path)
 }

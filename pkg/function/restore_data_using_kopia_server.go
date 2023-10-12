@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,7 @@ import (
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -38,7 +40,9 @@ const (
 	SparseRestoreOption = "sparseRestore"
 )
 
-type restoreDataUsingKopiaServerFunc struct{}
+type restoreDataUsingKopiaServerFunc struct {
+	progressPercent string
+}
 
 func init() {
 	_ = kanister.Register(&restoreDataUsingKopiaServerFunc{})
@@ -72,7 +76,11 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
-func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+	// Set progress percent
+	r.progressPercent = progress.StartedPercent
+	defer func() { r.progressPercent = progress.CompletedPercent }()
+
 	var (
 		err          error
 		image        string
@@ -151,6 +159,14 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 	)
 }
 
+func (r *restoreDataUsingKopiaServerFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    r.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
+}
+
 func restoreDataFromServer(
 	ctx context.Context,
 	cli kubernetes.Interface,
@@ -194,7 +210,7 @@ func restoreDataFromServer(
 		userPassphrase,
 		sparseRestore,
 	)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func restoreDataFromServerPodFunc(
