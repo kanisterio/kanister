@@ -67,7 +67,7 @@ check_dependencies() {
 
 check_dependencies
 echo "Running tests:"
-go test -v -installsuffix "static" -i ${TARGETS}
+go test -v -installsuffix "static" ${TARGETS}
 go test -v ${TARGETS} -list .
 go test -v -installsuffix "static" ${TARGETS} -check.v
 echo
