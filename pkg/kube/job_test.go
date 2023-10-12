@@ -36,7 +36,9 @@ type JobSuite struct{}
 
 var _ = Suite(&JobSuite{})
 
-var testJobName = "kanister-test-job"
+// Name of test job for this suite.
+// Initially it contains incorrect name of job for catching errors.
+var testJobName = "<unknown name>"
 
 const testJobNamespace = "default"
 const testJobImage = "busybox"
@@ -47,7 +49,7 @@ func (s *JobSuite) SetUpSuite(c *C) {
 }
 
 func (s *JobSuite) SetUpTest(c *C) {
-	testJobName = testJobName + rand.String(5)
+	testJobName = "kanister-test-job" + rand.String(5)
 }
 
 // Verifies that the Job object is not created if the job name is not specified.
