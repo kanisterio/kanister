@@ -52,9 +52,9 @@ run_build_container() {
   # In case of `minikube`, kube config stores full path to a certificates,
   # thus the simples way to get working minikube in the build container is
   # to bind original path to minikube settings to the container.
-  local path_to_minikube_dir="${HOME}/.minikube"
-  local minikube_dir_binding="-v ${path_to_minikube_dir}:${path_to_minikube_dir}"
-  if [ ! -d "${path_to_minikube_dir}" ]; then
+  local minikube_dir_path="${HOME}/.minikube"
+  local minikube_dir_binding="-v ${minikube_dir_path}:${minikube_dir_path}"
+  if [ ! -d "${minikube_dir_path}" ]; then
       minikube_dir_binding=""
   fi
 

@@ -69,7 +69,8 @@ check_dependencies() {
     # be present on the cluster. That's why we are checking that `csi-hostpath-driver`
     # installed before running tests.
     if ! ${SCRIPT_DIR}/local_kubernetes.sh check_csi_hostpath_driver_installed ; then
-        echo "Please install CSI hostpath driver using 'make install-csi-hostpath-driver' and try again."
+        echo "CRDs are not installed on the cluster but a test (CRDSuite) requires at least one CRD to be available on the cluster."\
+        " One can be installed by running 'make install-csi-hostpath-driver' command."
         exit 1
     fi
 }
