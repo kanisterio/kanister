@@ -41,12 +41,12 @@ Introducing Kopia
 ------------------
 
 Kopia is a powerful, cross-platform tool for managing encrypted backups
-in the cloud. It provides fast and secure backups, using compression,
+in the cloud. It provides fast and secure backups using compression,
 data `de-duplication`, and client-side end-to-end encryption. It supports
 a variety of backup storage targets, including object stores, which allows
-users to choose the storage provider that better addresses their needs.
-In Kopia, these storage locations are called repositories. It is a
-lock-free system that allows concurrent multi-client operations,
+users to choose the storage provider that best addresses/meets their
+requirements. In Kopia, these storage locations are called repositories.
+It is a lock-free system that allows concurrent multi-client operations,
 including garbage collection. To explore other features of Kopia,
 see its `documentation <https://kopia.io/docs/features/>`_
 
@@ -54,17 +54,17 @@ Kopia Repository Server
 -----------------------
 
 A Kopia Repository Server allows Kopia clients to proxy access to the backend storage
-location through it. At any time, a repository server can only connect to a single
+location through it. At any given time, a repository server can only connect to a single
 repository. Due to this limitation, a separate instance of the server will be used
 for each repository.
 
-In Kanister, the server will comprise of a Kubernetes pod and service. The pod runs
+In Kanister, the server comprises of Kubernetes pod and service. The pod runs
 the Kopia repository server process that will be used by Kopia clients to perform
-backup and restore operations. Kopia clients would only need a username/password and
-service name to connect to server without the need to know the backend storage
-location. This approach provides enhanced security since only authorized users will be
-allowed to access the Kopia repository server. These authorized users need to be
-added to the server before starting the server.
+backup and restore operations. Kopia clients only need a username/password and
+service name to connect to the server, without needing/requiring to know the backend
+storage location. This approach enhances security since only authorized users can
+access the Kopia repository server. These authorized users must be added to the
+server before starting the server.
 
 Kopia Repository
 ----------------
@@ -74,24 +74,24 @@ repository can exist at a particular path in the backend storage location.
 Users opting to use separate repositories are recommended to use unique path
 prefixes for each repository. For example, a repository for a namespace called
 monitoring on an S3 storage bucket called test-bucket could be created at the
-location ``s3://test-bucket/<UUID of monitoring namespace>/repo/``. Accessing
-the repository requires the storage location and credential information similar
-to a Kanister Profile CR and a unique password used by Kopia during encryption,
-along with the unique path prefix mentioned above.
+following location ``s3://test-bucket/<UUID of monitoring namespace>/repo/``.
+Accessing the repository requires the storage location and credential information,
+similar to a Kanister Profile CR, and a unique password used by Kopia for
+encryption, along with the unique path prefix mentioned above.
 
 
 Repository Server Workflow
 --------------------------
 The design of Repository Server consists of a controller and a custom resource
 RepositoryServer. The diagram below illustrates the relationship between the repository
-server controller and RepositoryServer custom resource. It shows the integration of
-kanister controller with repository server controller and how we can leverage this
-integration to use Kopia as a data mover tool.
+server controller and the RepositoryServer custom resource. It shows the integration of
+the Kanister controller with the repository server controller and how this integration
+can be leveraged to use Kopia as a data mover tool.
 
    .. image:: ./_static/repositoryserverworkflow.png
 
-To know more about the design of the Kopia repository server controller refer to
-its `design documentation <https://github.com/kanisterio/kanister/blob/master/design/kanister-kopia-integration.md>`_
+To know more about the design of the Kopia repository server controller, refer to
+its `design documentation <https://github.com/kanisterio/kanister/blob/master/design/kanister-kopia-integration.md>`_.
 
 Custom Resources
 ================
@@ -434,7 +434,7 @@ the Kopia repository server.
 
 .. note::
     Secrets referenced in the CR should be created in the format referenced
-    in the :ref:`Repository Server Secrets<repository_server_secrets>` section
+    in the :ref:`Repository Server Secrets<repository_server_secrets>` section.
 
 
 The definition of ``Repository Server`` is:
@@ -450,7 +450,8 @@ The definition of ``Repository Server`` is:
     Status RepositoryServerStatus `json:"status"`
   }
 
-  Repository Server ``Spec`` field is defined as follows:
+
+Repository Server ``Spec`` field is defined as follows:
 
 .. code-block:: go
   :linenos:
@@ -461,22 +462,19 @@ The definition of ``Repository Server`` is:
     Server Server `json:"server"`
   }
 
-- The ``Storage`` field in the ``RepositoryServerSpec`` contains the location
-  details where the Kopia repository is created
-
-.. code-block:: go
-  :linenos:
-
   type Storage struct {
     SecretRef corev1.SecretReference `json:"secretRef"`
     CredentialSecretRef corev1.SecretReference `json:"credentialSecretRef"`
   }
 
-^ ``SecretRef`` and ``CredentialSecretRef`` are the references to location
-  secrets
+- The ``Storage`` field in the ``RepositoryServerSpec`` contains the location
+  details where the Kopia repository is created.
 
-- ``Repository`` field in CR ``spec`` has details to connect to Kopia repository created
-  in the above location storage
+  - ``SecretRef`` and ``CredentialSecretRef`` are the references to location
+    secrets.
+
+- The ``Repository`` field in the CR ``spec`` contains details for connecting to
+  the Kopia repository created in the location storage mentioned above.
 
 .. code-block:: go
   :linenos:
@@ -489,37 +487,33 @@ The definition of ``Repository Server`` is:
     CacheSizeSettings CacheSizeSettings      `json:"cacheSizeSettings,omitempty"`
   }
 
-
-^ ``RootPath`` is the path for the Kopia repository. It is the sub-path within
-the path prefix specified in the storage location
-^ ``Username`` is an optional field used to override the default username while
-connecting to the Kopia repository
-^ ``Hostname`` is an optional field used to override the default host name while
-connecting to the Kopia repository
-
-Kopia identifies users by ``username@hostname`` and uses the values
-specified when establishing a connection to the repository to identify
-backups created in the session.
-
-
-^ ``PasswordSecretRef`` is the reference to the secret containing the password to
-connect to the Kopia repository
-^ ``CacheSizeSettings`` is an optional field used to specify the size of the different
-caches for the Kopia repository. If not specified, default cache settings are used
-by repository server controller
-
-To know more about the Kopia caches, refer to the `Kopia caching documentation <https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/>`_`
-
-.. code-block:: go
-  :linenos:
-
   type CacheSizeSettings struct {
     Metadata string `json:"metadata"`
     Content  string `json:"content"`
   }
 
+
+- ``RootPath`` is the path for the Kopia repository. It is the sub-path within
+  the path prefix specified in the storage location.
+- ``Username`` is an optional field used to override the default username while
+  connecting to the Kopia repository.
+- ``Hostname`` is an optional field used to override the default hostname while
+  connecting to the Kopia repository.
+
+Kopia identifies users by ``username@hostname`` and uses the values specified when
+establishing a connection to the repository to identify backups created in the session.
+
+- ``PasswordSecretRef`` is the reference to the secret containing the password to
+  connect to the Kopia repository.
+
+- ``CacheSizeSettings`` is an optional field used to specify the size of the different
+  caches for the Kopia repository. If not specified, default cache settings are used
+  by repository server controller.
+
+To know more about the Kopia caches, refer to the `Kopia caching documentation <https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/>`_.
+
 - ``Server`` field in the CR spec has references to all the secrets
-  required to start the Kopia repository server
+  required to start the Kopia repository server.
 
 .. code-block:: go
   :linenos:
@@ -530,25 +524,21 @@ To know more about the Kopia caches, refer to the `Kopia caching documentation <
     TLSSecretRef corev1.SecretReference `json:"tlsSecretRef"`
   }
 
-^ ``AdminSecretRef`` is a secret reference containing admin credentials
-  required to start the Kopia repository server
-
-^ ``TLSSecretRef`` is a TLS secret reference for Kopia client and server communication
-
-^ ``UserAccess`` contains username and password secret reference required
-  for creating Kopia repository server users.
-
-.. code-block:: go
-  :linenos:
-
   type UserAccess struct {
     UserAccessSecretRef corev1.SecretReference `json:"userAccessSecretRef"`
     Username string `json:"username"`
   }
 
+- ``AdminSecretRef`` is a secret reference containing admin credentials
+  required to start the Kopia repository server.
 
-- ``Status`` field in ``RepositoryServer`` CR is used by repository server controller
-  to propagate server's status to the client. It is defined as:
+- ``TLSSecretRef`` is a TLS secret reference for Kopia client and server communication.
+
+- The ``UserAccess`` field contains a username and password secret reference required
+  for creating Kopia repository server users.
+
+- The ``Status`` field in the ``RepositoryServer`` CR is used by repository server
+  controller to propagate the server's status to the client. It is defined as:
 
 .. code-block:: go
   :linenos:
@@ -559,34 +549,32 @@ To know more about the Kopia caches, refer to the `Kopia caching documentation <
     Progress   RepositoryServerProgress `json:"progress"`
   }
 
-- ``Progress`` is populated by controller with 3 values
-
-  ^ ``Ready`` represents the ready state of the repository server and
-  the pod, which runs the proxy server
-
-  ^ ``Failed`` represents that the controller got an error while
-  starting the repository server
-
-  ^ ``Pending`` represents that the repository server is yet to be completely started
-
-- ``ServerInfo`` is populated by the repository server controller with
-  the server details that the client requires to connect to the server
-
-.. code-block:: go
-  :linenos:
-
   type ServerInfo struct {
     PodName     string `json:"podName,omitempty"`
     ServiceName string `json:"serviceName,omitempty"`
   }
 
-^ ``PodName`` is the name of the pod created by controller for Kopia repository server
+- ``Progress`` is populated by the controller with three values:
 
-^ ``ServiceName`` is the name of the Kubernetes service created by the controller
-which contains the connection details for the repository server
+  - ``Ready`` represents the ready state of the repository server and
+    the pod, which runs the proxy server.
+
+  - ``Failed`` represents that the controller got an error while
+    starting the repository server.
+
+  - ``Pending`` represents that the repository server has not yet completely started.
+
+- ``ServerInfo`` is populated by the repository server controller with
+  the server details that the client requires to connect to the server.
+
+  - ``PodName`` is the name of the pod created by the controller for the
+    Kopia repository server.
+
+  - ``ServiceName`` is the name of the Kubernetes service created by the controller,
+    which contains the connection details for the repository server.
 
 
-As a reference, below is an example of a Repository Server
+As a reference, below is an example of a Repository Server:
 
 .. code-block:: yaml
   :linenos:
@@ -630,18 +618,18 @@ Repository Server Secrets
 =========================
 
 The repository server controller needs the following secrets to be created for starting
-the Kopia repository server successfully. The secrets are referenced in the
-``RepositoryServer`` CR, as described in  :ref:`RepositoryServer<repository_servers>`.
+the Kopia repository server successfully. These secrets are referenced in the
+``RepositoryServer`` CR, as described in the  :ref:`RepositoryServer<repository_servers>`.
 
 Location Storage Secret
 -----------------------
 
 This secret stores the sensitive details of the location where the Kopia
-repository is created. This secret is referenced by ``spec.storage.secretRef``
+repository is created. It is referenced by the ``spec.storage.secretRef``
 field in the repository server CR.
 
 The ``data.type`` field can have following values ``s3``, ``gcs``,
-``azure``, ``file-store``
+``azure``, and ``file-store``.
 
 .. code-block:: yaml
   :linenos:
@@ -671,7 +659,7 @@ The ``data.type`` field can have following values ``s3``, ``gcs``,
 Location Credentials Secret
 ---------------------------
 
-The following secret should be used for Azure, AWS and GCS storage credentials.
+The following secret should be used for Azure, AWS, and GCS storage credentials.
 This secret is referenced by the ``spec.storage.credentialSecretRef`` in the
 repository server CR:
 
@@ -736,8 +724,8 @@ repository server CR:
 
 Repository Password Secret
 --------------------------
-This is the password secret used by controller to connect to Kopia repository. It
-is referenced by the ``spec.repository.passwordSecretRef`` in the repository server CR.
+This is the secret password used by the controller to connect to the Kopia repository.
+It is referenced by the ``spec.repository.passwordSecretRef`` in the repository server CR.
 
 .. code-block:: yaml
   :linenos:
@@ -775,7 +763,7 @@ TLS Secret
 ----------
 
 This secret stores TLS sensitive data used for Kopia client server communication.
-It follows the standard ``kubernetes.io/tls``. It is referenced by the
+It follows the ``kubernetes.io/tls`` standard. It is referenced by the
 ``spec.server.tlsSecretRef`` in the repository server CR.
 
 .. code-block:: yaml
@@ -797,12 +785,12 @@ It follows the standard ``kubernetes.io/tls``. It is referenced by the
 Repository Server User Access Password Secret
 ---------------------------------------------
 The Kopia repository client needs an access username and password for authentication to
-connect to Kopia repository server.
+connect to the Kopia repository server.
 
 The Kopia client needs a user in the format of ``<username>@<hostname>``. The username is
-the same for all the clients, which is specified in ``spec.server.UserAccess.username`` of
+the same for all clients, which is specified in ``spec.server.UserAccess.username`` of
 the ``RepositoryServer`` CR. The password and host name are provided in the form of
-a secret, as shown below
+a secret, as shown below:
 
 .. code-block:: yaml
   :linenos:
@@ -873,15 +861,16 @@ deploying the controller.
 Execution Walkthrough
 ---------------------
 
-Repository server controller watches for create/update/delete actions on
-RepositoryServer custom resource in the same namespace it is deployed. Once the
-RepositoryServer CR is created, the ``status.Progress`` field is set to ``Pending``.
+The Repository server controller monitors and responds to create, update, or delete
+events for the RepositoryServer custom resource within the same namespace where
+it is deployed. When the RepositoryServer CR is created, it sets the ``status.Progress``
+field to ``Pending``.
 
-The controller starts a kopia repository server in a Kubernetes pod using the
+The controller starts a Kopia repository server within a Kubernetes pod, using the
 configuration provided in the RepositoryServer CR. To access the repository server
-inside the pod, it also creates a Kubernetes service. The repository server can be
-used in kanister controller as a data mover tool to backup and restore applications
-to a Kopia repository.
+within the pod, it also creates a Kubernetes service. This repository server can be
+used within the kanister controller as a data mover tool to backup and restore
+applications to a Kopia repository.
 
 .. code-block:: bash
 

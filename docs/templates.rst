@@ -550,7 +550,7 @@ The currently supported Profile template is based on the following definitions
 RepositoryServers
 -----------------
 
-RepositoryServers are a Kanister CustomResource that contain information about storage,
+RepositoryServers are Kanister CustomResource that store information about storage,
 repository, and server details. These details are required to run a Kopia repository
 server instance, which can then be further used for data operation artifacts.
 
