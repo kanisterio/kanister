@@ -46,7 +46,7 @@ func (s *ClientSuite) TestClient(c *C) {
 	config[blockstorage.AzureCloudEnvironmentID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCloudEnvironmentID)
 	azCli, err := NewClient(context.Background(), config)
 	c.Assert(err, IsNil)
-
+	c.Assert(azCli.Cred, NotNil)
 	c.Assert(azCli.SubscriptionID, NotNil)
 	c.Assert(azCli.DisksClient, NotNil)
 	c.Assert(azCli.SnapshotsClient, NotNil)

@@ -20,8 +20,8 @@ package azure
 
 import (
 	"context"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -29,17 +29,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Client is a wrapper for Client client
+// Client is a wrapper
 type Client struct {
-	Cred           *azidentity.DefaultAzureCredential
-	SubscriptionID string
-	ResourceGroup  string
-	BaseURI        string
-	//https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/main/sdk/resourcemanager/compute/disk/main.go
-	//https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/arm/compute#DisksClient
-	DisksClient *armcompute.DisksClient
-	//https://github.com/Azure-Samples/azure-sdk-for-go-samples/blob/main/sdk/resourcemanager/compute/snapshot/main.go
-	//https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/arm/compute#SnapshotsClient
+	Cred                azcore.TokenCredential
+	SubscriptionID      string
+	ResourceGroup       string
+	BaseURI             string
+	DisksClient         *armcompute.DisksClient
 	SnapshotsClient     *armcompute.SnapshotsClient
 	SKUsClient          *armcompute.ResourceSKUsClient
 	SubscriptionsClient *armsubscriptions.Client
@@ -75,10 +71,15 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	authenticator, err := NewAzureAuthenticator(config)
 	if err != nil {
 		return nil, err
 	}
+	err = authenticator.Authenticate(config)
+	if err != nil {
+		return nil, err
+	}
+	cred := authenticator.GetTokenCredential()
 	computeClientFactory, err = armcompute.NewClientFactory(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
