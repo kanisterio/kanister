@@ -49,19 +49,28 @@ run_build_container() {
       cmd=(/bin/bash)
   fi
 
+  # In case of `minikube`, kube config stores full path to a certificates,
+  # thus the simples way to get working minikube in the build container is
+  # to bind original path to minikube settings to the container.
+  local minikube_dir_path="${HOME}/.minikube"
+  local minikube_dir_binding="-v ${minikube_dir_path}:${minikube_dir_path}"
+  if [ ! -d "${minikube_dir_path}" ]; then
+      minikube_dir_binding=""
+  fi
+
   docker run                                                      \
       --platform ${PLATFORM}                                      \
       ${extra_params}                                             \
       --rm                                                        \
       --net host                                                  \
       -e GITHUB_TOKEN="${github_token}"                           \
+      ${minikube_dir_binding}                                     \
       -v "${HOME}/.kube:/root/.kube"                              \
       -v "${PWD}/.go/pkg:/go/pkg"                                 \
       -v "${PWD}/.go/cache:/go/.cache"                            \
       -v "${PWD}:/go/src/${PKG}"                                  \
       -v "${PWD}/bin/${ARCH}:/go/bin"                             \
       -v "${PWD}/.go/std/${ARCH}:/usr/local/go/pkg/linux_${ARCH}" \
-      -v "${HOME}/.docker:/root/.docker"                          \
       -v /var/run/docker.sock:/var/run/docker.sock                \
       -w /go/src/${PKG}                                           \
       ${BUILD_IMAGE}                                              \
