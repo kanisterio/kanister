@@ -72,7 +72,7 @@ func (s *AuthSuite) TestIsMSICredsAvailable(c *C) {
 	c.Assert(isMSICredsAvailable(config), Equals, false)
 }
 
-func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
+func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 	// successful with client secret creds
 	config := map[string]string{
 		blockstorage.AzureTenantID:     "some-tenant-id",
@@ -101,11 +101,11 @@ func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(authenticator, NotNil)
 
-	// unsuccessful with no creds
+	// successful with no creds, but uses azure default credential
 	config = map[string]string{}
 	authenticator, err = NewAzureAuthenticator(config)
-	c.Assert(err, NotNil)
-	c.Assert(authenticator, IsNil)
+	c.Assert(err, IsNil)
+	c.Assert(authenticator, NotNil)
 
 	// unsuccessful with an undefined combo of credss
 	config = map[string]string{
