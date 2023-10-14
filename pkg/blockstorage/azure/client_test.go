@@ -93,7 +93,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 		expCCC     ClientCredentialsConfig
 	}{
 		{
-			name: "TC1",
+			name: "Test with all attributes in configuration",
 			env:  PublicCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
@@ -112,7 +112,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: IsNil,
 		},
 		{
-			name: "TC2",
+			name: "Test with client credential in configuration",
 			env:  PublicCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:     "atid",
@@ -129,7 +129,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: IsNil,
 		},
 		{
-			name: "TC3",
+			name: "Test without AD in configuration",
 			env:  USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
@@ -148,7 +148,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: IsNil,
 		},
 		{
-			name: "TC4",
+			name: "Test with tenantid and clientid in configuration",
 			env:  USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
@@ -157,7 +157,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: NotNil,
 		},
 		{
-			name: "TC5",
+			name: "Test with tenantid in configuration",
 			env:  USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
@@ -165,7 +165,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: NotNil,
 		},
 		{
-			name:       "TC6",
+			name:       "Test with nil configuration",
 			env:        USGovernmentCloud,
 			config:     map[string]string{},
 			errChecker: NotNil,

@@ -110,7 +110,7 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 	if err != nil {
 		return nil, errors.Wrapf(err, "Volume create %s polling error", diskName)
 	}
-	return s.VolumeGet(ctx, blockstorage.String(resp.ID), volume.Az)
+	return s.VolumeParse(ctx, resp.Disk)
 }
 
 func (s *AdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
