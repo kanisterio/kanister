@@ -60,7 +60,7 @@ func NewClientCredentialsConfig(clientID string, clientSecret string, tenantID s
 // Public interface to authenticate with different Azure credentials type
 type AzureAuthenticator interface {
 	Authenticate(creds map[string]string) error
-	GetTokenCredential() azcore.TokenCredential
+	GetAuthorizer() azcore.TokenCredential
 }
 
 func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error) {
@@ -86,7 +86,7 @@ type DefaultAuthenticator struct {
 	azcore.TokenCredential
 }
 
-func (d *DefaultAuthenticator) GetTokenCredential() azcore.TokenCredential {
+func (d *DefaultAuthenticator) GetAuthorizer() azcore.TokenCredential {
 	return d.TokenCredential
 }
 
@@ -109,7 +109,7 @@ type MsiAuthenticator struct {
 	azcore.TokenCredential
 }
 
-func (m *MsiAuthenticator) GetTokenCredential() azcore.TokenCredential {
+func (m *MsiAuthenticator) GetAuthorizer() azcore.TokenCredential {
 	return m.TokenCredential
 }
 func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
@@ -139,7 +139,7 @@ type ClientSecretAuthenticator struct {
 	azcore.TokenCredential
 }
 
-func (c *ClientSecretAuthenticator) GetTokenCredential() azcore.TokenCredential {
+func (c *ClientSecretAuthenticator) GetAuthorizer() azcore.TokenCredential {
 	return c.TokenCredential
 }
 func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error {

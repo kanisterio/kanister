@@ -79,7 +79,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	cred := authenticator.GetTokenCredential()
+	cred := authenticator.GetAuthorizer()
 	computeClientFactory, err = armcompute.NewClientFactory(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
