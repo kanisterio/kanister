@@ -1,10 +1,8 @@
 package azure
 
 import (
-	"context"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/pkg/errors"
@@ -95,10 +93,6 @@ func (d *DefaultAuthenticator) Authenticate(creds map[string]string) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to create an Azure Default Identity credential")
 	}
-	_, err = cred.GetToken(context.Background(), policy.TokenRequestOptions{})
-	if err != nil {
-		return errors.Wrap(err, "Failed to create an access token")
-	}
 	d.TokenCredential = cred
 	// creds passed authentication
 	return nil
@@ -125,10 +119,6 @@ func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to create an Azure Managed Identity credential")
 	}
-	_, err = cred.GetToken(context.Background(), policy.TokenRequestOptions{})
-	if err != nil {
-		return errors.Wrap(err, "Failed to create an access token")
-	}
 	m.TokenCredential = cred
 	// creds passed authentication
 	return nil
@@ -150,10 +140,6 @@ func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error 
 	cred, err := azidentity.NewClientSecretCredential(credConfig.TenantID, credConfig.ClientID, credConfig.ClientSecret, nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create an Azure Client Secret credential")
-	}
-	_, err = cred.GetToken(context.Background(), policy.TokenRequestOptions{})
-	if err != nil {
-		return errors.Wrap(err, "Failed to create an access token")
 	}
 	c.TokenCredential = cred
 	// creds passed authentication
