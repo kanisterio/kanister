@@ -220,7 +220,7 @@ func Float32Ptr(i float32) *float32 {
 	return &i
 }
 
-// Float64 returns an int value for the passed int pointer. It returns 0.0 if the pointer is nil.
+// ToFloat64 returns an int value for the passed int pointer. It returns 0.0 if the pointer is nil.
 func Float64(i *float64) float64 {
 	if i != nil {
 		return *i
