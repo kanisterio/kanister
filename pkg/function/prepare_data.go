@@ -92,7 +92,10 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
 		}
 
-		validatedVols[pvcName] = kube.VolumeMountOptions{MountPoint: mountPoint, ReadOnly: kube.IsAccessModesOfPVCContainReadOnly(pvc)}
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPoint: mountPoint,
+			ReadOnly:   kube.IsAccessModesOfPVCContainReadOnly(pvc),
+		}
 	}
 
 	options := &kube.PodOptions{

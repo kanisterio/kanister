@@ -45,7 +45,14 @@ type Job struct {
 }
 
 // NewJob creates a new Job object.
-func NewJob(clientset kubernetes.Interface, jobName string, namespace string, serviceAccount string, image string, vols map[string]VolumeMountOptions, command ...string) (*Job, error) {
+func NewJob(clientset kubernetes.Interface,
+	jobName string,
+	namespace string,
+	serviceAccount string,
+	image string,
+	vols map[string]VolumeMountOptions,
+	command ...string,
+) (*Job, error) {
 	if jobName == "" {
 		return nil, errors.New("Job name is required")
 	}
@@ -128,7 +135,8 @@ func (job *Job) Create() error {
 
 func createFilesystemModeVolumeSpecs(
 	ctx context.Context,
-	vols map[string]VolumeMountOptions) (volumeMounts []v1.VolumeMount, podVolumes []v1.Volume, error error) {
+	vols map[string]VolumeMountOptions,
+) (volumeMounts []v1.VolumeMount, podVolumes []v1.Volume, error error) {
 	// Build filesystem mode volume specs
 	for pvcName, mountOpts := range vols {
 		id, err := uuid.NewV1()

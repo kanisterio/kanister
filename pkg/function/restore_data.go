@@ -122,7 +122,10 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
 		}
 
-		validatedVols[pvcName] = kube.VolumeMountOptions{MountPoint: mountPoint, ReadOnly: kube.IsAccessModesOfPVCContainReadOnly(pvc)}
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPoint: mountPoint,
+			ReadOnly:   kube.IsAccessModesOfPVCContainReadOnly(pvc),
+		}
 	}
 
 	options := &kube.PodOptions{

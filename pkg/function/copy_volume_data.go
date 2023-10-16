@@ -69,7 +69,16 @@ func (*copyVolumeDataFunc) Name() string {
 	return CopyVolumeDataFuncName
 }
 
-func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvcName, targetPath, encryptionKey string, podOverride map[string]interface{}) (map[string]interface{}, error) {
+func copyVolumeData(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	namespace,
+	pvcName,
+	targetPath,
+	encryptionKey string,
+	podOverride map[string]interface{},
+) (map[string]interface{}, error) {
 	// Validate PVC exists
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 	if err != nil {
