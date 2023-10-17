@@ -97,13 +97,15 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 			ConfigFilePath: rss.kopiaConfigDir,
 			LogDirectory:   rss.kopiaLogDir,
 		},
-		CacheDirectory:  rss.kopiaCacheDir,
-		Hostname:        rss.serverHost,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
-		RepoPathPrefix:  rss.repoPathPrefix,
-		Username:        rss.repositoryUser,
-		Location:        testutil.GetDefaultS3CompliantStorageLocation(),
+		CacheDirectory: rss.kopiaCacheDir,
+		Hostname:       rss.serverHost,
+		CacheArgs: kopiacmd.CacheArgs{
+			ContentCacheLimitMB:  contentCacheMB,
+			MetadataCacheLimitMB: metadataCacheMB,
+		},
+		RepoPathPrefix: rss.repoPathPrefix,
+		Username:       rss.repositoryUser,
+		Location:       testutil.GetDefaultS3CompliantStorageLocation(),
 	}
 	// First try to connect with Kopia Repository
 	c.Log("Connecting with Kopia Repository...")
