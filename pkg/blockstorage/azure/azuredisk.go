@@ -11,6 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+
 	azto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -493,7 +496,7 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 			return nil, errors.Wrap(err, "SnapshotsClient.List in SnapshotsList")
 		}
 		for _, snap := range page.Value {
-			k10Snap, err := s.SnapshotParse(ctx, snap)
+			k10Snap, err := s.SnapshotParse(ctx, *snap)
 			if err != nil {
 				log.WithError(err).Print("Incorrect Snaphost type", field.M{"SnapshotID": snap.ID})
 				continue
