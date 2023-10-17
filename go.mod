@@ -1,6 +1,6 @@
 module github.com/kanisterio/kanister
 
-go 1.19
+go 1.21.3
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
