@@ -1,6 +1,6 @@
 module github.com/kanisterio/kanister
 
-go 1.19
+go 1.21.3
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
@@ -51,11 +51,11 @@ require (
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
 	//pinned k8s.io to v0.26.x tag
-	k8s.io/api v0.26.3
+	k8s.io/api v0.26.9
 	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.9
 	k8s.io/cli-runtime v0.26.3
-	k8s.io/client-go v0.26.3
+	k8s.io/client-go v0.26.9
 	k8s.io/code-generator v0.26.9
 	k8s.io/kubectl v0.26.3
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
