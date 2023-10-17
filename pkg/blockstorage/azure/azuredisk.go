@@ -442,7 +442,7 @@ func (s *AdStorage) VolumesList(ctx context.Context, tags map[string]string, zon
 			return nil, errors.Wrap(err, "DisksClient.List in VolumesList")
 		}
 		for _, disk := range page.Value {
-			vol, err := s.VolumeParse(ctx, disk)
+			vol, err := s.VolumeParse(ctx, *disk)
 			if err != nil {
 				return nil, errors.Wrap(err, "DisksClient.List in VolumesList, failure in parsing Volume")
 			}
@@ -524,7 +524,7 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	if err != nil {
 		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
 	}
-	return s.VolumeGet(ctx, blockstorage.String(resp.ID), snapshot.Volume.Az)
+	return s.VolumeParse(ctx, resp.Disk)
 }
 
 func (s *AdStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
