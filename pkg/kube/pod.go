@@ -49,8 +49,8 @@ const (
 )
 
 type VolumeMountOptions struct {
-	MountPoint string
-	ReadOnly   bool
+	MountPath string
+	ReadOnly  bool
 }
 
 // PodOptions specifies options for `CreatePod`

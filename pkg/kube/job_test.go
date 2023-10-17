@@ -236,7 +236,7 @@ func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
 
 func (s *JobSuite) TestJobsVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
-	vols := map[string]VolumeMountOptions{"pvc-test": {MountPoint: "/mnt/data1", ReadOnly: false}}
+	vols := map[string]VolumeMountOptions{"pvc-test": {MountPath: "/mnt/data1", ReadOnly: false}}
 	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sleep", "300")
 	c.Assert(err, IsNil)
 	c.Assert(job.Create(), IsNil)
@@ -256,7 +256,7 @@ func (s *JobSuite) TestJobsVolumes(c *C) {
 
 func (s *JobSuite) TestJobsReadOnlyVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
-	vols := map[string]VolumeMountOptions{"pvc-test": {MountPoint: "/mnt/data1", ReadOnly: true}}
+	vols := map[string]VolumeMountOptions{"pvc-test": {MountPath: "/mnt/data1", ReadOnly: true}}
 	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sleep", "300")
 	c.Assert(err, IsNil)
 	c.Assert(job.Create(), IsNil)

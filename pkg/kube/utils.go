@@ -161,8 +161,8 @@ func IsNodeReady(node *v1.Node) bool {
 	return false
 }
 
-// IsAccessModesOfPVCContainReadOnly return true if AccessModes of PVC contain `ReadOnlyMany`
-func IsAccessModesOfPVCContainReadOnly(pvc *v1.PersistentVolumeClaim) bool {
+// PVCContainsReadOnlyAccessMode return true if AccessModes of PVC contain `ReadOnlyMany`
+func PVCContainsReadOnlyAccessMode(pvc *v1.PersistentVolumeClaim) bool {
 	for _, accessMode := range pvc.Spec.AccessModes {
 		if accessMode == v1.ReadOnlyMany {
 			return true

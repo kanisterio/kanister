@@ -93,8 +93,8 @@ func copyVolumeData(
 		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes: map[string]kube.VolumeMountOptions{pvcName: {
-			MountPoint: mountPoint,
-			ReadOnly:   kube.IsAccessModesOfPVCContainReadOnly(pvc),
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}},
 		PodOverride: podOverride,
 	}

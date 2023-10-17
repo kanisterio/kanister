@@ -123,8 +123,8 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 		}
 
 		validatedVols[pvcName] = kube.VolumeMountOptions{
-			MountPoint: mountPoint,
-			ReadOnly:   kube.IsAccessModesOfPVCContainReadOnly(pvc),
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}
 	}
 

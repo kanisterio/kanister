@@ -93,8 +93,8 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		}
 
 		validatedVols[pvcName] = kube.VolumeMountOptions{
-			MountPoint: mountPoint,
-			ReadOnly:   kube.IsAccessModesOfPVCContainReadOnly(pvc),
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}
 	}
 

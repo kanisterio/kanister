@@ -304,7 +304,7 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 	}
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	vols := map[string]VolumeMountOptions{pvc.Name: {MountPoint: "/mnt/data1", ReadOnly: IsAccessModesOfPVCContainReadOnly(pvc)}}
+	vols := map[string]VolumeMountOptions{pvc.Name: {MountPath: "/mnt/data1", ReadOnly: PVCContainsReadOnlyAccessMode(pvc)}}
 	ctx := context.Background()
 	var p *corev1.Pod
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
@@ -353,7 +353,7 @@ func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *C) {
 	}
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	vols := map[string]VolumeMountOptions{pvc.Name: {MountPoint: "/mnt/data1", ReadOnly: IsAccessModesOfPVCContainReadOnly(pvc)}}
+	vols := map[string]VolumeMountOptions{pvc.Name: {MountPath: "/mnt/data1", ReadOnly: PVCContainsReadOnlyAccessMode(pvc)}}
 	ctx := context.Background()
 	var p *corev1.Pod
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {

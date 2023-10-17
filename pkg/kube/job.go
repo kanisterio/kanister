@@ -149,7 +149,7 @@ func createFilesystemModeVolumeSpecs(
 		}
 
 		podVolName := fmt.Sprintf("vol-%s", id.String())
-		volumeMounts = append(volumeMounts, v1.VolumeMount{Name: podVolName, MountPath: mountOpts.MountPoint, ReadOnly: mountOpts.ReadOnly})
+		volumeMounts = append(volumeMounts, v1.VolumeMount{Name: podVolName, MountPath: mountOpts.MountPath, ReadOnly: mountOpts.ReadOnly})
 		podVolumes = append(podVolumes,
 			v1.Volume{
 				Name: podVolName,

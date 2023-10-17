@@ -276,8 +276,8 @@ func getVolumes(
 		}
 
 		vols[claimNameString] = kube.VolumeMountOptions{
-			MountPoint: storage.DefaultFSMountPath,
-			ReadOnly:   kube.IsAccessModesOfPVCContainReadOnly(pvc),
+			MountPath: storage.DefaultFSMountPath,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}
 	}
 	return vols, nil
