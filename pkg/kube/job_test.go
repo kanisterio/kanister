@@ -236,7 +236,27 @@ func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
 
 func (s *JobSuite) TestJobsVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
-	vols := map[string]string{"pvc-test": "/mnt/data1"}
+	vols := map[string]VolumeMountOptions{"pvc-test": {MountPath: "/mnt/data1", ReadOnly: false}}
+	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sleep", "300")
+	c.Assert(err, IsNil)
+	c.Assert(job.Create(), IsNil)
+
+	a := cli.Actions()
+	c.Assert(a, HasLen, 1)
+	createAction := a[0]
+	createdJob, ok := createAction.(k8stesting.CreateAction).GetObject().(*batch.Job)
+	c.Assert(ok, Equals, true)
+
+	c.Assert(createdJob.Name, Equals, testJobName)
+	podSpec := createdJob.Spec.Template.Spec
+	c.Assert(podSpec.Volumes, HasLen, 1)
+	c.Assert(podSpec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, "pvc-test")
+	c.Assert(podSpec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
+}
+
+func (s *JobSuite) TestJobsReadOnlyVolumes(c *C) {
+	cli := fake.NewSimpleClientset()
+	vols := map[string]VolumeMountOptions{"pvc-test": {MountPath: "/mnt/data1", ReadOnly: true}}
 	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sleep", "300")
 	c.Assert(err, IsNil)
 	c.Assert(job.Create(), IsNil)
