@@ -407,7 +407,7 @@ func (s *AdStorage) SnapshotParse(ctx context.Context, snapshot interface{}) (*b
 func (s *AdStorage) snapshotParse(ctx context.Context, snap armcompute.Snapshot) *blockstorage.Snapshot {
 	vol := &blockstorage.Volume{
 		Type: s.Type(),
-		ID:   *snap.Properties.CreationData.SourceResourceID,
+		ID:   *snap.ID,
 	}
 
 	snapCreationTime := *snap.Properties.TimeCreated
