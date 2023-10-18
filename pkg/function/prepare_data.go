@@ -17,9 +17,12 @@ package function
 import (
 	"context"
 	"fmt"
+	"io"
+	"time"
 
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -28,6 +31,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -49,7 +53,9 @@ func init() {
 
 var _ kanister.Func = (*prepareDataFunc)(nil)
 
-type prepareDataFunc struct{}
+type prepareDataFunc struct {
+	progressPercent string
+}
 
 func (*prepareDataFunc) Name() string {
 	return PrepareDataFuncName
@@ -79,17 +85,25 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 
 func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, podOverride crv1alpha1.JSONMap, command ...string) (map[string]interface{}, error) {
 	// Validate volumes
-	for pvc := range vols {
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+		}
+
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}
 	}
+
 	options := &kube.PodOptions{
 		Namespace:          namespace,
 		GenerateName:       prepareDataJobPrefix,
 		Image:              image,
 		Command:            command,
-		Volumes:            vols,
+		Volumes:            validatedVols,
 		ServiceAccountName: serviceAccount,
 		PodOverride:        podOverride,
 	}
@@ -98,24 +112,40 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 	return pr.Run(ctx, podFunc)
 }
 
-func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-		// Wait for pod completion
-		if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
+func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+		pod := pc.Pod()
+
+		// Wait for pod to reach running state
+		if err := pc.WaitForPodReady(ctx); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
+
+		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
-		logs, err := kube.GetPodLogs(ctx, cli, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+		r, err := pc.StreamPodLogs(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}
+		defer r.Close()
+
+		bytes, err := io.ReadAll(r)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to read logs from the pod")
+		}
+		logs := string(bytes)
+
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, logs)
 		out, err := parseLogAndCreateOutput(logs)
 		return out, errors.Wrap(err, "Failed to parse phase output")
 	}
 }
 
-func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	p.progressPercent = progress.StartedPercent
+	defer func() { p.progressPercent = progress.CompletedPercent }()
+
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
@@ -169,4 +199,12 @@ func (*prepareDataFunc) Arguments() []string {
 		PrepareDataServiceAccount,
 		PrepareDataPodOverrideArg,
 	}
+}
+
+func (p *prepareDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    p.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

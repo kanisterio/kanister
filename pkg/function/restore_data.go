@@ -15,10 +15,11 @@
 package function
 
 import (
+	"bytes"
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -62,7 +64,9 @@ func init() {
 
 var _ kanister.Func = (*restoreDataFunc)(nil)
 
-type restoreDataFunc struct{}
+type restoreDataFunc struct {
+	progressPercent string
+}
 
 func (*restoreDataFunc) Name() string {
 	return RestoreDataFuncName
@@ -111,35 +115,56 @@ func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams)
 func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, jobPrefix, image string,
 	vols map[string]string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	// Validate volumes
-	for pvc := range vols {
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+		}
+
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}
 	}
+
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		Volumes:      vols,
+		Volumes:      validatedVols,
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := restoreDataPodFunc(cli, tp, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID)
+	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID)
 	return pr.Run(ctx, podFunc)
 }
 
-func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func restoreDataPodFunc(
+	tp param.TemplateParams,
+	encryptionKey,
+	backupArtifactPrefix,
+	restorePath,
+	backupTag,
+	backupID string,
+) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+		pod := pc.Pod()
+
 		// Wait for pod to reach running state
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
+		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
-		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+
+		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
 		}
-		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+
+		// Parent context could already be dead, so removing file within new context
+		defer remover.Remove(context.Background()) //nolint:errcheck
+
 		var cmd []string
 		// Generate restore command based on the identifier passed
 		if backupTag != "" {
@@ -150,18 +175,28 @@ func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 		if err != nil {
 			return nil, err
 		}
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		ex, err := pc.GetCommandExecutor()
+		if err != nil {
+			return nil, err
+		}
+		var stdout, stderr bytes.Buffer
+		err = ex.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to restore backup")
 		}
-		out, err := parseLogAndCreateOutput(stdout)
+		out, err := parseLogAndCreateOutput(stdout.String())
 		return out, errors.Wrap(err, "Failed to parse phase output")
 	}
 }
 
-func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	r.progressPercent = progress.StartedPercent
+	defer func() { r.progressPercent = progress.CompletedPercent }()
+
 	var namespace, image, backupArtifactPrefix, backupTag, backupID string
 	var podOverride crv1alpha1.JSONMap
 	var err error
@@ -234,4 +269,12 @@ func (*restoreDataFunc) Arguments() []string {
 		RestoreDataBackupIdentifierArg,
 		RestoreDataPodOverrideArg,
 	}
+}
+
+func (d *restoreDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    d.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

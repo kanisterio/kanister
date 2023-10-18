@@ -166,7 +166,7 @@ as follows:
 - ``Object`` is a required reference to the Kubernetes object on which
   the action will be performed.
 - ``Blueprint`` is a required name of the Blueprint that contains the
-   action to run.
+  action to run.
 - ``Artifacts`` are input Artifacts passed to the Blueprint. This must
   contain an Artifact for each name listed in the BlueprintAction's
   InputArtifacts.

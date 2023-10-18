@@ -18,12 +18,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -51,13 +55,19 @@ func init() {
 
 var _ kanister.Func = (*deleteDataAllFunc)(nil)
 
-type deleteDataAllFunc struct{}
+type deleteDataAllFunc struct {
+	progressPercent string
+}
 
 func (*deleteDataAllFunc) Name() string {
 	return DeleteDataAllFuncName
 }
 
-func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	d.progressPercent = progress.StartedPercent
+	defer func() { d.progressPercent = progress.CompletedPercent }()
+
 	var namespace, deleteArtifactPrefix, backupInfo, encryptionKey string
 	var reclaimSpace bool
 	var err error
@@ -119,4 +129,12 @@ func (*deleteDataAllFunc) Arguments() []string {
 		DeleteDataAllEncryptionKeyArg,
 		DeleteDataAllReclaimSpace,
 	}
+}
+
+func (d *deleteDataAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    d.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

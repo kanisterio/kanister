@@ -17,14 +17,18 @@ package function
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -41,7 +45,9 @@ const (
 	WaitForSnapshotCompletionSnapshotsArg = "snapshots"
 )
 
-type waitForSnapshotCompletionFunc struct{}
+type waitForSnapshotCompletionFunc struct {
+	progressPercent string
+}
 
 func (*waitForSnapshotCompletionFunc) Name() string {
 	return WaitForSnapshotCompletionFuncName
@@ -55,12 +61,24 @@ func (*waitForSnapshotCompletionFunc) Arguments() []string {
 	return []string{WaitForSnapshotCompletionSnapshotsArg}
 }
 
-func (kef *waitForSnapshotCompletionFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (w *waitForSnapshotCompletionFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	w.progressPercent = progress.StartedPercent
+	defer func() { w.progressPercent = progress.CompletedPercent }()
+
 	var snapshotinfo string
 	if err := Arg(args, WaitForSnapshotCompletionSnapshotsArg, &snapshotinfo); err != nil {
 		return nil, err
 	}
 	return nil, waitForSnapshotsCompletion(ctx, snapshotinfo, tp.Profile, getter.New())
+}
+
+func (w *waitForSnapshotCompletionFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    w.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func waitForSnapshotsCompletion(ctx context.Context, snapshotinfo string, profile *param.Profile, getter getter.Getter) error {

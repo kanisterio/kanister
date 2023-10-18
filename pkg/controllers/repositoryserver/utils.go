@@ -156,7 +156,7 @@ func volumeSpecForName(podSpec corev1.PodSpec, podOverride map[string]interface{
 	}
 }
 
-func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, tlsCertSecretName string) error {
+func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, tlsCertSecretName string, po *kube.PodOptions) error {
 	podSpecBytes, err := json.Marshal(*podOverride)
 	if err != nil {
 		return errors.Wrap(err, "Failed to marshal Pod Override")
@@ -178,7 +178,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 
 	if len(podOverrideSpec.Containers) == 0 {
 		podOverrideSpec.Containers = append(podOverrideSpec.Containers, corev1.Container{
-			Name: "container",
+			Name: kube.ContainerNameFromPodOptsOrDefault(po),
 		})
 	}
 
@@ -199,7 +199,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	return nil
 }
 
-func getPodOptions(namespace string, podOverride map[string]interface{}, svc *corev1.Service, vols map[string]string) *kube.PodOptions {
+func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.VolumeMountOptions) *kube.PodOptions {
 	uidguid := int64(0)
 	nonRootBool := false
 	return &kube.PodOptions{
@@ -208,7 +208,6 @@ func getPodOptions(namespace string, podOverride map[string]interface{}, svc *co
 		Image:         consts.GetKanisterToolsImage(),
 		ContainerName: repoServerPodContainerName,
 		Command:       []string{"bash", "-c", "tail -f /dev/null"},
-		PodOverride:   podOverride,
 		Labels:        map[string]string{repoServerServiceNameKey: svc.Name},
 		PodSecurityContext: &corev1.PodSecurityContext{
 			RunAsUser:    &uidguid,
@@ -254,8 +253,13 @@ func getCondition(status metav1.ConditionStatus, reason string, message string, 
 	}
 }
 
-func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Secret, namespace string) (map[string]string, error) {
-	vols := make(map[string]string, 0)
+func getVolumes(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	secret *corev1.Secret,
+	namespace string,
+) (map[string]kube.VolumeMountOptions, error) {
+	vols := make(map[string]kube.VolumeMountOptions, 0)
 	var claimName []byte
 	if len(secret.Data) == 0 {
 		return nil, errors.Errorf(secerrors.EmptySecretErrorMessage, secret.Namespace, secret.Name)
@@ -264,11 +268,17 @@ func getVolumes(ctx context.Context, cli kubernetes.Interface, secret *corev1.Se
 		if claimName, ok = secret.Data[reposerver.ClaimNameKey]; !ok {
 			return nil, errors.New("Claim name not set for file store location secret, failed to retrieve PVC")
 		}
+
 		claimNameString := string(claimName)
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, claimNameString, metav1.GetOptions{}); err != nil {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, claimNameString, metav1.GetOptions{})
+		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to validate if PVC %s:%s exists", namespace, claimName)
 		}
-		vols[claimNameString] = storage.DefaultFSMountPath
+
+		vols[claimNameString] = kube.VolumeMountOptions{
+			MountPath: storage.DefaultFSMountPath,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
+		}
 	}
 	return vols, nil
 }

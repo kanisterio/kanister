@@ -15,25 +15,31 @@
 package function
 
 import (
+	"bytes"
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
 	DeleteDataUsingKopiaServerFuncName = "DeleteDataUsingKopiaServer"
 )
 
-type deleteDataUsingKopiaServerFunc struct{}
+type deleteDataUsingKopiaServerFunc struct {
+	progressPercent string
+}
 
 func init() {
 	err := kanister.Register(&deleteDataUsingKopiaServerFunc{})
@@ -65,7 +71,11 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
-func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+	// Set progress percent
+	d.progressPercent = progress.StartedPercent
+	defer func() { d.progressPercent = progress.CompletedPercent }()
+
 	var (
 		err          error
 		image        string
@@ -121,6 +131,14 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	)
 }
 
+func (d *deleteDataUsingKopiaServerFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    d.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
+}
+
 func deleteDataFromServer(
 	ctx context.Context,
 	cli kubernetes.Interface,
@@ -142,9 +160,7 @@ func deleteDataFromServer(
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataFromServerPodFunc(
-		cli,
 		hostname,
-		namespace,
 		serverAddress,
 		fingerprint,
 		snapID,
@@ -155,18 +171,19 @@ func deleteDataFromServer(
 }
 
 func deleteDataFromServerPodFunc(
-	cli kubernetes.Interface,
 	hostname,
-	namespace,
 	serverAddress,
 	fingerprint,
 	snapID,
 	username,
 	userPassphrase string,
-) func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
-	return func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrap(err, "Failed while waiting for Pod: "+pod.Name+" to be ready")
+) func(ctx context.Context, pc kube.PodController) (map[string]any, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]any, error) {
+		pod := pc.Pod()
+
+		// Wait for pod to reach running state
+		if err := pc.WaitForPodReady(ctx); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
 
 		contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
@@ -184,9 +201,16 @@ func deleteDataFromServerPodFunc(
 				ContentCacheMB:  contentCacheMB,
 				MetadataCacheMB: metadataCacheMB,
 			})
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		commandExecutor, err := pc.GetCommandExecutor()
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to get pod command executor")
+		}
+
+		var stdout, stderr bytes.Buffer
+		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to connect to Kopia Repository server")
 		}
@@ -200,9 +224,11 @@ func deleteDataFromServerPodFunc(
 				},
 				SnapID: snapID,
 			})
-		stdout, stderr, err = kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+		stdout.Reset()
+		stderr.Reset()
+		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		return nil, errors.Wrap(err, "Failed to delete backup from Kopia API server")
 	}
 }

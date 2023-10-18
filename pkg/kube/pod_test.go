@@ -304,7 +304,56 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 	}
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	vols := map[string]string{pvc.Name: "/mnt/data1"}
+	vols := map[string]VolumeMountOptions{pvc.Name: {MountPath: "/mnt/data1", ReadOnly: PVCContainsReadOnlyAccessMode(pvc)}}
+	ctx := context.Background()
+	var p *corev1.Pod
+	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		fmt.Println("found pod")
+		ca := action.(testing.CreateAction)
+		p = ca.GetObject().(*corev1.Pod)
+		if len(p.Spec.Volumes[0].Name) > 63 {
+			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
+		}
+		return false, nil, nil
+	})
+	cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		p.Status.Phase = corev1.PodRunning
+		return true, p, nil
+	})
+	pod, err := CreatePod(ctx, cli, &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		Volumes:      vols,
+	})
+	c.Assert(err, IsNil)
+	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
+	c.Assert(pod.Spec.Volumes, HasLen, 1)
+	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
+	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
+	c.Assert(len(pod.Spec.Containers[0].VolumeDevices), Equals, 0)
+}
+
+func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *C) {
+	cli := fake.NewSimpleClientset()
+	pvcName := "pvc-with-read-only-mount"
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pvcName,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadOnlyMany},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	vols := map[string]VolumeMountOptions{pvc.Name: {MountPath: "/mnt/data1", ReadOnly: PVCContainsReadOnlyAccessMode(pvc)}}
 	ctx := context.Background()
 	var p *corev1.Pod
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
@@ -415,7 +464,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 		Containers: []corev1.Container{
 			{
 				Name:            "container",
-				Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
+				Image:           "ghcr.io/kanisterio/kanister-tools:0.97.0",
 				Command:         []string{"sh", "-c", "echo in default specs"},
 				ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 				VolumeMounts: []corev1.VolumeMount{
@@ -461,7 +510,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.97.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -501,7 +550,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.97.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -555,7 +604,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.97.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -616,7 +665,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.97.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -679,7 +728,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.97.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -719,7 +768,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.97.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -762,7 +811,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.95.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.97.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -880,4 +929,31 @@ func (s *PodSuite) TestSetLifecycleHook(c *C) {
 	pod, err := CreatePod(context.Background(), s.cli, po)
 	c.Assert(err, IsNil)
 	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
+}
+
+func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
+	for _, tc := range []struct {
+		podOptsContainerName  string
+		expectedContainerName string
+	}{
+		{
+			podOptsContainerName:  "conone",
+			expectedContainerName: "conone",
+		},
+		{
+			podOptsContainerName:  "",
+			expectedContainerName: defaultContainerName,
+		},
+	} {
+		name := ContainerNameFromPodOptsOrDefault(&PodOptions{
+			ContainerName: tc.podOptsContainerName,
+		})
+		c.Assert(name, Equals, tc.expectedContainerName)
+	}
+
+	name := ContainerNameFromPodOptsOrDefault(&PodOptions{})
+	c.Assert(name, Equals, defaultContainerName)
+
+	name = ContainerNameFromPodOptsOrDefault(nil)
+	c.Assert(name, Equals, defaultContainerName)
 }
