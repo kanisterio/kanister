@@ -2,9 +2,9 @@ Using Kopia Repository Server as Data Mover in Blueprint
 ********************************************************
 
 This tutorial will demonstrate how to use Kopia to copy or restore
-backups in a Kopia repository. We will be using kanister functions
+backups in a Kopia repository. We will be using Kanister functions
 that use the Kopia repository Server as the data mover in the blueprint.
-For additional documentation on kanister functions and blueprints,
+For additional documentation on Kanister functions and blueprints,
 refer to the :ref:`architecture` and :ref:`kanister functions<functions>`
 sections, respectively.
 
@@ -89,7 +89,7 @@ Starting Kopia Repository Server
 
 To copy or restore backups to the location storage using the Kopia data mover,
 it is necessary to start the Kopia repository server. To learn more about the
-Kopia repository server, refer to :ref:`architecture <architecture>` section.
+Kopia repository server, refer to the :ref:`architecture <architecture>` section.
 
 The repository server controller requires the creation of a Repository Server
 custom resource to start the server. To understand more about this custom resource,
@@ -116,7 +116,7 @@ You can create it as shown below:
     --access-key=<ACCESS_KEY>
     --secret-access-key=<SECRET_ACCESS_KEY>
 
-To learn more about how to create repository and gain further insight into the Kopia
+To learn more about how to create a repository and gain further insight into the Kopia
 repository, refer to the `Kopia documentation <https://kopia.io/docs/reference/command-line/>`_.
 
 
@@ -207,7 +207,7 @@ references the previously created secrets. For more detailed information about t
 repository server CR, refer to the :ref:`architecture` section.
 
 It is important to ensure consistency by using the same values for the fields
-``spec.repository.username`` and ``spec.repository.hostname`` in the CR(Custom Resource)
+``spec.repository.username`` and ``spec.repository.hostname`` in the CR (Custom Resource)
 as those used during the repository creation process described in the section
 :ref:`Creating a Kopia Repository <creating_kopia_repository>`.
 
@@ -326,7 +326,7 @@ check the server's status:
        serviceName: repo-server-service-rq2pq
 
 ``pod/repo-server-pod-4tjcw`` and ``service/repo-server-service-rq2pq`` populated in
-``status.serverInfo`` field  should be used by the client to connect to the server.
+the ``status.serverInfo`` field  should be used by the client to connect to the server.
 
 Invoking Kanister Actions
 =========================
@@ -354,7 +354,7 @@ The ``restore`` action uses two Kanister functions, ``ScaleWorkload`` and
 ``RestoreDataUsingKopiaServer``.
 The ``ScaleWorkload`` function scales down the ``timelog`` application before
 restoring the data.
-The ``RestoreDataUsingKopiaServer`` function restores data using the the Kopia
+The ``RestoreDataUsingKopiaServer`` function restores data using the Kopia
 repository server from S3 storage.
 
 To learn more about the Kanister function, refer to the documentation on

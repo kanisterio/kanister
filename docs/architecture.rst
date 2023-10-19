@@ -61,7 +61,7 @@ for each repository.
 In Kanister, the server comprises of Kubernetes pod and service. The pod runs
 the Kopia repository server process that will be used by Kopia clients to perform
 backup and restore operations. Kopia clients only need a username/password and
-service name to connect to the server, without needing/requiring to know the backend
+service name to connect to the server, without requiring to know the backend
 storage location. This approach enhances security since only authorized users can
 access the Kopia repository server. These authorized users must be added to the
 server before starting the server.

@@ -109,7 +109,7 @@ Deploying Kopia Repository Server Controller
 ============================================
 
 To enable the Kopia Repository server controller, set the `repositoryServerController`
-value as shown below during the deployment
+value as shown below during the deployment:
 
 .. substitution-code-block:: bash
 
