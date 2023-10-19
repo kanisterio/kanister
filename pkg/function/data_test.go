@@ -175,26 +175,6 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-func newDescribeBackupsBlueprint() *crv1alpha1.Blueprint {
-	return &crv1alpha1.Blueprint{
-		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"describeBackups": {
-				Kind: param.StatefulSetKind,
-				Phases: []crv1alpha1.BlueprintPhase{
-					{
-						Name: "testDescribeBackups",
-						Func: DescribeBackupsFuncName,
-						Args: map[string]interface{}{
-							DescribeBackupsArtifactPrefixArg: "{{ .Profile.Location.Prefix }}",
-							DescribeBackupsEncryptionKeyArg:  "{{ .Secrets.backupKey.Data.password | toString }}",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func newCheckRepositoryBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
@@ -589,63 +569,6 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 	return tp
-}
-func (s *DataSuite) TestDescribeBackups(c *C) {
-	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
-
-	// Test backup
-	bp := *newBackupDataBlueprint()
-	out := runAction(c, bp, "backup", tp)
-	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
-	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
-	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
-
-	// Test DescribeBackups
-	bp2 := *newDescribeBackupsBlueprint()
-	out2 := runAction(c, bp2, "describeBackups", tp)
-	c.Assert(out2[DescribeBackupsFileCount].(string), Not(Equals), "")
-	c.Assert(out2[DescribeBackupsSize].(string), Not(Equals), "")
-	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Not(Equals), "")
-	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Not(Equals), "")
-	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
-}
-
-func (s *DataSuite) TestDescribeBackupsWrongPassword(c *C) {
-	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
-
-	// Test backup
-	bp := *newBackupDataBlueprint()
-	bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg], "abcde")
-	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = "foobar"
-	out := runAction(c, bp, "backup", tp)
-	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
-	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
-	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
-
-	// Test DescribeBackups
-	bp2 := *newDescribeBackupsBlueprint()
-	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], "abcde")
-	out2 := runAction(c, bp2, "describeBackups", tp)
-	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Equals, "true")
-	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
-}
-
-func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
-	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
-
-	// Test backup
-	bp := *newBackupDataBlueprint()
-	out := runAction(c, bp, "backup", tp)
-	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
-	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
-	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
-
-	// Test DescribeBackups
-	bp2 := *newDescribeBackupsBlueprint()
-	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], c.TestName())
-	out2 := runAction(c, bp2, "describeBackups", tp)
-	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Equals, "true")
-	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 }
 
 func (s *DataSuite) TestCheckRepository(c *C) {

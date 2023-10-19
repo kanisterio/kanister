@@ -1,5 +1,4 @@
-FROM golang:1.19-bullseye
-
+FROM golang:1.21-bullseye
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
 RUN apt-get update && apt-get -y install apt-transport-https ca-certificates bash git gnupg2 software-properties-common curl jq wget \
@@ -17,7 +16,7 @@ COPY --from=goreleaser/goreleaser:v1.12.3 /usr/bin/goreleaser /usr/local/bin/
 
 COPY --from=alpine/helm:3.12.2 /usr/bin/helm /usr/local/bin/
 
-COPY --from=golangci/golangci-lint:v1.50 /usr/bin/golangci-lint /usr/local/bin/
+COPY --from=golangci/golangci-lint:v1.51.2 /usr/bin/golangci-lint /usr/local/bin/
 
 RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-linux-amd64 \
     && chmod +x /usr/local/bin/kind
