@@ -62,10 +62,10 @@ func ConnectToAPIServer(
 
 	opts := &repo.ConnectOptions{
 		CachingOptions: content.CachingOptions{
-			CacheDirectory:              kopia.DefaultClientCacheDirectory,
-			ContentCacheSizeLimitBytes:  int64(contentCacheMB << 20),
-			MetadataCacheSizeLimitBytes: int64(metadataCacheMB << 20),
-			MaxListCacheDuration:        content.DurationSeconds(defaultConnectMaxListCacheDuration.Seconds()),
+			CacheDirectory:         kopia.DefaultClientCacheDirectory,
+			ContentCacheSizeBytes:  int64(contentCacheMB << 20),
+			MetadataCacheSizeBytes: int64(metadataCacheMB << 20),
+			MaxListCacheDuration:   content.DurationSeconds(defaultConnectMaxListCacheDuration.Seconds()),
 		},
 		ClientOptions: repo.ClientOptions{
 			Hostname: hostname,
