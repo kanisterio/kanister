@@ -32,6 +32,11 @@ type Directory struct {
 	children []fs.Entry
 }
 
+func (d *Directory) Iterate(ctx context.Context) (fs.DirectoryIterator, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 var _ (fs.Directory) = (*Directory)(nil)
 
 // AddDir adds a directory with a given name and permissions
