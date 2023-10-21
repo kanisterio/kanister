@@ -31,6 +31,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
+	github.com/kopia/kopia v0.13.1-0.20230605143225-3551f743d762
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
@@ -189,8 +190,6 @@ require (
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
-
-require github.com/kopia/kopia v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.1 // indirect
