@@ -198,16 +198,18 @@ func backupDataUsingKopiaServer(
 	configFile, logDirectory := kankopia.CustomConfigFileAndLogDirectory(hostname)
 
 	cmd := kopiacmd.RepositoryConnectServerCommand(kopiacmd.RepositoryServerCommandArgs{
-		UserPassword:    userPassphrase,
-		ConfigFilePath:  configFile,
-		LogDirectory:    logDirectory,
-		CacheDirectory:  kopiacmd.DefaultCacheDirectory,
-		Hostname:        hostname,
-		ServerURL:       serverAddress,
-		Fingerprint:     fingerprint,
-		Username:        username,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
+		UserPassword:   userPassphrase,
+		ConfigFilePath: configFile,
+		LogDirectory:   logDirectory,
+		CacheDirectory: kopiacmd.DefaultCacheDirectory,
+		Hostname:       hostname,
+		ServerURL:      serverAddress,
+		Fingerprint:    fingerprint,
+		Username:       username,
+		CacheArgs: kopiacmd.CacheArgs{
+			ContentCacheLimitMB:  contentCacheMB,
+			MetadataCacheLimitMB: metadataCacheMB,
+		},
 	})
 
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
