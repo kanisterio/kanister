@@ -186,6 +186,7 @@ type RepositorySetParametersCommandArgs struct {
 // RepositorySetParametersCommand to cover https://kopia.io/docs/reference/command-line/common/repository-set-parameters/
 func RepositorySetParametersCommand(cmdArgs RepositorySetParametersCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
+	args = args.AppendLoggable(repositorySubCommand, setParametersSubCommand)
 	if cmdArgs.RetentionMode != "" {
 		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
 		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())

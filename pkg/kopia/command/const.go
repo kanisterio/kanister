@@ -61,6 +61,7 @@ const (
 	serverSubCommand          = "server"
 	startSubCommand           = "start"
 	statusSubCommand          = "status"
+	setParametersSubCommand   = "set-parameters"
 	userSubCommand            = "user"
 	addressFlag               = "--address"
 	redirectToDevNull         = "> /dev/null 2>&1"
