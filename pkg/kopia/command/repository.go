@@ -18,7 +18,9 @@ import (
 	"time"
 
 	"github.com/go-openapi/strfmt"
+	"github.com/kopia/kopia/repo/blob"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 )
@@ -34,6 +36,9 @@ type RepositoryCommandArgs struct {
 	Username        string
 	RepoPathPrefix  string
 	ReadOnly        bool
+	// Only for CreateCommand
+	RetentionMode   blob.RetentionMode
+	RetentionPeriod metav1.Duration
 	// PITFlag is only effective if set while repository connect
 	PITFlag  strfmt.DateTime
 	Location map[string][]byte
@@ -86,6 +91,11 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 
 	if cmdArgs.Username != "" {
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
+	}
+
+	if cmdArgs.RetentionMode != "" {
+		args = args.AppendLoggableKV(retentionModeFlag, string(cmdArgs.RetentionMode))
+		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
 
 	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
@@ -166,5 +176,21 @@ func RepositoryStatusCommand(cmdArgs RepositoryStatusCommandArgs) []string {
 		args = args.AppendLoggable(jsonFlag)
 	}
 
+	return stringSliceCommand(args)
+}
+
+type RepositorySetParametersCommandArgs struct {
+	*CommandArgs
+	RetentionMode   blob.RetentionMode
+	RetentionPeriod metav1.Duration
+}
+
+// RepositorySetParametersCommand to cover https://kopia.io/docs/reference/command-line/common/repository-set-parameters/
+func RepositorySetParametersCommand(cmdArgs RepositorySetParametersCommandArgs) []string {
+	args := commonArgs(cmdArgs.CommandArgs)
+	if cmdArgs.RetentionMode != "" {
+		args = args.AppendLoggableKV(retentionModeFlag, string(cmdArgs.RetentionMode))
+		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
+	}
 	return stringSliceCommand(args)
 }

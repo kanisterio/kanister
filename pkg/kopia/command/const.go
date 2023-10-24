@@ -84,6 +84,8 @@ const (
 	pointInTimeConnectionFlag = "--point-in-time"
 	urlFlag                   = "--url"
 	readOnlyFlag              = "--readonly"
+	retentionModeFlag         = "--retention-mode"
+	retentionPeriodFlag       = "--retention-period"
 )
 
 // List of possible modifications to a policy, expressed as the kopia flag that will modify it
