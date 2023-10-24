@@ -34,6 +34,9 @@ type RepositoryCommandArgs struct {
 	Username        string
 	RepoPathPrefix  string
 	ReadOnly        bool
+	// Only for CreateCommand
+	RetentionMode   string
+	RetentionPeriod time.Duration
 	// PITFlag is only effective if set while repository connect
 	PITFlag  strfmt.DateTime
 	Location map[string][]byte
@@ -86,6 +89,11 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 
 	if cmdArgs.Username != "" {
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
+	}
+
+	if cmdArgs.RetentionMode != "" {
+		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
+		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
 
 	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
@@ -166,5 +174,22 @@ func RepositoryStatusCommand(cmdArgs RepositoryStatusCommandArgs) []string {
 		args = args.AppendLoggable(jsonFlag)
 	}
 
+	return stringSliceCommand(args)
+}
+
+type RepositorySetParametersCommandArgs struct {
+	*CommandArgs
+	RetentionMode   string
+	RetentionPeriod time.Duration
+}
+
+// RepositorySetParametersCommand to cover https://kopia.io/docs/reference/command-line/common/repository-set-parameters/
+func RepositorySetParametersCommand(cmdArgs RepositorySetParametersCommandArgs) []string {
+	args := commonArgs(cmdArgs.CommandArgs)
+	args = args.AppendLoggable(repositorySubCommand, setParametersSubCommand)
+	if cmdArgs.RetentionMode != "" {
+		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
+		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
+	}
 	return stringSliceCommand(args)
 }

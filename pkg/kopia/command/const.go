@@ -61,6 +61,7 @@ const (
 	serverSubCommand          = "server"
 	startSubCommand           = "start"
 	statusSubCommand          = "status"
+	setParametersSubCommand   = "set-parameters"
 	userSubCommand            = "user"
 	addressFlag               = "--address"
 	redirectToDevNull         = "> /dev/null 2>&1"
@@ -84,6 +85,8 @@ const (
 	pointInTimeConnectionFlag = "--point-in-time"
 	urlFlag                   = "--url"
 	readOnlyFlag              = "--readonly"
+	retentionModeFlag         = "--retention-mode"
+	retentionPeriodFlag       = "--retention-period"
 )
 
 // List of possible modifications to a policy, expressed as the kopia flag that will modify it
