@@ -33,8 +33,7 @@ type Directory struct {
 }
 
 func (d *Directory) Iterate(ctx context.Context) (fs.DirectoryIterator, error) {
-	//TODO implement me
-	panic("implement me")
+	return fs.StaticIterator(append([]fs.Entry{}, d.children...), nil), nil
 }
 
 var _ (fs.Directory) = (*Directory)(nil)
