@@ -303,7 +303,7 @@ func (s *RepositoryUtilsSuite) TestRepositorySetParametersCommand(c *check.C) {
 	c.Assert(cmd, check.DeepEquals, []string{"kopia",
 		"--log-level=error",
 		"--config-file=path/kopia.config",
-		"---log-dir=cache/log",
+		"--log-dir=cache/log",
 		repositorySubCommand,
 		setParametersSubCommand,
 		fmt.Sprintf("%s=%s", retentionModeFlag, retentionMode),
