@@ -742,7 +742,7 @@ func max(x, y int) int {
 
 func generateActionSetName(p *PerformParams) (string, error) {
 	if p.ActionSetName != "" {
-		return fmt.Sprintf("%s", p.ActionSetName), nil
+		return p.ActionSetName, nil
 	}
 
 	if p.ActionName != "" {
