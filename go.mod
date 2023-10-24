@@ -43,7 +43,7 @@ require (
 	github.com/prometheus/client_model v0.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
-	github.com/vmware/govmomi v0.31.0
+	github.com/vmware/govmomi v0.32.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/oauth2 v0.13.0
 	gonum.org/v1/gonum v0.14.0
