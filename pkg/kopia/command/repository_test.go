@@ -15,7 +15,6 @@
 package command
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -128,8 +127,8 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 				"--metadata-cache-size-mb=0",
 				"--override-hostname=test-hostname",
 				"--override-username=test-username",
-				fmt.Sprintf("%s=%s", retentionModeFlag, retentionMode),
-				fmt.Sprintf("%s=%s", retentionPeriodFlag, retentionPeriod),
+				"--retention-mode=Locked",
+				"--retention-period=10s",
 				"filesystem",
 				"--path=/mnt/data/test-prefix/test-path/prefix/",
 			},
@@ -290,7 +289,7 @@ func (kRepoStatus *RepositoryUtilsSuite) TestRepositoryStatusCommand(c *check.C)
 }
 
 func (s *RepositoryUtilsSuite) TestRepositorySetParametersCommand(c *check.C) {
-	retentionMode := "locked"
+	retentionMode := "Locked"
 	retentionPeriod := 10 * time.Second
 	cmd := RepositorySetParametersCommand(RepositorySetParametersCommandArgs{
 		CommandArgs: &CommandArgs{
@@ -304,9 +303,9 @@ func (s *RepositoryUtilsSuite) TestRepositorySetParametersCommand(c *check.C) {
 		"--log-level=error",
 		"--config-file=path/kopia.config",
 		"--log-dir=cache/log",
-		repositorySubCommand,
-		setParametersSubCommand,
-		fmt.Sprintf("%s=%s", retentionModeFlag, retentionMode),
-		fmt.Sprintf("%s=%s", retentionPeriodFlag, retentionPeriod),
+		"repository",
+		"set-parameters",
+		"--retention-mode=Locked",
+		"--retention-period=10s",
 	})
 }
