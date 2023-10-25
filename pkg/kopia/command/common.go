@@ -77,9 +77,11 @@ func ExecKopiaArgs(configFilePath string) []string {
 }
 
 const (
-	cacheDirectoryFlag      = "--cache-directory"
-	contentCacheSizeMBFlag  = "--content-cache-size-mb"
-	metadataCacheSizeMBFlag = "--metadata-cache-size-mb"
+	cacheDirectoryFlag           = "--cache-directory"
+	contentCacheSizeMBFlag       = "--content-cache-size-mb"
+	metadataCacheSizeMBFlag      = "--metadata-cache-size-mb"
+	contentCacheSizeLimitMBFlag  = "--content-cache-size-limit-mb"
+	metadataCacheSizeLimitMBFlag = "--metadata-cache-size-limit-mb"
 )
 
 func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, metadataCacheMB int) logsafe.Cmd {
