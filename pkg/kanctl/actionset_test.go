@@ -106,7 +106,7 @@ func (k *KanctlTestSuite) TestGenerateActionSetName(c *C) {
 			// if --name is provided we just use that we dont derive name
 			c.Assert(actual, DeepEquals, tc.expected)
 		} else {
-			// randomg 5 chars are added at the end if name is derived by us
+			// random 5 chars are added at the end if name is derived by us
 			c.Assert(actual[0:len(actual)-5], DeepEquals, tc.expected)
 		}
 	}
