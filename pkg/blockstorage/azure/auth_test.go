@@ -101,11 +101,11 @@ func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(authenticator, NotNil)
 
-	// successful with no creds, but uses azure default credential
+	// unsuccessful with no creds
 	config = map[string]string{}
 	authenticator, err = NewAzureAuthenticator(config)
-	c.Assert(err, IsNil)
-	c.Assert(authenticator, NotNil)
+	c.Assert(err, NotNil)
+	c.Assert(authenticator, IsNil)
 
 	// unsuccessful with an undefined combo of credss
 	config = map[string]string{

@@ -26,13 +26,6 @@ func isMSICredsAvailable(config map[string]string) bool {
 		config[blockstorage.AzureClientSecret] == ""
 }
 
-func isDefaultCredsAvailable(config map[string]string) bool {
-	_, clientIDok := config[blockstorage.AzureClientID]
-	_, tenantIDok := config[blockstorage.AzureTenantID]
-	_, clientSecretOk := config[blockstorage.AzureClientSecret]
-	return !clientIDok && !tenantIDok && !clientSecretOk
-}
-
 type ClientCredentialsConfig struct {
 	ClientID     string
 	ClientSecret string
@@ -72,30 +65,9 @@ func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error)
 		return &MsiAuthenticator{}, nil
 	case isClientCredsAvailable(config):
 		return &ClientSecretAuthenticator{}, nil
-	case isDefaultCredsAvailable(config):
-		return &DefaultAuthenticator{}, nil
 	default:
 		return nil, errors.New("Fail to get an authenticator for provided creds combination")
 	}
-}
-
-// authenticate with default credential
-type DefaultAuthenticator struct {
-	azcore.TokenCredential
-}
-
-func (d *DefaultAuthenticator) GetAuthorizer() azcore.TokenCredential {
-	return d.TokenCredential
-}
-
-func (d *DefaultAuthenticator) Authenticate(creds map[string]string) error {
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return errors.Wrap(err, "Failed to create an Azure Default Identity credential")
-	}
-	d.TokenCredential = cred
-	// creds passed authentication
-	return nil
 }
 
 // authenticate with MSI creds
@@ -106,10 +78,9 @@ type MsiAuthenticator struct {
 func (m *MsiAuthenticator) GetAuthorizer() azcore.TokenCredential {
 	return m.TokenCredential
 }
-func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
+func (m *MsiAuthenticator) Authenticate(config map[string]string) error {
 	// check if MSI endpoint is available
-
-	clientID, ok := creds[blockstorage.AzureClientID]
+	clientID, ok := config[blockstorage.AzureClientID]
 	if !ok || clientID == "" {
 		return errors.New("Failed to fetch azure clientID")
 	}
@@ -120,7 +91,7 @@ func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 		return errors.Wrap(err, "Failed to create an Azure Managed Identity credential")
 	}
 	m.TokenCredential = cred
-	// creds passed authentication
+	// config passed authentication
 	return nil
 }
 
