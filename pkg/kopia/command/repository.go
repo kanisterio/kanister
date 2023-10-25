@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
-	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
 // RepositoryCommandArgs contains fields that are needed for
@@ -186,8 +185,7 @@ type RepositorySetParametersCommandArgs struct {
 
 // RepositorySetParametersCommand to cover https://kopia.io/docs/reference/command-line/common/repository-set-parameters/
 func RepositorySetParametersCommand(cmdArgs RepositorySetParametersCommandArgs) []string {
-	// args := commonArgs(cmdArgs.CommandArgs)
-	args := logsafe.NewLoggable(kopiaCommand)
+	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, setParametersSubCommand)
 	if cmdArgs.RetentionMode != "" {
 		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
