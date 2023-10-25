@@ -105,3 +105,69 @@ func (k *KanctlTestSuite) TestGenerateActionSetName(c *C) {
 		c.Assert(actual, DeepEquals, tc.expected)
 	}
 }
+
+func (k *KanctlTestSuite) TestParseLabels(c *C) {
+	for _, tc := range []struct {
+		flagValue      string
+		expectedLabels map[string]string
+		expectedErr    error
+	}{
+		{
+			flagValue:      "a=b",
+			expectedLabels: map[string]string{"a": "b"},
+		},
+		{
+			flagValue:      "a=b,c=d",
+			expectedLabels: map[string]string{"a": "b", "c": "d"},
+		},
+		{
+			flagValue:      "a=b,c=d,e=f",
+			expectedLabels: map[string]string{"a": "b", "c": "d", "e": "f"},
+		},
+		{
+			flagValue:      "a=b,c=d,",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      ",a=b,c=d,",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      ",a=b,c=d",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      "a",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      "",
+			expectedLabels: nil,
+		},
+		{
+			flagValue:      "a,=b,c=d",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      "a=b ,c =d",
+			expectedLabels: map[string]string{"a": "b", "c": "d"},
+		},
+		{
+			flagValue:      "  a= b ,c = d ",
+			expectedLabels: map[string]string{"a": "b", "c": "d"},
+		},
+		{
+			flagValue:      "  a= b ",
+			expectedLabels: map[string]string{"a": "b"},
+		},
+	} {
+		op, err := parseLabels(tc.flagValue)
+		c.Assert(err, DeepEquals, tc.expectedErr)
+		c.Assert(op, DeepEquals, tc.expectedLabels)
+	}
+}
