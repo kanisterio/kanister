@@ -52,16 +52,16 @@ require (
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
 	//pinned k8s.io to v0.26.x tag
-	k8s.io/api v0.26.9
+	k8s.io/api v0.26.10
 	k8s.io/apiextensions-apiserver v0.26.3
-	k8s.io/apimachinery v0.26.9
-	k8s.io/cli-runtime v0.26.3
-	k8s.io/client-go v0.26.9
-	k8s.io/code-generator v0.26.9
-	k8s.io/kubectl v0.26.3
+	k8s.io/apimachinery v0.26.10
+	k8s.io/cli-runtime v0.26.10
+	k8s.io/client-go v0.26.10
+	k8s.io/code-generator v0.26.10
+	k8s.io/kubectl v0.26.10
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	sigs.k8s.io/controller-runtime v0.14.6
-	sigs.k8s.io/kustomize/kyaml v0.13.9
+	sigs.k8s.io/kustomize/kyaml v0.13.10
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -210,7 +210,7 @@ require (
 	gopkg.in/kothar/go-backblaze.v0 v0.0.0-20210124194846-35409b867216 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/component-base v0.26.3 // indirect
+	k8s.io/component-base v0.26.10 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230109183929-3758b55a6596 // indirect
