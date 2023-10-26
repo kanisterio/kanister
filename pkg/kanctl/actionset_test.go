@@ -89,8 +89,8 @@ func (k *KanctlTestSuite) TestGenerateActionSetName(c *C) {
 		{actionName: "my-action", actionSetName: "", parentName: "", expected: "my-action-"},
 		{actionName: "my-action", actionSetName: "", parentName: "parent", expected: "my-action-parent-"},
 		{actionName: "", actionSetName: "", parentName: "parent", expected: "parent-"},
-		{actionName: "my-action", actionSetName: "my-override", parentName: "parent", expected: "my-override-"},
-		{actionName: "", actionSetName: "my-override", parentName: "", expected: "my-override-"},
+		{actionName: "my-action", actionSetName: "my-override", parentName: "parent", expected: "my-override"},
+		{actionName: "", actionSetName: "my-override", parentName: "", expected: "my-override"},
 	}
 
 	for _, tc := range testCases {
@@ -102,7 +102,13 @@ func (k *KanctlTestSuite) TestGenerateActionSetName(c *C) {
 
 		actual, err := generateActionSetName(params)
 		c.Assert(err, DeepEquals, tc.expectedErr)
-		c.Assert(actual, DeepEquals, tc.expected)
+		if tc.actionSetName != "" || tc.expected == "" {
+			// if --name is provided we just use that we dont derive name
+			c.Assert(actual, DeepEquals, tc.expected)
+		} else {
+			// random 5 chars are added at the end if name is derived by us
+			c.Assert(actual[0:len(actual)-5], DeepEquals, tc.expected)
+		}
 	}
 }
 
