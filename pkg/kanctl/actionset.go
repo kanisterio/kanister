@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
@@ -40,7 +41,7 @@ import (
 
 const (
 	actionFlagName                       = "action"
-	actionSetFlagName                    = "action-set"
+	actionSetFlagName                    = "name"
 	blueprintFlagName                    = "blueprint"
 	configMapsFlagName                   = "config-maps"
 	deploymentFlagName                   = "deployment"
@@ -190,7 +191,7 @@ func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
+			Name: name,
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: actions,
@@ -254,7 +255,7 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
+			Name: name,
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: actions,
@@ -741,19 +742,19 @@ func max(x, y int) int {
 
 func generateActionSetName(p *PerformParams) (string, error) {
 	if p.ActionSetName != "" {
-		return fmt.Sprintf("%s-", p.ActionSetName), nil
+		return p.ActionSetName, nil
 	}
 
 	if p.ActionName != "" {
 		if p.ParentName != "" {
-			return fmt.Sprintf("%s-%s-", p.ActionName, p.ParentName), nil
+			return fmt.Sprintf("%s-%s-%s", p.ActionName, p.ParentName, rand.String(5)), nil
 		}
 
-		return fmt.Sprintf("%s-", p.ActionName), nil
+		return fmt.Sprintf("%s-%s", p.ActionName, rand.String(5)), nil
 	}
 
 	if p.ParentName != "" {
-		return fmt.Sprintf("%s-", p.ParentName), nil
+		return fmt.Sprintf("%s-%s", p.ParentName, rand.String(5)), nil
 	}
 
 	return "", errMissingFieldActionName
