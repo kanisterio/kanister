@@ -417,6 +417,7 @@ func ErrorsFromOutput(output string) []error {
 	return err
 }
 
+// ParsePolicyShow parses the output of a kopia policy show command.
 func ParsePolicyShow(output string) (policy.Policy, error) {
 	policy := policy.Policy{}
 

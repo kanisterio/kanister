@@ -1,4 +1,4 @@
-// Copyright 2022 The Kanister Authors.
+// Copyright 2023 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ type PolicyShowGlobalCommandArgs struct {
 	GetJsonOutput bool
 }
 
-// PolicySetGlobal returns the kopia command for modifying the global policy
+// PolicyShowGlobal returns the kopia command for showing the global policy.
 func PolicyShowGlobal(cmdArgs PolicyShowGlobalCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(policySubCommand, showSubCommand, globalFlag)
