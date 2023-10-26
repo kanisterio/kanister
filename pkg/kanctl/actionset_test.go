@@ -165,6 +165,10 @@ func (k *KanctlTestSuite) TestParseLabels(c *C) {
 			flagValue:      "  a= b ",
 			expectedLabels: map[string]string{"a": "b"},
 		},
+		{
+			flagValue:      "a=",
+			expectedLabels: map[string]string{"a": ""},
+		},
 	} {
 		op, err := parseLabels(tc.flagValue)
 		c.Assert(err, DeepEquals, tc.expectedErr)
