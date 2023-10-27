@@ -20,7 +20,6 @@ import (
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/policy"
-	"gopkg.in/check.v1"
 	. "gopkg.in/check.v1"
 )
 
@@ -698,7 +697,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestParsePolicyShow(c *C) {
 		gotPolicy, err := ParsePolicyShow(outputToParse)
 		c.Check(err, tc.errChecker, Commentf("Failed for output: %q", outputToParse))
 		c.Log(err)
-		c.Check(gotPolicy, check.DeepEquals, tc.expPolicyShow)
+		c.Check(gotPolicy, DeepEquals, tc.expPolicyShow)
 	}
 }
 
