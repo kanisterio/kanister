@@ -15,8 +15,6 @@
 package command
 
 import (
-	"strconv"
-
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/logsafe"
@@ -83,10 +81,3 @@ const (
 	contentCacheSizeLimitMBFlag  = "--content-cache-size-limit-mb"
 	metadataCacheSizeLimitMBFlag = "--metadata-cache-size-limit-mb"
 )
-
-func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, metadataCacheMB int) logsafe.Cmd {
-	args = args.AppendLoggableKV(cacheDirectoryFlag, cacheDirectory)
-	args = args.AppendLoggableKV(contentCacheSizeMBFlag, strconv.Itoa(contentCacheMB))
-	args = args.AppendLoggableKV(metadataCacheSizeMBFlag, strconv.Itoa(metadataCacheMB))
-	return args
-}
