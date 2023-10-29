@@ -70,6 +70,11 @@ func (d *Directory) Child(ctx context.Context, name string) (fs.Entry, error) {
 	return fs.IterateEntriesAndFindChild(ctx, d, name)
 }
 
+// Iterate returns directory iterator.
+func (d *Directory) Iterate(ctx context.Context) (fs.DirectoryIterator, error) {
+	return fs.StaticIterator(append([]fs.Entry{}, d.children...), nil), nil
+}
+
 // Remove removes directory dirEntry with the given name
 func (d *Directory) Remove(name string) {
 	newChildren := d.children[:0]
