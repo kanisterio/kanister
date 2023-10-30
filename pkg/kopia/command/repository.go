@@ -91,7 +91,8 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
-	if cmdArgs.RetentionMode != "" && cmdArgs.RetentionPeriod > 0 {
+	// RetentionPeriod can be 0 when wanting to disable blob retention or when changing the mode only
+	if cmdArgs.RetentionMode != "" {
 		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
 		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
@@ -187,7 +188,8 @@ type RepositorySetParametersCommandArgs struct {
 func RepositorySetParametersCommand(cmdArgs RepositorySetParametersCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, setParametersSubCommand)
-	if cmdArgs.RetentionMode != "" && cmdArgs.RetentionPeriod > 0 {
+	// RetentionPeriod can be 0 when wanting to disable blob retention or when changing the mode only
+	if cmdArgs.RetentionMode != "" {
 		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
 		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
