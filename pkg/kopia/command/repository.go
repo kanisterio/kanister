@@ -91,8 +91,8 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
-	// RetentionPeriod can be 0 when wanting to disable blob retention or when changing the mode only
-	if cmdArgs.RetentionMode != "" {
+	// During creation, both should be set. Technically RetentionPeriod should be >= 24 * time.Hour
+	if cmdArgs.RetentionMode != "" && cmdArgs.RetentionPeriod > 0 {
 		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
 		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
