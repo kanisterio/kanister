@@ -187,7 +187,7 @@ type RepositorySetParametersCommandArgs struct {
 func RepositorySetParametersCommand(cmdArgs RepositorySetParametersCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, setParametersSubCommand)
-	if cmdArgs.RetentionMode != "" {
+	if cmdArgs.RetentionMode != "" && cmdArgs.RetentionPeriod > 0 {
 		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
 		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
