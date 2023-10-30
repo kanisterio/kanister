@@ -91,7 +91,7 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
-	if cmdArgs.RetentionMode != "" {
+	if cmdArgs.RetentionMode != "" && cmdArgs.RetentionPeriod > 0 {
 		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
 		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
