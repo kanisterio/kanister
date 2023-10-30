@@ -146,17 +146,6 @@ func (d *Directory) resolveDirs(pathname string) (parent *Directory, missing []s
 	return p, nil, nil
 }
 
-func (d *Directory) IterateEntries(ctx context.Context, cb func(context.Context, fs.Entry) error) error {
-	entries := append([]fs.Entry{}, d.children...)
-	for _, e := range entries {
-		if err := cb(ctx, e); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (d *Directory) SupportsMultipleIterations() bool {
 	return true
 }
