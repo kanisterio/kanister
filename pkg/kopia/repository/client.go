@@ -64,6 +64,8 @@ func ConnectToAPIServer(
 		CachingOptions: content.CachingOptions{
 			CacheDirectory:              kopia.DefaultClientCacheDirectory,
 			ContentCacheSizeLimitBytes:  int64(contentCacheMB << 20),
+			ContentCacheSizeBytes:       int64(contentCacheMB << 20),
+			MetadataCacheSizeBytes:      int64(metadataCacheMB << 20),
 			MetadataCacheSizeLimitBytes: int64(metadataCacheMB << 20),
 			MaxListCacheDuration:        content.DurationSeconds(defaultConnectMaxListCacheDuration.Seconds()),
 		},
