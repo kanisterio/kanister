@@ -28,7 +28,7 @@ import (
 type RepositoryCommandArgs struct {
 	*CommandArgs
 	CacheArgs
-  CacheDirectory  string
+	CacheDirectory  string
 	Hostname        string
 	ContentCacheMB  int
 	MetadataCacheMB int
