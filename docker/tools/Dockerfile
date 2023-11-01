@@ -17,10 +17,7 @@ ENV GITHUB_REPOSITORY=https://github.com/restic/restic
 
 WORKDIR /restic
 
-RUN git checkout v0.16.0
-# An older version of module golang.org/x/net is used by restic or it's indirect deps
-# manually update go.mod file to use latest version v0.17.0
-RUN echo "replace golang.org/x/net => golang.org/x/net v0.17.0" >> go.mod && go mod tidy
+RUN git checkout v0.16.2
 RUN go run build.go
 
 # Build kopia binary from specific commit
@@ -33,10 +30,6 @@ ENV GITHUB_REPOSITORY=https://github.com/${kopia_repo_org}/kopia
 WORKDIR /kopia
 
 RUN git checkout ${kopia_build_commit}
-
-# An older version of module golang.org/x/net is used by restic or it's indirect deps
-# manually update go.mod file to use latest version v0.17.0
-RUN echo "replace golang.org/x/net => golang.org/x/net v0.17.0" >> go.mod && go mod tidy
 
 RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
   -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
