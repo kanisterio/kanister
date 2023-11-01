@@ -28,6 +28,7 @@ const (
 	restoreSubCommand     = "restore"
 	runSubCommand         = "run"
 	setSubCommand         = "set"
+	showSubCommand        = "show"
 	snapshotSubCommand    = "snapshot"
 	statsSubCommand       = "stats"
 
