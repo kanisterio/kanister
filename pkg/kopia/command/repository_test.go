@@ -17,6 +17,7 @@ package command
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-openapi/strfmt"
 	"gopkg.in/check.v1"
@@ -29,6 +30,8 @@ type RepositoryUtilsSuite struct{}
 var _ = check.Suite(&RepositoryUtilsSuite{})
 
 func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
+	retentionMode := "Locked"
+	retentionPeriod := 10 * time.Second
 	for _, tc := range []struct {
 		cmdArg   RepositoryCommandArgs
 		location map[string]string
@@ -90,6 +93,46 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 				"--metadata-cache-size-limit-mb=0",
 				"--override-hostname=test-hostname",
 				"--override-username=test-username",
+				"filesystem",
+				"--path=/mnt/data/test-prefix/test-path/prefix/",
+			},
+		},
+		{
+			cmdArg: RepositoryCommandArgs{
+				CommandArgs: &CommandArgs{
+					RepoPassword:   "pass123",
+					ConfigFilePath: "/tmp/config.file",
+					LogDirectory:   "/tmp/log.dir",
+				},
+				CacheDirectory:  "/tmp/cache.dir",
+				Hostname:        "test-hostname",
+				ContentCacheMB:  0,
+				MetadataCacheMB: 0,
+				Username:        "test-username",
+				RepoPathPrefix:  "test-path/prefix",
+				Location: map[string][]byte{
+					"prefix": []byte("test-prefix"),
+					"type":   []byte("filestore"),
+				},
+				RetentionMode:   retentionMode,
+				RetentionPeriod: retentionPeriod,
+			},
+			Checker: check.IsNil,
+			expectedCmd: []string{"kopia",
+				"--log-level=error",
+				"--config-file=/tmp/config.file",
+				"--log-dir=/tmp/log.dir",
+				"--password=pass123",
+				"repository",
+				"create",
+				"--no-check-for-updates",
+				"--cache-directory=/tmp/cache.dir",
+				"--content-cache-size-limit-mb=0",
+				"--metadata-cache-size-limit-mb=0",
+				"--override-hostname=test-hostname",
+				"--override-username=test-username",
+				"--retention-mode=Locked",
+				"--retention-period=10s",
 				"filesystem",
 				"--path=/mnt/data/test-prefix/test-path/prefix/",
 			},
@@ -254,4 +297,26 @@ func (kRepoStatus *RepositoryUtilsSuite) TestRepositoryStatusCommand(c *check.C)
 		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, check.Equals, tc.expectedLog)
 	}
+}
+
+func (s *RepositoryUtilsSuite) TestRepositorySetParametersCommand(c *check.C) {
+	retentionMode := "Locked"
+	retentionPeriod := 10 * time.Second
+	cmd := RepositorySetParametersCommand(RepositorySetParametersCommandArgs{
+		CommandArgs: &CommandArgs{
+			ConfigFilePath: "path/kopia.config",
+			LogDirectory:   "cache/log",
+		},
+		RetentionMode:   retentionMode,
+		RetentionPeriod: retentionPeriod,
+	})
+	c.Assert(cmd, check.DeepEquals, []string{"kopia",
+		"--log-level=error",
+		"--config-file=path/kopia.config",
+		"--log-dir=cache/log",
+		"repository",
+		"set-parameters",
+		"--retention-mode=Locked",
+		"--retention-period=10s",
+	})
 }

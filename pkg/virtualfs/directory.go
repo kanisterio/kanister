@@ -70,6 +70,11 @@ func (d *Directory) Child(ctx context.Context, name string) (fs.Entry, error) {
 	return fs.IterateEntriesAndFindChild(ctx, d, name)
 }
 
+// Iterate returns directory iterator.
+func (d *Directory) Iterate(ctx context.Context) (fs.DirectoryIterator, error) {
+	return fs.StaticIterator(append([]fs.Entry{}, d.children...), nil), nil
+}
+
 // Remove removes directory dirEntry with the given name
 func (d *Directory) Remove(name string) {
 	newChildren := d.children[:0]
@@ -139,17 +144,6 @@ func (d *Directory) resolveDirs(pathname string) (parent *Directory, missing []s
 	}
 
 	return p, nil, nil
-}
-
-func (d *Directory) IterateEntries(ctx context.Context, cb func(context.Context, fs.Entry) error) error {
-	entries := append([]fs.Entry{}, d.children...)
-	for _, e := range entries {
-		if err := cb(ctx, e); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (d *Directory) SupportsMultipleIterations() bool {
