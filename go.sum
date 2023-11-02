@@ -354,8 +354,8 @@ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
-github.com/kastenhq/stow v0.2.6-kasten.1.0.20230810051814-7e1569eac69b h1:51DAOiKCC7FGxrzFTDaKnj08DCJ4ATffgVg9a2lIP2A=
-github.com/kastenhq/stow v0.2.6-kasten.1.0.20230810051814-7e1569eac69b/go.mod h1:KCDpsGiySXiaIruvOquULdT8u/7GssXDte2PiqSjDF0=
+github.com/kastenhq/stow v0.2.6-kasten.1.0.20231101232131-9321daa23aae h1:2cl4yuAJpdmLCx7G8eIsfNlQBLEfw0JDj6mTTyqc5qg=
+github.com/kastenhq/stow v0.2.6-kasten.1.0.20231101232131-9321daa23aae/go.mod h1:KCDpsGiySXiaIruvOquULdT8u/7GssXDte2PiqSjDF0=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
