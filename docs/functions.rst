@@ -280,6 +280,10 @@ BackupData
 This function backs up data from a container into any object store
 supported by Kanister.
 
+.. warning::
+   The *BackupData* will be deprecated soon. We recommend using :ref:`copyvolumedata` instead.
+   However, :ref:`restoredata` and :ref:`deletedata` will continue to be available, ensuring you retain control over your existing backups.
+
 .. note::
    It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
@@ -391,7 +395,7 @@ Example:
 RestoreData
 -----------
 
-This function restores data backed up by the BackupData function.
+This function restores data backed up by the :ref:`backupdata` function.
 It creates a new Pod that mounts the PVCs referenced by the specified Pod
 and restores data to the specified path.
 
@@ -536,6 +540,7 @@ BackupDataAll function.
       kind: Deployment
       replicas: 2
 
+.. _copyvolumedata:
 
 CopyVolumeData
 --------------
@@ -589,10 +594,12 @@ If the ActionSet ``Object`` is a PersistentVolumeClaim:
       volume: "{{ .PVC.Name }}"
       dataArtifactPrefix: s3-bucket-name/path
 
+.. _deletedata:
+
 DeleteData
 ----------
 
-This function deletes the snapshot data backed up by the BackupData function.
+This function deletes the snapshot data backed up by the :ref:`backupdata` function.
 
 
 .. csv-table::
