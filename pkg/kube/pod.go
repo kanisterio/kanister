@@ -221,6 +221,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
+		log.Error().WithContext(ctx).WithError(err).Print("Failed to create pod.", field.M{"pod": pod, "options": opts})
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 	return pod, nil
