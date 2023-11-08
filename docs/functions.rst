@@ -342,6 +342,10 @@ BackupDataAll
 This function concurrently backs up data from one or more pods into an any
 object store supported by Kanister.
 
+.. warning::
+   The *BackupDataAll* will be deprecated soon.
+   However, :ref:`restoredataall` and :ref:`deletedataall` will continue to be available, ensuring you retain control over your existing backups.
+
 .. note::
    It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
@@ -629,6 +633,8 @@ For this phase, we will use the ``backupInfo`` Artifact provided by backup funct
       namespace: "{{ .Namespace.Name }}"
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+
+.. _deletedataall:
 
 DeleteDataAll
 -------------
