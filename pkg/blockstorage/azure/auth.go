@@ -55,11 +55,6 @@ type AzureAuthenticator interface {
 }
 
 func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error) {
-	// NewAzureAuthenticator opens up the possibility to Auth with:
-	//1. Env variables
-	//2. Managed Identity
-	//3. Workload Identity
-	//4. AzureCli
 	switch {
 	case isMSICredsAvailable(config):
 		return &MsiAuthenticator{}, nil

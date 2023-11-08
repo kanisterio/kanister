@@ -217,7 +217,7 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	if err != nil {
 		return nil, errors.Wrap(err, "Poller failed to retrieve snapshot")
 	}
-	snap, err := s.SnapshotGet(ctx, blockstorage.String(createSnapRes.ID))
+	snap, err := s.SnapshotGet(ctx, blockstorage.StringFromPtr(createSnapRes.ID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to Get Snapshot after create, snaphotName %s", snapName)
 	}
@@ -410,21 +410,21 @@ func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 	if vol.Tags != nil {
 		tags = blockstorage.StringMap(vol.Tags)
 	}
-	az := blockstorage.String(vol.Location)
+	az := blockstorage.StringFromPtr(vol.Location)
 	if z := vol.Zones; len(z) > 0 {
 		az = az + "-" + *(z[0])
 	}
 
 	return &blockstorage.Volume{
 		Type:         s.Type(),
-		ID:           blockstorage.String(vol.ID),
+		ID:           blockstorage.StringFromPtr(vol.ID),
 		Encrypted:    encrypted,
 		SizeInBytes:  blockstorage.Int64(vol.Properties.DiskSizeBytes),
 		Az:           az,
 		Tags:         blockstorage.MapToKeyValue(tags),
 		VolumeType:   string(*vol.SKU.Name),
 		CreationTime: blockstorage.TimeStamp(*vol.Properties.TimeCreated),
-		Attributes:   map[string]string{"Users": blockstorage.String(vol.ManagedBy)},
+		Attributes:   map[string]string{"Users": blockstorage.StringFromPtr(vol.ManagedBy)},
 	}, nil
 }
 
