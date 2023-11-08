@@ -141,11 +141,6 @@ func StringSlice(s *[]string) []string {
 	return nil
 }
 
-// StringSlicePtr returns a pointer to the passed string slice.
-func StringSlicePtr(s []string) *[]string {
-	return azto.Ptr(s)
-}
-
 // SliceStringPtr returns a slice of string pointers from the passed string slice.
 func SliceStringPtr(s []string) []*string {
 	ms := make([]*string, len(s))
@@ -153,19 +148,6 @@ func SliceStringPtr(s []string) []*string {
 		ms[k] = azto.Ptr(sp)
 	}
 	return ms
-}
-
-// Bool returns a bool value for the passed bool pointer. It returns false if the pointer is nil.
-func Bool(b *bool) bool {
-	if b != nil {
-		return *b
-	}
-	return false
-}
-
-// BoolPtr returns a pointer to the passed bool.
-func BoolPtr(b bool) *bool {
-	return &b
 }
 
 // Int returns an int value for the passed int pointer. It returns 0 if the pointer is nil.
@@ -202,40 +184,9 @@ func Int64(i *int64) int64 {
 	return 0
 }
 
-// Int64Ptr returns a pointer to the passed int64.
-func Int64Ptr(i int64) *int64 {
-	return &i
-}
-
-// Float32 returns an int value for the passed int pointer. It returns 0.0 if the pointer is nil.
-func Float32(i *float32) float32 {
-	if i != nil {
-		return *i
-	}
-	return 0.0
-}
-
-// Float32Ptr returns a pointer to the passed float32.
-func Float32Ptr(i float32) *float32 {
-	return &i
-}
-
-// ToFloat64 returns an int value for the passed int pointer. It returns 0.0 if the pointer is nil.
-func Float64(i *float64) float64 {
-	if i != nil {
-		return *i
-	}
-	return 0.0
-}
-
-// Float64Ptr returns a pointer to the passed float64.
-func Float64Ptr(i float64) *float64 {
-	return &i
-}
-
 // String returns a string value for the passed string pointer. It returns the empty string if the
 // pointer is nil.
-func String(s *string) string {
+func StringFromPtr(s *string) string {
 	if s != nil {
 		return *s
 	}
