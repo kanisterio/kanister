@@ -4,8 +4,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/pkg/errors"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 const ActiveDirectory = "activeDirectory"

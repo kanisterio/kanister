@@ -17,12 +17,14 @@ package azure
 import (
 	"context"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/kanisterio/kanister/pkg/blockstorage"
-	envconfig "github.com/kanisterio/kanister/pkg/config"
-	. "gopkg.in/check.v1"
 	"strings"
 	"testing"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
+	envconfig "github.com/kanisterio/kanister/pkg/config"
 )
 
 // Hook up gocheck into the "go test" runner.

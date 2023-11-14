@@ -15,8 +15,9 @@
 package azure
 
 import (
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 type AuthSuite struct{}
