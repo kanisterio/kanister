@@ -931,6 +931,82 @@ func (s *PodSuite) TestSetLifecycleHook(c *C) {
 	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
 }
 
+func (s *PodSuite) TestGetRedactedOptions(c *C) {
+	opts := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		EnvironmentVariables: []corev1.EnvVar{
+			{Name: "abc", Value: "def", ValueFrom: &corev1.EnvVarSource{}},
+			{Name: "ooo", Value: "aaa", ValueFrom: &corev1.EnvVarSource{}},
+		},
+	}
+
+	po1 := getRedactedOptions(opts)
+
+	c.Assert(po1.Namespace, Equals, opts.Namespace)
+	c.Assert(po1.GenerateName, Equals, opts.GenerateName)
+	c.Assert(po1.Image, Equals, opts.Image)
+	c.Assert(po1.Command, DeepEquals, opts.Command)
+	c.Assert(po1.EnvironmentVariables, DeepEquals, []corev1.EnvVar{
+		{Name: "abc", Value: "XXXXX"},
+		{Name: "ooo", Value: "XXXXX"},
+	})
+}
+
+func (s *PodSuite) TestGetRedactedPod(c *C) {
+	pod := &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Some kind",
+			APIVersion: "FakeAPI-1.0",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "c1",
+					Image: "img1",
+					Env: []corev1.EnvVar{
+						{Name: "ev1", Value: "23", ValueFrom: &corev1.EnvVarSource{}},
+						{Name: "ev2", Value: "dd", ValueFrom: &corev1.EnvVarSource{}},
+					},
+				},
+				{
+					Name:  "c2",
+					Image: "img2",
+					Env: []corev1.EnvVar{
+						{Name: "a1", Value: "v1", ValueFrom: &corev1.EnvVarSource{}},
+						{Name: "a2", Value: "v2", ValueFrom: &corev1.EnvVarSource{}},
+					},
+				},
+			},
+		},
+	}
+
+	p1 := getRedactedPod(pod)
+
+	c.Assert(p1.TypeMeta, DeepEquals, pod.TypeMeta)
+	c.Assert(len(p1.Spec.Containers), Equals, len(pod.Spec.Containers))
+	c.Assert(p1.Spec.Containers, DeepEquals, []corev1.Container{
+		{
+			Name:  "c1",
+			Image: "img1",
+			Env: []corev1.EnvVar{
+				{Name: "ev1", Value: "XXXXX"},
+				{Name: "ev2", Value: "XXXXX"},
+			},
+		},
+		{
+			Name:  "c2",
+			Image: "img2",
+			Env: []corev1.EnvVar{
+				{Name: "a1", Value: "XXXXX"},
+				{Name: "a2", Value: "XXXXX"},
+			},
+		},
+	})
+}
+
 func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 	for _, tc := range []struct {
 		podOptsContainerName  string
