@@ -221,7 +221,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		log.Error().WithContext(ctx).WithError(err).Print("Failed to create pod.", field.M{"pod": pod, "options": opts})
+		log.Error().WithContext(ctx).WithError(err).Print("Failed to create pod.", field.M{"pod": getRedactedPod(pod), "options": getRedactedOptions(opts)})
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 	return pod, nil
@@ -488,4 +488,60 @@ func GetPodReadyWaitTimeout() time.Duration {
 	}
 
 	return DefaultPodReadyWaitTimeout
+}
+
+// getRedactedEnvVariables returns array of variables with removed values
+func getRedactedEnvVariables(env []v1.EnvVar) []v1.EnvVar {
+	if len(env) == 0 {
+		return nil
+	}
+
+	result := make([]v1.EnvVar, len(env))
+	for i, ev := range env {
+		result[i] = v1.EnvVar{
+			Name:  ev.Name,
+			Value: "XXXXX",
+		}
+	}
+
+	return result
+}
+
+// getRedactedPod hides all values of env variables from pod, so that it should be safely logged
+func getRedactedPod(pod *v1.Pod) *v1.Pod {
+	if pod == nil {
+		return nil
+	}
+
+	result := *pod // Make shallow copy
+
+	getSanitizedContainers := func(containers []v1.Container) []v1.Container {
+		if len(containers) == 0 {
+			return nil
+		}
+
+		result := make([]v1.Container, len(containers))
+		for i, c := range containers {
+			result[i] = c
+			result[i].Env = getRedactedEnvVariables(c.Env)
+		}
+		return result
+	}
+
+	result.Spec.Containers = getSanitizedContainers(result.Spec.Containers)
+	result.Spec.InitContainers = getSanitizedContainers(result.Spec.InitContainers)
+
+	return &result
+}
+
+// getRedactedOptions hides all values of env variables from pod options, so that they should be safely logged
+func getRedactedOptions(opts *PodOptions) *PodOptions {
+	if opts == nil {
+		return nil
+	}
+
+	result := *opts // Make shallow copy
+
+	result.EnvironmentVariables = getRedactedEnvVariables(result.EnvironmentVariables)
+	return &result
 }
