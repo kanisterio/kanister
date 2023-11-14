@@ -2,8 +2,9 @@ package azure
 
 import (
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"strings"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 )
 
 const (
