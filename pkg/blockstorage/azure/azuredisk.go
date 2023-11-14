@@ -11,9 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-
 	azto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -324,10 +321,14 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 		return nil, errors.Wrapf(err, "Failed to create snapshot for volume %v", volume)
 	}
 	resp, err := pollerResp.PollUntilDone(ctx, nil)
-	blockSnapshot := s.snapshotParse(ctx, resp.Snapshot)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to Get Snapshot after create, snaphotName %s", snapName)
 	}
+	blockSnapshot, err := s.snapshotParse(ctx, resp.Snapshot)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to Parse Snapshot, snaphotName %s", snapName)
+	}
+
 	blockSnapshot.Volume = &volume
 	return blockSnapshot, nil
 }
@@ -393,7 +394,7 @@ func (s *AdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.S
 		return nil, errors.Wrapf(err, "SnapshotsClient.Get: Failed to get snapshot with ID %s", id)
 	}
 
-	return s.snapshotParse(ctx, snapRes.Snapshot), nil
+	return s.snapshotParse(ctx, snapRes.Snapshot)
 }
 
 func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*blockstorage.Volume, error) {
@@ -414,34 +415,73 @@ func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 	if z := vol.Zones; len(z) > 0 {
 		az = az + "-" + *(z[0])
 	}
+	volumeType := ""
+	if vol.SKU != nil &&
+		vol.SKU.Name != nil {
+		volumeType = string(*vol.SKU.Name)
+	} else {
+		return nil, errors.New("Volume type is not available")
+	}
+
+	volId := ""
+	if vol.ID != nil {
+		volId = blockstorage.StringFromPtr(vol.ID)
+	} else {
+		return nil, errors.New("Volume Id is not available")
+	}
+	diskSize := int64(0)
+	if vol.Properties != nil &&
+		vol.Properties.DiskSizeBytes != nil {
+		diskSize = blockstorage.Int64(vol.Properties.DiskSizeBytes)
+	}
+
+	var creationTime = time.Now()
+	if vol.Properties != nil && vol.Properties.TimeCreated != nil {
+		creationTime = *vol.Properties.TimeCreated
+	}
+
+	var managedBy = "N.A."
+	if vol.ManagedBy != nil {
+		managedBy = blockstorage.StringFromPtr(vol.ManagedBy)
+	}
 
 	return &blockstorage.Volume{
 		Type:         s.Type(),
-		ID:           blockstorage.StringFromPtr(vol.ID),
+		ID:           volId,
 		Encrypted:    encrypted,
-		SizeInBytes:  blockstorage.Int64(vol.Properties.DiskSizeBytes),
+		SizeInBytes:  diskSize,
 		Az:           az,
 		Tags:         blockstorage.MapToKeyValue(tags),
-		VolumeType:   string(*vol.SKU.Name),
-		CreationTime: blockstorage.TimeStamp(*vol.Properties.TimeCreated),
-		Attributes:   map[string]string{"Users": blockstorage.StringFromPtr(vol.ManagedBy)},
+		VolumeType:   volumeType,
+		CreationTime: blockstorage.TimeStamp(creationTime),
+		Attributes:   map[string]string{"Users": managedBy},
 	}, nil
 }
 
 func (s *AdStorage) SnapshotParse(ctx context.Context, snapshot interface{}) (*blockstorage.Snapshot, error) {
 	if snap, ok := snapshot.(armcompute.Snapshot); ok {
-		return s.snapshotParse(ctx, snap), nil
+		return s.snapshotParse(ctx, snap)
 	}
 	return nil, errors.New(fmt.Sprintf("Snapshot is not of type *armcompute.Snapshot, snapshot: %v", snapshot))
 }
 
-func (s *AdStorage) snapshotParse(ctx context.Context, snap armcompute.Snapshot) *blockstorage.Snapshot {
+func (s *AdStorage) snapshotParse(ctx context.Context, snap armcompute.Snapshot) (*blockstorage.Snapshot, error) {
+	snapId := ""
+	if snap.ID != nil {
+		snapId = *snap.ID
+	} else {
+		return nil, errors.New("Snapshot ID is missing")
+	}
 	vol := &blockstorage.Volume{
 		Type: s.Type(),
-		ID:   *snap.ID,
+		ID:   snapId,
 	}
 
-	snapCreationTime := *snap.Properties.TimeCreated
+	snapCreationTime := time.Now()
+	if snap.Properties != nil && snap.Properties.TimeCreated != nil {
+		snapCreationTime = *snap.Properties.TimeCreated
+	}
+
 	encrypted := false
 	if snap.Properties.EncryptionSettingsCollection != nil &&
 		snap.Properties.EncryptionSettingsCollection.Enabled != nil {
@@ -451,17 +491,28 @@ func (s *AdStorage) snapshotParse(ctx context.Context, snap armcompute.Snapshot)
 	if snap.Tags != nil {
 		tags = blockstorage.StringMap(snap.Tags)
 	}
+
+	diskSize := azto.Ptr(int64(0))
+	if snap.Properties != nil &&
+		snap.Properties.DiskSizeBytes != nil {
+		diskSize = snap.Properties.DiskSizeBytes
+	}
+
+	region := ""
+	if snap.Location != nil {
+		region = *snap.Location
+	}
 	return &blockstorage.Snapshot{
 		Encrypted:         encrypted,
-		ID:                *snap.ID,
-		Region:            *snap.Location,
-		SizeInBytes:       *snap.Properties.DiskSizeBytes,
+		ID:                snapId,
+		Region:            region,
+		SizeInBytes:       blockstorage.Int64(diskSize),
 		Tags:              blockstorage.MapToKeyValue(tags),
 		Type:              s.Type(),
 		Volume:            vol,
 		CreationTime:      blockstorage.TimeStamp(snapCreationTime),
 		ProvisioningState: *snap.Properties.ProvisioningState,
-	}
+	}, nil
 }
 
 func (s *AdStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
@@ -704,7 +755,11 @@ func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]str
 			return nil, errors.Wrap(err, "failed to advance page")
 		}
 		for _, location := range page.Value {
-			regionMap[*location.Name] = make(LocationZoneMap)
+			if location != nil && location.Name != nil {
+				regionMap[*location.Name] = make(LocationZoneMap)
+			} else {
+				continue
+			}
 		}
 	}
 
@@ -737,11 +792,17 @@ func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]str
 func (s *AdStorage) mapLocationToZone(skuResult *armcompute.ResourceSKU, regionMap *map[string]LocationZoneMap) {
 	var rm = *regionMap
 	for _, locationInfo := range skuResult.LocationInfo {
-		if val, ok := rm[*locationInfo.Location]; ok {
+		location := ""
+		if locationInfo.Location != nil {
+			location = *locationInfo.Location
+		} else {
+			continue
+		}
+		if val, ok := rm[location]; ok {
 			for _, zone := range locationInfo.Zones {
 				val[*zone] = struct{}{}
 			}
-			rm[*locationInfo.Location] = val
+			rm[location] = val
 		}
 	}
 }
