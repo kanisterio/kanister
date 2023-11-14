@@ -491,6 +491,7 @@ func GetPodReadyWaitTimeout() time.Duration {
 }
 
 // getRedactedEnvVariables returns array of variables with removed values
+// This function should be used every time when env variables are logged
 func getRedactedEnvVariables(env []v1.EnvVar) []v1.EnvVar {
 	if len(env) == 0 {
 		return nil
