@@ -17,6 +17,7 @@ package kube
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/url"
 	"strings"
@@ -29,6 +30,40 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
+
+// ExecError is an error returned by kube.Exec, kube.ExecOutput and kube.ExecWithOptions.
+// It contains not only error happened during an execution, but also keeps tails of stdout/stderr streams.
+// These tails could be used by the invoker to construct more precise error.
+type ExecError struct {
+	error
+	stdout LogTail
+	stderr LogTail
+}
+
+// NewExecError creates an instance of ExecError
+func NewExecError(err error, stdout, stderr LogTail) *ExecError {
+	return &ExecError{
+		error:  err,
+		stdout: stdout,
+		stderr: stderr,
+	}
+}
+
+func (e *ExecError) Error() string {
+	return fmt.Sprintf("%s.\nstdout: %s\nstderr: %s", e.error.Error(), e.Stdout(), e.Stderr())
+}
+
+func (e *ExecError) Unwrap() error {
+	return e.error
+}
+
+func (e *ExecError) Stdout() string {
+	return e.stdout.ToString()
+}
+
+func (e *ExecError) Stderr() string {
+	return e.stderr.ToString()
+}
 
 // ExecOptions passed to ExecWithOptions
 type ExecOptions struct {

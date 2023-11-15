@@ -16,45 +16,10 @@ package kube
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"k8s.io/client-go/kubernetes"
 )
-
-// ExecError is an error returned by PodCommandExecutor.Exec
-// It contains not only error happened during an execution, but also keeps tails of stdout/stderr streams.
-// These tails could be used by the invoker to construct more precise error.
-type ExecError struct {
-	error
-	stdout LogTail
-	stderr LogTail
-}
-
-// NewExecError creates an instance of ExecError
-func NewExecError(err error, stdout, stderr LogTail) *ExecError {
-	return &ExecError{
-		error:  err,
-		stdout: stdout,
-		stderr: stderr,
-	}
-}
-
-func (e *ExecError) Error() string {
-	return fmt.Sprintf("%s.\nstdout: %s\nstderr: %s", e.error.Error(), e.Stdout(), e.Stderr())
-}
-
-func (e *ExecError) Unwrap() error {
-	return e.error
-}
-
-func (e *ExecError) Stdout() string {
-	return e.stdout.ToString()
-}
-
-func (e *ExecError) Stderr() string {
-	return e.stderr.ToString()
-}
 
 // PodCommandExecutor provides a way to execute a command within the pod.
 // Is intended to be returned by PodController and works with pod controlled by it.
