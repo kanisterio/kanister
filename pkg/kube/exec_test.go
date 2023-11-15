@@ -20,6 +20,7 @@ package kube
 import (
 	"bytes"
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -142,6 +143,84 @@ func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(bufout.String(), Equals, testCase.expectedOut)
 		c.Assert(buferr.String(), Equals, testCase.expectedErr)
+	}
+}
+
+func (s *ExecSuite) TestErrorInExecWithOptions(c *C) {
+	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
+
+	var testCases = []struct {
+		cmd          []string
+		expectedOut  []string
+		expectedErr  []string
+		expectedText string
+	}{
+		{
+			cmd:          []string{"sh", "-c", "printf 'test\ntest1\ntest2\ntest3\ntest4\ntest5\ntest6\ntest7\ntest8\ntest9\ntest10' && exit 1"},
+			expectedOut:  []string{"test", "test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9", "test10"},
+			expectedErr:  []string{},
+			expectedText: "command terminated with exit code 1.\nstdout: test1\r\ntest2\r\ntest3\r\ntest4\r\ntest5\r\ntest6\r\ntest7\r\ntest8\r\ntest9\r\ntest10\nstderr: ",
+		},
+		{
+			cmd:          []string{"sh", "-c", "printf 'test\ntest1\ntest2\ntest3\ntest4\ntest5\ntest6\ntest7\ntest8\ntest9\ntest10' >&2 && exit 1"},
+			expectedOut:  []string{},
+			expectedErr:  []string{"test", "test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9", "test10"},
+			expectedText: "command terminated with exit code 1.\nstdout: \nstderr: test1\r\ntest2\r\ntest3\r\ntest4\r\ntest5\r\ntest6\r\ntest7\r\ntest8\r\ntest9\r\ntest10",
+		},
+	}
+
+	getSliceTail := func(slice []string, length int) []string {
+		if len(slice) > length {
+			return slice[len(slice)-length:]
+		}
+
+		return slice
+	}
+
+	for _, testCase := range testCases {
+		// First invocation is without stdout and stderr buffers
+		opts := ExecOptions{
+			Command:       testCase.cmd,
+			Namespace:     s.pod.Namespace,
+			PodName:       s.pod.Name,
+			ContainerName: "", // use default container
+			Stdin:         nil,
+		}
+		_, _, err1 := ExecWithOptions(s.cli, opts) // Output is not needed
+		c.Assert(err1, Not(IsNil))
+
+		var ee1 *ExecError
+		ok := errors.As(err1, &ee1)
+		c.Assert(ok, Equals, true)
+		c.Assert(ee1.Stdout(), Not(Equals), testCase.expectedOut)
+		c.Assert(ee1.Stderr(), Not(Equals), testCase.expectedErr)
+		c.Assert(ee1.Error(), Equals, testCase.expectedText)
+
+		// Now try the same with passing buffers for stdout and stderr
+		// This should not affect returned error
+		bufout := bytes.Buffer{}
+		buferr := bytes.Buffer{}
+		opts.Stdout = &bufout
+		opts.Stderr = &buferr
+
+		_, _, err2 := ExecWithOptions(s.cli, opts) // Output is not needed
+		c.Assert(err2, Not(IsNil))
+
+		var ee2 *ExecError
+		ok = errors.As(err2, &ee2)
+		c.Assert(ok, Equals, true)
+
+		// When error happens, stdout/stderr buffers should contain all lines produced by an app
+		c.Assert(bufout.String(), Equals, strings.Join(testCase.expectedOut, "\n"))
+		c.Assert(buferr.String(), Equals, strings.Join(testCase.expectedErr, "\n"))
+
+		// When error happens, ExecError should contain only last ten lines of stdout/stderr
+		c.Assert(ee2.Stdout(), Equals, strings.Join(getSliceTail(testCase.expectedOut, logTailDefaultLength), "\r\n"))
+		c.Assert(ee2.Stderr(), Equals, strings.Join(getSliceTail(testCase.expectedErr, logTailDefaultLength), "\r\n"))
+
+		// When error happens, ExecError should include stdout/stderr into its text representation
+		c.Assert(ee2.Error(), Equals, testCase.expectedText)
 	}
 }
 

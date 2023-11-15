@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"k8s.io/client-go/kubernetes"
@@ -37,6 +38,10 @@ func NewExecError(err error, stdout, stderr LogTail) *ExecError {
 		stdout: stdout,
 		stderr: stderr,
 	}
+}
+
+func (e *ExecError) Error() string {
+	return fmt.Sprintf("%s.\nstdout: %s\nstderr: %s", e.error.Error(), e.Stdout(), e.Stderr())
 }
 
 func (e *ExecError) Unwrap() error {

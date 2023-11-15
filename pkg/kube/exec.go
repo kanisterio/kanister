@@ -118,12 +118,25 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 		req.Param("container", options.ContainerName)
 	}
 
+	stderrTail := NewLogTail(logTailDefaultLength)
+	stdoutTail := NewLogTail(logTailDefaultLength)
+
+	var stdout io.Writer = stdoutTail
+	if options.Stdout != nil {
+		stdout = io.MultiWriter(options.Stdout, stdoutTail)
+	}
+
+	var stderr io.Writer = stderrTail
+	if options.Stderr != nil {
+		stderr = io.MultiWriter(options.Stderr, stderrTail)
+	}
+
 	req.VersionedParams(&v1.PodExecOptions{
 		Container: options.ContainerName,
 		Command:   options.Command,
 		Stdin:     options.Stdin != nil,
-		Stdout:    options.Stdout != nil,
-		Stderr:    options.Stderr != nil,
+		Stdout:    stdout != nil,
+		Stderr:    stderr != nil,
 		TTY:       tty,
 	}, scheme.ParameterCodec)
 
@@ -134,9 +147,14 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 			req.URL(),
 			config,
 			options.Stdin,
-			options.Stdout,
-			options.Stderr,
+			stdout,
+			stderr,
 			tty)
+
+		if err != nil {
+			err = NewExecError(err, stdoutTail, stderrTail)
+		}
+
 		errCh <- err
 	}()
 
