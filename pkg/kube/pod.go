@@ -45,7 +45,7 @@ const (
 	// PodReadyWaitTimeoutEnv is the env var to get pod ready wait timeout
 	PodReadyWaitTimeoutEnv = "KANISTER_POD_READY_WAIT_TIMEOUT"
 	errAccessingNode       = "Failed to get node"
-	defaultContainerName   = "container"
+	DefaultContainerName   = "container"
 )
 
 type VolumeMountOptions struct {
@@ -204,7 +204,7 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 // name. This should be used whenever we create pods for Kanister functions.
 func ContainerNameFromPodOptsOrDefault(po *PodOptions) string {
 	if po == nil || po.ContainerName == "" {
-		return defaultContainerName
+		return DefaultContainerName
 	}
 
 	return po.ContainerName
