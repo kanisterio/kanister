@@ -15,17 +15,21 @@
 package function
 
 import (
+	"bytes"
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -55,7 +59,9 @@ func init() {
 
 var _ kanister.Func = (*BackupDataStatsFunc)(nil)
 
-type BackupDataStatsFunc struct{}
+type BackupDataStatsFunc struct {
+	progressPercent string
+}
 
 func (*BackupDataStatsFunc) Name() string {
 	return BackupDataStatsFuncName
@@ -65,38 +71,57 @@ func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        getKanisterToolsImage(),
+		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := backupDataStatsPodFunc(cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, mode)
+	podFunc := backupDataStatsPodFunc(tp, encryptionKey, backupArtifactPrefix, backupID, mode)
 	return pr.Run(ctx, podFunc)
 }
 
-func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID, mode string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func backupDataStatsPodFunc(
+	tp param.TemplateParams,
+	encryptionKey,
+	backupArtifactPrefix,
+	backupID,
+	mode string,
+) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+		pod := pc.Pod()
+
 		// Wait for pod to reach running state
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
+		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
-		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+
+		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
 			return nil, err
 		}
-		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+
+		// Parent context could already be dead, so removing file within new context
+		defer remover.Remove(context.Background()) //nolint:errcheck
+
 		cmd, err := restic.StatsCommandByID(tp.Profile, backupArtifactPrefix, backupID, mode, encryptionKey)
 		if err != nil {
 			return nil, err
 		}
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		commandExecutor, err := pc.GetCommandExecutor()
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to get pod command executor")
+		}
+
+		var stdout, stderr bytes.Buffer
+		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to get backup stats")
 		}
 		// Get File Count and Size from Stats
-		mode, fc, size := restic.SnapshotStatsFromStatsLog(stdout)
+		mode, fc, size := restic.SnapshotStatsFromStatsLog(stdout.String())
 		if fc == "" || size == "" {
 			return nil, errors.New("Failed to parse snapshot stats from logs")
 		}
@@ -110,7 +135,11 @@ func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 	}
 }
 
-func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	b.progressPercent = progress.StartedPercent
+	defer func() { b.progressPercent = progress.CompletedPercent }()
+
 	var namespace, backupArtifactPrefix, backupID, mode, encryptionKey string
 	var err error
 	if err = Arg(args, BackupDataStatsNamespaceArg, &namespace); err != nil {
@@ -128,7 +157,7 @@ func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = OptArg(args, BackupDataStatsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	podOverride, err := GetPodSpecOverride(tp, args, DescribeBackupsPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, CheckRepositoryPodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -162,4 +191,12 @@ func (*BackupDataStatsFunc) Arguments() []string {
 		BackupDataStatsMode,
 		BackupDataStatsEncryptionKeyArg,
 	}
+}
+
+func (b *BackupDataStatsFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    b.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

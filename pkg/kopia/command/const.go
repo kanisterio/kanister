@@ -28,6 +28,7 @@ const (
 	restoreSubCommand     = "restore"
 	runSubCommand         = "run"
 	setSubCommand         = "set"
+	showSubCommand        = "show"
 	snapshotSubCommand    = "snapshot"
 	statsSubCommand       = "stats"
 
@@ -61,6 +62,7 @@ const (
 	serverSubCommand          = "server"
 	startSubCommand           = "start"
 	statusSubCommand          = "status"
+	setParametersSubCommand   = "set-parameters"
 	userSubCommand            = "user"
 	addressFlag               = "--address"
 	redirectToDevNull         = "> /dev/null 2>&1"
@@ -83,6 +85,9 @@ const (
 	overrideUsernameFlag      = "--override-username"
 	pointInTimeConnectionFlag = "--point-in-time"
 	urlFlag                   = "--url"
+	readOnlyFlag              = "--readonly"
+	retentionModeFlag         = "--retention-mode"
+	retentionPeriodFlag       = "--retention-period"
 )
 
 // List of possible modifications to a policy, expressed as the kopia flag that will modify it

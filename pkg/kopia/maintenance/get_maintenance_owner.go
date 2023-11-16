@@ -15,11 +15,14 @@
 package maintenance
 
 import (
-	"strings"
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
 
+	kopiacli "github.com/kopia/kopia/cli"
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
@@ -35,48 +38,45 @@ type KopiaUserProfile struct {
 	PasswordHash        []byte `json:"passwordHash"`
 }
 
-// GetMaintenanceOwnerForConnectedRepository executes maintenance info command, parses output
-// and returns maintenance owner
+// GetMaintenanceOwnerForConnectedRepository executes maintenance info command,
+// and returns maintenance owner.
 func GetMaintenanceOwnerForConnectedRepository(
-	cli kubernetes.Interface,
-	namespace,
-	pod,
-	container,
-	repoPassword,
+	ctx context.Context,
+	podController kube.PodController,
 	configFilePath,
 	logDirectory string,
 ) (string, error) {
-	args := command.MaintenanceInfoCommandArgs{
-		CommandArgs: &command.CommandArgs{
-			RepoPassword:   repoPassword,
-			ConfigFilePath: configFilePath,
-			LogDirectory:   logDirectory,
-		},
-		GetJsonOutput: false,
-	}
-	cmd := command.MaintenanceInfo(args)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	pod := podController.Pod()
+	container := pod.Spec.Containers[0].Name
+	commandExecutor, err := podController.GetCommandExecutor()
 	if err != nil {
 		return "", err
 	}
-	parsedOwner := parseOutput(stdout)
-	if parsedOwner == "" {
-		return "", errors.New("Failed parsing maintenance info output to get owner")
+
+	args := command.MaintenanceInfoCommandArgs{
+		CommandArgs: &command.CommandArgs{
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
+		},
+		GetJsonOutput: true,
 	}
-	return parsedOwner, nil
+	cmd := command.MaintenanceInfo(args)
+
+	var stdout, stderr bytes.Buffer
+	err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+	format.LogWithCtx(ctx, pod.Name, container, stdout.String())
+	format.LogWithCtx(ctx, pod.Name, container, stderr.String())
+	if err != nil {
+		return "", err
+	}
+
+	return parseOwner(stdout.Bytes())
 }
 
-func parseOutput(output string) string {
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "Owner") {
-			arr := strings.Split(line, ":")
-			if len(arr) == 2 {
-				return strings.TrimSpace(arr[1])
-			}
-		}
+func parseOwner(output []byte) (string, error) {
+	maintInfo := kopiacli.MaintenanceInfo{}
+	if err := json.Unmarshal(output, &maintInfo); err != nil {
+		return "", errors.New(fmt.Sprintf("failed to unmarshal maintenance info output: %v", err))
 	}
-	return ""
+	return maintInfo.Owner, nil
 }

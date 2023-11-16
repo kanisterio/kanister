@@ -19,18 +19,22 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
@@ -38,9 +42,13 @@ const (
 	BackupDataUsingKopiaServerFuncName = "BackupDataUsingKopiaServer"
 	// BackupDataUsingKopiaServerSnapshotTagsArg is the key used for returning snapshot tags
 	BackupDataUsingKopiaServerSnapshotTagsArg = "snapshotTags"
+	// KopiaRepositoryServerUserHostname is the key used for returning the hostname of the user
+	KopiaRepositoryServerUserHostname = "repositoryServerUserHostname"
 )
 
-type backupDataUsingKopiaServerFunc struct{}
+type backupDataUsingKopiaServerFunc struct {
+	progressPercent string
+}
 
 func init() {
 	err := kanister.Register(&backupDataUsingKopiaServerFunc{})
@@ -71,17 +79,23 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
 		BackupDataUsingKopiaServerSnapshotTagsArg,
+		KopiaRepositoryServerUserHostname,
 	}
 }
 
-func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+func (b *backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+	// Set progress percent
+	b.progressPercent = progress.StartedPercent
+	defer func() { b.progressPercent = progress.CompletedPercent }()
+
 	var (
-		container   string
-		err         error
-		includePath string
-		namespace   string
-		pod         string
-		tagsStr     string
+		container    string
+		err          error
+		includePath  string
+		namespace    string
+		pod          string
+		tagsStr      string
+		userHostname string
 	)
 	if err = Arg(args, BackupDataContainerArg, &container); err != nil {
 		return nil, err
@@ -96,6 +110,9 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, err
 	}
 	if err = OptArg(args, BackupDataUsingKopiaServerSnapshotTagsArg, &tagsStr, ""); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
 		return nil, err
 	}
 
@@ -114,8 +131,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
-	username := tp.RepositoryServer.Username
-	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
 	}
@@ -134,7 +150,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		pod,
 		tp.RepositoryServer.Address,
 		fingerprint,
-		username,
+		tp.RepositoryServer.Username,
 		userAccessPassphrase,
 		tags,
 	)
@@ -157,6 +173,14 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	return output, nil
 }
 
+func (b *backupDataUsingKopiaServerFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    b.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
+}
+
 func backupDataUsingKopiaServer(
 	cli kubernetes.Interface,
 	container,
@@ -174,16 +198,18 @@ func backupDataUsingKopiaServer(
 	configFile, logDirectory := kankopia.CustomConfigFileAndLogDirectory(hostname)
 
 	cmd := kopiacmd.RepositoryConnectServerCommand(kopiacmd.RepositoryServerCommandArgs{
-		UserPassword:    userPassphrase,
-		ConfigFilePath:  configFile,
-		LogDirectory:    logDirectory,
-		CacheDirectory:  kopiacmd.DefaultCacheDirectory,
-		Hostname:        hostname,
-		ServerURL:       serverAddress,
-		Fingerprint:     fingerprint,
-		Username:        username,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
+		UserPassword:   userPassphrase,
+		ConfigFilePath: configFile,
+		LogDirectory:   logDirectory,
+		CacheDirectory: kopiacmd.DefaultCacheDirectory,
+		Hostname:       hostname,
+		ServerURL:      serverAddress,
+		Fingerprint:    fingerprint,
+		Username:       username,
+		CacheArgs: kopiacmd.CacheArgs{
+			ContentCacheLimitMB:  contentCacheMB,
+			MetadataCacheLimitMB: metadataCacheMB,
+		},
 	})
 
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
@@ -223,24 +249,36 @@ func backupDataUsingKopiaServer(
 	return kopiacmd.ParseSnapshotCreateOutput(stdout, stderr)
 }
 
-func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
+func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostname string) (string, string, error) {
 	var userAccessMap map[string]string
 	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
 		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
 	}
 
-	var userPassPhrase string
-	var hostName string
-	for key, val := range userAccessMap {
-		hostName = key
-		userPassPhrase = val
+	// Check if hostname provided exists in the User Access Map
+	if hostname != "" {
+		err := checkHostnameExistsInUserAccessMap(userAccessMap, hostname)
+		if err != nil {
+			return "", "", errors.Wrap(err, "Failed to find hostname in the User Access Map")
+		}
 	}
 
-	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassPhrase)
+	// Set First Value of hostname and passphrase from the User Access Map
+	// Or if hostname provided by the user, set the hostname and password for hostname provided
+	var userPassphrase string
+	for key, val := range userAccessMap {
+		if hostname == "" || hostname == key {
+			hostname = key
+			userPassphrase = val
+			break
+		}
+	}
+
+	decodedUserPassphrase, err := base64.StdEncoding.DecodeString(userPassphrase)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
 	}
-	return hostName, string(decodedUserPassPhrase), nil
+	return hostname, string(decodedUserPassphrase), nil
 }
 
 func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
@@ -253,4 +291,12 @@ func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, erro
 		return "", "", errors.Wrap(err, "Error marshalling Certificate Data")
 	}
 	return string(userCredJSON), string(certJSON), nil
+}
+
+func checkHostnameExistsInUserAccessMap(userAccessMap map[string]string, hostname string) error {
+	// check if hostname that is provided by the user exists in the user access map
+	if _, ok := userAccessMap[hostname]; !ok {
+		return errors.New("hostname provided in the repository server CR does not exist in the user access map")
+	}
+	return nil
 }

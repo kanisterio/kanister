@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
@@ -34,32 +35,36 @@ import (
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/poll"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (
-	actionFlagName           = "action"
-	actionSetFlagName        = "action-set"
-	blueprintFlagName        = "blueprint"
-	configMapsFlagName       = "config-maps"
-	deploymentFlagName       = "deployment"
-	optionsFlagName          = "options"
-	profileFlagName          = "profile"
-	repositoryServerFlagName = "repository-server"
-	pvcFlagName              = "pvc"
-	secretsFlagName          = "secrets"
-	statefulSetFlagName      = "statefulset"
-	deploymentConfigFlagName = "deploymentconfig"
-	sourceFlagName           = "from"
-	selectorFlagName         = "selector"
-	selectorKindFlag         = "kind"
-	selectorNamespaceFlag    = "selector-namespace"
-	namespaceTargetsFlagName = "namespacetargets"
-	objectsFlagName          = "objects"
+	actionFlagName                       = "action"
+	actionSetFlagName                    = "name"
+	blueprintFlagName                    = "blueprint"
+	configMapsFlagName                   = "config-maps"
+	deploymentFlagName                   = "deployment"
+	optionsFlagName                      = "options"
+	profileFlagName                      = "profile"
+	repositoryServerFlagName             = "repository-server"
+	pvcFlagName                          = "pvc"
+	secretsFlagName                      = "secrets"
+	statefulSetFlagName                  = "statefulset"
+	deploymentConfigFlagName             = "deploymentconfig"
+	sourceFlagName                       = "from"
+	selectorFlagName                     = "selector"
+	selectorKindFlag                     = "kind"
+	selectorNamespaceFlag                = "selector-namespace"
+	namespaceTargetsFlagName             = "namespacetargets"
+	objectsFlagName                      = "objects"
+	waitForRepositoryServerReadyFlagName = "wait-for-repository-server"
+	labelsFlagName                       = "labels"
 )
 
 var (
 	errMissingFieldActionName = fmt.Errorf("missing action name. use the --action flag to specify the action name")
+	errInvalidFieldLabels     = fmt.Errorf("invalid --labels value. make sure the value for field --labels is correct")
 )
 
 type PerformParams struct {
@@ -75,6 +80,7 @@ type PerformParams struct {
 	RepositoryServer *crv1alpha1.ObjectReference
 	Secrets          map[string]crv1alpha1.ObjectReference
 	ConfigMaps       map[string]crv1alpha1.ObjectReference
+	Labels           map[string]string
 }
 
 func newActionSetCmd() *cobra.Command {
@@ -105,6 +111,8 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().StringSliceP(namespaceTargetsFlagName, "T", []string{}, "namespaces for the action set, comma separated list of namespaces (eg: --namespacetargets namespace1,namespace2)")
 	cmd.Flags().StringSliceP(objectsFlagName, "O", []string{}, "objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)")
+	cmd.Flags().BoolP(waitForRepositoryServerReadyFlagName, "w", false, "wait for repository server to be ready before creating actionset")
+	cmd.Flags().String(labelsFlagName, "", "Labels that should be added to the created actionset, space chars would be trimmed automatically. Multiple labels can be separate by comma(,) (eg: --labels key=value,foo=bar)")
 	return cmd
 }
 
@@ -121,7 +129,8 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	valFlag, _ := cmd.Flags().GetBool(skipValidationFlag)
 	if !valFlag {
-		err = verifyParams(ctx, params, cli, crCli, osCli)
+		repoServerReady, _ := cmd.Flags().GetBool(waitForRepositoryServerReadyFlagName)
+		err = verifyParams(ctx, params, cli, crCli, osCli, repoServerReady)
 		if err != nil {
 			return err
 		}
@@ -184,14 +193,19 @@ func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 		return nil, err
 	}
 
-	return &crv1alpha1.ActionSet{
+	actionset := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
+			Name: name,
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: actions,
 		},
-	}, nil
+	}
+	if params.Labels != nil {
+		actionset.Labels = params.Labels
+	}
+
+	return actionset, nil
 }
 
 func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1alpha1.ActionSet, error) {
@@ -248,14 +262,19 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 		return nil, err
 	}
 
-	return &crv1alpha1.ActionSet{
+	actionset := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
+			Name: name,
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: actions,
 		},
-	}, nil
+	}
+	if params.Labels != nil {
+		actionset.Labels = params.Labels
+	}
+
+	return actionset, nil
 }
 
 func createActionSet(ctx context.Context, crCli versioned.Interface, namespace string, as *crv1alpha1.ActionSet) error {
@@ -292,6 +311,7 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	parentName, _ := cmd.Flags().GetString(sourceFlagName)
 	blueprint, _ := cmd.Flags().GetString(blueprintFlagName)
 	dryRun, _ := cmd.Flags().GetBool(dryRunFlag)
+	labels, _ := cmd.Flags().GetString(labelsFlagName)
 	profile, err := parseProfile(cmd, ns)
 	if err != nil {
 		return nil, err
@@ -316,6 +336,11 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	if err != nil {
 		return nil, err
 	}
+	ls, err := parseLabels(labels)
+	if err != nil {
+		return nil, err
+	}
+
 	return &PerformParams{
 		Namespace:        ns,
 		ActionName:       actionName,
@@ -329,7 +354,41 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 		ConfigMaps:       cms,
 		Profile:          profile,
 		RepositoryServer: repositoryServer,
+		Labels:           ls,
 	}, nil
+}
+
+// parseLabels parses the given string to labels, it does some basic
+// validations, for example the key and value must be separated by `=`
+// and neither key nor value can have `,` in it.
+// If there are some issue even after this, that would be caught by apiserver
+// when actionset is actually created.
+func parseLabels(label string) (map[string]string, error) {
+	if label == "" {
+		return nil, nil
+	}
+	labels := strings.Split(label, ",")
+
+	parsed := map[string]string{}
+	for _, l := range labels {
+		if !strings.Contains(l, "=") {
+			return nil, errInvalidFieldLabels
+		}
+
+		kv := strings.Split(l, "=")
+		key := strings.TrimSpace(kv[0])
+		value := strings.TrimSpace(kv[1])
+
+		if strings.HasPrefix(key, ",") ||
+			strings.HasSuffix(key, ",") ||
+			strings.HasPrefix(value, ",") ||
+			strings.HasSuffix(value, ",") {
+			return nil, errInvalidFieldLabels
+		}
+
+		parsed[key] = value
+	}
+	return parsed, nil
 }
 
 func parseConfigMaps(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference, error) {
@@ -643,7 +702,7 @@ func parseName(k string, r string) (namespace, name string, err error) {
 	return m[1], m[2], nil
 }
 
-func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
+func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface, waitForRepoServerReady bool) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
@@ -674,7 +733,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	// RepositoryServer
 	go func() {
 		defer wg.Done()
-		err := verifyRepositoryServerParams(p.RepositoryServer, crCli, ctx)
+		err := verifyRepositoryServerParams(ctx, crCli, p.RepositoryServer, waitForRepoServerReady)
 		if err != nil {
 			msgs <- err
 		}
@@ -737,25 +796,25 @@ func max(x, y int) int {
 
 func generateActionSetName(p *PerformParams) (string, error) {
 	if p.ActionSetName != "" {
-		return fmt.Sprintf("%s-", p.ActionSetName), nil
+		return p.ActionSetName, nil
 	}
 
 	if p.ActionName != "" {
 		if p.ParentName != "" {
-			return fmt.Sprintf("%s-%s-", p.ActionName, p.ParentName), nil
+			return fmt.Sprintf("%s-%s-%s", p.ActionName, p.ParentName, rand.String(5)), nil
 		}
 
-		return fmt.Sprintf("%s-", p.ActionName), nil
+		return fmt.Sprintf("%s-%s", p.ActionName, rand.String(5)), nil
 	}
 
 	if p.ParentName != "" {
-		return fmt.Sprintf("%s-", p.ParentName), nil
+		return fmt.Sprintf("%s-%s", p.ParentName, rand.String(5)), nil
 	}
 
 	return "", errMissingFieldActionName
 }
 
-func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli versioned.Interface, ctx context.Context) error {
+func verifyRepositoryServerParams(ctx context.Context, crCli versioned.Interface, repoServer *crv1alpha1.ObjectReference, waitForRepoServerReady bool) error {
 	if repoServer != nil {
 		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
 		if err != nil {
@@ -764,10 +823,26 @@ func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli 
 			}
 			return errors.New("error while fetching repo server")
 		}
-		if rs.Status.Progress != "ServerReady" {
+		if waitForRepoServerReady {
+			return waitForKopiaRepositoryServerReady(ctx, crCli, rs)
+		}
+		if rs.Status.Progress != crv1alpha1.Ready {
 			err = errors.New("Repository Server Not Ready")
 			return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
 		}
+	}
+	return nil
+}
+
+func waitForKopiaRepositoryServerReady(ctx context.Context, crCli versioned.Interface, rs *crv1alpha1.RepositoryServer) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
+	defer waitCancel()
+	pollErr := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
+		return repositoryServer.Status.Progress == crv1alpha1.Ready, err
+	})
+	if pollErr != nil {
+		return errors.Wrapf(pollErr, "Failed while waiting for Repository Server %s/%s to be Ready", rs.GetNamespace(), rs.GetName())
 	}
 	return nil
 }

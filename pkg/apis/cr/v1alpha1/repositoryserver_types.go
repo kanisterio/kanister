@@ -81,13 +81,27 @@ type Repository struct {
 	// PasswordSecretRef has the password required to connect to kopia repository
 	PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef"`
 	CacheSizeSettings CacheSizeSettings      `json:"cacheSizeSettings,omitempty"`
+	Configuration     Configuration          `json:"configuration,omitempty"`
+}
+
+// Configuration can be used to specify the optional fields used
+// for repository operations
+type Configuration struct {
+	// CacheDirectory is an optional field to specify kopia cache directory
+	CacheDirectory string `json:"cacheDirectory,omitempty"`
+	// LogDirectory is an optional field to specify kopia log directory
+	LogDirectory string `json:"logDirectory,omitempty"`
+	// ConfigFilePath is an optional field to specify kopia config file path
+	ConfigFilePath string `json:"configFilePath,omitempty"`
 }
 
 // CacheSizeSettings are the metadata/content cache size details
 // that can be used while establishing connection to the kopia repository
 type CacheSizeSettings struct {
-	Metadata string `json:"metadata"`
-	Content  string `json:"content"`
+	// Metadata size should be in specified in MB
+	Metadata *int `json:"metadata,omitempty"`
+	// Content size should be in specified in MB
+	Content *int `json:"content,omitempty"`
 }
 
 // Server details required for starting the repository proxy server and initializing the repository client users
@@ -117,48 +131,44 @@ type UserAccess struct {
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
 type RepositoryServerStatus struct {
-	Conditions []Condition              `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Conditions []metav1.Condition       `json:"conditions,omitempty"`
 	ServerInfo ServerInfo               `json:"serverInfo,omitempty"`
 	Progress   RepositoryServerProgress `json:"progress,omitempty"`
 }
 
-// Condition contains details of the current state of the RepositoryServer resource
-type Condition struct {
-	LastTransitionTime metav1.Time                   `json:"lastTransitionTime,omitempty"`
-	LastUpdateTime     metav1.Condition              `json:"lastUpdateTime,omitempty"`
-	Status             metav1.ConditionStatus        `json:"status"`
-	Type               RepositoryServerConditionType `json:"type"`
-}
-
-// RepositoryServerConditionType defines all the various condition types of the RepositoryServer resource
-type RepositoryServerConditionType string
-
 const (
+
+	// ServerSetup indicates whether the repository pod and service have been
+	ServerSetup string = "ServerSetup"
+
+	// RepositoryConnected indicates whether the existing repository is connected and ready to use
+	RepositoryConnected string = "RepositoryConnected"
+
 	// RepositoryReady indicates whether the existing repository is connected and ready to use
-	RepositoryReady RepositoryServerConditionType = "RepositoryReady"
+	RepositoryReady string = "RepositoryReady"
 
 	// ServerInitialized means that the proxy server, that serves the repository, has been started
-	ServerInitialized RepositoryServerConditionType = "ServerInitialized"
+	ServerInitialized string = "ServerInitialized"
 
-	// ClientsInitialized indicates that the client users have been added or updated to the repository server
-	ClientsInitialized RepositoryServerConditionType = "ClientsInitialized"
+	// ClientUserInitialized indicates that the client users have been added or updated to the repository server
+	ClientUserInitialized string = "ClientUserInitialized"
 
 	// ServerRefreshed denotes the refreshed condition of the repository server in order to register client users
-	ServerRefreshed RepositoryServerConditionType = "ServerRefreshed"
+	ServerRefreshed string = "ServerRefreshed"
 )
 
 // RepositoryServerProgress is the field users would check to know the state of RepositoryServer
 type RepositoryServerProgress string
 
 const (
-	// ServerReady represents the ready state of the repository server and the pod which runs the proxy server
-	ServerReady RepositoryServerProgress = "ServerReady"
+	// Ready represents the ready state of the repository server
+	Ready RepositoryServerProgress = "Ready"
 
-	// ServerStopped represents the terminated state of the repository server pod due to any unforeseen errors
-	ServerStopped RepositoryServerProgress = "ServerStopped"
+	// Failed represents the terminated state of the repository server CR due to any unforeseen errors
+	Failed RepositoryServerProgress = "Failed"
 
-	// ServerPending indicates the pending state of the RepositoryServer CR when Reconcile callback is in progress
-	ServerPending RepositoryServerProgress = "ServerPending"
+	// Pending indicates the pending state of the RepositoryServer CR when Reconcile callback is in progress
+	Pending RepositoryServerProgress = "Pending"
 )
 
 // ServerInfo describes all the information required by the client users to connect to the repository server

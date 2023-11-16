@@ -50,6 +50,27 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		{
 			params: &StorageCommandParams{
 				Location: map[string][]byte{
+					repositoryserver.BucketKey:        []byte("test-bucket"),
+					repositoryserver.EndpointKey:      []byte("test-endpoint"),
+					repositoryserver.PrefixKey:        []byte("test-prefix"),
+					repositoryserver.RegionKey:        []byte("test-region"),
+					repositoryserver.SkipSSLVerifyKey: []byte("true"),
+					repositoryserver.TypeKey:          []byte("s3Compliant"),
+				},
+				RepoPathPrefix: "dir/subdir/",
+			},
+			Checker: check.IsNil,
+			expectedCmd: fmt.Sprint(
+				s3SubCommand,
+				fmt.Sprintf(" %s=test-bucket", bucketFlag),
+				fmt.Sprintf(" %s=test-endpoint", s3EndpointFlag),
+				fmt.Sprintf(" %s=test-prefix/dir/subdir/ %s", prefixFlag, s3DisableTLSVerifyFlag),
+				fmt.Sprintf(" %s=test-region", s3RegionFlag),
+			),
+		},
+		{
+			params: &StorageCommandParams{
+				Location: map[string][]byte{
 					repositoryserver.PrefixKey: []byte("test-prefix"),
 					repositoryserver.TypeKey:   []byte("filestore"),
 				},

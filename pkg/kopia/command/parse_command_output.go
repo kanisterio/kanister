@@ -25,6 +25,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/kopia/kopia/snapshot"
+	"github.com/kopia/kopia/snapshot/policy"
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/field"
@@ -105,6 +106,9 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		snapID = string(snapManifest.ID)
 		if snapManifest.RootEntry != nil {
 			rootID = snapManifest.RootEntry.ObjectID.String()
+			if snapManifest.RootEntry.DirSummary != nil && snapManifest.RootEntry.DirSummary.FatalErrorCount > 0 {
+				return "", "", errors.New(fmt.Sprintf("Error occurred during snapshot creation. Output %s", output))
+			}
 		}
 	}
 	if snapID == "" {
@@ -411,4 +415,15 @@ func ErrorsFromOutput(output string) []error {
 	}
 
 	return err
+}
+
+// ParsePolicyShow parses the output of a kopia policy show command.
+func ParsePolicyShow(output string) (policy.Policy, error) {
+	policy := policy.Policy{}
+
+	if err := json.Unmarshal([]byte(output), &policy); err != nil {
+		return policy, errors.Wrap(err, "Failed to unmarshal snapshot manifest list")
+	}
+
+	return policy, nil
 }

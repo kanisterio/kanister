@@ -19,6 +19,7 @@
 set -o errexit
 set -o nounset
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 export CGO_ENABLED=0
 export GO111MODULE=on
@@ -50,8 +51,34 @@ if [ -n "${ERRS}" ]; then
 fi
 echo
 
+check_dependencies() {
+    # Check if minio is already deployed. We suppress only `stdout` and not `stderr` to make sure we catch errors if `helm status` fails
+    if helm status minio -n minio 1> /dev/null ; then
+        # Setting env vars to access MinIO
+        export S3_COMPLIANT_AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+        export S3_COMPLIANT_AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        export S3_COMPLIANT_AWS_REGION="us-west-2"
+        export S3_COMPLIANT_LOCATION_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
+        export TEST_REPOSITORY_ENCRYPTION_KEY="testKopiaRepoPassword"
+    else
+        echo "Please install MinIO using 'make install-minio' and try again."
+        exit 1
+    fi
+
+    # A test (CRDSuite) that runs as part of `make test` requires at least one CRD to
+    # be present on the cluster. That's why we are checking that `csi-hostpath-driver`
+    # installed before running tests.
+    if ! ${SCRIPT_DIR}/local_kubernetes.sh check_csi_hostpath_driver_installed ; then
+        echo "CRDs are not installed on the cluster but a test (CRDSuite) requires at least one CRD to be available on the cluster."\
+        " One can be installed by running 'make install-csi-hostpath-driver' command."
+        exit 1
+    fi
+}
+
+check_dependencies
+
 echo "Running tests:"
-go test -v -installsuffix "static" -i ${TARGETS}
+go test -v -installsuffix "static" ${TARGETS}
 go test -v ${TARGETS} -list .
 go test -v -installsuffix "static" ${TARGETS} -check.v
 echo

@@ -15,11 +15,12 @@
 package function
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -30,6 +31,7 @@ import (
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -38,7 +40,9 @@ const (
 	SparseRestoreOption = "sparseRestore"
 )
 
-type restoreDataUsingKopiaServerFunc struct{}
+type restoreDataUsingKopiaServerFunc struct {
+	progressPercent string
+}
 
 func init() {
 	_ = kanister.Register(&restoreDataUsingKopiaServerFunc{})
@@ -68,16 +72,22 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 		RestoreDataVolsArg,
 		RestoreDataPodOverrideArg,
 		RestoreDataImageArg,
+		KopiaRepositoryServerUserHostname,
 	}
 }
 
-func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+	// Set progress percent
+	r.progressPercent = progress.StartedPercent
+	defer func() { r.progressPercent = progress.CompletedPercent }()
+
 	var (
-		err         error
-		image       string
-		namespace   string
-		restorePath string
-		snapID      string
+		err          error
+		image        string
+		namespace    string
+		restorePath  string
+		snapID       string
+		userHostname string
 	)
 	if err = Arg(args, RestoreDataBackupIdentifierArg, &snapID); err != nil {
 		return nil, err
@@ -89,6 +99,9 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		return nil, err
 	}
 	if err = Arg(args, RestoreDataImageArg, &image); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
 		return nil, err
 	}
 
@@ -115,8 +128,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		}
 	}
 
-	username := tp.RepositoryServer.Username
-	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
 	}
@@ -139,12 +151,20 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		tp.RepositoryServer.Address,
 		fingerprint,
 		snapID,
-		username,
+		tp.RepositoryServer.Username,
 		userAccessPassphrase,
 		sparseRestore,
 		vols,
 		podOverride,
 	)
+}
+
+func (r *restoreDataUsingKopiaServerFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    r.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func restoreDataFromServer(
@@ -164,9 +184,17 @@ func restoreDataFromServer(
 	vols map[string]string,
 	podOverride crv1alpha1.JSONMap,
 ) (map[string]any, error) {
-	for pvc := range vols {
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrap(err, "Failed to retrieve PVC from namespace: "+namespace+" name: "+pvc)
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	// Validate volumes
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+		}
+
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}
 	}
 
@@ -175,15 +203,13 @@ func restoreDataFromServer(
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
-		Volumes:      vols,
+		Volumes:      validatedVols,
 		PodOverride:  podOverride,
 	}
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataFromServerPodFunc(
-		cli,
 		hostname,
-		namespace,
 		restorePath,
 		serverAddress,
 		fingerprint,
@@ -196,9 +222,7 @@ func restoreDataFromServer(
 }
 
 func restoreDataFromServerPodFunc(
-	cli kubernetes.Interface,
 	hostname,
-	namespace,
 	restorePath,
 	serverAddress,
 	fingerprint,
@@ -206,10 +230,13 @@ func restoreDataFromServerPodFunc(
 	username,
 	userPassphrase string,
 	sparseRestore bool,
-) func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
-	return func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrap(err, "Failed while waiting for Pod: "+pod.Name+" to be ready")
+) func(ctx context.Context, pc kube.PodController) (map[string]any, error) {
+	return func(ctx context.Context, pc kube.PodController) (map[string]any, error) {
+		pod := pc.Pod()
+
+		// Wait for pod to reach running state
+		if err := pc.WaitForPodReady(ctx); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
 
 		contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
@@ -217,22 +244,31 @@ func restoreDataFromServerPodFunc(
 
 		cmd := kopiacmd.RepositoryConnectServerCommand(
 			kopiacmd.RepositoryServerCommandArgs{
-				UserPassword:    userPassphrase,
-				ConfigFilePath:  configFile,
-				LogDirectory:    logDirectory,
-				CacheDirectory:  kopiacmd.DefaultCacheDirectory,
-				Hostname:        hostname,
-				ServerURL:       serverAddress,
-				Fingerprint:     fingerprint,
-				Username:        username,
-				ContentCacheMB:  contentCacheMB,
-				MetadataCacheMB: metadataCacheMB,
+				UserPassword:   userPassphrase,
+				ConfigFilePath: configFile,
+				LogDirectory:   logDirectory,
+				CacheDirectory: kopiacmd.DefaultCacheDirectory,
+				Hostname:       hostname,
+				ServerURL:      serverAddress,
+				Fingerprint:    fingerprint,
+				Username:       username,
+				CacheArgs: kopiacmd.CacheArgs{
+					ContentCacheLimitMB:  contentCacheMB,
+					MetadataCacheLimitMB: metadataCacheMB,
+				},
 			})
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		commandExecutor, err := pc.GetCommandExecutor()
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to connect to Kopia API server")
+			return nil, errors.Wrap(err, "Unable to get pod command executor")
+		}
+
+		var stdout, stderr bytes.Buffer
+		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to connect to Kopia Repository server")
 		}
 
 		cmd = kopiacmd.SnapshotRestore(
@@ -247,9 +283,13 @@ func restoreDataFromServerPodFunc(
 				SparseRestore:          sparseRestore,
 				IgnorePermissionErrors: true,
 			})
-		stdout, stderr, err = kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+
+		stdout.Reset()
+		stderr.Reset()
+		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+
 		return nil, errors.Wrap(err, "Failed to restore backup from Kopia API server")
 	}
 }

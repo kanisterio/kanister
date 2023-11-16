@@ -69,6 +69,9 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
+	if projectID, ok := config[blockstorage.GoogleProjectID]; ok {
+		gCli.ProjectID = projectID
+	}
 	return &GpdStorage{
 		service: gCli.Service,
 		project: gCli.ProjectID}, nil

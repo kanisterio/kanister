@@ -17,14 +17,18 @@ package function
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -44,13 +48,19 @@ const (
 	KubeExecAllCommandArg        = "command"
 )
 
-type kubeExecAllFunc struct{}
+type kubeExecAllFunc struct {
+	progressPercent string
+}
 
 func (*kubeExecAllFunc) Name() string {
 	return KubeExecAllFuncName
 }
 
-func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (kef *kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	kef.progressPercent = progress.StartedPercent
+	defer func() { kef.progressPercent = progress.CompletedPercent }()
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, err
@@ -90,6 +100,14 @@ func (*kubeExecAllFunc) Arguments() []string {
 		KubeExecAllContainersNameArg,
 		KubeExecAllCommandArg,
 	}
+}
+
+func (k *kubeExecAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    k.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) (map[string]interface{}, error) {

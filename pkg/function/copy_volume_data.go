@@ -15,20 +15,24 @@
 package function
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap/buffer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -57,44 +61,62 @@ func init() {
 
 var _ kanister.Func = (*copyVolumeDataFunc)(nil)
 
-type copyVolumeDataFunc struct{}
+type copyVolumeDataFunc struct {
+	progressPercent string
+}
 
 func (*copyVolumeDataFunc) Name() string {
 	return CopyVolumeDataFuncName
 }
 
-func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string, podOverride map[string]interface{}) (map[string]interface{}, error) {
+func copyVolumeData(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	namespace,
+	pvcName,
+	targetPath,
+	encryptionKey string,
+	podOverride map[string]interface{},
+) (map[string]interface{}, error) {
 	// Validate PVC exists
-	if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
 	}
+
 	// Create a pod with PVCs attached
-	mountPoint := fmt.Sprintf(CopyVolumeDataMountPoint, pvc)
+	mountPoint := fmt.Sprintf(CopyVolumeDataMountPoint, pvcName)
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: CopyVolumeDataJobPrefix,
-		Image:        getKanisterToolsImage(),
+		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		Volumes:      map[string]string{pvc: mountPoint},
-		PodOverride:  podOverride,
+		Volumes: map[string]kube.VolumeMountOptions{pvcName: {
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
+		}},
+		PodOverride: podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := copyVolumeDataPodFunc(cli, tp, namespace, mountPoint, targetPath, encryptionKey)
-	return pr.RunEx(ctx, podFunc)
+	podFunc := copyVolumeDataPodFunc(cli, tp, mountPoint, targetPath, encryptionKey)
+	return pr.Run(ctx, podFunc)
 }
 
-func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint, targetPath, encryptionKey string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+func copyVolumeDataPodFunc(
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	mountPoint,
+	targetPath,
+	encryptionKey string,
+) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
 		}
-		pw1, err := pc.GetFileWriter()
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
-		}
 
-		remover, err := WriteCredsToPod(ctx, pw1, tp.Profile)
+		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
 		}
@@ -104,7 +126,15 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 
 		pod := pc.Pod()
 		// Get restic repository
-		if err := restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
+		if err := restic.GetOrCreateRepository(
+			cli,
+			pod.Namespace,
+			pod.Name,
+			pod.Spec.Containers[0].Name,
+			targetPath,
+			encryptionKey,
+			tp.Profile,
+		); err != nil {
 			return nil, err
 		}
 		// Copy data to object store
@@ -117,8 +147,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if err != nil {
 			return nil, err
 		}
-		var stdout buffer.Buffer
-		var stderr buffer.Buffer
+		var stdout, stderr bytes.Buffer
 		err = ex.Exec(ctx, cmd, nil, &stdout, &stderr)
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
@@ -148,7 +177,11 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 	}
 }
 
-func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	c.progressPercent = progress.StartedPercent
+	defer func() { c.progressPercent = progress.CompletedPercent }()
+
 	var namespace, vol, targetPath, encryptionKey string
 	var err error
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
@@ -196,4 +229,12 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataArtifactPrefixArg,
 		CopyVolumeDataEncryptionKeyArg,
 	}
+}
+
+func (c *copyVolumeDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    c.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

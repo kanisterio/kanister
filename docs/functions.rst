@@ -889,57 +889,6 @@ Example:
             mode: restore-size
             backupID: "{{ .ArtifactsIn.snapshot.KeyValue.backupIdentifier }}"
 
-DescribeBackups
----------------
-
-This function describes the backups for an object store location
-
-.. note::
-   It is important that the application includes a ``kanister-tools``
-   sidecar container. This sidecar is necessary to run the
-   tools that get the information from the object store.
-
-Arguments:
-
-.. csv-table::
-   :header: "Argument", "Required", "Type", "Description"
-   :align: left
-   :widths: 5,5,5,15
-
-   `backupArtifactPrefix`, Yes, `string`, path to the object store location
-   `encryptionKey`, No, `string`, encryption key to be used for backups
-
-Outputs:
-
-.. csv-table::
-   :header: "Output", "Type", "Description"
-   :align: left
-   :widths: 5,5,15
-
-   `fileCount`,`string`, number of files in backup object store location
-   `size`, `string`, size of the number of files in in backup object store location
-   `passwordIncorrect`, `string`, true if encryption key is incorrect
-   `repoDoesNotExist`, `string`, true if object store location does not exist
-
-Example:
-
-.. code-block:: yaml
-  :linenos:
-
-  actions:
-    backupStats:
-      outputArtifacts:
-        backupStats:
-          keyValue:
-            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.fileCount }}"
-            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.size }}"
-            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.passwordIncorrect }}"
-            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.repoDoesNotExist }}"
-      phases:
-        - func: DescribeBackups
-          name: DescribeBackupsFromObjectStore
-          args:
-            backupArtifactPrefix: s3-bucket/path/artifactPrefix
 
 CreateRDSSnapshot
 -----------------
@@ -1607,6 +1556,7 @@ Arguments:
    `container`, Yes, `string`, name of the kanister sidecar container
    `includePath`, Yes, `string`, path of the data to be backed up
    `snapshotTags`, No, `string`, custom tags to be provided to the kopia snapshots
+   `repositoryServerUserHostname`, No, `string`, user's hostname to access the kopia repository server. Hostname would be available in the user access credential secret
 
 Outputs:
 
@@ -1669,6 +1619,7 @@ function argument and restores data to the specified path.
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, mapping of `pvcName` to `mountPath` under which the volume will be available
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
+   `repositoryServerUserHostname`, No, `string`, user's hostname to access the kopia repository server. Hostname would be available in the user access credential secret
 
 .. note::
    The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
@@ -1738,6 +1689,7 @@ function. It creates a new Pod that runs ``delete snapshot`` command.
    `namespace`, Yes, `string`, namespace in which to execute the delete job
    `backupID`, Yes, `string`, unique snapshot id generated during backup
    `image`, Yes, `string`, image to be used for running delete job (should contain kopia binary)
+   `repositoryServerUserHostname`, No, `string`, user's hostname to access the kopia repository server. Hostname would be available in the user access credential secret
 
 Example:
 

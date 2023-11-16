@@ -97,13 +97,30 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	s.snapshotterBeta = snapshot.NewSnapshotBeta(cli, dynCli)
 	s.snapshotterStable = snapshot.NewSnapshotStable(cli, dynCli)
 
-	// Find alpha VolumeSnapshotClass name
-	snapClassAlpha, driverAlpha := findSnapshotClassName(c, ctx, s.dynCli, v1alpha1.VolSnapClassGVR, v1alpha1.VolumeSnapshotClass{})
-	s.snapshotClassAlpha = &snapClassAlpha
-	snapClassBeta, driverBeta := findSnapshotClassName(c, ctx, s.dynCli, v1beta1.VolSnapClassGVR, v1beta1.VolumeSnapshotClass{})
-	s.snapshotClassBeta = &snapClassBeta
-	snapClassStable, driverStable := findSnapshotClassName(c, ctx, s.dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
-	s.snapshotClassStable = &snapClassStable
+	// Pick latest version available as in snapshot.NewSnapshotter
+	var (
+		snapClassStable, driverStable string
+		snapClassBeta, driverBeta     string
+		snapClassAlpha, driverAlpha   string
+	)
+	for {
+		snapClassStable, driverStable = findSnapshotClassName(c, ctx, s.dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
+		if snapClassStable != "" {
+			s.snapshotClassStable = &snapClassStable
+			break
+		}
+		snapClassBeta, driverBeta = findSnapshotClassName(c, ctx, s.dynCli, v1beta1.VolSnapClassGVR, v1beta1.VolumeSnapshotClass{})
+		if snapClassBeta != "" {
+			s.snapshotClassBeta = &snapClassBeta
+			break
+		}
+		snapClassAlpha, driverAlpha = findSnapshotClassName(c, ctx, s.dynCli, v1alpha1.VolSnapClassGVR, v1alpha1.VolumeSnapshotClass{})
+		if snapClassAlpha != "" {
+			s.snapshotClassAlpha = &snapClassAlpha
+			break
+		}
+	}
+
 	storageClasses, err := cli.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	for _, class := range storageClasses.Items {
@@ -349,19 +366,19 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotAlpha(c *C) {
 	if s.snapshotClassAlpha == nil {
-		c.Skip("No Volumesnapshotclass in the cluster, create a volumesnapshotclass in the cluster")
+		c.Skip("No v1alpha1 Volumesnapshotclass in the cluster")
 	}
 	if s.storageClassCSIAlpha == "" {
 		c.Skip("No Storageclass with CSI provisioner, install CSI and create a storageclass for it")
 	}
-	c.Logf("snapshotclass: %s, storageclass %s", *s.snapshotClassBeta, s.storageClassCSIBeta)
+	c.Logf("snapshotclass: %s, storageclass %s", *s.snapshotClassAlpha, s.storageClassCSIAlpha)
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
 	s.testVolumeSnapshot(c, s.snapshotterAlpha, s.storageClassCSIAlpha, s.snapshotClassAlpha)
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotBeta(c *C) {
 	if s.snapshotClassBeta == nil {
-		c.Skip("No Volumesnapshotclass in the cluster, create a volumesnapshotclass in the cluster")
+		c.Skip("No v1beta1 Volumesnapshotclass in the cluster")
 	}
 	if s.storageClassCSIBeta == "" {
 		c.Skip("No Storageclass with CSI provisioner, install CSI and create a storageclass for it")
@@ -373,12 +390,12 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotBeta(c *C) {
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotStable(c *C) {
 	if s.snapshotClassStable == nil {
-		c.Skip("No Volumesnapshotclass in the cluster, create a volumesnapshotclass in the cluster")
+		c.Skip("No v1 Volumesnapshotclass in the cluster")
 	}
 	if s.storageClassCSIStable == "" {
 		c.Skip("No Storageclass with CSI provisioner, install CSI and create a storageclass for it")
 	}
-	c.Logf("snapshotclass: %s, storageclass %s", *s.snapshotClassBeta, s.storageClassCSIBeta)
+	c.Logf("snapshotclass: %s, storageclass %s", *s.snapshotClassStable, s.storageClassCSIStable)
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
 	s.testVolumeSnapshot(c, s.snapshotterStable, s.storageClassCSIStable, s.snapshotClassStable)
 }

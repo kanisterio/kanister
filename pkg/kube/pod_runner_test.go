@@ -19,7 +19,7 @@ import (
 	"os"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/testing"
@@ -109,8 +109,8 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 	cancel()
 }
 
-func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 		<-ch
 		return nil, nil
 	}

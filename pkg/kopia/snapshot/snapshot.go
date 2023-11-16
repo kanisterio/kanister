@@ -67,10 +67,11 @@ func SnapshotSource(
 		return "", 0, errors.Wrap(err, "Failed to save kopia manifest")
 	}
 
-	_, err = policy.ApplyRetentionPolicy(ctx, rep, sourceInfo, true)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "Failed to apply kopia retention policy")
-	}
+	// TODO: https://github.com/kanisterio/kanister/issues/2441
+	// _, err = policy.ApplyRetentionPolicy(ctx, rep, sourceInfo, true)
+	// if err != nil {
+	// 	return "", 0, errors.Wrap(err, "Failed to apply kopia retention policy")
+	// }
 
 	if err = policy.SetManual(ctx, rep, sourceInfo); err != nil {
 		return "", 0, errors.Wrap(err, "Failed to set manual field in kopia scheduling policy for source")

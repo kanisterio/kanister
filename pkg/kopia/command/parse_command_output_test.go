@@ -16,8 +16,10 @@ package command
 
 import (
 	"encoding/json"
+
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
+	"github.com/kopia/kopia/snapshot/policy"
 	. "gopkg.in/check.v1"
 )
 
@@ -136,6 +138,12 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput
 		{
 			output: `ERROR: unable to get local filesystem entry: resolveSymlink: stat: lstat /tmp/aaa2: no such file or directory
 			`,
+			checker:        NotNil,
+			expectedSnapID: "",
+			expectedRootID: "",
+		},
+		{
+			output:         `{"id":"1b6639b9797dc77dd4ddf57723918187","source":{"host":"da","userName":"kk","path":"/mnt/nfspvc"},"description":"","startTime":"2023-07-13T00:08:08.049239555Z","endTime":"2023-07-13T00:08:08.054904252Z","incomplete":"canceled","rootEntry":{"name":"nfspvc","type":"d","mode":"0755","mtime":"2023-07-11T20:33:41.386653643Z","obj":"k453085aaf775ecb9018a3fa8e276ca5d","summ":{"size":0,"files":0,"symlinks":0,"dirs":2,"maxTime":"2023-07-11T20:33:27.628326361Z","incomplete":"canceled","numFailed":1,"errors":[{"path":"for1001","error":"permission denied"}]}}}`,
 			checker:        NotNil,
 			expectedSnapID: "",
 			expectedRootID: "",
@@ -651,10 +659,59 @@ func (kParse *KopiaParseUtilsTestSuite) TestErrorsFromOutput(c *C) {
 	}
 }
 
+func (kParse *KopiaParseUtilsTestSuite) TestParsePolicyShow(c *C) {
+	for _, tc := range []struct {
+		description   string
+		outputGenFunc func(*C, policy.Policy) string
+		expPolicyShow policy.Policy
+		errChecker    Checker
+	}{
+		{
+			description:   "empty policy show",
+			outputGenFunc: marshalPolicy,
+			expPolicyShow: policy.Policy{},
+			errChecker:    IsNil,
+		},
+		{
+			description:   "default policy show",
+			outputGenFunc: marshalPolicy,
+			expPolicyShow: *policy.DefaultPolicy,
+			errChecker:    IsNil,
+		},
+		{
+			description: "error: parse empty output",
+			outputGenFunc: func(*C, policy.Policy) string {
+				return ""
+			},
+			errChecker: NotNil,
+		},
+		{
+			description: "error: unmarshal fails",
+			outputGenFunc: func(*C, policy.Policy) string {
+				return "asdf"
+			},
+			errChecker: NotNil,
+		},
+	} {
+		outputToParse := tc.outputGenFunc(c, tc.expPolicyShow)
+		gotPolicy, err := ParsePolicyShow(outputToParse)
+		c.Check(err, tc.errChecker, Commentf("Failed for output: %q", outputToParse))
+		c.Log(err)
+		c.Check(gotPolicy, DeepEquals, tc.expPolicyShow)
+	}
+}
+
 func marshalManifestList(c *C, manifestList []*snapshot.Manifest) string {
 	c.Assert(manifestList, NotNil)
 
 	b, err := json.Marshal(manifestList)
+	c.Assert(err, IsNil)
+
+	return string(b)
+}
+
+func marshalPolicy(c *C, policy policy.Policy) string {
+	b, err := json.Marshal(policy)
 	c.Assert(err, IsNil)
 
 	return string(b)

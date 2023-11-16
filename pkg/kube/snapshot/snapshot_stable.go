@@ -170,3 +170,10 @@ func (sna *SnapshotStable) CreateContentFromSource(ctx context.Context, source *
 func (sna *SnapshotStable) WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error {
 	return waitOnReadyToUse(ctx, sna.dynCli, VolSnapGVR, snapshotName, namespace)
 }
+
+func (sna *SnapshotStable) GroupVersion(ctx context.Context) schema.GroupVersion {
+	return schema.GroupVersion{
+		Group:   GroupName,
+		Version: Version,
+	}
+}
