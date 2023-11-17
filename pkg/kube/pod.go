@@ -46,6 +46,7 @@ const (
 	PodReadyWaitTimeoutEnv = "KANISTER_POD_READY_WAIT_TIMEOUT"
 	errAccessingNode       = "Failed to get node"
 	DefaultContainerName   = "container"
+	redactedValue          = "XXXXX"
 )
 
 type VolumeMountOptions struct {
@@ -501,14 +502,58 @@ func getRedactedEnvVariables(env []v1.EnvVar) []v1.EnvVar {
 	for i, ev := range env {
 		result[i] = v1.EnvVar{
 			Name:  ev.Name,
-			Value: "XXXXX",
+			Value: redactedValue,
 		}
 	}
 
 	return result
 }
 
-// getRedactedPod hides all values of env variables from pod, so that it should be safely logged
+func getRedactedContainers(containers []v1.Container) []v1.Container {
+	if len(containers) == 0 {
+		return nil
+	}
+
+	result := make([]v1.Container, len(containers))
+	for i, c := range containers {
+		result[i] = c
+		result[i].Env = getRedactedEnvVariables(c.Env)
+		result[i].Command = getRedactedStringSlice(c.Command)
+		result[i].Args = getRedactedStringSlice(c.Args)
+	}
+	return result
+}
+
+func getRedactedStringSlice(slice []string) []string {
+	if len(slice) == 0 {
+		return nil
+	}
+	result := make([]string, len(slice))
+	for j := range slice {
+		result[j] = redactedValue
+	}
+	return result
+}
+
+func getRedactedPodOverride(podOverride crv1alpha1.JSONMap) crv1alpha1.JSONMap {
+	if len(podOverride) == 0 {
+		return nil
+	}
+
+	result := make(crv1alpha1.JSONMap, len(podOverride))
+	for k, v := range podOverride {
+		if c, ok := v.([]v1.Container); ok {
+			result[k] = getRedactedContainers(c)
+		} else {
+			result[k] = v
+		}
+	}
+
+	return result
+}
+
+// getRedactedPod hides all sensitive information from pod object (env variables, commands)
+// Should be used when pod structure is logged
 func getRedactedPod(pod *v1.Pod) *v1.Pod {
 	if pod == nil {
 		return nil
@@ -516,21 +561,8 @@ func getRedactedPod(pod *v1.Pod) *v1.Pod {
 
 	result := *pod // Make shallow copy
 
-	getSanitizedContainers := func(containers []v1.Container) []v1.Container {
-		if len(containers) == 0 {
-			return nil
-		}
-
-		result := make([]v1.Container, len(containers))
-		for i, c := range containers {
-			result[i] = c
-			result[i].Env = getRedactedEnvVariables(c.Env)
-		}
-		return result
-	}
-
-	result.Spec.Containers = getSanitizedContainers(result.Spec.Containers)
-	result.Spec.InitContainers = getSanitizedContainers(result.Spec.InitContainers)
+	result.Spec.Containers = getRedactedContainers(result.Spec.Containers)
+	result.Spec.InitContainers = getRedactedContainers(result.Spec.InitContainers)
 
 	return &result
 }
@@ -544,5 +576,7 @@ func getRedactedOptions(opts *PodOptions) *PodOptions {
 	result := *opts // Make shallow copy
 
 	result.EnvironmentVariables = getRedactedEnvVariables(result.EnvironmentVariables)
+	result.Command = getRedactedStringSlice(result.Command)
+	result.PodOverride = getRedactedPodOverride(result.PodOverride)
 	return &result
 }
