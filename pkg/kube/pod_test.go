@@ -239,7 +239,7 @@ func (s *PodSuite) TestPod(c *C) {
 		case po.ContainerName != "":
 			c.Assert(pod.Spec.Containers[0].Name, Equals, po.ContainerName)
 		default:
-			c.Assert(pod.Spec.Containers[0].Name, Equals, defaultContainerName)
+			c.Assert(pod.Spec.Containers[0].Name, Equals, DefaultContainerName)
 		}
 
 		switch {
@@ -1063,7 +1063,7 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 		},
 		{
 			podOptsContainerName:  "",
-			expectedContainerName: defaultContainerName,
+			expectedContainerName: DefaultContainerName,
 		},
 	} {
 		name := ContainerNameFromPodOptsOrDefault(&PodOptions{
@@ -1073,8 +1073,8 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 	}
 
 	name := ContainerNameFromPodOptsOrDefault(&PodOptions{})
-	c.Assert(name, Equals, defaultContainerName)
+	c.Assert(name, Equals, DefaultContainerName)
 
 	name = ContainerNameFromPodOptsOrDefault(nil)
-	c.Assert(name, Equals, defaultContainerName)
+	c.Assert(name, Equals, DefaultContainerName)
 }
