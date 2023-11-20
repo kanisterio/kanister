@@ -1036,7 +1036,15 @@ func (s *SnapshotTestSuite) TestCreateFromSource(c *C) {
 	kubeCli := fake.NewSimpleClientset()
 	snapshoterAlpha := snapshot.NewSnapshotAlpha(kubeCli, dynCli)
 
-	volSnap = snapshot.UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, existingSnapshotName, namespace, "pvcName", "content", snapshotClass, nil)
+	volSnap = snapshot.UnstructuredVolumeSnapshot(
+		v1beta1.VolSnapGVR,
+		existingSnapshotName,
+		namespace,
+		"pvcName",
+		"content",
+		snapshotClass,
+		nil,
+	)
 	volSnapClass = snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, snapshotClass, "driver", "DELETE", nil)
 	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap, volSnapClass)
 	kubeCli = fake.NewSimpleClientset()
