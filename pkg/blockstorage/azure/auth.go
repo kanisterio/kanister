@@ -1,58 +1,33 @@
 package azure
 
 import (
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/pkg/errors"
+	"context"
 
+	"github.com/Azure/go-autorest/autorest/adal"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/pkg/errors"
 )
-
-const ActiveDirectory = "activeDirectory"
 
 // currently avaialble types: https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization
 // to be available with azidentity: https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azidentity#readme-credential-types
 // determine if the combination of creds are client secret creds
 func isClientCredsAvailable(config map[string]string) bool {
-	return config[blockstorage.AzureTenantID] != "" &&
+	return (config[blockstorage.AzureTenantID] != "" &&
 		config[blockstorage.AzureClientID] != "" &&
-		config[blockstorage.AzureClientSecret] != ""
+		config[blockstorage.AzureClientSecret] != "")
 }
 
 // determine if the combination of creds are MSI creds
 func isMSICredsAvailable(config map[string]string) bool {
 	_, clientIDok := config[blockstorage.AzureClientID]
-	return clientIDok && config[blockstorage.AzureTenantID] == "" &&
-		config[blockstorage.AzureClientSecret] == ""
-}
-
-type ClientCredentialsConfig struct {
-	ClientID     string
-	ClientSecret string
-	TenantID     string
-	AuxTenants   []string
-	AADEndpoint  string
-	Resource     string
-}
-
-// Defaults to Public Cloud and Resource Manager Endpoint.
-func NewClientCredentialsConfig(clientID string, clientSecret string, tenantID string) ClientCredentialsConfig {
-	return ClientCredentialsConfig{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		TenantID:     tenantID,
-		Resource:     cloud.AzurePublic.Services[cloud.ResourceManager].Endpoint,
-		//Todo: find a replacement for the AADEndpoint in the new azure sdk
-		AADEndpoint: cloud.AzurePublic.Services[ActiveDirectory].Endpoint,
-		//azure.PublicCloud.ActiveDirectoryEndpoint,
-	}
+	return (clientIDok && config[blockstorage.AzureTenantID] == "" &&
+		config[blockstorage.AzureClientSecret] == "")
 }
 
 // Public interface to authenticate with different Azure credentials type
 type AzureAuthenticator interface {
 	Authenticate(creds map[string]string) error
-	GetAuthorizer() azcore.TokenCredential
 }
 
 func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error) {
@@ -67,68 +42,69 @@ func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error)
 }
 
 // authenticate with MSI creds
-type MsiAuthenticator struct {
-	azcore.TokenCredential
-}
+type MsiAuthenticator struct{}
 
-func (m *MsiAuthenticator) GetAuthorizer() azcore.TokenCredential {
-	return m.TokenCredential
-}
-func (m *MsiAuthenticator) Authenticate(config map[string]string) error {
+func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	// check if MSI endpoint is available
-	clientID, ok := config[blockstorage.AzureClientID]
-	if !ok || clientID == "" {
-		return errors.New("Failed to fetch azure clientID")
+	if !adal.MSIAvailable(context.Background(), nil) {
+		return errors.New("MSI endpoint is not supported")
 	}
-	azClientID := azidentity.ClientID(clientID)
-	opts := azidentity.ManagedIdentityCredentialOptions{ID: azClientID}
-	cred, err := azidentity.NewManagedIdentityCredential(&opts)
+	// create a service principal token
+	msiConfig := auth.NewMSIConfig()
+	if clientID, ok := creds[blockstorage.AzureClientID]; ok && clientID != "" {
+		msiConfig.ClientID = clientID
+	}
+	spt, err := msiConfig.ServicePrincipalToken()
 	if err != nil {
-		return errors.Wrap(err, "Failed to create an Azure Managed Identity credential")
+		return errors.Wrap(err, "Failed to create a service principal token")
 	}
-	m.TokenCredential = cred
-	// config passed authentication
+	// network call to check for token
+	err = spt.Refresh()
+	if err != nil {
+		return errors.Wrap(err, "Failed to refresh token")
+	}
+	// creds passed authentication
 	return nil
 }
 
 // authenticate with client secret creds
-type ClientSecretAuthenticator struct {
-	azcore.TokenCredential
-}
+type ClientSecretAuthenticator struct{}
 
-func (c *ClientSecretAuthenticator) GetAuthorizer() azcore.TokenCredential {
-	return c.TokenCredential
-}
 func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error {
 	credConfig, err := getCredConfigForAuth(creds)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get Client Secret config")
 	}
-	cred, err := azidentity.NewClientSecretCredential(credConfig.TenantID, credConfig.ClientID, credConfig.ClientSecret, nil)
+	// create a service principal token
+	spt, err := credConfig.ServicePrincipalToken()
 	if err != nil {
-		return errors.Wrap(err, "Failed to create an Azure Client Secret credential")
+		return errors.Wrap(err, "Failed to create a service principal token")
 	}
-	c.TokenCredential = cred
+	// network call to check for token
+	err = spt.Refresh()
+	if err != nil {
+		return errors.Wrap(err, "Failed to refresh token")
+	}
 	// creds passed authentication
 	return nil
 }
 
-func getCredConfigForAuth(config map[string]string) (ClientCredentialsConfig, error) {
+func getCredConfigForAuth(config map[string]string) (auth.ClientCredentialsConfig, error) {
 	tenantID, ok := config[blockstorage.AzureTenantID]
 	if !ok {
-		return ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
+		return auth.ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
 	}
 
 	clientID, ok := config[blockstorage.AzureClientID]
 	if !ok {
-		return ClientCredentialsConfig{}, errors.New("Cannot get clientID from config")
+		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientID from config")
 	}
 
 	clientSecret, ok := config[blockstorage.AzureClientSecret]
 	if !ok {
-		return ClientCredentialsConfig{}, errors.New("Cannot get clientSecret from config")
+		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientSecret from config")
 	}
 
-	credConfig := NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
 	return credConfig, nil
 }

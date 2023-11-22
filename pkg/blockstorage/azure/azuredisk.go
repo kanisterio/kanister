@@ -2,7 +2,6 @@
 // Related Ticket- https://github.com/kanisterio/kanister/issues/1684
 //
 //nolint:staticcheck
-
 package azure
 
 import (
@@ -12,11 +11,12 @@ import (
 	"strings"
 	"time"
 
-	azto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/skus"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/subscriptions"
+	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
-	"github.com/gofrs/uuid"
+	azto "github.com/Azure/go-autorest/autorest/to"
+	uuid "github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -25,6 +25,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 var _ blockstorage.Provider = (*AdStorage)(nil)
@@ -37,8 +38,6 @@ const (
 	copyContainerName = "vhdscontainer"
 	copyBlobName      = "copy-blob-%s.vhd"
 )
-
-type LocationZoneMap map[string]struct{}
 
 // AdStorage describes the azure storage client
 type AdStorage struct {
@@ -64,11 +63,11 @@ func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 		return nil, errors.Wrapf(err, "Failed to get info for volume with ID %s", id)
 	}
 
-	diskResponse, err := s.azCli.DisksClient.Get(ctx, rg, name, nil)
+	disk, err := s.azCli.DisksClient.Get(ctx, rg, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get volume, volumeID: %s", id)
 	}
-	return s.VolumeParse(ctx, diskResponse.Disk)
+	return s.VolumeParse(ctx, disk)
 }
 
 func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
@@ -78,40 +77,43 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 		return nil, errors.Wrap(err, "Failed to create UUID")
 	}
 	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
-
-	diskProperties := &armcompute.DiskProperties{
-		CreationData: &armcompute.CreationData{
-			CreateOption: azto.Ptr(armcompute.DiskCreateOptionEmpty),
+	diskProperties := &azcompute.DiskProperties{
+		DiskSizeGB: azto.Int32Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
+		CreationData: &azcompute.CreationData{
+			CreateOption: azcompute.DiskCreateOption(azcompute.DiskCreateOptionTypesEmpty),
 		},
-		DiskSizeGB: blockstorage.Int32Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
 	}
 	region, id, err := getLocationInfo(volume.Az)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
 	}
 	// TODO(ilya): figure out how to create SKUed disks
-	createdDisk := armcompute.Disk{
-		Name:       blockstorage.StringPtr(diskName),
-		Tags:       *blockstorage.StringMapPtr(tags),
-		Location:   blockstorage.StringPtr(region),
-		Properties: diskProperties,
-		SKU: &armcompute.DiskSKU{
-			Name: azto.Ptr(armcompute.DiskStorageAccountTypesStandardLRS),
-		},
+	createDisk := azcompute.Disk{
+		Name:           azto.StringPtr(diskName),
+		Tags:           *azto.StringMapPtr(tags),
+		Location:       azto.StringPtr(region),
+		DiskProperties: diskProperties,
 	}
 	if id != "" {
-		createdDisk.Zones = blockstorage.SliceStringPtr([]string{id})
+		createDisk.Zones = azto.StringSlicePtr([]string{id})
+	}
+	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
+	if err != nil {
+		return nil, err
+	}
+	err = result.WaitForCompletionRef(ctx, s.azCli.DisksClient.Client)
+	if err != nil {
+		return nil, err
+	}
+	disk, err := result.Result(*s.azCli.DisksClient)
+	if err != nil {
+		return nil, err
 	}
 
-	pollerResp, err := s.azCli.DisksClient.BeginCreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createdDisk, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Could not create volume %s", diskName)
-	}
-	resp, err := pollerResp.PollUntilDone(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Volume create %s polling error", diskName)
-	}
-	return s.VolumeParse(ctx, resp.Disk)
+	// Even though the 'CreateOrUpdate' call above returns a 'Disk' model, this is incomplete and
+	// requires a GET to populate correctly.
+	// See https://github.com/Azure/azure-sdk-for-go/issues/326 for the explanation why
+	return s.VolumeGet(ctx, azto.String(disk.ID), volume.Az)
 }
 
 func (s *AdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
@@ -119,11 +121,11 @@ func (s *AdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volum
 	if err != nil {
 		return errors.Wrapf(err, "Error in deleting Volume with ID %s", volume.ID)
 	}
-	poller, err := s.azCli.DisksClient.BeginDelete(ctx, rg, name, nil)
+	result, err := s.azCli.DisksClient.Delete(ctx, rg, name)
 	if err != nil {
 		return errors.Wrapf(err, "Error in deleting Volume with ID %s", volume.ID)
 	}
-	_, err = poller.PollUntilDone(ctx, nil)
+	err = result.WaitForCompletionRef(ctx, s.azCli.DisksClient.Client)
 	return errors.Wrapf(err, "Error in deleting Volume with ID %s", volume.ID)
 }
 
@@ -152,27 +154,38 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	if err != nil {
 		return nil, errors.Wrapf(err, "SnapshotsClient.Copy: Failure in parsing snapshot ID %s", from.ID)
 	}
-	_, err = s.azCli.SnapshotsClient.Get(ctx, rg, name, nil)
+	_, err = s.azCli.SnapshotsClient.Get(ctx, rg, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "SnapshotsClient.Copy: Failed to get snapshot with ID %s", from.ID)
 	}
 
 	duration := int32(3600)
-	gad := armcompute.GrantAccessData{
-		Access:            azto.Ptr(armcompute.AccessLevelRead),
+	gad := azcompute.GrantAccessData{
+		Access:            azcompute.Read,
 		DurationInSeconds: &duration,
 	}
 
-	snapshotsGrantAccessPoller, err := s.azCli.SnapshotsClient.BeginGrantAccess(ctx, rg, name, gad, nil)
+	snapshotsGrantAccessFuture, err := s.azCli.SnapshotsClient.GrantAccess(ctx, rg, name, gad)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to grant read access to snapshot: %s", from.ID)
 	}
 	defer s.revokeAccess(ctx, rg, name, from.ID)
-	snapshotGrantRes, err := snapshotsGrantAccessPoller.PollUntilDone(ctx, nil)
+
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		_, err := snapshotsGrantAccessFuture.Result(*s.azCli.SnapshotsClient)
+		if err != nil {
+			if strings.Contains(err.Error(), "asynchronous operation has not completed") {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "SnapshotsClient.Copy failure to grant snapshot access. Snapshot grant access poller failed to pull the result")
+		return nil, errors.Wrap(err, "SnapshotsClient.Copy failure to grant snapshot access")
 	}
 
+	accessURI, err := snapshotsGrantAccessFuture.Result(*s.azCli.SnapshotsClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "SnapshotsClient.Copy failure to grant snapshot access")
 	}
@@ -196,7 +209,7 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 			Timeout: uint(time),
 		}
 	}
-	err = blob.Copy(*snapshotGrantRes.AccessSAS, copyOptions)
+	err = blob.Copy(*accessURI.AccessSAS, copyOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to copy disk to blob")
 	}
@@ -215,15 +228,15 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	}
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 
-	createSnap := armcompute.Snapshot{
-		Name:     blockstorage.StringPtr(snapName),
-		Location: blockstorage.StringPtr(to.Region),
-		Tags:     *blockstorage.StringMapPtr(tags),
-		Properties: &armcompute.SnapshotProperties{
-			CreationData: &armcompute.CreationData{
-				CreateOption:     azto.Ptr(armcompute.DiskCreateOptionImport),
-				StorageAccountID: blockstorage.StringPtr(storageAccountID),
-				SourceURI:        blockstorage.StringPtr(blobURI),
+	createSnap := azcompute.Snapshot{
+		Name:     azto.StringPtr(snapName),
+		Location: azto.StringPtr(to.Region),
+		Tags:     *azto.StringMapPtr(tags),
+		SnapshotProperties: &azcompute.SnapshotProperties{
+			CreationData: &azcompute.CreationData{
+				CreateOption:     azcompute.Import,
+				StorageAccountID: azto.StringPtr(storageAccountID),
+				SourceURI:        azto.StringPtr(blobURI),
 			},
 		},
 	}
@@ -232,15 +245,20 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	if val, ok := args[blockstorage.AzureMigrateResourceGroup]; ok && val != "" {
 		migrateResourceGroup = val
 	}
-	createSnapshotPoller, err := s.azCli.SnapshotsClient.BeginCreateOrUpdate(ctx, migrateResourceGroup, snapName, createSnap, nil)
+	result, err := s.azCli.SnapshotsClient.CreateOrUpdate(ctx, migrateResourceGroup, snapName, createSnap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to copy snapshot from source snapshot %v", from)
 	}
-	createSnapRes, err := createSnapshotPoller.PollUntilDone(ctx, nil)
+	err = result.WaitForCompletionRef(ctx, s.azCli.SnapshotsClient.Client)
 	if err != nil {
-		return nil, errors.Wrap(err, "Poller failed to retrieve snapshot")
+		return nil, errors.Wrapf(err, "Failed to copy snapshot from source snapshot %v", from)
 	}
-	snap, err := s.SnapshotGet(ctx, blockstorage.StringFromPtr(createSnapRes.ID))
+	rs, err := result.Result(*s.azCli.SnapshotsClient)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error in getting result of Snapshot copy operation, snaphotName %s", snapName)
+	}
+
+	snap, err := s.SnapshotGet(ctx, azto.String(rs.ID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to Get Snapshot after create, snaphotName %s", snapName)
 	}
@@ -253,15 +271,7 @@ func isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey strin
 }
 
 func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
-	poller, err := s.azCli.SnapshotsClient.BeginRevokeAccess(ctx, rg, name, nil)
-	if err != nil {
-		log.Print("Failed to finish the revoke request", field.M{"error": err.Error()})
-	}
-	_, err = poller.PollUntilDone(ctx, nil)
-	if err != nil {
-		log.Print("failed to pull the result", field.M{"error": err.Error()})
-	}
-
+	_, err := s.azCli.SnapshotsClient.RevokeAccess(ctx, rg, name)
 	if err != nil {
 		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": ID})
 	}
@@ -285,32 +295,36 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
 	}
-	createSnap := armcompute.Snapshot{
-		Name:     blockstorage.StringPtr(snapName),
-		Location: blockstorage.StringPtr(region),
-		Tags:     *blockstorage.StringMapPtr(tags),
-		Properties: &armcompute.SnapshotProperties{
-			CreationData: &armcompute.CreationData{
-				CreateOption:     azto.Ptr(armcompute.DiskCreateOptionCopy),
-				SourceResourceID: blockstorage.StringPtr(volume.ID),
+	createSnap := azcompute.Snapshot{
+		Name:     azto.StringPtr(snapName),
+		Location: azto.StringPtr(region),
+		Tags:     *azto.StringMapPtr(tags),
+		SnapshotProperties: &azcompute.SnapshotProperties{
+			CreationData: &azcompute.CreationData{
+				CreateOption:     azcompute.Copy,
+				SourceResourceID: azto.StringPtr(volume.ID),
 			},
 		},
 	}
-	pollerResp, err := s.azCli.SnapshotsClient.BeginCreateOrUpdate(ctx, s.azCli.ResourceGroup, snapName, createSnap, nil)
+	result, err := s.azCli.SnapshotsClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, snapName, createSnap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create snapshot for volume %v", volume)
 	}
-	resp, err := pollerResp.PollUntilDone(ctx, nil)
+	err = result.WaitForCompletionRef(ctx, s.azCli.SnapshotsClient.Client)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create snapshot for volume %v", volume)
+	}
+	rs, err := result.Result(*s.azCli.SnapshotsClient)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error in getting result of Snapshot create operation, snaphotName %s", snapName)
+	}
+
+	snap, err := s.SnapshotGet(ctx, azto.String(rs.ID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to Get Snapshot after create, snaphotName %s", snapName)
 	}
-	blockSnapshot, err := s.snapshotParse(ctx, resp.Snapshot)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to Parse Snapshot, snaphotName %s", snapName)
-	}
-
-	blockSnapshot.Volume = &volume
-	return blockSnapshot, nil
+	snap.Volume = &volume
+	return snap, nil
 }
 
 func (s *AdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
@@ -348,11 +362,12 @@ func (s *AdStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.S
 	if err != nil {
 		return errors.Wrapf(err, "SnapshotClient.Delete: Failure in parsing snapshot ID %s", snapshot.ID)
 	}
-	poller, err := s.azCli.SnapshotsClient.BeginDelete(ctx, rg, name, nil)
+	result, err := s.azCli.SnapshotsClient.Delete(ctx, rg, name)
 	if err != nil {
 		return errors.Wrapf(err, "SnapshotClient.Delete: Failed to delete snapshot with ID %s", snapshot.ID)
 	}
-	_, err = poller.PollUntilDone(ctx, nil)
+	err = result.WaitForCompletionRef(ctx, s.azCli.SnapshotsClient.Client)
+
 	return errors.Wrapf(err, "SnapshotClient.Delete: Error while waiting for snapshot with ID %s to get deleted", snapshot.ID)
 }
 
@@ -361,148 +376,95 @@ func (s *AdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.S
 	if err != nil {
 		return nil, errors.Wrapf(err, "SnapshotsClient.Get: Failure in parsing snapshot ID %s", id)
 	}
-	snapRes, err := s.azCli.SnapshotsClient.Get(ctx, rg, name, nil)
+	snap, err := s.azCli.SnapshotsClient.Get(ctx, rg, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "SnapshotsClient.Get: Failed to get snapshot with ID %s", id)
 	}
 
-	return s.snapshotParse(ctx, snapRes.Snapshot)
+	return s.snapshotParse(ctx, snap), nil
 }
 
 func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*blockstorage.Volume, error) {
-	vol, ok := volume.(armcompute.Disk)
+	vol, ok := volume.(azcompute.Disk)
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Volume is not of type *armcompute.Disk, volume: %v", volume))
+		return nil, errors.New(fmt.Sprintf("Volume is not of type *azcompute.Disk, volume: %v", volume))
 	}
 	encrypted := false
-	if vol.Properties.EncryptionSettingsCollection != nil &&
-		vol.Properties.EncryptionSettingsCollection.Enabled != nil {
-		encrypted = *vol.Properties.EncryptionSettingsCollection.Enabled
+	if vol.DiskProperties.EncryptionSettingsCollection != nil &&
+		vol.DiskProperties.EncryptionSettingsCollection.Enabled != nil {
+		encrypted = *vol.DiskProperties.EncryptionSettingsCollection.Enabled
 	}
 	tags := map[string]string{"": ""}
 	if vol.Tags != nil {
-		tags = blockstorage.StringMap(vol.Tags)
+		tags = azto.StringMap(vol.Tags)
 	}
-	az := blockstorage.StringFromPtr(vol.Location)
-	if z := vol.Zones; len(z) > 0 {
-		az = az + "-" + *(z[0])
-	}
-	volumeType := ""
-	if vol.SKU != nil &&
-		vol.SKU.Name != nil {
-		volumeType = string(*vol.SKU.Name)
-	} else {
-		return nil, errors.New("Volume type is not available")
-	}
-
-	volId := ""
-	if vol.ID != nil {
-		volId = blockstorage.StringFromPtr(vol.ID)
-	} else {
-		return nil, errors.New("Volume Id is not available")
-	}
-	diskSize := int64(0)
-	if vol.Properties != nil &&
-		vol.Properties.DiskSizeBytes != nil {
-		diskSize = blockstorage.Int64(vol.Properties.DiskSizeBytes)
-	}
-
-	var creationTime = time.Now()
-	if vol.Properties != nil && vol.Properties.TimeCreated != nil {
-		creationTime = *vol.Properties.TimeCreated
-	}
-
-	var managedBy = "N.A."
-	if vol.ManagedBy != nil {
-		managedBy = blockstorage.StringFromPtr(vol.ManagedBy)
+	az := azto.String(vol.Location)
+	if z := azto.StringSlice(vol.Zones); len(z) > 0 {
+		az = az + "-" + z[0]
 	}
 
 	return &blockstorage.Volume{
 		Type:         s.Type(),
-		ID:           volId,
+		ID:           azto.String(vol.ID),
 		Encrypted:    encrypted,
-		SizeInBytes:  diskSize,
+		SizeInBytes:  azto.Int64(vol.DiskSizeBytes),
 		Az:           az,
 		Tags:         blockstorage.MapToKeyValue(tags),
-		VolumeType:   volumeType,
-		CreationTime: blockstorage.TimeStamp(creationTime),
-		Attributes:   map[string]string{"Users": managedBy},
+		VolumeType:   string(vol.Sku.Name),
+		CreationTime: blockstorage.TimeStamp(vol.DiskProperties.TimeCreated.ToTime()),
+		Attributes:   map[string]string{"Users": azto.String(vol.ManagedBy)},
 	}, nil
 }
 
 func (s *AdStorage) SnapshotParse(ctx context.Context, snapshot interface{}) (*blockstorage.Snapshot, error) {
-	if snap, ok := snapshot.(armcompute.Snapshot); ok {
-		return s.snapshotParse(ctx, snap)
+	if snap, ok := snapshot.(azcompute.Snapshot); ok {
+		return s.snapshotParse(ctx, snap), nil
 	}
-	return nil, errors.New(fmt.Sprintf("Snapshot is not of type *armcompute.Snapshot, snapshot: %v", snapshot))
+	return nil, errors.New(fmt.Sprintf("Snapshot is not of type *azcompute.Snapshot, snapshot: %v", snapshot))
 }
 
-func (s *AdStorage) snapshotParse(ctx context.Context, snap armcompute.Snapshot) (*blockstorage.Snapshot, error) {
-	snapId := ""
-	if snap.ID != nil {
-		snapId = *snap.ID
-	} else {
-		return nil, errors.New("Snapshot ID is missing")
-	}
+func (s *AdStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) *blockstorage.Snapshot {
 	vol := &blockstorage.Volume{
 		Type: s.Type(),
-		ID:   snapId,
+		ID:   azto.String(snap.SnapshotProperties.CreationData.SourceResourceID),
 	}
 
-	snapCreationTime := time.Now()
-	if snap.Properties != nil && snap.Properties.TimeCreated != nil {
-		snapCreationTime = *snap.Properties.TimeCreated
-	}
-
+	snapCreationTime := *snap.TimeCreated
 	encrypted := false
-	if snap.Properties.EncryptionSettingsCollection != nil &&
-		snap.Properties.EncryptionSettingsCollection.Enabled != nil {
-		encrypted = *snap.Properties.EncryptionSettingsCollection.Enabled
+	if snap.SnapshotProperties.EncryptionSettingsCollection != nil &&
+		snap.SnapshotProperties.EncryptionSettingsCollection.Enabled != nil {
+		encrypted = *snap.SnapshotProperties.EncryptionSettingsCollection.Enabled
 	}
 	tags := map[string]string{}
 	if snap.Tags != nil {
-		tags = blockstorage.StringMap(snap.Tags)
-	}
-
-	diskSize := azto.Ptr(int64(0))
-	if snap.Properties != nil &&
-		snap.Properties.DiskSizeBytes != nil {
-		diskSize = snap.Properties.DiskSizeBytes
-	}
-
-	region := ""
-	if snap.Location != nil {
-		region = *snap.Location
+		tags = azto.StringMap(snap.Tags)
 	}
 	return &blockstorage.Snapshot{
 		Encrypted:    encrypted,
-		ID:           snapId,
-		Region:       region,
-		SizeInBytes:  blockstorage.Int64(diskSize),
+		ID:           azto.String(snap.ID),
+		Region:       azto.String(snap.Location),
+		SizeInBytes:  azto.Int64(snap.SnapshotProperties.DiskSizeBytes),
 		Tags:         blockstorage.MapToKeyValue(tags),
 		Type:         s.Type(),
 		Volume:       vol,
-		CreationTime: blockstorage.TimeStamp(snapCreationTime),
-	}, nil
+		CreationTime: blockstorage.TimeStamp(snapCreationTime.ToTime()),
+	}
 }
 
 func (s *AdStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	var vols []*blockstorage.Volume
 	// (ilya): It looks like azure doesn't support search by tags
 	// List does listing per Subscription
-	pager := s.azCli.DisksClient.NewListPager(nil)
-	for pager.More() {
-		page, err := pager.NextPage(ctx)
+	for diskList, err := s.azCli.DisksClient.ListComplete(ctx); diskList.NotDone(); err = diskList.Next() {
 		if err != nil {
 			return nil, errors.Wrap(err, "DisksClient.List in VolumesList")
 		}
-		for _, disk := range page.Value {
-			vol, err := s.VolumeParse(ctx, *disk)
-			if err != nil {
-				return nil, errors.Wrap(err, "DisksClient.List in VolumesList, failure in parsing Volume")
-			}
-			vols = append(vols, vol)
+		disk := diskList.Value()
+		vol, err := s.VolumeParse(ctx, disk)
+		if err != nil {
+			return nil, errors.Wrap(err, "DisksClient.List in VolumesList, failure in parsing Volume")
 		}
+		vols = append(vols, vol)
 	}
 	return vols, nil
 }
@@ -511,20 +473,17 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 	var snaps []*blockstorage.Snapshot
 	// (ilya): It looks like azure doesn't support search by tags
 	// List does listing per Subscription
-	pager := s.azCli.SnapshotsClient.NewListPager(nil)
-	for pager.More() {
-		page, err := pager.NextPage(ctx)
+	for snapList, err := s.azCli.SnapshotsClient.ListComplete(ctx); snapList.NotDone(); err = snapList.Next() {
 		if err != nil {
 			return nil, errors.Wrap(err, "SnapshotsClient.List in SnapshotsList")
 		}
-		for _, snap := range page.Value {
-			k10Snap, err := s.SnapshotParse(ctx, *snap)
-			if err != nil {
-				log.WithError(err).Print("Incorrect Snaphost type", field.M{"SnapshotID": snap.ID})
-				continue
-			}
-			snaps = append(snaps, k10Snap)
+		snap := snapList.Value()
+		k10Snap, err := s.SnapshotParse(ctx, snap)
+		if err != nil {
+			log.WithError(err).Print("Incorrect Snaphost type", field.M{"SnapshotID": snap.ID})
+			continue
 		}
+		snaps = append(snaps, k10Snap)
 	}
 	snaps = blockstorage.FilterSnapshotsWithTags(snaps, blockstorage.SanitizeTags(tags))
 	return snaps, nil
@@ -550,36 +509,39 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	}
 	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
 	tags = blockstorage.SanitizeTags(tags)
-	createDisk := armcompute.Disk{
-		Name:     blockstorage.StringPtr(diskName),
-		Tags:     *blockstorage.StringMapPtr(tags),
-		Location: blockstorage.StringPtr(region),
-		Properties: &armcompute.DiskProperties{
-			CreationData: &armcompute.CreationData{
-				CreateOption:     azto.Ptr(armcompute.DiskCreateOptionCopy),
-				SourceResourceID: blockstorage.StringPtr(snapshot.ID),
+	createDisk := azcompute.Disk{
+		Name:     azto.StringPtr(diskName),
+		Tags:     *azto.StringMapPtr(tags),
+		Location: azto.StringPtr(region),
+		DiskProperties: &azcompute.DiskProperties{
+			CreationData: &azcompute.CreationData{
+				CreateOption:     azcompute.Copy,
+				SourceResourceID: azto.StringPtr(snapshot.ID),
 			},
 		},
 	}
 	if id != "" {
-		createDisk.Zones = blockstorage.SliceStringPtr([]string{id})
+		createDisk.Zones = azto.StringSlicePtr([]string{id})
 	}
-	for _, saType := range armcompute.PossibleDiskStorageAccountTypesValues() {
+	for _, saType := range azcompute.PossibleDiskStorageAccountTypesValues() {
 		if string(saType) == snapshot.Volume.VolumeType {
-			createDisk.SKU = &armcompute.DiskSKU{
-				Name: azto.Ptr(saType),
+			createDisk.Sku = &azcompute.DiskSku{
+				Name: saType,
 			}
 		}
 	}
-	poller, err := s.azCli.DisksClient.BeginCreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk, nil)
+	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
 	if err != nil {
 		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
 	}
-	resp, err := poller.PollUntilDone(ctx, nil)
-	if err != nil {
+	if err = result.WaitForCompletionRef(ctx, s.azCli.DisksClient.Client); err != nil {
 		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
 	}
-	return s.VolumeParse(ctx, resp.Disk)
+	disk, err := result.Result(*s.azCli.DisksClient)
+	if err != nil {
+		return nil, err
+	}
+	return s.VolumeGet(ctx, azto.String(disk.ID), snapshot.Volume.Az)
 }
 
 func (s *AdStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
@@ -632,19 +594,19 @@ func (s *AdStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 			if err != nil {
 				return err
 			}
-			snap, err := s.azCli.SnapshotsClient.Get(ctx, rg, name, nil)
+			snap, err := s.azCli.SnapshotsClient.Get(ctx, rg, name)
 			if err != nil {
 				return errors.Wrapf(err, "SnapshotsClient.Get in SetTags, snapshotID: %s", res.ID)
 			}
-			tags = ktags.AddMissingTags(blockstorage.StringMap(snap.Tags), ktags.GetTags(tags))
-			snapProperties := armcompute.SnapshotUpdate{
-				Tags: *blockstorage.StringMapPtr(blockstorage.SanitizeTags(tags)),
+			tags = ktags.AddMissingTags(azto.StringMap(snap.Tags), ktags.GetTags(tags))
+			snapProperties := azcompute.SnapshotUpdate{
+				Tags: *azto.StringMapPtr(blockstorage.SanitizeTags(tags)),
 			}
-			poller, err := s.azCli.SnapshotsClient.BeginUpdate(ctx, rg, name, snapProperties, nil)
+			result, err := s.azCli.SnapshotsClient.Update(ctx, rg, name, snapProperties)
 			if err != nil {
 				return errors.Wrapf(err, "SnapshotsClient.Update in SetTags, snapshotID: %s", name)
 			}
-			_, err = poller.PollUntilDone(ctx, nil)
+			err = result.WaitForCompletionRef(ctx, s.azCli.SnapshotsClient.Client)
 			return errors.Wrapf(err, "SnapshotsClient.Update in SetTags, snapshotID: %s", name)
 		}
 	case *blockstorage.Volume:
@@ -653,20 +615,20 @@ func (s *AdStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 			if err != nil {
 				return err
 			}
-			vol, err := s.azCli.DisksClient.Get(ctx, rg, volID, nil)
+			vol, err := s.azCli.DisksClient.Get(ctx, rg, volID)
 			if err != nil {
 				return errors.Wrapf(err, "DiskClient.Get in SetTags, volumeID: %s", volID)
 			}
-			tags = ktags.AddMissingTags(blockstorage.StringMap(vol.Tags), ktags.GetTags(tags))
+			tags = ktags.AddMissingTags(azto.StringMap(vol.Tags), ktags.GetTags(tags))
 
-			diskProperties := armcompute.DiskUpdate{
-				Tags: *blockstorage.StringMapPtr(blockstorage.SanitizeTags(tags)),
+			diskProperties := azcompute.DiskUpdate{
+				Tags: *azto.StringMapPtr(blockstorage.SanitizeTags(tags)),
 			}
-			poller, err := s.azCli.DisksClient.BeginUpdate(ctx, rg, volID, diskProperties, nil)
+			result, err := s.azCli.DisksClient.Update(ctx, rg, volID, diskProperties)
 			if err != nil {
 				return errors.Wrapf(err, "DiskClient.Update in SetTags, volumeID: %s", volID)
 			}
-			_, err = poller.PollUntilDone(ctx, nil)
+			err = result.WaitForCompletionRef(ctx, s.azCli.DisksClient.Client)
 			return errors.Wrapf(err, "DiskClient.Update in SetTags, volumeID: %s", volID)
 		}
 	default:
@@ -716,38 +678,39 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 // dynamicRegionMapAzure derives a mapping from Regions to zones for Azure. Depends on subscriptionID
 func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]string, error) {
-	subscriptionsClient := s.azCli.SubscriptionsClient
-	regionMap := make(map[string]LocationZoneMap)
+	subscriptionsCLient := subscriptions.NewClientWithBaseURI(s.azCli.BaseURI)
+	subscriptionsCLient.Authorizer = s.azCli.Authorizer
+	llResp, err := subscriptionsCLient.ListLocations(ctx, s.azCli.SubscriptionID, nil)
+	if err != nil {
+		return nil, err
+	}
+	regionMap := make(map[string]map[string]struct{})
+	for _, location := range *llResp.Value {
+		regionMap[*location.Name] = make(map[string]struct{})
+	}
 
-	locationsPager := subscriptionsClient.NewListLocationsPager(s.azCli.SubscriptionID, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
-	for locationsPager.More() {
-		page, err := locationsPager.NextPage(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to advance page")
-		}
-		for _, location := range page.Value {
-			if location != nil && location.Name != nil {
-				regionMap[*location.Name] = make(LocationZoneMap)
-			} else {
-				continue
+	skuClient := skus.NewResourceSkusClientWithBaseURI(s.azCli.BaseURI, s.azCli.SubscriptionID)
+	skuClient.Authorizer = s.azCli.Authorizer
+	skuResults, err := skuClient.ListComplete(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for skuResults.Value().Name != nil {
+		if skuResults.Value().ResourceType != nil && *skuResults.Value().ResourceType == "disks" {
+			for _, location := range *skuResults.Value().LocationInfo {
+				if val, ok := regionMap[*location.Location]; ok {
+					for _, zone := range *location.Zones {
+						val[zone] = struct{}{}
+					}
+					regionMap[*location.Location] = val
+				}
 			}
+		}
+		if err = skuResults.NextWithContext(ctx); err != nil {
+			return nil, err
 		}
 	}
 
-	skusClient := s.azCli.SKUsClient
-	skusPager := skusClient.NewListPager(&armcompute.ResourceSKUsClientListOptions{Filter: nil,
-		IncludeExtendedLocations: nil})
-	for skusPager.More() {
-		skuResults, err := skusPager.NextPage(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to advance page")
-		}
-		for _, skuResult := range skuResults.Value {
-			if skuResult.Name != nil && skuResult.ResourceType != nil && *skuResult.ResourceType == "disks" {
-				s.mapLocationToZone(skuResult, &regionMap)
-			}
-		}
-	}
 	// convert to map of []string
 	regionMapResult := make(map[string][]string)
 	for region, zoneSet := range regionMap {
@@ -758,22 +721,4 @@ func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]str
 		regionMapResult[region] = zoneArray
 	}
 	return regionMapResult, nil
-}
-
-func (s *AdStorage) mapLocationToZone(skuResult *armcompute.ResourceSKU, regionMap *map[string]LocationZoneMap) {
-	var rm = *regionMap
-	for _, locationInfo := range skuResult.LocationInfo {
-		location := ""
-		if locationInfo.Location != nil {
-			location = *locationInfo.Location
-		} else {
-			continue
-		}
-		if val, ok := rm[location]; ok {
-			for _, zone := range locationInfo.Zones {
-				val[*zone] = struct{}{}
-			}
-			rm[location] = val
-		}
-	}
 }

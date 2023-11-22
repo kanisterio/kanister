@@ -20,11 +20,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	. "gopkg.in/check.v1"
-
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
+	. "gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -48,13 +48,12 @@ func (s *ClientSuite) TestClient(c *C) {
 	config[blockstorage.AzureCloudEnvironmentID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCloudEnvironmentID)
 	azCli, err := NewClient(context.Background(), config)
 	c.Assert(err, IsNil)
-	c.Assert(azCli.Cred, NotNil)
+
 	c.Assert(azCli.SubscriptionID, NotNil)
+	c.Assert(azCli.Authorizer, NotNil)
 	c.Assert(azCli.DisksClient, NotNil)
 	c.Assert(azCli.SnapshotsClient, NotNil)
-	c.Assert(azCli.DisksClient.NewListPager(nil), NotNil)
-	c.Assert(azCli.SKUsClient, NotNil)
-	c.Assert(azCli.SubscriptionsClient, NotNil)
+	_, err = azCli.DisksClient.List(context.Background())
 	c.Assert(err, IsNil)
 }
 
@@ -88,15 +87,13 @@ func (s ClientSuite) TestGetRegions(c *C) {
 
 func (s *ClientSuite) TestGetCredConfig(c *C) {
 	for _, tc := range []struct {
-		name       string
-		env        Environment
+		env        azure.Environment
 		config     map[string]string
 		errChecker Checker
-		expCCC     ClientCredentialsConfig
+		expCCC     auth.ClientCredentialsConfig
 	}{
 		{
-			name: "Test with all attributes in configuration",
-			env:  PublicCloud,
+			env: azure.PublicCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
 				blockstorage.AzureClientID:            "acid",
@@ -104,7 +101,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 				blockstorage.AzureActiveDirEndpoint:   "aade",
 				blockstorage.AzureActiveDirResourceID: "aadrid",
 			},
-			expCCC: ClientCredentialsConfig{
+			expCCC: auth.ClientCredentialsConfig{
 				ClientID:     "acid",
 				ClientSecret: "acs",
 				TenantID:     "atid",
@@ -114,25 +111,23 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: IsNil,
 		},
 		{
-			name: "Test with client credential in configuration",
-			env:  PublicCloud,
+			env: azure.PublicCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:     "atid",
 				blockstorage.AzureClientID:     "acid",
 				blockstorage.AzureClientSecret: "acs",
 			},
-			expCCC: ClientCredentialsConfig{
+			expCCC: auth.ClientCredentialsConfig{
 				ClientID:     "acid",
 				ClientSecret: "acs",
 				TenantID:     "atid",
-				Resource:     cloud.AzurePublic.Services[cloud.ResourceManager].Endpoint,
-				AADEndpoint:  cloud.AzurePublic.ActiveDirectoryAuthorityHost,
+				Resource:     azure.PublicCloud.ResourceManagerEndpoint,
+				AADEndpoint:  azure.PublicCloud.ActiveDirectoryEndpoint,
 			},
 			errChecker: IsNil,
 		},
 		{
-			name: "Test without AD in configuration",
-			env:  USGovernmentCloud,
+			env: azure.USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
 				blockstorage.AzureClientID:            "acid",
@@ -140,18 +135,17 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 				blockstorage.AzureActiveDirEndpoint:   "",
 				blockstorage.AzureActiveDirResourceID: "",
 			},
-			expCCC: ClientCredentialsConfig{
+			expCCC: auth.ClientCredentialsConfig{
 				ClientID:     "acid",
 				ClientSecret: "acs",
 				TenantID:     "atid",
-				Resource:     cloud.AzureGovernment.Services[cloud.ResourceManager].Endpoint,
-				AADEndpoint:  cloud.AzureGovernment.ActiveDirectoryAuthorityHost,
+				Resource:     azure.USGovernmentCloud.ResourceManagerEndpoint,
+				AADEndpoint:  azure.USGovernmentCloud.ActiveDirectoryEndpoint,
 			},
 			errChecker: IsNil,
 		},
 		{
-			name: "Test with tenantid and clientid in configuration",
-			env:  USGovernmentCloud,
+			env: azure.USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
 				blockstorage.AzureClientID: "acid",
@@ -159,16 +153,14 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: NotNil,
 		},
 		{
-			name: "Test with tenantid in configuration",
-			env:  USGovernmentCloud,
+			env: azure.USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
 			},
 			errChecker: NotNil,
 		},
 		{
-			name:       "Test with nil configuration",
-			env:        USGovernmentCloud,
+			env:        azure.USGovernmentCloud,
 			config:     map[string]string{},
 			errChecker: NotNil,
 		},
