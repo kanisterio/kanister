@@ -15,9 +15,8 @@
 package azure
 
 import (
-	. "gopkg.in/check.v1"
-
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	. "gopkg.in/check.v1"
 )
 
 type AuthSuite struct{}
@@ -73,7 +72,7 @@ func (s *AuthSuite) TestIsMSICredsAvailable(c *C) {
 	c.Assert(isMSICredsAvailable(config), Equals, false)
 }
 
-func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
+func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
 	// successful with client secret creds
 	config := map[string]string{
 		blockstorage.AzureTenantID:     "some-tenant-id",

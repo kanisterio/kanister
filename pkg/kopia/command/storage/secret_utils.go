@@ -16,10 +16,11 @@ package storage
 
 import (
 	"context"
-	"github.com/kanisterio/kanister/pkg/blockstorage/azure"
+	"time"
+
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"time"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
