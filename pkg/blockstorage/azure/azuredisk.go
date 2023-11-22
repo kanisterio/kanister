@@ -2,6 +2,7 @@
 // Related Ticket- https://github.com/kanisterio/kanister/issues/1684
 //
 //nolint:staticcheck
+
 package azure
 
 import (
