@@ -45,7 +45,7 @@ func NewClientCredentialsConfig(clientID string, clientSecret string, tenantID s
 		Resource:     cloud.AzurePublic.Services[cloud.ResourceManager].Endpoint,
 		//Todo: find a replacement for the AADEndpoint in the new azure sdk
 		AADEndpoint: cloud.AzurePublic.Services[ActiveDirectory].Endpoint,
-		//azure.PublicCloud.ActiveDirectoryEndpoint,
+		// azure.PublicCloud.ActiveDirectoryEndpoint,
 	}
 }
 

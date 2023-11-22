@@ -2,6 +2,7 @@
 // Related Ticket- https://github.com/kanisterio/kanister/issues/1684
 //
 //nolint:staticcheck
+
 package azure
 
 import (
@@ -272,7 +273,7 @@ func isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey strin
 	return migrateStorageAccount == "" || migrateStorageKey == ""
 }
 
-func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
+func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, id string) {
 	poller, err := s.azCli.SnapshotsClient.BeginRevokeAccess(ctx, rg, name, nil)
 	if err != nil {
 		log.Print("Failed to finish the revoke request", field.M{"error": err.Error()})
@@ -283,7 +284,7 @@ func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
 	}
 
 	if err != nil {
-		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": ID})
+		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": id})
 	}
 }
 
