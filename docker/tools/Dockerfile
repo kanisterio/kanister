@@ -17,8 +17,11 @@ ENV GITHUB_REPOSITORY=https://github.com/restic/restic
 
 WORKDIR /restic
 
-RUN git checkout v0.16.2
-RUN go run build.go
+RUN git checkout v0.16.2 && \
+    echo 'package main' > cmd/restic/fipsonly.go && \
+    echo 'import _ "crypto/tls/fipsonly"' >> cmd/restic/fipsonly.go
+# use debug flag to preserve symbols
+RUN go run build.go --tags debug
 
 # Build kopia binary from specific commit
 WORKDIR /
