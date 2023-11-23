@@ -518,6 +518,9 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 		}
 		snaps = append(snaps, k10Snap)
 	}
+
+	fmt.Printf("snaps that we have before filter in kanister impl %d\n", len(snaps))
+
 	snaps = blockstorage.FilterSnapshotsWithTags(snaps, blockstorage.SanitizeTags(tags))
 	return snaps, nil
 }
