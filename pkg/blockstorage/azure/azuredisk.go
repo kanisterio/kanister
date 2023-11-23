@@ -501,7 +501,12 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 	var snaps []*blockstorage.Snapshot
 	// (ilya): It looks like azure doesn't support search by tags
 	// List does listing per Subscription
-	for snapList, err := s.azCli.SnapshotsClient.ListComplete(ctx); snapList.NotDone(); err = snapList.Next() {
+	snapList, err := s.azCli.SnapshotsClient.ListComplete(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "ListComplete on SnapshotClient")
+	}
+
+	for ; snapList.NotDone(); err = snapList.Next() {
 		if err != nil {
 			return nil, errors.Wrap(err, "SnapshotsClient.List in SnapshotsList")
 		}
