@@ -505,7 +505,7 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 	if err != nil {
 		return nil, errors.Wrap(err, "ListComplete on SnapshotClient")
 	}
-
+	fmt.Println("Listing all the snapshots")
 	for ; snapList.NotDone(); err = snapList.Next() {
 		if err != nil {
 			return nil, errors.Wrap(err, "SnapshotsClient.List in SnapshotsList")
