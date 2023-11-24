@@ -239,7 +239,7 @@ func (s *PodSuite) TestPod(c *C) {
 		case po.ContainerName != "":
 			c.Assert(pod.Spec.Containers[0].Name, Equals, po.ContainerName)
 		default:
-			c.Assert(pod.Spec.Containers[0].Name, Equals, defaultContainerName)
+			c.Assert(pod.Spec.Containers[0].Name, Equals, DefaultContainerName)
 		}
 
 		switch {
@@ -931,6 +931,127 @@ func (s *PodSuite) TestSetLifecycleHook(c *C) {
 	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
 }
 
+func (s *PodSuite) TestGetRedactedOptions(c *C) {
+	opts := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		EnvironmentVariables: []corev1.EnvVar{
+			{Name: "abc", Value: "def", ValueFrom: &corev1.EnvVarSource{}},
+			{Name: "ooo", Value: "aaa", ValueFrom: &corev1.EnvVarSource{}},
+		},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []corev1.Container{{
+				Name:    "sidecar",
+				Image:   consts.LatestKanisterToolsImage,
+				Command: []string{"sh", "-c", "echo sidecar"},
+				Env: []corev1.EnvVar{
+					{Name: "a1", Value: "v1"},
+					{Name: "a2", Value: "v2"},
+				},
+			}},
+		},
+	}
+
+	po1 := getRedactedOptions(opts)
+
+	c.Assert(po1.Namespace, Equals, opts.Namespace)
+	c.Assert(po1.GenerateName, Equals, opts.GenerateName)
+	c.Assert(po1.Image, Equals, opts.Image)
+	c.Assert(po1.Command, DeepEquals, []string{redactedValue, redactedValue, redactedValue})
+	c.Assert(po1.EnvironmentVariables, DeepEquals, []corev1.EnvVar{
+		{Name: "abc", Value: redactedValue},
+		{Name: "ooo", Value: redactedValue},
+	})
+	c.Assert(po1.PodOverride, DeepEquals, crv1alpha1.JSONMap{
+		"containers": []corev1.Container{{
+			Name:    "sidecar",
+			Image:   consts.LatestKanisterToolsImage,
+			Command: []string{redactedValue, redactedValue, redactedValue},
+			Env: []corev1.EnvVar{
+				{Name: "a1", Value: redactedValue},
+				{Name: "a2", Value: redactedValue},
+			},
+		}},
+	})
+
+	po2 := getRedactedOptions(&PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		PodOverride: crv1alpha1.JSONMap{
+			"volumes":    []corev1.Volume{{Name: "Fake volume"}},
+			"containers": 123, // Check that non []corev1.Container value will not break anything
+		},
+	})
+
+	c.Assert(po2.Namespace, Equals, s.namespace)
+	c.Assert(po2.Image, Equals, consts.LatestKanisterToolsImage)
+	c.Assert(po2.Command, IsNil)
+	c.Assert(po2.EnvironmentVariables, IsNil)
+	c.Assert(po2.PodOverride, DeepEquals, crv1alpha1.JSONMap{
+		"volumes":    []corev1.Volume{{Name: "Fake volume"}},
+		"containers": 123,
+	})
+}
+
+func (s *PodSuite) TestGetRedactedPod(c *C) {
+	pod := &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Some kind",
+			APIVersion: "FakeAPI-1.0",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "c1",
+					Image: "img1",
+					Args:  []string{"a", "b", "c"},
+					Env: []corev1.EnvVar{
+						{Name: "ev1", Value: "23", ValueFrom: &corev1.EnvVarSource{}},
+						{Name: "ev2", Value: "dd", ValueFrom: &corev1.EnvVarSource{}},
+					},
+				},
+				{
+					Name:    "c2",
+					Image:   "img2",
+					Command: []string{"sh", "-c", "tail -f /dev/null"},
+					Env: []corev1.EnvVar{
+						{Name: "a1", Value: "v1", ValueFrom: &corev1.EnvVarSource{}},
+						{Name: "a2", Value: "v2", ValueFrom: &corev1.EnvVarSource{}},
+					},
+				},
+			},
+		},
+	}
+
+	p1 := getRedactedPod(pod)
+
+	c.Assert(p1.TypeMeta, DeepEquals, pod.TypeMeta)
+	c.Assert(len(p1.Spec.Containers), Equals, len(pod.Spec.Containers))
+	c.Assert(p1.Spec.Containers, DeepEquals, []corev1.Container{
+		{
+			Name:  "c1",
+			Image: "img1",
+			Args:  []string{redactedValue, redactedValue, redactedValue},
+			Env: []corev1.EnvVar{
+				{Name: "ev1", Value: redactedValue},
+				{Name: "ev2", Value: redactedValue},
+			},
+		},
+		{
+			Name:    "c2",
+			Image:   "img2",
+			Command: []string{redactedValue, redactedValue, redactedValue},
+			Env: []corev1.EnvVar{
+				{Name: "a1", Value: redactedValue},
+				{Name: "a2", Value: redactedValue},
+			},
+		},
+	})
+}
+
 func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 	for _, tc := range []struct {
 		podOptsContainerName  string
@@ -942,7 +1063,7 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 		},
 		{
 			podOptsContainerName:  "",
-			expectedContainerName: defaultContainerName,
+			expectedContainerName: DefaultContainerName,
 		},
 	} {
 		name := ContainerNameFromPodOptsOrDefault(&PodOptions{
@@ -952,8 +1073,8 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 	}
 
 	name := ContainerNameFromPodOptsOrDefault(&PodOptions{})
-	c.Assert(name, Equals, defaultContainerName)
+	c.Assert(name, Equals, DefaultContainerName)
 
 	name = ContainerNameFromPodOptsOrDefault(nil)
-	c.Assert(name, Equals, defaultContainerName)
+	c.Assert(name, Equals, DefaultContainerName)
 }
