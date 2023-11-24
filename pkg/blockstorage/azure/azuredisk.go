@@ -330,11 +330,11 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 func (s *AdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		snapshot, err := s.SnapshotGet(ctx, snap.ID)
-		if err != nil || snapshot.ProvisioningState != string(azcompute.ProvisioningStateSucceeded) {
-			return false, nil
+		if err == nil && snapshot.ProvisioningState == string(azcompute.ProvisioningStateSucceeded) {
+			return true, nil
 		}
 
-		return true, nil
+		return false, nil
 	})
 	return err
 }
