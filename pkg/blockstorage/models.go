@@ -88,6 +88,9 @@ type Snapshot struct {
 
 	// volume
 	Volume *Volume
+
+	// ProvisioningState is snapshot's provisioning state.
+	ProvisioningState string
 }
 
 // TimeStamp Time stamp for an event related to an object, for example when the object was created.
