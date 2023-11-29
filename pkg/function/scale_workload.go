@@ -63,9 +63,7 @@ func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	s.progressPercent = progress.StartedPercent
 	defer func() { s.progressPercent = progress.CompletedPercent }()
 
-	var namespace, kind, name string
-	var replicas int32
-	namespace, kind, name, replicas, waitForReady, err := getArgs(tp, args)
+	scaleArgs, err := getArgs(tp, args)
 	if err != nil {
 		return nil, err
 	}
@@ -78,19 +76,19 @@ func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	switch strings.ToLower(scaleWorkloadArgs.kind) {
+	switch strings.ToLower(scaleArgs.kind) {
 	case param.StatefulSetKind:
-		return nil, kube.ScaleStatefulSet(ctx, cli, scaleWorkloadArgs.namespace, scaleWorkloadArgs.name, scaleWorkloadArgs.replicas, scaleWorkloadArgs.waitForReady)
+		return nil, kube.ScaleStatefulSet(ctx, cli, scaleArgs.namespace, scaleArgs.name, scaleArgs.replicas, scaleArgs.waitForReady)
 	case param.DeploymentKind:
-		return nil, kube.ScaleDeployment(ctx, cli, scaleWorkloadArgs.namespace, scaleWorkloadArgs.name, scaleWorkloadArgs.replicas, scaleWorkloadArgs.waitForReady)
+		return nil, kube.ScaleDeployment(ctx, cli, scaleArgs.namespace, scaleArgs.name, scaleArgs.replicas, scaleArgs.waitForReady)
 	case param.DeploymentConfigKind:
 		osCli, err := osversioned.NewForConfig(cfg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create OpenShift client")
 		}
-		return nil, kube.ScaleDeploymentConfig(ctx, cli, osCli, scaleWorkloadArgs.namespace, scaleWorkloadArgs.name, scaleWorkloadArgs.replicas, scaleWorkloadArgs.waitForReady)
+		return nil, kube.ScaleDeploymentConfig(ctx, cli, osCli, scaleArgs.namespace, scaleArgs.name, scaleArgs.replicas, scaleArgs.waitForReady)
 	}
-	return nil, errors.New("Workload type not supported " + scaleWorkloadArgs.kind)
+	return nil, errors.New("Workload type not supported " + scaleArgs.kind)
 }
 
 func (*scaleWorkloadFunc) RequiredArgs() []string {
@@ -115,7 +113,15 @@ func (s *scaleWorkloadFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error
 	}, nil
 }
 
-func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, kind, name string, replicas int32, waitForReady bool, err error) {
+type scaleArgs struct {
+	namespace    string
+	kind         string
+	name         string
+	replicas     int32
+	waitForReady bool
+}
+
+func getArgs(tp param.TemplateParams, args map[string]interface{}) (*scaleArgs, error) {
 	var rep interface{}
 	waitForReady := true
 	err := Arg(args, ScaleWorkloadReplicas, &rep)
@@ -180,7 +186,7 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 	if err != nil {
 		return nil, err
 	}
-	return &scaleWorkloadArgs{
+	return &scaleArgs{
 		namespace:    namespace,
 		name:         name,
 		kind:         kind,

@@ -164,7 +164,20 @@ func (r *restoreRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, 
 	}, nil
 }
 
-func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
+func restoreRDSSnapshot(
+	ctx context.Context,
+	namespace,
+	instanceID,
+	subnetGroup,
+	snapshotID,
+	backupArtifactPrefix,
+	backupID,
+	username,
+	password string,
+	dbEngine RDSDBEngine,
+	sgIDs []string,
+	profile *param.Profile,
+) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Error validating profile")

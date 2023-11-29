@@ -247,7 +247,20 @@ func (d *exportRDSSnapshotToLocationFunc) ExecutionProgress() (crv1alpha1.PhaseP
 	}, nil
 }
 
-func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile, dbEngineVersion string) (map[string]interface{}, error) {
+func execDumpCommand(
+	ctx context.Context,
+	dbEngine RDSDBEngine,
+	action RDSAction,
+	namespace,
+	dbEndpoint,
+	username,
+	password string,
+	databases []string,
+	backupPrefix,
+	backupID string,
+	profile *param.Profile,
+	dbEngineVersion string,
+) (map[string]interface{}, error) {
 	// Trim "\n" from creds
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)
