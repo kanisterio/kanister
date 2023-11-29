@@ -280,6 +280,10 @@ BackupData
 This function backs up data from a container into any object store
 supported by Kanister.
 
+.. warning::
+   The *BackupData* will be deprecated soon. We recommend using :ref:`copyvolumedata` instead.
+   However, :ref:`restoredata` and :ref:`deletedata` will continue to be available, ensuring you retain control over your existing backups.
+
 .. note::
    It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
@@ -338,6 +342,10 @@ BackupDataAll
 This function concurrently backs up data from one or more pods into an any
 object store supported by Kanister.
 
+.. warning::
+   The *BackupDataAll* will be deprecated soon.
+   However, :ref:`restoredataall` and :ref:`deletedataall` will continue to be available, ensuring you retain control over your existing backups.
+
 .. note::
    It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
@@ -391,7 +399,7 @@ Example:
 RestoreData
 -----------
 
-This function restores data backed up by the BackupData function.
+This function restores data backed up by the :ref:`backupdata` function.
 It creates a new Pod that mounts the PVCs referenced by the specified Pod
 and restores data to the specified path.
 
@@ -536,6 +544,7 @@ BackupDataAll function.
       kind: Deployment
       replicas: 2
 
+.. _copyvolumedata:
 
 CopyVolumeData
 --------------
@@ -589,10 +598,12 @@ If the ActionSet ``Object`` is a PersistentVolumeClaim:
       volume: "{{ .PVC.Name }}"
       dataArtifactPrefix: s3-bucket-name/path
 
+.. _deletedata:
+
 DeleteData
 ----------
 
-This function deletes the snapshot data backed up by the BackupData function.
+This function deletes the snapshot data backed up by the :ref:`backupdata` function.
 
 
 .. csv-table::
@@ -622,6 +633,8 @@ For this phase, we will use the ``backupInfo`` Artifact provided by backup funct
       namespace: "{{ .Namespace.Name }}"
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+
+.. _deletedataall:
 
 DeleteDataAll
 -------------
@@ -889,57 +902,6 @@ Example:
             mode: restore-size
             backupID: "{{ .ArtifactsIn.snapshot.KeyValue.backupIdentifier }}"
 
-DescribeBackups
----------------
-
-This function describes the backups for an object store location
-
-.. note::
-   It is important that the application includes a ``kanister-tools``
-   sidecar container. This sidecar is necessary to run the
-   tools that get the information from the object store.
-
-Arguments:
-
-.. csv-table::
-   :header: "Argument", "Required", "Type", "Description"
-   :align: left
-   :widths: 5,5,5,15
-
-   `backupArtifactPrefix`, Yes, `string`, path to the object store location
-   `encryptionKey`, No, `string`, encryption key to be used for backups
-
-Outputs:
-
-.. csv-table::
-   :header: "Output", "Type", "Description"
-   :align: left
-   :widths: 5,5,15
-
-   `fileCount`,`string`, number of files in backup object store location
-   `size`, `string`, size of the number of files in in backup object store location
-   `passwordIncorrect`, `string`, true if encryption key is incorrect
-   `repoDoesNotExist`, `string`, true if object store location does not exist
-
-Example:
-
-.. code-block:: yaml
-  :linenos:
-
-  actions:
-    backupStats:
-      outputArtifacts:
-        backupStats:
-          keyValue:
-            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.fileCount }}"
-            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.size }}"
-            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.passwordIncorrect }}"
-            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.repoDoesNotExist }}"
-      phases:
-        - func: DescribeBackups
-          name: DescribeBackupsFromObjectStore
-          args:
-            backupArtifactPrefix: s3-bucket/path/artifactPrefix
 
 CreateRDSSnapshot
 -----------------

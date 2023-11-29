@@ -17,12 +17,14 @@ package function
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
@@ -31,6 +33,7 @@ import (
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -49,7 +52,9 @@ const (
 	CreateVolumeFromSnapshotPVCNamesArg  = "pvcNames"
 )
 
-type createVolumeFromSnapshotFunc struct{}
+type createVolumeFromSnapshotFunc struct {
+	progressPercent string
+}
 
 func (*createVolumeFromSnapshotFunc) Name() string {
 	return CreateVolumeFromSnapshotFuncName
@@ -120,7 +125,11 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 	return providerList, nil
 }
 
-func (kef *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (c *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	c.progressPercent = progress.StartedPercent
+	defer func() { c.progressPercent = progress.CompletedPercent }()
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
@@ -153,4 +162,12 @@ func (*createVolumeFromSnapshotFunc) Arguments() []string {
 		CreateVolumeFromSnapshotManifestArg,
 		CreateVolumeFromSnapshotPVCNamesArg,
 	}
+}
+
+func (crs *createVolumeFromSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    crs.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

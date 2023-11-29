@@ -46,6 +46,11 @@ func (p *Phase) Name() string {
 	return p.name
 }
 
+// Progress return execution progress of the phase.
+func (p *Phase) Progress() (crv1alpha1.PhaseProgress, error) {
+	return p.f.ExecutionProgress()
+}
+
 // Objects returns the phase object references
 func (p *Phase) Objects() map[string]crv1alpha1.ObjectReference {
 	return p.objects

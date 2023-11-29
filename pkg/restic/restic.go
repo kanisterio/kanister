@@ -46,17 +46,6 @@ func shCommand(command string) []string {
 	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}
 }
 
-// BackupCommandByID returns restic backup command
-func BackupCommandByID(profile *param.Profile, repository, pathToBackup, encryptionKey string) ([]string, error) {
-	cmd, err := resticArgs(profile, repository, encryptionKey)
-	if err != nil {
-		return nil, err
-	}
-	cmd = append(cmd, "backup", pathToBackup)
-	command := strings.Join(cmd, " ")
-	return shCommand(command), nil
-}
-
 // BackupCommandByTag returns restic backup command with tag
 func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePath, encryptionKey string) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
@@ -130,17 +119,6 @@ func InitCommand(profile *param.Profile, repository, encryptionKey string) ([]st
 		return nil, err
 	}
 	cmd = append(cmd, "init")
-	command := strings.Join(cmd, " ")
-	return shCommand(command), nil
-}
-
-// ForgetCommandByTag returns restic forget command
-func ForgetCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) ([]string, error) {
-	cmd, err := resticArgs(profile, repository, encryptionKey)
-	if err != nil {
-		return nil, err
-	}
-	cmd = append(cmd, "forget", "--tag", tag)
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
@@ -447,25 +425,6 @@ func IsPasswordIncorrect(output string) bool {
 // DoesRepoExists checks if repo exists from Snapshot Command log
 func DoesRepoExist(output string) bool {
 	return strings.Contains(output, "Is there a repository at the following location?")
-}
-
-// SnapshotIDFromSnapshotLog gets the SnapshotID from Snapshot Command log
-func SnapshotIDsFromSnapshotCommand(output string) ([]string, error) {
-	var snapIds []string
-	var result []map[string]interface{}
-	err := json.Unmarshal([]byte(output), &result)
-	if err != nil {
-		return nil, errors.WithMessage(err, "Failed to unmarshall output from snapshotCommand")
-	}
-	if len(result) == 0 {
-		return nil, errors.New("Snapshots not found")
-	}
-	for _, r := range result {
-		if r["short_id"] != nil {
-			snapIds = append(snapIds, r["short_id"].(string))
-		}
-	}
-	return snapIds, nil
 }
 
 // SpaceFreedFromPruneLog gets the space freed from the prune log output

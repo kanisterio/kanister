@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
@@ -54,7 +56,9 @@ const (
 	CreateVolumeSnapshotSkipWaitArg  = "skipWait"
 )
 
-type createVolumeSnapshotFunc struct{}
+type createVolumeSnapshotFunc struct {
+	progressPercent string
+}
 
 func (*createVolumeSnapshotFunc) Name() string {
 	return CreateVolumeSnapshotFuncName
@@ -261,7 +265,11 @@ func getPVCList(tp param.TemplateParams) ([]string, error) {
 	return pvcList, nil
 }
 
-func (kef *createVolumeSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (c *createVolumeSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	c.progressPercent = progress.StartedPercent
+	defer func() { c.progressPercent = progress.CompletedPercent }()
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
@@ -316,4 +324,12 @@ func (*createVolumeSnapshotFunc) Arguments() []string {
 		CreateVolumeSnapshotPVCsArg,
 		CreateVolumeSnapshotSkipWaitArg,
 	}
+}
+
+func (c *createVolumeSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    c.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

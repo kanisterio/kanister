@@ -17,6 +17,7 @@ package function
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +28,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -62,7 +64,9 @@ func init() {
 
 var _ kanister.Func = (*restoreDataFunc)(nil)
 
-type restoreDataFunc struct{}
+type restoreDataFunc struct {
+	progressPercent string
+}
 
 func (*restoreDataFunc) Name() string {
 	return RestoreDataFuncName
@@ -111,22 +115,30 @@ func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams)
 func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, jobPrefix, image string,
 	vols map[string]string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	// Validate volumes
-	for pvc := range vols {
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+		}
+
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}
 	}
+
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		Volumes:      vols,
+		Volumes:      validatedVols,
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func restoreDataPodFunc(
@@ -180,7 +192,11 @@ func restoreDataPodFunc(
 	}
 }
 
-func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	r.progressPercent = progress.StartedPercent
+	defer func() { r.progressPercent = progress.CompletedPercent }()
+
 	var namespace, image, backupArtifactPrefix, backupTag, backupID string
 	var podOverride crv1alpha1.JSONMap
 	var err error
@@ -253,4 +269,12 @@ func (*restoreDataFunc) Arguments() []string {
 		RestoreDataBackupIdentifierArg,
 		RestoreDataPodOverrideArg,
 	}
+}
+
+func (d *restoreDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    d.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }

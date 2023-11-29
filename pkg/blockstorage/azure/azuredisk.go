@@ -347,7 +347,15 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 }
 
 func (s *AdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
-	return nil
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		snapshot, err := s.SnapshotGet(ctx, snap.ID)
+		if err == nil && snapshot.ProvisioningState == string(azcompute.ProvisioningStateSucceeded) {
+			return true, nil
+		}
+
+		return false, nil
+	})
+	return err
 }
 
 const (
@@ -459,14 +467,15 @@ func (s *AdStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) 
 		tags = azto.StringMap(snap.Tags)
 	}
 	return &blockstorage.Snapshot{
-		Encrypted:    encrypted,
-		ID:           azto.String(snap.ID),
-		Region:       azto.String(snap.Location),
-		SizeInBytes:  azto.Int64(snap.SnapshotProperties.DiskSizeBytes),
-		Tags:         blockstorage.MapToKeyValue(tags),
-		Type:         s.Type(),
-		Volume:       vol,
-		CreationTime: blockstorage.TimeStamp(snapCreationTime.ToTime()),
+		Encrypted:         encrypted,
+		ID:                azto.String(snap.ID),
+		Region:            azto.String(snap.Location),
+		SizeInBytes:       azto.Int64(snap.SnapshotProperties.DiskSizeBytes),
+		Tags:              blockstorage.MapToKeyValue(tags),
+		Type:              s.Type(),
+		Volume:            vol,
+		CreationTime:      blockstorage.TimeStamp(snapCreationTime.ToTime()),
+		ProvisioningState: *snap.ProvisioningState,
 	}
 }
 

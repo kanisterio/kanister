@@ -24,7 +24,7 @@ type KopiaPolicyTestSuite struct{}
 
 var _ = Suite(&KopiaPolicyTestSuite{})
 
-func (kPolicy *KopiaPolicyTestSuite) TestPolicyCommands(c *C) {
+func (kPolicy *KopiaPolicyTestSuite) TestPolicySetCommands(c *C) {
 	for _, tc := range []struct {
 		f           func() []string
 		expectedLog string
@@ -42,6 +42,31 @@ func (kPolicy *KopiaPolicyTestSuite) TestPolicyCommands(c *C) {
 				return PolicySetGlobal(args)
 			},
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key policy set --global asdf=bsdf",
+		},
+	} {
+		cmd := strings.Join(tc.f(), " ")
+		c.Check(cmd, Equals, tc.expectedLog)
+	}
+}
+
+func (kPolicy *KopiaPolicyTestSuite) TestPolicyShowCommands(c *C) {
+	for _, tc := range []struct {
+		f           func() []string
+		expectedLog string
+	}{
+		{
+			f: func() []string {
+				args := PolicyShowGlobalCommandArgs{
+					CommandArgs: &CommandArgs{
+						RepoPassword:   "encr-key",
+						ConfigFilePath: "path/kopia.config",
+						LogDirectory:   "cache/log",
+					},
+					GetJsonOutput: true,
+				}
+				return PolicyShowGlobal(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key policy show --global --json",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
