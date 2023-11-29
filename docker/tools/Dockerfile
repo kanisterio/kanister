@@ -17,7 +17,7 @@ ENV GITHUB_REPOSITORY=https://github.com/restic/restic
 
 WORKDIR /restic
 
-RUN git checkout v0.16.0
+RUN git checkout v0.16.2
 RUN go run build.go
 
 # Build kopia binary from specific commit
@@ -30,6 +30,7 @@ ENV GITHUB_REPOSITORY=https://github.com/${kopia_repo_org}/kopia
 WORKDIR /kopia
 
 RUN git checkout ${kopia_build_commit}
+
 RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
   -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
             -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopia_build_commit} \
@@ -53,7 +54,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2-750
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3-1361.1699548032
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \

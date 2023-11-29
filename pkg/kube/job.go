@@ -40,12 +40,19 @@ type Job struct {
 	name      string
 	sa        string
 	// vols is a map of PVC->Mount points to add to the job pod spec
-	vols      map[string]string
+	vols      map[string]VolumeMountOptions
 	clientset kubernetes.Interface
 }
 
 // NewJob creates a new Job object.
-func NewJob(clientset kubernetes.Interface, jobName string, namespace string, serviceAccount string, image string, vols map[string]string, command ...string) (*Job, error) {
+func NewJob(clientset kubernetes.Interface,
+	jobName string,
+	namespace string,
+	serviceAccount string,
+	image string,
+	vols map[string]VolumeMountOptions,
+	command ...string,
+) (*Job, error) {
 	if jobName == "" {
 		return nil, errors.New("Job name is required")
 	}
@@ -73,7 +80,8 @@ func NewJob(clientset kubernetes.Interface, jobName string, namespace string, se
 // Create creates the Job in Kubernetes.
 func (job *Job) Create() error {
 	falseVal := false
-	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(job.vols)
+	ctx := context.TODO()
+	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(ctx, job.vols)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create volume spec for job %s", job.name)
 	}
@@ -115,7 +123,7 @@ func (job *Job) Create() error {
 	batchClient := job.clientset.BatchV1()
 	jobsClient := batchClient.Jobs(job.namespace)
 
-	newJob, err := jobsClient.Create(context.TODO(), k8sJob, metav1.CreateOptions{})
+	newJob, err := jobsClient.Create(ctx, k8sJob, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create job %s", job.name)
 	}
@@ -125,21 +133,30 @@ func (job *Job) Create() error {
 	return nil
 }
 
-func createFilesystemModeVolumeSpecs(vols map[string]string) (volumeMounts []corev1.VolumeMount, podVolumes []corev1.Volume, error error) {
+func createFilesystemModeVolumeSpecs(
+	ctx context.Context,
+	vols map[string]VolumeMountOptions,
+) (volumeMounts []corev1.VolumeMount, podVolumes []corev1.Volume, error error) {
 	// Build filesystem mode volume specs
-	for pvc, mountPath := range vols {
+	for pvcName, mountOpts := range vols {
 		id, err := uuid.NewV1()
 		if err != nil {
 			return nil, nil, err
 		}
+
+		if mountOpts.ReadOnly {
+			log.Debug().WithContext(ctx).Print("PVC will be mounted in read-only mode", field.M{"pvcName": pvcName})
+		}
+
 		podVolName := fmt.Sprintf("vol-%s", id.String())
-		volumeMounts = append(volumeMounts, corev1.VolumeMount{Name: podVolName, MountPath: mountPath})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{Name: podVolName, MountPath: mountOpts.MountPath, ReadOnly: mountOpts.ReadOnly})
 		podVolumes = append(podVolumes,
 			corev1.Volume{
 				Name: podVolName,
 				VolumeSource: corev1.VolumeSource{
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: pvc,
+						ClaimName: pvcName,
+						ReadOnly:  mountOpts.ReadOnly,
 					},
 				},
 			},

@@ -27,6 +27,7 @@ import (
 // creating or connecting to a Kopia repository
 type RepositoryCommandArgs struct {
 	*CommandArgs
+	CacheArgs
 	CacheDirectory  string
 	Hostname        string
 	ContentCacheMB  int
@@ -34,6 +35,9 @@ type RepositoryCommandArgs struct {
 	Username        string
 	RepoPathPrefix  string
 	ReadOnly        bool
+	// Only for CreateCommand
+	RetentionMode   string
+	RetentionPeriod time.Duration
 	// PITFlag is only effective if set while repository connect
 	PITFlag  strfmt.DateTime
 	Location map[string][]byte
@@ -48,7 +52,7 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		args = args.AppendLoggable(readOnlyFlag)
 	}
 
-	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
+	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
 
 	if cmdArgs.Hostname != "" {
 		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
@@ -78,7 +82,7 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
-	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
+	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
 
 	if cmdArgs.Hostname != "" {
 		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
@@ -86,6 +90,12 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 
 	if cmdArgs.Username != "" {
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
+	}
+
+	// During creation, both should be set. Technically RetentionPeriod should be >= 24 * time.Hour
+	if cmdArgs.RetentionMode != "" && cmdArgs.RetentionPeriod > 0 {
+		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
+		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
 
 	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
@@ -102,17 +112,16 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 // RepositoryServerCommandArgs contains fields required for connecting
 // to Kopia Repository API server
 type RepositoryServerCommandArgs struct {
-	UserPassword    string
-	ConfigFilePath  string
-	LogDirectory    string
-	CacheDirectory  string
-	Hostname        string
-	ServerURL       string
-	Fingerprint     string
-	Username        string
-	ReadOnly        bool
-	ContentCacheMB  int
-	MetadataCacheMB int
+	UserPassword   string
+	ConfigFilePath string
+	LogDirectory   string
+	CacheDirectory string
+	Hostname       string
+	ServerURL      string
+	Fingerprint    string
+	Username       string
+	ReadOnly       bool
+	CacheArgs
 }
 
 // RepositoryConnectServerCommand returns the kopia command for connecting to a remote
@@ -129,7 +138,7 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 		args = args.AppendLoggable(readOnlyFlag)
 	}
 
-	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
+	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
 
 	if cmdArgs.Hostname != "" {
 		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
@@ -166,5 +175,23 @@ func RepositoryStatusCommand(cmdArgs RepositoryStatusCommandArgs) []string {
 		args = args.AppendLoggable(jsonFlag)
 	}
 
+	return stringSliceCommand(args)
+}
+
+type RepositorySetParametersCommandArgs struct {
+	*CommandArgs
+	RetentionMode   string
+	RetentionPeriod time.Duration
+}
+
+// RepositorySetParametersCommand to cover https://kopia.io/docs/reference/command-line/common/repository-set-parameters/
+func RepositorySetParametersCommand(cmdArgs RepositorySetParametersCommandArgs) []string {
+	args := commonArgs(cmdArgs.CommandArgs)
+	args = args.AppendLoggable(repositorySubCommand, setParametersSubCommand)
+	// RetentionPeriod can be 0 when wanting to disable blob retention or when changing the mode only
+	if cmdArgs.RetentionMode != "" {
+		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
+		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
+	}
 	return stringSliceCommand(args)
 }

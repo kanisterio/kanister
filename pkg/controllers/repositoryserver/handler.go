@@ -266,7 +266,7 @@ func (h *RepoServerHandler) setCredDataFromSecretInPod(ctx context.Context, podO
 		h.Logger.Info("Setting credentials data from secret as env variables")
 		podOptions.EnvironmentVariables = envVars
 	}
-	pod, err = kube.GetPodObjectFromPodOptions(h.KubeCli, podOptions)
+	pod, err = kube.GetPodObjectFromPodOptions(ctx, h.KubeCli, podOptions)
 	if err != nil {
 		return nil, nil, err
 	}

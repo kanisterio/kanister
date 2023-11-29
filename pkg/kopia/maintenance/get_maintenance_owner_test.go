@@ -15,8 +15,12 @@
 package maintenance
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
+	kopiacli "github.com/kopia/kopia/cli"
+	"github.com/kopia/kopia/repo/maintenance"
 	. "gopkg.in/check.v1"
 )
 
@@ -28,28 +32,65 @@ type KopiaMaintenanceOwnerTestSuite struct{}
 var _ = Suite(&KopiaMaintenanceOwnerTestSuite{})
 
 func (kMaintenanceOwner *KopiaMaintenanceOwnerTestSuite) TestParseMaintenanceOwnerOutput(c *C) {
+	maintInfoResult := kopiacli.MaintenanceInfo{
+		Params: maintenance.Params{
+			Owner: "owner@hostname",
+			QuickCycle: maintenance.CycleParams{
+				Enabled:  false,
+				Interval: 10 * time.Minute,
+			},
+			FullCycle: maintenance.CycleParams{
+				Enabled:  true,
+				Interval: 10 * time.Minute,
+			},
+		},
+		Schedule: maintenance.Schedule{
+			NextFullMaintenanceTime:  time.Now().Add(1 * time.Hour),
+			NextQuickMaintenanceTime: time.Now().Add(10 * time.Minute),
+			Runs: map[maintenance.TaskType][]maintenance.RunInfo{
+				"asdf": {
+					{
+						Start:   time.Now().Add(-10 * time.Minute),
+						End:     time.Now().Add(-5 * time.Minute),
+						Success: true,
+						Error:   "",
+					},
+				},
+				"bsdf": {
+					{
+						Start:   time.Now().Add(-100 * time.Minute),
+						End:     time.Now().Add(-50 * time.Minute),
+						Success: false,
+						Error:   "some error",
+					},
+				},
+			},
+		},
+	}
+	maintOutput, err := json.Marshal(maintInfoResult)
+	c.Assert(err, IsNil)
+
 	for _, tc := range []struct {
-		output        string
+		desc          string
+		output        []byte
 		expectedOwner string
+		expectedErr   Checker
 	}{
 		{
-			output:        "",
+			desc:          "empty output",
+			output:        []byte{},
 			expectedOwner: "",
+			expectedErr:   NotNil,
 		},
 		{
-			output: `Owner: username@hostname
-			Quick Cycle:
-			  scheduled: true
-			  interval: 1h0m0s
-			  next run: now
-			Full Cycle:
-			  scheduled: false
-			Recent Maintenance Runs:
-			`,
-			expectedOwner: "username@hostname",
+			desc:          "maintenance output",
+			output:        maintOutput,
+			expectedOwner: "owner@hostname",
+			expectedErr:   IsNil,
 		},
 	} {
-		owner := parseOutput(tc.output)
-		c.Assert(owner, Equals, tc.expectedOwner)
+		owner, err := parseOwner(tc.output)
+		c.Assert(err, tc.expectedErr, Commentf("Case: %s", tc.desc))
+		c.Assert(owner, Equals, tc.expectedOwner, Commentf("Case: %s", tc.desc))
 	}
 }

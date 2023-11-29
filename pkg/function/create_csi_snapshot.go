@@ -17,15 +17,19 @@ package function
 import (
 	"context"
 	"fmt"
+	"time"
 
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 func init() {
@@ -55,13 +59,19 @@ const (
 	CreateCSISnapshotSnapshotContentNameArg = "snapshotContent"
 )
 
-type createCSISnapshotFunc struct{}
+type createCSISnapshotFunc struct {
+	progressPercent string
+}
 
 func (*createCSISnapshotFunc) Name() string {
 	return CreateCSISnapshotFuncName
 }
 
-func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (c *createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	c.progressPercent = progress.StartedPercent
+	defer func() { c.progressPercent = progress.CompletedPercent }()
+
 	var snapshotClass string
 	var labels map[string]string
 	var name, pvc, namespace string
@@ -146,4 +156,12 @@ func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, na
 // defaultSnapshotName generates snapshot name using <pvcName>-snapshot-<randomValue>
 func defaultSnapshotName(pvcName string, len int) string {
 	return fmt.Sprintf("%s-snapshot-%s", pvcName, rand.String(len))
+}
+
+func (c *createCSISnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    c.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
