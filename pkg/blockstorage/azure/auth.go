@@ -5,8 +5,9 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/pkg/errors"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 // currently available types: https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization

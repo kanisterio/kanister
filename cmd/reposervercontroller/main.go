@@ -38,7 +38,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
-	//+kubebuilder:scaffold:imports
 )
 
 var (

@@ -22,9 +22,10 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	. "gopkg.in/check.v1"
+
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
-	. "gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.

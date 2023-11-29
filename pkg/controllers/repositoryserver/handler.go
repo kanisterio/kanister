@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/jpillora/backoff"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,6 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
