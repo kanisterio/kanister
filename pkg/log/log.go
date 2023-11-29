@@ -198,7 +198,7 @@ func (l *logger) entry(fields ...field.M) *logrus.Entry {
 		}
 	}
 
-	frame := caller.GetFrame(3)
+	frame := caller.GetFrame(4)
 	logFields["Function"] = frame.Function
 	logFields["File"] = frame.File
 	logFields["Line"] = frame.Line

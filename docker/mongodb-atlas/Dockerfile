@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2-750
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3-1361.1699548032
 
 RUN cat >/etc/yum.repos.d/mongodb.repo <<EOL
 [mongodb-org-6.0]

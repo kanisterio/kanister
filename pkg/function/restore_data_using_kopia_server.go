@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,7 @@ import (
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -38,7 +40,9 @@ const (
 	SparseRestoreOption = "sparseRestore"
 )
 
-type restoreDataUsingKopiaServerFunc struct{}
+type restoreDataUsingKopiaServerFunc struct {
+	progressPercent string
+}
 
 func init() {
 	_ = kanister.Register(&restoreDataUsingKopiaServerFunc{})
@@ -72,7 +76,11 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
-func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
+	// Set progress percent
+	r.progressPercent = progress.StartedPercent
+	defer func() { r.progressPercent = progress.CompletedPercent }()
+
 	var (
 		err          error
 		image        string
@@ -151,6 +159,14 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 	)
 }
 
+func (r *restoreDataUsingKopiaServerFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    r.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
+}
+
 func restoreDataFromServer(
 	ctx context.Context,
 	cli kubernetes.Interface,
@@ -168,9 +184,17 @@ func restoreDataFromServer(
 	vols map[string]string,
 	podOverride crv1alpha1.JSONMap,
 ) (map[string]any, error) {
-	for pvc := range vols {
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrap(err, "Failed to retrieve PVC from namespace: "+namespace+" name: "+pvc)
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	// Validate volumes
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+		}
+
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}
 	}
 
@@ -179,7 +203,7 @@ func restoreDataFromServer(
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
-		Volumes:      vols,
+		Volumes:      validatedVols,
 		PodOverride:  podOverride,
 	}
 
@@ -194,7 +218,7 @@ func restoreDataFromServer(
 		userPassphrase,
 		sparseRestore,
 	)
-	return pr.RunEx(ctx, podFunc)
+	return pr.Run(ctx, podFunc)
 }
 
 func restoreDataFromServerPodFunc(
@@ -220,16 +244,18 @@ func restoreDataFromServerPodFunc(
 
 		cmd := kopiacmd.RepositoryConnectServerCommand(
 			kopiacmd.RepositoryServerCommandArgs{
-				UserPassword:    userPassphrase,
-				ConfigFilePath:  configFile,
-				LogDirectory:    logDirectory,
-				CacheDirectory:  kopiacmd.DefaultCacheDirectory,
-				Hostname:        hostname,
-				ServerURL:       serverAddress,
-				Fingerprint:     fingerprint,
-				Username:        username,
-				ContentCacheMB:  contentCacheMB,
-				MetadataCacheMB: metadataCacheMB,
+				UserPassword:   userPassphrase,
+				ConfigFilePath: configFile,
+				LogDirectory:   logDirectory,
+				CacheDirectory: kopiacmd.DefaultCacheDirectory,
+				Hostname:       hostname,
+				ServerURL:      serverAddress,
+				Fingerprint:    fingerprint,
+				Username:       username,
+				CacheArgs: kopiacmd.CacheArgs{
+					ContentCacheLimitMB:  contentCacheMB,
+					MetadataCacheLimitMB: metadataCacheMB,
+				},
 			})
 
 		commandExecutor, err := pc.GetCommandExecutor()

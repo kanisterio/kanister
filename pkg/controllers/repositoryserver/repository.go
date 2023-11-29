@@ -30,11 +30,13 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 			ConfigFilePath: repoConfiguration.ConfigFilePath,
 			LogDirectory:   repoConfiguration.LogDirectory,
 		},
-		CacheDirectory:  repoConfiguration.CacheDirectory,
-		Hostname:        h.RepositoryServer.Spec.Repository.Hostname,
-		ContentCacheMB:  *cacheSizeSettings.Content,
-		MetadataCacheMB: *cacheSizeSettings.Metadata,
-		Username:        h.RepositoryServer.Spec.Repository.Username,
+		CacheDirectory: repoConfiguration.CacheDirectory,
+		Hostname:       h.RepositoryServer.Spec.Repository.Hostname,
+		CacheArgs: command.CacheArgs{
+			ContentCacheLimitMB:  *cacheSizeSettings.Content,
+			MetadataCacheLimitMB: *cacheSizeSettings.Metadata,
+		},
+		Username: h.RepositoryServer.Spec.Repository.Username,
 		// TODO(Amruta): Generate path for respository
 		RepoPathPrefix: h.RepositoryServer.Spec.Repository.RootPath,
 		Location:       h.RepositoryServerSecrets.storage.Data,

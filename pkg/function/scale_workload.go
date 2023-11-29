@@ -18,14 +18,18 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 const (
@@ -46,14 +50,22 @@ var (
 	_ kanister.Func = (*scaleWorkloadFunc)(nil)
 )
 
-type scaleWorkloadFunc struct{}
+type scaleWorkloadFunc struct {
+	progressPercent string
+}
 
 func (*scaleWorkloadFunc) Name() string {
 	return ScaleWorkloadFuncName
 }
 
-func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	scaleWorkloadArgs, err := getArgs(tp, args)
+func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	s.progressPercent = progress.StartedPercent
+	defer func() { s.progressPercent = progress.CompletedPercent }()
+
+	var namespace, kind, name string
+	var replicas int32
+	namespace, kind, name, replicas, waitForReady, err := getArgs(tp, args)
 	if err != nil {
 		return nil, err
 	}
@@ -95,15 +107,15 @@ func (*scaleWorkloadFunc) Arguments() []string {
 	}
 }
 
-type scaleWorkloadArgs struct {
-	namespace    string
-	kind         string
-	name         string
-	replicas     int32
-	waitForReady bool
+func (s *scaleWorkloadFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    s.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
-func getArgs(tp param.TemplateParams, args map[string]interface{}) (*scaleWorkloadArgs, error) {
+func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, kind, name string, replicas int32, waitForReady bool, err error) {
 	var rep interface{}
 	waitForReady := true
 	err := Arg(args, ScaleWorkloadReplicas, &rep)

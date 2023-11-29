@@ -478,13 +478,15 @@ func CreateTestKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.Repository
 			ConfigFilePath: command.DefaultConfigFilePath,
 			LogDirectory:   command.DefaultLogDirectory,
 		},
-		CacheDirectory:  command.DefaultCacheDirectory,
-		Hostname:        KopiaRepositoryServerHost,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
-		Username:        KopiaRepositoryUser,
-		RepoPathPrefix:  KopiaRepositoryPath,
-		Location:        storageLocation,
+		CacheDirectory: command.DefaultCacheDirectory,
+		Hostname:       KopiaRepositoryServerHost,
+		CacheArgs: command.CacheArgs{
+			ContentCacheLimitMB:  contentCacheMB,
+			MetadataCacheLimitMB: metadataCacheMB,
+		},
+		Username:       KopiaRepositoryUser,
+		RepoPathPrefix: KopiaRepositoryPath,
+		Location:       storageLocation,
 	}
 	return repository.ConnectToOrCreateKopiaRepository(
 		cli,

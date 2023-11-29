@@ -19,6 +19,7 @@ import (
 
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
+	"github.com/kopia/kopia/snapshot/policy"
 	. "gopkg.in/check.v1"
 )
 
@@ -658,10 +659,59 @@ func (kParse *KopiaParseUtilsTestSuite) TestErrorsFromOutput(c *C) {
 	}
 }
 
+func (kParse *KopiaParseUtilsTestSuite) TestParsePolicyShow(c *C) {
+	for _, tc := range []struct {
+		description   string
+		outputGenFunc func(*C, policy.Policy) string
+		expPolicyShow policy.Policy
+		errChecker    Checker
+	}{
+		{
+			description:   "empty policy show",
+			outputGenFunc: marshalPolicy,
+			expPolicyShow: policy.Policy{},
+			errChecker:    IsNil,
+		},
+		{
+			description:   "default policy show",
+			outputGenFunc: marshalPolicy,
+			expPolicyShow: *policy.DefaultPolicy,
+			errChecker:    IsNil,
+		},
+		{
+			description: "error: parse empty output",
+			outputGenFunc: func(*C, policy.Policy) string {
+				return ""
+			},
+			errChecker: NotNil,
+		},
+		{
+			description: "error: unmarshal fails",
+			outputGenFunc: func(*C, policy.Policy) string {
+				return "asdf"
+			},
+			errChecker: NotNil,
+		},
+	} {
+		outputToParse := tc.outputGenFunc(c, tc.expPolicyShow)
+		gotPolicy, err := ParsePolicyShow(outputToParse)
+		c.Check(err, tc.errChecker, Commentf("Failed for output: %q", outputToParse))
+		c.Log(err)
+		c.Check(gotPolicy, DeepEquals, tc.expPolicyShow)
+	}
+}
+
 func marshalManifestList(c *C, manifestList []*snapshot.Manifest) string {
 	c.Assert(manifestList, NotNil)
 
 	b, err := json.Marshal(manifestList)
+	c.Assert(err, IsNil)
+
+	return string(b)
+}
+
+func marshalPolicy(c *C, policy policy.Policy) string {
+	b, err := json.Marshal(policy)
 	c.Assert(err, IsNil)
 
 	return string(b)

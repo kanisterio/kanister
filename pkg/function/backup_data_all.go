@@ -19,15 +19,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
@@ -62,13 +66,19 @@ func init() {
 
 var _ kanister.Func = (*backupDataAllFunc)(nil)
 
-type backupDataAllFunc struct{}
+type backupDataAllFunc struct {
+	progressPercent string
+}
 
 func (*backupDataAllFunc) Name() string {
 	return BackupDataAllFuncName
 }
 
-func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (b *backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	b.progressPercent = progress.StartedPercent
+	defer func() { b.progressPercent = progress.CompletedPercent }()
+
 	var namespace, pods, container, includePath, backupArtifactPrefix, encryptionKey string
 	var err error
 	if err = Arg(args, BackupDataAllNamespaceArg, &namespace); err != nil {
@@ -170,5 +180,13 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 	return map[string]interface{}{
 		BackupDataAllOutput:   string(manifestData),
 		FunctionOutputVersion: kanister.DefaultVersion,
+	}, nil
+}
+
+func (b *backupDataAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    b.progressPercent,
+		LastTransitionTime: &metav1Time,
 	}, nil
 }

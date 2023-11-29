@@ -89,8 +89,8 @@ func (k *KanctlTestSuite) TestGenerateActionSetName(c *C) {
 		{actionName: "my-action", actionSetName: "", parentName: "", expected: "my-action-"},
 		{actionName: "my-action", actionSetName: "", parentName: "parent", expected: "my-action-parent-"},
 		{actionName: "", actionSetName: "", parentName: "parent", expected: "parent-"},
-		{actionName: "my-action", actionSetName: "my-override", parentName: "parent", expected: "my-override-"},
-		{actionName: "", actionSetName: "my-override", parentName: "", expected: "my-override-"},
+		{actionName: "my-action", actionSetName: "my-override", parentName: "parent", expected: "my-override"},
+		{actionName: "", actionSetName: "my-override", parentName: "", expected: "my-override"},
 	}
 
 	for _, tc := range testCases {
@@ -102,6 +102,82 @@ func (k *KanctlTestSuite) TestGenerateActionSetName(c *C) {
 
 		actual, err := generateActionSetName(params)
 		c.Assert(err, DeepEquals, tc.expectedErr)
-		c.Assert(actual, DeepEquals, tc.expected)
+		if tc.actionSetName != "" || tc.expected == "" {
+			// if --name is provided we just use that we dont derive name
+			c.Assert(actual, DeepEquals, tc.expected)
+		} else {
+			// random 5 chars are added at the end if name is derived by us
+			c.Assert(actual[0:len(actual)-5], DeepEquals, tc.expected)
+		}
+	}
+}
+
+func (k *KanctlTestSuite) TestParseLabels(c *C) {
+	for _, tc := range []struct {
+		flagValue      string
+		expectedLabels map[string]string
+		expectedErr    error
+	}{
+		{
+			flagValue:      "a=b",
+			expectedLabels: map[string]string{"a": "b"},
+		},
+		{
+			flagValue:      "a=b,c=d",
+			expectedLabels: map[string]string{"a": "b", "c": "d"},
+		},
+		{
+			flagValue:      "a=b,c=d,e=f",
+			expectedLabels: map[string]string{"a": "b", "c": "d", "e": "f"},
+		},
+		{
+			flagValue:      "a=b,c=d,",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      ",a=b,c=d,",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      ",a=b,c=d",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      "a",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      "",
+			expectedLabels: nil,
+		},
+		{
+			flagValue:      "a,=b,c=d",
+			expectedLabels: nil,
+			expectedErr:    errInvalidFieldLabels,
+		},
+		{
+			flagValue:      "a=b ,c =d",
+			expectedLabels: map[string]string{"a": "b", "c": "d"},
+		},
+		{
+			flagValue:      "  a= b ,c = d ",
+			expectedLabels: map[string]string{"a": "b", "c": "d"},
+		},
+		{
+			flagValue:      "  a= b ",
+			expectedLabels: map[string]string{"a": "b"},
+		},
+		{
+			flagValue:      "a=",
+			expectedLabels: map[string]string{"a": ""},
+		},
+	} {
+		op, err := parseLabels(tc.flagValue)
+		c.Assert(err, DeepEquals, tc.expectedErr)
+		c.Assert(op, DeepEquals, tc.expectedLabels)
 	}
 }
