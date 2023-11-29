@@ -45,8 +45,14 @@ const (
 	// PodReadyWaitTimeoutEnv is the env var to get pod ready wait timeout
 	PodReadyWaitTimeoutEnv = "KANISTER_POD_READY_WAIT_TIMEOUT"
 	errAccessingNode       = "Failed to get node"
-	defaultContainerName   = "container"
+	DefaultContainerName   = "container"
+	redactedValue          = "XXXXX"
 )
+
+type VolumeMountOptions struct {
+	MountPath string
+	ReadOnly  bool
+}
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
@@ -59,7 +65,7 @@ type PodOptions struct {
 	Labels             map[string]string
 	Namespace          string
 	ServiceAccountName string
-	Volumes            map[string]string
+	Volumes            map[string]VolumeMountOptions
 	BlockVolumes       map[string]string
 	// PodSecurityContext and ContainerSecurityContext can be used to set the security context
 	// at the pod level and container level respectively.
@@ -76,7 +82,7 @@ type PodOptions struct {
 	Lifecycle                *v1.Lifecycle
 }
 
-func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()
 	if err != nil {
@@ -101,7 +107,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		opts.RestartPolicy = v1.RestartPolicyNever
 	}
 
-	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(opts.Volumes)
+	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(ctx, opts.Volumes)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create volume spec")
 	}
@@ -202,7 +208,7 @@ func createPodSpec(opts *PodOptions, patchedSpecs v1.PodSpec, ns string) *v1.Pod
 // name. This should be used whenever we create pods for Kanister functions.
 func ContainerNameFromPodOptsOrDefault(po *PodOptions) string {
 	if po == nil || po.ContainerName == "" {
-		return defaultContainerName
+		return DefaultContainerName
 	}
 
 	return po.ContainerName
@@ -210,13 +216,16 @@ func ContainerNameFromPodOptsOrDefault(po *PodOptions) string {
 
 // CreatePod creates a pod with a single container based on the specified image
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
-	pod, err := GetPodObjectFromPodOptions(cli, opts)
+	pod, err := GetPodObjectFromPodOptions(ctx, cli, opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 
+	log.Debug().WithContext(ctx).Print("Creating POD", field.M{"name": pod.Name, "namespace": pod.Namespace})
+
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
+		log.Error().WithContext(ctx).WithError(err).Print("Failed to create pod.", field.M{"pod": getRedactedPod(pod), "options": getRedactedOptions(opts)})
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 	return pod, nil
@@ -482,4 +491,94 @@ func GetPodReadyWaitTimeout() time.Duration {
 	}
 
 	return DefaultPodReadyWaitTimeout
+}
+
+// getRedactedEnvVariables returns array of variables with removed values
+// This function should be used every time when env variables are logged
+func getRedactedEnvVariables(env []v1.EnvVar) []v1.EnvVar {
+	if len(env) == 0 {
+		return nil
+	}
+
+	result := make([]v1.EnvVar, len(env))
+	for i, ev := range env {
+		result[i] = v1.EnvVar{
+			Name:  ev.Name,
+			Value: redactedValue,
+		}
+	}
+
+	return result
+}
+
+func getRedactedContainers(containers []v1.Container) []v1.Container {
+	if len(containers) == 0 {
+		return nil
+	}
+
+	result := make([]v1.Container, len(containers))
+	for i, c := range containers {
+		result[i] = c
+		result[i].Env = getRedactedEnvVariables(c.Env)
+		result[i].Command = getRedactedStringSlice(c.Command)
+		result[i].Args = getRedactedStringSlice(c.Args)
+	}
+	return result
+}
+
+func getRedactedStringSlice(slice []string) []string {
+	if len(slice) == 0 {
+		return nil
+	}
+	result := make([]string, len(slice))
+	for j := range slice {
+		result[j] = redactedValue
+	}
+	return result
+}
+
+func getRedactedPodOverride(podOverride crv1alpha1.JSONMap) crv1alpha1.JSONMap {
+	if len(podOverride) == 0 {
+		return nil
+	}
+
+	result := make(crv1alpha1.JSONMap, len(podOverride))
+	for k, v := range podOverride {
+		if c, ok := v.([]v1.Container); ok {
+			result[k] = getRedactedContainers(c)
+		} else {
+			result[k] = v
+		}
+	}
+
+	return result
+}
+
+// getRedactedPod hides all sensitive information from pod object (env variables, commands)
+// Should be used when pod structure is logged
+func getRedactedPod(pod *v1.Pod) *v1.Pod {
+	if pod == nil {
+		return nil
+	}
+
+	result := *pod // Make shallow copy
+
+	result.Spec.Containers = getRedactedContainers(result.Spec.Containers)
+	result.Spec.InitContainers = getRedactedContainers(result.Spec.InitContainers)
+
+	return &result
+}
+
+// getRedactedOptions hides all values of env variables from pod options, so that they should be safely logged
+func getRedactedOptions(opts *PodOptions) *PodOptions {
+	if opts == nil {
+		return nil
+	}
+
+	result := *opts // Make shallow copy
+
+	result.EnvironmentVariables = getRedactedEnvVariables(result.EnvironmentVariables)
+	result.Command = getRedactedStringSlice(result.Command)
+	result.PodOverride = getRedactedPodOverride(result.PodOverride)
+	return &result
 }

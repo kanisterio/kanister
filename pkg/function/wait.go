@@ -37,6 +37,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
+	"github.com/kanisterio/kanister/pkg/progress"
 )
 
 type WaitConditions struct {
@@ -62,13 +63,19 @@ func init() {
 
 var _ kanister.Func = (*waitFunc)(nil)
 
-type waitFunc struct{}
+type waitFunc struct {
+	progressPercent string
+}
 
 func (*waitFunc) Name() string {
 	return WaitFuncName
 }
 
-func (ktf *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (w *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	// Set progress percent
+	w.progressPercent = progress.StartedPercent
+	defer func() { w.progressPercent = progress.CompletedPercent }()
+
 	rendered, err := param.RenderArgs(args, tp)
 	if err != nil {
 		return nil, err
@@ -110,6 +117,14 @@ func (*waitFunc) Arguments() []string {
 		WaitTimeoutArg,
 		WaitConditionsArg,
 	}
+}
+
+func (w *waitFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+	metav1Time := metav1.NewTime(time.Now())
+	return crv1alpha1.PhaseProgress{
+		ProgressPercent:    w.progressPercent,
+		LastTransitionTime: &metav1Time,
+	}, nil
 }
 
 // waitForCondition wait till the condition satisfies within the timeout duration
