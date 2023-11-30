@@ -268,9 +268,9 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 		// it's possible that snapshot was created despite of SOAP errors,
 		// we're trying to find snapshot created in the current iteration(using timeOfCreateSnapshotCall)
 		// so we won't reuse snapshots created in previous runs
-		foundSnapId := p.getCreatedSnapshotID(ctx, description, volume.ID, timeOfCreateSnapshotCall)
-		if foundSnapId != nil {
-			res = *foundSnapId
+		foundSnapID := p.getCreatedSnapshotID(ctx, description, volume.ID, timeOfCreateSnapshotCall)
+		if foundSnapID != nil {
+			res = *foundSnapID
 			log.Error().WithError(createErr).Print("snapshot created with errors")
 			return true, nil
 		}
@@ -721,8 +721,8 @@ func (p *FcdProvider) getTagsFromSnapshotID(categoryTags []vapitags.Tag, fullSna
 		if err := parsedTag.Parse(catTag.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed to parse tag")
 		}
-		snapId := SnapshotFullID(parsedTag.volid, parsedTag.snapid)
-		if snapId == fullSnapshotID {
+		snapID := SnapshotFullID(parsedTag.volid, parsedTag.snapid)
+		if snapID == fullSnapshotID {
 			tags[parsedTag.key] = parsedTag.value
 		}
 	}
@@ -736,11 +736,11 @@ func (p *FcdProvider) getSnapshotIDsFromTags(categoryTags []vapitags.Tag, tags m
 		if err := parsedTag.Parse(catTag.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed to parse tag")
 		}
-		snapId := SnapshotFullID(parsedTag.volid, parsedTag.snapid)
-		if _, ok := snapshotTagMap[snapId]; !ok {
-			snapshotTagMap[snapId] = map[string]string{}
+		snapID := SnapshotFullID(parsedTag.volid, parsedTag.snapid)
+		if _, ok := snapshotTagMap[snapID]; !ok {
+			snapshotTagMap[snapID] = map[string]string{}
 		}
-		snapshotTagMap[snapId][parsedTag.key] = parsedTag.value
+		snapshotTagMap[snapID][parsedTag.key] = parsedTag.value
 	}
 
 	snapshotIDs := []string{}

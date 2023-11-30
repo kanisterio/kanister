@@ -16,7 +16,7 @@ package command
 
 type MaintenanceInfoCommandArgs struct {
 	*CommandArgs
-	GetJsonOutput bool
+	GetJsonOutput bool //nolint:stylecheck // Validate workflows before enabling stylecheck
 }
 
 // MaintenanceInfo returns the kopia command to get maintenance info

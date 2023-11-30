@@ -91,13 +91,13 @@ func (k *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[st
 	if err != nil {
 		return nil, err
 	}
-	objRefJson, err := json.Marshal(objRef)
+	objRefJSON, err := json.Marshal(objRef)
 	if err != nil {
 		return nil, err
 	}
 	// Convert objRef to map[string]interface{}
 	var out map[string]interface{}
-	if err := json.Unmarshal(objRefJson, &out); err != nil {
+	if err := json.Unmarshal(objRefJSON, &out); err != nil {
 		return nil, err
 	}
 	return out, nil

@@ -20,8 +20,8 @@ import "fmt"
 
 // The below variables will be overrriden using ldflags set by goreleaser during the build process
 var VERSION = "DEV"
-var GIT_COMMIT = "NONE"
-var BUILD_DATE = "UNKNOWN"
+var GIT_COMMIT = "NONE"    //nolint:stylecheck // Validate goreleaser works find after the change
+var BUILD_DATE = "UNKNOWN" //nolint:stylecheck // Validate goreleaser works find after the change
 
 const versionStringFmt = `{"version": "%s", "gitCommit": "%s", "buildDate": "%s"}`
 

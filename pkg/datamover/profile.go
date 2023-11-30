@@ -108,10 +108,10 @@ func (p *profile) unmarshalKopiaSnapshot(ctx context.Context) (*snapshot.Snapsho
 	return &kopiaSnap, nil
 }
 
-func NewProfileDataMover(prof *param.Profile, outputName, snapJson string) *profile {
+func NewProfileDataMover(prof *param.Profile, outputName, snapJSON string) *profile {
 	return &profile{
 		outputName: outputName,
 		profile:    prof,
-		snapJSON:   snapJson,
+		snapJSON:   snapJSON,
 	}
 }

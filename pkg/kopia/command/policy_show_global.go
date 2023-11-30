@@ -16,7 +16,7 @@ package command
 
 type PolicyShowGlobalCommandArgs struct {
 	*CommandArgs
-	GetJsonOutput bool
+	GetJsonOutput bool //nolint:stylecheck // Validate workflows before enabling stylecheck
 }
 
 // PolicyShowGlobal returns the kopia command for showing the global policy.

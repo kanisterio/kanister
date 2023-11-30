@@ -22,12 +22,12 @@ linters:
     - dupl
     - exportloopref
     - importas
-    # - stylecheck It needs a lot of changes
     - misspell
     - nestif
     - gci
     - goprintffuncname
     - nolintlint
+    - stylecheck
 
 
 run:
@@ -46,6 +46,7 @@ issues:
         - dupl
         - misspell
         - nestif
+        - stylecheck
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
@@ -76,3 +77,5 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/kanisterio/kanister)
+  stylecheck:
+    checks: [ "ST1003" ]

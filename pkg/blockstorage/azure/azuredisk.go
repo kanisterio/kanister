@@ -72,11 +72,11 @@ func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 
 func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	tags := blockstorage.SanitizeTags(blockstorage.KeyValueToMap(volume.Tags))
-	diskId, err := uuid.NewV1()
+	diskID, err := uuid.NewV1()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create UUID")
 	}
-	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
+	diskName := fmt.Sprintf(volumeNameFmt, diskID.String())
 	diskProperties := &azcompute.DiskProperties{
 		DiskSizeGB: azto.Int32Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
 		CreationData: &azcompute.CreationData{
@@ -207,11 +207,11 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to copy disk to blob")
 	}
-	snapId, err := uuid.NewV1()
+	snapID, err := uuid.NewV1()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create UUID")
 	}
-	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
+	snapName := fmt.Sprintf(snapshotNameFmt, snapID.String())
 	createSnap := getSnapshotObject(blob, from, to, snapName, storageAccountID)
 
 	migrateResourceGroup := s.azCli.ResourceGroup
@@ -304,11 +304,11 @@ func deleteBlob(blob *storage.Blob, blobName string) {
 }
 
 func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	snapId, err := uuid.NewV1()
+	snapID, err := uuid.NewV1()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create UUID")
 	}
-	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
+	snapName := fmt.Sprintf(snapshotNameFmt, snapID.String())
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 	region, _, err := getLocationInfo(volume.Az)
 	if err != nil {
@@ -531,11 +531,11 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 
-	diskId, err := uuid.NewV1()
+	diskID, err := uuid.NewV1()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create UUID")
 	}
-	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
+	diskName := fmt.Sprintf(volumeNameFmt, diskID.String())
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := azcompute.Disk{
 		Name:     azto.StringPtr(diskName),
