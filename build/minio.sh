@@ -25,7 +25,7 @@ install_minio ()
 {
     echo "Deploying minio..."
     # Add minio helm repo
-    helm repo add minio https://helm.min.io/
+    helm repo add minio https://charts.min.io/
     helm repo update
 
     # create minio namespace
