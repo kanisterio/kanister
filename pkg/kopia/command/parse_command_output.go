@@ -205,7 +205,7 @@ type SnapshotCreateStats struct {
 	ProgressPercent int64
 }
 
-var kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx) //nolint:lll
+var kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx)
 
 // SnapshotStatsFromSnapshotCreate parses the output of a kopia snapshot
 // create execution for a log of the stats for that execution.

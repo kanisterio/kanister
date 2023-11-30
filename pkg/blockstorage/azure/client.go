@@ -101,7 +101,6 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	}, nil
 }
 
-//nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
 	if isClientCredsAvailable(config) {
 		return getClientCredsAuthorizer(env, config)

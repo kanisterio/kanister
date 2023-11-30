@@ -32,10 +32,10 @@ func (fce *FakePodCommandExecutor) Exec(_ context.Context, command []string, std
 	fce.inExecCommand = make([]string, len(command))
 	copy(fce.inExecCommand, command)
 	if stdout != nil && len(fce.ExecStdout) > 0 {
-		stdout.Write([]byte(fce.ExecStdout)) //nolint: errcheck
+		stdout.Write([]byte(fce.ExecStdout))
 	}
 	if stderr != nil && len(fce.ExecStderr) > 0 {
-		stderr.Write([]byte(fce.ExecStderr)) //nolint: errcheck
+		stderr.Write([]byte(fce.ExecStderr))
 	}
 
 	return fce.ExecErr

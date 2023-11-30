@@ -272,7 +272,7 @@ func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, 
 	// Grab last log lines and put them to an error
 	lt := NewLogTail(logTailDefaultLength)
 	// We are not interested in log extraction error
-	io.Copy(lt, r) // nolint: errcheck
+	io.Copy(lt, r) //nolint:errcheck
 
 	return errors.Wrap(errors.Wrap(err, lt.ToString()), errorMessage)
 }
