@@ -19,7 +19,7 @@ set -o nounset
 
 # Default bucket name
 S3_BUCKET="tests.kanister.io"
-MINIO_CHART_VERSION="8.0.0"
+MINIO_CHART_VERSION="5.0.14"
 
 install_minio ()
 {
@@ -33,11 +33,10 @@ install_minio ()
 
     # deploy minio
     helm install minio --version ${MINIO_CHART_VERSION} --namespace minio \
-    --set defaultBucket.enabled=true,defaultBucket.name=${S3_BUCKET} \
-    --set environment.MINIO_SSE_AUTO_ENCRYPTION=on \
-    --set environment.MINIO_SSE_MASTER_KEY=my-minio-key:feb5bb6c5cf851e21dbc0376ca81012a9edc4ca0ceeb9df5064ccba2991ae9de \
-    --set accessKey="AKIAIOSFODNN7EXAMPLE",secretKey="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-    --set resources.requests.memory=200Mi \
+    --set resources.requests.memory=512Mi --set replicas=1 \
+    --set persistence.enabled=false --set mode=standalone \
+    --set buckets[0].name=${S3_BUCKET} \
+    --set rootUser=AKIAIOSFODNN7EXAMPLE,rootPassword=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
     minio/minio --wait --timeout 3m
 
     # export default creds for minio
