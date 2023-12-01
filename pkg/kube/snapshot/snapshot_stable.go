@@ -176,7 +176,7 @@ func (sna *SnapshotStable) CreateContentFromSource(ctx context.Context, source *
 // WaitOnReadyToUse will block until the Volumesnapshot in 'namespace' with name 'snapshotName'
 // has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 func (sna *SnapshotStable) WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error {
-	return waitOnReadyToUse(ctx, sna.dynCli, VolSnapGVR, snapshotName, namespace)
+	return waitOnReadyToUse(ctx, sna.dynCli, VolSnapGVR, snapshotName, namespace, isReadyToUseBeta)
 }
 
 func (sna *SnapshotStable) GroupVersion(ctx context.Context) schema.GroupVersion {
