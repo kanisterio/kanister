@@ -305,7 +305,8 @@ func (sna *SnapshotBeta) WaitOnReadyToUse(ctx context.Context, snapshotName, nam
 }
 
 func waitOnReadyToUse(ctx context.Context, dynCli dynamic.Interface, snapGVR schema.GroupVersionResource, snapshotName, namespace string) error {
-	return poll.Wait(ctx, func(context.Context) (bool, error) {
+	retries := 100
+	return poll.WaitWithRetries(ctx, retries, isTransientError, func(context.Context) (bool, error) {
 		us, err := dynCli.Resource(snapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
 		if err != nil {
 			return false, err

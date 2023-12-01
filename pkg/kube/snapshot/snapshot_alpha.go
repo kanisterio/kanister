@@ -320,8 +320,10 @@ func (sna *SnapshotAlpha) CreateContentFromSource(ctx context.Context, source *S
 
 // WaitOnReadyToUse will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
 // has status 'ReadyToUse' or 'ctx.Done()' is signalled.
+// FIXME: merge this with beta wait
 func (sna *SnapshotAlpha) WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error {
-	return poll.Wait(ctx, func(context.Context) (bool, error) {
+	retries := 100
+	return poll.WaitWithRetries(ctx, retries, isTransientError, func(context.Context) (bool, error) {
 		us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
 		if err != nil {
 			return false, err

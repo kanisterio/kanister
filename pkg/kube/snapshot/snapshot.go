@@ -16,6 +16,7 @@ package snapshot
 
 import (
 	"context"
+	"regexp"
 
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
@@ -152,4 +153,15 @@ func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Sna
 		return NewSnapshotAlpha(kubeCli, dynCli), nil
 	}
 	return nil, errors.New("Snapshot resources not supported")
+}
+
+// We use regexp to match because errors written in vs.Status.Error.Message are strings
+// and we don't have any status code or other metadata in there.
+var transientErrorRegexp = regexp.MustCompile("the object has been modified; please apply your changes to the latest version and try again")
+
+// Use regexp to detect resource conflict error
+// If CSI snapshotter changes error reporting to use more structured errors,
+// we can improve this function to parse and recognise error codes or types.
+func isTransientError(err error) bool {
+	return transientErrorRegexp.MatchString(err.Error())
 }
