@@ -365,7 +365,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 }
 
 func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *C) {
-	snapshotName := "snap-1-fake"
+	snapshotNameBase := "snap-1-fake"
 	volName := "pvc-1-fake"
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
@@ -402,16 +402,17 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *C) {
 		ctx := context.Background()
 
 		var volumeSnapshotGVR schema.GroupVersionResource
+		var snapshotName string
 		switch fakeSs.(type) {
 		case *snapshot.SnapshotAlpha:
 			volumeSnapshotGVR = v1alpha1.VolSnapGVR
-			snapshotName = snapshotName + "-alpha"
+			snapshotName = snapshotNameBase + "-alpha"
 		case *snapshot.SnapshotBeta:
 			volumeSnapshotGVR = v1beta1.VolSnapGVR
-			snapshotName = snapshotName + "-beta"
+			snapshotName = snapshotNameBase + "-beta"
 		case *snapshot.SnapshotStable:
 			volumeSnapshotGVR = snapshot.VolSnapGVR
-			snapshotName = snapshotName + "-stable"
+			snapshotName = snapshotNameBase + "-stable"
 		}
 
 		err = fakeSs.Create(ctx, snapshotName, defaultNamespace, volName, &fakeClass, false, nil)

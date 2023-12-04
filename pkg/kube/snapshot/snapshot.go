@@ -169,7 +169,14 @@ func isTransientError(err error) bool {
 	return transientErrorRegexp.MatchString(err.Error())
 }
 
-func waitOnReadyToUse(ctx context.Context, dynCli dynamic.Interface, snapGVR schema.GroupVersionResource, snapshotName, namespace string, isReadyFunc func(*unstructured.Unstructured) (bool, error)) error {
+func waitOnReadyToUse(
+	ctx context.Context,
+	dynCli dynamic.Interface,
+	snapGVR schema.GroupVersionResource,
+	snapshotName,
+	namespace string,
+	isReadyFunc func(*unstructured.Unstructured) (bool, error),
+) error {
 	retries := 100
 	return poll.WaitWithRetries(ctx, retries, isTransientError, func(context.Context) (bool, error) {
 		us, err := dynCli.Resource(snapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
