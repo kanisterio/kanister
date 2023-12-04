@@ -88,9 +88,7 @@ func newActionSetCmd() *cobra.Command {
 		Use:   "actionset",
 		Short: "Create a new ActionSet or override a <parent> ActionSet",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(c *cobra.Command, args []string) error {
-			return initializeAndPerform(c, args)
-		},
+		RunE:  initializeAndPerform,
 	}
 	cmd.Flags().StringP(sourceFlagName, "f", "", "specify name of the action set")
 
@@ -558,7 +556,7 @@ func parseGenericObjectReference(s string) (crv1alpha1.ObjectReference, error) {
 	}, nil
 }
 
-func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interface, osCli osversioned.Interface, parsed map[string]bool) ([]crv1alpha1.ObjectReference, error) {
+func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interface, osCli osversioned.Interface, parsed map[string]bool) ([]crv1alpha1.ObjectReference, error) { //nolint:gocyclo
 	ctx := context.Background()
 	var objects []crv1alpha1.ObjectReference
 	appendObj := func(kind, namespace, name string) {

@@ -811,11 +811,12 @@ func (ge govmomiError) ExtractMessages() []string {
 		case govmomitask.Error:
 			foundHandledErrorType = true
 		default:
-			if soap.IsSoapFault(err) {
+			switch {
+			case soap.IsSoapFault(err):
 				foundHandledErrorType = true
-			} else if soap.IsVimFault(err) {
+			case soap.IsVimFault(err):
 				foundHandledErrorType = true
-			} else {
+			default:
 				err = errors.Unwrap(err)
 			}
 		}

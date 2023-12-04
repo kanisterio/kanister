@@ -42,9 +42,7 @@ func newValidateCommand() *cobra.Command {
 		Use:   "validate <resource>",
 		Short: "Validate custom Kanister resources",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return performValidation(cmd, args)
-		},
+		RunE:  performValidation,
 	}
 	cmd.Flags().String(nameFlag, "", "specify the K8s name of the custom resource to validate")
 	cmd.Flags().StringP(filenameFlag, "f", "", "yaml or json file of the custom resource to validate")

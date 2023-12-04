@@ -199,47 +199,20 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	blob := container.GetBlobReference(blobName)
 	defer deleteBlob(blob, blobName)
 
-	var copyOptions *storage.CopyOptions
-	if t, ok := ctx.Deadline(); ok {
-		time := time.Until(t).Seconds()
-		if time <= 0 {
-			return nil, errors.New("Context deadline exceeded, cannot copy snapshot")
-		}
-		copyOptions = &storage.CopyOptions{
-			Timeout: uint(time),
-		}
+	copyOptions, err := getCopyOptions(ctx)
+	if err != nil {
+		return nil, err
 	}
 	err = blob.Copy(*accessURI.AccessSAS, copyOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to copy disk to blob")
 	}
-	blobURI := blob.GetURL()
-
 	snapId, err := uuid.NewV1()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create UUID")
 	}
 	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
-	var tags = make(map[string]string)
-	for _, tag := range from.Volume.Tags {
-		if _, found := tags[tag.Key]; !found {
-			tags[tag.Key] = tag.Value
-		}
-	}
-	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
-
-	createSnap := azcompute.Snapshot{
-		Name:     azto.StringPtr(snapName),
-		Location: azto.StringPtr(to.Region),
-		Tags:     *azto.StringMapPtr(tags),
-		SnapshotProperties: &azcompute.SnapshotProperties{
-			CreationData: &azcompute.CreationData{
-				CreateOption:     azcompute.Import,
-				StorageAccountID: azto.StringPtr(storageAccountID),
-				SourceURI:        azto.StringPtr(blobURI),
-			},
-		},
-	}
+	createSnap := getSnapshotObject(blob, from, to, snapName, storageAccountID)
 
 	migrateResourceGroup := s.azCli.ResourceGroup
 	if val, ok := args[blockstorage.AzureMigrateResourceGroup]; ok && val != "" {
@@ -266,14 +239,60 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	return snap, nil
 }
 
+func getCopyOptions(ctx context.Context) (*storage.CopyOptions, error) {
+	var copyOptions *storage.CopyOptions
+	if t, ok := ctx.Deadline(); ok {
+		time := time.Until(t).Seconds()
+		if time <= 0 {
+			return nil, errors.New("Context deadline exceeded, cannot copy snapshot")
+		}
+		copyOptions = &storage.CopyOptions{
+			Timeout: uint(time),
+		}
+	}
+	return copyOptions, nil
+}
+
+func getSnapshotObject(
+	blob *storage.Blob,
+	from,
+	to blockstorage.Snapshot,
+	snapName,
+	storageAccountID string,
+) azcompute.Snapshot {
+	blobURI := blob.GetURL()
+
+	var tags = make(map[string]string)
+	for _, tag := range from.Volume.Tags {
+		if _, found := tags[tag.Key]; !found {
+			tags[tag.Key] = tag.Value
+		}
+	}
+	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
+
+	createSnap := azcompute.Snapshot{
+		Name:     azto.StringPtr(snapName),
+		Location: azto.StringPtr(to.Region),
+		Tags:     *azto.StringMapPtr(tags),
+		SnapshotProperties: &azcompute.SnapshotProperties{
+			CreationData: &azcompute.CreationData{
+				CreateOption:     azcompute.Import,
+				StorageAccountID: azto.StringPtr(storageAccountID),
+				SourceURI:        azto.StringPtr(blobURI),
+			},
+		},
+	}
+	return createSnap
+}
+
 func isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey string) bool {
 	return migrateStorageAccount == "" || migrateStorageKey == ""
 }
 
-func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
+func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, id string) {
 	_, err := s.azCli.SnapshotsClient.RevokeAccess(ctx, rg, name)
 	if err != nil {
-		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": ID})
+		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": id})
 	}
 }
 
@@ -554,7 +573,7 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 }
 
 func (s *AdStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
-	//check if current node region is zoned or not
+	// check if current node region is zoned or not
 	kubeCli, err := kube.NewClient()
 	if err != nil {
 		return "", "", err

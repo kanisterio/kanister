@@ -34,9 +34,7 @@ func newStreamPushCommand() *cobra.Command {
 		Use:   "push <source>",
 		Short: "Push the output of a stream source to object storage",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
-			return runStreamPush(c, args)
-		},
+		RunE:  runStreamPush,
 	}
 	cmd.Flags().StringP(streamPushDirPathFlagName, "d", "", "Specify a root directory path for the data stream (required)")
 	cmd.Flags().StringP(streamPushFilePathFlagName, "f", "", "Specify a file name or path for the data stream (required)")

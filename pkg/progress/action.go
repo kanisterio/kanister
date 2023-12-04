@@ -186,7 +186,7 @@ func SetActionSetPercentCompleted(actionSet *crv1alpha1.ActionSet) error {
 			totalPhases++
 		}
 	}
-	actionProgress = actionProgress / totalPhases
+	actionProgress /= totalPhases
 
 	// Update LastTransitionTime only if there is a change in action PercentCompleted
 	if strconv.Itoa(actionProgress) == actionSet.Status.Progress.PercentCompleted {
