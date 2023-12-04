@@ -22,7 +22,6 @@ linters:
     - dupl
     - exportloopref
     - importas
-    # - stylecheck It needs a lot of changes
     - misspell
     - nestif
     - gci
