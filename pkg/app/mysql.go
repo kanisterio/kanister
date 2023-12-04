@@ -83,7 +83,7 @@ func (mdb *MysqlDB) Init(ctx context.Context) error {
 	return nil
 }
 
-func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error { //nolint:dupl
+func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error { //nolint:dupl // Not a duplicate, common code already extracted
 	mdb.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {
