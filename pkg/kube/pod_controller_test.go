@@ -17,7 +17,6 @@ package kube
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
@@ -135,7 +134,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 
 			ee, ok := err.(*errkit.Error)
 			c.Assert(ok, Equals, true)
-			c.Assert(ee.Message(), Equals, fmt.Sprintf("Pod failed to become ready in time"))
+			c.Assert(ee.Message(), Equals, "Pod failed to become ready in time")
 			// Check that POD deletion was also invoked with expected arguments
 		},
 		"Waiting succeeded": func(pcp *FakePodControllerProcessor, pc PodController) {
