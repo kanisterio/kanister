@@ -145,7 +145,7 @@ type ResourceRequirement struct {
 // DeepCopyInto provides explicit deep copy implementation to avoid
 func (r ResourceRequirement) DeepCopyInto(out *ResourceRequirement) {
 	r.LocalObjectReference.DeepCopyInto(&out.LocalObjectReference)
-	(*out).ResourceTypeRequirement = r.ResourceTypeRequirement
+	out.ResourceTypeRequirement = r.ResourceTypeRequirement
 	r.LabelSelector.DeepCopyInto(&out.LabelSelector)
 }
 

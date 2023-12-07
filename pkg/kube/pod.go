@@ -153,6 +153,10 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 		return patchedSpecs.Containers[i].Name == ContainerNameFromPodOptsOrDefault(opts)
 	})
 
+	return createPodSpec(opts, patchedSpecs, ns), nil
+}
+
+func createPodSpec(opts *PodOptions, patchedSpecs v1.PodSpec, ns string) *v1.Pod {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
@@ -197,8 +201,7 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 	}
 
 	pod.Namespace = ns
-
-	return pod, nil
+	return pod
 }
 
 // ContainerNameFromPodOptsOrDefault returns the container name if it's set in
@@ -411,8 +414,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 			return true, err
 		}
 		containerForLogs = p.Spec.Containers[0].Name
-		switch p.Status.Phase {
-		case v1.PodFailed:
+		if p.Status.Phase == v1.PodFailed {
 			return false, errkit.New("Pod failed", "podName", name, "status", p.Status.String())
 		}
 		return p.Status.Phase == v1.PodSucceeded, nil
