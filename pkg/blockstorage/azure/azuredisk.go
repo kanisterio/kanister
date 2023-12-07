@@ -15,7 +15,6 @@ import (
 	azto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
@@ -337,7 +336,7 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 func (s *AdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		snapshot, err := s.SnapshotGet(ctx, snap.ID)
-		if err == nil && snapshot.ProvisioningState == string(armstorage.ProvisioningStateSucceeded) {
+		if err == nil && snapshot.ProvisioningState == string(armcompute.GalleryProvisioningStateSucceeded) {
 			return true, nil
 		}
 
