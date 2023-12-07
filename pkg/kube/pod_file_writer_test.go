@@ -17,10 +17,11 @@ package kube
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	. "gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -78,7 +79,7 @@ func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
-	simulatedError := errors.New("SimulatedError")
+	simulatedError := errkit.NewPureError("SimulatedError")
 
 	cases := map[string]func(pfwp *fakePodFileWriterProcessor, pfw PodFileWriter){
 		"Write to pod failed": func(pfwp *fakePodFileWriterProcessor, pfw PodFileWriter) {

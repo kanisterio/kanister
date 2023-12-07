@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -54,7 +54,7 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 	size, err := resource.ParseQuantity(sizeFmt)
 	emptyStorageClass := ""
 	if err != nil {
-		return "", errors.Wrapf(err, "Unable to parse sizeFmt %s", sizeFmt)
+		return "", errkit.Wrap(err, "Unable to parse sizeFmt", "sizeFmt", sizeFmt)
 	}
 	if len(accessmodes) == 0 {
 		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
@@ -92,7 +92,7 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 		if name != "" && apierrors.IsAlreadyExists(err) {
 			return name, nil
 		}
-		return "", errors.Wrapf(err, "Unable to create PVC %v", pvc)
+		return "", errkit.Wrap(err, "Unable to create PVC", "pvc", pvc)
 	}
 	return createdPVC.Name, nil
 }
@@ -125,7 +125,7 @@ type CreatePVCFromSnapshotArgs struct {
 func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs) (string, error) {
 	storageSize, err := getPVCRestoreSize(ctx, args)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to get PVC restore size")
+		return "", errkit.Wrap(err, "Failed to get PVC restore size")
 	}
 
 	if len(args.AccessModes) == 0 {
@@ -176,7 +176,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		if args.VolumeName != "" && apierrors.IsAlreadyExists(err) {
 			return args.VolumeName, nil
 		}
-		return "", errors.Wrapf(err, "Unable to create PVC, PVC: %v", pvc)
+		return "", errkit.Wrap(err, "Unable to create PVC", "pvc", pvc)
 	}
 	return pvc.Name, err
 }
@@ -187,25 +187,25 @@ func getPVCRestoreSize(ctx context.Context, args *CreatePVCFromSnapshotArgs) (*r
 	if args.RestoreSize != "" {
 		s, err := resource.ParseQuantity(args.RestoreSize)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse quantity (%s)", args.RestoreSize)
+			return nil, errkit.New("Failed to parse quantity", "restoreSize", args.RestoreSize)
 		}
 		quantities = append(quantities, &s)
 	}
 
 	sns, err := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get snapshotter")
+		return nil, errkit.Wrap(err, "Failed to get snapshotter")
 	}
 	snap, err := sns.Get(ctx, args.SnapshotName, args.Namespace)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get snapshot")
+		return nil, errkit.Wrap(err, "Failed to get snapshot")
 	}
 	if snap.Status != nil && snap.Status.RestoreSize != nil {
 		quantities = append(quantities, snap.Status.RestoreSize)
 	}
 
 	if len(quantities) == 0 {
-		return nil, fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", args.SnapshotName)
+		return nil, errkit.New("Restore size is empty and no restore size argument given", "volumeSnapshot", args.SnapshotName)
 	}
 
 	quantity := quantities[0]
@@ -223,7 +223,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 	sizeFmt := fmt.Sprintf("%d", vol.SizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	if err != nil {
-		return "", errors.Wrapf(err, "Unable to parse sizeFmt %s", sizeFmt)
+		return "", errkit.Wrap(err, "Unable to parse sizeFmt", "sizeFmt", sizeFmt)
 	}
 	matchLabels := map[string]string{pvMatchLabelName: filepath.Base(vol.ID)}
 
@@ -269,12 +269,12 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
 
 	default:
-		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
+		return "", errkit.New("Volume type not supported", "volumeType", volType, "type", fmt.Sprintf("%T", volType))
 	}
 
 	createdPV, err := kubeCli.CoreV1().PersistentVolumes().Create(ctx, &pv, metav1.CreateOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "Unable to create PV for volume %v", pv)
+		return "", errkit.Wrap(err, "Unable to create PV for volume", "pv", pv)
 	}
 	return createdPV.Name, nil
 }

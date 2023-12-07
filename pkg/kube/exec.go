@@ -22,8 +22,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/kanisterio/errkit"
 	"github.com/kanisterio/kanister/pkg/format"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -133,7 +133,7 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) error {
 
 	errCh := execStream(kubeCli, config, options)
 	err = <-errCh
-	return errors.Wrap(err, "Failed to exec command in pod")
+	return errkit.Wrap(err, "Failed to exec command in pod")
 }
 
 func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) chan error {

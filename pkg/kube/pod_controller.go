@@ -19,7 +19,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -29,10 +29,10 @@ import (
 )
 
 var (
-	ErrPodControllerNotInitialized    = errors.New("pod has not been initialized")
-	ErrPodControllerPodAlreadyStarted = errors.New("pod has already been started")
-	ErrPodControllerPodNotReady       = errors.New("pod is not yet ready")
-	ErrPodControllerPodNotStarted     = errors.New("pod is not yet started")
+	ErrPodControllerNotInitialized    = errkit.NewPureError("pod has not been initialized")
+	ErrPodControllerPodAlreadyStarted = errkit.NewPureError("pod has already been started")
+	ErrPodControllerPodNotReady       = errkit.NewPureError("pod is not yet ready")
+	ErrPodControllerPodNotStarted     = errkit.NewPureError("pod is not yet started")
 	PodControllerDefaultStopTime      = 30 * time.Second
 	PodControllerInfiniteStopTime     = 0 * time.Second
 )
@@ -133,17 +133,17 @@ func (p *podController) Pod() *corev1.Pod {
 // StartPod creates pod and in case of success, it stores pod name for further use.
 func (p *podController) StartPod(ctx context.Context) error {
 	if p.podName != "" {
-		return errors.Wrap(ErrPodControllerPodAlreadyStarted, "Failed to create pod")
+		return errkit.Wrap(ErrPodControllerPodAlreadyStarted, "Failed to create pod")
 	}
 
 	if p.cli == nil || p.podOptions == nil {
-		return errors.Wrap(ErrPodControllerNotInitialized, "Failed to create pod")
+		return errkit.Wrap(ErrPodControllerNotInitialized, "Failed to create pod")
 	}
 
 	pod, err := p.pcp.CreatePod(ctx, p.podOptions)
 	if err != nil {
 		log.WithError(err).Print("Failed to create pod", field.M{"PodName": p.podOptions.Name, "Namespace": p.podOptions.Namespace})
-		return errors.Wrap(err, "Failed to create pod")
+		return errkit.Wrap(err, "Failed to create pod")
 	}
 
 	p.pod = pod
@@ -161,7 +161,7 @@ func (p *podController) WaitForPodReady(ctx context.Context) error {
 
 	if err := p.pcp.WaitForPodReady(ctx, p.pod.Namespace, p.pod.Name); err != nil {
 		log.WithError(err).Print("Pod failed to become ready in time", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
-		return errors.Wrap(err, "Pod failed to become ready in time")
+		return errkit.Wrap(err, "Pod failed to become ready in time")
 	}
 
 	p.podReady = true
@@ -181,7 +181,7 @@ func (p *podController) WaitForPodCompletion(ctx context.Context) error {
 
 	if err := p.pcp.WaitForPodCompletion(ctx, p.pod.Namespace, p.pod.Name); err != nil {
 		log.WithError(err).Print("Pod failed to complete in time", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
-		return errors.Wrap(err, "Pod failed to complete in time")
+		return errkit.Wrap(err, "Pod failed to complete in time")
 	}
 
 	p.podReady = false

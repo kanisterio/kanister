@@ -16,8 +16,8 @@ package kube
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -47,7 +47,7 @@ func GetPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface
 		return podName, containerName, err
 	}
 	if len(pod) == 0 {
-		return podName, containerName, fmt.Errorf("Unable to find ready pod for deployment %s/%s", namespace, deployName)
+		return podName, containerName, errkit.New("Unable to find ready pod for deployment", "namespace", namespace, "deployment", deployName)
 	}
 	podName = pod[0].GetName()
 	container, err := PodContainers(ctx, cli, namespace, podName)
@@ -55,7 +55,7 @@ func GetPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface
 		return podName, containerName, err
 	}
 	if len(container) == 0 {
-		return podName, containerName, fmt.Errorf("Unable to find containers in pod %s/%s", namespace, podName)
+		return podName, containerName, errkit.New("Unable to find containers in pod", "namespace", namespace, "podName", podName)
 	}
 	return podName, container[0].Name, nil
 }
@@ -67,7 +67,7 @@ func GetPodContainerFromDeploymentConfig(ctx context.Context, osCli osversioned.
 		return podName, containerName, err
 	}
 	if len(pods) == 0 {
-		return podName, containerName, fmt.Errorf("Unable to find ready pod for deploymentconfig %s/%s", namespace, deployConfigName)
+		return podName, containerName, errkit.New("Unable to find ready pod for deploymentconfig", "namespace", namespace, "deploymentConfig", deployConfigName)
 	}
 
 	podName = pods[0].GetName()
@@ -77,7 +77,7 @@ func GetPodContainerFromDeploymentConfig(ctx context.Context, osCli osversioned.
 	}
 
 	if len(containers) == 0 {
-		return podName, containerName, fmt.Errorf("Unable to find containers in pod %s/%s", namespace, podName)
+		return podName, containerName, errkit.New("Unable to find containers in pod", "namespace", namespace, "podName", podName)
 	}
 	return podName, containers[0].Name, nil
 }
@@ -89,7 +89,7 @@ func GetPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interfac
 		return podName, containerName, err
 	}
 	if len(pod) == 0 {
-		return podName, containerName, fmt.Errorf("Unable to find ready pod for statefulset %s/%s", namespace, ssName)
+		return podName, containerName, errkit.New("Unable to find ready pod for statefulset", "namespace", namespace, "statefulSet", ssName)
 	}
 	podName = pod[0].GetName()
 	container, err := PodContainers(ctx, cli, namespace, podName)
@@ -97,7 +97,7 @@ func GetPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interfac
 		return podName, containerName, err
 	}
 	if len(container) == 0 {
-		return podName, containerName, fmt.Errorf("Unable to find containers in pod %s/%s", namespace, podName)
+		return podName, containerName, errkit.New("Unable to find containers in pod", "namespace", namespace, "podName", podName)
 	}
 	return podName, container[0].Name, nil
 }

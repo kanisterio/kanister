@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/gofrs/uuid"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,11 +54,11 @@ func NewJob(clientset kubernetes.Interface,
 	command ...string,
 ) (*Job, error) {
 	if jobName == "" {
-		return nil, errors.New("Job name is required")
+		return nil, errkit.New("Job name is required")
 	}
 
 	if image == "" {
-		return nil, errors.New("Container image needs to be passed")
+		return nil, errkit.New("Container image needs to be passed")
 	}
 
 	if namespace == "" {
@@ -67,11 +67,11 @@ func NewJob(clientset kubernetes.Interface,
 	}
 
 	if clientset == nil {
-		return nil, errors.New("No clientset object provided")
+		return nil, errkit.New("No clientset object provided")
 	}
 
 	if len(command) == 0 || command[0] == "" {
-		return nil, errors.New("Command needs to be passed")
+		return nil, errkit.New("Command needs to be passed")
 	}
 
 	return &Job{image, command, namespace, jobName, serviceAccount, vols, clientset}, nil
@@ -83,7 +83,7 @@ func (job *Job) Create() error {
 	ctx := context.TODO()
 	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(ctx, job.vols)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create volume spec for job %s", job.name)
+		return errkit.Wrap(err, "Failed to create volume spec for job", "jobName", job.name)
 	}
 	k8sJob := &batch.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -125,7 +125,7 @@ func (job *Job) Create() error {
 
 	newJob, err := jobsClient.Create(ctx, k8sJob, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create job %s", job.name)
+		return errkit.Wrap(err, "Failed to create job", "jobName", job.name)
 	}
 	job.name = newJob.Name
 	log.Print("New job created", field.M{"JobName": job.name})
@@ -194,18 +194,18 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 	jobsClient := batchClient.Jobs(job.namespace)
 	watch, err := jobsClient.Watch(ctx, metav1.ListOptions{LabelSelector: "job-name=" + job.name})
 	if err != nil {
-		return errors.Wrap(err, "Failed to create watch object")
+		return errkit.Wrap(err, "Failed to create watch object")
 	}
 
 	// Before getting into the loop of watching events, confirm that the job is actually present
 	// in Kubernetes.
 	k8sjob, err := jobsClient.Get(ctx, job.name, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get job %s", job.name)
+		return errkit.Wrap(err, "Failed to get job", "jobName", job.name)
 	}
 
 	if k8sjob == nil {
-		return errors.Wrapf(err, "Couldn't find job %s", job.name)
+		return errkit.Wrap(err, "Couldn't find job", "jobName", job.name)
 	}
 
 	events := watch.ResultChan()
@@ -213,11 +213,11 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 		select {
 		case event := <-events:
 			if event.Object == nil {
-				return errors.Errorf("Result channel closed for Job %s", job.name)
+				return errkit.New("Result channel closed for Job", "jobName", job.name)
 			}
 			k8sJob, ok := event.Object.(*batch.Job)
 			if !ok {
-				return errors.Errorf("Invalid Job event object: %T", event.Object)
+				return errkit.New("Invalid Job event object", "eventType", fmt.Sprintf("%T", event.Object))
 			}
 			conditions := k8sJob.Status.Conditions
 			for _, condition := range conditions {
@@ -225,11 +225,11 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 					log.Print("Job reported complete\n", field.M{"JobName": job.name})
 					return nil
 				} else if condition.Type == batch.JobFailed {
-					return errors.Errorf("Job %s failed", job.name)
+					return errkit.New("Job failed", "jobName", job.name)
 				}
 			}
 		case <-ctx.Done():
-			return errors.New("Cancellation received")
+			return errkit.New("Cancellation received")
 		}
 	}
 }
@@ -241,7 +241,7 @@ func (job *Job) Delete() error {
 	deletePropagation := metav1.DeletePropagationForeground
 	err := jobsClient.Delete(context.TODO(), job.name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to delete job %s", job.name)
+		return errkit.Wrap(err, "Failed to delete job", "jobName", job.name)
 	}
 	log.Print("Deleted job", field.M{"JobName": job.name})
 

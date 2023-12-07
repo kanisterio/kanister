@@ -17,9 +17,9 @@ package snapshot
 import (
 	"context"
 
+	"github.com/kanisterio/errkit"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
-	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,7 +91,7 @@ func (sna *SnapshotStable) Delete(ctx context.Context, name, namespace string) (
 // DeleteContent will delete the specified VolumeSnapshotContent
 func (sna *SnapshotStable) DeleteContent(ctx context.Context, name string) error {
 	if err := sna.dynCli.Resource(VolSnapContentGVR).Delete(ctx, name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Failed to delete VolumeSnapshotContent: %s", name)
+		return errkit.Wrap(err, "Failed to delete", "volumeSnapshotContent", name)
 	}
 	// If the Snapshot Content does not exist, that's an acceptable error and we ignore it
 	return nil
@@ -102,15 +102,15 @@ func (sna *SnapshotStable) DeleteContent(ctx context.Context, name string) error
 func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool, labels map[string]string) error {
 	_, err := sna.Get(ctx, cloneName, cloneNamespace)
 	if err == nil {
-		return errors.Errorf("Target snapshot already exists in target namespace, Volumesnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
+		return errkit.New("Target snapshot already exists in target namespace", "volumeSnapshot", cloneName, "namespace", cloneNamespace)
 	}
 	if !k8errors.IsNotFound(err) {
-		return errors.Errorf("Failed to query target Volumesnapshot: %s, Namespace: %s: %v", cloneName, cloneNamespace, err)
+		return errkit.Wrap(err, "Failed to query target", "volumeSnapshot", cloneName, "namespace", cloneNamespace)
 	}
 
 	src, err := sna.GetSource(ctx, name, namespace)
 	if err != nil {
-		return errors.Errorf("Failed to get source")
+		return errkit.New("Failed to get source")
 	}
 	return sna.CreateFromSource(ctx, src, cloneName, cloneNamespace, waitForReady, labels)
 }
@@ -124,7 +124,7 @@ func (sna *SnapshotStable) GetSource(ctx context.Context, snapshotName, namespac
 func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool, labels map[string]string) error {
 	deletionPolicy, err := getDeletionPolicyFromClass(sna.dynCli, VolSnapClassGVR, source.VolumeSnapshotClassName)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
+		return errkit.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
 	snap := UnstructuredVolumeSnapshot(
@@ -141,7 +141,7 @@ func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source,
 		return err
 	}
 	if _, err := sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
-		return errors.Errorf("Failed to create content, Volumesnapshot: %s, Error: %v", snap.GetName(), err)
+		return errkit.Wrap(err, "Failed to create content", "volumeSnapshot", snap.GetName())
 	}
 	if !waitForReady {
 		return nil
@@ -168,7 +168,7 @@ func (sna *SnapshotStable) UpdateVolumeSnapshotStatusStable(ctx context.Context,
 func (sna *SnapshotStable) CreateContentFromSource(ctx context.Context, source *Source, contentName, snapshotName, namespace, deletionPolicy string) error {
 	content := UnstructuredVolumeSnapshotContent(VolSnapContentGVR, contentName, snapshotName, namespace, deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName)
 	if _, err := sna.dynCli.Resource(VolSnapContentGVR).Create(ctx, content, metav1.CreateOptions{}); err != nil {
-		return errors.Errorf("Failed to create content, VolumesnapshotContent: %s, Error: %v", content.GetName(), err)
+		return errkit.Wrap(err, "Failed to create content", "volumeSnapshotContent", content.GetName())
 	}
 	return nil
 }

@@ -19,7 +19,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -55,7 +55,7 @@ func (fpc *FakePodController) PodName() string {
 }
 
 func (fpc *FakePodController) Run(ctx context.Context, fn func(context.Context, *corev1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
-	return nil, errors.New("Not implemented")
+	return nil, errkit.New("Not implemented")
 }
 
 func (fpc *FakePodController) StartPod(_ context.Context) error {
@@ -69,11 +69,11 @@ func (fpc *FakePodController) WaitForPodReady(_ context.Context) error {
 }
 
 func (fpc *FakePodController) WaitForPodCompletion(_ context.Context) error {
-	return errors.New("Not implemented")
+	return errkit.New("Not implemented")
 }
 
 func (fpc *FakePodController) StreamPodLogs(_ context.Context) (io.ReadCloser, error) {
-	return nil, errors.New("Not implemented")
+	return nil, errkit.New("Not implemented")
 }
 
 func (fpc *FakePodController) GetCommandExecutor() (PodCommandExecutor, error) {

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
+	"github.com/kanisterio/errkit"
 	. "gopkg.in/check.v1"
 	batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,7 +122,7 @@ func waitForJobCount(clientset kubernetes.Interface, namespace string, expectedC
 		newJobCount = getK8sJobCount(clientset, namespace, c)
 		if newJobCount != expectedCount {
 			if int(boff.Attempt()) >= maxRetries {
-				return fmt.Errorf("Job count %d, expected job count %d", newJobCount, expectedCount)
+				return errkit.New("Unexpected job count", "jobCount", newJobCount, "expectedJobCount", expectedCount)
 			}
 			duration := boff.Duration()
 			fmt.Printf("Trying again in %s\n", duration)
