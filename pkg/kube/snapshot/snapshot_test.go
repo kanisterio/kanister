@@ -469,7 +469,14 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *C) {
 // Helpers to work with volume snapshot status used in TestWaitOnReadyToUse
 // ----------------------------------------------------------------------------
 
-func waitOnReadyToUseInBackground(c *C, ctx context.Context, fakeSs snapshot.Snapshotter, snapshotName string, namespace string, timeout time.Duration) chan error {
+func waitOnReadyToUseInBackground(
+	c *C,
+	ctx context.Context,
+	fakeSs snapshot.Snapshotter,
+	snapshotName string,
+	namespace string,
+	timeout time.Duration,
+) chan error {
 	reply := make(chan error)
 	go func() {
 		err := waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, namespace, timeout)
@@ -478,7 +485,14 @@ func waitOnReadyToUseInBackground(c *C, ctx context.Context, fakeSs snapshot.Sna
 	return reply
 }
 
-func waitOnReadyToUseWithTimeout(c *C, ctx context.Context, fakeSs snapshot.Snapshotter, snapshotName string, namespace string, timeout time.Duration) error {
+func waitOnReadyToUseWithTimeout(
+	c *C,
+	ctx context.Context,
+	fakeSs snapshot.Snapshotter,
+	snapshotName string,
+	namespace string,
+	timeout time.Duration,
+) error {
 	deadline := time.Now().Add(timeout)
 	deadlineCtx, cancel := context.WithDeadline(ctx, deadline)
 	defer cancel()
@@ -487,7 +501,13 @@ func waitOnReadyToUseWithTimeout(c *C, ctx context.Context, fakeSs snapshot.Snap
 	return err
 }
 
-func setReadyStatus(c *C, dynCli *dynfake.FakeDynamicClient, volumeSnapshotGVR schema.GroupVersionResource, snapshotName string, namespace string) {
+func setReadyStatus(
+	c *C,
+	dynCli *dynfake.FakeDynamicClient,
+	volumeSnapshotGVR schema.GroupVersionResource,
+	snapshotName string,
+	namespace string,
+) {
 	status := make(map[string]interface{})
 	status["readyToUse"] = true
 	status["creationTime"] = time.Now().Format(time.RFC3339)
@@ -495,7 +515,14 @@ func setReadyStatus(c *C, dynCli *dynfake.FakeDynamicClient, volumeSnapshotGVR s
 	setVolumeSnapshotStatus(c, dynCli, volumeSnapshotGVR, snapshotName, namespace, status)
 }
 
-func setErrorStatus(c *C, dynCli *dynfake.FakeDynamicClient, volumeSnapshotGVR schema.GroupVersionResource, snapshotName string, namespace string, message string) {
+func setErrorStatus(
+	c *C,
+	dynCli *dynfake.FakeDynamicClient,
+	volumeSnapshotGVR schema.GroupVersionResource,
+	snapshotName string,
+	namespace string,
+	message string,
+) {
 	status := make(map[string]interface{})
 	status["Error"] = map[string]interface{}{
 		"Message": message,
@@ -503,7 +530,14 @@ func setErrorStatus(c *C, dynCli *dynfake.FakeDynamicClient, volumeSnapshotGVR s
 	setVolumeSnapshotStatus(c, dynCli, volumeSnapshotGVR, snapshotName, namespace, status)
 }
 
-func setVolumeSnapshotStatus(c *C, dynCli *dynfake.FakeDynamicClient, volumeSnapshotGVR schema.GroupVersionResource, snapshotName string, namespace string, status map[string]interface{}) {
+func setVolumeSnapshotStatus(
+	c *C,
+	dynCli *dynfake.FakeDynamicClient,
+	volumeSnapshotGVR schema.GroupVersionResource,
+	snapshotName string,
+	namespace string,
+	status map[string]interface{},
+) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
