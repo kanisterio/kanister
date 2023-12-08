@@ -1,9 +1,17 @@
-FROM bitnami/cassandra:3.11.8-debian-10-r20
+# We get tools from tools image
+# Tools are not up to date in debian repos
+ARG TOOLS_IMAGE
+FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
+
+# Actual image base
+FROM bitnami/cassandra:4.1.3-debian-11-r76
 
 MAINTAINER "Tom Manville <tom@kasten.io>"
 
 # Install restic to take backups
-COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
+COPY --from=TOOLS_IMAGE /usr/local/bin/restic /usr/local/bin/restic
+# Update gosu from recent version
+COPY --from=TOOLS_IMAGE /usr/local/bin/gosu /usr/local/bin/gosu
 
-# Install kando 
+# Install kando
 ADD kando /usr/local/bin/
