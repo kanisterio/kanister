@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/format"
@@ -42,7 +42,7 @@ func CreateKopiaRepository(
 ) error {
 	cmd, err := command.RepositoryCreateCommand(cmdArgs)
 	if err != nil {
-		return errors.Wrap(err, "Failed to generate repository create command")
+		return errkit.Wrap(err, "Failed to generate repository create command")
 	}
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
@@ -56,7 +56,7 @@ func CreateKopiaRepository(
 		message = message + ": " + kerrors.ErrAccessDeniedStr
 	}
 	if err != nil {
-		return errors.Wrap(err, message)
+		return errkit.Wrap(err, message)
 	}
 
 	if err := setGlobalPolicy(
@@ -66,7 +66,7 @@ func CreateKopiaRepository(
 		container,
 		cmdArgs.CommandArgs,
 	); err != nil {
-		return errors.Wrap(err, "Failed to set global policy")
+		return errkit.Wrap(err, "Failed to set global policy")
 	}
 
 	// Set custom maintenance owner in case of successful repository creation
@@ -109,7 +109,7 @@ func setCustomMaintenanceOwner(
 ) error {
 	nsUID, err := utils.GetNamespaceUID(context.Background(), cli, namespace)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get namespace UID")
+		return errkit.Wrap(err, "Failed to get namespace UID")
 	}
 	newOwner := fmt.Sprintf(maintenanceOwnerFormat, username, nsUID)
 	cmd := command.MaintenanceSetOwner(command.MaintenanceSetOwnerCommandArgs{

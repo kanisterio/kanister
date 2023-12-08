@@ -15,6 +15,7 @@
 package repository
 
 import (
+	"github.com/kanisterio/errkit"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/kopia/command"
@@ -40,7 +41,7 @@ func ConnectToOrCreateKopiaRepository(
 	case err == nil:
 		// If repository connect was successful, we're done!
 		return nil
-	case kerrors.IsInvalidPasswordError(err):
+	case kerrors.IsInvalidPasswordError(err): // TODO: Verify
 		// If connect failed due to invalid password, no need to attempt creation
 		return err
 	}
@@ -74,6 +75,6 @@ func ConnectToOrCreateKopiaRepository(
 		return nil
 	}
 
-	err = kerrors.Append(err, connectErr)
+	err = errkit.Append(err, connectErr)
 	return err
 }

@@ -25,12 +25,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/kopia/kopia/repo/object"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -70,22 +70,22 @@ const (
 func ExtractFingerprintFromCertSecret(ctx context.Context, cli kubernetes.Interface, secretName, secretNamespace string) (string, error) {
 	secret, err := cli.CoreV1().Secrets(secretNamespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to get Certificate Secret. Secret: %s", secretName)
+		return "", errkit.Wrap(err, "Failed to get Certificate Secret.", "secretName", secretName)
 	}
 
 	certBytes, err := json.Marshal(secret.Data[TLSCertificateKey])
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to marshal Certificate Secret Data")
+		return "", errkit.Wrap(err, "Failed to marshal Certificate Secret Data")
 	}
 
 	var certString string
 	if err := json.Unmarshal([]byte(certBytes), &certString); err != nil {
-		return "", errors.Wrap(err, "Failed to unmarshal Certificate Secret Data")
+		return "", errkit.Wrap(err, "Failed to unmarshal Certificate Secret Data")
 	}
 
 	decodedCertData, err := base64.StdEncoding.DecodeString(certString)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to decode Certificate Secret Data")
+		return "", errkit.Wrap(err, "Failed to decode Certificate Secret Data")
 	}
 
 	return extractFingerprintFromSliceOfBytes(decodedCertData)
@@ -96,12 +96,12 @@ func ExtractFingerprintFromCertSecret(ctx context.Context, cli kubernetes.Interf
 func extractFingerprintFromSliceOfBytes(pemData []byte) (string, error) {
 	block, rest := pem.Decode([]byte(pemData))
 	if block == nil || len(rest) > 0 {
-		return "", errors.New("Failed to PEM Decode Kopia API Server Certificate Secret Data")
+		return "", errkit.New("Failed to PEM Decode Kopia API Server Certificate Secret Data")
 	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to parse X509 Kopia API Server Certificate Secret Data")
+		return "", errkit.Wrap(err, "Failed to parse X509 Kopia API Server Certificate Secret Data")
 	}
 
 	fingerprint := sha256.Sum256(cert.Raw)
@@ -114,17 +114,17 @@ func ExtractFingerprintFromCertificateJSON(cert string) (string, error) {
 	var certMap map[string]string
 
 	if err := json.Unmarshal([]byte(cert), &certMap); err != nil {
-		return "", errors.Wrap(err, "Failed to unmarshal Kopia API Server Certificate Secret Data")
+		return "", errkit.Wrap(err, "Failed to unmarshal Kopia API Server Certificate Secret Data")
 	}
 
 	decodedCertData, err := base64.StdEncoding.DecodeString(certMap[TLSCertificateKey])
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to base64 decode Kopia API Server Certificate Secret Data")
+		return "", errkit.Wrap(err, "Failed to base64 decode Kopia API Server Certificate Secret Data")
 	}
 
 	fingerprint, err := extractFingerprintFromSliceOfBytes(decodedCertData)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
+		return "", errkit.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
 	}
 
 	return fingerprint, nil
@@ -135,7 +135,7 @@ func ExtractFingerprintFromCertificateJSON(cert string) (string, error) {
 func ExtractFingerprintFromCertificate(cert string) (string, error) {
 	fingerprint, err := extractFingerprintFromSliceOfBytes([]byte(cert))
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
+		return "", errkit.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
 	}
 
 	return fingerprint, nil
@@ -150,22 +150,22 @@ func GetStreamingFileObjectIDFromSnapshot(ctx context.Context, rep repo.Reposito
 	// Load the kopia snapshot with the given backupID
 	m, err := snapshot.LoadSnapshot(ctx, rep, manifest.ID(backupID))
 	if err != nil {
-		return object.ID{}, errors.Wrapf(err, "Failed to load kopia snapshot with ID: %v", backupID)
+		return object.ID{}, errkit.Wrap(err, "Failed to load kopia snapshot with ID", "backupId", backupID)
 	}
 
 	// root entry of the kopia snapshot is a static directory with filepath.Dir(path) as its path
 	if m.RootEntry == nil {
-		return object.ID{}, errors.New("No root entry found in kopia manifest")
+		return object.ID{}, errkit.New("No root entry found in kopia manifest")
 	}
 	rootEntry, err := snapshotfs.SnapshotRoot(rep, m)
 	if err != nil {
-		return object.ID{}, errors.Wrapf(err, "Failed to get root entry from kopia snapshot with ID: %v", backupID)
+		return object.ID{}, errkit.Wrap(err, "Failed to get root entry from kopia snapshot with ID", "backupId", backupID)
 	}
 
 	// Get the nested entry belonging to the backed up streaming file and return its object ID
 	e, err := snapshotfs.GetNestedEntry(ctx, rootEntry, []string{filepath.Base(path)})
 	if err != nil {
-		return object.ID{}, errors.Wrapf(err, "Failed to get nested entry from kopia snapshot: %v", filepath.Base(path))
+		return object.ID{}, errkit.Wrap(err, "Failed to get nested entry from kopia snapshot", "pathBase", filepath.Base(path))
 	}
 
 	return e.(object.HasObjectID).ObjectID(), nil
