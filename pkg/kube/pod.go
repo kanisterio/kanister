@@ -370,9 +370,9 @@ func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kube
 		if apierrors.IsNotFound(errors.Cause(err)) {
 			// Do not return err, wait for timeout, since sometimes in case of statefulsets, they trigger creation of a volume
 			return nil
-		} else {
-			return errkit.Wrap(err, "Failed to get PVC", "pvcName", pvcName)
 		}
+
+		return errkit.Wrap(err, "Failed to get PVC", "pvcName", pvcName)
 	}
 
 	switch pvc.Status.Phase {
@@ -389,9 +389,9 @@ func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kube
 			if apierrors.IsNotFound(errors.Cause(err)) {
 				// wait for timeout
 				return nil
-			} else {
-				return errkit.Wrap(err, "Failed to get PV", "pvName", pvName)
 			}
+
+			return errkit.Wrap(err, "Failed to get PV", "pvName", pvName)
 		}
 		if pv.Status.Phase == v1.VolumeFailed {
 			return errkit.New("PV associated with PVC has unexpected status",
