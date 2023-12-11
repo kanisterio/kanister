@@ -78,7 +78,7 @@ func (sna *SnapshotAlpha) CloneVolumeSnapshotClass(ctx context.Context, sourceCl
 	// Set Annotations/Labels
 	usNew.SetAnnotations(existingAnnotations)
 	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
-	if _, err = sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Create(ctx, usNew, metav1.CreateOptions{}); !apierrors.IsAlreadyExists(err) {
+	if _, err = sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Create(ctx, usNew, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return errkit.Wrap(err, "Failed to create VolumeSnapshotClass", "className", targetClassName)
 	}
 	return nil
@@ -454,7 +454,11 @@ func TransformUnstructured(u *unstructured.Unstructured, value interface{}) erro
 		return errkit.Wrap(err, "Failed to Marshal unstructured object")
 	}
 	err = json.Unmarshal(b, value)
-	return errkit.Wrap(err, "Failed to Unmarshal unstructured object")
+	if err != nil {
+		return errkit.Wrap(err, "Failed to Unmarshal unstructured object", "object", string(b))
+	}
+
+	return nil
 }
 
 // GetSnapshotClassbyAnnotation checks if the provided annotation is present in either the storageclass

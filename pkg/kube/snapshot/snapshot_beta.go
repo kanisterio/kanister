@@ -67,7 +67,7 @@ func cloneSnapshotClass(ctx context.Context, dynCli dynamic.Interface, snapClass
 	// Set Annotations/Labels
 	usNew.SetAnnotations(existingAnnotations)
 	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
-	if _, err = dynCli.Resource(snapClassGVR).Create(ctx, usNew, metav1.CreateOptions{}); !apierrors.IsAlreadyExists(err) {
+	if _, err = dynCli.Resource(snapClassGVR).Create(ctx, usNew, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return errkit.Wrap(err, "Failed to create VolumeSnapshotClass", "volumeSnapshotClass", targetClassName)
 	}
 	return nil

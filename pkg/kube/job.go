@@ -205,7 +205,7 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 	}
 
 	if k8sjob == nil {
-		return errkit.Wrap(err, "Couldn't find job", "jobName", job.name)
+		return errkit.New("Couldn't find job", "jobName", job.name)
 	}
 
 	events := watch.ResultChan()
