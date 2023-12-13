@@ -33,7 +33,6 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
@@ -318,24 +317,22 @@ func (sna *SnapshotAlpha) CreateContentFromSource(ctx context.Context, source *S
 	return nil
 }
 
+func isReadyToUseAlpha(us *unstructured.Unstructured) (bool, error) {
+	vs := v1alpha1.VolumeSnapshot{}
+	if err := TransformUnstructured(us, &vs); err != nil {
+		return false, err
+	}
+	// Error can be set while waiting for creation
+	if vs.Status.Error != nil {
+		return false, errkit.New(vs.Status.Error.Message)
+	}
+	return (vs.Status.ReadyToUse && vs.Status.CreationTime != nil), nil
+}
+
 // WaitOnReadyToUse will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
 // has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 func (sna *SnapshotAlpha) WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error {
-	return poll.Wait(ctx, func(context.Context) (bool, error) {
-		us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		vs := v1alpha1.VolumeSnapshot{}
-		if err := TransformUnstructured(us, &vs); err != nil {
-			return false, err
-		}
-		// Error can be set while waiting for creation
-		if vs.Status.Error != nil {
-			return false, errkit.New(vs.Status.Error.Message)
-		}
-		return (vs.Status.ReadyToUse && vs.Status.CreationTime != nil), nil
-	})
+	return waitOnReadyToUse(ctx, sna.dynCli, v1alpha1.VolSnapGVR, snapshotName, namespace, isReadyToUseAlpha)
 }
 
 func (sna *SnapshotAlpha) GroupVersion(ctx context.Context) schema.GroupVersion {
