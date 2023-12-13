@@ -514,3 +514,28 @@ func IsPodRunning(cli kubernetes.Interface, podName, podNamespace string) (bool,
 
 	return true, nil
 }
+
+func StatefulSetReplicas(ctx context.Context, kubeCli kubernetes.Interface, namespace, name string) (int32, error) {
+	sts, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return 0, errors.Wrapf(err, "Could not get STS{Namespace %s, Name: %s}, to figure out replicas", namespace, name)
+	}
+	return *sts.Spec.Replicas, nil
+}
+
+func DeploymentReplicas(ctx context.Context, kubeCli kubernetes.Interface, namespace, name string) (int32, error) {
+	d, err := kubeCli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return 0, errors.Wrapf(err, "Could not get Deployment{Namespace %s, Name: %s}, to figure out replicas", namespace, name)
+	}
+	return *d.Spec.Replicas, nil
+}
+
+func DeploymentConfigReplicas(ctx context.Context, osCli osversioned.Interface, namespace, name string) (int32, error) {
+	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return 0, errors.Wrapf(err, "Could not get DeploymentConfig{Namespace %s, Name: %s}, to figure out replicas", namespace, name)
+	}
+
+	return dc.Spec.Replicas, nil
+}

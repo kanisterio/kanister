@@ -147,7 +147,9 @@ Example:
 ScaleWorkload
 -------------
 
-ScaleWorkload is used to scale up or scale down a Kubernetes workload.
+ScaleWorkload is used to scale up or scale down a Kubernetes workload. It
+also sets the original replica count of the workload as output artifact with
+the key ``originalReplicaCount``.
 The function only returns after the desired replica state is achieved:
 
 * When reducing the replica count, wait until all terminating pods
@@ -155,7 +157,8 @@ The function only returns after the desired replica state is achieved:
 
 * When increasing the replica count, wait until all pods are ready.
 
-Currently the function supports Deployments and StatefulSets.
+Currently the function supports Deployments, StatefulSets and
+DeploymentConfigs.
 
 It is similar to running
 
@@ -165,7 +168,8 @@ It is similar to running
 
 This can be useful if the workload needs to be shutdown before processing
 certain data operations. For example, it may be useful to use ``ScaleWorkload``
-to stop a database process before restoring files.
+to stop a database process before restoring files. See
+:ref:`scaleworkloadexample` for an example with new ``ScaleWorkload`` function.
 
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
