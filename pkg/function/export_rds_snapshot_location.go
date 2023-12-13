@@ -286,8 +286,7 @@ func prepareCommand(
 		return nil, "", err
 	}
 
-	switch dbEngine {
-	case PostgrSQLEngine:
+	if dbEngine == PostgrSQLEngine {
 		switch action {
 		case BackupAction:
 			// For backup operation, if database arg is not set, we take backup of all databases

@@ -73,9 +73,10 @@ func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 func validatePhaseNames(bp *crv1alpha1.Blueprint) error {
 	phasesCount := make(map[string]int)
 	for _, action := range bp.Actions {
-		allPhases := action.Phases
+		allPhases := []crv1alpha1.BlueprintPhase{}
+		allPhases = append(allPhases, action.Phases...)
 		if action.DeferPhase != nil {
-			allPhases = append(action.Phases, *action.DeferPhase)
+			allPhases = append(allPhases, *action.DeferPhase)
 		}
 
 		for _, phase := range allPhases {

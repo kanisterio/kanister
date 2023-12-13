@@ -21,7 +21,7 @@ import (
 
 func init() {
 	// We silence all non-fatal log messages.
-	//logrus.SetLevel(logrus.ErrorLevel)
+	// logrus.SetLevel(logrus.ErrorLevel)
 }
 
 func main() {

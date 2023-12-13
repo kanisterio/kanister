@@ -95,9 +95,7 @@ func newS3CompliantProfileCmd() *cobra.Command {
 		Use:   "s3compliant",
 		Short: "Create new S3 compliant profile",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return createNewProfile(cmd, args)
-		},
+		RunE:  createNewProfile,
 	}
 
 	cmd.Flags().StringP(awsAccessKeyFlag, "a", "", "access key of the s3 compliant bucket")
@@ -114,9 +112,7 @@ func newGCPProfileCmd() *cobra.Command {
 		Use:   "gcp",
 		Short: "Create new gcp profile",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return createNewProfile(cmd, args)
-		},
+		RunE:  createNewProfile,
 	}
 
 	cmd.Flags().StringP(gcpProjectIDFlag, "a", "", "Project ID of the google application")
@@ -132,9 +128,7 @@ func newAzureProfileCmd() *cobra.Command {
 		Use:   "azure",
 		Short: "Create new azure profile",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return createNewProfile(cmd, args)
-		},
+		RunE:  createNewProfile,
 	}
 
 	cmd.Flags().StringP(AzureStorageAccountFlag, "a", "", "Storage account name of the azure storage")
@@ -263,7 +257,7 @@ func constructProfile(lP *locationParams, secret *v1.Secret) *v1alpha1.Profile {
 				},
 			},
 		}
-	case lP.locationType == v1alpha1.LocationTypeGCS: //GCP
+	case lP.locationType == v1alpha1.LocationTypeGCS: // GCP
 		creds = v1alpha1.Credential{
 			Type: v1alpha1.CredentialTypeKeyPair,
 			KeyPair: &v1alpha1.KeyPair{
@@ -490,7 +484,7 @@ func getServiceKey(ctx context.Context, filename string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	//Parse the service key
+	// Parse the service key
 	_, err = google.CredentialsFromJSON(ctx, b, compute.ComputeScope)
 	if err != nil {
 		return "", err

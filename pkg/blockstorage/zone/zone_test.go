@@ -23,7 +23,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/kube"
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -543,14 +543,14 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		outZones []string
 		outErr   error
 	}{
-		{ //success case
+		{ // success case
 			inRegion: "us-west-2",
 			inZones:  []string{"us-west-2a"},
 			inCli:    cli,
 			outZones: []string{"us-west-2a"},
 			outErr:   nil,
 		},
-		{ //success case gce multi region
+		{ // success case gce multi region
 			inRegion: "us-west1",
 			inZones:  []string{"us-west1-a"},
 			inCli:    cligce,
