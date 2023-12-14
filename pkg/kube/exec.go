@@ -133,7 +133,11 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) error {
 
 	errCh := execStream(kubeCli, config, options)
 	err = <-errCh
-	return errkit.Wrap(err, "Failed to exec command in pod")
+	if err != nil {
+		return errkit.Wrap(err, "Failed to exec command in pod")
+	}
+
+	return nil
 }
 
 func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) chan error {

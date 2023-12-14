@@ -420,6 +420,10 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})
 
+	if err == nil {
+		return err
+	}
+
 	errorMessage := "Pod failed or did not transition into complete state"
 	if attachLog {
 		return getErrorFromLogs(ctx, cli, namespace, name, containerForLogs, err, errorMessage)
