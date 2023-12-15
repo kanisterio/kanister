@@ -33,6 +33,10 @@ jobs:
         } >> "$GITHUB_OUTPUT"
   lint:
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/kanisterio/build:v0.0.25
+      env:
+        GOFLAGS: -buildvcs=false
     needs: gomod
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -40,7 +44,10 @@ jobs:
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
-    - run: make golint
+    - uses: actions/setup-go@v4
+      with:
+        go-version-file: 'go.mod'
+    - run: ./build/golint.sh
   test:
     runs-on: ubuntu-20.04
     needs: gomod
