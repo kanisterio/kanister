@@ -1,4 +1,4 @@
-FROM golang:1.21-bullseye
+FROM golang:1.21.5-bullseye
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
 RUN apt-get update && apt-get -y install apt-transport-https ca-certificates bash git gnupg2 software-properties-common curl jq wget \
