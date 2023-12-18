@@ -341,47 +341,47 @@ func (h *RepoServerHandler) updateRepoServerProgress(ctx context.Context, progre
 	return nil
 }
 
-func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) (ctrl.Result, error) {
+func (h *RepoServerHandler) setupKopiaRepositoryServer(ctx context.Context, logger logr.Logger) error {
 	logger.Info("Start Kopia Repository Server")
 	if err := h.startRepoProxyServer(ctx); err != nil {
 		condition := getCondition(metav1.ConditionFalse, conditionReasonServerInitializedErr, "", crkanisteriov1alpha1.ServerInitialized)
 		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
-			return ctrl.Result{}, uerr
+			return uerr
 		}
-		return ctrl.Result{}, err
+		return err
 	}
 
 	condition := getCondition(metav1.ConditionTrue, conditionReasonServerInitializedSuccess, "", crkanisteriov1alpha1.ServerInitialized)
 	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Pending); uerr != nil {
-		return ctrl.Result{}, uerr
+		return uerr
 	}
 
 	logger.Info("Add/Update users in Kopia Repository Server")
 	if err := h.createOrUpdateClientUsers(ctx); err != nil {
 		condition := getCondition(metav1.ConditionFalse, conditionReasonClientInitializedErr, err.Error(), crkanisteriov1alpha1.ClientUserInitialized)
 		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
-			return ctrl.Result{}, uerr
+			return uerr
 		}
-		return ctrl.Result{}, err
+		return err
 	}
 
 	condition = getCondition(metav1.ConditionTrue, conditionReasonClientInitializedSuccess, "", crkanisteriov1alpha1.ClientUserInitialized)
 	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Pending); uerr != nil {
-		return ctrl.Result{}, uerr
+		return uerr
 	}
 
 	logger.Info("Refresh Kopia Repository Server")
 	if err := h.refreshServer(ctx); err != nil {
 		condition := getCondition(metav1.ConditionFalse, conditionReasonServerRefreshedErr, err.Error(), crkanisteriov1alpha1.ServerRefreshed)
 		if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
-			return ctrl.Result{}, uerr
+			return uerr
 		}
-		return ctrl.Result{}, err
+		return err
 	}
 
 	condition = getCondition(metav1.ConditionTrue, conditionReasonServerRefreshedSuccess, "", crkanisteriov1alpha1.ServerRefreshed)
 	if uerr := h.setCondition(ctx, condition, crkanisteriov1alpha1.Ready); uerr != nil {
-		return ctrl.Result{}, uerr
+		return uerr
 	}
-	return ctrl.Result{}, nil
+	return nil
 }
