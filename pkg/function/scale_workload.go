@@ -129,10 +129,8 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (*scaleArgs, 
 		return nil, err
 	}
 
-	var (
-		namespace, kind, name string
-		replicas              int32
-	)
+	var namespace, kind, name string
+	var replicas int32
 
 	switch val := rep.(type) {
 	case int:
