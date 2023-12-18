@@ -118,8 +118,8 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, uerr
 	}
 
-	if result, err := repoServerHandler.setupKopiaRepositoryServer(ctx, logger); err != nil {
-		return result, err
+	if err := repoServerHandler.setupKopiaRepositoryServer(ctx, logger); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

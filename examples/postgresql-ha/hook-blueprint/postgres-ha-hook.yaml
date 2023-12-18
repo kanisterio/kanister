@@ -26,7 +26,7 @@ actions:
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
         namespace: '{{ .StatefulSet.Namespace }}'
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.101.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.103.0
         command:
         - bash
         - -o
