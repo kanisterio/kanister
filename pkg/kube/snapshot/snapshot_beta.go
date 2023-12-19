@@ -32,7 +32,6 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
-	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 type SnapshotBeta struct {
@@ -111,7 +110,7 @@ func createSnapshot(
 		return nil
 	}
 
-	if err := waitOnReadyToUse(ctx, dynCli, snapGVR, name, namespace); err != nil {
+	if err := waitOnReadyToUse(ctx, dynCli, snapGVR, name, namespace, isReadyToUseBeta); err != nil {
 		return err
 	}
 
@@ -312,29 +311,22 @@ func (sna *SnapshotBeta) CreateContentFromSource(ctx context.Context, source *So
 // WaitOnReadyToUse will block until the Volumesnapshot in 'namespace' with name 'snapshotName'
 // has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 func (sna *SnapshotBeta) WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error {
-	return waitOnReadyToUse(ctx, sna.dynCli, v1beta1.VolSnapGVR, snapshotName, namespace)
+	return waitOnReadyToUse(ctx, sna.dynCli, v1beta1.VolSnapGVR, snapshotName, namespace, isReadyToUseBeta)
 }
 
-func waitOnReadyToUse(ctx context.Context, dynCli dynamic.Interface, snapGVR schema.GroupVersionResource, snapshotName, namespace string) error {
-	return poll.Wait(ctx, func(context.Context) (bool, error) {
-		us, err := dynCli.Resource(snapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		vs := v1beta1.VolumeSnapshot{}
-		err = TransformUnstructured(us, &vs)
-		if err != nil {
-			return false, err
-		}
-		if vs.Status == nil {
-			return false, nil
-		}
-		// Error can be set while waiting for creation
-		if vs.Status.Error != nil {
-			return false, errors.New(*vs.Status.Error.Message)
-		}
-		return (vs.Status.ReadyToUse != nil && *vs.Status.ReadyToUse && vs.Status.CreationTime != nil), nil
-	})
+func isReadyToUseBeta(us *unstructured.Unstructured) (bool, error) {
+	vs := v1beta1.VolumeSnapshot{}
+	if err := TransformUnstructured(us, &vs); err != nil {
+		return false, err
+	}
+	if vs.Status == nil {
+		return false, nil
+	}
+	// Error can be set while waiting for creation
+	if vs.Status.Error != nil {
+		return false, errors.New(*vs.Status.Error.Message)
+	}
+	return (vs.Status.ReadyToUse != nil && *vs.Status.ReadyToUse && vs.Status.CreationTime != nil), nil
 }
 
 func getSnapshotContent(ctx context.Context, dynCli dynamic.Interface, snapContentGVR schema.GroupVersionResource, contentName string) (*v1.VolumeSnapshotContent, error) {
