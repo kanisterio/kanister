@@ -58,7 +58,7 @@ func SnapshotIDsFromSnapshot(output string) (snapID, rootID string, err error) {
 		if len(match) > 0 && len(match[0]) > 2 {
 			snapID = match[0][2]
 			rootID = match[0][1]
-			return
+			return snapID, rootID, nil
 		}
 	}
 	return snapID, rootID, errors.New("Failed to find Root ID from output")
