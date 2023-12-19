@@ -53,7 +53,7 @@ require (
 
 	//pinned k8s.io to v0.26.x tag
 	k8s.io/api v0.26.11
-	k8s.io/apiextensions-apiserver v0.26.10
+	k8s.io/apiextensions-apiserver v0.26.11
 	k8s.io/apimachinery v0.26.11
 	k8s.io/cli-runtime v0.26.11
 	k8s.io/client-go v0.26.11
@@ -61,7 +61,7 @@ require (
 	k8s.io/kubectl v0.26.11
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	sigs.k8s.io/controller-runtime v0.14.7
-	sigs.k8s.io/kustomize/kyaml v0.13.9
+	sigs.k8s.io/kustomize/kyaml v0.13.10
 	sigs.k8s.io/yaml v1.3.0
 
 )
