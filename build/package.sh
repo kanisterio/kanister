@@ -30,7 +30,12 @@ build_licenses_info_image() {
     elif grep docker /proc/1/cgroup -qa; then
         mount_cmd="--volumes-from $(grep docker -m 1 /proc/self/cgroup|cut -d/ -f3)"
     fi
+    if [ -z "${ARCH:-""}" ]; then
+        echo "ARCH must be set"
+        exit 1
+    fi
     docker run --rm ${mount_cmd} \
+        --platform linux/${ARCH}\
         "ghcr.io/kanisterio/license-extractor:4e0a91a" \
         --mode merge \
         --source ${src_dir} \
@@ -66,5 +71,5 @@ sed                                \
     -e "s|ARG_ARCH|${ARCH}|g"      \
     -e "s|ARG_SOURCE_BIN|${SOURCE_BIN}|g" \
     Dockerfile.in > .dockerfile-${ARCH}
-docker buildx build --push --pull --sbom=true ${baseimagearg:-} --build-arg kanister_version=${VERSION} -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
+docker buildx build --push --pull --sbom=true ${baseimagearg:-} --build-arg kanister_version=${VERSION} -t ${IMAGE}:${VERSION} --platform linux/${ARCH}  -f .dockerfile-${ARCH} .
 docker images -q ${IMAGE}:${VERSION}
