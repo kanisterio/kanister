@@ -17,7 +17,7 @@ linters:
     - lll
     - nakedret
     - asciicheck
-    - depguard
+    # - depguard # Disabling temporarily due to https://github.com/golangci/golangci-lint/issues/3906
     - dogsled
     - dupl
     - exportloopref
