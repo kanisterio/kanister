@@ -315,15 +315,16 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			check:            IsNil,
 		},
 	} {
-		scaleWorkloadArgs, err := getArgs(tc.tp, tc.args)
+		s := scaleWorkloadFunc{}
+		err := s.setArgs(tc.tp, tc.args)
 		c.Assert(err, tc.check)
 		if err != nil {
 			continue
 		}
-		c.Assert(scaleWorkloadArgs.namespace, Equals, tc.wantNamespace)
-		c.Assert(scaleWorkloadArgs.name, Equals, tc.wantName)
-		c.Assert(scaleWorkloadArgs.kind, Equals, tc.wantKind)
-		c.Assert(scaleWorkloadArgs.replicas, Equals, tc.wantReplicas)
-		c.Assert(scaleWorkloadArgs.waitForReady, Equals, tc.wantWaitForReady)
+		c.Assert(s.namespace, Equals, tc.wantNamespace)
+		c.Assert(s.name, Equals, tc.wantName)
+		c.Assert(s.kind, Equals, tc.wantKind)
+		c.Assert(s.replicas, Equals, tc.wantReplicas)
+		c.Assert(s.waitForReady, Equals, tc.wantWaitForReady)
 	}
 }
