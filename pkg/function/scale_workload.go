@@ -52,6 +52,11 @@ var (
 
 type scaleWorkloadFunc struct {
 	progressPercent string
+	namespace       string
+	kind            string
+	name            string
+	replicas        int32
+	waitForReady    bool
 }
 
 func (*scaleWorkloadFunc) Name() string {
@@ -63,7 +68,7 @@ func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	s.progressPercent = progress.StartedPercent
 	defer func() { s.progressPercent = progress.CompletedPercent }()
 
-	scaleArgs, err := getArgs(tp, args)
+	err := s.setArgs(tp, args)
 	if err != nil {
 		return nil, err
 	}
@@ -76,19 +81,19 @@ func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	switch strings.ToLower(scaleArgs.kind) {
+	switch strings.ToLower(s.kind) {
 	case param.StatefulSetKind:
-		return nil, kube.ScaleStatefulSet(ctx, cli, scaleArgs.namespace, scaleArgs.name, scaleArgs.replicas, scaleArgs.waitForReady)
+		return nil, kube.ScaleStatefulSet(ctx, cli, s.namespace, s.name, s.replicas, s.waitForReady)
 	case param.DeploymentKind:
-		return nil, kube.ScaleDeployment(ctx, cli, scaleArgs.namespace, scaleArgs.name, scaleArgs.replicas, scaleArgs.waitForReady)
+		return nil, kube.ScaleDeployment(ctx, cli, s.namespace, s.name, s.replicas, s.waitForReady)
 	case param.DeploymentConfigKind:
 		osCli, err := osversioned.NewForConfig(cfg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create OpenShift client")
 		}
-		return nil, kube.ScaleDeploymentConfig(ctx, cli, osCli, scaleArgs.namespace, scaleArgs.name, scaleArgs.replicas, scaleArgs.waitForReady)
+		return nil, kube.ScaleDeploymentConfig(ctx, cli, osCli, s.namespace, s.name, s.replicas, s.waitForReady)
 	}
-	return nil, errors.New("Workload type not supported " + scaleArgs.kind)
+	return nil, errors.New("Workload type not supported " + s.kind)
 }
 
 func (*scaleWorkloadFunc) RequiredArgs() []string {
@@ -113,26 +118,16 @@ func (s *scaleWorkloadFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error
 	}, nil
 }
 
-type scaleArgs struct {
-	namespace    string
-	kind         string
-	name         string
-	replicas     int32
-	waitForReady bool
-}
-
-func getArgs(tp param.TemplateParams, args map[string]interface{}) (*scaleArgs, error) {
+func (s *scaleWorkloadFunc) setArgs(tp param.TemplateParams, args map[string]interface{}) error {
 	var rep interface{}
 	waitForReady := true
 	err := Arg(args, ScaleWorkloadReplicas, &rep)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var (
-		namespace, kind, name string
-		replicas              int32
-	)
+	var namespace, kind, name string
+	var replicas int32
 
 	switch val := rep.(type) {
 	case int:
@@ -144,11 +139,11 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (*scaleArgs, 
 	case string:
 		var v int
 		if v, err = strconv.Atoi(val); err != nil {
-			return nil, errors.Wrapf(err, "Cannot convert %s to int ", val)
+			return errors.Wrapf(err, "Cannot convert %s to int ", val)
 		}
 		replicas = int32(v)
 	default:
-		return nil, errors.Errorf("Invalid arg type %T for Arg %s ", rep, ScaleWorkloadReplicas)
+		return errors.Errorf("Invalid arg type %T for Arg %s ", rep, ScaleWorkloadReplicas)
 	}
 	// Populate default values for optional arguments from template parameters
 	switch {
@@ -166,31 +161,30 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (*scaleArgs, 
 		namespace = tp.DeploymentConfig.Namespace
 	default:
 		if !ArgExists(args, ScaleWorkloadNamespaceArg) || !ArgExists(args, ScaleWorkloadNameArg) || !ArgExists(args, ScaleWorkloadKindArg) {
-			return nil, errors.New("Workload information not available via defaults or namespace/name/kind parameters")
+			return errors.New("Workload information not available via defaults or namespace/name/kind parameters")
 		}
 	}
 
 	err = OptArg(args, ScaleWorkloadNamespaceArg, &namespace, namespace)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = OptArg(args, ScaleWorkloadNameArg, &name, name)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = OptArg(args, ScaleWorkloadKindArg, &kind, kind)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = OptArg(args, ScaleWorkloadWaitArg, &waitForReady, waitForReady)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &scaleArgs{
-		namespace:    namespace,
-		name:         name,
-		kind:         kind,
-		replicas:     replicas,
-		waitForReady: waitForReady,
-	}, nil
+	s.kind = kind
+	s.name = name
+	s.namespace = namespace
+	s.replicas = replicas
+	s.waitForReady = waitForReady
+	return nil
 }

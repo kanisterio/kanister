@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      - uses: tj-actions/changed-files@da093c1609db0edd0a037ce9664e135f74bf30d9 # v40.2.0
+      - uses: tj-actions/changed-files@94549999469dbfa032becf298d95c87a14c34394 # v40.2.2
         name: Get changed files
         id: changed-files
         with:
@@ -39,7 +39,7 @@ jobs:
       uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
     - name: Image metadata
       id: meta
-      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+      uses: docker/metadata-action@31cebacef4805868f9ce9a0cb03ee36c32df2ac4 # v5.3.0
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
