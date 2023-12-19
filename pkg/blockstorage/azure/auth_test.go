@@ -73,7 +73,7 @@ func (s *AuthSuite) TestIsMSICredsAvailable(c *C) {
 	c.Assert(isMSICredsAvailable(config), Equals, false)
 }
 
-func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
+func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 	// successful with client secret creds
 	config := map[string]string{
 		blockstorage.AzureTenantID:     "some-tenant-id",

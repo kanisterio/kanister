@@ -16,9 +16,12 @@ package snapshot
 
 import (
 	"context"
+	"regexp"
 
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -26,6 +29,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 // Snapshotter is an interface that describes snapshot operations
@@ -152,4 +156,33 @@ func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Sna
 		return NewSnapshotAlpha(kubeCli, dynCli), nil
 	}
 	return nil, errors.New("Snapshot resources not supported")
+}
+
+// We use regexp to match because errors written in vs.Status.Error.Message are strings
+// and we don't have any status code or other metadata in there.
+var transientErrorRegexp = regexp.MustCompile("the object has been modified; please apply your changes to the latest version and try again")
+
+// Use regexp to detect resource conflict error
+// If CSI snapshotter changes error reporting to use more structured errors,
+// we can improve this function to parse and recognise error codes or types.
+func isTransientError(err error) bool {
+	return transientErrorRegexp.MatchString(err.Error())
+}
+
+func waitOnReadyToUse(
+	ctx context.Context,
+	dynCli dynamic.Interface,
+	snapGVR schema.GroupVersionResource,
+	snapshotName,
+	namespace string,
+	isReadyFunc func(*unstructured.Unstructured) (bool, error),
+) error {
+	retries := 100
+	return poll.WaitWithRetries(ctx, retries, isTransientError, func(context.Context) (bool, error) {
+		us, err := dynCli.Resource(snapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		return isReadyFunc(us)
+	})
 }
