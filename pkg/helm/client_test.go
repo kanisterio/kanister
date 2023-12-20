@@ -17,6 +17,7 @@ package helm
 import (
 	"context"
 	"testing"
+	"time"
 
 	. "gopkg.in/check.v1"
 )
@@ -53,7 +54,8 @@ func Test(t *testing.T) { TestingT(t) }
 
 func (s *ExecSuite) TestRunCmdWithTimeout(c *C) {
 	ctx := context.Background()
-	out, err := RunCmdWithTimeout(ctx, s.command, s.args)
+	customTimeout := 100 * time.Millisecond
+	out, err := RunCmdWithCustomTimeout(ctx, s.command, s.args, customTimeout)
 	if s.err {
 		c.Assert(err, NotNil)
 		return
