@@ -28,6 +28,7 @@ type RepositoryServerValidator struct{}
 
 var _ webhook.CustomValidator = &RepositoryServerValidator{}
 
+//nolint:lll
 //+kubebuilder:webhook:path=/validate/v1alpha1/repositoryserver,mutating=false,failurePolicy=fail,sideEffects=None,groups=cr.kanister.io,resources=repositoryservers,verbs=update,versions=v1alpha1,name=repositoryserver.cr.kanister.io,admissionReviewVersions=v1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type

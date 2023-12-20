@@ -158,7 +158,9 @@ func (cas *CassandraInstance) Ping(ctx context.Context) error {
 // Insert is used to insert the  records into the database
 func (cas *CassandraInstance) Insert(ctx context.Context) error {
 	log.Print("Inserting records into the database.", field.M{"app": cas.name})
-	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"insert into restaurants.guests (id, firstname, lastname, birthday)  values (uuid(), 'Tom', 'Singh', '2015-02-18');\" --request-timeout=%s", cqlTimeout)}
+	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"insert into "+
+		"restaurants.guests (id, firstname, lastname, birthday)  values (uuid(), 'Tom', 'Singh', "+
+		"'2015-02-18');\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s inserting records into the database.", stderr)
@@ -191,7 +193,8 @@ func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
 // Reset is used to reset or imitate disaster, in the database
 func (cas *CassandraInstance) Reset(ctx context.Context) error {
 	// delete keyspace and table if they already exist
-	delRes := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e 'drop table if exists restaurants.guests; drop keyspace if exists restaurants;' --request-timeout=%s", cqlTimeout)}
+	delRes := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e "+
+		"'drop table if exists restaurants.guests; drop keyspace if exists restaurants;' --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, delRes)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s, deleting resources while reseting application.", stderr)
@@ -202,14 +205,16 @@ func (cas *CassandraInstance) Reset(ctx context.Context) error {
 // Initialize is used to initialize the database or create schema
 func (cas *CassandraInstance) Initialize(ctx context.Context) error {
 	// create the keyspace
-	createKS := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"create keyspace restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};\" --request-timeout=%s", cqlTimeout)}
+	createKS := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"create keyspace "+
+		"restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, createKS)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while creating the keyspace for application.", stderr)
 	}
 
 	// create the table
-	createTab := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"create table restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);\" --request-timeout=%s", cqlTimeout)}
+	createTab := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"create table "+
+		"restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err = cas.execCommand(ctx, createTab)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s creating table.", stderr)
