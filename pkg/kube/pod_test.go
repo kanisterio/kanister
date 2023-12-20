@@ -36,6 +36,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/testutil/testmutex"
 )
 
 type PodSuite struct {
@@ -62,7 +63,7 @@ func (s *PodSuite) SetUpSuite(c *C) {
 	ns, err = s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
-
+	testmutex.PodNamespaceMutex.Lock()
 	os.Setenv("POD_NAMESPACE", ns.Name)
 	os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
 
@@ -78,6 +79,8 @@ func (s *PodSuite) TearDownSuite(c *C) {
 		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
+	testmutex.PodNamespaceMutex.TryLock()
+	testmutex.PodNamespaceMutex.Unlock()
 }
 
 func (s *PodSuite) TestPod(c *C) {

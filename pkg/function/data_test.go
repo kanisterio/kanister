@@ -36,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	"github.com/kanisterio/kanister/pkg/testutil/testmutex"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
@@ -105,7 +106,7 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	location.Prefix = "testBackupRestoreLocDelete"
 	location.Bucket = testBucketName
 	s.profile = testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
-
+	testmutex.PodNamespaceMutex.Lock()
 	os.Setenv("POD_NAMESPACE", s.namespace)
 	os.Setenv("POD_SERVICE_ACCOUNT", "default")
 }
@@ -119,6 +120,8 @@ func (s *DataSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
 	}
+	testmutex.PodNamespaceMutex.TryLock()
+	testmutex.PodNamespaceMutex.Unlock()
 }
 
 func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alpha1.Blueprint {

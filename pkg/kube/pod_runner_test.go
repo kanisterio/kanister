@@ -18,6 +18,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/kanisterio/kanister/pkg/testutil/testmutex"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,7 +36,13 @@ const (
 )
 
 func (s *PodRunnerTestSuite) SetUpSuite(c *C) {
+	testmutex.PodNamespaceMutex.Lock()
 	os.Setenv("POD_NAMESPACE", podRunnerNS)
+}
+
+func (s *PodRunnerTestSuite) TearDownSuite(c *C) {
+	testmutex.PodNamespaceMutex.TryLock()
+	testmutex.PodNamespaceMutex.Unlock()
 }
 
 func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {

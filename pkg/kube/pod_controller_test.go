@@ -20,6 +20,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kanisterio/kanister/pkg/testutil/testmutex"
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,7 +38,13 @@ const (
 )
 
 func (s *PodControllerTestSuite) SetUpSuite(c *C) {
+	testmutex.PodNamespaceMutex.Lock()
 	os.Setenv("POD_NAMESPACE", podControllerNS)
+}
+
+func (s *PodControllerTestSuite) TearDownSuite(c *C) {
+	testmutex.PodNamespaceMutex.TryLock()
+	testmutex.PodNamespaceMutex.Unlock()
 }
 
 func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {

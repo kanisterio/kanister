@@ -29,6 +29,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/testutil/testmutex"
 )
 
 var _ = Suite(&KubeTaskSuite{})
@@ -51,6 +52,7 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
+	testmutex.PodNamespaceMutex.Lock()
 	os.Setenv("POD_NAMESPACE", cns.Name)
 	os.Setenv("POD_SERVICE_ACCOUNT", "default")
 }
@@ -59,6 +61,8 @@ func (s *KubeTaskSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
+	testmutex.PodNamespaceMutex.TryLock()
+	testmutex.PodNamespaceMutex.Unlock()
 }
 
 func outputPhase(namespace string) crv1alpha1.BlueprintPhase {

@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/kanisterio/kanister/pkg/testutil/testmutex"
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -36,7 +37,13 @@ const (
 )
 
 func (s *PodFileWriterTestSuite) SetUpSuite(c *C) {
+	testmutex.PodNamespaceMutex.Lock()
 	os.Setenv("POD_NAMESPACE", podFileWriterNS)
+}
+
+func (s *PodFileWriterTestSuite) TearDownSuite(c *C) {
+	testmutex.PodNamespaceMutex.TryLock()
+	testmutex.PodNamespaceMutex.Unlock()
 }
 
 type fakePodFileWriterProcessor struct {

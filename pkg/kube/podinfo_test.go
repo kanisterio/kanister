@@ -17,6 +17,7 @@ package kube
 import (
 	"os"
 
+	"github.com/kanisterio/kanister/pkg/testutil/testmutex"
 	. "gopkg.in/check.v1"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -31,6 +32,8 @@ const testPodName = "test-pod-name"
 const testPodSA = "test-pod-sa"
 
 func (s *PodInfoSuite) TestGetControllerNamespaceFromEnv(c *C) {
+	testmutex.PodNamespaceMutex.Lock()
+	defer testmutex.PodNamespaceMutex.Unlock()
 	os.Setenv(PodNSEnvVar, testPodNamespace)
 	ns, err := GetControllerNamespace()
 	c.Assert(err, IsNil)
@@ -67,6 +70,8 @@ func (s *PodInfoSuite) TestGetControllerPodNameFromSystem(c *C) {
 }
 
 func (s *PodInfoSuite) TestGetControllerServiceAccountFromEnv(c *C) {
+	testmutex.PodNamespaceMutex.Lock()
+	defer testmutex.PodNamespaceMutex.Unlock()
 	os.Setenv(PodSAEnvVar, testPodSA)
 	saName, err := GetControllerServiceAccount(fake.NewSimpleClientset())
 	c.Assert(err, IsNil)
