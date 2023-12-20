@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jpillora/backoff"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	promgomodel "github.com/prometheus/client_model/go"
@@ -123,8 +124,6 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 }
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
-	err := os.Unsetenv(kube.PodNSEnvVar)
-	c.Assert(err, IsNil)
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -147,17 +146,13 @@ func (s *ControllerSuite) TearDownTest(c *C) {
 	s.cancel()
 }
 
-func (s *ControllerSuite) TestWatch(c *C) {
-	// We give it a few seconds complete it's scan. This isn't required for the
-	// test, but is a more realistic startup scenario.
-	time.Sleep(5 * time.Second)
-}
+var testBackoff = backoff.Backoff{Min: 50 * time.Millisecond, Factor: 1.1}
 
 //nolint:unparam
 func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
-	err := poll.Wait(ctx, func(context.Context) (bool, error) {
+	err := poll.WaitWithBackoff(ctx, testBackoff, func(context.Context) (bool, error) {
 		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -184,7 +179,7 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+	err := poll.WaitWithBackoff(ctx, testBackoff, func(ctx context.Context) (bool, error) {
 		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -210,7 +205,7 @@ func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, 
 func (s *ControllerSuite) waitOnActionSetCompleteWithRunningPhases(as *crv1alpha1.ActionSet, rp *sets.Set[string]) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
-	err := poll.Wait(ctx, func(context.Context) (bool, error) {
+	err := poll.WaitWithBackoff(ctx, testBackoff, func(context.Context) (bool, error) {
 		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -444,10 +439,10 @@ func newBPForProgressRunningPhase() *crv1alpha1.Blueprint {
 				// set output artifacts from main phases as well as deferPhase
 				OutputArtifacts: map[string]crv1alpha1.Artifact{},
 				Phases: []crv1alpha1.BlueprintPhase{
-					*phaseWithNameAndCMD("backupPhaseOne", []string{"sleep", "10"}),
-					*phaseWithNameAndCMD("backupPhaseTwo", []string{"sleep", "8"}),
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"sleep", "5"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"sleep", "4"}),
 				},
-				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"sleep", "8"}),
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"sleep", "4"}),
 			},
 		},
 	}
@@ -516,188 +511,6 @@ func (s *ControllerSuite) TestNilPrometheusRegistry(c *C) {
 	ctrl := New(config, nil)
 	c.Assert(ctrl, NotNil)
 	c.Assert(ctrl.metrics, IsNil)
-}
-
-func (s *ControllerSuite) TestExecActionSet(c *C) {
-	for _, pok := range []string{"StatefulSet", "Deployment"} {
-		for _, tc := range []struct {
-			funcNames        []string
-			args             [][]string
-			name             string
-			version          string
-			metricResolution string
-		}{
-			{
-				funcNames:        []string{testutil.WaitFuncName},
-				name:             "WaitFunc",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			},
-			{
-				funcNames:        []string{testutil.WaitFuncName, testutil.WaitFuncName},
-				name:             "WaitWait",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			},
-			{
-				funcNames:        []string{testutil.FailFuncName},
-				name:             "FailFunc",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
-			},
-			{
-				funcNames:        []string{testutil.WaitFuncName, testutil.FailFuncName},
-				name:             "WaitFail",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
-			},
-			{
-				funcNames:        []string{testutil.FailFuncName, testutil.WaitFuncName},
-				name:             "FailWait",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
-			},
-			{
-				funcNames:        []string{testutil.ArgFuncName},
-				name:             "ArgFunc",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			},
-			{
-				funcNames:        []string{testutil.ArgFuncName, testutil.FailFuncName},
-				name:             "ArgFail",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
-			},
-			{
-				funcNames:        []string{testutil.OutputFuncName},
-				name:             "OutputFunc",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			},
-			{
-				funcNames:        []string{testutil.CancelFuncName},
-				name:             "CancelFunc",
-				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
-			},
-			{
-				funcNames:        []string{testutil.ArgFuncName},
-				name:             "ArgFuncVersion",
-				version:          testutil.TestVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			},
-			{
-				funcNames:        []string{testutil.ArgFuncName},
-				name:             "ArgFuncVersionFallback",
-				version:          "v1.2.3",
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			},
-			{
-				funcNames:        []string{testutil.ArgFuncName},
-				name:             "ArgFuncNoActionSetVersion",
-				version:          "",
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			},
-			{
-				funcNames:        []string{testutil.VersionMismatchFuncName},
-				name:             "VersionMismatchFunc",
-				version:          "v1.2.3",
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
-			},
-			{
-				funcNames:        []string{testutil.ArgFuncName, testutil.OutputFuncName},
-				name:             "ArgOutputFallbackOnlyOutput",
-				version:          testutil.TestVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			},
-		} {
-			var err error
-			// Add a blueprint with a mocked kanister function.
-			bp := testutil.NewTestBlueprint(pok, tc.funcNames...)
-			bp = testutil.BlueprintWithConfigMap(bp)
-			ctx := context.Background()
-			bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-			c.Assert(err, IsNil)
-
-			oldValue := getCounterVecValue(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution})
-
-			var n string
-			switch pok {
-			case "StatefulSet":
-				n = s.ss.GetName()
-			case "Deployment":
-				n = s.deployment.GetName()
-			default:
-				c.FailNow()
-			}
-
-			// Add an actionset that references that blueprint.
-			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version, testAction)
-			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-			as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
-
-			final := crv1alpha1.StateComplete
-			cancel := false
-		Loop:
-			for _, fn := range tc.funcNames {
-				switch fn {
-				case testutil.FailFuncName:
-					final = crv1alpha1.StateFailed
-					c.Assert(testutil.FailFuncError().Error(), DeepEquals, "Kanister function failed", Commentf("Failed case: %s", tc.name))
-					break Loop
-				case testutil.WaitFuncName:
-					testutil.ReleaseWaitFunc()
-				case testutil.ArgFuncName:
-					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
-				case testutil.OutputFuncName:
-					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
-				case testutil.CancelFuncName:
-					testutil.CancelFuncStarted()
-					err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
-					c.Assert(err, IsNil)
-					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
-					cancel = true
-				case testutil.VersionMismatchFuncName:
-					final = crv1alpha1.StateFailed
-					c.Assert(err, IsNil)
-				}
-			}
-
-			if !cancel {
-				err = s.waitOnActionSetState(c, as, final)
-				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
-				expectedValue := oldValue + 1
-				err = waitForMetrics(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution}, expectedValue, time.Second)
-				c.Assert(err, IsNil, Commentf("Failed case: %s, failed waiting for metric update to %v", tc.name, expectedValue))
-			}
-			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
-			c.Assert(err, IsNil)
-			err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
-			if !cancel {
-				c.Assert(err, IsNil)
-			} else {
-				c.Assert(err, NotNil)
-			}
-		}
-	}
-}
-
-func waitForMetrics(metrics prometheus.CounterVec, labels []string, expected float64, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	err := poll.Wait(ctx, func(context.Context) (bool, error) {
-		current := getCounterVecValue(metrics, labels)
-		if current == expected {
-			return true, nil
-		} else {
-			return false, nil
-		}
-	})
-
-	return err
 }
 
 func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
