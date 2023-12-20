@@ -77,9 +77,12 @@ check_dependencies() {
 
 check_dependencies
 
+echo "Listing tests:"
+go test -v ${TARGETS} -check.list .
+echo
+
 echo "Running tests:"
-go test -v ${TARGETS} -list .
-go test -v -installsuffix "static" ${TARGETS} -check.v
+go test -v -installsuffix "static" ${TARGETS} -check.v -check.suitep $(nproc --all)
 echo
 
 echo "PASS"
