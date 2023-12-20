@@ -3,14 +3,10 @@
 Using ScaleWorkload function with output artifact
 -------------------------------------------------
 
-Traditionally, when ``ScaleWorkload`` functions were used to scale down the
-workload, it was required to get the original replica count of the workload and
-set it as output artifact. So that it can later be used to scale up the
-workload to same number of replicas.
-
-After the new changes, the ``ScaleWorkload`` function automatically sets the
-original replica count of the workload as output artifact, which makes using
-``ScaleWorkload`` function in blueprints a lot easier.
+``ScaleWorkload`` function can be used to scale a workload to specified
+replicas. It automatically sets the original replica count of the workload
+as output artifact, which makes using ``ScaleWorkload`` function in blueprints
+a lot easier.
 
 Below is an example of how this function can be used
 
