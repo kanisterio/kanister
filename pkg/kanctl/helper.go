@@ -20,10 +20,6 @@ import (
 
 const characters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
-func init() {
-
-}
-
 func randString(length int) string {
 	bytes := make([]byte, length)
 	for i := 0; i < length; i++ {

@@ -28,7 +28,6 @@ linters:
     - goprintffuncname
     - nolintlint
 
-
 run:
   timeout: 10m                          # golangci-lint run's timeout.
 
