@@ -123,7 +123,7 @@ func (cas *CassandraInstance) Object() crv1alpha1.ObjectReference {
 	}
 }
 
-// Uninstall us used to remove the datbase application
+// Uninstall us used to remove the database application
 func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 	log.Print("Uninstalling application.", field.M{"app": cas.name})
 	cli, err := helm.NewCliClient()
@@ -142,7 +142,7 @@ func (cas *CassandraInstance) GetClusterScopedResources(ctx context.Context) []c
 	return nil
 }
 
-// Ping is used to ping the application to check the datbase connectivity
+// Ping is used to ping the application to check the database connectivity
 func (cas *CassandraInstance) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": cas.name})
 

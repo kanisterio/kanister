@@ -116,7 +116,7 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 func GetEnvOrSkip(c *check.C, varName string) string {
 	v := os.Getenv(varName)
 	if v == "" {
-		reason := fmt.Sprintf("Test %s requires the environemnt variable '%s'", c.TestName(), varName)
+		reason := fmt.Sprintf("Test %s requires the environment variable '%s'", c.TestName(), varName)
 		c.Skip(reason)
 	}
 	return v
