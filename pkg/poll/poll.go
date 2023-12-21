@@ -91,7 +91,10 @@ func WaitWithBackoffWithRetries(ctx context.Context, b backoff.Backoff, numRetri
 		sleep := b.Duration()
 		if deadline, ok := ctx.Deadline(); ok {
 			ctxSleep := time.Until(deadline)
-			sleep = minDuration(sleep, ctxSleep)
+			// We want to wait for smaller of backoff sleep and context sleep
+			// but it has to be > 0 to give ctx.Done() a chance
+			// to return below
+			sleep = max(min(sleep, ctxSleep), 5*time.Millisecond)
 		}
 		t.Reset(sleep)
 		select {
@@ -100,11 +103,4 @@ func WaitWithBackoffWithRetries(ctx context.Context, b backoff.Backoff, numRetri
 		case <-t.C:
 		}
 	}
-}
-
-func minDuration(a, b time.Duration) time.Duration {
-	if a < b {
-		return a
-	}
-	return b
 }
