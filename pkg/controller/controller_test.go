@@ -121,6 +121,8 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(ctx, cm, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.confimap = cm
+	// We don't unset this env because we have multiple suites which would have conflicting unsetenv
+	os.Setenv(kube.PodNSEnvVar, "test")
 }
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
@@ -284,7 +286,7 @@ func newBPWithDeferPhaseAndErrInDeferPhase() *crv1alpha1.Blueprint {
 					*phaseWithNameAndCMD("backupPhaseOne", []string{"kando", "output", "value", "mainValue"}),
 					*phaseWithNameAndCMD("backupPhaseTwo", []string{"kando", "output", "value", "mainValueTwo"}),
 				},
-				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"exit", "1"}),
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"sh", "-c", "exit 1"}),
 			},
 		},
 	}
@@ -577,8 +579,6 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 }
 
 func (s *ControllerSuite) TestDeferPhase(c *C) {
-	os.Setenv(kube.PodNSEnvVar, "test")
-
 	ctx := context.Background()
 	bp := newBPWithDeferPhase()
 
@@ -627,7 +627,6 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 // 3. Phases have correct state in actionset status
 // 4. We don't render output artifacts if any of the phases failed
 func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
-	os.Setenv(kube.PodNSEnvVar, "test")
 	ctx := context.Background()
 
 	bp := newBPWithDeferPhaseAndErrInCorePhase()
@@ -662,7 +661,6 @@ func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
 }
 
 func (s *ControllerSuite) TestDeferPhaseDeferErr(c *C) {
-	os.Setenv(kube.PodNSEnvVar, "test")
 	ctx := context.Background()
 
 	bp := newBPWithDeferPhaseAndErrInDeferPhase()
@@ -832,7 +830,6 @@ func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
 }
 
 func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
-	os.Setenv(kube.PodNSEnvVar, "test")
 	ctx := context.Background()
 
 	bp := newBPForProgressRunningPhase()
