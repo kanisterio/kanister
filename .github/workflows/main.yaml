@@ -7,6 +7,8 @@ on:
     branches:
     - master
 jobs:
+  ## Make sure go.mod and go.sum files are up-to-date with the code
+  ## TODO: make this fail if they're not up-to-date to inform the committer to udpate them
   gomod:
     runs-on: ubuntu-20.04
     outputs:
@@ -36,6 +38,7 @@ jobs:
     needs: gomod
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
@@ -50,6 +53,7 @@ jobs:
         testSuite: [test, integration-test, helm-test]
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
@@ -75,6 +79,7 @@ jobs:
         bin: [controller, kanctl, kando]
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
