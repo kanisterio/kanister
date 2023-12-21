@@ -420,9 +420,9 @@ func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 		return nil, errors.New("Volume type is not available")
 	}
 
-	volId := ""
+	volID := ""
 	if vol.ID != nil {
-		volId = blockstorage.StringFromPtr(vol.ID)
+		volID = blockstorage.StringFromPtr(vol.ID)
 	} else {
 		return nil, errors.New("Volume Id is not available")
 	}
@@ -444,7 +444,7 @@ func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 
 	return &blockstorage.Volume{
 		Type:         s.Type(),
-		ID:           volId,
+		ID:           volID,
 		Encrypted:    encrypted,
 		SizeInBytes:  diskSize,
 		Az:           az,
@@ -463,15 +463,15 @@ func (s *AdStorage) SnapshotParse(ctx context.Context, snapshot interface{}) (*b
 }
 
 func (s *AdStorage) snapshotParse(ctx context.Context, snap armcompute.Snapshot) (*blockstorage.Snapshot, error) {
-	snapId := ""
+	snapID := ""
 	if snap.ID != nil {
-		snapId = *snap.ID
+		snapID = *snap.ID
 	} else {
 		return nil, errors.New("Snapshot ID is missing")
 	}
 	vol := &blockstorage.Volume{
 		Type: s.Type(),
-		ID:   snapId,
+		ID:   snapID,
 	}
 
 	snapCreationTime := time.Now()
@@ -501,7 +501,7 @@ func (s *AdStorage) snapshotParse(ctx context.Context, snap armcompute.Snapshot)
 	}
 	return &blockstorage.Snapshot{
 		Encrypted:         encrypted,
-		ID:                snapId,
+		ID:                snapID,
 		Region:            region,
 		SizeInBytes:       blockstorage.Int64(diskSize),
 		Tags:              blockstorage.MapToKeyValue(tags),
