@@ -14,8 +14,6 @@
 
 // TODO: Switch to using the latest azure sdk and remove nolint.
 // Related Ticket- https://github.com/kanisterio/kanister/issues/168
-//
-//nolint:staticcheck
 package azure
 
 import (
