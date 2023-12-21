@@ -85,33 +85,33 @@ func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	}
 	switch strings.ToLower(s.kind) {
 	case param.StatefulSetKind:
-		count, err := kube.StatefulSetReplicas(ctx, cli, namespace, name)
+		count, err := kube.StatefulSetReplicas(ctx, cli, s.namespace, s.name)
 		if err != nil {
 			return nil, err
 		}
 		return map[string]interface{}{
 			outputArtifactOriginalReplicaCount: count,
-		}, kube.ScaleStatefulSet(ctx, cli, namespace, name, replicas, waitForReady)
+		}, kube.ScaleStatefulSet(ctx, cli, s.namespace, s.name, s.replicas, s.waitForReady)
 	case param.DeploymentKind:
-		count, err := kube.DeploymentReplicas(ctx, cli, namespace, name)
+		count, err := kube.DeploymentReplicas(ctx, cli, s.namespace, s.name)
 		if err != nil {
 			return nil, err
 		}
 		return map[string]interface{}{
 			outputArtifactOriginalReplicaCount: count,
-		}, kube.ScaleDeployment(ctx, cli, namespace, name, replicas, waitForReady)
+		}, kube.ScaleDeployment(ctx, cli, s.namespace, s.name, s.replicas, s.waitForReady)
 	case param.DeploymentConfigKind:
 		osCli, err := osversioned.NewForConfig(cfg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create OpenShift client")
 		}
-		count, err := kube.DeploymentConfigReplicas(ctx, osCli, namespace, name)
+		count, err := kube.DeploymentConfigReplicas(ctx, osCli, s.namespace, s.name)
 		if err != nil {
 			return nil, err
 		}
 		return map[string]interface{}{
 			outputArtifactOriginalReplicaCount: count,
-		}, kube.ScaleDeploymentConfig(ctx, cli, osCli, namespace, name, replicas, waitForReady)
+		}, kube.ScaleDeploymentConfig(ctx, cli, osCli, s.namespace, s.name, s.replicas, s.waitForReady)
 	}
 	return nil, errors.New("Workload type not supported " + s.kind)
 }
