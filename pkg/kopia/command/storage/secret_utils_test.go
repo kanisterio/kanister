@@ -19,10 +19,10 @@ import (
 	"time"
 
 	"gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
@@ -88,27 +88,27 @@ func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) 
 
 	locSecretName := "test-secret"
 	for _, tc := range []struct {
-		secret          *v1.Secret
-		expectedEnvVars []v1.EnvVar
+		secret          *corev1.Secret
+		expectedEnvVars []corev1.EnvVar
 		check.Checker
 	}{
 		{
-			secret: &v1.Secret{
+			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: locSecretName,
 				},
-				Type: v1.SecretType(secrets.AWSSecretType),
+				Type: corev1.SecretType(secrets.AWSSecretType),
 				Data: map[string][]byte{
 					secrets.AWSAccessKeyID:     []byte(awsAccessKeyId),
 					secrets.AWSSecretAccessKey: []byte(awsSecretAccessKey),
 				},
 			},
-			expectedEnvVars: []v1.EnvVar{
+			expectedEnvVars: []corev1.EnvVar{
 				{
 					Name: aws.AccessKeyID,
-					ValueFrom: &v1.EnvVarSource{
-						SecretKeyRef: &v1.SecretKeySelector{
-							LocalObjectReference: v1.LocalObjectReference{
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
 								Name: locSecretName,
 							},
 							Key: secrets.AWSAccessKeyID,
@@ -117,9 +117,9 @@ func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) 
 				},
 				{
 					Name: aws.SecretAccessKey,
-					ValueFrom: &v1.EnvVarSource{
-						SecretKeyRef: &v1.SecretKeySelector{
-							LocalObjectReference: v1.LocalObjectReference{
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
 								Name: locSecretName,
 							},
 							Key: secrets.AWSSecretAccessKey,
@@ -130,23 +130,23 @@ func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) 
 			Checker: check.IsNil,
 		},
 		{
-			secret: &v1.Secret{
+			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: locSecretName,
 				},
-				Type: v1.SecretType(secrets.AzureSecretType),
+				Type: corev1.SecretType(secrets.AzureSecretType),
 				Data: map[string][]byte{
 					secrets.AzureStorageAccountID:   []byte(azureStorageAccountID),
 					secrets.AzureStorageAccountKey:  []byte(azureStorageAccountKey),
 					secrets.AzureStorageEnvironment: []byte(azureStorageEnvironment),
 				},
 			},
-			expectedEnvVars: []v1.EnvVar{
+			expectedEnvVars: []corev1.EnvVar{
 				{
 					Name: azureStorageAccountEnv,
-					ValueFrom: &v1.EnvVarSource{
-						SecretKeyRef: &v1.SecretKeySelector{
-							LocalObjectReference: v1.LocalObjectReference{
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
 								Name: locSecretName,
 							},
 							Key: secrets.AzureStorageAccountID,
@@ -155,9 +155,9 @@ func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) 
 				},
 				{
 					Name: azureStorageKeyEnv,
-					ValueFrom: &v1.EnvVarSource{
-						SecretKeyRef: &v1.SecretKeySelector{
-							LocalObjectReference: v1.LocalObjectReference{
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
 								Name: locSecretName,
 							},
 							Key: secrets.AzureStorageAccountKey,
@@ -176,7 +176,7 @@ func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) 
 			Checker: check.NotNil,
 		},
 		{
-			secret: &v1.Secret{
+			secret: &corev1.Secret{
 				Type: "Opaque",
 			},
 			Checker:         check.IsNil,
@@ -271,7 +271,7 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 			},
 		},
 		{
-			locType:       repositoryserver.LocType(v1alpha1.LocationTypeS3Compliant),
+			locType:       repositoryserver.LocType(crv1alpha1.LocationTypeS3Compliant),
 			prefix:        prefixValue,
 			region:        regionValue,
 			bucket:        bucketValue,

@@ -23,7 +23,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/kube"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -38,13 +38,13 @@ var _ = Suite(&ZoneSuite{})
 
 func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	ctx := context.Background()
-	node1 := &v1.Node{
+	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-a"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -52,13 +52,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 			},
 		},
 	}
-	node2 := &v1.Node{
+	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-b"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -66,13 +66,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 			},
 		},
 	}
-	node3 := &v1.Node{
+	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -81,13 +81,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 		},
 	}
 	// error nodes
-	node4 := &v1.Node{
+	node4 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "False",
 					Type:   "Ready",
@@ -95,16 +95,16 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 			},
 		},
 	}
-	node5 := &v1.Node{
+	node5 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node5",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
 		},
-		Spec: v1.NodeSpec{
+		Spec: corev1.NodeSpec{
 			Unschedulable: true,
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -129,13 +129,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 
 func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	ctx := context.Background()
-	node1 := &v1.Node{
+	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2a"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -143,13 +143,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 			},
 		},
 	}
-	node2 := &v1.Node{
+	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2b"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -157,13 +157,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 			},
 		},
 	}
-	node3 := &v1.Node{
+	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -172,13 +172,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 		},
 	}
 	// error nodes
-	node4 := &v1.Node{
+	node4 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "False",
 					Type:   "Ready",
@@ -186,16 +186,16 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 			},
 		},
 	}
-	node5 := &v1.Node{
+	node5 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node5",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
 		},
-		Spec: v1.NodeSpec{
+		Spec: corev1.NodeSpec{
 			Unschedulable: true,
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -220,13 +220,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 
 func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	ctx := context.Background()
-	node1 := &v1.Node{
+	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
 			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-1"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -234,13 +234,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 			},
 		},
 	}
-	node2 := &v1.Node{
+	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
 			Labels: map[string]string{kube.TopologyRegionLabelName: "westus2", kube.TopologyZoneLabelName: "westus2-2"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -248,13 +248,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 			},
 		},
 	}
-	node3 := &v1.Node{
+	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
 			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-3"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -263,13 +263,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 	}
 	// non-zonal node (FaultDomain)
-	node4 := &v1.Node{
+	node4 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
 			Labels: map[string]string{kube.FDRegionLabelName: "westus", kube.FDZoneLabelName: "0"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -278,13 +278,13 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 	}
 	// error nodes
-	node5 := &v1.Node{
+	node5 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node5",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-4"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "False",
 					Type:   "Ready",
@@ -292,16 +292,16 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 			},
 		},
 	}
-	node6 := &v1.Node{
+	node6 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node6",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-5"},
 		},
-		Spec: v1.NodeSpec{
+		Spec: corev1.NodeSpec{
 			Unschedulable: true,
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -428,13 +428,13 @@ func (s ZoneSuite) TestSanitizeZones(c *C) {
 func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 	ctx := context.Background()
 	var t = &ebsTest{}
-	node1 := &v1.Node{
+	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2a"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -442,13 +442,13 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 			},
 		},
 	}
-	node2 := &v1.Node{
+	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2b"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -456,13 +456,13 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 			},
 		},
 	}
-	node3 := &v1.Node{
+	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -471,13 +471,13 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 	}
 
-	gceNode1 := &v1.Node{
+	gceNode1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-a"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -486,13 +486,13 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 	}
 
-	gceNode2 := &v1.Node{
+	gceNode2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-b"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -501,13 +501,13 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 	}
 
-	gceNode3 := &v1.Node{
+	gceNode3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -516,13 +516,13 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 	}
 
-	noZonesNode := &v1.Node{
+	noZonesNode := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "noZoneNode",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-east2", kube.FDZoneLabelName: "us-east2-c"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -672,13 +672,13 @@ func (et *ebsTest) FromRegion(ctx context.Context, region string) ([]string, err
 }
 
 func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
-	node1 := &v1.Node{
+	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
 			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-1"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -686,16 +686,16 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 			},
 		},
 	}
-	node2 := &v1.Node{
+	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
 			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-2"},
 		},
-		Spec: v1.NodeSpec{
+		Spec: corev1.NodeSpec{
 			Unschedulable: true,
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "True",
 					Type:   "Ready",
@@ -703,13 +703,13 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 			},
 		},
 	}
-	node3 := &v1.Node{
+	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
 			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-3"},
 		},
-		Status: v1.NodeStatus{
-			Conditions: []v1.NodeCondition{
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
 				{
 					Status: "False",
 					Type:   "Ready",
@@ -722,7 +722,7 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(nl), Equals, 1)
 
-	node1.Spec = v1.NodeSpec{
+	node1.Spec = corev1.NodeSpec{
 		Unschedulable: true,
 	}
 	cli = fake.NewSimpleClientset(node1, node2, node3)

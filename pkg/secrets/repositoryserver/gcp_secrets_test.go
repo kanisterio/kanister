@@ -17,7 +17,7 @@ package repositoryserver
 import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -34,8 +34,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *C) {
 		expectedError error
 	}{
 		{ // Valid GCP Secret
-			secret: NewGCPLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypeGCS),
+			secret: NewGCPLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypeGCS),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -48,8 +48,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *C) {
 			errChecker: IsNil,
 		},
 		{ // Missing required field - Bucket Key
-			secret: NewGCPLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypeGCS),
+			secret: NewGCPLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypeGCS),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -62,8 +62,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *C) {
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
 		},
 		{ // Empty Secret
-			secret: NewGCPLocation(&v1.Secret{
-				Type: v1.SecretType(LocTypeGCS),
+			secret: NewGCPLocation(&corev1.Secret{
+				Type: corev1.SecretType(LocTypeGCS),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",

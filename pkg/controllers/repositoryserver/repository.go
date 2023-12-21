@@ -15,7 +15,7 @@
 package repositoryserver
 
 import (
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
@@ -51,8 +51,8 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 	)
 }
 
-func (h *RepoServerHandler) getRepositoryConfiguration() v1alpha1.Configuration {
-	configuration := v1alpha1.Configuration{
+func (h *RepoServerHandler) getRepositoryConfiguration() crv1alpha1.Configuration {
+	configuration := crv1alpha1.Configuration{
 		ConfigFilePath: command.DefaultConfigFilePath,
 		LogDirectory:   command.DefaultLogDirectory,
 		CacheDirectory: command.DefaultCacheDirectory,
@@ -70,9 +70,9 @@ func (h *RepoServerHandler) getRepositoryConfiguration() v1alpha1.Configuration 
 	return configuration
 }
 
-func (h *RepoServerHandler) getRepositoryCacheSettings() v1alpha1.CacheSizeSettings {
+func (h *RepoServerHandler) getRepositoryCacheSettings() crv1alpha1.CacheSizeSettings {
 	defaultContentCacheMB, defaultMetadataCacheMB := command.GetGeneralCacheSizeSettings()
-	cacheSizeSettings := v1alpha1.CacheSizeSettings{
+	cacheSizeSettings := crv1alpha1.CacheSizeSettings{
 		Metadata: &defaultMetadataCacheMB,
 		Content:  &defaultContentCacheMB,
 	}
