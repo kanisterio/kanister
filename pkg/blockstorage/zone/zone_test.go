@@ -562,14 +562,14 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 			inZones:  []string{"us-west-2a"},
 			inCli:    nil,
 			outZones: nil,
-			outErr:   fmt.Errorf(".*Unable to find valid availabilty zones for region.*"),
+			outErr:   fmt.Errorf(".*Unable to find valid availability zones for region.*"),
 		},
 		{ // Kubernetes provided zones are invalid use valid sourceZones
 			inRegion: "us-west-2",
 			inZones:  []string{"us-west-2a", "us-west-2b", "us-west-2d"},
 			inCli:    nil,
 			outZones: []string{"us-west-2a", "us-west-2b"},
-			outErr:   fmt.Errorf(".*Unable to find valid availabilty zones for region.*"),
+			outErr:   fmt.Errorf(".*Unable to find valid availability zones for region.*"),
 		},
 		{ // Source zone not found but other valid zones available
 			inRegion: "us-west-2",
