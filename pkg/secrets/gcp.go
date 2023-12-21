@@ -27,7 +27,7 @@ const (
 	// GCPServiceKey is the config map key for gcp service key data
 	GCPServiceKey string = "gcp_service_key"
 	// GCPServerAccountJsonKey is the key for gcp service account json
-	GCPServiceAccountJsonKey string = "service-account.json"
+	GCPServiceAccountJSONKey string = "service-account.json"
 
 	// GCPSecretType represents the secret type for GCP credentials.
 	GCPSecretType string = "secrets.kanister.io/gcp"
@@ -38,7 +38,7 @@ const (
 func ValidateGCPCredentials(secret *corev1.Secret) error {
 	// Required fields for the secret are
 	// - GCPProjectID
-	// - GCPServiceAccountJsonKey
+	// - GCPServiceAccountJSONKey
 	if secret == nil {
 		return errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
@@ -51,8 +51,8 @@ func ValidateGCPCredentials(secret *corev1.Secret) error {
 	if _, ok := secret.Data[GCPProjectID]; !ok {
 		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, secret.Namespace, secret.Name)
 	}
-	if _, ok := secret.Data[GCPServiceAccountJsonKey]; !ok {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceAccountJsonKey, secret.Namespace, secret.Name)
+	if _, ok := secret.Data[GCPServiceAccountJSONKey]; !ok {
+		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceAccountJSONKey, secret.Namespace, secret.Name)
 	}
 	return nil
 }

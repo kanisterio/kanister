@@ -89,16 +89,16 @@ func printResult(mv []vulnerabilityReport) {
 func main() {
 	validSeverityLevels := []string{"Negliable", "Low", "Medium", "High", "Critical"}
 	severityInputList := flag.String("s", "High,Critical", "Comma separated list of severity levels to scan. Valid severity levels are: "+strings.Join(validSeverityLevels, ","))
-	reportJsonFilePath := flag.String("p", "", "Path to the JSON file containing the vulnerabilities report")
+	reportJSONFilePath := flag.String("p", "", "Path to the JSON file containing the vulnerabilities report")
 	flag.Parse()
 
 	// passing file path is compulsory
-	if *reportJsonFilePath == "" {
+	if *reportJSONFilePath == "" {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 	severityLevels := strings.Split(*severityInputList, ",")
-	mv, err := parseVulerabilitiesReport(*reportJsonFilePath, severityLevels)
+	mv, err := parseVulerabilitiesReport(*reportJSONFilePath, severityLevels)
 	if err != nil {
 		fmt.Printf("Failed to parse vulnerabilities report: %v\n", err)
 		os.Exit(1)

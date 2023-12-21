@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var validateErr = fmt.Errorf("Validation Failed")
+var errValidate = fmt.Errorf("Validation Failed")
 
 func errorf(err error, format string, args ...interface{}) error {
 	return errors.Wrapf(err, format, args...)
@@ -28,5 +28,5 @@ func errorf(err error, format string, args ...interface{}) error {
 
 // IsError returns true iff the underlying cause was a validation error.
 func IsError(err error) bool {
-	return errors.Cause(err) == validateErr
+	return errors.Cause(err) == errValidate
 }

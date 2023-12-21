@@ -39,7 +39,7 @@ func (s *ErrorSuite) TestIsError(c *C) {
 			is:  false,
 		},
 		{
-			err: validateErr,
+			err: errValidate,
 			is:  true,
 		},
 		{
@@ -51,11 +51,11 @@ func (s *ErrorSuite) TestIsError(c *C) {
 			is:  false,
 		},
 		{
-			err: errors.Wrap(validateErr, "test"),
+			err: errors.Wrap(errValidate, "test"),
 			is:  true,
 		},
 		{
-			err: errors.WithStack(validateErr),
+			err: errors.WithStack(errValidate),
 			is:  true,
 		},
 		{

@@ -34,7 +34,7 @@ const (
 	AWSSecretAccessKey  = "AWS_SECRET_ACCESS_KEY"
 	AWSSessionToken     = "AWS_SESSION_TOKEN"
 	GoogleCloudCreds    = "GOOGLE_APPLICATION_CREDENTIALS"
-	GoogleProjectId     = "GOOGLE_PROJECT_ID"
+	GoogleProjectID     = "GOOGLE_PROJECT_ID"
 	AzureStorageAccount = "AZURE_ACCOUNT_NAME"
 	AzureStorageKey     = "AZURE_ACCOUNT_KEY"
 

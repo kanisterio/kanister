@@ -875,9 +875,9 @@ func (s *PodSuite) TestSetPodSecurityContext(c *C) {
 	c.Assert(err, IsNil)
 	runAsNonRootExpected := true
 	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
-	var uidAndGidExpected int64 = 1000
-	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
-	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+	var uidAndGIDExpected int64 = 1000
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGIDExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGIDExpected)
 }
 
 func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
@@ -904,9 +904,9 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 	c.Assert(err, IsNil)
 	runAsNonRootExpected := true
 	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
-	var uidAndGidExpected int64 = 1000
-	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
-	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+	var uidAndGIDExpected int64 = 1000
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGIDExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGIDExpected)
 }
 
 func (s *PodSuite) TestSetLifecycleHook(c *C) {

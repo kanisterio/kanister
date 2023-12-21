@@ -156,7 +156,7 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 
 type RepositoryStatusCommandArgs struct {
 	*CommandArgs
-	GetJsonOutput bool
+	GetJsonOutput bool //nolint:stylecheck // Validate workflows before enabling stylecheck
 }
 
 // RepositoryStatusCommand returns the kopia command for checking status of the Kopia repository

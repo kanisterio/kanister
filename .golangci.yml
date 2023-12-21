@@ -27,6 +27,7 @@ linters:
     - gci
     - goprintffuncname
     - nolintlint
+    - stylecheck
 
 run:
   timeout: 10m                          # golangci-lint run's timeout.
@@ -44,6 +45,7 @@ issues:
         - dupl
         - misspell
         - nestif
+        - stylecheck
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
@@ -74,3 +76,5 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/kanisterio/kanister)
+  stylecheck:
+    checks: [ "all", "-ST1001", "-ST1005", "-ST1016", "-ST1023" ]

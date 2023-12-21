@@ -27,26 +27,26 @@ type metrics struct {
 }
 
 const (
-	ACTION_SET_COUNTER_VEC_LABEL_RES         = "resolution"
-	ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS = "success"
-	ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE = "failure"
+	ACTION_SET_COUNTER_VEC_LABEL_RES         = "resolution" //nolint:stylecheck // Already defined in docs
+	ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS = "success"    //nolint:stylecheck // Already defined in docs
+	ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE = "failure"    //nolint:stylecheck // Already defined in docs
 )
 
 const (
-	ACTION_TYPE_BACKUP              = "backup"
-	ACTION_TYPE_RESTORE             = "restore"
-	ACTION_TYPE_DELETE              = "delete"
-	ACTION_TYPE_BACKUP_TO_SERVER    = "backupToServer"
-	ACTION_TYPE_RESTORE_FROM_SERVER = "restoreFromServer"
-	ACTION_TYPE_BEFORE_BACKUP       = "before-backup"
-	ACTION_TYPE_ON_SUCCESS          = "on-success"
-	ACTION_TYPE_ON_FAILURE          = "on-failure"
-	ACTION_TYPE_PRE_RESTORE         = "pre-restore"
-	ACTION_TYPE_POST_RESTORE        = "post-restore"
-	ACTION_TYPE_POST_RESTORE_FAILED = "post-restore-failed"
-	ACTION_TYPE_BACKUP_PREHOOK      = "backupPrehook"
-	ACTION_TYPE_BACKUP_POSTHOOK     = "backupPosthook"
-	ACTION_TYPE_BACKUP_OTHER        = "other"
+	ACTION_TYPE_BACKUP              = "backup"              //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_RESTORE             = "restore"             //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_DELETE              = "delete"              //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_BACKUP_TO_SERVER    = "backupToServer"      //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_RESTORE_FROM_SERVER = "restoreFromServer"   //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_BEFORE_BACKUP       = "before-backup"       //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_ON_SUCCESS          = "on-success"          //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_ON_FAILURE          = "on-failure"          //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_PRE_RESTORE         = "pre-restore"         //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_POST_RESTORE        = "post-restore"        //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_POST_RESTORE_FAILED = "post-restore-failed" //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_BACKUP_PREHOOK      = "backupPrehook"       //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_BACKUP_POSTHOOK     = "backupPosthook"      //nolint:stylecheck // Already defined in docs
+	ACTION_TYPE_BACKUP_OTHER        = "other"               //nolint:stylecheck // Already defined in docs
 )
 
 var knownActionsList = map[string]bool{
