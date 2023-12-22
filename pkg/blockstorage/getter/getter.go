@@ -34,7 +34,7 @@ var _ Getter = (*getter)(nil)
 
 type getter struct{}
 
-// New retuns a new Getter
+// New returns a new Getter
 func New() Getter {
 	return &getter{}
 }

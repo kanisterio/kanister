@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -46,15 +46,15 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	targetVolID := "testVolID"
 	annotations := map[string]string{"a1": "foo"}
 	cli := fake.NewSimpleClientset()
-	pvcName, err := CreatePVC(ctx, cli, ns, NoPVCNameSpecified, pvcSize, targetVolID, annotations, []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}, nil)
+	pvcName, err := CreatePVC(ctx, cli, ns, NoPVCNameSpecified, pvcSize, targetVolID, annotations, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, nil)
 	c.Assert(err, IsNil)
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, pvcName, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	c.Assert(len(pvc.Spec.AccessModes) >= 1, Equals, true)
 	accessMode := pvc.Spec.AccessModes[0]
-	c.Assert(accessMode, Equals, v1.ReadWriteOnce)
-	capacity, ok := pvc.Spec.Resources.Requests[v1.ResourceStorage]
+	c.Assert(accessMode, Equals, corev1.ReadWriteOnce)
+	capacity, ok := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 	c.Assert(ok, Equals, true)
 	c.Assert(capacity.Value() >= int64(pvcSize), Equals, true)
 	eq := reflect.DeepEqual(annotations, pvc.ObjectMeta.Annotations)
@@ -63,13 +63,13 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	label := pvc.Spec.Selector.MatchLabels[pvMatchLabelName]
 	c.Assert(label, Equals, filepath.Base(targetVolID))
 
-	volumeMode := v1.PersistentVolumeBlock
+	volumeMode := corev1.PersistentVolumeBlock
 	_, err = CreatePVC(ctx, cli, ns, "pvc2", pvcSize, targetVolID, annotations, nil, &volumeMode)
 	c.Assert(err, IsNil)
 	pvc2, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc2", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(len(pvc2.Spec.AccessModes) >= 1, Equals, true)
-	c.Assert(*pvc2.Spec.VolumeMode, Equals, v1.PersistentVolumeBlock)
+	c.Assert(*pvc2.Spec.VolumeMode, Equals, corev1.PersistentVolumeBlock)
 	c.Assert(pvc2.GetAnnotations(), NotNil)
 	c.Assert(pvc2.GetAnnotations()["a1"], Equals, "foo")
 }

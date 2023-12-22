@@ -20,7 +20,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -43,7 +43,7 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	s.cli = cli
 
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterkubetasktest-",
 		},
@@ -71,7 +71,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.101.0",
+				"kando output version 0.103.0",
 			},
 		},
 	}
@@ -144,7 +144,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				{
-					"version": "0.101.0",
+					"version": "0.103.0",
 				},
 				{},
 				{},

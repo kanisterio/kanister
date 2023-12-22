@@ -57,7 +57,7 @@ type PodController interface {
 
 // podController keeps Kubernetes Client and PodOptions needed for creating a Pod.
 // It implements the PodControllerProcessor interface.
-// All communication with kubernetes API are done via PodControllerProcessor interface, which could be overriden for testing purposes.
+// All communication with kubernetes API are done via PodControllerProcessor interface, which could be overridden for testing purposes.
 type podController struct {
 	cli        kubernetes.Interface
 	podOptions *PodOptions

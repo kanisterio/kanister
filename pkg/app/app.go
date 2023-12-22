@@ -23,7 +23,7 @@ import (
 
 // App represents an application we can install into a namespace.
 type App interface {
-	// Init instantiates the app based on the environemnt configuration,
+	// Init instantiates the app based on the environment configuration,
 	// including environement variables and state in the Kubernetes cluster. If
 	// any required configuration is not discoverable, Init will return an
 	// error.
@@ -48,7 +48,7 @@ type App interface {
 type DatabaseApp interface {
 	App
 	// Ping will issue trivial request to the database to see if it is
-	// accessable.
+	// accessible.
 	Ping(context.Context) error
 	// Insert adds n entries to the database.
 	Insert(ctx context.Context) error

@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
 // maximum concurrent reconcilations that can be triggered by the controller
@@ -76,16 +76,16 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, errors.Wrap(err, "Failed to get a k8s client")
 	}
 
-	repositoryServer := &crkanisteriov1alpha1.RepositoryServer{}
+	repositoryServer := &crv1alpha1.RepositoryServer{}
 	if err = r.Get(ctx, req.NamespacedName, repositoryServer); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	repositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
+	repositoryServer.Status.Progress = crv1alpha1.Pending
 
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
 	repoServerHandler.RepositoryServer = repositoryServer
-	repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.Pending
+	repoServerHandler.RepositoryServer.Status.Progress = crv1alpha1.Pending
 	repoServerHandler.RepositoryServer.Status.Conditions = nil
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
@@ -93,33 +93,33 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("Create or update owned resources by Repository Server CR")
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
-		condition := getCondition(metav1.ConditionFalse, conditionReasonServerSetupErr, err.Error(), crkanisteriov1alpha1.ServerSetup)
-		if uerr := repoServerHandler.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonServerSetupErr, err.Error(), crv1alpha1.ServerSetup)
+		if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
-	condition := getCondition(metav1.ConditionTrue, conditionReasonServerSetupSuccess, "", crkanisteriov1alpha1.ServerSetup)
-	if uerr := repoServerHandler.setCondition(ctx, condition, crkanisteriov1alpha1.Pending); uerr != nil {
+	condition := getCondition(metav1.ConditionTrue, conditionReasonServerSetupSuccess, "", crv1alpha1.ServerSetup)
+	if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Pending); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
 	logger.Info("Connect to Kopia Repository")
 	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
-		condition := getCondition(metav1.ConditionFalse, conditionReasonRepositoryConnectedErr, err.Error(), crkanisteriov1alpha1.RepositoryConnected)
-		if uerr := repoServerHandler.setCondition(ctx, condition, crkanisteriov1alpha1.Failed); uerr != nil {
+		condition := getCondition(metav1.ConditionFalse, conditionReasonRepositoryConnectedErr, err.Error(), crv1alpha1.RepositoryConnected)
+		if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr
 		}
 		return ctrl.Result{}, err
 	}
 
-	condition = getCondition(metav1.ConditionTrue, conditionReasonRepositoryConnectedSuccess, "", crkanisteriov1alpha1.RepositoryConnected)
-	if uerr := repoServerHandler.setCondition(ctx, condition, crkanisteriov1alpha1.Pending); uerr != nil {
+	condition = getCondition(metav1.ConditionTrue, conditionReasonRepositoryConnectedSuccess, "", crv1alpha1.RepositoryConnected)
+	if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Pending); uerr != nil {
 		return ctrl.Result{}, uerr
 	}
 
-	if result, err := repoServerHandler.setupKopiaRepositoryServer(ctx, logger); err != nil {
-		return result, err
+	if err := repoServerHandler.setupKopiaRepositoryServer(ctx, logger); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
@@ -131,7 +131,7 @@ func newRepositoryServerHandler(
 	logger logr.Logger,
 	reconciler *RepositoryServerReconciler,
 	kubeCli kubernetes.Interface,
-	repositoryServer *crkanisteriov1alpha1.RepositoryServer) RepoServerHandler {
+	repositoryServer *crv1alpha1.RepositoryServer) RepoServerHandler {
 	return RepoServerHandler{
 		Req:              req,
 		Logger:           logger,
@@ -150,7 +150,7 @@ func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// child resources and run the same reconcile loop for all events on child resources
 	r.Recorder = mgr.GetEventRecorderFor("RepositoryServer")
 	return ctrl.NewControllerManagedBy(mgr).WithOptions(opts).
-		For(&crkanisteriov1alpha1.RepositoryServer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(&crv1alpha1.RepositoryServer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&corev1.Service{}).
 		Owns(&networkingv1.NetworkPolicy{}).
 		Owns(&corev1.Pod{}).
