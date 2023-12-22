@@ -26,9 +26,8 @@ import (
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	scv1 "k8s.io/api/storage/v1"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -364,6 +363,192 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 	}
 }
 
+func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *C) {
+	snapshotNameBase := "snap-1-fake"
+	volName := "pvc-1-fake"
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+
+	fakeCli := fake.NewSimpleClientset()
+
+	size, err := resource.ParseQuantity("1Gi")
+	c.Assert(err, IsNil)
+
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: volName,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: size,
+				},
+			},
+		},
+	}
+	_, err = fakeCli.CoreV1().PersistentVolumeClaims(defaultNamespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	dynCli := dynfake.NewSimpleDynamicClient(scheme)
+
+	for _, fakeSs := range []snapshot.Snapshotter{
+		snapshot.NewSnapshotAlpha(fakeCli, dynCli),
+		snapshot.NewSnapshotBeta(fakeCli, dynCli),
+		snapshot.NewSnapshotStable(fakeCli, dynCli),
+	} {
+		ctx := context.Background()
+
+		var volumeSnapshotGVR schema.GroupVersionResource
+		var snapshotName string
+		switch fakeSs.(type) {
+		case *snapshot.SnapshotAlpha:
+			volumeSnapshotGVR = v1alpha1.VolSnapGVR
+			snapshotName = snapshotNameBase + "-alpha"
+		case *snapshot.SnapshotBeta:
+			volumeSnapshotGVR = v1beta1.VolSnapGVR
+			snapshotName = snapshotNameBase + "-beta"
+		case *snapshot.SnapshotStable:
+			volumeSnapshotGVR = snapshot.VolSnapGVR
+			snapshotName = snapshotNameBase + "-stable"
+		}
+
+		err = fakeSs.Create(ctx, snapshotName, defaultNamespace, volName, &fakeClass, false, nil)
+		c.Assert(err, IsNil)
+
+		// This function should timeout
+		timeout := 500 * time.Millisecond
+		bgTimeout := 5 * time.Second
+		// We don't have readyToUse and no error, waiting indefinitely
+		err = waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, defaultNamespace, timeout)
+		c.Assert(err, NotNil)
+		c.Assert(err.Error(), Matches, ".*context deadline exceeded*")
+
+		reply := waitOnReadyToUseInBackground(c, ctx, fakeSs, snapshotName, defaultNamespace, bgTimeout)
+		setReadyStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace)
+		select {
+		case err = <-reply:
+			c.Assert(err, IsNil)
+		case <-time.After(2 * time.Second):
+			c.Error("timeout waiting on ready to use")
+		}
+
+		setVolumeSnapshotStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, nil)
+
+		// Set non-transient error
+		message := "some error"
+		setErrorStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, message)
+
+		// If there is non-transient error, exit right away
+		err = waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, defaultNamespace, timeout)
+		c.Assert(err, NotNil)
+		c.Assert(err.Error(), Matches, ".*some error.*")
+
+		// Set transient error
+		message = "the object has been modified; please apply your changes to the latest version and try again"
+		setErrorStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, message)
+
+		// If there is a transient error, wait with exp backoff which is long
+		err = waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, defaultNamespace, timeout)
+		c.Assert(err, NotNil)
+		c.Assert(err.Error(), Matches, ".*context deadline exceeded*")
+
+		reply = waitOnReadyToUseInBackground(c, ctx, fakeSs, snapshotName, defaultNamespace, bgTimeout)
+		setReadyStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace)
+		select {
+		case err = <-reply:
+			c.Assert(err, IsNil)
+		case <-time.After(2 * time.Second):
+			c.Error("timeout waiting on ready to use")
+		}
+	}
+}
+
+// Helpers to work with volume snapshot status used in TestWaitOnReadyToUse
+// ----------------------------------------------------------------------------
+
+func waitOnReadyToUseInBackground(
+	c *C,
+	ctx context.Context,
+	fakeSs snapshot.Snapshotter,
+	snapshotName string,
+	namespace string,
+	timeout time.Duration,
+) chan error {
+	reply := make(chan error)
+	go func() {
+		err := waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, namespace, timeout)
+		reply <- err
+	}()
+	return reply
+}
+
+func waitOnReadyToUseWithTimeout(
+	c *C,
+	ctx context.Context,
+	fakeSs snapshot.Snapshotter,
+	snapshotName string,
+	namespace string,
+	timeout time.Duration,
+) error {
+	deadline := time.Now().Add(timeout)
+	deadlineCtx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
+	err := fakeSs.WaitOnReadyToUse(deadlineCtx, snapshotName, defaultNamespace)
+	return err
+}
+
+func setReadyStatus(
+	c *C,
+	dynCli *dynfake.FakeDynamicClient,
+	volumeSnapshotGVR schema.GroupVersionResource,
+	snapshotName string,
+	namespace string,
+) {
+	status := make(map[string]interface{})
+	status["readyToUse"] = true
+	status["creationTime"] = time.Now().Format(time.RFC3339)
+
+	setVolumeSnapshotStatus(c, dynCli, volumeSnapshotGVR, snapshotName, namespace, status)
+}
+
+func setErrorStatus(
+	c *C,
+	dynCli *dynfake.FakeDynamicClient,
+	volumeSnapshotGVR schema.GroupVersionResource,
+	snapshotName string,
+	namespace string,
+	message string,
+) {
+	status := make(map[string]interface{})
+	status["Error"] = map[string]interface{}{
+		"Message": message,
+	}
+	setVolumeSnapshotStatus(c, dynCli, volumeSnapshotGVR, snapshotName, namespace, status)
+}
+
+func setVolumeSnapshotStatus(
+	c *C,
+	dynCli *dynfake.FakeDynamicClient,
+	volumeSnapshotGVR schema.GroupVersionResource,
+	snapshotName string,
+	namespace string,
+	status map[string]interface{},
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	us, err := dynCli.Resource(volumeSnapshotGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	us.Object["status"] = status
+	_, err = dynCli.Resource(volumeSnapshotGVR).Namespace(namespace).UpdateStatus(ctx, us, metav1.UpdateOptions{})
+	c.Assert(err, IsNil)
+}
+
+// ----------------------------------------------------------------------------
+
 func (s *SnapshotTestSuite) TestVolumeSnapshotAlpha(c *C) {
 	if s.snapshotClassAlpha == nil {
 		c.Skip("No v1alpha1 Volumesnapshotclass in the cluster")
@@ -604,7 +789,8 @@ func (s *SnapshotTestSuite) TestNewSnapshotter(c *C) {
 			check:    IsNil,
 		},
 	} {
-		fakeCli.Resources = []*metav1.APIResourceList{&tc.apiResources}
+		apiRes := tc.apiResources
+		fakeCli.Resources = []*metav1.APIResourceList{&apiRes}
 		ss, err := snapshot.NewSnapshotter(fakeCli, nil)
 		c.Assert(err, tc.check)
 		c.Assert(reflect.TypeOf(ss).String(), Equals, tc.expected)
@@ -887,7 +1073,7 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 func findSnapshotClassName(c *C, ctx context.Context, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
 	// Find alpha VolumeSnapshotClass name
 	us, err := dynCli.Resource(gvr).List(ctx, metav1.ListOptions{})
-	if err != nil && !k8errors.IsNotFound(err) {
+	if err != nil && !apierrors.IsNotFound(err) {
 		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 		c.Fail()
 	}
@@ -1273,8 +1459,8 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 	}
 }
 
-func fakePVC(name, namespace string) *v1.PersistentVolumeClaim {
-	return &v1.PersistentVolumeClaim{
+func fakePVC(name, namespace string) *corev1.PersistentVolumeClaim {
+	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,

@@ -26,7 +26,7 @@ import (
 	"github.com/Masterminds/sprig"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -61,7 +61,7 @@ func (s *ParamsSuite) SetUpSuite(c *C) {
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.cli = cli
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterparamstest-",
 		},
@@ -73,15 +73,15 @@ func (s *ParamsSuite) SetUpSuite(c *C) {
 }
 
 func (s *ParamsSuite) SetUpTest(c *C) {
-	pvc := &v1.PersistentVolumeClaim{
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterparamtest-",
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("1Gi"),
 				},
 			},
 		},
@@ -359,7 +359,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	c.Assert(err, IsNil)
 	c.Assert(cm, NotNil)
 
-	secret := &v1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-name",
 			Namespace: s.namespace,
@@ -464,19 +464,19 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
 	ctx := context.Background()
 	for _, tc := range []struct {
-		secret  *v1.Secret
+		secret  *corev1.Secret
 		kvs     *crv1alpha1.KeyPair
 		checker Checker
 		cred    *Credential
 	}{
 		{
-			secret:  &v1.Secret{},
+			secret:  &corev1.Secret{},
 			kvs:     &crv1alpha1.KeyPair{},
 			cred:    nil,
 			checker: NotNil,
 		},
 		{
-			secret: &v1.Secret{
+			secret: &corev1.Secret{
 				Data: map[string][]byte{
 					"myKey":   []byte("foo"),
 					"myValue": []byte("bar"),
@@ -512,14 +512,14 @@ func (s *ParamsSuite) TestProfile(c *C) {
 			Labels:    map[string]string{"app": "fake-app"},
 		},
 	}
-	pod := &v1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "podName",
 			Namespace: s.namespace,
 			Labels:    map[string]string{"app": "fake-app"},
 		},
 	}
-	secret := &v1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secretName",
 			Namespace: s.namespace,
@@ -608,7 +608,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 
 func (s *ParamsSuite) TestParamsWithoutProfile(c *C) {
 	ctx := context.Background()
-	secret := &v1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-name",
 			Namespace: s.namespace,
@@ -653,7 +653,7 @@ func (s *ParamsSuite) TestParamsWithoutProfile(c *C) {
 
 func (s *ParamsSuite) TestPhaseParams(c *C) {
 	ctx := context.Background()
-	secret := &v1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-name",
 			Namespace: s.namespace,
@@ -733,7 +733,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 
 func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
 	ctx := context.Background()
-	secret := &v1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-dfss",
 			Namespace: "ns1",
@@ -791,14 +791,14 @@ func newDeploymentConfig() *osapps.DeploymentConfig {
 			Selector: map[string]string{
 				"app": "test",
 			},
-			Template: &v1.PodTemplateSpec{
+			Template: &corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"app": "test",
 					},
 				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Image:   "alpine",
 							Name:    "container",

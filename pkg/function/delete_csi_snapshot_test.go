@@ -18,7 +18,7 @@ import (
 	"context"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -81,23 +81,23 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		fakeCli := fake.NewSimpleClientset()
 		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
 
-		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
+		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
 		scheme := runtime.NewScheme()
 		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
 		c.Assert(err, IsNil)
 
-		originalPVC := &v1.PersistentVolumeClaim{
+		originalPVC := &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: testSuite.pvcName,
 			},
-			Spec: v1.PersistentVolumeClaimSpec{
+			Spec: corev1.PersistentVolumeClaimSpec{
 				StorageClassName: &testSuite.storageClass,
-				AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-				Resources: v1.ResourceRequirements{
-					Requests: v1.ResourceList{
-						v1.ResourceStorage: resource.MustParse("1Gi"),
+				AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceStorage: resource.MustParse("1Gi"),
 					},
 				},
 			},

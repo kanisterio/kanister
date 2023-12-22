@@ -37,6 +37,7 @@ const (
 	typeKey       = "type"
 	snapshotValue = "snapshot"
 
+	//nolint:lll
 	snapshotCreateOutputRegEx       = `(?P<spinner>[|/\-\\\*]).+[^\d](?P<numHashed>\d+) hashed \((?P<hashedSize>[^\)]+)\), (?P<numCached>\d+) cached \((?P<cachedSize>[^\)]+)\), uploaded (?P<uploadedSize>[^\)]+), (?:estimating...|estimated (?P<estimatedSize>[^\)]+) \((?P<estimatedProgress>[^\)]+)\%\).+)`
 	extractSnapshotIDRegEx          = `Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`
 	repoTotalSizeFromBlobStatsRegEx = `Total: (\d+)$`
@@ -57,7 +58,7 @@ func SnapshotIDsFromSnapshot(output string) (snapID, rootID string, err error) {
 		if len(match) > 0 && len(match[0]) > 2 {
 			snapID = match[0][2]
 			rootID = match[0][1]
-			return
+			return snapID, rootID, nil
 		}
 	}
 	return snapID, rootID, errors.New("Failed to find Root ID from output")

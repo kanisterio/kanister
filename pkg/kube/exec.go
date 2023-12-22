@@ -17,18 +17,53 @@ package kube
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/url"
 	"strings"
 
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
+
+// ExecError is an error returned by kube.Exec, kube.ExecOutput and kube.ExecWithOptions.
+// It contains not only error happened during an execution, but also keeps tails of stdout/stderr streams.
+// These tails could be used by the invoker to construct more precise error.
+type ExecError struct {
+	error
+	stdout LogTail
+	stderr LogTail
+}
+
+// NewExecError creates an instance of ExecError
+func NewExecError(err error, stdout, stderr LogTail) *ExecError {
+	return &ExecError{
+		error:  err,
+		stdout: stdout,
+		stderr: stderr,
+	}
+}
+
+func (e *ExecError) Error() string {
+	return fmt.Sprintf("%s.\nstdout: %s\nstderr: %s", e.error.Error(), e.Stdout(), e.Stderr())
+}
+
+func (e *ExecError) Unwrap() error {
+	return e.error
+}
+
+func (e *ExecError) Stdout() string {
+	return e.stdout.ToString()
+}
+
+func (e *ExecError) Stderr() string {
+	return e.stderr.ToString()
+}
 
 // ExecOptions passed to ExecWithOptions
 type ExecOptions struct {
@@ -118,12 +153,25 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 		req.Param("container", options.ContainerName)
 	}
 
-	req.VersionedParams(&v1.PodExecOptions{
+	stderrTail := NewLogTail(logTailDefaultLength)
+	stdoutTail := NewLogTail(logTailDefaultLength)
+
+	var stdout io.Writer = stdoutTail
+	if options.Stdout != nil {
+		stdout = io.MultiWriter(options.Stdout, stdoutTail)
+	}
+
+	var stderr io.Writer = stderrTail
+	if options.Stderr != nil {
+		stderr = io.MultiWriter(options.Stderr, stderrTail)
+	}
+
+	req.VersionedParams(&corev1.PodExecOptions{
 		Container: options.ContainerName,
 		Command:   options.Command,
 		Stdin:     options.Stdin != nil,
-		Stdout:    options.Stdout != nil,
-		Stderr:    options.Stderr != nil,
+		Stdout:    stdout != nil,
+		Stderr:    stderr != nil,
 		TTY:       tty,
 	}, scheme.ParameterCodec)
 
@@ -134,9 +182,14 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 			req.URL(),
 			config,
 			options.Stdin,
-			options.Stdout,
-			options.Stderr,
+			stdout,
+			stderr,
 			tty)
+
+		if err != nil {
+			err = NewExecError(err, stdoutTail, stderrTail)
+		}
+
 		errCh <- err
 	}()
 

@@ -19,7 +19,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/config"
@@ -31,13 +31,13 @@ var _ = Suite(&AWSSecretSuite{})
 
 func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 	tcs := []struct {
-		secret     *v1.Secret
+		secret     *corev1.Secret
 		expected   *credentials.Value
 		errChecker Checker
 	}{
 		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AWSSecretType),
 				Data: map[string][]byte{
 					AWSAccessKeyID:     []byte("key_id"),
 					AWSSecretAccessKey: []byte("secret_key"),
@@ -51,15 +51,15 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 			errChecker: IsNil,
 		},
 		{
-			secret: &v1.Secret{
+			secret: &corev1.Secret{
 				Type: "Opaque",
 			},
 			expected:   nil,
 			errChecker: NotNil,
 		},
 		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AWSSecretType),
 				Data: map[string][]byte{
 					AWSSecretAccessKey: []byte("secret_key"),
 				},
@@ -68,8 +68,8 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 			errChecker: NotNil,
 		},
 		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AWSSecretType),
 				Data: map[string][]byte{
 					AWSAccessKeyID: []byte("key_id"),
 				},
@@ -78,8 +78,8 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 			errChecker: NotNil,
 		},
 		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AWSSecretType),
 				Data: map[string][]byte{
 					AWSAccessKeyID:     []byte("key_id"),
 					AWSSecretAccessKey: []byte("secret_key"),
@@ -99,12 +99,12 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 
 func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *C) {
 	for _, tc := range []struct {
-		secret *v1.Secret
+		secret *corev1.Secret
 		output Checker
 	}{
 		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AWSSecretType),
 				Data: map[string][]byte{
 					AWSAccessKeyID:     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
 					AWSSecretAccessKey: []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
@@ -114,8 +114,8 @@ func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *C) {
 			output: IsNil,
 		},
 		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AWSSecretType),
 				Data: map[string][]byte{
 					AWSAccessKeyID:     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
 					AWSSecretAccessKey: []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
