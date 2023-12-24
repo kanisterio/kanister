@@ -1,6 +1,8 @@
 FROM golang:1.21-bullseye
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
+ARG TARGETPLATFORM
+
 RUN apt-get update && apt-get -y install apt-transport-https ca-certificates bash git gnupg2 software-properties-common curl jq wget \
     && update-ca-certificates
 
@@ -18,8 +20,8 @@ COPY --from=alpine/helm:3.12.2 /usr/bin/helm /usr/local/bin/
 
 COPY --from=golangci/golangci-lint:v1.51.2 /usr/bin/golangci-lint /usr/local/bin/
 
-RUN ARCH=$(uname -m | sed -e 's/aarch64/arm64/') && \
-    wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-linux-${ARCH} \
+RUN wget -O /usr/local/bin/kind \
+      https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -) \
     && chmod +x /usr/local/bin/kind
 
 RUN git config --global --add safe.directory /go/src/github.com/kanisterio/kanister
