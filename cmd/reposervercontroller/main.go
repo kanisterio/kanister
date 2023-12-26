@@ -35,13 +35,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
-
 	//+kubebuilder:scaffold:imports
 )
 
@@ -144,7 +142,7 @@ func main() {
 		if validatingwebhook.IsCACertMounted() {
 			hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir, Port: webhookServerPort}
 			hookServer := webhook.NewServer(hookServerOptions)
-			webhook := admission.WithCustomValidator(mgr.GetScheme(), &v1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
+			webhook := admission.WithCustomValidator(mgr.GetScheme(), &crv1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
 			hookServer.Register(whHandlePath, webhook)
 		}
 	}

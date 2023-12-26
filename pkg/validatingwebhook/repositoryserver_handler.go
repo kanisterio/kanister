@@ -18,11 +18,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
 type RepositoryServerValidator struct{}
@@ -39,8 +40,8 @@ func (r *RepositoryServerValidator) ValidateCreate(ctx context.Context, obj runt
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *RepositoryServerValidator) ValidateUpdate(ctx context.Context, old runtime.Object, new runtime.Object) (admission.Warnings, error) {
-	oldrs, ook := old.(*v1alpha1.RepositoryServer)
-	newrs, nok := new.(*v1alpha1.RepositoryServer)
+	oldrs, ook := old.(*crv1alpha1.RepositoryServer)
+	newrs, nok := new.(*crv1alpha1.RepositoryServer)
 	if !ook || !nok {
 		return nil, errors.New("Either updated object or the old object is not of type RepositoryServer.cr.kanister.io")
 	}
