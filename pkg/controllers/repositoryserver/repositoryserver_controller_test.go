@@ -36,6 +36,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
@@ -47,8 +49,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/testutil"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 const (

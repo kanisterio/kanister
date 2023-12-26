@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	// importing go check to bypass the testing flags
-	"golang.org/x/net/context"
 	_ "gopkg.in/check.v1"
 )
 
@@ -160,8 +159,10 @@ func rawCRDFromFile(path string) ([]byte, error) {
 
 func waitForCRDInit(crcontext Context, resource CustomResource) error {
 	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
-	deadlineCtx, _ := context.WithTimeout(context.TODO(), crcontext.Timeout)
-	return wait.PollUntilContextTimeout(deadlineCtx, crcontext.Interval, crcontext.Timeout, false, func(ctx context.Context) (bool, error) {
+	deadlineCtx, cancel := contextpkg.WithTimeout(contextpkg.TODO(), crcontext.Timeout)
+	defer cancel()
+
+	return wait.PollUntilContextTimeout(deadlineCtx, crcontext.Interval, crcontext.Timeout, false, func(ctx contextpkg.Context) (bool, error) {
 		crd, err := crcontext.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(contextpkg.TODO(), crdName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
