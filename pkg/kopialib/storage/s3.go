@@ -17,6 +17,8 @@ package storage
 import (
 	"context"
 
+	"github.com/kanisterio/kanister/pkg/kopialib"
+	"github.com/kanisterio/kanister/pkg/utils"
 	"github.com/kopia/kopia/repo/blob"
 	"github.com/kopia/kopia/repo/blob/s3"
 )
@@ -26,6 +28,28 @@ type s3Storage struct {
 	Create  bool
 }
 
-func (s s3Storage) GetStorage() (blob.Storage, error) {
+func (s *s3Storage) Connect() (blob.Storage, error) {
 	return s3.New(context.Background(), &s.Options, s.Create)
+}
+
+func (s *s3Storage) WithOptions(opts s3.Options) {
+	s.Options = opts
+}
+
+func (s *s3Storage) WithCreate(create bool) {
+	s.Create = create
+}
+
+func (s *s3Storage) SetOptions(ctx context.Context, options map[string]string) {
+	s.Options = s3.Options{
+		BucketName:      options[kopialib.BucketKey],
+		Endpoint:        options[kopialib.EndpointKey],
+		Prefix:          options[kopialib.PrefixKey],
+		Region:          options[kopialib.RegionKey],
+		SessionToken:    options[kopialib.S3TokenKey],
+		AccessKeyID:     options[kopialib.S3AccessKey],
+		SecretAccessKey: options[kopialib.S3SecretAccessKey],
+	}
+	s.Options.DoNotUseTLS, _ = utils.GetBoolOrDefault(options[kopialib.DoNotUseTLS], true)
+	s.Options.DoNotVerifyTLS, _ = utils.GetBoolOrDefault(options[kopialib.DoNotVerifyTLS], true)
 }

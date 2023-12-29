@@ -17,6 +17,7 @@ package storage
 import (
 	"context"
 
+	"github.com/kanisterio/kanister/pkg/kopialib"
 	"github.com/kopia/kopia/repo/blob"
 	"github.com/kopia/kopia/repo/blob/azure"
 )
@@ -26,6 +27,24 @@ type azureStorage struct {
 	Create  bool
 }
 
-func (a azureStorage) GetStorage() (blob.Storage, error) {
+func (a azureStorage) Connect() (blob.Storage, error) {
 	return azure.New(context.Background(), &a.Options, a.Create)
+}
+
+func (a *azureStorage) WithOptions(opts azure.Options) {
+	a.Options = opts
+}
+
+func (a *azureStorage) WithCreate(create bool) {
+	a.Create = create
+}
+
+func (a *azureStorage) SetOptions(ctx context.Context, options map[string]string) {
+	a.Options = azure.Options{
+		Prefix:         options[kopialib.PrefixKey],
+		Container:      options[kopialib.BucketKey],
+		StorageAccount: options[kopialib.AzureStorageAccount],
+		StorageKey:     options[kopialib.AzureStorageAccountAccessKey],
+		SASToken:       options[kopialib.AzureStorageAccountAccessKey],
+	}
 }
