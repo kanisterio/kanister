@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-const logTailDefaultLength = 10
+const logTailDefaultLength = 1000
 
 // LogTail interface allows to store last N lines of log written to it
 type LogTail interface {
