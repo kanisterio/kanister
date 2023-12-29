@@ -28,13 +28,13 @@ const (
 	TypeFileStore StorageType = "FileStore"
 )
 
-type storage interface {
+type Storage interface {
 	Connect() (blob.Storage, error)
 	SetOptions(context.Context, map[string]string)
 	WithCreate(bool)
 }
 
-func New(storageType StorageType) storage {
+func New(storageType StorageType) Storage {
 	switch storageType {
 	case TypeS3:
 		return &s3Storage{}
