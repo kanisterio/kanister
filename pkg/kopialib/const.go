@@ -12,37 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
-
-import (
-	"context"
-
-	"github.com/kopia/kopia/repo/blob"
-)
-
-type StorageType string
+package kopialib
 
 const (
-	TypeS3        StorageType = "S3"
-	TypeAzure     StorageType = "Azure"
-	TypeFileStore StorageType = "FileStore"
+	// S3 storage consts
+	BucketKey         = "bucket"
+	EndpointKey       = "endpoint"
+	PrefixKey         = "prefix"
+	RegionKey         = "region"
+	SkipSSLVerifyKey  = "skipSSLVerify"
+	S3AccessKey       = "accessKeyID"
+	S3SecretAccessKey = "secretAccessKey"
+	S3TokenKey        = "sessionToken"
+	DoNotUseTLS       = "doNotUseTLS"
+	DoNotVerifyTLS    = "doNotVerifyTLS"
+
+	//Azure storage conts
+	AzureStorageAccount          = "storageAccount"
+	AzureStorageAccountAccessKey = "storageKey"
+	AzureSASToken                = "sasToken"
 )
-
-type storage interface {
-	Connect() (blob.Storage, error)
-	SetOptions(context.Context, map[string]string)
-	WithCreate(bool)
-}
-
-func New(storageType StorageType) storage {
-	switch storageType {
-	case TypeS3:
-		return &s3Storage{}
-	case TypeFileStore:
-		return &fileSystem{}
-	case TypeAzure:
-		return &azureStorage{}
-	default:
-		return nil
-	}
-}

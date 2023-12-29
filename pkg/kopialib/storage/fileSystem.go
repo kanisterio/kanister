@@ -26,6 +26,18 @@ type fileSystem struct {
 	Create  bool
 }
 
-func (f fileSystem) GetStorage() (blob.Storage, error) {
+func (f *fileSystem) Connect() (blob.Storage, error) {
 	return filesystem.New(context.Background(), &f.Options, f.Create)
+}
+
+func (f *fileSystem) WithOptions(opts filesystem.Options) {
+	f.Options = opts
+}
+
+func (f *fileSystem) WithCreate(create bool) {
+	f.Create = create
+}
+
+func (f *fileSystem) SetOptions(ctx context.Context, options map[string]string) {
+	f.Options = filesystem.Options{}
 }
