@@ -32,7 +32,7 @@ type Repository struct {
 }
 
 func (r *Repository) Create(opts *repo.NewRepositoryOptions) (err error) {
-	storage, err := r.st.GetStorage()
+	storage, err := r.st.Connect()
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (r *Repository) Create(opts *repo.NewRepositoryOptions) (err error) {
 }
 
 func (r *Repository) Connect(opts *repo.ConnectOptions) (err error) {
-	storage, err := r.st.GetStorage()
+	storage, err := r.st.Connect()
 	if err != nil {
 		return err
 	}
