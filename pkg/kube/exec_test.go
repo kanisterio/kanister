@@ -25,7 +25,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -33,7 +33,7 @@ import (
 type ExecSuite struct {
 	cli       kubernetes.Interface
 	namespace string
-	pod       *v1.Pod
+	pod       *corev1.Pod
 }
 
 var _ = Suite(&ExecSuite{})
@@ -43,7 +43,7 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 	var err error
 	s.cli, err = NewClient()
 	c.Assert(err, IsNil)
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "exectest-",
 		},
@@ -51,10 +51,10 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 	ns, err = s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
-	pod := &v1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{
 					Name:    "testcontainer",
 					Image:   "busybox",
@@ -106,7 +106,7 @@ func (s *ExecSuite) TestStderr(c *C) {
 }
 
 func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
-	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(s.pod.Status.Phase, Equals, corev1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
 
 	var testCases = []struct {
@@ -147,7 +147,7 @@ func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
 }
 
 func (s *ExecSuite) TestErrorInExecWithOptions(c *C) {
-	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(s.pod.Status.Phase, Equals, corev1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
 
 	var testCases = []struct {
@@ -226,7 +226,7 @@ func (s *ExecSuite) TestErrorInExecWithOptions(c *C) {
 
 func (s *ExecSuite) TestExecEcho(c *C) {
 	cmd := []string{"sh", "-c", "cat -"}
-	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(s.pod.Status.Phase, Equals, corev1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
 	for _, cs := range s.pod.Status.ContainerStatuses {
 		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, bytes.NewBufferString("badabing"))
@@ -238,7 +238,7 @@ func (s *ExecSuite) TestExecEcho(c *C) {
 
 func (s *ExecSuite) TestExecEchoDefaultContainer(c *C) {
 	cmd := []string{"sh", "-c", "cat -"}
-	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(s.pod.Status.Phase, Equals, corev1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
 	stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, "", cmd, bytes.NewBufferString("badabing"))
 	c.Assert(err, IsNil)
@@ -248,7 +248,7 @@ func (s *ExecSuite) TestExecEchoDefaultContainer(c *C) {
 
 func (s *ExecSuite) TestLSWithoutStdIn(c *C) {
 	cmd := []string{"ls", "-l", "/home"}
-	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(s.pod.Status.Phase, Equals, corev1.PodRunning)
 	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
 	stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, "", cmd, nil)
 	c.Assert(err, IsNil)
@@ -258,13 +258,13 @@ func (s *ExecSuite) TestLSWithoutStdIn(c *C) {
 
 func (s *ExecSuite) TestKopiaCommand(c *C) {
 	ctx := context.Background()
-	pod := &v1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kopia-pod",
 			Namespace: s.namespace,
 		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{
 					Name:  "kanister-sidecar",
 					Image: "ghcr.io/kanisterio/kanister-tools:0.37.0",

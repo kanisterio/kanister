@@ -20,7 +20,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -105,7 +105,7 @@ func (s *KubeOpsSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	s.dynCli = dynCli
 
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterkubeopstest-",
 		},

@@ -25,7 +25,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -223,8 +223,8 @@ func (s *LocationSuite) TestGetAzureSecret(c *C) {
 					ID:     "id",
 					Secret: "secret",
 				},
-				Secret: &v1.Secret{
-					Type: v1.SecretType(secrets.AzureSecretType),
+				Secret: &corev1.Secret{
+					Type: corev1.SecretType(secrets.AzureSecretType),
 					Data: map[string][]byte{
 						secrets.AzureStorageAccountID:   []byte("said"),
 						secrets.AzureStorageAccountKey:  []byte("sakey"),
@@ -245,8 +245,8 @@ func (s *LocationSuite) TestGetAzureSecret(c *C) {
 					ID:     "id",
 					Secret: "secret",
 				},
-				Secret: &v1.Secret{
-					Type: v1.SecretType(secrets.AzureSecretType),
+				Secret: &corev1.Secret{
+					Type: corev1.SecretType(secrets.AzureSecretType),
 					Data: map[string][]byte{
 						secrets.AzureStorageAccountID:   []byte("said"),
 						secrets.AzureStorageAccountKey:  []byte("sakey"),
@@ -268,8 +268,8 @@ func (s *LocationSuite) TestGetAzureSecret(c *C) {
 					ID:     "id",
 					Secret: "secret",
 				},
-				Secret: &v1.Secret{
-					Type: v1.SecretType(secrets.AzureSecretType),
+				Secret: &corev1.Secret{
+					Type: corev1.SecretType(secrets.AzureSecretType),
 					Data: map[string][]byte{
 						secrets.AzureStorageAccountID:   []byte("said"),
 						secrets.AzureStorageEnvironment: []byte("env"),
@@ -290,8 +290,8 @@ func (s *LocationSuite) TestGetAzureSecret(c *C) {
 					ID:     "id",
 					Secret: "secret",
 				},
-				Secret: &v1.Secret{
-					Type: v1.SecretType(secrets.AzureSecretType),
+				Secret: &corev1.Secret{
+					Type: corev1.SecretType(secrets.AzureSecretType),
 					Data: map[string][]byte{
 						secrets.AzureStorageAccountID:   []byte("said"),
 						secrets.AzureStorageAccountKey:  []byte("sakey"),

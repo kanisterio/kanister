@@ -43,7 +43,7 @@ var _ getter.Getter = (*mockGetter)(nil)
 
 type mockGetter struct{}
 
-// NewGetter retuns a new mockGetter
+// NewGetter returns a new mockGetter
 func NewGetter() getter.Getter {
 	return &mockGetter{}
 }

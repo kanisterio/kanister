@@ -66,7 +66,7 @@ var allowedMetadataKeys = map[string]bool{
 	"newFileSystem":   true,
 }
 
-// NewEFSProvider retuns a blockstorage provider for AWS EFS.
+// NewEFSProvider returns a blockstorage provider for AWS EFS.
 func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
 	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {

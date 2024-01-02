@@ -164,7 +164,20 @@ func (r *restoreRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, 
 	}, nil
 }
 
-func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
+func restoreRDSSnapshot(
+	ctx context.Context,
+	namespace,
+	instanceID,
+	subnetGroup,
+	snapshotID,
+	backupArtifactPrefix,
+	backupID,
+	username,
+	password string,
+	dbEngine RDSDBEngine,
+	sgIDs []string,
+	profile *param.Profile,
+) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Error validating profile")
@@ -186,11 +199,7 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup,
 		// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
 		// Find security group ids
 		if sgIDs == nil {
-			if !isAuroraCluster(string(dbEngine)) {
-				sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
-			} else {
-				sgIDs, err = findAuroraSecurityGroups(ctx, rdsCli, instanceID)
-			}
+			sgIDs, err = findSecurityGroupIDs(ctx, rdsCli, instanceID, string(dbEngine))
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
 			}
@@ -222,6 +231,12 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup,
 	return map[string]interface{}{
 		RestoreRDSSnapshotEndpoint: dbEndpoint,
 	}, nil
+}
+func findSecurityGroupIDs(ctx context.Context, rdsCli *rds.RDS, instanceID, dbEngine string) ([]string, error) {
+	if !isAuroraCluster(dbEngine) {
+		return findSecurityGroups(ctx, rdsCli, instanceID)
+	}
+	return findAuroraSecurityGroups(ctx, rdsCli, instanceID)
 }
 
 //nolint:unparam
@@ -323,8 +338,20 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 	}
 
 	log.WithContext(ctx).Print("Creating DB instance in the cluster")
-	// After Aurora cluster is created, we will have to explictly create the DB instance
-	dbInsOp, err := rdsCli.CreateDBInstance(ctx, nil, defaultAuroraInstanceClass, fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix), dbEngine, "", "", nil, nil, aws.String(*op.DBCluster.DBClusterIdentifier), subnetGroup)
+	// After Aurora cluster is created, we will have to explicitly create the DB instance
+	dbInsOp, err := rdsCli.CreateDBInstance(
+		ctx,
+		nil,
+		defaultAuroraInstanceClass,
+		fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix),
+		dbEngine,
+		"",
+		"",
+		nil,
+		nil,
+		aws.String(*op.DBCluster.DBClusterIdentifier),
+		subnetGroup,
+	)
 	if err != nil {
 		return errors.Wrap(err, "Error while creating Aurora DB instance in the cluster.")
 	}
