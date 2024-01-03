@@ -91,12 +91,15 @@ func SnapshotsCommand(profile *param.Profile, repository, encryptionKey string) 
 }
 
 // LatestSnapshotsCommand returns restic snapshots command for last snapshots
-func LatestSnapshotsCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+func LatestSnapshotsCommand(profile *param.Profile, repository, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "snapshots", "--last", "--json")
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
@@ -113,12 +116,15 @@ func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKe
 }
 
 // InitCommand returns restic init command
-func InitCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+func InitCommand(profile *param.Profile, repository, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "init")
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
@@ -259,13 +265,13 @@ func resticAzureArgs(profile *param.Profile, repository string) ([]string, error
 }
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
-func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
-	_, _, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, insecureTLS bool, profile *param.Profile) error {
+	_, _, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, insecureTLS, cli, namespace, pod, container)
 	if err == nil {
 		return nil
 	}
 	// Create a repository
-	cmd, err := InitCommand(profile, artifactPrefix, encryptionKey)
+	cmd, err := InitCommand(profile, artifactPrefix, encryptionKey, insecureTLS)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create init command")
 	}
@@ -276,8 +282,8 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 }
 
 // CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots
-func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) error {
-	_, stderr, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, insecureTLS bool, cli kubernetes.Interface, namespace string, pod string, container string) error {
+	_, stderr, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, insecureTLS, cli, namespace, pod, container)
 	if IsPasswordIncorrect(stderr) { // If password didn't work
 		return errors.New(PasswordIncorrect)
 	}
@@ -291,9 +297,9 @@ func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encry
 }
 
 //nolint:unparam
-func getLatestSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
+func getLatestSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, insecureTLS bool, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
 	// Use the latest snapshots command to check if the repository exists
-	cmd, err := LatestSnapshotsCommand(profile, artifactPrefix, encryptionKey)
+	cmd, err := LatestSnapshotsCommand(profile, artifactPrefix, encryptionKey, insecureTLS)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to create snapshot command")
 	}
