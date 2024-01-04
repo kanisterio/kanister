@@ -154,7 +154,8 @@ func (*backupDataAllFunc) Arguments() []string {
 	}
 }
 
-func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, container string, backupArtifactPrefix, includePath, encryptionKey string, insecureTLS bool, tp param.TemplateParams) (map[string]interface{}, error) {
+func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, container string, backupArtifactPrefix, includePath, encryptionKey string,
+	insecureTLS bool, tp param.TemplateParams) (map[string]interface{}, error) {
 	errChan := make(chan error, len(ps))
 	outChan := make(chan BackupInfo, len(ps))
 	Output := make(map[string]BackupInfo)
