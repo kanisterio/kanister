@@ -23,7 +23,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 )
@@ -49,6 +49,8 @@ const (
 	TemplateVersionOCP4_12 DBTemplate = "release-4.12"
 	// TemplateVersionOCP4_13 stores version of db template 4.13
 	TemplateVersionOCP4_13 DBTemplate = "release-4.13"
+	// TemplateVersionOCP4_14 stores version of db template 4.14
+	TemplateVersionOCP4_14 DBTemplate = "release-4.14"
 )
 
 type storage string
@@ -83,14 +85,14 @@ func bastionDebugWorkloadSpec(ctx context.Context, name string, image string, na
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": name}},
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"app": name,
 					},
 				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Name:    name,
 							Image:   image,

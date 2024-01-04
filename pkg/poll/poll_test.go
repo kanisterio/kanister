@@ -16,7 +16,9 @@ package poll
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"runtime"
 	"testing"
 	"time"
 
@@ -128,6 +130,30 @@ func (s *PollSuite) TestWaitWithBackoffCancellation(c *C) {
 	b := backoff.Backoff{}
 	err := WaitWithBackoff(ctx, b, f)
 	c.Check(err, NotNil)
+}
+
+func (s *PollSuite) TestWaitWithRetriesTimeout(c *C) {
+	// There's a better chance of catching a race condition
+	// if there is only one thread
+	maxprocs := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(maxprocs)
+
+	f := func(context.Context) (bool, error) {
+		return false, errors.New("retryable")
+	}
+	errf := func(err error) bool {
+		return err.Error() == "retryable"
+	}
+	ctx := context.Background()
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithTimeout(ctx, time.Millisecond)
+	defer cancel()
+
+	backoff := backoff.Backoff{}
+	backoff.Min = 2 * time.Millisecond
+	err := WaitWithBackoffWithRetries(ctx, backoff, 10, errf, f)
+	c.Check(err, NotNil)
+	c.Assert(err.Error(), Matches, ".*context deadline exceeded*")
 }
 
 func (s *PollSuite) TestWaitWithBackoffBackoff(c *C) {

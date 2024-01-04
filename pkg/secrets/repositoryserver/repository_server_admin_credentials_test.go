@@ -17,7 +17,7 @@ package repositoryserver
 import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -34,8 +34,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 		expectedError error
 	}{
 		{ // Valid Repository Server Admin Credentials Secret
-			secret: NewRepositoryServerAdminCredentials(&v1.Secret{
-				Type: v1.SecretType(AdminCredentialsSecret),
+			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
+				Type: corev1.SecretType(AdminCredentialsSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -48,8 +48,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 			errChecker: IsNil,
 		},
 		{ // Missing required field - AdminUsernameKey
-			secret: NewRepositoryServerAdminCredentials(&v1.Secret{
-				Type: v1.SecretType(AdminCredentialsSecret),
+			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
+				Type: corev1.SecretType(AdminCredentialsSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -63,8 +63,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminUsernameKey, "ns", "sec"),
 		},
 		{ // Missing required field - AdminPasswordKey
-			secret: NewRepositoryServerAdminCredentials(&v1.Secret{
-				Type: v1.SecretType(AdminCredentialsSecret),
+			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
+				Type: corev1.SecretType(AdminCredentialsSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -78,8 +78,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminPasswordKey, "ns", "sec"),
 		},
 		{ // Secret should contain only 2 key value pairs
-			secret: NewRepositoryServerAdminCredentials(&v1.Secret{
-				Type: v1.SecretType(AdminCredentialsSecret),
+			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
+				Type: corev1.SecretType(AdminCredentialsSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -94,8 +94,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, "ns", "sec"),
 		},
 		{ // Empty Secret
-			secret: NewRepositoryServerAdminCredentials(&v1.Secret{
-				Type: v1.SecretType(AdminCredentialsSecret),
+			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
+				Type: corev1.SecretType(AdminCredentialsSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",

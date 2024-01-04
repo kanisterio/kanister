@@ -1,3 +1,4 @@
+name: Build and test
 on:
   push:
     branches:
@@ -6,39 +7,58 @@ on:
     branches:
     - master
 jobs:
+  ## Make sure go.mod and go.sum files are up-to-date with the code
+  ## TODO: make this fail if they're not up-to-date to inform the committer to udpate them
   gomod:
     runs-on: ubuntu-20.04
+    outputs:
+      gomod: ${{ steps.gomod.outputs.gomod }}
+      gosum: ${{ steps.gosum.outputs.gosum }}
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
     - run: make go-mod-tidy
-    - run: make go-mod-download
-    - run: tar -cvf ./src.tar.gz ./ # preserve file permissions
-    - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-      with:
-        name: src
-        path: ./src.tar.gz
+    - id: gomod
+      run: |
+        {
+          echo 'gomod<<FILE'
+          cat go.mod
+          echo
+          echo FILE
+        } >> "$GITHUB_OUTPUT"
+    - id: gosum
+      run: |
+        {
+          echo 'gosum<<FILE'
+          cat go.sum
+          echo
+          echo FILE
+        } >> "$GITHUB_OUTPUT"
   lint:
     runs-on: ubuntu-20.04
     needs: gomod
     steps:
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-      with:
-        name: src
-    - run: tar -xvf ./src.tar.gz
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    ## Sync go.mod and go.sum files from gomod job
+    - name: restore_gomod
+      run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
+    - name: restore_gosum
+      run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - run: make golint
   test:
     runs-on: ubuntu-20.04
-    needs: [gomod, lint]
+    needs: gomod
     strategy:
       fail-fast: false
       matrix:
         testSuite: [test, integration-test, helm-test]
     steps:
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-      with:
-        name: src
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    ## Sync go.mod and go.sum files from gomod job
+    - name: restore_gomod
+      run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
+    - name: restore_gosum
+      run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - uses: helm/kind-action@v1.8.0
-    - run: tar -xvf ./src.tar.gz
     - run: |
         make install-csi-hostpath-driver
         make install-minio
@@ -53,35 +73,32 @@ jobs:
     - run: make ${{ matrix.testSuite }}
   build:
     runs-on: ubuntu-20.04
-    needs: [gomod, lint, test]
+    needs: gomod
     strategy:
       matrix:
         bin: [controller, kanctl, kando]
     steps:
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-      with:
-        name: src
-    - run: tar -xvf ./src.tar.gz
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    ## Sync go.mod and go.sum files from gomod job
+    - name: restore_gomod
+      run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
+    - name: restore_gosum
+      run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - run: make build BIN=${{ matrix.bin }} GOBORING=true
   docs:
     runs-on: ubuntu-20.04
-    needs: gomod
     steps:
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-      with:
-        name: src
-    - run: tar -xvf ./src.tar.gz
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
     - run: make docs
   release:
     runs-on: ubuntu-20.04
-    needs: [test, build]
+    needs: [lint, test, build, docs]
     if: github.ref_name == 'master' || startsWith(github.ref, 'refs/tags')
     permissions:
       packages: write
     steps:
-    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-      with:
-        name: src
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    - run: make go-mod-tidy
     - uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
       with:
         registry: ghcr.io
@@ -89,6 +106,5 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     - run: sudo rm -rf /usr/share/dotnet
     - run: sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-    - run: tar -xvf ./src.tar.gz
     - run: make release-snapshot
     - run: ./build/push_images.sh

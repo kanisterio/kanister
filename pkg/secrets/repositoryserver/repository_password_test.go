@@ -17,7 +17,7 @@ package repositoryserver
 import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -34,8 +34,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 		expectedError error
 	}{
 		{ // Valid Repository Password Secret
-			secret: NewRepoPassword(&v1.Secret{
-				Type: v1.SecretType(RepositoryPasswordSecret),
+			secret: NewRepoPassword(&corev1.Secret{
+				Type: corev1.SecretType(RepositoryPasswordSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -47,8 +47,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 			errChecker: IsNil,
 		},
 		{ // Missing required field - Repo Password Key
-			secret: NewRepoPassword(&v1.Secret{
-				Type: v1.SecretType(RepositoryPasswordSecret),
+			secret: NewRepoPassword(&corev1.Secret{
+				Type: corev1.SecretType(RepositoryPasswordSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -61,8 +61,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RepoPasswordKey, "ns", "sec"),
 		},
 		{ // Secret should contain only 1 key value pair
-			secret: NewRepoPassword(&v1.Secret{
-				Type: v1.SecretType(RepositoryPasswordSecret),
+			secret: NewRepoPassword(&corev1.Secret{
+				Type: corev1.SecretType(RepositoryPasswordSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",
@@ -76,8 +76,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, "ns", "sec"),
 		},
 		{ // Empty Secret
-			secret: NewRepoPassword(&v1.Secret{
-				Type: v1.SecretType(RepositoryPasswordSecret),
+			secret: NewRepoPassword(&corev1.Secret{
+				Type: corev1.SecretType(RepositoryPasswordSecret),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sec",
 					Namespace: "ns",

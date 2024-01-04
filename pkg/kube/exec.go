@@ -24,7 +24,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
@@ -161,7 +161,7 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 		stderr = io.MultiWriter(options.Stderr, stderrTail)
 	}
 
-	req.VersionedParams(&v1.PodExecOptions{
+	req.VersionedParams(&corev1.PodExecOptions{
 		Container: options.ContainerName,
 		Command:   options.Command,
 		Stdin:     options.Stdin != nil,
