@@ -68,24 +68,28 @@ func (*restoreDataAllFunc) Name() string {
 	return RestoreDataAllFuncName
 }
 
-func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, crv1alpha1.JSONMap, error) {
+func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, bool, crv1alpha1.JSONMap, error) {
 	var restorePath, encryptionKey, pods string
 	var ps []string
 	var podOverride crv1alpha1.JSONMap
 	var err error
+	var insecureTLS bool
 
 	if err = OptArg(args, RestoreDataAllRestorePathArg, &restorePath, "/"); err != nil {
-		return restorePath, encryptionKey, ps, podOverride, err
+		return restorePath, encryptionKey, ps, insecureTLS, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataAllEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
-		return restorePath, encryptionKey, ps, podOverride, err
+		return restorePath, encryptionKey, ps, insecureTLS, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataAllPodsArg, &pods, ""); err != nil {
-		return restorePath, encryptionKey, ps, podOverride, err
+		return restorePath, encryptionKey, ps, insecureTLS, podOverride, err
+	}
+	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
+		return restorePath, encryptionKey, ps, insecureTLS, podOverride, err
 	}
 	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataAllPodOverrideArg)
 	if err != nil {
-		return restorePath, encryptionKey, ps, podOverride, err
+		return restorePath, encryptionKey, ps, insecureTLS, podOverride, err
 	}
 
 	if pods != "" {
@@ -97,11 +101,11 @@ func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.Templ
 		case tp.StatefulSet != nil:
 			ps = tp.StatefulSet.Pods
 		default:
-			return restorePath, encryptionKey, ps, podOverride, errors.New("Unsupported workload type")
+			return restorePath, encryptionKey, ps, insecureTLS, podOverride, errors.New("Unsupported workload type")
 		}
 	}
 
-	return restorePath, encryptionKey, ps, podOverride, nil
+	return restorePath, encryptionKey, ps, insecureTLS, podOverride, err
 }
 
 func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -111,6 +115,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 
 	var namespace, image, backupArtifactPrefix, backupInfo string
 	var err error
+
 	if err = Arg(args, RestoreDataAllNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -125,7 +130,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	}
 
 	// Validate and get optional arguments
-	restorePath, encryptionKey, pods, podOverride, err := validateAndGetRestoreAllOptArgs(args, tp)
+	restorePath, encryptionKey, pods, insecureTLS, podOverride, err := validateAndGetRestoreAllOptArgs(args, tp)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +160,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 				outputChan <- out
 				return
 			}
-			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, image, vols, podOverride)
+			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, image, insecureTLS, vols, podOverride)
 			errChan <- errors.Wrapf(err, "Failed to restore data for pod %s", pod)
 			outputChan <- out
 		}(pod)
