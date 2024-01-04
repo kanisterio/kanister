@@ -273,6 +273,7 @@ func (*restoreDataFunc) Arguments() []string {
 		RestoreDataBackupTagArg,
 		RestoreDataBackupIdentifierArg,
 		RestoreDataPodOverrideArg,
+		InsecureTLS,
 	}
 }
 

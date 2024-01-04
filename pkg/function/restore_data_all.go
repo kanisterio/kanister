@@ -202,6 +202,7 @@ func (*restoreDataAllFunc) Arguments() []string {
 		RestoreDataAllEncryptionKeyArg,
 		RestoreDataAllPodsArg,
 		RestoreDataAllPodOverrideArg,
+		InsecureTLS,
 	}
 }
 
