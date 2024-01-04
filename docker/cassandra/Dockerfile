@@ -1,4 +1,4 @@
-FROM bitnami/cassandra:3.11.8-debian-10-r20
+FROM bitnami/cassandra:4.1.3-debian-11-r78
 
 MAINTAINER "Tom Manville <tom@kasten.io>"
 
