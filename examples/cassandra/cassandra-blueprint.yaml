@@ -71,6 +71,7 @@ actions:
         container: "cassandra"
         includePath: "{{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}"
         backupArtifactPrefix: "{{ .Phases.getBackupPrefixLocation.Output.backupPrefixLocation }}"
+        insecureTLS: true
     - func: KubeExec
       name: deleteLocalBackup
       args:
@@ -107,6 +108,7 @@ actions:
         pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
         restorePath: "{{ .ArtifactsIn.params.KeyValue.restorePathPrefix }}"
         backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
+        insecureTLS: true
     - func: ScaleWorkload
       name: bringupPod
       args:
@@ -181,3 +183,4 @@ actions:
         backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
         backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
         reclaimSpace: true
+        insecureTLS: true
