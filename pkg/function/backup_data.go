@@ -175,7 +175,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 
 	// Create backup and dump it on the object store
 	backupTag := rand.String(10)
-	cmd, err := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
+	cmd, err := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey, insecureTLS)
 	if err != nil {
 		return backupDataParsedOutput{}, err
 	}

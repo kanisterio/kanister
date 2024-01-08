@@ -47,12 +47,15 @@ func shCommand(command string) []string {
 }
 
 // BackupCommandByTag returns restic backup command with tag
-func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePath, encryptionKey string) ([]string, error) {
+func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "backup", "--tag", backupTag, includePath)
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
