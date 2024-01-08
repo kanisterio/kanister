@@ -114,12 +114,15 @@ func LatestSnapshotsCommand(profile *param.Profile, repository, encryptionKey st
 }
 
 // SnapshotsCommandByTag returns restic snapshots command
-func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) ([]string, error) {
+func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "snapshots", "--tag", tag, "--json")
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
@@ -139,23 +142,29 @@ func InitCommand(profile *param.Profile, repository, encryptionKey string, insec
 }
 
 // ForgetCommandByID returns restic forget command
-func ForgetCommandByID(profile *param.Profile, repository, id, encryptionKey string) ([]string, error) {
+func ForgetCommandByID(profile *param.Profile, repository, id, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "forget", id)
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
 
 // PruneCommand returns restic prune command
-func PruneCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+func PruneCommand(profile *param.Profile, repository, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "prune")
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
