@@ -20,6 +20,8 @@ import (
 	"regexp"
 	"strconv"
 
+	osAppsv1 "github.com/openshift/api/apps/v1"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,8 +33,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/poll"
-	osAppsv1 "github.com/openshift/api/apps/v1"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (

@@ -17,9 +17,10 @@ package repositoryserver
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/testutil"
 	. "gopkg.in/check.v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 func (s *RepoServerControllerSuite) TestFetchSecretsForRepositoryServer(c *C) {

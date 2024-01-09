@@ -21,14 +21,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/pkg/errors"
+	"sigs.k8s.io/kustomize/kyaml/sets"
+
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/maintenance"
 	"github.com/kanisterio/kanister/pkg/kube"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	"github.com/pkg/errors"
-	"sigs.k8s.io/kustomize/kyaml/sets"
 )
 
 const (

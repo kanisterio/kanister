@@ -17,11 +17,12 @@ package secrets
 import (
 	"encoding/base64"
 
-	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
 type GCPSecretSuite struct{}

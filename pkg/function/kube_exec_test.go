@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +34,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 type KubeExecTest struct {

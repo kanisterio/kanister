@@ -20,8 +20,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 func Test(t *testing.T) { TestingT(t) }

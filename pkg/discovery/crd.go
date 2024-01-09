@@ -17,11 +17,12 @@ package discovery
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/filter"
 	"github.com/pkg/errors"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kanisterio/kanister/pkg/filter"
 )
 
 // CRDMatcher returns a ResourceTypeMatcher that matches all CRs in this cluster.

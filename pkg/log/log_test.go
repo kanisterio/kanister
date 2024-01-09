@@ -35,11 +35,10 @@ func (s *LogSuite) TestWithNilError(c *C) {
 	WithError(nil).Print("Message")
 }
 
-// nolint
 func (s *LogSuite) TestWithNilContext(c *C) {
 	log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
 	// Should not panic
-	WithContext(nil).Print("Message")
+	WithContext(nil).Print("Message") //nolint:staticcheck
 }
 
 func (s *LogSuite) TestLogMessage(c *C) {

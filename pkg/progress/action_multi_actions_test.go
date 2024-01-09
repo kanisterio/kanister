@@ -3,11 +3,11 @@ package progress
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 	. "gopkg.in/check.v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 )
 
 type TestSuiteMultiActions struct {

@@ -23,8 +23,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
+
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (

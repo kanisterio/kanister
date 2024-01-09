@@ -15,9 +15,10 @@
 package kanctl
 
 import (
-	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	kanister "github.com/kanisterio/kanister/pkg"
 )
 
 type validateParams struct {

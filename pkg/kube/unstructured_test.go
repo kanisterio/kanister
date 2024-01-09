@@ -19,9 +19,8 @@ import (
 	"context"
 	"text/template"
 
-	. "gopkg.in/check.v1"
-
 	"github.com/Masterminds/sprig"
+	. "gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 

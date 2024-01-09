@@ -19,9 +19,10 @@ import (
 	"context"
 	"io"
 
+	"github.com/pkg/errors"
+
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/pkg/errors"
 )
 
 func Pull(ctx context.Context, target io.Writer, p param.Profile, manifest string) error {

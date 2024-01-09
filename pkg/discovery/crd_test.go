@@ -17,10 +17,11 @@ package discovery
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/filter"
-	"github.com/kanisterio/kanister/pkg/kube"
 	. "gopkg.in/check.v1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+
+	"github.com/kanisterio/kanister/pkg/filter"
+	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 type CRDSuite struct{}

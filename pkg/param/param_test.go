@@ -24,6 +24,9 @@ import (
 	"time"
 
 	"github.com/Masterminds/sprig"
+	osapps "github.com/openshift/api/apps/v1"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
+	osfake "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -39,9 +42,6 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crfake "github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 	"github.com/kanisterio/kanister/pkg/kube"
-	osapps "github.com/openshift/api/apps/v1"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	osfake "github.com/openshift/client-go/apps/clientset/versioned/fake"
 )
 
 // Hook up gocheck into the "go test" runner.

@@ -24,6 +24,9 @@ linters:
     - importas
     - misspell
     - nestif
+    - gci
+    - goprintffuncname
+    - nolintlint
 
 run:
   timeout: 10m                          # golangci-lint run's timeout.
@@ -66,3 +69,8 @@ linters-settings:
         alias: crv1alpha1
   nestif:
     min-complexity: 6
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/kanisterio/kanister)

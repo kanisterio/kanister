@@ -15,11 +15,12 @@
 package repositoryserver
 
 import (
+	. "gopkg.in/check.v1"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/testutil"
-	. "gopkg.in/check.v1"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {

@@ -15,9 +15,10 @@
 package secrets
 
 import (
-	"github.com/kanisterio/kanister/pkg/objectstore"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/objectstore"
 )
 
 type AzureSecretSuite struct{}

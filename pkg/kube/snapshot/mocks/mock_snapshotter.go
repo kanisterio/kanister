@@ -9,9 +9,10 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	snapshot "github.com/kanisterio/kanister/pkg/kube/snapshot"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
+
+	snapshot "github.com/kanisterio/kanister/pkg/kube/snapshot"
 )
 
 // MockSnapshotter is a mock of Snapshotter interface.
