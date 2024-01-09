@@ -139,7 +139,7 @@ func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
 			Stdout:        bufout,
 			Stderr:        buferr,
 		}
-		_, _, err := ExecWithOptions(s.cli, opts)
+		err := ExecWithOptions(s.cli, opts)
 		c.Assert(err, IsNil)
 		c.Assert(bufout.String(), Equals, testCase.expectedOut)
 		c.Assert(buferr.String(), Equals, testCase.expectedErr)
@@ -187,7 +187,7 @@ func (s *ExecSuite) TestErrorInExecWithOptions(c *C) {
 			ContainerName: "", // use default container
 			Stdin:         nil,
 		}
-		_, _, err1 := ExecWithOptions(s.cli, opts) // Output is not needed
+		err1 := ExecWithOptions(s.cli, opts)
 		c.Assert(err1, Not(IsNil))
 
 		var ee1 *ExecError
@@ -204,7 +204,7 @@ func (s *ExecSuite) TestErrorInExecWithOptions(c *C) {
 		opts.Stdout = &bufout
 		opts.Stderr = &buferr
 
-		_, _, err2 := ExecWithOptions(s.cli, opts) // Output is not needed
+		err2 := ExecWithOptions(s.cli, opts)
 		c.Assert(err2, Not(IsNil))
 
 		var ee2 *ExecError
