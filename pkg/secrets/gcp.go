@@ -16,7 +16,7 @@ package secrets
 
 import (
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
@@ -35,7 +35,7 @@ const (
 
 // ValidateGCPCredentials function is to verify the schema of GCP secrets
 // that need to be provided for kopia commands
-func ValidateGCPCredentials(secret *v1.Secret) error {
+func ValidateGCPCredentials(secret *corev1.Secret) error {
 	// Required fields for the secret are
 	// - GCPProjectID
 	// - GCPServiceAccountJsonKey

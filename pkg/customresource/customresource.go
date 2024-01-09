@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 
 	// importing go check to bypass the testing flags
 	_ "gopkg.in/check.v1"
@@ -130,23 +131,29 @@ func createCRD(context Context, resource CustomResource) error {
 			return errors.Errorf("Failed to create %s CRD. %+v", resource.Name, err)
 		}
 
-		// if CRD already exists, get the resource version and create the CRD with that resource version
-		c, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("Failed to get CRD to get resource version: %s\n", err.Error())
-		}
+		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// if CRD already exists, get the resource version and create the CRD with that resource version
+			c, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 
-		crd.ResourceVersion = c.ResourceVersion
-		_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
+			crd.ResourceVersion = c.ResourceVersion
+			_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 		if err != nil {
-			return fmt.Errorf("Failed to delete already present CRD: %s\n", err.Error())
+			return fmt.Errorf("Failed to update existing CRD: %s\n", err.Error())
 		}
 	}
 	return nil
 }
 
 func rawCRDFromFile(path string) ([]byte, error) {
-	// yamls is the variable that has embeded custom resource manifest. More at `embed.go`
+	// yamls is the variable that has embedded custom resource manifest. More at `embed.go`
 	return yamls.ReadFile(path)
 }
 

@@ -32,7 +32,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -132,13 +132,13 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 }
 
 func checkCRAccess(ctx context.Context, cli versioned.Interface, ns string) error {
-	if _, err := cli.CrV1alpha1().ActionSets(ns).List(ctx, v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().ActionSets(ns).List(ctx, metav1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list ActionSets")
 	}
-	if _, err := cli.CrV1alpha1().Blueprints(ns).List(ctx, v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().Blueprints(ns).List(ctx, metav1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list Blueprints")
 	}
-	if _, err := cli.CrV1alpha1().Profiles(ns).List(ctx, v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().Profiles(ns).List(ctx, metav1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list Profiles")
 	}
 	return nil
@@ -182,7 +182,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		new := newObj.(*crv1alpha1.ActionSet)
 		if err := c.onUpdateActionSet(old, new); err != nil {
 			bpName := new.Spec.Actions[0].Blueprint
-			bp, _ := c.crClient.CrV1alpha1().Blueprints(new.GetNamespace()).Get(context.TODO(), bpName, v1.GetOptions{})
+			bp, _ := c.crClient.CrV1alpha1().Blueprints(new.GetNamespace()).Get(context.TODO(), bpName, metav1.GetOptions{})
 			c.logAndErrorEvent(context.TODO(), "Callback onUpdateActionSet() failed:", "Error", err, new, bp)
 		}
 	case *crv1alpha1.Blueprint:
@@ -199,7 +199,7 @@ func (c *Controller) onDelete(obj interface{}) {
 	case *crv1alpha1.ActionSet:
 		if err := c.onDeleteActionSet(v); err != nil {
 			bpName := v.Spec.Actions[0].Blueprint
-			bp, _ := c.crClient.CrV1alpha1().Blueprints(v.GetNamespace()).Get(context.TODO(), bpName, v1.GetOptions{})
+			bp, _ := c.crClient.CrV1alpha1().Blueprints(v.GetNamespace()).Get(context.TODO(), bpName, metav1.GetOptions{})
 			c.logAndErrorEvent(context.TODO(), "Callback onDeleteActionSet() failed:", "Error", err, v, bp)
 		}
 	case *crv1alpha1.Blueprint:
@@ -217,7 +217,7 @@ func (c *Controller) onAddActionSet(ctx context.Context, t *tomb.Tomb, as *crv1a
 	if as.Status == nil {
 		c.initActionSetStatus(ctx, as)
 	}
-	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), v1.GetOptions{})
+	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -317,7 +317,7 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 			break
 		}
 		var bp *crv1alpha1.Blueprint
-		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, v1.GetOptions{}); err != nil {
+		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, metav1.GetOptions{}); err != nil {
 			err = errors.Wrap(err, "Failed to query blueprint")
 			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Error", err, as)
 			break
@@ -340,7 +340,7 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 		as.Status.State = crv1alpha1.StatePending
 		as.Status.Actions = actions
 	}
-	if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{}); err != nil {
+	if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, metav1.UpdateOptions{}); err != nil {
 		c.logAndErrorEvent(ctx, "Could not update ActionSet:", "Update Failed", err, as)
 	}
 }
@@ -384,7 +384,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 		return nil
 	}
 	as.Status.State = crv1alpha1.StateRunning
-	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{}); err != nil {
+	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, metav1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
@@ -397,7 +397,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 
 	for i, a := range as.Status.Actions {
 		var bp *crv1alpha1.Blueprint
-		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, v1.GetOptions{}); err != nil {
+		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, metav1.GetOptions{}); err != nil {
 			err = errors.Wrap(err, "Failed to query blueprint")
 			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Error", err, as)
 			break
@@ -417,7 +417,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 		as.Status.Error = crv1alpha1.Error{
 			Message: err.Error(),
 		}
-		_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{})
+		_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, metav1.UpdateOptions{})
 		return errors.WithStack(err)
 	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})

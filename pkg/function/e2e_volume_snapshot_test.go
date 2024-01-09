@@ -23,7 +23,7 @@ import (
 	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
@@ -124,8 +124,8 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 }
 
 // NewTestProfileSecret function returns a pointer to a new Secret test object.
-func NewTestProfileSecret(id string, secret string) *v1.Secret {
-	return &v1.Secret{
+func NewTestProfileSecret(id string, secret string) *corev1.Secret {
+	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-secret-",
 		},
@@ -267,18 +267,18 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 		Spec: appsv1.StatefulSetSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "test"}},
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"app": "test",
 					},
 				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Name:  "nginx",
 							Image: "nginx:1.18.0",
-							VolumeMounts: []v1.VolumeMount{
+							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "kanister-test-pvc-snap-vol1",
 									MountPath: "/var/lib/vol1",
@@ -288,17 +288,17 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 					},
 				},
 			},
-			VolumeClaimTemplates: []v1.PersistentVolumeClaim{
+			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "kanister-test-pvc-snap-vol1",
 						Namespace: namespace,
 					},
-					Spec: v1.PersistentVolumeClaimSpec{
-						AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-						Resources: v1.ResourceRequirements{
-							Requests: v1.ResourceList{
-								v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
+					Spec: corev1.PersistentVolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceName(corev1.ResourceStorage): k8sresource.MustParse("1Gi"),
 							},
 						},
 					},

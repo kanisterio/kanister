@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -61,7 +61,7 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 	err = resource.CreateCustomResources(context.Background(), config)
 	c.Assert(err, IsNil)
 
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanister-scale-test-",
 		},
@@ -85,7 +85,7 @@ func (s *ScaleSuite) TearDownTest(c *C) {
 	}
 }
 
-func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
+func newScaleBlueprint(kind string, scaleUpCount string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"echoHello": {
@@ -122,7 +122,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 						Name: "testScale",
 						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
-							ScaleWorkloadReplicas: "2",
+							ScaleWorkloadReplicas: scaleUpCount,
 						},
 					},
 				},
@@ -133,10 +133,11 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 
 func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	ctx := context.Background()
-	d := testutil.NewTestDeployment(1)
-	d.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-		PreStop: &v1.LifecycleHandler{
-			Exec: &v1.ExecAction{
+	var originalReplicaCount int32 = 1
+	d := testutil.NewTestDeployment(originalReplicaCount)
+	d.Spec.Template.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
+		PreStop: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{
 				Command: []string{"sleep", "30"},
 			},
 		},
@@ -160,15 +161,27 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 			Namespace: s.namespace,
 		},
 	}
+	var scaleUpToReplicas int32 = 2
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, s.osCli, as)
 		c.Assert(err, IsNil)
-		bp := newScaleBlueprint(kind)
+		bp := newScaleBlueprint(kind, fmt.Sprintf("%d", scaleUpToReplicas))
 		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			_, err = p.Exec(context.Background(), *bp, action, *tp)
+			out, err := p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
+			// at the start workload has `originalReplicaCount` replicas, the first phase that is going to get executed is
+			// `scaleUp` which would change that count to 2, but the function would return the count that workload originally had
+			// i.e., `originalReplicaCount`
+			if action == "scaleUp" {
+				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, originalReplicaCount)
+			}
+			// `scaleDown` is going to change the replica count to 0 from 2. Because the workload already had 2 replicas
+			//  (previous phase), so ouptut artifact from the function this time would be what the workload already had i.e., 2
+			if action == "scaleDown" {
+				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, scaleUpToReplicas)
+			}
 		}
 		ok, _, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
 		c.Assert(err, IsNil)
@@ -182,10 +195,11 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 
 func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	ctx := context.Background()
-	ss := testutil.NewTestStatefulSet(1)
-	ss.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-		PreStop: &v1.LifecycleHandler{
-			Exec: &v1.ExecAction{
+	var originalReplicaCount int32 = 1
+	ss := testutil.NewTestStatefulSet(originalReplicaCount)
+	ss.Spec.Template.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
+		PreStop: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{
 				Command: []string{"sleep", "30"},
 			},
 		},
@@ -209,15 +223,27 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		},
 	}
 
+	var scaleUpToReplicas int32 = 2
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
 		c.Assert(err, IsNil)
-		bp := newScaleBlueprint(kind)
+		bp := newScaleBlueprint(kind, fmt.Sprintf("%d", scaleUpToReplicas))
 		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			_, err = p.Exec(context.Background(), *bp, action, *tp)
+			out, err := p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
+			// at the start workload has `originalReplicaCount` replicas, the first phase that is going to get executed is
+			// `scaleUp` which would change that count to 2, but the function would return the count that workload originally had
+			// i.e., `originalReplicaCount`
+			if action == "scaleUp" {
+				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, originalReplicaCount)
+			}
+			// `scaleDown` is going to change the replica count to 0 from 2. Because the workload already had 2 replicas
+			//  (previous phase), so ouptut artifact from the function this time would be what the workload already had i.e., 2
+			if action == "scaleDown" {
+				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, scaleUpToReplicas)
+			}
 		}
 		ok, _, err := kube.StatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 		c.Assert(err, IsNil)
@@ -315,15 +341,16 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			check:            IsNil,
 		},
 	} {
-		namespace, kind, name, replicas, waitForReady, err := getArgs(tc.tp, tc.args)
+		s := scaleWorkloadFunc{}
+		err := s.setArgs(tc.tp, tc.args)
 		c.Assert(err, tc.check)
 		if err != nil {
 			continue
 		}
-		c.Assert(namespace, Equals, tc.wantNamespace)
-		c.Assert(name, Equals, tc.wantName)
-		c.Assert(kind, Equals, tc.wantKind)
-		c.Assert(replicas, Equals, tc.wantReplicas)
-		c.Assert(waitForReady, Equals, tc.wantWaitForReady)
+		c.Assert(s.namespace, Equals, tc.wantNamespace)
+		c.Assert(s.name, Equals, tc.wantName)
+		c.Assert(s.kind, Equals, tc.wantKind)
+		c.Assert(s.replicas, Equals, tc.wantReplicas)
+		c.Assert(s.waitForReady, Equals, tc.wantWaitForReady)
 	}
 }

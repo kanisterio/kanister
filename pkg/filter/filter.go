@@ -15,7 +15,7 @@
 package filter
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -135,7 +135,7 @@ func JoinResourceTypeMatchers(ms ...ResourceTypeMatcher) ResourceTypeMatcher {
 // ResourceRequirement allows specifying a resource requirement by type and/or name
 type ResourceRequirement struct {
 	// Provides the Name of the resource object
-	v1.LocalObjectReference `json:",inline,omitempty"`
+	corev1.LocalObjectReference `json:",inline,omitempty"`
 	// Provides the Group, Version, and Resource values (GVR)
 	ResourceTypeRequirement `json:",inline,omitempty"`
 	// Specifies a set of label requirements to be used as filters for matches
