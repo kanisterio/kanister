@@ -22,7 +22,7 @@ require (
 	github.com/aws/aws-sdk-go v1.49.17
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-logr/logr v1.3.0
-	github.com/go-openapi/strfmt v0.21.10
+	github.com/go-openapi/strfmt v0.22.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.5.0
