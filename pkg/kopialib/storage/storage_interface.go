@@ -1,4 +1,4 @@
-// Copyright 2023 The Kanister Authors.
+// Copyright 2024 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ const (
 	TypeS3        StorageType = "S3"
 	TypeAzure     StorageType = "Azure"
 	TypeFileStore StorageType = "FileStore"
+	TypeGCP       StorageType = "GCP"
 )
 
 type Storage interface {
@@ -42,6 +43,8 @@ func New(storageType StorageType) Storage {
 		return &fileSystem{}
 	case TypeAzure:
 		return &azureStorage{}
+	case TypeGCP:
+		return &gcpStorage{}
 	default:
 		return nil
 	}
