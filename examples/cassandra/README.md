@@ -33,7 +33,7 @@ $ helm install cassandra bitnami/cassandra --namespace <app-namespace> --set ima
 
 
 ```
-This command will install Cassandra on your Kubernetes cluster with 2 nodes. You can notice that we are using custom image of Cassandra in the helm to install the Cassandra cluster. The reason is we have to use some Kanister tools to take backup, so only change that we have done is including that tooling on top of standard `cassandra:3.11.8-debian-10-r20` image.
+This command will install Cassandra on your Kubernetes cluster with 2 nodes. You can notice that we are using custom image of Cassandra in the helm to install the Cassandra cluster. The reason is we have to use some Kanister tools to take backup, so only change that we have done is including that tooling on top of standard `4.1.3-debian-11-r76` image.
 
 ## Integrating with Kanister
 
