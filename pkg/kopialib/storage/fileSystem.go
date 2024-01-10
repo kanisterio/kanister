@@ -1,4 +1,4 @@
-// Copyright 2023 The Kanister Authors.
+// Copyright 2024 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,22 +16,29 @@ package storage
 
 import (
 	"context"
+	"path/filepath"
 
+	"github.com/kanisterio/kanister/pkg/kopialib"
 	"github.com/kopia/kopia/repo/blob"
 	"github.com/kopia/kopia/repo/blob/filesystem"
 )
 
+const (
+	defaultFileMode = 0o600
+	defaultDirMode  = 0o700
+)
+
 type fileSystem struct {
-	Options filesystem.Options
+	Options *filesystem.Options
 	Create  bool
 }
 
 func (f *fileSystem) Connect() (blob.Storage, error) {
-	return filesystem.New(context.Background(), &f.Options, f.Create)
+	return filesystem.New(context.Background(), f.Options, f.Create)
 }
 
 func (f *fileSystem) WithOptions(opts filesystem.Options) {
-	f.Options = opts
+	f.Options = &opts
 }
 
 func (f *fileSystem) WithCreate(create bool) {
@@ -39,5 +46,10 @@ func (f *fileSystem) WithCreate(create bool) {
 }
 
 func (f *fileSystem) SetOptions(ctx context.Context, options map[string]string) {
-	f.Options = filesystem.Options{}
+	filePath := filepath.Join(kopialib.DefaultFSMountPath, options[kopialib.FilesystorePath])
+	f.Options = &filesystem.Options{
+		Path:          filePath,
+		FileMode:      defaultFileMode,
+		DirectoryMode: defaultDirMode,
+	}
 }
