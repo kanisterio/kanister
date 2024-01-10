@@ -34,7 +34,7 @@ jobs:
           If you haven't already, please take a moment to review our project's [Code of Conduct](https://github.com/kanisterio/kanister/blob/master/CODE_OF_CONDUCT.md) document.
     -
       name: Update project
-      uses: alex-page/github-project-automation-plus@v0.8.3
+      uses: alex-page/github-project-automation-plus@v0.9.0
       with:
         repo-token: ${{ secrets.GH_TOKEN }} # must use a PAT here
         project: Kanister

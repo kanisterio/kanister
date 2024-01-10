@@ -24,9 +24,11 @@ builds:
   - amd64
 - id: kando
   binary: kando
-  main: cmd/kando/main.go
+  main: ./cmd/kando
   ldflags: *ldflags
   env: *env
+  tags:
+  - fipsonly
   goos: &goos
   - linux
   goarch: *goarch

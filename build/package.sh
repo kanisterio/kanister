@@ -35,7 +35,6 @@ build_licenses_info_image() {
         exit 1
     fi
     docker run --rm ${mount_cmd} \
-        --platform linux/${ARCH}\
         "ghcr.io/kanisterio/license-extractor:4e0a91a" \
         --mode merge \
         --source ${src_dir} \

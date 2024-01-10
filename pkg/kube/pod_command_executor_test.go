@@ -69,8 +69,6 @@ type fakePodCommandExecutorProcessor struct {
 	inExecWithOptionsOpts *ExecOptions
 	execWithOptionsStdout string
 	execWithOptionsStderr string
-	execWithOptionsRet1   string
-	execWithOptionsRet2   string
 	execWithOptionsErr    error
 
 	// Signal to `ExecWithOptions` to start "executing" command.
@@ -79,7 +77,7 @@ type fakePodCommandExecutorProcessor struct {
 	execWithOptionsSyncEnd   testBarrier
 }
 
-func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(opts ExecOptions) (string, string, error) {
+func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(opts ExecOptions) error {
 	fprp.inExecWithOptionsOpts = &opts
 	fprp.execWithOptionsSyncStart.SyncWithController()
 	if opts.Stdout != nil && len(fprp.execWithOptionsStdout) > 0 {
@@ -90,7 +88,7 @@ func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(opts ExecOptions) (
 	}
 	fprp.execWithOptionsSyncEnd.SyncWithController()
 
-	return fprp.execWithOptionsRet1, fprp.execWithOptionsRet2, fprp.execWithOptionsErr
+	return fprp.execWithOptionsErr
 }
 
 func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {

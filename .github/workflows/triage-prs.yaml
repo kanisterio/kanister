@@ -31,7 +31,7 @@ jobs:
           If you haven't already, please take a moment to review our project [contributing guideline](https://github.com/kanisterio/kanister/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/kanisterio/kanister/blob/master/CODE_OF_CONDUCT.md) document.
     -
       name: Update status in project
-      uses: alex-page/github-project-automation-plus@v0.8.3
+      uses: alex-page/github-project-automation-plus@v0.9.0
       # This only works for PRs opened in the same repo and not by dependabot.
       # Other PRs don't get the necessary credentials.
       if: github.repository == 'kanisterio/kanister' && !github.event.pull_request.head.repo.fork
