@@ -48,7 +48,7 @@ func (v *VulnerabilityParserSuite) TestValidJsonForMatchingVulerabilities(c *C) 
 	c.Assert(len(matchingVulnerabilities), Equals, 2)
 	c.Assert(err, IsNil)
 	for index, vulnerability := range matchingVulnerabilities {
-		c.Assert(vulnerability.ID, Equals, expectedIds[index])
-		c.Assert(vulnerability.Severity, Equals, severityLevels[index])
+		c.Assert(vulnerability.Vulnerabilities.ID, Equals, expectedIds[index])
+		c.Assert(vulnerability.Vulnerabilities.Severity, Equals, severityLevels[index])
 	}
 }
