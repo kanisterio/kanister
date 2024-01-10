@@ -93,7 +93,7 @@ jobs:
   release:
     runs-on: ubuntu-20.04
     needs: [lint, test, build, docs]
-    if: github.ref_name == 'master' || startsWith(github.ref, 'refs/tags')
+    # if: github.ref_name == 'master' || startsWith(github.ref, 'refs/tags')
     permissions:
       packages: write
     steps:

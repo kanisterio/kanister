@@ -239,7 +239,7 @@ gorelease:
 	@$(MAKE) run CMD="./build/gorelease.sh"
 
 release-snapshot:
-	@$(MAKE) run CMD="GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot --timeout=60m0s"
+	@$(MAKE) run CMD="GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --parallelism=1 --debug release --rm-dist --snapshot --timeout=60m0s"
 
 go-mod-download:
 	@$(MAKE) run CMD="go mod download"
