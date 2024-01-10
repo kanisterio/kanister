@@ -550,3 +550,33 @@ var _ = Suite(&PostgreSQLDepConfig4_13{
 		profile:   newSecretProfile(),
 	},
 })
+
+// MysqlDBDepConfig4_14 for Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+type MysqlDBDepConfig4_14 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MysqlDBDepConfig4_14{
+	IntegrationSuite{
+		name:      "mysqldc",
+		namespace: "mysqldc4-14-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_14, app.EphemeralStorage, "8.0"),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQLDepConfig4_14 for PostgreSQL deployed on openshift cluster
+type PostgreSQLDepConfig4_14 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&PostgreSQLDepConfig4_14{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-14-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_14, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})

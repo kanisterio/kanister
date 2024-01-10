@@ -49,6 +49,8 @@ const (
 	TemplateVersionOCP4_12 DBTemplate = "release-4.12"
 	// TemplateVersionOCP4_13 stores version of db template 4.13
 	TemplateVersionOCP4_13 DBTemplate = "release-4.13"
+	// TemplateVersionOCP4_14 stores version of db template 4.14
+	TemplateVersionOCP4_14 DBTemplate = "release-4.14"
 )
 
 type storage string
