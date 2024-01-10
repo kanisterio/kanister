@@ -1,4 +1,4 @@
-// Copyright 2023 The Kanister Authors.
+// Copyright 2024 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
 package kopialib
 
 const (
+	// Common storage consts
+	BucketKey = "bucket"
+	PrefixKey = "prefix"
+
 	// S3 storage consts
-	BucketKey         = "bucket"
-	EndpointKey       = "endpoint"
-	PrefixKey         = "prefix"
-	RegionKey         = "region"
+	S3EndpointKey     = "endpoint"
+	S3RegionKey       = "region"
 	SkipSSLVerifyKey  = "skipSSLVerify"
 	S3AccessKey       = "accessKeyID"
 	S3SecretAccessKey = "secretAccessKey"
@@ -27,8 +29,17 @@ const (
 	DoNotUseTLS       = "doNotUseTLS"
 	DoNotVerifyTLS    = "doNotVerifyTLS"
 
-	//Azure storage conts
+	// Azure storage consts
 	AzureStorageAccount          = "storageAccount"
 	AzureStorageAccountAccessKey = "storageKey"
 	AzureSASToken                = "sasToken"
+
+	//Filestore storage consts
+	FilesystorePath    = "path"
+	DefaultFSMountPath = "/mnt/data"
+
+	//GCP storage consts
+	GCPServiceAccountCredentialsFile = "serviceAccountCredentialsFile"
+	GCPServiceAccountCredentialJSON  = "serviceAccountCredentialsJson"
+	GCPReadOnly                      = "readOnly"
 )

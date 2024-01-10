@@ -1,4 +1,4 @@
-// Copyright 2023 The Kanister Authors.
+// Copyright 2024 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,16 +23,16 @@ import (
 )
 
 type azureStorage struct {
-	Options azure.Options
+	Options *azure.Options
 	Create  bool
 }
 
 func (a azureStorage) Connect() (blob.Storage, error) {
-	return azure.New(context.Background(), &a.Options, a.Create)
+	return azure.New(context.Background(), a.Options, a.Create)
 }
 
 func (a *azureStorage) WithOptions(opts azure.Options) {
-	a.Options = opts
+	a.Options = &opts
 }
 
 func (a *azureStorage) WithCreate(create bool) {
@@ -40,7 +40,7 @@ func (a *azureStorage) WithCreate(create bool) {
 }
 
 func (a *azureStorage) SetOptions(ctx context.Context, options map[string]string) {
-	a.Options = azure.Options{
+	a.Options = &azure.Options{
 		Prefix:         options[kopialib.PrefixKey],
 		Container:      options[kopialib.BucketKey],
 		StorageAccount: options[kopialib.AzureStorageAccount],

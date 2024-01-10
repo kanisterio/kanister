@@ -1,4 +1,4 @@
-// Copyright 2023 The Kanister Authors.
+// Copyright 2024 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,16 +24,16 @@ import (
 )
 
 type s3Storage struct {
-	Options s3.Options
+	Options *s3.Options
 	Create  bool
 }
 
 func (s *s3Storage) Connect() (blob.Storage, error) {
-	return s3.New(context.Background(), &s.Options, s.Create)
+	return s3.New(context.Background(), s.Options, s.Create)
 }
 
 func (s *s3Storage) WithOptions(opts s3.Options) {
-	s.Options = opts
+	s.Options = &opts
 }
 
 func (s *s3Storage) WithCreate(create bool) {
@@ -41,11 +41,11 @@ func (s *s3Storage) WithCreate(create bool) {
 }
 
 func (s *s3Storage) SetOptions(ctx context.Context, options map[string]string) {
-	s.Options = s3.Options{
+	s.Options = &s3.Options{
 		BucketName:      options[kopialib.BucketKey],
-		Endpoint:        options[kopialib.EndpointKey],
+		Endpoint:        options[kopialib.S3EndpointKey],
 		Prefix:          options[kopialib.PrefixKey],
-		Region:          options[kopialib.RegionKey],
+		Region:          options[kopialib.S3RegionKey],
 		SessionToken:    options[kopialib.S3TokenKey],
 		AccessKeyID:     options[kopialib.S3AccessKey],
 		SecretAccessKey: options[kopialib.S3SecretAccessKey],
