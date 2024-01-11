@@ -28,7 +28,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/pkg/errors"
-	"sigs.k8s.io/kustomize/kyaml/sets"
+	"k8s.io/kube-openapi/pkg/util/sets"
 )
 
 const (
