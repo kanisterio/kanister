@@ -18,7 +18,7 @@
 package cmd
 
 // Here's an example of how you might use this package:
-
+//
 // package main
 //
 // import (
