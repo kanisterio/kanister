@@ -17,3 +17,44 @@
 // and redacted, unless explicitly specified.
 package cmd
 
+// Here's an example of how you might use this package:
+
+// package main
+//
+// import (
+//     "fmt"
+//     "cmd"
+// )
+//
+// func main() {
+//     // Create a new command builder
+//     cmdBuilder := cmd.NewBuilder().
+//         AppendLoggable("zip").
+//         AppendLoggableKV(
+//				"--temp-path", "/tmp",
+//				"--exclude", "*.log",
+//		   ).
+//         AppendRedactedKV("-p", "password123").
+//         AppendLoggable(
+//				"project_backup.zip",
+//				"~/home/user/project")
+//
+//     fmt.Println("Builder:", cmdBuilder)
+//     // Output: Builder: [zip --temp-path=/tmp --exclude=*.log -p=<****> project_backup.zip ~/home/user/project]
+//     // The fmt.Println call implicitly invokes the String() method on cmdBuilder,
+//     // which returns a log string representation of the command.
+//     // This is similar to calling logger.Log() as shown below.
+//
+//     // Build the command.
+//     command := cmdBuilder.Build()
+//     fmt.Println("Command:", command)
+//     // Output: Command: [zip --temp-path=/tmp --exclude=*.log -p=password123 project_backup.zip ~/home/user/project]
+//
+//     // Log the command with sensitive data redacted.
+//     logger := cmd.NewLogger(cmdBuilder)
+//     logOutput := logger.Log()
+//
+//     fmt.Println("Log:", logOutput)
+//     // Output: Log: zip --temp-path=/tmp --exclude=*.log -p=<****> project_backup.zip ~/home/user/project
+// }
+//
