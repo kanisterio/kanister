@@ -166,12 +166,12 @@ func (b *Builder) String() string {
 
 // Logger is used for logging command arguments.
 type Logger struct {
-	args      CommandArguments
+	command   CommandArguments
 	Formatter ArgumentFormatter
 }
 
 // Log builds the loggable command string from the command arguments.
 func (l *Logger) Log() string {
-	c := l.Formatter.format(l.args.Arguments())
+	c := l.Formatter.format(l.command.Arguments())
 	return strings.Join(c, " ")
 }
