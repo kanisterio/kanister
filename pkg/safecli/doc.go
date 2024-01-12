@@ -12,24 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cmd provides a framework for constructing commands that
-// are safe for logging, where each token is considered unsafe
-// and redacted, unless explicitly specified.
-package cmd
+// Package safecli provides functionality for building, redacting, and logging command-line arguments.
+// It is designed to handle sensitive values securely
+// while also providing utility for CLI construction and logging.
+package safecli
 
-// Here's an example of how you might use this package:
+// The package offers two concrete builder functions:
+// - NewBuilder: Creates a new CLI builder, allowing for flexible CLI creation.
+// - NewLogger: Creates a new CLI logger for safely CLI logging.
+
+// Usage example:
 //
 // package main
 //
 // import (
 //     "fmt"
-//     "cmd"
+//     "safecli"
 // )
 //
 // func main() {
 //     // Create a new command builder
-//     cmdBuilder := cmd.NewBuilder().
-//         AppendLoggable("zip").
+//     zipcli := safecli.NewBuilder("zip").
 //         AppendLoggableKV(
 //             "--temp-path", "/tmp",
 //             "--exclude", "*.log",
@@ -39,19 +42,19 @@ package cmd
 //             "project_backup.zip",
 //             "~/home/user/project")
 //
-//     fmt.Println("Builder:", cmdBuilder)
+//     fmt.Println("Builder:", zipcli)
 //     // Output: Builder: [zip --temp-path=/tmp --exclude=*.log -p=<****> project_backup.zip ~/home/user/project]
-//     // The fmt.Println call implicitly invokes the String() method on cmdBuilder,
+//     // The fmt.Println call implicitly invokes the String() method on zipcli,
 //     // which returns a log string representation of the command.
 //     // This is similar to calling logger.Log() as shown below.
 //
 //     // Build the command.
-//     command := cmdBuilder.Build()
+//     command := zipcli.Build()
 //     fmt.Println("Command:", command)
 //     // Output: Command: [zip --temp-path=/tmp --exclude=*.log -p=password123 project_backup.zip ~/home/user/project]
 //
 //     // Log the command with sensitive data redacted.
-//     logger := cmd.NewLogger(cmdBuilder)
+//     logger := safecli.NewLogger(zipcli)
 //     logOutput := logger.Log()
 //
 //     fmt.Println("Log:", logOutput)

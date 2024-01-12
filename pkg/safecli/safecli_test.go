@@ -1,18 +1,4 @@
-// Copyright 2019 The Kanister Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package cmd
+package safecli
 
 import (
 	"fmt"
@@ -22,6 +8,45 @@ import (
 	"strings"
 	"testing"
 )
+
+func createTestCommand() *Builder {
+	return NewBuilder("cmd").
+		AppendLoggableKV("--temp-dir", "/tmp").
+		Append(createTestSubCommand())
+}
+
+func createTestSubCommand() *Builder {
+	return NewBuilder("subcmd").
+		AppendRedactedKV("--password", "pass123")
+}
+
+func TestNewCommandBuilder(t *testing.T) {
+	builder := createTestCommand()
+
+	expect := []string{"cmd", "--temp-dir=/tmp", "subcmd", "--password=pass123"}
+	got := builder.Build()
+	if len(expect) != len(got) {
+		t.Errorf("Expected %v args, got %v", len(expect), len(got))
+	}
+
+	if !reflect.DeepEqual(expect, got) {
+		t.Errorf("Expected %v, got %v", expect, got)
+	}
+}
+
+func TestNewCommandLogger(t *testing.T) {
+	logger := NewLogger(createTestCommand())
+
+	expect := fmt.Sprintf("cmd --temp-dir=/tmp subcmd --password=%v", redactedValue)
+	got := logger.Log()
+	if len(expect) != len(got) {
+		t.Errorf("Expected %v args, got %v", len(expect), len(got))
+	}
+
+	if !reflect.DeepEqual(expect, got) {
+		t.Errorf("Expected %v, got %v", expect, got)
+	}
+}
 
 func TestPlainValue(t *testing.T) {
 	l := PlainValue{"--arg"}
@@ -205,13 +230,11 @@ func TestBuilderAppend(t *testing.T) {
 		"--password=pass123",
 	}
 
-	builder := NewBuilder().
-		AppendLoggable("cmd").
+	builder := NewBuilder("cmd").
 		AppendLoggableKV("--temp-dir", "/tmp").
 		AppendLoggableKV("--log-dir", "/var/log")
 
-	subCmd := NewBuilder().
-		AppendLoggable("subcmd").
+	subCmd := NewBuilder("subcmd").
 		AppendRedactedKV("--password", "pass123")
 	builder.Append(subCmd)
 
@@ -233,8 +256,7 @@ func TestBuilderAppend(t *testing.T) {
 func TestBuilderString(t *testing.T) {
 	expected := "cmd --temp-dir=/tmp subcmd --password=<****>"
 
-	builder := NewBuilder().
-		AppendLoggable("cmd").
+	builder := NewBuilder("cmd").
 		AppendLoggableKV("--temp-dir", "/tmp").
 		AppendLoggable("subcmd").
 		AppendRedactedKV("--password", "pass123")
@@ -248,7 +270,7 @@ func TestBuilderString(t *testing.T) {
 		{fmt: "%v", expected: expected},
 		{fmt: "%+v", expected: expected},
 		{fmt: "%q", expected: fmt.Sprintf("\"%s\"", expected)},
-		{fmt: "%#v", expected: `&cmd.Builder{Args:[]cmd.Argument{cmd.Argument{Key:"", Value:(*cmd.PlainValue)()}, cmd.Argument{Key:"--temp-dir", Value:(*cmd.PlainValue)()}, cmd.Argument{Key:"", Value:(*cmd.PlainValue)()}, cmd.Argument{Key:"--password", Value:<****>}}, Formatter:(cmd.ArgumentFormatter)()}`},
+		{fmt: "%#v", expected: `&safecli.Builder{Args:[]safecli.Argument{safecli.Argument{Key:"", Value:(*safecli.PlainValue)()}, safecli.Argument{Key:"--temp-dir", Value:(*safecli.PlainValue)()}, safecli.Argument{Key:"", Value:(*safecli.PlainValue)()}, safecli.Argument{Key:"--password", Value:<****>}}, Formatter:(safecli.ArgumentFormatter)()}`},
 	} {
 		var logOut strings.Builder
 		logger := log.New(&logOut, "", 0)
@@ -266,6 +288,36 @@ func TestBuilderString(t *testing.T) {
 			t.Errorf("%q: \nexpected '%v', \ngot      '%v'", tt.fmt, tt.expected, got)
 		}
 	}
+}
+
+func TestCommandBuilder(t *testing.T) {
+	expectedLogCmd := "cmd --temp-dir=/tmp subcmd --password=<****>"
+	expectedExecCmd := []string{
+		"cmd",
+		"--temp-dir=/tmp",
+		"subcmd",
+		"--password=pass123",
+	}
+
+	builder := NewBuilder("cmd").
+		AppendLoggableKV("--temp-dir", "/tmp").
+		AppendLoggable("subcmd").
+		AppendRedactedKV("--password", "pass123")
+
+	gotLogCmd, gotExecCmd := execCommand(builder)
+	if expectedLogCmd != gotLogCmd {
+		t.Errorf("Expected '%#v', got '%#v'", expectedLogCmd, gotLogCmd)
+	}
+
+	if !reflect.DeepEqual(expectedExecCmd, gotExecCmd) {
+		t.Errorf("Expected '%#v', got '%#v'", expectedExecCmd, gotExecCmd)
+	}
+}
+
+func execCommand(cmd CommandBuilder) (string, []string) {
+	logCmd := fmt.Sprint(cmd)
+	execCmd := cmd.Build()
+	return logCmd, execCmd
 }
 
 // removeHexNumbers removes hexadecimal (0x...) numbers from the string.

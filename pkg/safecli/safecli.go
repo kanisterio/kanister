@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package safecli
 
 import "strings"
 
@@ -20,6 +20,16 @@ const (
 	redactedValue     = "<****>"
 	keyValueDelimiter = "="
 )
+
+// Redactor defines an interface for handling sensitive value in the way
+// that it can be represented both in a plain and redacted text form.
+type Redactor interface {
+	PlainString() string
+	String() string
+}
+
+// redactor defines a function that converts value to Redactor.
+type redactor func(value string) Redactor
 
 // Argument stores a key=value pair where the value is subject to redaction.
 type Argument struct {
@@ -47,6 +57,11 @@ func (r SensitiveValue) PlainString() string {
 	return r.value
 }
 
+// newSensitive returns value as Sensitive.
+func newSensitive(value string) Redactor {
+	return &SensitiveValue{value}
+}
+
 // PlainValue implements Redactor interface for non-sensitive data.
 type PlainValue struct {
 	value string
@@ -62,35 +77,20 @@ func (l PlainValue) PlainString() string {
 	return l.value
 }
 
-// Builder implements CommandBuilder and CommandData interfaces.
-// It is used to build a command with a mix of loggable and redacted arguments.
-type Builder struct {
-	Args      []Argument
-	Formatter ArgumentFormatter
-}
-
-// assert that Builder implements CommandBuilder and CommandArguments interfaces
-// and Logger implements CommandLogger interface.
-var (
-	_ CommandBuilder   = (*Builder)(nil)
-	_ CommandArguments = (*Builder)(nil)
-	_ CommandLogger    = (*Logger)(nil)
-)
-
 // newPlain returns value as Plain.
 func newPlain(value string) Redactor {
 	return &PlainValue{value}
 }
 
-// newSensitive returns value as Sensitive.
-func newSensitive(value string) Redactor {
-	return &SensitiveValue{value}
+// Builder is used for constructing CLI.
+type Builder struct {
+	// Args stores the command arguments.
+	Args []Argument
+	// Formatter defines a function that formats a command argument to the string.
+	Formatter ArgumentFormatter
 }
 
-// redactor is a function that converts value to Redactor.
-type redactor func(value string) Redactor
-
-// append adds a single argument to the command builder with a custom redactor.
+// append adds a single argument to the builder with a custom redactor.
 func (b *Builder) append(key, value string, redactor redactor) {
 	b.Args = append(b.Args, Argument{
 		Key:   key,
@@ -98,15 +98,15 @@ func (b *Builder) append(key, value string, redactor redactor) {
 	})
 }
 
-// appendValues adds values to the command builder with a custom redactor.
+// appendValues adds values to the builder with a custom redactor.
 func (b *Builder) appendValues(values []string, redactor redactor) *Builder {
-	for _, arg := range values {
-		b.append("", arg, redactor)
+	for _, value := range values {
+		b.append("", value, redactor)
 	}
 	return b
 }
 
-// appendKeyValuePairs adds key=value pairs to the command builder with a custom redactor.
+// appendKeyValuePairs adds key=value pairs to the builder with a custom redactor.
 func (b *Builder) appendKeyValuePairs(kvPairs []string, redactor redactor) *Builder {
 	for i := 0; i < len(kvPairs); i += 2 {
 		key, value := kvPairs[i], ""
@@ -118,25 +118,25 @@ func (b *Builder) appendKeyValuePairs(kvPairs []string, redactor redactor) *Buil
 	return b
 }
 
-// AppendLoggable adds loggable values to the command builder.
+// AppendLoggable adds loggable values to the builder.
 // These values can be logged and displayed as they do not have sensitive info.
 func (b *Builder) AppendLoggable(values ...string) *Builder {
 	return b.appendValues(values, newPlain)
 }
 
-// AppendRedacted adds redacted values to the command builder.
+// AppendRedacted adds redacted values to the builder.
 // These values are sensitive and should be display in logs as <****>.
 func (b *Builder) AppendRedacted(values ...string) *Builder {
 	return b.appendValues(values, newSensitive)
 }
 
-// AppendLoggableKV adds key=value pairs to the command builder.
+// AppendLoggableKV adds key=value pairs to the builder.
 // Key and value are loggable.
 func (b *Builder) AppendLoggableKV(kvPairs ...string) *Builder {
 	return b.appendKeyValuePairs(kvPairs, newPlain)
 }
 
-// AppendRedactedKV adds key=value pairs to the command builder.
+// AppendRedactedKV adds key=value pairs to the builder.
 // Key is loggable and value is sensitive.
 // The value should be display in logs as <****>.
 func (b *Builder) AppendRedactedKV(kvPairs ...string) *Builder {
@@ -159,19 +159,61 @@ func (b *Builder) Build() []string {
 	return b.Formatter.format(b.Args)
 }
 
-// String returns a string representation of the Builder with hidden sensitive fields.
+// String returns a string representation of the builder with hidden sensitive fields.
 func (b *Builder) String() string {
 	return NewLogger(b).Log()
 }
 
 // Logger is used for logging command arguments.
 type Logger struct {
-	command   CommandArguments
+	// Command stores the Command arguments.
+	Command CommandArguments
+	// Formatter defines a function that formats a command argument to the string.
 	Formatter ArgumentFormatter
 }
 
 // Log builds the loggable command string from the command arguments.
 func (l *Logger) Log() string {
-	c := l.Formatter.format(l.command.Arguments())
+	c := l.Formatter.format(l.Command.Arguments())
 	return strings.Join(c, " ")
+}
+
+// CommandBuilder builds and returns the command for execution.
+type CommandBuilder interface {
+	Build() []string
+}
+
+// CommandArguments provides an interface for accessing command arguments.
+type CommandArguments interface {
+	Arguments() []Argument
+}
+
+// CommandLogger returns a string representation of the command for logging.
+type CommandLogger interface {
+	Log() string
+}
+
+// assert that Builder implements CommandBuilder and CommandArguments interfaces
+// and Logger implements CommandLogger interface.
+var (
+	_ CommandBuilder   = (*Builder)(nil)
+	_ CommandArguments = (*Builder)(nil)
+	_ CommandLogger    = (*Logger)(nil)
+)
+
+// NewBuilder creates a new command builder instance.
+// It takes a slice of string values which are appended to the builder.
+func NewBuilder(values ...string) *Builder {
+	b := &Builder{
+		Formatter: CommandArgumentFormatter,
+	}
+	return b.AppendLoggable(values...)
+}
+
+// NewLogger creates a new Logger instance.
+func NewLogger(command CommandArguments) *Logger {
+	return &Logger{
+		Command:   command,
+		Formatter: LogArgumentFormatter,
+	}
 }
