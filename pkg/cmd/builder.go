@@ -69,7 +69,8 @@ type Builder struct {
 	Formatter ArgumentFormatter
 }
 
-// asserts that Builder implements CommandBuilder and CommandExecutor interfaces.
+// assert that Builder implements CommandBuilder and CommandArguments interfaces
+// and Logger implements CommandLogger interface.
 var (
 	_ CommandBuilder   = (*Builder)(nil)
 	_ CommandArguments = (*Builder)(nil)
