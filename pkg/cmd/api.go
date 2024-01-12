@@ -44,9 +44,9 @@ type CommandArguments interface {
 }
 
 // NewLogger creates a new Logger instance.
-func NewLogger(args CommandArguments) *Logger {
+func NewLogger(command CommandArguments) *Logger {
 	return &Logger{
-		command:   args,
+		command:   command,
 		Formatter: LogArgumentsFormatter,
 	}
 }
