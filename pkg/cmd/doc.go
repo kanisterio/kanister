@@ -31,13 +31,13 @@ package cmd
 //     cmdBuilder := cmd.NewBuilder().
 //         AppendLoggable("zip").
 //         AppendLoggableKV(
-//				"--temp-path", "/tmp",
-//				"--exclude", "*.log",
-//		   ).
+//             "--temp-path", "/tmp",
+//             "--exclude", "*.log",
+//         ).
 //         AppendRedactedKV("-p", "password123").
 //         AppendLoggable(
-//				"project_backup.zip",
-//				"~/home/user/project")
+//             "project_backup.zip",
+//             "~/home/user/project")
 //
 //     fmt.Println("Builder:", cmdBuilder)
 //     // Output: Builder: [zip --temp-path=/tmp --exclude=*.log -p=<****> project_backup.zip ~/home/user/project]
