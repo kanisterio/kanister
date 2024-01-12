@@ -25,7 +25,7 @@ func TestLogFormatter(t *testing.T) {
 		Value: &SensitiveValue{"pass123"},
 	}
 	expect := fmt.Sprintf("--password=%v", redactedValue)
-	got := LogArgumentsFormatter(arg)
+	got := LogArgumentFormatter(arg)
 	if expect != got {
 		t.Errorf("Expected %v, got %v", expect, got)
 	}
@@ -37,7 +37,7 @@ func TestCommandFormatter(t *testing.T) {
 		Value: &SensitiveValue{"pass123"},
 	}
 	expect := "--password=pass123"
-	got := CommandArgumentsFormatter(arg)
+	got := CommandArgumentFormatter(arg)
 	if expect != got {
 		t.Errorf("Expected %v, got %v", expect, got)
 	}

@@ -28,13 +28,13 @@ func (f ArgumentFormatter) format(args []Argument) []string {
 	return c
 }
 
-// CommandArgumentsFormatter implements regular command formatter.
-func CommandArgumentsFormatter(a Argument) string {
+// CommandArgumentFormatter implements regular command formatter.
+func CommandArgumentFormatter(a Argument) string {
 	return combineKeyValue(a.Key, a.Value.PlainString())
 }
 
-// LogArgumentsFormatter implements log formatter.
-func LogArgumentsFormatter(a Argument) string {
+// LogArgumentFormatter implements log formatter.
+func LogArgumentFormatter(a Argument) string {
 	return combineKeyValue(a.Key, a.Value.String())
 }
 

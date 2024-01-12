@@ -34,7 +34,7 @@ type CommandLogger interface {
 // NewBuilder creates a new command builder instance.
 func NewBuilder() *Builder {
 	return &Builder{
-		Formatter: CommandArgumentsFormatter,
+		Formatter: CommandArgumentFormatter,
 	}
 }
 
@@ -47,6 +47,6 @@ type CommandArguments interface {
 func NewLogger(command CommandArguments) *Logger {
 	return &Logger{
 		command:   command,
-		Formatter: LogArgumentsFormatter,
+		Formatter: LogArgumentFormatter,
 	}
 }
