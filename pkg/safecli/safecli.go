@@ -143,7 +143,7 @@ func (b *Builder) AppendRedactedKV(kvPairs ...string) *Builder {
 	return b.appendKeyValuePairs(kvPairs, newSensitive)
 }
 
-// Append combines Builder with the command arguments.
+// Append combines the command arguments with the builder.
 func (b *Builder) Append(command CommandArguments) *Builder {
 	b.Args = append(b.Args, command.Arguments()...)
 	return b
