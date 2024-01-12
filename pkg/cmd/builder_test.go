@@ -17,12 +17,13 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
 )
 
-func TestBuilderLoggable(t *testing.T) {
+func TestPlainValue(t *testing.T) {
 	l := PlainValue{"--arg"}
 	if l.PlainString() != "--arg" {
 		t.Errorf("Expected --arg, got %v", l.PlainString())
@@ -33,7 +34,7 @@ func TestBuilderLoggable(t *testing.T) {
 	}
 }
 
-func TestBuilderRedacted(t *testing.T) {
+func TestSensitiveValue(t *testing.T) {
 	r := SensitiveValue{"pass123"}
 	if r.PlainString() != "pass123" {
 		t.Errorf("Expected pass123, got %v", r.PlainString())
@@ -80,8 +81,8 @@ func TestBuilderRedactedPrint(t *testing.T) {
 func TestBuilderAppendLoggable(t *testing.T) {
 	expect := []string{"cmd", "--arg1"}
 
-	builder := NewBuilder()
-	builder.AppendLoggable(expect...)
+	builder := NewBuilder().
+		AppendLoggable(expect...)
 
 	if len(builder.Args) != 2 {
 		t.Errorf("Expected %v args, got %v", len(expect), len(builder.Args))
@@ -101,8 +102,8 @@ func TestBuilderAppendLoggable(t *testing.T) {
 func TestBuilderAppendRedacted(t *testing.T) {
 	expect := []string{"--arg1", "--arg2"}
 
-	builder := NewBuilder()
-	builder.AppendRedacted(expect...)
+	builder := NewBuilder().
+		AppendRedacted(expect...)
 
 	if len(builder.Args) != 2 {
 		t.Errorf("Expected %v args, got %v", len(expect), len(builder.Args))
@@ -120,70 +121,123 @@ func TestBuilderAppendRedacted(t *testing.T) {
 }
 
 func TestBuilderAppendLoggableKV(t *testing.T) {
-	builder := NewBuilder()
-	builder.AppendLoggableKV("--temp-dir", "/tmp")
+	builder := NewBuilder().
+		AppendLoggableKV(
+			"--temp-dir", "/tmp",
+			"--log-dir", "/var/log",
+			"--dry-run",
+		)
 
-	if len(builder.Args) != 1 {
-		t.Errorf("Expected 1 args, got %v", len(builder.Args))
+	if len(builder.Args) != 3 {
+		t.Errorf("Expected 3 args, got %v", len(builder.Args))
 	}
 
 	if builder.Args[0].Key != "--temp-dir" {
 		t.Errorf("args[0].Key expected --temp-dir, got %v", builder.Args[0].Key)
 	}
-
 	if builder.Args[0].Value.PlainString() != "/tmp" {
 		t.Errorf("args[0].Value().PlainString() expected /tmp, got %v", builder.Args[0].Value.PlainString())
 	}
-
 	if builder.Args[0].Value.String() != "/tmp" {
 		t.Errorf("args[0].Value().String() expected /tmp, got %v", builder.Args[0].Value.String())
+	}
+
+	if builder.Args[1].Key != "--log-dir" {
+		t.Errorf("args[1].Key expected --log-dir, got %v", builder.Args[1].Key)
+	}
+	if builder.Args[1].Value.PlainString() != "/var/log" {
+		t.Errorf("args[1].Value().PlainString() expected /var/log, got %v", builder.Args[1].Value.PlainString())
+	}
+	if builder.Args[1].Value.String() != "/var/log" {
+		t.Errorf("args[1].Value().String() expected /var/log, got %v", builder.Args[1].Value.String())
+	}
+
+	if builder.Args[2].Key != "--dry-run" {
+		t.Errorf("args[2].Key expected --dry-run, got %v", builder.Args[2].Key)
+	}
+	if builder.Args[2].Value.PlainString() != "" {
+		t.Errorf("args[2].Value().PlainString() expected \"\", got \"%v\"", builder.Args[2].Value.PlainString())
+	}
+	if builder.Args[2].Value.String() != "" {
+		t.Errorf("args[2].Value().String() expected \"\", got \"%v\"", builder.Args[2].Value.String())
 	}
 }
 
 func TestBuilderAppendRedactedKV(t *testing.T) {
-	builder := NewBuilder()
-	builder.AppendRedactedKV("--password", "pass123")
+	builder := NewBuilder().
+		AppendRedactedKV(
+			"--password", "pass123",
+			"--dry-run",
+		)
 
-	if len(builder.Args) != 1 {
-		t.Errorf("Expected 1 args, got %v", len(builder.Args))
+	if len(builder.Args) != 2 {
+		t.Errorf("Expected 2 args, got %v", len(builder.Args))
 	}
 
 	if builder.Args[0].Key != "--password" {
 		t.Errorf("args[0].Key expected --password, got %v", builder.Args[0].Key)
 	}
-
 	if builder.Args[0].Value.PlainString() != "pass123" {
 		t.Errorf("args[0].Value.PlainString() expected pass123, got %v", builder.Args[0].Value.PlainString())
 	}
-
 	if builder.Args[0].Value.String() != redactedValue {
 		t.Errorf("args[0].Value.PlainString() expected %v, got %v", redactedValue, builder.Args[0].Value.PlainString())
+	}
+
+	if builder.Args[1].Key != "--dry-run" {
+		t.Errorf("args[1].Key expected --dry-run, got %v", builder.Args[1].Key)
+	}
+	if builder.Args[1].Value.PlainString() != "" {
+		t.Errorf("args[1].Value().PlainString() expected \"\", got \"%v\"", builder.Args[1].Value.PlainString())
+	}
+	if builder.Args[1].Value.String() != redactedValue {
+		t.Errorf("args[1].Value().String() expected \"%v\", got \"%v\"", redactedValue, builder.Args[1].Value.String())
 	}
 }
 
 func TestBuilderAppend(t *testing.T) {
-	builder := NewBuilder()
-	builder.AppendLoggable("cmd")
-	builder.AppendLoggableKV("--temp-dir", "/tmp")
+	expectedCmd := "cmd --temp-dir=/tmp --log-dir=/var/log subcmd --password=<****>"
+	expectedLog := []string{
+		"cmd",
+		"--temp-dir=/tmp",
+		"--log-dir=/var/log",
+		"subcmd",
+		"--password=pass123",
+	}
 
-	sub := NewBuilder()
-	sub.AppendLoggable("subcmd")
-	builder.AppendRedactedKV("--password", "pass123")
+	builder := NewBuilder().
+		AppendLoggable("cmd").
+		AppendLoggableKV("--temp-dir", "/tmp").
+		AppendLoggableKV("--log-dir", "/var/log")
 
-	builder.Append(sub)
-	if len(builder.Args) != 4 {
-		t.Errorf("Expected 4 args, got %v", len(builder.Args))
+	subCmd := NewBuilder().
+		AppendLoggable("subcmd").
+		AppendRedactedKV("--password", "pass123")
+	builder.Append(subCmd)
+
+	if len(builder.Args) != 5 {
+		t.Errorf("Expected 5 args, got %v", len(builder.Args))
+	}
+
+	gotCmd := builder.String()
+	if expectedCmd != gotCmd {
+		t.Errorf("Expected '%v', got '%v'", expectedCmd, gotCmd)
+	}
+
+	gotLog := builder.Build()
+	if !reflect.DeepEqual(expectedLog, gotLog) {
+		t.Errorf("Expected '%#v', got '%#v'", expectedLog, gotLog)
 	}
 }
 
 func TestBuilderString(t *testing.T) {
 	expected := "cmd --temp-dir=/tmp subcmd --password=<****>"
 
-	builder := NewBuilder()
-	builder.AppendLoggable("cmd")
-	builder.AppendLoggableKV("--temp-dir", "/tmp")
-	builder.AppendLoggable("subcmd")
-	builder.AppendRedactedKV("--password", "pass123")
+	builder := NewBuilder().
+		AppendLoggable("cmd").
+		AppendLoggableKV("--temp-dir", "/tmp").
+		AppendLoggable("subcmd").
+		AppendRedactedKV("--password", "pass123")
 
 	for _, tt := range []struct {
 		fmt      string
