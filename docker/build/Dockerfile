@@ -29,6 +29,10 @@ RUN git config --global --add safe.directory /go/src/github.com/kanisterio/kanis
 # Adding CRD documentation generation tool.
 RUN GOBIN=/usr/local/bin go install github.com/ahmetb/gen-crd-api-reference-docs@v0.3.0
 
+RUN apt-get update && apt-get install -y pip
+
+RUN pip install reno
+
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \
     GOROOT="/usr/local/go" \

@@ -25,4 +25,11 @@ then
 	echo "You can generate a token here: https://github.com/settings/tokens/new"
 	exit 1
 fi
-goreleaser release --parallelism=1 --rm-dist --debug --timeout 120m
+
+RELEASE_NOTES=""
+if [ -n "${CHANGELOG_FILE:-}" ]
+then
+	RELEASE_NOTES="--release-notes ${CHANGELOG_FILE}"
+fi
+
+goreleaser release --parallelism=1 --rm-dist --debug --timeout 120m ${RELEASE_NOTES}

@@ -236,7 +236,7 @@ release-helm:
 	@/bin/bash ./build/release_helm.sh $(VERSION)
 
 gorelease:
-	@$(MAKE) run CMD="./build/gorelease.sh"
+	@$(MAKE) run CMD="./build/gorelease.sh $(CHANGELOG_FILE)"
 
 release-snapshot:
 	@$(MAKE) run CMD="GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot --timeout=60m0s"
@@ -284,3 +284,8 @@ uninstall-crds: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/conf
 manifests: ## Generates CustomResourceDefinition objects.
 	@$(MAKE) run CMD="./build/generate_crds.sh ${CONTROLLER_TOOLS_VERSION}"
 
+reno-new:
+	@$(MAKE) run CMD="reno new $(note)"
+
+reno-report:
+	@$(MAKE) run CMD="reno report > ./CHANGELOG.md"
