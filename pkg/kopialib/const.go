@@ -34,11 +34,11 @@ const (
 	AzureStorageAccountAccessKey = "storageKey"
 	AzureSASToken                = "sasToken"
 
-	//Filestore storage consts
+	// Filestore storage consts
 	FilesystorePath    = "path"
 	DefaultFSMountPath = "/mnt/data"
 
-	//GCP storage consts
+	// GCP storage consts
 	GCPServiceAccountCredentialsFile = "serviceAccountCredentialsFile"
 	GCPServiceAccountCredentialJSON  = "serviceAccountCredentialsJson"
 	GCPReadOnly                      = "readOnly"

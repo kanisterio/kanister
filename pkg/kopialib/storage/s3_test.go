@@ -133,6 +133,5 @@ func (s *s3StorageTestSuite) TestSetOptions(c *C) {
 		}
 
 		c.Assert(s3Storage.Options, DeepEquals, tc.expectedOptions)
-
 	}
 }
