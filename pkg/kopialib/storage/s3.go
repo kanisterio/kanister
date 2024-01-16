@@ -23,6 +23,14 @@ import (
 	"github.com/kopia/kopia/repo/blob/s3"
 )
 
+var requiredS3Arguments = []string{
+	kopialib.BucketKey,
+	kopialib.S3EndpointKey,
+	kopialib.S3AccessKey,
+	kopialib.S3SecretAccessKey,
+	kopialib.S3RegionKey,
+}
+
 type s3Storage struct {
 	Options *s3.Options
 	Create  bool
@@ -40,7 +48,11 @@ func (s *s3Storage) WithCreate(create bool) {
 	s.Create = create
 }
 
-func (s *s3Storage) SetOptions(ctx context.Context, options map[string]string) {
+func (s *s3Storage) SetOptions(ctx context.Context, options map[string]string) error {
+	err := validateCommonStorageArgs(options, TypeS3, requiredS3Arguments)
+	if err != nil {
+		return err
+	}
 	s.Options = &s3.Options{
 		BucketName:      options[kopialib.BucketKey],
 		Endpoint:        options[kopialib.S3EndpointKey],
@@ -52,4 +64,6 @@ func (s *s3Storage) SetOptions(ctx context.Context, options map[string]string) {
 	}
 	s.Options.DoNotUseTLS, _ = utils.GetBoolOrDefault(options[kopialib.DoNotUseTLS], true)
 	s.Options.DoNotVerifyTLS, _ = utils.GetBoolOrDefault(options[kopialib.DoNotVerifyTLS], true)
+
+	return nil
 }

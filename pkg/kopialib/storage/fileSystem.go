@@ -45,11 +45,12 @@ func (f *fileSystem) WithCreate(create bool) {
 	f.Create = create
 }
 
-func (f *fileSystem) SetOptions(ctx context.Context, options map[string]string) {
+func (f *fileSystem) SetOptions(ctx context.Context, options map[string]string) error {
 	filePath := filepath.Join(kopialib.DefaultFSMountPath, options[kopialib.FilesystorePath])
 	f.Options = &filesystem.Options{
 		Path:          filePath,
 		FileMode:      defaultFileMode,
 		DirectoryMode: defaultDirMode,
 	}
+	return nil
 }

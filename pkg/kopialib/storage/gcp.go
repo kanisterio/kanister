@@ -40,7 +40,7 @@ func (g *gcpStorage) WithCreate(create bool) {
 	g.Create = create
 }
 
-func (g *gcpStorage) SetOptions(ctx context.Context, options map[string]string) {
+func (g *gcpStorage) SetOptions(ctx context.Context, options map[string]string) error {
 	g.Options = &gcs.Options{
 		Prefix:                        options[kopialib.PrefixKey],
 		BucketName:                    options[kopialib.BucketKey],
@@ -48,4 +48,5 @@ func (g *gcpStorage) SetOptions(ctx context.Context, options map[string]string) 
 	}
 
 	g.Options.ReadOnly, _ = utils.GetBoolOrDefault(options[kopialib.GCPReadOnly], false)
+	return nil
 }

@@ -39,7 +39,7 @@ func (a *azureStorage) WithCreate(create bool) {
 	a.Create = create
 }
 
-func (a *azureStorage) SetOptions(ctx context.Context, options map[string]string) {
+func (a *azureStorage) SetOptions(ctx context.Context, options map[string]string) error {
 	a.Options = &azure.Options{
 		Prefix:         options[kopialib.PrefixKey],
 		Container:      options[kopialib.BucketKey],
@@ -47,4 +47,6 @@ func (a *azureStorage) SetOptions(ctx context.Context, options map[string]string
 		StorageKey:     options[kopialib.AzureStorageAccountAccessKey],
 		SASToken:       options[kopialib.AzureStorageAccountAccessKey],
 	}
+
+	return nil
 }
