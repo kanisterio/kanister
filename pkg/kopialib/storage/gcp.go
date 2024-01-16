@@ -23,6 +23,8 @@ import (
 	"github.com/kopia/kopia/repo/blob/gcs"
 )
 
+var _ Storage = &gcpStorage{}
+
 type gcpStorage struct {
 	Options *gcs.Options
 	Create  bool

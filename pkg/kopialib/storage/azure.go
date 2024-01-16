@@ -22,6 +22,8 @@ import (
 	"github.com/kopia/kopia/repo/blob/azure"
 )
 
+var _ Storage = &azureStorage{}
+
 type azureStorage struct {
 	Options *azure.Options
 	Create  bool

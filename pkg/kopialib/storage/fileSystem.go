@@ -23,6 +23,8 @@ import (
 	"github.com/kopia/kopia/repo/blob/filesystem"
 )
 
+var _ Storage = &fileSystem{}
+
 const (
 	defaultFileMode = 0o600
 	defaultDirMode  = 0o700

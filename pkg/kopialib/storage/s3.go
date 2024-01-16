@@ -23,6 +23,8 @@ import (
 	"github.com/kopia/kopia/repo/blob/s3"
 )
 
+var _ Storage = &s3Storage{}
+
 var requiredS3Arguments = []string{
 	kopialib.BucketKey,
 	kopialib.S3EndpointKey,
