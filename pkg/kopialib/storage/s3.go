@@ -27,10 +27,6 @@ var _ Storage = &s3Storage{}
 
 var requiredS3Arguments = []string{
 	kopialib.BucketKey,
-	kopialib.S3EndpointKey,
-	kopialib.S3AccessKey,
-	kopialib.S3SecretAccessKey,
-	kopialib.S3RegionKey,
 }
 
 type s3Storage struct {
