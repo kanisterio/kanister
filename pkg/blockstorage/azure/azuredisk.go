@@ -573,6 +573,8 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 
+	fmt.Printf("region that we got in azuredisk.go of snapshot, to create volume from is %s and id is %s\n", region, id)
+
 	diskId, err := uuid.NewV1()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create UUID")
