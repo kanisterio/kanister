@@ -623,6 +623,9 @@ func (s *AdStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz 
 	if err != nil {
 		return "", "", err
 	}
+
+	fmt.Printf("zs and region %s and %s\n", zs, region)
+
 	if len(zs) == 0 {
 		return region, "", nil
 	}
@@ -631,11 +634,13 @@ func (s *AdStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz 
 	if err != nil {
 		return "", "", err
 	}
+	fmt.Printf("zones that we got from FromSourceRegionZone %+v\n", zones)
 	if len(zones) != 1 {
 		return "", "", errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
 	}
 
 	region, id, err := getLocationInfo(zones[0])
+	fmt.Printf("region and id that we got from getLocationInfo %s, %s\n", region, id)
 	return region, id, errors.Wrapf(err, "Could not get region from zone %s", zones[0])
 }
 
