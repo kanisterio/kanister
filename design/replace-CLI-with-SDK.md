@@ -1,24 +1,38 @@
-# Problem Statement
-Currently we are using Kopia CLI to perform the repository and kopia repository server operations in kanister.
-The repository controller creates a pod, executes commands through `kube.exec`` to perform operations. The commands include: 
-- repo connect 
-- start server 
-- add users 
-- refresh server 
 
-The CLI commands executed using kube.exec can be flakey for long running commands.
+<!-- toc -->
+- [Motivation](#motivation)
+- [Scope](#scope)
+- [High Level Design](#high-level-design)
+  - [Kopia SDK wrappers](#kopia-sdk-wrappers)
+    - [Storage pkg](#storage-pkg)
+    - [Repository pkg](#repository-pkg)
+  - [Repository server controller changes](#repository-server-controller-changes)
+	- [Kopia CLI Approach](#kopia-cli-approach)
+	- [Kopia SDK Approach](#kopia-sdk-approach)
+<!-- /toc -->
 
-The goal of the proposal is
-- To replace kopia CLI with Kopia SDK wherever possible to gain more control over operations on kopia.
+
+# Motivation
+
+Kanister uses a kubernetes custom controller makes use of kopia as a primary backup and restore tool. 
+The detailed design of the customer controller can be found [here](https://github.com/kanisterio/kanister/blob/master/design/kanister-kopia-integration.md)
+
+The custom controller called as repository server controller currently uses kopia CLI to perform the kopia operations. All the
+operations are executed inside a pod using the `kubectl exec` function. `kubectl exec` can be flaky for long running operations
+and gives less control over command that is being executed. 
+
+The goal over here is to build a kopia server programatically and reduce the dependency on kopia CLI in turn reducing the usage of 
+`kubectl exec` by using kopia SDK and gain more flexibility over the operations
 
 ## Scope
 1. Implement a library that provides wraps the SDK functions provided by kopia to connect to underlying storage providers - S3, Azure, GCP, Filestore
 2. Build another pkg on top of the library implemented in #1 that can be used to perform repository operations
-
+3. Modify the repository server controller to run a pod that executes a custom image. The binary would take all the
+necessary steps to make the kopia server ready using kopia SDK and kopia CLI. 
 
 ## High Level Design
 
-### Kopia Library
+### Kopia SDK Wrappers
 
 #### Storage pkg
 
@@ -177,3 +191,30 @@ func repositoryConfigFileName(configFile string) string {
 }
 
 ```
+
+### Repository server controller changes
+
+#### Kopia CLI Approach
+
+![Alt text](images/kopia-CLI-workflow.png?raw=true "Kanister Kopia Integration using Kopia CLI")
+
+Above diagram explains the current workflow repository server controller
+uses to start the kopia repository server. All the commands are executed from the controller pod inside 
+the respoitory server pod using `kube.exec`. The repository server pod that is created by controller
+uses `kanister-tools` image
+
+
+#### Kopia SDK Approach
+
+![Alt text](images/kopia-SDK-workflow.png?raw=true "Kanister Kopia Integration using Kopia SDK")
+
+
+As shown in the figure we will be building a custom image which is going have this workflow:
+1. Start the kopia repository server in `--async-repo-connect` mode that means the server would be started without
+connecting to the repository in an async mode. Existing approach starts the server only after the connection to kopia repository
+is successful. Kopia SDK currently does not have an exported function to start the kopia server. So we would still be using Kopia
+CLI to start the server
+2. Check kopia server status using Kopia SDK wrappers explained in section [Kopia SDK wrappers](#kopia-sdk-wrappers)
+2. Connect to Kopia repository using Kopia SDK wrappers
+3. Add or Update server users using Kopia SDK wrappers
+4. Refresh server using Kopia SDK wrappers
