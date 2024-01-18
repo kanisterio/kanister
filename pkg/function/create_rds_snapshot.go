@@ -139,8 +139,8 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 	return output, nil
 }
 
-func createSnapshot(ctx context.Context, rdsCli *rds.RDS, snapshotID, dbEngine, instanceID string) (int64, error) {
-	log.WithContext(ctx).Print("Creating RDS snapshot", field.M{"SnapshotID": snapshotID})
+func createSnapshot(ctx context.Context, rdsCli *rds.RDS, snapshotID, instanceID, dbEngine string) (int64, error) {
+	log.WithContext(ctx).Print("Creating RDS snapshot", field.M{"SnapshotID": snapshotID, "InstanceID": instanceID})
 	var allocatedStorage int64
 	if !isAuroraCluster(dbEngine) {
 		dbSnapshotOutput, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID)

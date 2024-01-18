@@ -94,8 +94,8 @@ build: bin/$(ARCH)/$(BIN)
 
 build-controller:
 	@$(MAKE) run CMD=" \
-	goreleaser build --id $(BIN) --rm-dist --debug --snapshot \
-	&& cp dist/$(BIN)_linux_$(ARCH)_*/$(BIN) bin/$(ARCH)/$(BIN) \
+	GOOS=linux GOARCH=$(ARCH) goreleaser build --id $(BIN) --rm-dist --debug --snapshot --single-target \
+	&& cp dist/$(BIN)_linux_$(ARCH)*/$(BIN) bin/$(ARCH)/$(BIN) \
 	"
 
 bin/$(ARCH)/$(BIN):
