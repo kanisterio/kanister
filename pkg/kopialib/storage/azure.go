@@ -42,6 +42,11 @@ func (a *azureStorage) WithCreate(create bool) {
 }
 
 func (a *azureStorage) SetOptions(ctx context.Context, options map[string]string) error {
+	err := validateCommonStorageArgs(options, TypeS3, nil)
+	if err != nil {
+		return err
+	}
+
 	a.Options = &azure.Options{
 		Prefix:         options[kopialib.PrefixKey],
 		Container:      options[kopialib.BucketKey],
