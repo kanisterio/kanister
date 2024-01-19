@@ -178,6 +178,15 @@ func (l *Logger) Log() string {
 	return strings.Join(c, " ")
 }
 
+// CommandAppend appends the command arguments to the builder.
+type CommandAppender interface {
+	AppendLoggable(values ...string) *Builder
+	AppendLoggableKV(kvPairs ...string) *Builder
+	AppendRedacted(values ...string) *Builder
+	AppendRedactedKV(kvPairs ...string) *Builder
+	Append(command CommandArguments) *Builder
+}
+
 // CommandBuilder builds and returns the command for execution.
 type CommandBuilder interface {
 	Build() []string
