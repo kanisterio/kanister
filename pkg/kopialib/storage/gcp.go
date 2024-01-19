@@ -25,6 +25,11 @@ import (
 
 var _ Storage = &gcpStorage{}
 
+var requiredgcpArguments = []string{
+	kopialib.BucketKey,
+	kopialib.GCPServiceAccountCredentialsFile,
+}
+
 type gcpStorage struct {
 	Options *gcs.Options
 	Create  bool
@@ -43,6 +48,10 @@ func (g *gcpStorage) WithCreate(create bool) {
 }
 
 func (g *gcpStorage) SetOptions(ctx context.Context, options map[string]string) error {
+	err := validateCommonStorageArgs(options, TypeGCP, requiredgcpArguments)
+	if err != nil {
+		return err
+	}
 	g.Options = &gcs.Options{
 		Prefix:                        options[kopialib.PrefixKey],
 		BucketName:                    options[kopialib.BucketKey],
