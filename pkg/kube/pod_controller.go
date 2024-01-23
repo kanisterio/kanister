@@ -99,11 +99,17 @@ func NewPodController(cli kubernetes.Interface, options *PodOptions, opts ...Pod
 	return r
 }
 
-// NewPodControllerForExistingPod returns a new PodController given Kubernetes
-// Client and existing pod details.
-// Invocation of StartPod of returned PodController instance will fail, since the pod is already known.
-func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) PodController {
-	r := &podController{
+// NewPodControllerForExistingPod returns a new PodController for the given
+// running pod.
+// Invocation of StartPod of returned PodController instance will fail, since
+// the pod is expected to be running already.
+func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) (PodController, error) {
+	err := WaitForPodReady(context.Background(), cli, pod.Namespace, pod.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	pc := &podController{
 		cli: cli,
 		pcp: &podControllerProcessor{
 			cli: cli,
@@ -117,9 +123,10 @@ func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) P
 		Namespace:     pod.Namespace,
 		ContainerName: pod.Spec.Containers[0].Name,
 	}
-	r.podOptions = options
+	pc.podOptions = options
+	pc.podReady = true
 
-	return r
+	return pc, nil
 }
 
 func (p *podController) PodName() string {
