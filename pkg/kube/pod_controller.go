@@ -103,6 +103,9 @@ func NewPodController(cli kubernetes.Interface, options *PodOptions, opts ...Pod
 // running pod.
 // Invocation of StartPod of returned PodController instance will fail, since
 // the pod is expected to be running already.
+// Note:
+// If the pod is not in the ready state, it will wait for up to
+// KANISTER_POD_READY_WAIT_TIMEOUT (15 minutes by default) until the pod becomes ready.
 func NewPodControllerForExistingPod(cli kubernetes.Interface, pod *corev1.Pod) (PodController, error) {
 	err := WaitForPodReady(context.Background(), cli, pod.Namespace, pod.Name)
 	if err != nil {
