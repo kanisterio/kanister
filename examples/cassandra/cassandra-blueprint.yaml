@@ -92,7 +92,7 @@ actions:
       - params
     phases:
     - func: KubeExec
-      name: restoreSnapshot
+      name: waitForConnectionReady
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
         pod: "{{ index .StatefulSet.Pods 0 }}"
@@ -106,7 +106,7 @@ actions:
           - errexit
           - -c
           - |
-            sleep 20
+            sleep 60
     - func: ScaleWorkload
       name: shutdownPod
       args:
