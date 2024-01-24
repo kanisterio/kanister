@@ -91,6 +91,22 @@ actions:
     inputArtifactNames:
       - params
     phases:
+    - func: KubeExec
+      name: restoreSnapshot
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        command:
+          - bash
+          - -o
+          - xtrace
+          - -o
+          - pipefail
+          - -o
+          - errexit
+          - -c
+          - |
+            sleep 20
     - func: ScaleWorkload
       name: shutdownPod
       args:
