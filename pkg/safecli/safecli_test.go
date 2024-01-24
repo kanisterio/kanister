@@ -7,6 +7,10 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	// satisfy github actions to avoid:
+	// flag provided but not defined: -check.v
+	_ "gopkg.in/check.v1"
 )
 
 func createTestCommand() *Builder {
