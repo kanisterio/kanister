@@ -118,6 +118,7 @@ actions:
               sleep 2
               timeout=$((timeout-2))
             done
+            nodetool scrub
     - func: ScaleWorkload
       name: shutdownPod
       args:
