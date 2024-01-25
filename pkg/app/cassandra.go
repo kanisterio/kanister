@@ -57,11 +57,11 @@ func NewCassandraInstance(name string) App {
 			Chart:    "cassandra",
 			RepoName: helm.BitnamiRepoName,
 			Values: map[string]string{
-				"image.registry":       "ghcr.io",
-				"image.repository":     "kanisterio/cassandra",
-				"image.tag":            "v9.99.9-dev",
-				"image.pullPolicy":     "Always",
-				"cluster.replicaCount": "1",
+				"image.registry":   "ghcr.io",
+				"image.repository": "kanisterio/cassandra",
+				"image.tag":        "v9.99.9-dev",
+				"image.pullPolicy": "Always",
+				"replicaCount":     "1",
 			},
 		},
 	}
@@ -206,7 +206,7 @@ func (cas *CassandraInstance) Reset(ctx context.Context) error {
 func (cas *CassandraInstance) Initialize(ctx context.Context) error {
 	// create the keyspace
 	createKS := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"create keyspace "+
-		"restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};\" --request-timeout=%s", cqlTimeout)}
+		"restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 1};\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, createKS)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while creating the keyspace for application.", stderr)
