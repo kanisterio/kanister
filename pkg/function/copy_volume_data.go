@@ -77,6 +77,7 @@ func copyVolumeData(
 	pvcName,
 	targetPath,
 	encryptionKey string,
+	insecureTLS bool,
 	podOverride map[string]interface{},
 ) (map[string]interface{}, error) {
 	// Validate PVC exists
@@ -99,7 +100,7 @@ func copyVolumeData(
 		PodOverride: podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := copyVolumeDataPodFunc(cli, tp, mountPoint, targetPath, encryptionKey)
+	podFunc := copyVolumeDataPodFunc(cli, tp, mountPoint, targetPath, encryptionKey, insecureTLS)
 	return pr.Run(ctx, podFunc)
 }
 
@@ -109,6 +110,7 @@ func copyVolumeDataPodFunc(
 	mountPoint,
 	targetPath,
 	encryptionKey string,
+	insecureTLS bool,
 ) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
@@ -133,13 +135,14 @@ func copyVolumeDataPodFunc(
 			pod.Spec.Containers[0].Name,
 			targetPath,
 			encryptionKey,
+			insecureTLS,
 			tp.Profile,
 		); err != nil {
 			return nil, err
 		}
 		// Copy data to object store
 		backupTag := rand.String(10)
-		cmd, err := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey)
+		cmd, err := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey, insecureTLS)
 		if err != nil {
 			return nil, err
 		}
@@ -184,6 +187,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 
 	var namespace, vol, targetPath, encryptionKey string
 	var err error
+	var insecureTLS bool
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -194,6 +198,9 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		return nil, err
 	}
 	if err = OptArg(args, CopyVolumeDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
@@ -211,7 +218,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey, podOverride)
+	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey, insecureTLS, podOverride)
 }
 
 func (*copyVolumeDataFunc) RequiredArgs() []string {
@@ -228,6 +235,7 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataVolumeArg,
 		CopyVolumeDataArtifactPrefixArg,
 		CopyVolumeDataEncryptionKeyArg,
+		InsecureTLS,
 	}
 }
 
