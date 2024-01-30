@@ -71,6 +71,7 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	var namespace, deleteArtifactPrefix, backupInfo, encryptionKey string
 	var reclaimSpace bool
 	var err error
+	var insecureTLS bool
 	if err = Arg(args, DeleteDataAllNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -84,6 +85,9 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		return nil, err
 	}
 	if err = OptArg(args, DeleteDataAllReclaimSpace, &reclaimSpace, false); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
@@ -110,7 +114,7 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		deleteIdentifiers = append(deleteIdentifiers, info.BackupID)
 	}
 
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix, podOverride)
+	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, insecureTLS, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix, podOverride)
 }
 
 func (*deleteDataAllFunc) RequiredArgs() []string {
@@ -128,6 +132,7 @@ func (*deleteDataAllFunc) Arguments() []string {
 		DeleteDataAllBackupInfo,
 		DeleteDataAllEncryptionKeyArg,
 		DeleteDataAllReclaimSpace,
+		InsecureTLS,
 	}
 }
 
