@@ -7,7 +7,7 @@ As the official documentation of [Cassandra](http://cassandra.apache.org/) says,
 * Kubernetes 1.9+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.103.0 installed in your cluster, let's say in namespace `<kanister-operator-namespace>`
+* Kanister controller version 0.105.0 installed in your cluster, let's say in namespace `<kanister-operator-namespace>`
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 To install kanister and related tools you can follow [this](https://docs.kanister.io/install.html#install) link.
@@ -29,11 +29,11 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 # remove app-namespace with the namespace you want to deploy the Cassandra app in
 $ kubectl create ns <app-namespace>
-$ helm install cassandra bitnami/cassandra --namespace <app-namespace> --set image.repository=kanisterio/cassandra --set image.tag=0.103.0 --set cluster.replicaCount=2 --set image.registry=ghcr.io --set image.pullPolicy=Always
+$ helm install cassandra bitnami/cassandra --namespace <app-namespace> --set image.repository=kanisterio/cassandra --set image.tag=0.105.0 --set cluster.replicaCount=2 --set image.registry=ghcr.io --set image.pullPolicy=Always
 
 
 ```
-This command will install Cassandra on your Kubernetes cluster with 2 nodes. You can notice that we are using custom image of Cassandra in the helm to install the Cassandra cluster. The reason is we have to use some Kanister tools to take backup, so only change that we have done is including that tooling on top of standard `cassandra:3.11.8-debian-10-r20` image.
+This command will install Cassandra on your Kubernetes cluster with 2 nodes. You can notice that we are using custom image of Cassandra in the helm to install the Cassandra cluster. The reason is we have to use some Kanister tools to take backup, so only change that we have done is including that tooling on top of standard `4.1.3-debian-11-r76` image.
 
 ## Integrating with Kanister
 

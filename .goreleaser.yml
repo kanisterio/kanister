@@ -24,9 +24,11 @@ builds:
   - amd64
 - id: kando
   binary: kando
-  main: cmd/kando/main.go
+  main: ./cmd/kando
   ldflags: *ldflags
   env: *env
+  tags:
+  - fipsonly
   goos: &goos
   - linux
   goarch: *goarch
@@ -62,8 +64,8 @@ dockers:
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
-# Refers to https://github.com/kopia/kopia/commit/fc640a98e4914e1da9fff6be1931ebfd767d3ee3
-  - "--build-arg=kopia_build_commit=fc640a9"
+# Refers to https://github.com/kopia/kopia/commit/1d6f852cd6534f4bea978cbdc85c583803d79f77
+  - "--build-arg=kopia_build_commit=1d6f852"
   - "--build-arg=kopia_repo_org=kopia"
   extra_files:
   - 'LICENSE'
@@ -72,6 +74,8 @@ dockers:
   image_templates:
   - 'ghcr.io/kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - image_templates:
   - 'ghcr.io/kanisterio/postgresql:{{ .Tag }}'
   dockerfile: 'docker/postgresql/Dockerfile'
@@ -99,11 +103,15 @@ dockers:
   image_templates:
   - 'ghcr.io/kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - image_templates:
   - 'ghcr.io/kanisterio/kafka-adobe-s3-source-connector:{{ .Tag }}'
   dockerfile: 'docker/kafka-adobes3Connector/image/adobeSource.Dockerfile'
