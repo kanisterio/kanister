@@ -36,18 +36,28 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, st
 	}()
 
 	// Scan log lines when ready.
-	s := bufio.NewScanner(r)
-	for s.Scan() {
-		l := s.Text()
-		l = strings.TrimSpace(l)
-		if l == "" {
-			continue
+	// Don't use bufio.Scanner because it breaks if lines are too long
+	reader := bufio.NewReader(r)
+	// ReadString returns error AND a line for last line
+	line, err := reader.ReadString('\n')
+	for {
+		line = strings.TrimSpace(line)
+
+		if line != "" {
+			if err := f(ctx, line); err != nil {
+				return err
+			}
 		}
-		if err := f(ctx, l); err != nil {
-			return err
+		if err != nil {
+			break
 		}
+		line, err = reader.ReadString('\n')
 	}
-	return errors.Wrap(s.Err(), "Split lines failed")
+	if err != io.EOF {
+		return errors.Wrap(err, "Split lines failed")
+	}
+
+	return nil
 }
 
 func LogAndParse(ctx context.Context, r io.ReadCloser) (map[string]interface{}, error) {
