@@ -18,14 +18,10 @@ import (
 	"github.com/kanisterio/safecli"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag"
 
 	flagcommon "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/common"
 )
-
-// CommandApplier is an interface alias for applying commands to a CLI.
-type CommandApplier = internal.Applier
 
 // Command is a CLI command/subcommand.
 type Command string

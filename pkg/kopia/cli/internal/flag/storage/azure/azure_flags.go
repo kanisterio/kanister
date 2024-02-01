@@ -25,7 +25,7 @@ func Prefix(prefix string) flag.Applier {
 	return flag.NewStringFlag("--prefix", prefix)
 }
 
-// AzureContainer creates a new Azure container flag with a given container name.
-func AzureCountainer(name string) flag.Applier {
+// Countainer creates a new Azure container flag with a given container name.
+func Countainer(name string) flag.Applier {
 	return flag.NewStringFlag("--container", name)
 }

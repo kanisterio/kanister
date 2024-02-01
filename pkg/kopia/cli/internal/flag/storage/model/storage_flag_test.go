@@ -40,7 +40,7 @@ func (s *StorageFlagSuite) TestGetLogger(c *check.C) {
 func (s *StorageFlagSuite) TestApplyNoFactory(c *check.C) {
 	sf := StorageFlag{}
 	err := sf.Apply(nil)
-	c.Check(err, check.Equals, ErrInvalidFactor)
+	c.Check(err, check.Equals, ErrInvalidFactory)
 }
 
 func (s *StorageFlagSuite) TestApply(c *check.C) {

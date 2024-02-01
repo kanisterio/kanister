@@ -32,7 +32,7 @@ func Username(username string) flag.Applier {
 	return flag.NewStringFlag("--override-username", username)
 }
 
-// BlobRetentionFlag creates a new blob retention flag with a given mode and period.
+// BlobRetention creates a new blob retention flag with a given mode and period.
 // If mode is empty, the flag will be a no-op.
 func BlobRetention(mode string, period time.Duration) flag.Applier {
 	if mode == "" {

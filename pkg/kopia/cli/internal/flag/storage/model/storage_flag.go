@@ -24,7 +24,8 @@ import (
 )
 
 var (
-	ErrInvalidFactor = errors.New("factory cannot be nil")
+	// ErrInvalidFactory is returned when the factory is nil.
+	ErrInvalidFactory = errors.New("factory cannot be nil")
 )
 
 // StorageFlag is a set of flags that are used to create a StorageFlag sub command.
@@ -48,7 +49,7 @@ func (s StorageFlag) GetLogger() log.Logger {
 // Apply applies the storage flags to the command.
 func (s StorageFlag) Apply(cli safecli.CommandAppender) error {
 	if s.Factory == nil {
-		return ErrInvalidFactor
+		return ErrInvalidFactory
 	}
 	storageBuilder := s.Factory.Create(s.Location.Type())
 	storageCLI, err := storageBuilder(s)

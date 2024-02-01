@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	// DefaultFSMountPath is the default mount path for the filesystem subcommand storage.
 	DefaultFSMountPath = "/mnt/data"
 )
 

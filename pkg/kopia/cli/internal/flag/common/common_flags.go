@@ -94,9 +94,8 @@ type checkForUpdates struct {
 func (f checkForUpdates) Flag() string {
 	if f.CheckForUpdates {
 		return "--check-for-updates"
-	} else {
-		return "--no-check-for-updates"
 	}
+	return "--no-check-for-updates"
 }
 
 func (f checkForUpdates) Apply(cli safecli.CommandAppender) error {
@@ -109,7 +108,7 @@ func ReadOnly(readOnly bool) flag.Applier {
 	return flag.NewBoolFlag("--readonly", readOnly)
 }
 
-// ContentCacheSizeMB creates a new content cache size flag with a given size.
+// ContentCacheSizeLimitMB creates a new content cache size flag with a given size.
 func ContentCacheSizeLimitMB(size int) flag.Applier {
 	val := strconv.Itoa(size)
 	return flag.NewStringFlag("--content-cache-size-limit-mb", val)

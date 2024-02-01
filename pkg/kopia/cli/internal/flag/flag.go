@@ -20,24 +20,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 )
 
-// Applier is an interface for applying flags to a command.
+// Applier is an interface for applying flags/args to a command.
 type Applier = internal.Applier
-
-// Flag is a flag interface.
-type Flag interface {
-	Flag() string
-	Applier
-}
-
-// FlagApplierHandler type is an adapter to allow the use of
-// ordinary functions as FlagApplier. If f is a function
-// with the appropriate signature, FlagApplierHandler(f) is a
-// FlagApplier that calls f.
-type FlagApplierHandler func(safecli.CommandAppender) error
-
-func (h FlagApplierHandler) Apply(cli safecli.CommandAppender) error {
-	return h(cli)
-}
 
 // Apply attaches multiple flags to the CLI.
 // If any of the flags encounter an error during the Apply process,

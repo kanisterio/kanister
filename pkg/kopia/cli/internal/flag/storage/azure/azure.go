@@ -25,7 +25,7 @@ import (
 func New(f model.StorageFlag) (*safecli.Builder, error) {
 	prefix := model.GenerateFullRepoPath(f.Location.Prefix(), f.RepoPathPrefix)
 	return command.NewCommandBuilder(command.Azure,
-		AzureCountainer(f.Location.BucketName()),
+		Countainer(f.Location.BucketName()),
 		Prefix(prefix),
 	)
 }

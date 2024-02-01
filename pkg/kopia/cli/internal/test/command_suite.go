@@ -28,6 +28,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
 )
 
+// CommonArgs is a set of common arguments for the tests.
 var CommonArgs = cli.CommonArgs{
 	RepoPassword:   "encr-key",
 	ConfigFilePath: "path/kopia.config",

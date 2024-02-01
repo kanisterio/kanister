@@ -27,22 +27,27 @@ import (
 // It is useful for testing.
 type StringLogger []string
 
+// Print appends the message to the slice.
 func (l *StringLogger) Print(msg string, fields ...field.M) {
 	*l = append(*l, msg)
 }
 
+// PrintTo appends the message to the slice.
 func (l *StringLogger) PrintTo(w io.Writer, msg string, fields ...field.M) {
 	*l = append(*l, msg)
 }
 
+// WithContext does nothing.
 func (l *StringLogger) WithContext(ctx context.Context) log.Logger {
 	return l
 }
 
+// WithError does nothing.
 func (l *StringLogger) WithError(err error) log.Logger {
 	return l
 }
 
+// MatchString returns true if any of the log messages match the pattern.
 func (l *StringLogger) MatchString(pattern string) bool {
 	for _, line := range *l {
 		if found, _ := regexp.MatchString(pattern, line); found {

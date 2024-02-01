@@ -28,18 +28,18 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/s3"
 )
 
-// StorageOption is a function that sets a storage option.
-type StorageOption func(*model.StorageFlag)
+// Option is a function that sets a storage option.
+type Option func(*model.StorageFlag)
 
 // WithLogger sets the logger for the storage.
-func WithLogger(logger log.Logger) StorageOption {
+func WithLogger(logger log.Logger) Option {
 	return func(s *model.StorageFlag) {
 		s.Logger = logger
 	}
 }
 
 // WithFactory sets the storage args builder factory for the storage.
-func WithFactory(factory model.StorageBuilderFactory) StorageOption {
+func WithFactory(factory model.StorageBuilderFactory) Option {
 	return func(s *model.StorageFlag) {
 		s.Factory = factory
 	}
@@ -52,7 +52,8 @@ var (
 	factory = model.BuildersFactory{}
 )
 
-func Storage(location model.Location, repoPathPrefix string, opts ...StorageOption) model.StorageFlag {
+// Storage creates a new storage with the given location, repo path prefix and options.
+func Storage(location model.Location, repoPathPrefix string, opts ...Option) model.StorageFlag {
 	factoryOnce.Do(func() {
 		// Register storage builders.
 		factory[rs.LocTypeAzure] = azure.New

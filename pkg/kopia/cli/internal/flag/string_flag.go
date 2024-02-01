@@ -50,9 +50,8 @@ func (f stringFlag) Apply(cli safecli.CommandAppender) error {
 func (f stringFlag) selectAppenderFuncs(cli safecli.CommandAppender) (appenderFunc, appenderFunc) {
 	if f.redacted {
 		return cli.AppendRedacted, cli.AppendRedactedKV
-	} else {
-		return cli.AppendLoggable, cli.AppendLoggableKV
 	}
+	return cli.AppendLoggable, cli.AppendLoggableKV
 }
 
 // newStringFlag creates a new string flag with a given flag name and value.

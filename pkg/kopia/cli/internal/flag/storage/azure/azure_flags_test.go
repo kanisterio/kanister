@@ -26,11 +26,11 @@ func TestStorageAzureFlags(t *testing.T) { check.TestingT(t) }
 var _ = check.Suite(test.NewFlagSuite([]test.FlagTest{
 	{
 		Name: "Empty AzureCountainer should not generate a flag",
-		Flag: AzureCountainer(""),
+		Flag: Countainer(""),
 	},
 	{
 		Name:        "AzureCountainer with value should generate a flag with the given value",
-		Flag:        AzureCountainer("container"),
+		Flag:        Countainer("container"),
 		ExpectedCLI: []string{"--container=container"},
 	},
 	{

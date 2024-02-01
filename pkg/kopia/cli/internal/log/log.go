@@ -26,16 +26,20 @@ import (
 // TODO: Move to log package
 type NopLogger struct{}
 
+// Print does nothing.
 func (NopLogger) Print(msg string, fields ...field.M) {
 }
 
+// PrintTo does nothing.
 func (NopLogger) PrintTo(w io.Writer, msg string, fields ...field.M) {
 }
 
+// WithContext does nothing.
 func (NopLogger) WithContext(ctx context.Context) log.Logger {
 	return &NopLogger{}
 }
 
+// WithError does nothing.
 func (NopLogger) WithError(err error) log.Logger {
 	return &NopLogger{}
 }
