@@ -162,6 +162,15 @@ func (s *ApplySuite) TestApply(c *check.C) {
 			ExpectedLog: "cmd --flag1=value1 --flag2=<****> value3",
 		},
 		{
+			Name: "NewFlags should generate no flags if one of them returns an error",
+			Flags: []Applier{NewFlags(
+				NewStringFlag("--flag1", "value1"),
+				&MockFlagApplier{flagName: "flag2", applyErr: ErrFlag},
+			)},
+			ExpectedCLI: []string{"cmd"},
+			ExpectedErr: ErrFlag,
+		},
+		{
 			Name:        "DoNothingFlag should not generate any flags",
 			Flags:       []Applier{DoNothingFlag()},
 			ExpectedCLI: []string{"cmd"},

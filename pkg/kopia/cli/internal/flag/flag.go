@@ -50,7 +50,9 @@ type flags []Applier
 // Apply applies the flags to the CLI.
 func (flags flags) Apply(cli safecli.CommandAppender) error {
 	for _, flag := range flags {
-		flag.Apply(cli)
+		if err := flag.Apply(cli); err != nil {
+			return err
+		}
 	}
 	return nil
 }
