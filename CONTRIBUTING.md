@@ -84,21 +84,26 @@ If your changes involve the Kanister API types, generate the API documentation u
 ### Commit messages
 
 The basic idea is that we ask all contributors to practice
-[good git commit hygiene](https://www.futurelearn.com/info/blog/telling-stories-with-your-git-history)
+[good git commit hygiene](https://www.freecodecamp.org/news/how-to-write-better-git-commit-messages/)
 to make reviews and retrospection easy. Use your git commits to provide context
 for the reviewers, and the folks who will be reading the codebase in the months
 and years to come.
 
-Finalized commit messages should look similar to the following format:
+We're trying to keep all commits in `master` to follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
+See [conventions](#commit-conventions) for more info on types and scopes.
+We are using squash and merge approach to PRs which means that commit descriptions are generated from PR titles.
 
-```text
-Short one line title
-
-An explanation of the problem, providing context, and why the change is being
-made.
-```
+It's recommended to use conventional commits when strarting a PR, but follow-up commits in the PR don't have to follow the convention.
 
 ### Submitting Pull Requests
+
+**PR titles should be in following format:**
+
+```text
+<type>[optional scope]: <description>
+```
+
+See [conventions](#commit-conventions) for more info on types and scopes.
 
 When submitting a pull request, it's important that you communicate your intent,
 by clearly:
@@ -127,3 +132,42 @@ contributions are high quality and easy for our community to review and accept. 
 
 Please don't hesitate to reach out to us on [Slack](https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk). if you
 have any questions about contributing!
+
+### Commit conventions
+
+#### Types:
+
+- `feat` - new feature/functionality
+	it's recommended to link a GH issue or discussion which describes the feature request or describe it in the commit message
+- `fix` - bugfix
+	it's recommended to link a GH issue or discussion to describe the bug or describe it in the commit message
+- `refactor` - code restructure/refactor which does not affect the (public) behaviour
+- `docs` - changes in documentation
+- `test` - adding, improving, removing tests
+- `build` - changes to build scripts, dockerfiles, ci pipelines
+- `deps` - updates to dependencies configuration
+- `chore` - none of the above
+	use is generally discuraged
+- `revert` - revert previous commit
+
+#### Scopes:
+
+There is no strict list of scopes to be used, suggested scopes are:
+
+- `build(ci)` - changes in github workflows
+- `build(release)` - changes in release process
+- `deps(go)` - dependabot updating go library
+- `docs(examples)` - changes in examples
+- `docs(readme)` - changes in MD files at the repo root
+- `feat(kanctl)` - new functionality for `kanctl` (e.g. new command)
+- `refactor(style)` - formatting, adding newlines, etc. in code
+
+#### Breaking changes indicator:
+
+There can be optional `!` after the type and scope to indicate breaking changes
+
+`fix(scope)!: fix with breaking changes`
+
+#### Description:
+
+Short description of WHAT was changed in the commit. SHOULD start with lowercase. MUST NOT have a `.` at the end.
