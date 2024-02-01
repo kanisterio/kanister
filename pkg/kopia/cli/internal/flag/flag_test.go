@@ -189,11 +189,3 @@ func (s *ApplySuite) TestApply(c *check.C) {
 		}
 	}
 }
-
-// func (s *ApplySuite) TestSwitchFlag(c *check.C) {
-// 	sf := SwitchFlag("--flag")
-// 	c.Assert(sf, check.NotNil)
-// 	b := safecli.NewBuilder()
-// 	c.Assert(sf.Apply(b), check.IsNil)
-// 	c.Assert(b.Build(), check.DeepEquals, []string{"--flag"})
-// }

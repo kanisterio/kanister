@@ -16,12 +16,13 @@ package flag
 
 import (
 	"github.com/kanisterio/safecli"
-
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 )
 
 // Applier is an interface for applying flags/args to a command.
-type Applier = internal.Applier
+type Applier interface {
+	// Apply applies the flags/args to the command.
+	Apply(cli safecli.CommandAppender) error
+}
 
 // Apply attaches multiple flags to the CLI.
 // If any of the flags encounter an error during the Apply process,
