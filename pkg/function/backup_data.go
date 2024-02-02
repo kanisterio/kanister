@@ -60,6 +60,8 @@ const (
 	BackupDataOutputBackupSize = "size"
 	// BackupDataOutputBackupPhysicalSize is the key used for returning physical size taken by the snapshot
 	BackupDataOutputBackupPhysicalSize = "phySize"
+	// InsecureTLS is the key name which provides an option to a user to disable tls
+	InsecureTLS = "insecureTLS"
 )
 
 func init() {
@@ -83,6 +85,7 @@ func (b *backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 
 	var namespace, pod, container, includePath, backupArtifactPrefix, encryptionKey string
 	var err error
+	var insecureTLS bool
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -101,6 +104,9 @@ func (b *backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, BackupDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
+		return nil, err
+	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
@@ -114,7 +120,7 @@ func (b *backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	}
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
-	backupOutputs, err := backupData(ctx, cli, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey, tp)
+	backupOutputs, err := backupData(ctx, cli, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey, insecureTLS, tp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to backup data")
 	}
@@ -147,6 +153,7 @@ func (*backupDataFunc) Arguments() []string {
 		BackupDataIncludePathArg,
 		BackupDataBackupArtifactPrefixArg,
 		BackupDataEncryptionKeyArg,
+		InsecureTLS,
 	}
 }
 
@@ -158,19 +165,19 @@ type backupDataParsedOutput struct {
 	phySize    string
 }
 
-func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey string, tp param.TemplateParams) (backupDataParsedOutput, error) {
+func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey string, insecureTLS bool, tp param.TemplateParams) (backupDataParsedOutput, error) {
 	pw, err := GetPodWriter(cli, ctx, namespace, pod, container, tp.Profile)
 	if err != nil {
 		return backupDataParsedOutput{}, err
 	}
 	defer CleanUpCredsFile(ctx, pw, namespace, pod, container)
-	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
+	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, insecureTLS, tp.Profile); err != nil {
 		return backupDataParsedOutput{}, err
 	}
 
 	// Create backup and dump it on the object store
 	backupTag := rand.String(10)
-	cmd, err := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
+	cmd, err := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey, insecureTLS)
 	if err != nil {
 		return backupDataParsedOutput{}, err
 	}

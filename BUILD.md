@@ -52,6 +52,14 @@ make test
 make build-controller
 ```
 
+To build kanister tools (kanctl and kando), use the following conmmand:
+```sh
+make build GOBORING=true BIN=<kanctl|kando> ARCH=<arm64|amd64>
+```
+
+This will build a selected binary `BIN` for a selected architecture `ARCH`.
+
+
 To build the controller OCI image:
 ```sh
 make release-controller \
@@ -99,6 +107,22 @@ helm upgrade kanister ./helm/kanister-operator \
 
 Most of the Makefile targets can work in a non-Docker development setup, by
 setting the `DOCKER_BUILD` variable to `false`.
+
+## Testing
+
+Kanister is using `check` library to extend go testing capabilities: https://github.com/kastenhq/check
+It's recommended to write new tests using this library for consistency.
+
+`make test` runs all tests in the repository.
+To run tests for specific package you can run `go test` in that package directory.
+It's recommended to do that in build image shell, you can run it with `make shell`.
+
+The `check` library handles arguments differently from standard `go test`
+- to run specific test, you can use `-check.f <test regex>` to filter test (or suite) names
+- to increase verbosity, you can use `-check.v` or `-check.vv`
+- to controll how many suites from the package run in parallel, you can use `-check.suitep <number>`
+
+See https://github.com/kastenhq/check and https://github.com/kastenhq/check/blob/v1/run.go#L30 for more information
 
 ## Documentation
 
