@@ -68,7 +68,7 @@ func (f simpleFlag) Apply(safecli.CommandAppender) error {
 }
 
 // EmptyFlag creates a new flag that does nothing.
-// It is useful for creating a no-op flag when a condition is not met 
+// It is useful for creating a no-op flag when a condition is not met
 // but Applier interface is required.
 func EmptyFlag() Applier {
 	return simpleFlag{}
