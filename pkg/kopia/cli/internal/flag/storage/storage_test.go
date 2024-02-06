@@ -169,27 +169,21 @@ func (s *StorageSuite) TestStorageFlag(c *check.C) {
 
 		cmt := check.Commentf("FAIL: %v", tt.name)
 		if tt.errMsg != "" {
+			c.Assert(err, check.NotNil, cmt)
 			c.Assert(err.Error(), check.Equals, tt.errMsg, cmt)
 		}
 
 		if tt.err == nil {
 			c.Assert(err, check.IsNil, cmt)
 		} else {
-			if errors.Cause(err) != nil {
-				c.Assert(errors.Cause(err), check.DeepEquals, tt.err, cmt)
-			} else {
-				c.Assert(err, check.Equals, tt.err, cmt)
-			}
+			c.Assert(errors.Cause(err), check.Equals, tt.err, cmt)
 		}
 		c.Assert(b.Build(), check.DeepEquals, tt.expCLI, cmt)
 	}
 }
 
+// MockFlagWithError is a mock flag that always returns an error
 type MockFlagWithError struct{}
-
-func (f MockFlagWithError) Flag() string {
-	return "mock"
-}
 
 var errMock = fmt.Errorf("mock error")
 
@@ -200,8 +194,7 @@ func (f MockFlagWithError) Apply(cli safecli.CommandAppender) error {
 func (s *StorageSuite) TestNewStorageBuilderWithErrorFlag(c *check.C) {
 	b, err := command.NewCommandBuilder(command.FileSystem, MockFlagWithError{})
 	c.Assert(b, check.IsNil)
-	c.Assert(err, check.NotNil)
-	c.Assert(err, check.DeepEquals, errMock)
+	c.Assert(err, check.Equals, errMock)
 }
 
 func (s *StorageSuite) TestStorageGetLogger(c *check.C) {
@@ -213,11 +206,12 @@ func (s *StorageSuite) TestStorageGetLogger(c *check.C) {
 	c.Assert(storage.GetLogger(), check.Equals, nopLog)
 }
 
+// MockFactory is a mock storage factory
 type MockFactory struct{}
 
 func (f MockFactory) Create(locType rs.LocType) model.StorageBuilder {
 	return func(s model.StorageFlag) (*safecli.Builder, error) {
-		return safecli.NewBuilder("mock"), nil
+		return safecli.NewBuilder("mockfactory"), nil
 	}
 }
 
@@ -228,4 +222,8 @@ func (s *StorageSuite) TestStorageFactory(c *check.C) {
 	mockFactory := &MockFactory{}
 	storage = Storage(nil, "prefix", WithFactory(mockFactory))
 	c.Assert(storage.Factory, check.Equals, mockFactory)
+	b, err := storage.Factory.Create("anything")(model.StorageFlag{})
+	c.Assert(b, check.NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(b.Build(), check.DeepEquals, []string{"mockfactory"})
 }
