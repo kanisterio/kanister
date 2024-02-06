@@ -25,6 +25,24 @@ func TestStorageGCSFlags(t *testing.T) { check.TestingT(t) }
 
 var _ = check.Suite(test.NewFlagSuite([]test.FlagTest{
 	{
+		Name: "Empty Bucket should not generate a flag",
+		Flag: Bucket(""),
+	},
+	{
+		Name:        "Bucket with value should generate a flag with the given value",
+		Flag:        Bucket("bucket"),
+		ExpectedCLI: []string{"--bucket=bucket"},
+	},
+	{
+		Name: "Empty Prefix should not generate a flag",
+		Flag: Prefix(""),
+	},
+	{
+		Name:        "Prefix with value should generate a flag with the given value",
+		Flag:        Prefix("prefix"),
+		ExpectedCLI: []string{"--prefix=prefix"},
+	},
+	{
 		Name: "Empty CredentialsFile should not generate a flag",
 		Flag: CredentialsFile(""),
 	},
