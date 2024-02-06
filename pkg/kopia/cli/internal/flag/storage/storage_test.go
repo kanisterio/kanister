@@ -209,7 +209,7 @@ var _ = check.Suite(test.NewFlagSuite([]test.FlagTest{
 		},
 	},
 	{
-		Name: "S3 with no prefix should use onlu repo path prefix",
+		Name: "S3 with no prefix should use only repo path prefix",
 		Flag: Storage(
 			model.Location{
 				rs.TypeKey:          []byte("s3"),
