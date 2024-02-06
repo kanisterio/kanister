@@ -30,6 +30,10 @@ type FlagTest struct {
 	// If nil, no error is expected and
 	// ExpectedCLI and ExpectedLog are checked.
 	ExpectedErr error
+
+	// Expected error message. (optional)
+	// If empty, it will be ignored.
+	ExpectedErrMsg string
 }
 
 // CheckCommentString implements check.CommentInterface
@@ -48,6 +52,13 @@ func (t *FlagTest) setDefaultExpectedLog() {
 func (t *FlagTest) assertError(c *check.C, err error) {
 	actualErr := errors.Cause(err)
 	c.Assert(actualErr, check.Equals, t.ExpectedErr, t)
+}
+
+// assertErrorMsg checks the error message against ExpectedErrMsg.
+func (t *FlagTest) assertErrorMsg(c *check.C, err error) {
+	if t.ExpectedErrMsg != "" {
+		c.Assert(err.Error(), check.Equals, t.ExpectedErrMsg, t)
+	}
 }
 
 // assertNoError makes sure there is no error.
@@ -71,6 +82,7 @@ func (t *FlagTest) Test(c *check.C, b *safecli.Builder) {
 	err := flag.Apply(b, t.Flag)
 	if t.ExpectedErr != nil {
 		t.assertError(c, err)
+		t.assertErrorMsg(c, err)
 	} else {
 		t.assertNoError(c, err)
 		t.assertCLI(c, b)

@@ -20,18 +20,16 @@ import (
 
 	"gopkg.in/check.v1"
 
-	"github.com/pkg/errors"
-
 	"github.com/kanisterio/safecli"
 
 	rs "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/command"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/fs"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/model"
 	cmdlog "github.com/kanisterio/kanister/pkg/kopia/cli/internal/log"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/test"
 )
 
 func TestStorageFlags(t *testing.T) { check.TestingT(t) }
@@ -109,217 +107,191 @@ func (s *StorageSuite) TestLocationMethods(c *check.C) {
 	}
 }
 
-func (s *StorageSuite) TestStorageFlag(c *check.C) {
-	tests := []struct {
-		name    string
-		storage flag.Applier
-		expCLI  []string
-		err     error
-		errMsg  string
-	}{
-		{
-			name:    "Empty Storage should generate an error",
-			storage: Storage(nil, ""),
-			err:     cli.ErrUnsupportedStorage,
-		},
-		{
-			name: "Filesystem without prefix and with repo path should generate repo path",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:   []byte("filestore"),
-					rs.PrefixKey: []byte(""),
-				},
-				"dir1/subdir/",
-			),
-			expCLI: []string{
-				"filesystem",
-				fmt.Sprintf("--path=%s/dir1/subdir/", fs.DefaultFSMountPath),
+var _ = check.Suite(test.NewFlagSuite([]test.FlagTest{
+	{
+		Name:        "Empty Storage should generate an error",
+		Flag:        Storage(nil, ""),
+		ExpectedErr: cli.ErrUnsupportedStorage,
+	},
+	{
+		Name: "Filesystem without prefix and with repo path should generate repo path",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:   []byte("filestore"),
+				rs.PrefixKey: []byte(""),
 			},
+			"dir1/subdir/",
+		),
+		ExpectedCLI: []string{
+			"filesystem",
+			fmt.Sprintf("--path=%s/dir1/subdir/", fs.DefaultFSMountPath),
 		},
-		{
-			name: "Filesystem with prefix and repo path should generate merged prefix and repo path",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:   []byte("filestore"),
-					rs.PrefixKey: []byte("test-prefix"),
-				},
-				"dir1/subdir/",
-			),
-			expCLI: []string{
-				"filesystem",
-				fmt.Sprintf("--path=%s/test-prefix/dir1/subdir/", fs.DefaultFSMountPath),
+	},
+	{
+		Name: "Filesystem with prefix and repo path should generate merged prefix and repo path",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:   []byte("filestore"),
+				rs.PrefixKey: []byte("test-prefix"),
 			},
+			"dir1/subdir/",
+		),
+		ExpectedCLI: []string{
+			"filesystem",
+			fmt.Sprintf("--path=%s/test-prefix/dir1/subdir/", fs.DefaultFSMountPath),
 		},
-		{
-			name: "Unsupported storage type should generate an error",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey: []byte("ftp"),
-				},
-				"prefixfs",
-			),
-			errMsg: "failed to apply storage args: unsupported location type: 'ftp': unsupported storage",
-			err:    cli.ErrUnsupportedStorage,
-		},
-		{
-			name: "GCS should generate gcs args",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:   []byte("gcs"),
-					rs.BucketKey: []byte("bucket"),
-					rs.PrefixKey: []byte("/path/to/prefix"),
-				},
-				"prefixfs",
-			),
-			expCLI: []string{
-				"gcs",
-				"--bucket=bucket",
-				"--credentials-file=/tmp/creds.txt",
-				"--prefix=/path/to/prefix/prefixfs/",
+	},
+	{
+		Name: "Unsupported storage type should generate an error",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey: []byte("ftp"),
 			},
-		},
-		{
-			name: "Azure should generate azure args",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:   []byte("azure"),
-					rs.BucketKey: []byte("bucket"),
-					rs.PrefixKey: []byte("/path/to/prefix"),
-				},
-				"prefixfs",
-			),
-			expCLI: []string{
-				"azure",
-				"--container=bucket",
-				"--prefix=/path/to/prefix/prefixfs/",
+			"prefixfs",
+		),
+		ExpectedErr:    cli.ErrUnsupportedStorage,
+		ExpectedErrMsg: "failed to apply storage args: unsupported location type: 'ftp': unsupported storage",
+	},
+	{
+		Name: "GCS should generate gcs args",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:   []byte("gcs"),
+				rs.BucketKey: []byte("bucket"),
+				rs.PrefixKey: []byte("/path/to/prefix"),
 			},
+			"prefixfs",
+		),
+		ExpectedCLI: []string{
+			"gcs",
+			"--bucket=bucket",
+			"--credentials-file=/tmp/creds.txt",
+			"--prefix=/path/to/prefix/prefixfs/",
 		},
-		{
-			name: "S3 should generate s3 args",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:          []byte("s3"),
-					rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
-					rs.PrefixKey:        []byte("/path/to/prefix"),
-					rs.RegionKey:        []byte("us-east-1"),
-					rs.BucketKey:        []byte("bucket"),
-					rs.SkipSSLVerifyKey: []byte("true"),
-				},
-				"prefixfs",
-			),
-			expCLI: []string{
-				"s3",
-				"--region=us-east-1",
-				"--bucket=bucket",
-				"--endpoint=endpoint.com",
-				"--prefix=/path/to/prefix/prefixfs/",
-				"--disable-tls",
-				"--disable-tls-verification",
+	},
+	{
+		Name: "Azure should generate azure args",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:   []byte("azure"),
+				rs.BucketKey: []byte("bucket"),
+				rs.PrefixKey: []byte("/path/to/prefix"),
 			},
+			"prefixfs",
+		),
+		ExpectedCLI: []string{
+			"azure",
+			"--container=bucket",
+			"--prefix=/path/to/prefix/prefixfs/",
 		},
-		{
-			name: "S3 with no prefix should use onlu repo path prefix",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:          []byte("s3"),
-					rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
-					rs.RegionKey:        []byte("us-east-1"),
-					rs.BucketKey:        []byte("bucket"),
-					rs.SkipSSLVerifyKey: []byte("true"),
-				},
-				"prefixfs",
-			),
-			expCLI: []string{
-				"s3",
-				"--region=us-east-1",
-				"--bucket=bucket",
-				"--endpoint=endpoint.com",
-				"--prefix=prefixfs",
-				"--disable-tls",
-				"--disable-tls-verification",
+	},
+	{
+		Name: "S3 should generate s3 args",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:          []byte("s3"),
+				rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
+				rs.PrefixKey:        []byte("/path/to/prefix"),
+				rs.RegionKey:        []byte("us-east-1"),
+				rs.BucketKey:        []byte("bucket"),
+				rs.SkipSSLVerifyKey: []byte("true"),
 			},
+			"prefixfs",
+		),
+		ExpectedCLI: []string{
+			"s3",
+			"--region=us-east-1",
+			"--bucket=bucket",
+			"--endpoint=endpoint.com",
+			"--prefix=/path/to/prefix/prefixfs/",
+			"--disable-tls",
+			"--disable-tls-verification",
 		},
-		{
-			name: "S3 with no endpoint should omit endpoint flag",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:   []byte("s3"),
-					rs.PrefixKey: []byte("/path/to/prefix"),
-					rs.RegionKey: []byte("us-east-1"),
-					rs.BucketKey: []byte("bucket"),
-				},
-				"prefixfs",
-			),
-			expCLI: []string{
-				"s3",
-				"--region=us-east-1",
-				"--bucket=bucket",
-				"--prefix=/path/to/prefix/prefixfs/",
+	},
+	{
+		Name: "S3 with no prefix should use onlu repo path prefix",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:          []byte("s3"),
+				rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
+				rs.RegionKey:        []byte("us-east-1"),
+				rs.BucketKey:        []byte("bucket"),
+				rs.SkipSSLVerifyKey: []byte("true"),
 			},
+			"prefixfs",
+		),
+		ExpectedCLI: []string{
+			"s3",
+			"--region=us-east-1",
+			"--bucket=bucket",
+			"--endpoint=endpoint.com",
+			"--prefix=prefixfs",
+			"--disable-tls",
+			"--disable-tls-verification",
 		},
-		{
-			name: "S3 endpoint with trailing slashes should be trimmed",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:     []byte("s3"),
-					rs.EndpointKey: []byte("https://endpoint.com//////"), // slashes will be trimmed
-					rs.PrefixKey:   []byte("/path/to/prefix"),
-					rs.RegionKey:   []byte("us-east-1"),
-					rs.BucketKey:   []byte("bucket"),
-				},
-				"prefixfs",
-			),
-			expCLI: []string{
-				"s3",
-				"--region=us-east-1",
-				"--bucket=bucket",
-				"--endpoint=endpoint.com",
-				"--prefix=/path/to/prefix/prefixfs/",
+	},
+	{
+		Name: "S3 with no endpoint should omit endpoint flag",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:   []byte("s3"),
+				rs.PrefixKey: []byte("/path/to/prefix"),
+				rs.RegionKey: []byte("us-east-1"),
+				rs.BucketKey: []byte("bucket"),
 			},
+			"prefixfs",
+		),
+		ExpectedCLI: []string{
+			"s3",
+			"--region=us-east-1",
+			"--bucket=bucket",
+			"--prefix=/path/to/prefix/prefixfs/",
 		},
-		{
-			name: "S3 compliant should generate s3 args",
-			storage: Storage(
-				model.Location{
-					rs.TypeKey:          []byte("s3Compliant"),
-					rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
-					rs.PrefixKey:        []byte("/path/to/prefix"),
-					rs.RegionKey:        []byte("us-east-1"),
-					rs.BucketKey:        []byte("bucket"),
-					rs.SkipSSLVerifyKey: []byte("true"),
-				},
-				"prefixfs",
-			),
-			expCLI: []string{
-				"s3",
-				"--region=us-east-1",
-				"--bucket=bucket",
-				"--endpoint=endpoint.com",
-				"--prefix=/path/to/prefix/prefixfs/",
-				"--disable-tls",
-				"--disable-tls-verification",
+	},
+	{
+		Name: "S3 endpoint with trailing slashes should be trimmed",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:     []byte("s3"),
+				rs.EndpointKey: []byte("https://endpoint.com//////"), // slashes will be trimmed
+				rs.PrefixKey:   []byte("/path/to/prefix"),
+				rs.RegionKey:   []byte("us-east-1"),
+				rs.BucketKey:   []byte("bucket"),
 			},
+			"prefixfs",
+		),
+		ExpectedCLI: []string{
+			"s3",
+			"--region=us-east-1",
+			"--bucket=bucket",
+			"--endpoint=endpoint.com",
+			"--prefix=/path/to/prefix/prefixfs/",
 		},
-	}
-
-	for _, tt := range tests {
-		b := safecli.NewBuilder()
-		err := tt.storage.Apply(b)
-
-		cmt := check.Commentf("FAIL: %v", tt.name)
-		if tt.errMsg != "" {
-			c.Assert(err, check.NotNil, cmt)
-			c.Assert(err.Error(), check.Equals, tt.errMsg, cmt)
-		}
-
-		if tt.err == nil {
-			c.Assert(err, check.IsNil, cmt)
-		} else {
-			c.Assert(errors.Cause(err), check.Equals, tt.err, cmt)
-		}
-		c.Assert(b.Build(), check.DeepEquals, tt.expCLI, cmt)
-	}
-}
+	},
+	{
+		Name: "S3 compliant should generate s3 args",
+		Flag: Storage(
+			model.Location{
+				rs.TypeKey:          []byte("s3Compliant"),
+				rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
+				rs.PrefixKey:        []byte("/path/to/prefix"),
+				rs.RegionKey:        []byte("us-east-1"),
+				rs.BucketKey:        []byte("bucket"),
+				rs.SkipSSLVerifyKey: []byte("true"),
+			},
+			"prefixfs",
+		),
+		ExpectedCLI: []string{
+			"s3",
+			"--region=us-east-1",
+			"--bucket=bucket",
+			"--endpoint=endpoint.com",
+			"--prefix=/path/to/prefix/prefixfs/",
+			"--disable-tls",
+			"--disable-tls-verification",
+		},
+	},
+}))
 
 // MockFlagWithError is a mock flag that always returns an error
 type MockFlagWithError struct{}
