@@ -26,6 +26,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/fs"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/gcs"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/model"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/s3"
 )
 
 // Option is a function that sets a storage option.
@@ -59,6 +60,8 @@ func Storage(location model.Location, repoPathPrefix string, opts ...Option) mod
 		factory[rs.LocTypeFilestore] = fs.New
 		factory[rs.LocTypeGCS] = gcs.New
 		factory[rs.LocTypeAzure] = azure.New
+		factory[rs.LocTypeS3] = s3.New
+		factory[rs.LocTypes3Compliant] = s3.New
 	})
 	// create a new storage with the given location, repo path prefix and defaults.
 	s := model.StorageFlag{

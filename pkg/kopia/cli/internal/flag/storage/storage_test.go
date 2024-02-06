@@ -194,6 +194,112 @@ func (s *StorageSuite) TestStorageFlag(c *check.C) {
 				"--prefix=/path/to/prefix/prefixfs/",
 			},
 		},
+		{
+			name: "S3 should generate s3 args",
+			storage: Storage(
+				model.Location{
+					rs.TypeKey:          []byte("s3"),
+					rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
+					rs.PrefixKey:        []byte("/path/to/prefix"),
+					rs.RegionKey:        []byte("us-east-1"),
+					rs.BucketKey:        []byte("bucket"),
+					rs.SkipSSLVerifyKey: []byte("true"),
+				},
+				"prefixfs",
+			),
+			expCLI: []string{
+				"s3",
+				"--region=us-east-1",
+				"--bucket=bucket",
+				"--endpoint=endpoint.com",
+				"--prefix=/path/to/prefix/prefixfs/",
+				"--disable-tls",
+				"--disable-tls-verification",
+			},
+		},
+		{
+			name: "S3 with no prefix should use onlu repo path prefix",
+			storage: Storage(
+				model.Location{
+					rs.TypeKey:          []byte("s3"),
+					rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
+					rs.RegionKey:        []byte("us-east-1"),
+					rs.BucketKey:        []byte("bucket"),
+					rs.SkipSSLVerifyKey: []byte("true"),
+				},
+				"prefixfs",
+			),
+			expCLI: []string{
+				"s3",
+				"--region=us-east-1",
+				"--bucket=bucket",
+				"--endpoint=endpoint.com",
+				"--prefix=prefixfs",
+				"--disable-tls",
+				"--disable-tls-verification",
+			},
+		},
+		{
+			name: "S3 with no endpoint should omit endpoint flag",
+			storage: Storage(
+				model.Location{
+					rs.TypeKey:   []byte("s3"),
+					rs.PrefixKey: []byte("/path/to/prefix"),
+					rs.RegionKey: []byte("us-east-1"),
+					rs.BucketKey: []byte("bucket"),
+				},
+				"prefixfs",
+			),
+			expCLI: []string{
+				"s3",
+				"--region=us-east-1",
+				"--bucket=bucket",
+				"--prefix=/path/to/prefix/prefixfs/",
+			},
+		},
+		{
+			name: "S3 endpoint with trailing slashes should be trimmed",
+			storage: Storage(
+				model.Location{
+					rs.TypeKey:     []byte("s3"),
+					rs.EndpointKey: []byte("https://endpoint.com//////"), // slashes will be trimmed
+					rs.PrefixKey:   []byte("/path/to/prefix"),
+					rs.RegionKey:   []byte("us-east-1"),
+					rs.BucketKey:   []byte("bucket"),
+				},
+				"prefixfs",
+			),
+			expCLI: []string{
+				"s3",
+				"--region=us-east-1",
+				"--bucket=bucket",
+				"--endpoint=endpoint.com",
+				"--prefix=/path/to/prefix/prefixfs/",
+			},
+		},
+		{
+			name: "S3 compliant should generate s3 args",
+			storage: Storage(
+				model.Location{
+					rs.TypeKey:          []byte("s3Compliant"),
+					rs.EndpointKey:      []byte("http://endpoint.com"), // disable TLS
+					rs.PrefixKey:        []byte("/path/to/prefix"),
+					rs.RegionKey:        []byte("us-east-1"),
+					rs.BucketKey:        []byte("bucket"),
+					rs.SkipSSLVerifyKey: []byte("true"),
+				},
+				"prefixfs",
+			),
+			expCLI: []string{
+				"s3",
+				"--region=us-east-1",
+				"--bucket=bucket",
+				"--endpoint=endpoint.com",
+				"--prefix=/path/to/prefix/prefixfs/",
+				"--disable-tls",
+				"--disable-tls-verification",
+			},
+		},
 	}
 
 	for _, tt := range tests {
