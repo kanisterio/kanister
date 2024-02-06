@@ -178,6 +178,22 @@ func (s *StorageSuite) TestStorageFlag(c *check.C) {
 				"--prefix=/path/to/prefix/prefixfs/",
 			},
 		},
+		{
+			name: "Azure should generate azure args",
+			storage: Storage(
+				model.Location{
+					rs.TypeKey:   []byte("azure"),
+					rs.BucketKey: []byte("bucket"),
+					rs.PrefixKey: []byte("/path/to/prefix"),
+				},
+				"prefixfs",
+			),
+			expCLI: []string{
+				"azure",
+				"--container=bucket",
+				"--prefix=/path/to/prefix/prefixfs/",
+			},
+		},
 	}
 
 	for _, tt := range tests {

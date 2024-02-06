@@ -4,4 +4,5 @@ package command
 var (
 	FileSystem = Command{"filesystem"}
 	GCS        = Command{"gcs"}
+	Azure      = Command{"azure"}
 )
