@@ -28,6 +28,8 @@ var (
 	ErrInvalidCacheArgs = errors.New("cache flag expects at most one cli.CacheArgs argument")
 	// ErrInvalidID is returned when the ID is empty.
 	ErrInvalidID = errors.New("invalid ID")
+	// ErrInvalidCommand is returned when the command is empty.
+	ErrInvalidCommand = errors.New("invalid command")
 )
 
 // storage errors
