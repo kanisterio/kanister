@@ -17,11 +17,13 @@ package storage
 import (
 	"sync"
 
-	cmdlog "github.com/kanisterio/kanister/pkg/kopia/cli/internal/log"
 	"github.com/kanisterio/kanister/pkg/log"
 	rs "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 
+	cmdlog "github.com/kanisterio/kanister/pkg/kopia/cli/internal/log"
+
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/fs"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/gcs"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/model"
 )
 
@@ -54,6 +56,7 @@ func Storage(location model.Location, repoPathPrefix string, opts ...Option) mod
 	factoryOnce.Do(func() {
 		// Register storage builders.
 		factory[rs.LocTypeFilestore] = fs.New
+		factory[rs.LocTypeGCS] = gcs.New
 	})
 	// create a new storage with the given location, repo path prefix and defaults.
 	s := model.StorageFlag{

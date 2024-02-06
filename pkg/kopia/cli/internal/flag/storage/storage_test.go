@@ -161,6 +161,23 @@ func (s *StorageSuite) TestStorageFlag(c *check.C) {
 			errMsg: "failed to apply storage args: unsupported location type: 'ftp': unsupported storage",
 			err:    cli.ErrUnsupportedStorage,
 		},
+		{
+			name: "GCS should generate gcs args",
+			storage: Storage(
+				model.Location{
+					rs.TypeKey:   []byte("gcs"),
+					rs.BucketKey: []byte("bucket"),
+					rs.PrefixKey: []byte("/path/to/prefix"),
+				},
+				"prefixfs",
+			),
+			expCLI: []string{
+				"gcs",
+				"--bucket=bucket",
+				"--credentials-file=/tmp/creds.txt",
+				"--prefix=/path/to/prefix/prefixfs/",
+			},
+		},
 	}
 
 	for _, tt := range tests {
