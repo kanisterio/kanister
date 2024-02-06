@@ -29,3 +29,9 @@ var (
 	// ErrInvalidID is returned when the ID is empty.
 	ErrInvalidID = errors.New("invalid ID")
 )
+
+// storage errors
+var (
+	// ErrUnsupportedStorage is returned when the storage is not supported.
+	ErrUnsupportedStorage = errors.New("unsupported storage")
+)
