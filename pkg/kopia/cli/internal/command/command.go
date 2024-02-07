@@ -17,8 +17,10 @@ package command
 import (
 	"github.com/kanisterio/safecli"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	clierrors "github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag"
+	flagcommon "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/common"
 )
 
 // Command is a CLI command/subcommand.
@@ -42,4 +44,10 @@ func NewCommandBuilder(cmd flag.Applier, flags ...flag.Applier) (*safecli.Builde
 		return nil, err
 	}
 	return b, nil
+}
+
+// NewKopiaCommandBuilder returns a new Kopia command builder.
+func NewKopiaCommandBuilder(args cli.CommonArgs, flags ...flag.Applier) (*safecli.Builder, error) {
+	flags = append([]flag.Applier{flagcommon.Common(args)}, flags...)
+	return NewCommandBuilder(KopiaBinaryName, flags...)
 }

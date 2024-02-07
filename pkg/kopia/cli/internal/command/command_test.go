@@ -95,3 +95,14 @@ func (s *CommandSuite) TestNewCommandBuilder(c *check.C) {
 		"--flag2",
 	})
 }
+
+func (s *CommandSuite) TestNewKopiaCommandBuilder(c *check.C) {
+	b, err := NewKopiaCommandBuilder(cli.CommonArgs{}, &mockCommandAndFlag{flagName: "--flag1"}, &mockCommandAndFlag{flagName: "--flag2"})
+	c.Assert(err, check.IsNil)
+	c.Check(b.Build(), check.DeepEquals, []string{
+		"kopia",
+		"--log-level=error",
+		"--flag1",
+		"--flag2",
+	})
+}
