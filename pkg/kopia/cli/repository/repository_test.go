@@ -20,6 +20,7 @@ import (
 
 	"gopkg.in/check.v1"
 
+	"github.com/go-openapi/strfmt"
 	"github.com/kanisterio/safecli"
 
 	rs "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
@@ -270,6 +271,75 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 			"--bucket=test-bucket",
 			"--endpoint=test-endpoint",
 			"--prefix=test-prefix/test-path/prefix/",
+		},
+	},
+}))
+
+// Test Repository Connect command
+var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
+	{
+		Name: "repository connect with default retention",
+		CLI: func() (safecli.CommandBuilder, error) {
+			args := ConnectArgs{
+				CommonArgs:     test.CommonArgs,
+				CacheArgs:      cacheArgs,
+				Hostname:       "test-hostname",
+				Username:       "test-username",
+				RepoPathPrefix: "test-path/prefix",
+				Location:       locFS,
+			}
+			return Connect(args)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-level=error",
+			"--log-dir=cache/log",
+			"--password=encr-key",
+			"repository",
+			"connect",
+			"--no-check-for-updates",
+			"--cache-directory=/tmp/cache.dir",
+			"--content-cache-size-limit-mb=0",
+			"--metadata-cache-size-limit-mb=0",
+			"--override-hostname=test-hostname",
+			"--override-username=test-username",
+			"filesystem",
+			"--path=/mnt/data/test-prefix/test-path/prefix/",
+		},
+	},
+	{
+		Name: "repository connect with PIT and ReadOnly",
+		CLI: func() (safecli.CommandBuilder, error) {
+			pit, _ := strfmt.ParseDateTime("2021-02-03T01:02:03Z")
+			args := ConnectArgs{
+				CommonArgs:     test.CommonArgs,
+				CacheArgs:      cacheArgs,
+				Hostname:       "test-hostname",
+				Username:       "test-username",
+				RepoPathPrefix: "test-path/prefix",
+				Location:       locFS,
+				PointInTime:    pit,
+				ReadOnly:       true,
+			}
+			return Connect(args)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-level=error",
+			"--log-dir=cache/log",
+			"--password=encr-key",
+			"repository",
+			"connect",
+			"--no-check-for-updates",
+			"--readonly",
+			"--cache-directory=/tmp/cache.dir",
+			"--content-cache-size-limit-mb=0",
+			"--metadata-cache-size-limit-mb=0",
+			"--override-hostname=test-hostname",
+			"--override-username=test-username",
+			"filesystem",
+			"--path=/mnt/data/test-prefix/test-path/prefix/",
+			"--point-in-time=2021-02-03T01:02:03.000Z",
 		},
 	},
 }))

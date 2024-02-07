@@ -23,6 +23,7 @@ var (
 var (
 	Repository = Command{"repository"}
 	Create     = Command{"create"}
+	Connect    = Command{"connect"}
 )
 
 // Repository storage sub commands.
