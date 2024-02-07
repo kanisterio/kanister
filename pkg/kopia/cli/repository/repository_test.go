@@ -443,3 +443,43 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 		},
 	},
 }))
+
+// Test Repository Status command
+var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
+	{
+		Name: "repository status with default args",
+		CLI: func() (safecli.CommandBuilder, error) {
+			args := StatusArgs{
+				CommonArgs: test.CommonArgs,
+			}
+			return Status(args)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-level=error",
+			"--log-dir=cache/log",
+			"--password=encr-key",
+			"repository",
+			"status",
+		},
+	},
+	{
+		Name: "repository status with JSON output",
+		CLI: func() (safecli.CommandBuilder, error) {
+			args := StatusArgs{
+				CommonArgs: test.CommonArgs,
+				JSONOutput: true,
+			}
+			return Status(args)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-level=error",
+			"--log-dir=cache/log",
+			"--password=encr-key",
+			"repository",
+			"status",
+			"--json",
+		},
+	},
+}))

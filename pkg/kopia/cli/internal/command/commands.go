@@ -26,6 +26,7 @@ var (
 	Connect       = Command{"connect"}
 	Server        = Command{"server"}
 	SetParameters = Command{"set-parameters"}
+	Status        = Command{"status"}
 )
 
 // Repository storage sub commands.
