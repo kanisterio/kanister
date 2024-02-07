@@ -21,10 +21,11 @@ var (
 
 // Repository commands.
 var (
-	Repository = Command{"repository"}
-	Create     = Command{"create"}
-	Connect    = Command{"connect"}
-	Server     = Command{"server"}
+	Repository    = Command{"repository"}
+	Create        = Command{"create"}
+	Connect       = Command{"connect"}
+	Server        = Command{"server"}
+	SetParameters = Command{"set-parameters"}
 )
 
 // Repository storage sub commands.

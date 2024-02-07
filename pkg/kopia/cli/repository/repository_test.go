@@ -381,3 +381,65 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 		},
 	},
 }))
+
+// Test Repository Set Parameters command
+var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
+	{
+		Name: "repository set-parameters with default retention",
+		CLI: func() (safecli.CommandBuilder, error) {
+			args := SetParametersArgs{
+				CommonArgs: test.CommonArgs,
+			}
+			return SetParameters(args)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-level=error",
+			"--log-dir=cache/log",
+			"--password=encr-key",
+			"repository",
+			"set-parameters",
+		},
+	},
+	{
+		Name: "repository set-parameters with custom retention args",
+		CLI: func() (safecli.CommandBuilder, error) {
+			args := SetParametersArgs{
+				CommonArgs:      test.CommonArgs,
+				RetentionMode:   retentionMode,
+				RetentionPeriod: retentionPeriod,
+			}
+			return SetParameters(args)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-level=error",
+			"--log-dir=cache/log",
+			"--password=encr-key",
+			"repository",
+			"set-parameters",
+			"--retention-mode=Locked",
+			"--retention-period=15m0s",
+		},
+	},
+	{
+		Name: "repository set-parameters with custom retention mode only",
+		CLI: func() (safecli.CommandBuilder, error) {
+			args := SetParametersArgs{
+				CommonArgs:    test.CommonArgs,
+				RetentionMode: retentionMode,
+			}
+			return SetParameters(args)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-level=error",
+			"--log-dir=cache/log",
+			"--password=encr-key",
+			"repository",
+			"set-parameters",
+			"--retention-mode=Locked",
+			"--retention-period=0s",
+		},
+	},
+}))
