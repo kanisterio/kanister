@@ -14,7 +14,7 @@
 
 # Motivation
 
-Kanister uses a Kubernetes custom controller makes use of Kopia as a primary backup and restore tool. 
+Kanister uses a Kubernetes custom controller that makes use of Kopia as a primary backup and restore tool. 
 The detailed design of the customer controller can be found [here](https://github.com/kanisterio/kanister/blob/master/design/kanister-kopia-integration.md)
 
 The custom controller called as repository server controller currently uses Kopia CLI to perform the Kopia operations. All the

@@ -604,7 +604,7 @@ If misplaced, Kanister will not be able to recover these credentials.
 
 ### Replace Kopia CLI with SDK
 
-Currently we are using Kopia CLI to perform the repository and kopia repository server operations in Kanister.
+Currently, we are using Kopia CLI to perform the repository and kopia repository server operations in Kanister.
 The repository controller creates a pod, executes commands through `kube.exec` on the pod to perform
 repository operations. The commands include: 
 - repo connect 
@@ -612,5 +612,5 @@ repository operations. The commands include:
 - add users 
 - refresh server 
 
-Kopia provides a SDK to perform repository operations which can be used instead of CLI. The detailed design is explained in the document
+Kopia provides an SDK to perform repository operations which can be used instead of CLI. The detailed design is explained in the document
 [Replace Kopia CLI with Kopia SDK](https://github.com/kanisterio/kanister/blob/master/design/replace-CLI-with-SDK.md).
