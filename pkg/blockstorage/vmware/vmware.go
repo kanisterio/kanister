@@ -336,7 +336,7 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 	if err != nil {
 		return errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
 	}
-	return wait.PollUntilContextTimeout(ctx, time.Second, defaultRetryLimit, false, func(innerCtx context.Context) (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, time.Second, defaultRetryLimit, false, func(context.Context) (bool, error) {
 		log.Debug().Print("SnapshotDelete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
 		task, lerr := p.Gom.DeleteSnapshot(ctx, vimID(volID), vimID(snapshotID))
 		if lerr != nil {

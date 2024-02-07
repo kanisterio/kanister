@@ -159,11 +159,9 @@ func rawCRDFromFile(path string) ([]byte, error) {
 
 func waitForCRDInit(crcontext Context, resource CustomResource) error {
 	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
-	deadlineCtx, cancel := contextpkg.WithTimeout(contextpkg.TODO(), crcontext.Timeout)
-	defer cancel()
-
-	return wait.PollUntilContextTimeout(deadlineCtx, crcontext.Interval, crcontext.Timeout, false, func(ctx contextpkg.Context) (bool, error) {
-		crd, err := crcontext.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(contextpkg.TODO(), crdName, metav1.GetOptions{})
+	ctx := contextpkg.TODO()
+	return wait.PollUntilContextTimeout(ctx, crcontext.Interval, crcontext.Timeout, false, func(contextpkg.Context) (bool, error) {
+		crd, err := crcontext.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
