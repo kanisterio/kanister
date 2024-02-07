@@ -16,6 +16,9 @@ package output
 
 import (
 	"bytes"
+	"context"
+	"io"
+	"strings"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -45,13 +48,27 @@ func (s *OutputSuite) TestValidateKey(c *C) {
 	}
 }
 
+// FIXME: replace this with TestLogAndParse
+func parse(str string) (*Output, error) {
+	reader := io.NopCloser(strings.NewReader(str))
+	output, err := LogAndParse(context.Background(), reader)
+	var o *Output
+	for k, v := range output {
+		o = &Output{
+			Key:   k,
+			Value: v.(string),
+		}
+	}
+	return o, err
+}
+
 func (s *OutputSuite) TestParseValid(c *C) {
 	key, val := "foo", "bar"
 	b := bytes.NewBuffer(nil)
 	err := fPrintOutput(b, key, val)
 	c.Check(err, IsNil)
 
-	o, err := Parse(b.String())
+	o, err := parse(b.String())
 	c.Assert(err, IsNil)
 	c.Assert(o, NotNil)
 	c.Assert(o.Key, Equals, key)
@@ -77,7 +94,7 @@ func (s *OutputSuite) TestParseNoOutput(c *C) {
 			checker: IsNil,
 		},
 	} {
-		o, err := Parse(tc.s)
+		o, err := parse(tc.s)
 		c.Assert(err, tc.checker)
 		c.Assert(o, IsNil)
 	}

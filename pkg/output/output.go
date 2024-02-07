@@ -20,7 +20,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -47,7 +46,7 @@ func marshalOutput(key, value string) (string, error) {
 }
 
 // UnmarshalOutput unmarshals output json into Output struct
-func UnmarshalOutput(opString string) (*Output, error) {
+func UnmarshalOutput(opString []byte) (*Output, error) {
 	p := &Output{}
 	err := json.Unmarshal([]byte(opString), p)
 	return p, errors.Wrap(err, "Failed to unmarshal key-value pair")
@@ -89,16 +88,3 @@ func fPrintOutput(w io.Writer, key, value string) error {
 const reStr = PhaseOpString + `(.*)$`
 
 var logRE = regexp.MustCompile(reStr)
-
-func Parse(l string) (*Output, error) {
-	l = strings.TrimSpace(l)
-	match := logRE.FindAllStringSubmatch(l, 1)
-	if len(match) == 0 {
-		return nil, nil
-	}
-	op, err := UnmarshalOutput(match[0][1])
-	if err != nil {
-		return nil, err
-	}
-	return op, nil
-}

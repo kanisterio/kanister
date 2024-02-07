@@ -74,7 +74,8 @@ func bigOutputPhase(namespace string) crv1alpha1.BlueprintPhase {
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				fmt.Sprintf("kando output longstring %s", longstring),
+				// We output a line for log only, and a line with output at the tail
+				fmt.Sprintf("echo -n %s > tmpfile; cat tmpfile; echo; cat tmpfile; kando output longstring $(cat tmpfile)", longstring),
 			},
 		},
 	}

@@ -19,7 +19,7 @@ import (
 	"context"
 	"io"
 	"os"
-	"regexp"
+	"strings"
 	"time"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -60,22 +60,31 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 	if out == "" {
 		return nil, nil
 	}
-	var op map[string]interface{}
-	logs := regexp.MustCompile("[\n]").Split(out, -1)
-	for _, l := range logs {
-		opObj, err := output.Parse(l)
-		if err != nil {
-			return nil, err
-		}
-		if opObj == nil {
-			continue
-		}
-		if op == nil {
-			op = make(map[string]interface{})
-		}
-		op[opObj.Key] = opObj.Value
+
+	// var op map[string]interface{}
+	reader := io.NopCloser(strings.NewReader(out))
+	output, err := output.LogAndParse(context.Background(), reader)
+
+	// For some reason we expect empty output to be returned as nil here
+	if len(output) == 0 {
+		return nil, err
 	}
-	return op, nil
+	return output, err
+	// logs := regexp.MustCompile("[\n]").Split(out, -1)
+	// for _, l := range logs {
+	// 	opObj, err := output.Parse(l)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if opObj == nil {
+	// 		continue
+	// 	}
+	// 	if op == nil {
+	// 		op = make(map[string]interface{})
+	// 	}
+	// 	op[opObj.Key] = opObj.Value
+	// }
+	// return op, nil
 }
 
 func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
