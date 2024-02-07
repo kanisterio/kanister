@@ -46,7 +46,7 @@ func (*CheckRepositoryFunc) Name() string {
 	return CheckRepositoryFuncName
 }
 
-func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, insecureTLS bool, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	namespace, err := kube.GetControllerNamespace()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get controller namespace")
@@ -59,7 +59,7 @@ func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := CheckRepositoryPodFunc(cli, tp, encryptionKey, targetPaths)
+	podFunc := CheckRepositoryPodFunc(cli, tp, encryptionKey, targetPaths, insecureTLS)
 	return pr.Run(ctx, podFunc)
 }
 
@@ -68,6 +68,7 @@ func CheckRepositoryPodFunc(
 	tp param.TemplateParams,
 	encryptionKey,
 	targetPath string,
+	insecureTLS bool,
 ) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		pod := pc.Pod()
@@ -89,6 +90,7 @@ func CheckRepositoryPodFunc(
 			tp.Profile,
 			targetPath,
 			encryptionKey,
+			insecureTLS,
 			cli,
 			pod.Namespace,
 			pod.Name,
@@ -126,12 +128,17 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	defer func() { c.progressPercent = progress.CompletedPercent }()
 
 	var checkRepositoryArtifactPrefix, encryptionKey string
+	var insecureTLS bool
 	if err := Arg(args, CheckRepositoryArtifactPrefixArg, &checkRepositoryArtifactPrefix); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CheckRepositoryEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
+	if err := OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
+		return nil, err
+	}
+
 	podOverride, err := GetPodSpecOverride(tp, args, CheckRepositoryPodOverrideArg)
 	if err != nil {
 		return nil, err
@@ -147,7 +154,7 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return CheckRepository(ctx, cli, tp, encryptionKey, checkRepositoryArtifactPrefix, CheckRepositoryJobPrefix, podOverride)
+	return CheckRepository(ctx, cli, tp, encryptionKey, checkRepositoryArtifactPrefix, CheckRepositoryJobPrefix, insecureTLS, podOverride)
 }
 
 func (*CheckRepositoryFunc) RequiredArgs() []string {
@@ -158,6 +165,7 @@ func (*CheckRepositoryFunc) Arguments() []string {
 	return []string{
 		CheckRepositoryArtifactPrefixArg,
 		CheckRepositoryEncryptionKeyArg,
+		InsecureTLS,
 	}
 }
 func (c *CheckRepositoryFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
