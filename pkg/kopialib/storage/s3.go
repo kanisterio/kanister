@@ -17,7 +17,7 @@ package storage
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/kopialib"
+	kopialibutils "github.com/kanisterio/kanister/pkg/kopialib/utils"
 	"github.com/kanisterio/kanister/pkg/utils"
 	"github.com/kopia/kopia/repo/blob"
 	"github.com/kopia/kopia/repo/blob/s3"
@@ -26,24 +26,20 @@ import (
 var _ Storage = &s3Storage{}
 
 var requiredS3Arguments = []string{
-	kopialib.BucketKey,
+	kopialibutils.BucketKey,
 }
 
 type s3Storage struct {
-	Options *s3.Options
-	Create  bool
+	options *s3.Options
+	create  bool
 }
 
-func (s *s3Storage) Connect() (blob.Storage, error) {
-	return s3.New(context.Background(), s.Options, s.Create)
+func (s *s3Storage) New() (blob.Storage, error) {
+	return s3.New(context.Background(), s.options, s.create)
 }
 
-func (s *s3Storage) WithOptions(opts s3.Options) {
-	s.Options = &opts
-}
-
-func (s *s3Storage) WithCreate(create bool) {
-	s.Create = create
+func (s *s3Storage) WithCreate() {
+	s.create = true
 }
 
 func (s *s3Storage) SetOptions(ctx context.Context, options map[string]string) error {
@@ -51,17 +47,25 @@ func (s *s3Storage) SetOptions(ctx context.Context, options map[string]string) e
 	if err != nil {
 		return err
 	}
-	s.Options = &s3.Options{
-		BucketName:      options[kopialib.BucketKey],
-		Endpoint:        options[kopialib.S3EndpointKey],
-		Prefix:          options[kopialib.PrefixKey],
-		Region:          options[kopialib.S3RegionKey],
-		SessionToken:    options[kopialib.S3TokenKey],
-		AccessKeyID:     options[kopialib.S3AccessKey],
-		SecretAccessKey: options[kopialib.S3SecretAccessKey],
+	s.options = &s3.Options{
+		BucketName:      options[kopialibutils.BucketKey],
+		Endpoint:        options[kopialibutils.S3EndpointKey],
+		Prefix:          options[kopialibutils.PrefixKey],
+		Region:          options[kopialibutils.S3RegionKey],
+		SessionToken:    options[kopialibutils.S3TokenKey],
+		AccessKeyID:     options[kopialibutils.S3AccessKey],
+		SecretAccessKey: options[kopialibutils.S3SecretAccessKey],
 	}
-	s.Options.DoNotUseTLS, _ = utils.GetBoolOrDefault(options[kopialib.DoNotUseTLS], true)
-	s.Options.DoNotVerifyTLS, _ = utils.GetBoolOrDefault(options[kopialib.DoNotVerifyTLS], true)
+	doNotUseTLS, err := utils.GetBoolOrDefault(options[kopialibutils.DoNotUseTLS], true)
+	if err != nil {
+		return err
+	}
+	s.options.DoNotUseTLS = doNotUseTLS
+	doNotVerifyTLS, err := utils.GetBoolOrDefault(options[kopialibutils.DoNotVerifyTLS], true)
+	if err != nil {
+		return err
+	}
 
+	s.options.DoNotVerifyTLS = doNotVerifyTLS
 	return nil
 }

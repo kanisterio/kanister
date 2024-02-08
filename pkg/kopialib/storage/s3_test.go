@@ -18,7 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kanisterio/kanister/pkg/kopialib"
+	kopiaerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
+	"github.com/kanisterio/kanister/pkg/kopialib/utils"
 	"github.com/kopia/kopia/repo/blob/s3"
 	. "gopkg.in/check.v1"
 )
@@ -34,31 +35,34 @@ func (s *s3StorageTestSuite) TestSetOptions(c *C) {
 		expectedOptions s3.Options
 		expectedErr     string
 		errChecker      Checker
+		desc            string
 	}{
 		{
 			name:        "options not set",
 			options:     map[string]string{},
-			expectedErr: fmt.Sprintf(ErrStorageOptionsCannotBeNilMsg, TypeS3),
+			expectedErr: fmt.Sprintf(kopiaerrors.ErrStorageOptionsCannotBeNilMsg, TypeS3),
 			errChecker:  NotNil,
+			desc:        "options to connect to S3 storage not set",
 		},
 		{
 			name: "bucket name is required",
 			options: map[string]string{
-				kopialib.S3EndpointKey: "test-endpoint",
+				utils.S3EndpointKey: "test-endpoint",
 			},
-			expectedErr: fmt.Sprintf(ErrMissingRequiredFieldMsg, kopialib.BucketKey, TypeS3),
+			expectedErr: fmt.Sprintf(kopiaerrors.ErrMissingRequiredFieldMsg, utils.BucketKey, TypeS3),
 			errChecker:  NotNil,
+			desc:        "required field `bucket name` is not set",
 		},
 		{
 			name: "set correct options",
 			options: map[string]string{
-				kopialib.BucketKey:         "test-bucket",
-				kopialib.S3EndpointKey:     "test-endpoint",
-				kopialib.S3RegionKey:       "test-region",
-				kopialib.S3AccessKey:       "test-access-key",
-				kopialib.S3SecretAccessKey: "test-secret-access-key",
-				kopialib.S3TokenKey:        "test-s3-token",
-				kopialib.PrefixKey:         "test-prefix",
+				utils.BucketKey:         "test-bucket",
+				utils.S3EndpointKey:     "test-endpoint",
+				utils.S3RegionKey:       "test-region",
+				utils.S3AccessKey:       "test-access-key",
+				utils.S3SecretAccessKey: "test-secret-access-key",
+				utils.S3TokenKey:        "test-s3-token",
+				utils.PrefixKey:         "test-prefix",
 			},
 			expectedOptions: s3.Options{
 				BucketName:      "test-bucket",
@@ -72,18 +76,19 @@ func (s *s3StorageTestSuite) TestSetOptions(c *C) {
 				DoNotVerifyTLS:  true,
 			},
 			errChecker: IsNil,
+			desc:       "All the connect options for S3 are set correctly",
 		},
 		{
 			name: "set TLS",
 			options: map[string]string{
-				kopialib.BucketKey:         "test-bucket",
-				kopialib.S3EndpointKey:     "test-endpoint",
-				kopialib.S3RegionKey:       "test-region",
-				kopialib.S3AccessKey:       "test-access-key",
-				kopialib.S3SecretAccessKey: "test-secret-access-key",
-				kopialib.S3TokenKey:        "test-s3-token",
-				kopialib.PrefixKey:         "test-prefix",
-				kopialib.DoNotUseTLS:       "false",
+				utils.BucketKey:         "test-bucket",
+				utils.S3EndpointKey:     "test-endpoint",
+				utils.S3RegionKey:       "test-region",
+				utils.S3AccessKey:       "test-access-key",
+				utils.S3SecretAccessKey: "test-secret-access-key",
+				utils.S3TokenKey:        "test-s3-token",
+				utils.PrefixKey:         "test-prefix",
+				utils.DoNotUseTLS:       "false",
 			},
 			expectedOptions: s3.Options{
 				BucketName:      "test-bucket",
@@ -97,19 +102,20 @@ func (s *s3StorageTestSuite) TestSetOptions(c *C) {
 				DoNotVerifyTLS:  true,
 			},
 			errChecker: IsNil,
+			desc:       "Verify if TLS is set to true",
 		},
 		{
 			name: "set verify TLS",
 			options: map[string]string{
-				kopialib.BucketKey:         "test-bucket",
-				kopialib.S3EndpointKey:     "test-endpoint",
-				kopialib.S3RegionKey:       "test-region",
-				kopialib.S3AccessKey:       "test-access-key",
-				kopialib.S3SecretAccessKey: "test-secret-access-key",
-				kopialib.S3TokenKey:        "test-s3-token",
-				kopialib.PrefixKey:         "test-prefix",
-				kopialib.DoNotUseTLS:       "false",
-				kopialib.DoNotVerifyTLS:    "false",
+				utils.BucketKey:         "test-bucket",
+				utils.S3EndpointKey:     "test-endpoint",
+				utils.S3RegionKey:       "test-region",
+				utils.S3AccessKey:       "test-access-key",
+				utils.S3SecretAccessKey: "test-secret-access-key",
+				utils.S3TokenKey:        "test-s3-token",
+				utils.PrefixKey:         "test-prefix",
+				utils.DoNotUseTLS:       "false",
+				utils.DoNotVerifyTLS:    "false",
 			},
 			expectedOptions: s3.Options{
 				BucketName:      "test-bucket",
@@ -123,6 +129,7 @@ func (s *s3StorageTestSuite) TestSetOptions(c *C) {
 				DoNotVerifyTLS:  false,
 			},
 			errChecker: IsNil,
+			desc:       "Check if VerifyTLS is set to true",
 		},
 	} {
 		s3Storage := s3Storage{}
@@ -130,8 +137,9 @@ func (s *s3StorageTestSuite) TestSetOptions(c *C) {
 		c.Check(err, tc.errChecker)
 		if err != nil {
 			c.Check(err.Error(), Equals, tc.expectedErr, Commentf("test number: %d", i))
+			c.Check(err.Error(), Equals, tc.expectedErr, Commentf("test number: %d, desc: %s", i, tc.desc))
 		}
 
-		c.Assert(s3Storage.Options, DeepEquals, tc.expectedOptions)
+		c.Assert(s3Storage.options, DeepEquals, tc.expectedOptions)
 	}
 }

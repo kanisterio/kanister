@@ -17,6 +17,7 @@ package storage
 import (
 	"context"
 
+	kopiaerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kopia/kopia/repo/blob"
 	"github.com/pkg/errors"
 )
@@ -31,9 +32,9 @@ const (
 )
 
 type Storage interface {
-	Connect() (blob.Storage, error)
+	New() (blob.Storage, error)
 	SetOptions(context.Context, map[string]string) error
-	WithCreate(bool)
+	WithCreate()
 }
 
 func New(storageType StorageType) Storage {
@@ -47,11 +48,11 @@ func New(storageType StorageType) Storage {
 
 func validateCommonStorageArgs(options map[string]string, storageType StorageType, requiredArgs []string) error {
 	if options == nil {
-		return errors.Errorf(ErrStorageOptionsCannotBeNilMsg, string(storageType))
+		return errors.Errorf(kopiaerrors.ErrStorageOptionsCannotBeNilMsg, string(storageType))
 	}
 	for _, arg := range requiredArgs {
 		if _, ok := options[arg]; !ok {
-			return errors.Errorf(ErrMissingRequiredFieldMsg, arg, string(storageType))
+			return errors.Errorf(kopiaerrors.ErrMissingRequiredFieldMsg, arg, string(storageType))
 		}
 	}
 	return nil
