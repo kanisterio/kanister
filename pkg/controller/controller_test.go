@@ -668,7 +668,9 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			if !cancel {
 				err = s.waitOnActionSetState(c, as, final)
 				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
-				c.Assert(getCounterVecValue(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution}), Equals, oldValue+1, Commentf("Failed case: %s", tc.name))
+				expectedValue := oldValue + 1
+				err = waitForMetrics(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution}, expectedValue, time.Second)
+				c.Assert(err, IsNil, Commentf("Failed case: %s, failed waiting for metric update to %v", tc.name, expectedValue))
 			}
 			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
 			c.Assert(err, IsNil)
@@ -680,6 +682,22 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			}
 		}
 	}
+}
+
+func waitForMetrics(metrics prometheus.CounterVec, labels []string, expected float64, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	err := poll.Wait(ctx, func(context.Context) (bool, error) {
+		current := getCounterVecValue(metrics, labels)
+		if current == expected {
+			return true, nil
+		} else {
+			return false, nil
+		}
+	})
+
+	return err
 }
 
 func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
