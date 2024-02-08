@@ -17,10 +17,12 @@ package storage
 import (
 	"context"
 
+	kopiaerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	kopialibutils "github.com/kanisterio/kanister/pkg/kopialib/utils"
 	"github.com/kanisterio/kanister/pkg/utils"
 	"github.com/kopia/kopia/repo/blob"
 	"github.com/kopia/kopia/repo/blob/s3"
+	"github.com/pkg/errors"
 )
 
 var _ Storage = &s3Storage{}
@@ -35,6 +37,9 @@ type s3Storage struct {
 }
 
 func (s *s3Storage) New() (blob.Storage, error) {
+	if s.options == nil {
+		return nil, errors.Errorf(kopiaerrors.ErrStorageOptionsCannotBeNilMsg, TypeS3)
+	}
 	return s3.New(context.Background(), s.options, s.create)
 }
 

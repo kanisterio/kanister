@@ -34,7 +34,6 @@ const (
 type Storage interface {
 	New() (blob.Storage, error)
 	SetOptions(context.Context, map[string]string) error
-	WithCreate()
 }
 
 func New(storageType StorageType) Storage {
