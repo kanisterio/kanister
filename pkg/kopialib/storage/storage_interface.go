@@ -40,6 +40,8 @@ func New(storageType StorageType) Provider {
 	switch storageType {
 	case TypeS3:
 		return &s3Storage{}
+	case TypeAzure:
+		return &azureStorage{}
 	default:
 		return nil
 	}
