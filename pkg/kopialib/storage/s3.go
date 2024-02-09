@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var _ Storage = &s3Storage{}
+var _ Provider = &s3Storage{}
 
 var requiredS3Arguments = []string{
 	kopialibutils.BucketKey,
@@ -33,18 +33,13 @@ var requiredS3Arguments = []string{
 
 type s3Storage struct {
 	options *s3.Options
-	create  bool
 }
 
-func (s *s3Storage) New() (blob.Storage, error) {
+func (s *s3Storage) Initialize() (blob.Storage, error) {
 	if s.options == nil {
 		return nil, errors.Errorf(kopiaerrors.ErrStorageOptionsCannotBeNilMsg, TypeS3)
 	}
-	return s3.New(context.Background(), s.options, s.create)
-}
-
-func (s *s3Storage) WithCreate() {
-	s.create = true
+	return s3.New(context.Background(), s.options, false)
 }
 
 func (s *s3Storage) SetOptions(ctx context.Context, options map[string]string) error {

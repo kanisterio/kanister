@@ -31,12 +31,12 @@ const (
 	TypeGCP       StorageType = "GCP"
 )
 
-type Storage interface {
-	New() (blob.Storage, error)
+type Provider interface {
+	Initialize() (blob.Storage, error)
 	SetOptions(context.Context, map[string]string) error
 }
 
-func New(storageType StorageType) Storage {
+func New(storageType StorageType) Provider {
 	switch storageType {
 	case TypeS3:
 		return &s3Storage{}
