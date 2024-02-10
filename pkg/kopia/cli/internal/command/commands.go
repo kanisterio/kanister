@@ -63,3 +63,8 @@ var (
 	Show   = Command{"show"}
 	_      = Set
 )
+
+// Manifest commands.
+var (
+	Manifest = Command{"manifest"}
+)
