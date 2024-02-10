@@ -139,7 +139,9 @@ func handleLog(line []byte, isPrefix bool, ctx context.Context, f func(context.C
 	} else {
 		// Log everything before separator as plain output
 		prefix := line[0:indexOfPOString]
-		logOutput(ctx, prefix)
+		if len(prefix) > 0 {
+			logOutput(ctx, prefix)
+		}
 
 		return captureOutputContent(line, isPrefix, indexOfPOString+len(PhaseOpString), ctx, f)
 	}
