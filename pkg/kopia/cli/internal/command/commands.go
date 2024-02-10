@@ -78,3 +78,15 @@ var (
 	_        = Restore
 	_        = List
 )
+
+// Server commands.
+var (
+	_       = Server
+	Start   = Command{"start"}
+	Stop    = Command{"stop"}
+	Refresh = Command{"refresh"}
+	_       = Status
+	User    = Command{"user"}
+	_       = List
+	Add     = Command{"add"}
+)
