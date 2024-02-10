@@ -56,3 +56,10 @@ var (
 var (
 	Restore = Command{"restore"}
 )
+
+// Policy commands.
+var (
+	Policy = Command{"policy"}
+	Show   = Command{"show"}
+	_      = Set
+)
