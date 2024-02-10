@@ -36,3 +36,11 @@ var (
 	Azure      = Command{"azure"}
 	S3         = Command{"s3"}
 )
+
+// Maintenance commands.
+var (
+	Maintenance = Command{"maintenance"}
+	Info        = Command{"info"}
+	Set         = Command{"set"}
+	Run         = Command{"run"}
+)
