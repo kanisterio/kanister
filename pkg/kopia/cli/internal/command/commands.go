@@ -44,3 +44,10 @@ var (
 	Set         = Command{"set"}
 	Run         = Command{"run"}
 )
+
+// Blob commands.
+var (
+	Blob  = Command{"blob"}
+	List  = Command{"list"}
+	Stats = Command{"stats"}
+)
