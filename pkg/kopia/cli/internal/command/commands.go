@@ -68,3 +68,13 @@ var (
 var (
 	Manifest = Command{"manifest"}
 )
+
+// Snapshot commands.
+var (
+	Snapshot = Command{"snapshot"}
+	Delete   = Command{"delete"}
+	Expire   = Command{"expire"}
+	_        = Create
+	_        = Restore
+	_        = List
+)

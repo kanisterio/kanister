@@ -32,6 +32,10 @@ var (
 	ErrInvalidCommand = errors.New("invalid command")
 	// ErrInvalidTargetPath is returned when the target path is empty.
 	ErrInvalidTargetPath = errors.New("invalid target path")
+	// ErrInvalidBackupPath is returned when the backup path is empty.
+	ErrInvalidBackupPath = errors.New("invalid backup path")
+	// ErrInvalidTag is returned when the tag is invalid.
+	ErrInvalidTag = errors.New("invalid tag")
 )
 
 // storage errors
