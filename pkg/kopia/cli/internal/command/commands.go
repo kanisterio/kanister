@@ -51,3 +51,8 @@ var (
 	List  = Command{"list"}
 	Stats = Command{"stats"}
 )
+
+// Restore commands.
+var (
+	Restore = Command{"restore"}
+)

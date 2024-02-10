@@ -30,6 +30,8 @@ var (
 	ErrInvalidID = errors.New("invalid ID")
 	// ErrInvalidCommand is returned when the command is empty.
 	ErrInvalidCommand = errors.New("invalid command")
+	// ErrInvalidTargetPath is returned when the target path is empty.
+	ErrInvalidTargetPath = errors.New("invalid target path")
 )
 
 // storage errors
