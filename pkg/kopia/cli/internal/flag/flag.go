@@ -36,7 +36,7 @@ func Apply(cli safecli.CommandAppender, flags ...Applier) error {
 		if flag == nil { // if the flag is nil, skip it
 			continue
 		}
-		if err := flag.Apply(cli); err != nil {
+		if err := flag.Apply(sub); err != nil {
 			return err
 		}
 	}
