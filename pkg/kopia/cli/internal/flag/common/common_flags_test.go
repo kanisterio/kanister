@@ -124,13 +124,8 @@ var _ = check.Suite(test.NewFlagSuite([]test.FlagTest{
 	},
 	{
 		Name:        "Empty Common should generate a flag with default value(s)",
-		Flag:        Common(),
+		Flag:        Common(cli.CommonArgs{}),
 		ExpectedCLI: []string{"--log-level=error"},
-	},
-	{
-		Name:        "Common with more than one cli.CommonArgs should generate an error",
-		Flag:        Common(cli.CommonArgs{}, cli.CommonArgs{}),
-		ExpectedErr: cli.ErrInvalidCommonArgs,
 	},
 	{
 		Name: "Common with values should generate multiple flags with the given values and redact password for logs",
@@ -149,17 +144,12 @@ var _ = check.Suite(test.NewFlagSuite([]test.FlagTest{
 	},
 	{
 		Name: "Empty FlagCacheArgs should generate multiple flags with default values",
-		Flag: Cache(),
+		Flag: Cache(cli.CacheArgs{}),
 		ExpectedCLI: []string{
 			"--cache-directory=/tmp/kopia-cache",
 			"--content-cache-size-limit-mb=0",
 			"--metadata-cache-size-limit-mb=0",
 		},
-	},
-	{
-		Name:        "Cache with more than one cli.CacheArgs should generate an error",
-		Flag:        Cache(cli.CacheArgs{}, cli.CacheArgs{}),
-		ExpectedErr: cli.ErrInvalidCacheArgs,
 	},
 	{
 		Name: "Cache with CacheArgs should generate multiple cache related flags",

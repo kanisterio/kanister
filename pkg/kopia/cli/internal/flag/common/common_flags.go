@@ -138,18 +138,8 @@ func (f common) Apply(cmd safecli.CommandAppender) error {
 }
 
 // Common creates a new common flag.
-// If no arguments are provided, the default common flags are used.
-// If one argument is provided, the common flags are used.
-// If more than one argument is provided, ErrInvalidCommonArgs is returned.
-func Common(args ...cli.CommonArgs) flag.Applier {
-	switch len(args) {
-	case 0:
-		return common{cli.CommonArgs{}}
-	case 1:
-		return common{args[0]}
-	default:
-		return flag.ErrorFlag(cli.ErrInvalidCommonArgs)
-	}
+func Common(args cli.CommonArgs) flag.Applier {
+	return common{args}
 }
 
 // cache defines cache flags and implements Applier interface for the cache flags.
@@ -169,18 +159,8 @@ func (f cache) Apply(cmd safecli.CommandAppender) error {
 }
 
 // Cache creates a new cache flag.
-// If no arguments are provided, the default cache flags are used.
-// If one argument is provided, the cache flags are used.
-// If more than one argument is provided, ErrInvalidCacheArgs is returned.
-func Cache(args ...cli.CacheArgs) flag.Applier {
-	switch len(args) {
-	case 0:
-		return cache{cli.CacheArgs{}}
-	case 1:
-		return cache{args[0]}
-	default:
-		return flag.ErrorFlag(cli.ErrInvalidCacheArgs)
-	}
+func Cache(args cli.CacheArgs) flag.Applier {
+	return cache{args}
 }
 
 // JSONOutput creates a new JSON output flag.
