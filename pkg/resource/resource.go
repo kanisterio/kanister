@@ -64,7 +64,7 @@ func newOpKitContext(config *rest.Config, ctx context.Context) (*customresource.
 		APIExtensionClientset: apiExtClientset,
 		Interval:              500 * time.Millisecond,
 		Timeout:               60 * time.Second,
-		ParentContext:         ctx,
+		Context:               ctx,
 	}, nil
 }
 
