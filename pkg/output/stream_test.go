@@ -162,3 +162,27 @@ func (s *OutputTestSuite) TestShortStreamsWithPhaseOutput(c *C) {
 	c.Check(len(m), Equals, 1)
 	c.Check(m[cases[0].key], Equals, string(cases[0].value))
 }
+
+func (s *OutputTestSuite) TestLongStreamsWithPhaseOutput(c *C) {
+	done := make(chan struct{})
+	defer func() { close(done) }()
+
+	cases := generateTestCases(10, 10000, 10, 50, EndlineRequired)
+	r := getTestReaderCloser(done, cases)
+	m, e := output.LogAndParse(context.TODO(), r)
+	c.Check(e, IsNil)
+	c.Check(len(m), Equals, 10)
+	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+}
+
+func (s *OutputTestSuite) TestHugeStreamsWithPhaseOutput(c *C) {
+	done := make(chan struct{})
+	defer func() { close(done) }()
+
+	cases := generateTestCases(5, 100000, 10, 50, EndlineRequired)
+	r := getTestReaderCloser(done, cases)
+	m, e := output.LogAndParse(context.TODO(), r)
+	c.Check(e, IsNil)
+	c.Check(len(m), Equals, 5)
+	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+}

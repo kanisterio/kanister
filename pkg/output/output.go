@@ -84,7 +84,3 @@ func fPrintOutput(w io.Writer, key, value string) error {
 	fmt.Fprintln(w, PhaseOpString, outString)
 	return nil
 }
-
-const reStr = PhaseOpString + `(.*)$`
-
-var logRE = regexp.MustCompile(reStr)

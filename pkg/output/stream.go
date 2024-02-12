@@ -61,19 +61,18 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, []
 		if len(line) == 0 {
 			continue
 		}
-		if state.readingOutput {
+		switch {
+		case state.readingOutput:
 			if state, err = handleOutput(state, line, isPrefix, ctx, f); err != nil {
 				return err
 			}
-		} else {
-			if len(state.separatorSuffix) > 0 {
-				if state, err = handleSeparatorSuffix(state, line, isPrefix, ctx, f); err != nil {
-					return err
-				}
-			} else {
-				if state, err = handleLog(line, isPrefix, ctx, f); err != nil {
-					return err
-				}
+		case len(state.separatorSuffix) > 0:
+			if state, err = handleSeparatorSuffix(state, line, isPrefix, ctx, f); err != nil {
+				return err
+			}
+		default:
+			if state, err = handleLog(line, isPrefix, ctx, f); err != nil {
+				return err
 			}
 		}
 	}
@@ -109,7 +108,8 @@ func handleOutput(state scanState, line []byte, isPrefix bool, ctx context.Conte
 		return ReadPhaseOutputState(append(state.outputBuf, line...)), nil
 	} else {
 		// Reached the end of the line while reading phase output
-		outputContent := append(state.outputBuf, line...)
+		outputContent := state.outputBuf
+		outputContent = append(outputContent, line...)
 
 		if err := f(ctx, outputContent); err != nil {
 			return state, err
