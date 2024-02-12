@@ -31,6 +31,8 @@ type scanState struct {
 	separatorSuffix []byte
 }
 
+const bufferSize64k = 64 * 1024
+
 func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, []byte) error) error {
 	// Call r.Close() if the context is canceled or if s.Scan() == false.
 	ctx, cancel := context.WithCancel(ctx)
@@ -42,7 +44,8 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, []
 
 	state := InitState()
 
-	reader := bufio.NewReader(r)
+	reader := bufio.NewReaderSize(r, bufferSize64k)
+	// reader := bufio.NewReader(r)
 
 	// Run a simple state machine loop
 	for {
@@ -53,6 +56,10 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, []
 		}
 		if err != nil {
 			return err
+		}
+		// Skip empty lines
+		if len(line) == 0 {
+			continue
 		}
 		if state.readingOutput {
 			if state, err = handleOutput(state, line, isPrefix, ctx, f); err != nil {
@@ -162,7 +169,7 @@ func captureOutputContent(line []byte, isPrefix bool, startIndex int, ctx contex
 func checkSplitSeparator(line []byte) (splitSeparator int, separatorSuffix []byte) {
 	lineLength := len(line)
 	phaseOpBytes := []byte(PhaseOpString)
-	for i := 1; i < len(phaseOpBytes); i++ {
+	for i := 1; i < len(phaseOpBytes) && i <= lineLength; i++ {
 		if bytes.Equal(line[lineLength-i:], phaseOpBytes[0:i]) {
 			return lineLength - i, phaseOpBytes[i:]
 		}

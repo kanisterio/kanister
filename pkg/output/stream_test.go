@@ -18,7 +18,6 @@ import (
 	"context"
 	"io"
 	"math/rand"
-	"testing"
 	"time"
 
 	"github.com/kanisterio/kanister/pkg/output"
@@ -35,9 +34,6 @@ const (
 	EndlineRequired EndlinePolicy = iota
 	EndlineRandom
 )
-
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
 
 type OutputTestSuite struct{}
 
@@ -148,7 +144,7 @@ func (s *OutputTestSuite) TestHugeStreamsWithoutPhaseOutput(c *C) {
 	// I expect that it will be logged as one line as it was before
 	// But in fact it is logged by chunks of ±4kb
 	// When we will fix the code behavior, numOfLines has to be set to 10, and avgPrefix len has to be set to 500000
-	cases := generateTestCases(1, 10000, 0, 0, EndlineRequired)
+	cases := generateTestCases(10, 50000, 0, 0, EndlineRequired)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
 	c.Check(e, IsNil)
