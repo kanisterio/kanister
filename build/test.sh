@@ -24,6 +24,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 export CGO_ENABLED=0
 export GO111MODULE=on
 
+TEST_FILTER="${TEST_FILTER:-}"
+GOCHECK_FILTER=""
+if [ -n "${TEST_FILTER}" ]; then
+    echo "Using test filter ${TEST_FILTER}"
+    GOCHECK_FILTER="-check.f ${TEST_FILTER}"
+fi
+
 TARGETS=$(for d in "$@"; do echo ./$d/...; done)
 
 echo -n "Checking gofmt: "
@@ -79,7 +86,7 @@ check_dependencies
 
 echo "Running tests:"
 go test -v ${TARGETS} -list .
-go test -v -installsuffix "static" ${TARGETS} -check.v
+go test -v -installsuffix "static" ${TARGETS} -check.v ${GOCHECK_FILTER}
 echo
 
 echo "PASS"
