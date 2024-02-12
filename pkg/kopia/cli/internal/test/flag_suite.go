@@ -62,7 +62,9 @@ func (t *FlagTest) assertNoError(c *check.C, err error) {
 
 // assertCLI asserts the builder's CLI output against ExpectedCLI.
 func (t *FlagTest) assertCLI(c *check.C, b *safecli.Builder) {
-	c.Check(b.Build(), check.DeepEquals, t.ExpectedCLI, t)
+	if t.ExpectedCLI != nil {
+		c.Check(b.Build(), check.DeepEquals, t.ExpectedCLI, t)
+	}
 }
 
 // assertLog asserts the builder's log output against ExpectedLog.
@@ -74,11 +76,11 @@ func (t *FlagTest) assertLog(c *check.C, b *safecli.Builder) {
 // Test runs the flag test.
 func (ft *FlagTest) Test(c *check.C, b *safecli.Builder) {
 	err := flag.Apply(b, ft.Flag)
+	ft.assertCLI(c, b)
 	if ft.ExpectedErr != nil {
 		ft.assertError(c, err)
 	} else {
 		ft.assertNoError(c, err)
-		ft.assertCLI(c, b)
 		ft.assertLog(c, b)
 	}
 }
