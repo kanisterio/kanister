@@ -45,7 +45,6 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, []
 	state := InitState()
 
 	reader := bufio.NewReaderSize(r, bufferSize64k)
-	// reader := bufio.NewReader(r)
 
 	// Run a simple state machine loop
 	for {

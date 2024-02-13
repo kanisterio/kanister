@@ -61,7 +61,6 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 		return nil, nil
 	}
 
-	// var op map[string]interface{}
 	reader := io.NopCloser(strings.NewReader(out))
 	output, err := output.LogAndParse(context.Background(), reader)
 
@@ -70,21 +69,6 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return output, err
-	// logs := regexp.MustCompile("[\n]").Split(out, -1)
-	// for _, l := range logs {
-	// 	opObj, err := output.Parse(l)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	if opObj == nil {
-	// 		continue
-	// 	}
-	// 	if op == nil {
-	// 		op = make(map[string]interface{})
-	// 	}
-	// 	op[opObj.Key] = opObj.Value
-	// }
-	// return op, nil
 }
 
 func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
