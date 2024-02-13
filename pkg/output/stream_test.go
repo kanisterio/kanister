@@ -32,7 +32,7 @@ const (
 	NoEndline      = rune(0)
 
 	EndlineRequired EndlinePolicy = iota
-	EndlineRandom
+	EndlineProhibited
 )
 
 type OutputTestSuite struct{}
@@ -88,9 +88,12 @@ func generateTestCases(numOfLines, avgPrefixLength, avgKeyLength, avgValueLength
 			key = apirand.String(generateLength(r, avgKeyLength))
 			value = generateRandomRunes(r, avgValueLength, NoEndline)
 		}
+
+		prefixWithEndLine := endlinePolicy == EndlineRequired
+
 		cases[i] = testCase{
 			prefixLength:      generateLength(r, avgPrefixLength),
-			prefixWithEndline: endlinePolicy == EndlineRequired || rand.Intn(2) == 1,
+			prefixWithEndline: prefixWithEndLine,
 			key:               key,
 			value:             value,
 		}
@@ -136,14 +139,13 @@ func getTestReaderCloser(done chan struct{}, cases []testCase) io.ReadCloser {
 	return pr
 }
 
-func (s *OutputTestSuite) TestHugeStreamsWithoutPhaseOutput(c *C) {
+// TestLongStreamsWithoutPhaseOutput Will produce 10 long lines
+// each line will contain from 50Kb to 60Kb of random text
+// there will be no phase output in lines
+func (s *OutputTestSuite) TestLongStreamsWithoutPhaseOutput(c *C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
 
-	// e-sumin: Here I'm generating test case, when we have just random string around 10000 runes
-	// I expect that it will be logged as one line as it was before
-	// But in fact it is logged by chunks of ±4kb
-	// When we will fix the code behavior, numOfLines has to be set to 10, and avgPrefix len has to be set to 500000
 	cases := generateTestCases(10, 50000, 0, 0, EndlineRequired)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
@@ -151,6 +153,8 @@ func (s *OutputTestSuite) TestHugeStreamsWithoutPhaseOutput(c *C) {
 	c.Check(len(m), Equals, 0)
 }
 
+// TestShortStreamsWithPhaseOutput Will produce one short line
+// which will contain ONLY phase output and nothing else
 func (s *OutputTestSuite) TestShortStreamsWithPhaseOutput(c *C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
@@ -163,6 +167,9 @@ func (s *OutputTestSuite) TestShortStreamsWithPhaseOutput(c *C) {
 	c.Check(m[cases[0].key], Equals, string(cases[0].value))
 }
 
+// TestLongStreamsWithPhaseOutput Will produce 10 long lines
+// each line will contain from 10Kb to 12Kb of random text and
+// phase output preceded with newline
 func (s *OutputTestSuite) TestLongStreamsWithPhaseOutput(c *C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
@@ -175,6 +182,9 @@ func (s *OutputTestSuite) TestLongStreamsWithPhaseOutput(c *C) {
 	c.Check(m[cases[0].key], Equals, string(cases[0].value))
 }
 
+// TestHugeStreamsWithHugePhaseOutput Will produce five huge lines
+// each line will contain ±100Kb of random text WITH newline before Phase Output mark
+// Phase output value will be very short
 func (s *OutputTestSuite) TestHugeStreamsWithPhaseOutput(c *C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
@@ -184,5 +194,50 @@ func (s *OutputTestSuite) TestHugeStreamsWithPhaseOutput(c *C) {
 	m, e := output.LogAndParse(context.TODO(), r)
 	c.Check(e, IsNil)
 	c.Check(len(m), Equals, 5)
+	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+}
+
+// TestHugeStreamsWithHugePhaseOutput Will produce five huge lines
+// each line will contain ±500Kb of random text WITH newline before Phase Output mark
+// Phase output value will be ±10Kb of random text
+func (s *OutputTestSuite) TestHugeStreamsWithLongPhaseOutput(c *C) {
+	done := make(chan struct{})
+	defer func() { close(done) }()
+
+	cases := generateTestCases(5, 500000, 10, 10000, EndlineRequired)
+	r := getTestReaderCloser(done, cases)
+	m, e := output.LogAndParse(context.TODO(), r)
+	c.Check(e, IsNil)
+	c.Check(len(m), Equals, 5)
+	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+}
+
+// TestHugeStreamsWithHugePhaseOutput Will produce one huge line
+// which will contain ±500Kb of random text WITH newline before Phase Output mark
+// Phase output value will also be ±500Kb
+func (s *OutputTestSuite) TestHugeStreamsWithHugePhaseOutput(c *C) {
+	done := make(chan struct{})
+	defer func() { close(done) }()
+
+	cases := generateTestCases(1, 500000, 10, 500000, EndlineRequired)
+	r := getTestReaderCloser(done, cases)
+	m, e := output.LogAndParse(context.TODO(), r)
+	c.Check(e, IsNil)
+	c.Check(len(m), Equals, 1)
+	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+}
+
+// TestHugeStreamsWithHugePhaseOutputWithoutNewlineDelimiter Will produce one huge line
+// which will contain ±500Kb of random text WITHOUT newline before Phase Output mark
+// Phase output value will also be ±500Kb
+func (s *OutputTestSuite) TestHugeStreamsWithHugePhaseOutputWithoutNewlineDelimiter(c *C) {
+	done := make(chan struct{})
+	defer func() { close(done) }()
+
+	cases := generateTestCases(1, 500000, 10, 500000, EndlineProhibited)
+	r := getTestReaderCloser(done, cases)
+	m, e := output.LogAndParse(context.TODO(), r)
+	c.Check(e, IsNil)
+	c.Check(len(m), Equals, 1)
 	c.Check(m[cases[0].key], Equals, string(cases[0].value))
 }
