@@ -76,6 +76,8 @@ const (
 	tlsGenerateCertFlag       = "--tls-generate-cert"
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
+	enablePprof               = "--enable-pprof"
+	metricsListerAddress      = "--metrics-listen-addr"
 
 	// Repository specific
 	repositorySubCommand      = "repository"
