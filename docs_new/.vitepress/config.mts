@@ -14,24 +14,21 @@ export default defineConfig({
       provider: "local",
     },
     outline: [2, 3],
-    // nav: [
-    //   { text: "Home", link: "/", },
-    //   { text: "Examples", link: "/markdown-examples" },
-    //   { text: "API", link: "/api-examples", '' },
-    // ],
     footer: {
       copyright: "© Copyright 2017-2024, Kanister",
     },
 
     sidebar: [
-      //How we can group these
       { text: "Overview", link: "/overview" },
       { text: "Installation", link: "/install" },
       { text: "Tutorial", link: "/tutorial" },
       { text: "Architecture", link: "/architecture" },
+      { text: "Tooling", link: "/tooling" },
+      { text: "Functions", link: "/functions" },
+      { text: "Template Parameters", link: "/templates" },
+      { text: "Troubleshooting", link: "/troubleshooting" },
       {
         text: "Tasks",
-        collapsed: true,
         items: [
           {
             text: "Automating ActionSet Creation using Argo Cron Workflows",
@@ -48,15 +45,6 @@ export default defineConfig({
           },
         ],
       },
-      { text: "Tooling", link: "/tooling" },
-      { text: "Functions", link: "/functions" },
-      { text: "Template Parameters", link: "/templates" },
-      { text: "Troubleshooting", link: "/troubleshooting" },
-
-      // { text: "Index 2", link: "/index 2" },
-      // { text: "Index", link: "/index" },
-      // { text: "Markdown-examples", link: "/markdown-examples" },
-      // { text: "Api-examples", link: "/api-examples" },
     ],
 
     socialLinks: [
