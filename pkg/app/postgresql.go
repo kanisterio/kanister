@@ -54,6 +54,7 @@ func NewPostgresDB(name string, subPath string) App {
 				"auth.postgresPassword":                                "test@54321",
 				"volumePermissions.enabled":                            "true",
 				"persistence.subPath":                                  subPath,
+				"primary.networkPolicy.enabled":                        "false",
 				"primary.containerSecurityContext.seccompProfile.type": "Unconfined",
 				"primary.containerSecurityContext.capabilities.add[0]": "CHOWN",
 				"primary.containerSecurityContext.capabilities.add[1]": "FOWNER",
