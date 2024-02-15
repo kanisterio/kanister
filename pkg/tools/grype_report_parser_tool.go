@@ -88,7 +88,7 @@ func parseVulerabilitiesReport(filePath string, severityLevels []string) ([]matc
 func printResult(mr []matchResponse, githubActionOutput bool) {
 	for _, response := range mr {
 		fmt.Printf("ID: %s\n", response.Vulnerabilities.ID)
-		fmt.Printf("Link: https://github.com/advisories/%s\n", response.Vulnerabilities.DataSource)
+		fmt.Printf("Link: %s\n", response.Vulnerabilities.DataSource)
 		fmt.Printf("Severity: %s\n", response.Vulnerabilities.Severity)
 		fmt.Printf("Namespace: %s\n", response.Vulnerabilities.Namespace)
 		fmt.Printf("Description: %s\n", response.Vulnerabilities.Description)
