@@ -120,8 +120,8 @@ func newTestPodTemplateSpec() corev1.PodTemplateSpec {
 				{
 					Name:            "test-container",
 					Image:           consts.LatestKanisterToolsImage,
-					Command:         []string{"tail"},
-					Args:            []string{"-f", "/dev/null"},
+					Command:         []string{"sh"},
+					Args:            []string{"-c", "trap true TERM; sleep infinity & wait"},
 					ImagePullPolicy: corev1.PullAlways,
 				},
 			},

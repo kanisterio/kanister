@@ -83,23 +83,28 @@ type PodOptions struct {
 }
 
 func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*corev1.Pod, error) {
-	// If Namespace is not specified, use the controller Namespace.
-	cns, err := GetControllerNamespace()
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get controller namespace")
-	}
-	ns := opts.Namespace
-	if ns == "" {
-		ns = cns
-	}
+	var err error
 
-	// If a ServiceAccount is not specified and we are in the controller's
-	// namespace, use the same service account as the controller.
+	ns := opts.Namespace
 	sa := opts.ServiceAccountName
-	if sa == "" && ns == cns {
-		sa, err = GetControllerServiceAccount(cli)
+
+	// We will need controller namespace if namespace or service account is not set
+	if ns == "" || sa == "" {
+		cns, err := GetControllerNamespace()
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get Controller Service Account")
+			return nil, errors.Wrapf(err, "Failed to get controller namespace")
+		}
+		// If Namespace is not specified, use the controller Namespace.
+		if ns == "" {
+			ns = cns
+		}
+		// If a ServiceAccount is not specified and we are in the controller's
+		// namespace, use the same service account as the controller.
+		if sa == "" && ns == cns {
+			sa, err = getControllerServiceAccountInNamespace(cli, cns)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to get Controller Service Account")
+			}
 		}
 	}
 

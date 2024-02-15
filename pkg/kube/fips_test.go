@@ -69,8 +69,8 @@ func (s *FIPSSuite) SetUpSuite(c *C) {
 	c.Assert(WaitForPodReady(ctxTimeout, s.cli, s.namespace, s.pod.Name), IsNil)
 	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Get(ctx, s.pod.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
-	// install go in kanister-tools pod
-	cmd := []string{"microdnf", "install", "-y", "go"}
+	// Install nm to pod
+	cmd := []string{"microdnf", "install", "-y", "binutils"}
 	for _, cs := range s.pod.Status.ContainerStatuses {
 		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, IsNil)
@@ -92,7 +92,7 @@ func (s *FIPSSuite) TestFIPSBoringEnabled(c *C) {
 		"/usr/local/bin/kando",
 	} {
 		c.Logf("Testing %s", tool)
-		cmd := []string{"go", "tool", "nm", tool}
+		cmd := []string{"nm", tool}
 		for _, cs := range s.pod.Status.ContainerStatuses {
 			stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
 			c.Assert(err, IsNil)

@@ -124,7 +124,6 @@ func waitForJobCount(clientset kubernetes.Interface, namespace string, expectedC
 				return fmt.Errorf("Job count %d, expected job count %d", newJobCount, expectedCount)
 			}
 			duration := boff.Duration()
-			fmt.Printf("Trying again in %s\n", duration)
 			time.Sleep(duration)
 			continue
 		} else {
@@ -143,21 +142,19 @@ func (s *JobSuite) TestJobsBasic(c *C) {
 
 	images := [2]string{"ubuntu:latest", "perl"}
 	for _, image := range images {
-		job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, image, nil, "sleep", "2")
+		job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, image, nil, "sleep", "1")
 
 		c.Assert(job, NotNil)
 		c.Assert(err, IsNil)
 
 		err = job.Create()
 		c.Assert(err, IsNil)
-
 		ctx := context.Background()
 		err = job.WaitForCompletion(ctx)
 		c.Assert(err, IsNil)
 
 		err = job.Delete()
 		c.Assert(err, IsNil)
-
 		err = waitForJobCount(clientset, namespace, origJobCount, c)
 		if err != nil {
 			c.Fail()
@@ -171,7 +168,7 @@ func (s *JobSuite) TestJobsDeleteWhileRunning(c *C) {
 	clientset, err := NewClient()
 	c.Assert(err, IsNil)
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sh", "-c", "trap true TERM; sleep 300 & wait")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
@@ -187,8 +184,8 @@ func (s *JobSuite) TestJobsDeleteWhileRunning(c *C) {
 	c.Assert(c, NotNil)
 }
 
-func cancelLater(cancel func()) {
-	time.Sleep(10 * time.Second)
+func cancelLater(cancel func(), timeout time.Duration) {
+	time.Sleep(timeout)
 	cancel()
 }
 
@@ -197,7 +194,7 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 	clientset, err := NewClient()
 	c.Assert(err, IsNil)
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sh", "-c", "trap true TERM; sleep 300 & wait")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
@@ -214,7 +211,7 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	go cancelLater(cancel)
+	go cancelLater(cancel, 2*time.Second)
 	// WaitForCompletion should complete when the context is cancelled.
 	_ = job.WaitForCompletion(ctx)
 	c.Assert(c, NotNil)
@@ -224,7 +221,7 @@ func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
 	clientset, err := NewClient()
 	c.Assert(err, IsNil)
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sh", "-c", "trap true TERM; sleep 300 & wait")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
@@ -237,7 +234,7 @@ func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
 func (s *JobSuite) TestJobsVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
 	vols := map[string]VolumeMountOptions{"pvc-test": {MountPath: "/mnt/data1", ReadOnly: false}}
-	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sleep", "300")
+	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sh", "-c", "trap true TERM; sleep 300 & wait")
 	c.Assert(err, IsNil)
 	c.Assert(job.Create(), IsNil)
 
@@ -257,7 +254,7 @@ func (s *JobSuite) TestJobsVolumes(c *C) {
 func (s *JobSuite) TestJobsReadOnlyVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
 	vols := map[string]VolumeMountOptions{"pvc-test": {MountPath: "/mnt/data1", ReadOnly: true}}
-	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sleep", "300")
+	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sh", "-c", "trap true TERM; sleep 300 & wait")
 	c.Assert(err, IsNil)
 	c.Assert(job.Create(), IsNil)
 

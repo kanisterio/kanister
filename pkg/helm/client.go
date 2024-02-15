@@ -205,8 +205,12 @@ func (h CliClient) RemoveRepo(ctx context.Context, name string) error {
 
 // RunCmdWithTimeout executes command on host with DefaultCommandTimeout timeout
 func RunCmdWithTimeout(ctx context.Context, command string, args []string) (string, error) {
+	return RunCmdWithCustomTimeout(ctx, command, args, DefaultCommandTimeout)
+}
+
+func RunCmdWithCustomTimeout(ctx context.Context, command string, args []string, timeout time.Duration) (string, error) {
 	log.Debug().Print("Executing command", field.M{"command": command, "args": args})
-	ctx, cancel := context.WithTimeout(ctx, DefaultCommandTimeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, command, args...).CombinedOutput()
 	return strings.TrimSpace(string(out)), err

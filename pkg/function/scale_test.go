@@ -135,17 +135,8 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	ctx := context.Background()
 	var originalReplicaCount int32 = 1
 	d := testutil.NewTestDeployment(originalReplicaCount)
-	d.Spec.Template.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
-		PreStop: &corev1.LifecycleHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"sleep", "30"},
-			},
-		},
-	}
-
 	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
 	c.Assert(err, IsNil)
 
@@ -197,16 +188,8 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	ctx := context.Background()
 	var originalReplicaCount int32 = 1
 	ss := testutil.NewTestStatefulSet(originalReplicaCount)
-	ss.Spec.Template.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
-		PreStop: &corev1.LifecycleHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"sleep", "30"},
-			},
-		},
-	}
 	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
 

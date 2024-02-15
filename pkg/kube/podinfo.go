@@ -46,21 +46,30 @@ func GetControllerNamespace() (string, error) {
 }
 
 // GetControllerServiceAccount returns controller ServiceAccount
+// Deprecated: this function is not used anymore inside kanister
 func GetControllerServiceAccount(k8sclient kubernetes.Interface) (string, error) {
-	if ns, ok := os.LookupEnv(PodSAEnvVar); ok {
-		return ns, nil
+	if sa, ok := os.LookupEnv(PodSAEnvVar); ok {
+		return sa, nil
 	}
 	ns, err := GetControllerNamespace()
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to get Controller namespace")
 	}
+	return getControllerServiceAccountInNamespace(k8sclient, ns)
+}
 
+// getControllerServiceAccountInNamespace returns controller ServiceAccount
+// for a controller in the namespace
+func getControllerServiceAccountInNamespace(k8sclient kubernetes.Interface, namespace string) (string, error) {
+	if sa, ok := os.LookupEnv(PodSAEnvVar); ok {
+		return sa, nil
+	}
 	podName, err := GetControllerPodName()
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to get Controller pod name")
 	}
 
-	pod, err := k8sclient.CoreV1().Pods(ns).Get(context.TODO(), podName, metav1.GetOptions{})
+	pod, err := k8sclient.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to get Controller pod object from k8s")
 	}
