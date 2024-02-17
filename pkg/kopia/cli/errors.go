@@ -22,8 +22,6 @@ import (
 var (
 	// ErrInvalidID is returned when the ID is empty.
 	ErrInvalidID = errors.New("invalid ID")
-	// ErrInvalidCommand is returned when the command is empty.
-	ErrInvalidCommand = errors.New("invalid command")
 )
 
 // storage errors
