@@ -30,4 +30,6 @@ var (
 var (
 	// ErrUnsupportedStorage is returned when the storage is not supported.
 	ErrUnsupportedStorage = errors.New("unsupported storage")
+	// ErrInvalidRepoPath is returned when the repoPath is empty.
+	ErrInvalidRepoPath = errors.New("repository path cannot be empty")
 )
