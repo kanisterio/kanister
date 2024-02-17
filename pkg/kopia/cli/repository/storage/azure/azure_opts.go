@@ -15,17 +15,19 @@
 package azure
 
 import (
-	"github.com/kanisterio/safecli"
-
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/command"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/model"
+	"github.com/kanisterio/safecli/command"
 )
 
-// New returns a builder for the Azure subcommand storage.
-func New(f model.StorageFlag) (*safecli.Builder, error) {
-	prefix := model.GenerateFullRepoPath(f.Location.Prefix(), f.RepoPathPrefix)
-	return command.NewCommandBuilder(command.Azure,
-		Countainer(f.Location.BucketName()),
-		Prefix(prefix),
-	)
+var (
+	subcmdAzure = command.NewArgument("azure")
+)
+
+// optPrefix creates a new prefix option with a given prefix.
+func optPrefix(prefix string) command.Applier {
+	return command.NewOptionWithArgument("--prefix", prefix)
+}
+
+// optContainer creates a new container option with a given container name.
+func optContainer(name string) command.Applier {
+	return command.NewOptionWithArgument("--container", name)
 }

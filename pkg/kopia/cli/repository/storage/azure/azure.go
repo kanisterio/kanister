@@ -14,18 +14,22 @@
 
 package azure
 
-import "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag"
+import (
+	"github.com/kanisterio/safecli/command"
 
-//
-// Azure flags.
-//
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
+	"github.com/kanisterio/kanister/pkg/log"
+)
 
-// Prefix creates a new Azure prefix flag with a given prefix.
-func Prefix(prefix string) flag.Applier {
-	return flag.NewStringFlag("--prefix", prefix)
-}
-
-// Countainer creates a new Azure container flag with a given container name.
-func Countainer(name string) flag.Applier {
-	return flag.NewStringFlag("--container", name)
+// New creates a new subcommand for the Azure storage.
+func New(location internal.Location, repoPathPrefix string, _ log.Logger) command.Applier {
+	prefix := internal.GenerateFullRepoPath(location.Prefix(), repoPathPrefix)
+	if prefix == "" {
+		return command.NewErrorArgument(cli.ErrInvalidRepoPath)
+	}
+	return command.NewArguments(subcmdAzure,
+		optContainer(location.BucketName()),
+		optPrefix(prefix),
+	)
 }
