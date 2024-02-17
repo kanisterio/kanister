@@ -18,14 +18,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// flag errors
+// Common errors
 var (
-	// ErrInvalidFlag is returned when the flag name is empty.
-	ErrInvalidFlag = errors.New("invalid flag")
-	// ErrInvalidCommonArgs is returned when the common flag expects at most one cli.CommonArgs argument.
-	ErrInvalidCommonArgs = errors.New("common flag expects at most one cli.CommonArgs argument")
-	// ErrInvalidCacheArgs is returned when the cache flag expects at most one cli.CacheArgs argument.
-	ErrInvalidCacheArgs = errors.New("cache flag expects at most one cli.CacheArgs argument")
 	// ErrInvalidID is returned when the ID is empty.
 	ErrInvalidID = errors.New("invalid ID")
 )

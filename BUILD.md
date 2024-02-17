@@ -114,6 +114,14 @@ Kanister is using `check` library to extend go testing capabilities: https://git
 It's recommended to write new tests using this library for consistency.
 
 `make test` runs all tests in the repository.
+It's possible to run a specific test with `TEST_FILTER` environment variable:
+
+```
+make tests TEST_FILTER=OutputTestSuite
+```
+
+This variable will be passed to `-check.f` flag and supports regex filters.
+
 To run tests for specific package you can run `go test` in that package directory.
 It's recommended to do that in build image shell, you can run it with `make shell`.
 
