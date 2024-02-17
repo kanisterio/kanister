@@ -30,6 +30,7 @@ func TestNewGCS(t *testing.T) { check.TestingT(t) }
 func newGCS(prefix, repoPath string) command.Applier {
 	l := internal.Location{
 		"prefix": []byte(prefix),
+		"bucket": []byte("bucket"),
 	}
 	return New(l, repoPath, nil)
 }
@@ -38,12 +39,12 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 	{
 		Name:        "NewGCS",
 		Argument:    newGCS("prefix", "repoPath"),
-		ExpectedCLI: []string{"cmd", "gcs", "--credentials-file=/tmp/creds.txt", "--prefix=prefix/repoPath/"},
+		ExpectedCLI: []string{"cmd", "gcs", "--bucket=bucket", "--credentials-file=/tmp/creds.txt", "--prefix=prefix/repoPath/"},
 	},
 	{
 		Name:        "NewGCS with empty repoPath",
 		Argument:    newGCS("prefix", ""),
-		ExpectedCLI: []string{"cmd", "gcs", "--credentials-file=/tmp/creds.txt", "--prefix=prefix/"},
+		ExpectedCLI: []string{"cmd", "gcs", "--bucket=bucket", "--credentials-file=/tmp/creds.txt", "--prefix=prefix/"},
 	},
 	{
 		Name:        "NewGCS with empty local prefix and repo prefix should return error",
