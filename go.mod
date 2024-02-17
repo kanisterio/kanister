@@ -216,7 +216,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
 
-require github.com/kanisterio/safecli v0.0.3
+require github.com/kanisterio/safecli v0.0.4
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.27 // indirect
