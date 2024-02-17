@@ -156,14 +156,20 @@ This new documentation system offers a live-dev server that will dynamically ren
 as you are making changes to them on your local machine/branch.
 To start this development server, place yourself in the `new_docs` folder, then run the following commands:
 
-`pnpm install`
-`pnpm run docs:dev`
+```sh
+pnpm install
+pnpm run docs:dev
+```
 
 To render/build the docs locally (it will generate static assets, like HTML pages, Javascript/CSS files, etc.), use this command:
-`pnpm run docs:build`
+```sh
+pnpm run docs:build
+```
 
 To start a local webserver that you can use to preview the documentation that has been rendered by the command above, use this coommand:
-`pnpm run docs:preview`
+```sh
+pnpm run docs:preview
+```
 
 ## New Blueprints
 
