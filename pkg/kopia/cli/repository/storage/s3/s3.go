@@ -17,25 +17,31 @@ package s3
 import (
 	"strings"
 
-	"github.com/kanisterio/safecli"
+	"github.com/kanisterio/safecli/command"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
+	intlog "github.com/kanisterio/kanister/pkg/kopia/cli/internal/log"
 	"github.com/kanisterio/kanister/pkg/log"
-
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/command"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/model"
 )
 
-// New returns a builder for the S3 subcommand storage.
-func New(s model.StorageFlag) (*safecli.Builder, error) {
-	endpoint := resolveS3Endpoint(s.Location.Endpoint(), s.GetLogger())
-	prefix := model.GenerateFullRepoPath(s.Location.Prefix(), s.RepoPathPrefix)
-	return command.NewCommandBuilder(command.S3,
-		Region(s.Location.Region()),
-		Bucket(s.Location.BucketName()),
-		Endpoint(endpoint),
-		Prefix(prefix),
-		DisableTLS(s.Location.IsInsecureEndpoint()),
-		DisableTLSVerify(s.Location.HasSkipSSLVerify()),
+// New creates a new subcommand for the S3 storage.
+func New(location internal.Location, repoPathPrefix string, logger log.Logger) command.Applier {
+	if logger == nil {
+		logger = intlog.NopLogger{}
+	}
+	endpoint := resolveS3Endpoint(location.Endpoint(), logger)
+	prefix := internal.GenerateFullRepoPath(location.Prefix(), repoPathPrefix)
+	if prefix == "" {
+		return command.NewErrorArgument(cli.ErrInvalidRepoPath)
+	}
+	return command.NewArguments(subcmdS3,
+		optRegion(location.Region()),
+		optBucket(location.BucketName()),
+		optEndpoint(endpoint),
+		optPrefix(prefix),
+		optDisableTLS(location.IsInsecureEndpoint()),
+		optDisableTLSVerify(location.HasSkipSSLVerify()),
 	)
 }
 
