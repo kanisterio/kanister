@@ -20,6 +20,7 @@ export KIND_VERSION=${KIND_VERSION:-"v0.18.0"}
 export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
 export LOCAL_PATH_PROV_VERSION="v0.0.11"
 export SNAPSHOTTER_VERSION="v6.2.1"
+export HOSTPATH_DRIVER_VERSION="v1.12.1"
 declare -a REQUIRED_BINS=( docker jq go )
 
 if command -v apt-get
@@ -76,6 +77,7 @@ install_csi_hostpath_driver() {
     pushd /tmp
       git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
       pushd csi-driver-host-path
+        git checkout ${HOSTPATH_DRIVER_VERSION}
         sed -i 's/mountPropagation: Bidirectional/\#mountPropagation: Bidirectional/g' deploy/kubernetes-latest/hostpath/csi-hostpath-plugin.yaml
 
         ./deploy/kubernetes-latest/deploy.sh
