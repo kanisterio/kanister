@@ -17,64 +17,173 @@ package s3
 import (
 	"testing"
 
-	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
+	intlog "github.com/kanisterio/kanister/pkg/kopia/cli/internal/log"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 func TestNewS3(t *testing.T) { check.TestingT(t) }
 
-func newS3(prefix, repoPath, endpoint string) command.Applier {
-	l := internal.Location{
-		"prefix":        []byte(prefix),
-		"endpoint":      []byte(endpoint),
-		"region":        []byte("region"),
-		"bucket":        []byte("bucket"),
-		"skipSSLVerify": []byte("true"),
-	}
-	return New(l, repoPath, nil)
+// ArgTest extends test.ArgumentTest to include logger tests.
+type ArgTest struct {
+	test test.ArgumentTest
+
+	location    internal.Location // location is the location to use for the test.
+	repoPath    string            // repoPath is the repository path to use for the test.
+	Logger      log.Logger        // Logger is the logger to use for the test. (optional)
+	LoggerRegex []string          // LoggerRegex is a list of regexs to match against the log output. (optional)
 }
 
-var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTest{
+// Test runs the test with the given command and checks the log output.
+func (t *ArgTest) Test(c *check.C, cmd string) {
+	t.test.Argument = New(t.location, t.repoPath, t.Logger)
+	t.test.Test(c, cmd)
+	t.assertLog(c)
+}
+
+// assertLog checks the log output against the expected regexs.
+func (t *ArgTest) assertLog(c *check.C) {
+	if t.Logger == nil {
+		return
+	}
+	log := t.Logger.(*intlog.StringLogger)
+	if len(t.LoggerRegex) == 1 && t.LoggerRegex[0] == "" {
+		cmtLog := check.Commentf("FAIL: log should be empty but got %#v", log)
+		c.Assert(len([]string(*log)), check.Equals, 0, cmtLog)
+	} else {
+		for _, regex := range t.LoggerRegex {
+			cmtLog := check.Commentf("FAIL: %v\nlog %#v expected to match %#v", t.test.Name, log, regex)
+			c.Assert(log.MatchString(regex), check.Equals, true, cmtLog)
+		}
+
+	}
+}
+
+// ArgSuite defines a suite of tests for a single ArgTest.
+type ArgSuite struct {
+	Cmd       string    // Cmd appends to the safecli.Builder before test if not empty.
+	Arguments []ArgTest // Tests to run.
+}
+
+// TestArguments runs all tests in the suite.
+func (s *ArgSuite) TestArguments(c *check.C) {
+	for _, arg := range s.Arguments {
+		arg.Test(c, s.Cmd)
+	}
+}
+
+var _ = check.Suite(&ArgSuite{Cmd: "cmd", Arguments: []ArgTest{
 	{
-		Name:     "NewS3",
-		Argument: newS3("prefix", "repoPath", "http://endpoint/path/"),
-		ExpectedCLI: []string{"cmd", "s3",
-			"--region=region",
-			"--bucket=bucket",
-			"--endpoint=endpoint/path",
-			"--prefix=prefix/repoPath/",
-			"--disable-tls",
-			"--disable-tls-verification",
+		test: test.ArgumentTest{
+			Name: "NewS3",
+			ExpectedCLI: []string{"cmd", "s3",
+				"--region=region",
+				"--bucket=bucket",
+				"--endpoint=endpoint/path",
+				"--prefix=prefix/repoPath/",
+				"--disable-tls",
+				"--disable-tls-verification",
+			},
+		},
+		location: internal.Location{
+			"prefix":        []byte("prefix"),
+			"endpoint":      []byte("http://endpoint/path/"),
+			"region":        []byte("region"),
+			"bucket":        []byte("bucket"),
+			"skipSSLVerify": []byte("true"),
+		},
+		repoPath: "repoPath",
+		Logger:   &intlog.StringLogger{},
+		LoggerRegex: []string{
+			"Removing leading",
+			"Removing trailing",
 		},
 	},
 	{
-		Name:     "NewS3 with empty repoPath and https endpoint",
-		Argument: newS3("prefix", "", "https://endpoint/path/"),
-		ExpectedCLI: []string{"cmd", "s3",
-			"--region=region",
-			"--bucket=bucket",
-			"--endpoint=endpoint/path",
-			"--prefix=prefix/",
-			"--disable-tls-verification",
+		test: test.ArgumentTest{
+			Name: "NewS3 w/o logger should not panic",
+			ExpectedCLI: []string{"cmd", "s3",
+				"--region=region",
+				"--bucket=bucket",
+				"--endpoint=endpoint/path",
+				"--prefix=prefix/repoPath/",
+				"--disable-tls",
+				"--disable-tls-verification",
+			},
+		},
+		location: internal.Location{
+			"prefix":        []byte("prefix"),
+			"endpoint":      []byte("http://endpoint/path/"),
+			"region":        []byte("region"),
+			"bucket":        []byte("bucket"),
+			"skipSSLVerify": []byte("true"),
+		},
+		repoPath: "repoPath",
+	},
+	{
+		test: test.ArgumentTest{
+			Name: "NewS3 with empty repoPath and https endpoint",
+			ExpectedCLI: []string{"cmd", "s3",
+				"--region=region",
+				"--bucket=bucket",
+				"--endpoint=endpoint/path",
+				"--prefix=prefix/",
+				"--disable-tls-verification",
+			},
+		},
+		location: internal.Location{
+			"prefix":        []byte("prefix"),
+			"endpoint":      []byte("https://endpoint/path/"),
+			"region":        []byte("region"),
+			"bucket":        []byte("bucket"),
+			"skipSSLVerify": []byte("true"),
+		},
+		repoPath: "",
+		Logger:   &intlog.StringLogger{},
+		LoggerRegex: []string{
+			"Removing leading",
+			"Removing trailing",
 		},
 	},
 	{
-		Name:     "NewS3 with empty repoPath and endpoint",
-		Argument: newS3("prefix", "", ""),
-		ExpectedCLI: []string{"cmd", "s3",
-			"--region=region",
-			"--bucket=bucket",
-			"--prefix=prefix/",
-			"--disable-tls-verification",
+		test: test.ArgumentTest{
+			Name: "NewS3 with empty repoPath and endpoint",
+			ExpectedCLI: []string{"cmd", "s3",
+				"--region=region",
+				"--bucket=bucket",
+				"--prefix=prefix/",
+				"--disable-tls-verification",
+			},
 		},
+		location: internal.Location{
+			"prefix":        []byte("prefix"),
+			"endpoint":      []byte(""),
+			"region":        []byte("region"),
+			"bucket":        []byte("bucket"),
+			"skipSSLVerify": []byte("true"),
+		},
+		repoPath:    "",
+		Logger:      &intlog.StringLogger{},
+		LoggerRegex: []string{""}, // no output expected
 	},
 	{
-		Name:        "NewS3 with empty local prefix and repo prefix should return error",
-		Argument:    newS3("", "", ""),
-		ExpectedErr: cli.ErrInvalidRepoPath,
+		test: test.ArgumentTest{
+			Name:        "NewS3 with empty repoPath, prefix and endpoint",
+			ExpectedErr: cli.ErrInvalidRepoPath,
+		},
+		location: internal.Location{
+			"prefix":        []byte(""),
+			"endpoint":      []byte(""),
+			"region":        []byte("region"),
+			"bucket":        []byte("bucket"),
+			"skipSSLVerify": []byte("true"),
+		},
+		repoPath:    "",
+		Logger:      &intlog.StringLogger{},
+		LoggerRegex: []string{""}, // no output expected
 	},
 }})

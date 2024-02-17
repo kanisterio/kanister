@@ -17,6 +17,7 @@ package storage
 import (
 	"context"
 	"io"
+	"regexp"
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -42,4 +43,32 @@ func (NopLogger) WithContext(ctx context.Context) log.Logger {
 // WithError does nothing.
 func (NopLogger) WithError(err error) log.Logger {
 	return &NopLogger{}
+}
+
+// StringLogger is a logger that stores log messages in a slice of strings.
+type StringLogger []string
+
+func (l *StringLogger) Print(msg string, fields ...field.M) {
+	*l = append(*l, msg)
+}
+
+func (l *StringLogger) PrintTo(w io.Writer, msg string, fields ...field.M) {
+	*l = append(*l, msg)
+}
+
+func (l *StringLogger) WithContext(ctx context.Context) log.Logger {
+	return l
+}
+
+func (l *StringLogger) WithError(err error) log.Logger {
+	return l
+}
+
+func (l *StringLogger) MatchString(pattern string) bool {
+	for _, line := range *l {
+		if found, _ := regexp.MatchString(pattern, line); found {
+			return true
+		}
+	}
+	return false
 }
