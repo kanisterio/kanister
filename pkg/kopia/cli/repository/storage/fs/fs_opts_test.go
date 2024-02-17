@@ -17,10 +17,11 @@ package fs
 import (
 	"testing"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 )
 
 func TestFilesystemOptions(t *testing.T) { check.TestingT(t) }
