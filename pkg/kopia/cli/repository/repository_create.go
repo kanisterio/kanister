@@ -19,19 +19,16 @@ import (
 
 	"github.com/kanisterio/safecli"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 	"github.com/kanisterio/kanister/pkg/log"
-
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/command"
-	flagcommon "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/common"
-	flagrepo "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/repository"
-	flagstorage "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage"
 )
 
 // CreateArgs defines the arguments for the `kopia repository create` command.
 type CreateArgs struct {
-	cli.CommonArgs
-	cli.CacheArgs
+	args.Common // embeds common arguments
+	args.Cache  // embeds cache arguments
 
 	Hostname        string            // the hostname of the repository
 	Username        string            // the username of the repository
@@ -44,18 +41,19 @@ type CreateArgs struct {
 }
 
 // Create creates a new `kopia repository create ...` command.
-func Create(args CreateArgs) (safecli.CommandBuilder, error) {
-	return command.NewKopiaCommandBuilder(args.CommonArgs,
-		command.Repository, command.Create,
-		flagcommon.NoCheckForUpdates,
-		flagcommon.Cache(args.CacheArgs),
-		flagrepo.Hostname(args.Hostname),
-		flagrepo.Username(args.Username),
-		flagrepo.BlobRetention(args.RetentionMode, args.RetentionPeriod),
-		flagstorage.Storage(
+func Create(args CreateArgs) (*safecli.Builder, error) {
+	return internal.NewKopiaCommand(
+		opts.Common(args.Common),
+		cmdRepository, subcmdCreate,
+		opts.CheckForUpdates(false),
+		opts.Cache(args.Cache),
+		optHostname(args.Hostname),
+		optUsername(args.Username),
+		optBlobRetention(args.RetentionMode, args.RetentionPeriod),
+		optStorage(
 			args.Location,
 			args.RepoPathPrefix,
-			flagstorage.WithLogger(args.Logger), // log.Debug for old output
+			args.Logger,
 		),
 	)
 }
