@@ -18,22 +18,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-// flag errors
+// Common errors
 var (
-	// ErrInvalidFlag is returned when the flag name is empty.
-	ErrInvalidFlag = errors.New("invalid flag")
-	// ErrInvalidCommonArgs is returned when the common flag expects at most one cli.CommonArgs argument.
-	ErrInvalidCommonArgs = errors.New("common flag expects at most one cli.CommonArgs argument")
-	// ErrInvalidCacheArgs is returned when the cache flag expects at most one cli.CacheArgs argument.
-	ErrInvalidCacheArgs = errors.New("cache flag expects at most one cli.CacheArgs argument")
 	// ErrInvalidID is returned when the ID is empty.
 	ErrInvalidID = errors.New("invalid ID")
-	// ErrInvalidCommand is returned when the command is empty.
-	ErrInvalidCommand = errors.New("invalid command")
 )
 
 // storage errors
 var (
 	// ErrUnsupportedStorage is returned when the storage is not supported.
 	ErrUnsupportedStorage = errors.New("unsupported storage")
+	// ErrInvalidRepoPath is returned when the repoPath is empty.
+	ErrInvalidRepoPath = errors.New("repository path cannot be empty")
 )

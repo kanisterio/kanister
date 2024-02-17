@@ -16,13 +16,15 @@ package command
 
 type ServerStartCommandArgs struct {
 	*CommandArgs
-	ServerAddress    string
-	TLSCertFile      string
-	TLSKeyFile       string
-	ServerUsername   string
-	ServerPassword   string
-	AutoGenerateCert bool
-	Background       bool
+	ServerAddress        string
+	TLSCertFile          string
+	TLSKeyFile           string
+	ServerUsername       string
+	ServerPassword       string
+	AutoGenerateCert     bool
+	Background           bool
+	EnablePprof          bool
+	MetricsListenAddress string
 }
 
 // ServerStart returns the kopia command for starting the Kopia API Server
@@ -45,6 +47,14 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 
 	// TODO: Remove when GRPC support is added
 	args = args.AppendLoggable(noGrpcFlag)
+
+	if cmdArgs.EnablePprof {
+		args = args.AppendLoggable(enablePprof)
+	}
+
+	if cmdArgs.MetricsListenAddress != "" {
+		args = args.AppendLoggableKV(metricsListerAddress, cmdArgs.MetricsListenAddress)
+	}
 
 	if cmdArgs.Background {
 		// To start the server and run in the background

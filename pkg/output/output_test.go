@@ -15,7 +15,6 @@
 package output
 
 import (
-	"bytes"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -42,43 +41,5 @@ func (s *OutputSuite) TestValidateKey(c *C) {
 	} {
 		err := ValidateKey(tc.key)
 		c.Check(err, tc.checker, Commentf("Key (%s) failed!", tc.key))
-	}
-}
-
-func (s *OutputSuite) TestParseValid(c *C) {
-	key, val := "foo", "bar"
-	b := bytes.NewBuffer(nil)
-	err := fPrintOutput(b, key, val)
-	c.Check(err, IsNil)
-
-	o, err := Parse(b.String())
-	c.Assert(err, IsNil)
-	c.Assert(o, NotNil)
-	c.Assert(o.Key, Equals, key)
-	c.Assert(o.Value, Equals, val)
-}
-
-func (s *OutputSuite) TestParseNoOutput(c *C) {
-	key, val := "foo", "bar"
-	b := bytes.NewBuffer(nil)
-	err := fPrintOutput(b, key, val)
-	c.Check(err, IsNil)
-	valid := b.String()
-	for _, tc := range []struct {
-		s       string
-		checker Checker
-	}{
-		{
-			s:       valid[0 : len(valid)-2],
-			checker: NotNil,
-		},
-		{
-			s:       valid[1 : len(valid)-1],
-			checker: IsNil,
-		},
-	} {
-		o, err := Parse(tc.s)
-		c.Assert(err, tc.checker)
-		c.Assert(o, IsNil)
 	}
 }
