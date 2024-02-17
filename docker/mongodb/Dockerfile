@@ -3,7 +3,7 @@
 ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
-FROM bitnami/mongodb:7.0.4-debian-11-r0
+FROM bitnami/mongodb:7.0-debian-11
 
 LABEL maintainer="Tom Manville <tom@kasten.io>"
 
