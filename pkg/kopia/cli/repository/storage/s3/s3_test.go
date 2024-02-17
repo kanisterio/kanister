@@ -45,21 +45,30 @@ func (t *ArgTest) Test(c *check.C, cmd string) {
 	t.assertLog(c)
 }
 
+func (t *ArgTest) isEmptyLogExpected() bool {
+	return len(t.LoggerRegex) == 1 && t.LoggerRegex[0] == ""
+}
+
 // assertLog checks the log output against the expected regexs.
 func (t *ArgTest) assertLog(c *check.C) {
 	if t.Logger == nil {
 		return
 	}
-	log := t.Logger.(*intlog.StringLogger)
-	if len(t.LoggerRegex) == 1 && t.LoggerRegex[0] == "" {
+
+	log, ok := t.Logger.(*intlog.StringLogger)
+	if !ok {
+		c.Fatalf("t.Logger is not *intlog.StringLogger")
+	}
+	if t.isEmptyLogExpected() {
 		cmtLog := check.Commentf("FAIL: log should be empty but got %#v", log)
 		c.Assert(len([]string(*log)), check.Equals, 0, cmtLog)
-	} else {
-		for _, regex := range t.LoggerRegex {
-			cmtLog := check.Commentf("FAIL: %v\nlog %#v expected to match %#v", t.test.Name, log, regex)
-			c.Assert(log.MatchString(regex), check.Equals, true, cmtLog)
-		}
+		return
+	}
 
+	// Check each regex.
+	for _, regex := range t.LoggerRegex {
+		cmtLog := check.Commentf("FAIL: %v\nlog %#v expected to match %#v", t.test.Name, log, regex)
+		c.Assert(log.MatchString(regex), check.Equals, true, cmtLog)
 	}
 }
 
