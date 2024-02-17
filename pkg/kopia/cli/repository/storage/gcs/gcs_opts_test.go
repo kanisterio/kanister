@@ -17,9 +17,10 @@ package gcs
 import (
 	"testing"
 
+	"gopkg.in/check.v1"
+
 	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
-	"gopkg.in/check.v1"
 )
 
 func TestGCSOptions(t *testing.T) { check.TestingT(t) }
