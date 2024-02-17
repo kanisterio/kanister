@@ -18,21 +18,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kanisterio/safecli"
 	"gopkg.in/check.v1"
 
-	"github.com/kanisterio/safecli"
-
-	rs "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/storage/model"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/test"
+	rs "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func TestRepositoryCommands(t *testing.T) { check.TestingT(t) }
 
 var (
-	cacheArgs = cli.CacheArgs{
+	common = args.Common{
+		RepoPassword:   "encr-key",
+		ConfigFilePath: "path/kopia.config",
+		LogDirectory:   "cache/log",
+	}
+
+	cache = args.Cache{
 		CacheDirectory:           "/tmp/cache.dir",
 		ContentCacheSizeLimitMB:  0,
 		MetadataCacheSizeLimitMB: 0,
@@ -41,24 +46,24 @@ var (
 	retentionMode   = "Locked"
 	retentionPeriod = 15 * time.Minute
 
-	locFS = model.Location{
+	locFS = internal.Location{
 		rs.TypeKey:   []byte("filestore"),
 		rs.PrefixKey: []byte("test-prefix"),
 	}
 
-	locAzure = model.Location{
+	locAzure = internal.Location{
 		rs.TypeKey:   []byte("azure"),
 		rs.BucketKey: []byte("test-bucket"),
 		rs.PrefixKey: []byte("test-prefix"),
 	}
 
-	locGCS = model.Location{
+	locGCS = internal.Location{
 		rs.TypeKey:   []byte("gcs"),
 		rs.BucketKey: []byte("test-bucket"),
 		rs.PrefixKey: []byte("test-prefix"),
 	}
 
-	locS3 = model.Location{
+	locS3 = internal.Location{
 		rs.TypeKey:          []byte("s3"),
 		rs.EndpointKey:      []byte("test-endpoint"),
 		rs.RegionKey:        []byte("test-region"),
@@ -67,7 +72,7 @@ var (
 		rs.SkipSSLVerifyKey: []byte("false"),
 	}
 
-	locS3Compliant = model.Location{
+	locS3Compliant = internal.Location{
 		rs.TypeKey:          []byte("s3Compliant"),
 		rs.EndpointKey:      []byte("test-endpoint"),
 		rs.RegionKey:        []byte("test-region"),
@@ -81,10 +86,10 @@ var (
 var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	{
 		Name: "repository create with no storage",
-		CLI: func() (safecli.CommandBuilder, error) {
+		Command: func() (*safecli.Builder, error) {
 			args := CreateArgs{
-				CommonArgs:     test.CommonArgs,
-				CacheArgs:      cacheArgs,
+				Common:         common,
+				Cache:          cache,
 				Hostname:       "test-hostname",
 				Username:       "test-username",
 				RepoPathPrefix: "test-path/prefix",
@@ -95,10 +100,10 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	},
 	{
 		Name: "repository create with filestore location",
-		CLI: func() (safecli.CommandBuilder, error) {
+		Command: func() (*safecli.Builder, error) {
 			args := CreateArgs{
-				CommonArgs:      test.CommonArgs,
-				CacheArgs:       cacheArgs,
+				Common:          common,
+				Cache:           cache,
 				Hostname:        "test-hostname",
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
@@ -110,8 +115,8 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",
-			"--log-level=error",
 			"--log-dir=cache/log",
+			"--log-level=error",
 			"--password=encr-key",
 			"repository",
 			"create",
@@ -129,10 +134,10 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	},
 	{
 		Name: "repository create with azure location",
-		CLI: func() (safecli.CommandBuilder, error) {
+		Command: func() (*safecli.Builder, error) {
 			args := CreateArgs{
-				CommonArgs:      test.CommonArgs,
-				CacheArgs:       cacheArgs,
+				Common:          common,
+				Cache:           cache,
 				Hostname:        "test-hostname",
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
@@ -144,8 +149,8 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",
-			"--log-level=error",
 			"--log-dir=cache/log",
+			"--log-level=error",
 			"--password=encr-key",
 			"repository",
 			"create",
@@ -164,10 +169,10 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	},
 	{
 		Name: "repository create with gcs location",
-		CLI: func() (safecli.CommandBuilder, error) {
+		Command: func() (*safecli.Builder, error) {
 			args := CreateArgs{
-				CommonArgs:      test.CommonArgs,
-				CacheArgs:       cacheArgs,
+				Common:          common,
+				Cache:           cache,
 				Hostname:        "test-hostname",
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
@@ -179,8 +184,8 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",
-			"--log-level=error",
 			"--log-dir=cache/log",
+			"--log-level=error",
 			"--password=encr-key",
 			"repository",
 			"create",
@@ -200,10 +205,10 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	},
 	{
 		Name: "repository create with s3 location",
-		CLI: func() (safecli.CommandBuilder, error) {
+		Command: func() (*safecli.Builder, error) {
 			args := CreateArgs{
-				CommonArgs:      test.CommonArgs,
-				CacheArgs:       cacheArgs,
+				Common:          common,
+				Cache:           cache,
 				Hostname:        "test-hostname",
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
@@ -215,8 +220,8 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",
-			"--log-level=error",
 			"--log-dir=cache/log",
+			"--log-level=error",
 			"--password=encr-key",
 			"repository",
 			"create",
@@ -237,10 +242,10 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	},
 	{
 		Name: "repository create with s3 compliant location",
-		CLI: func() (safecli.CommandBuilder, error) {
+		Command: func() (*safecli.Builder, error) {
 			args := CreateArgs{
-				CommonArgs:      test.CommonArgs,
-				CacheArgs:       cacheArgs,
+				Common:          common,
+				Cache:           cache,
 				Hostname:        "test-hostname",
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
@@ -252,8 +257,8 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",
-			"--log-level=error",
 			"--log-dir=cache/log",
+			"--log-level=error",
 			"--password=encr-key",
 			"repository",
 			"create",
