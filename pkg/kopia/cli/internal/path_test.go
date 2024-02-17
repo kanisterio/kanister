@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package internal_test
 
 import (
 	"testing"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"gopkg.in/check.v1"
 )
 
@@ -44,7 +45,7 @@ func (s *PathSuite) TestGenerateFullRepoPath(c *check.C) {
 		},
 	}
 	for _, test := range tests {
-		got := GenerateFullRepoPath(test.locPrefix, test.repoPathPrefix)
+		got := internal.GenerateFullRepoPath(test.locPrefix, test.repoPathPrefix)
 		c.Check(got, check.Equals, test.expected)
 	}
 }

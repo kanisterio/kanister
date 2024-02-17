@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package internal_test
 
 import (
 	"testing"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	rs "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"gopkg.in/check.v1"
 )
@@ -40,17 +41,17 @@ func (s *LocationSuite) TestLocation(c *check.C) {
 
 	tests := []struct {
 		name     string
-		location Location
+		location internal.Location
 		expected expected
 	}{
 		{
 			name:     "Test with no fields",
-			location: Location{},
+			location: internal.Location{},
 			expected: expected{},
 		},
 		{
 			name: "Test with all fields",
-			location: Location{
+			location: internal.Location{
 				rs.TypeKey:          []byte("Type1"),
 				rs.RegionKey:        []byte("Region1"),
 				rs.BucketKey:        []byte("Bucket1"),
