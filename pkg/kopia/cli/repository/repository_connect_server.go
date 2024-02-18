@@ -17,18 +17,16 @@ package repository
 import (
 	"github.com/kanisterio/safecli"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 	"github.com/kanisterio/kanister/pkg/log"
-
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/command"
-	flagcommon "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/common"
-	flagrepo "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/repository"
 )
 
 // ConnectServerArgs defines the arguments for the `kopia repository connect server` command.
 type ConnectServerArgs struct {
-	cli.CommonArgs
-	cli.CacheArgs
+	args.Common
+	args.Cache
 
 	Hostname    string // hostname of the repository
 	Username    string // username of the repository
@@ -40,16 +38,17 @@ type ConnectServerArgs struct {
 }
 
 // ConnectServer creates a new `kopia repository connect server...` command.
-func ConnectServer(args ConnectServerArgs) (safecli.CommandBuilder, error) {
-	return command.NewKopiaCommandBuilder(args.CommonArgs,
-		command.Repository, command.Connect, command.Server,
-		flagcommon.NoCheckForUpdates,
-		flagcommon.NoGRPC,
-		flagcommon.ReadOnly(args.ReadOnly),
-		flagcommon.Cache(args.CacheArgs),
-		flagrepo.Hostname(args.Hostname),
-		flagrepo.Username(args.Username),
-		flagrepo.ServerURL(args.ServerURL),
-		flagrepo.ServerCertFingerprint(args.Fingerprint),
+func ConnectServer(args ConnectServerArgs) (*safecli.Builder, error) {
+	return internal.NewKopiaCommand(
+		opts.Common(args.Common),
+		cmdRepository, subcmdConnect, subcmdServer,
+		opts.CheckForUpdates(false),
+		opts.GRPC(false),
+		optReadOnly(args.ReadOnly),
+		opts.Cache(args.Cache),
+		optHostname(args.Hostname),
+		optUsername(args.Username),
+		optServerURL(args.ServerURL),
+		optServerCertFingerprint(args.Fingerprint),
 	)
 }
