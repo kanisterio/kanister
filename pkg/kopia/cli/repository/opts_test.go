@@ -17,6 +17,7 @@ package repository
 import (
 	"testing"
 
+	"github.com/go-openapi/strfmt"
 	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
@@ -75,5 +76,24 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 		Name:        "optStorage FTP Unsupported",
 		Argument:    optStorage(locFTP, "repoPathPrefix", nil),
 		ExpectedErr: cli.ErrUnsupportedStorage,
+	},
+	{
+		Name: "optReadOnly",
+		Argument: command.NewArguments(
+			optReadOnly(true),
+			optReadOnly(false), //
+		),
+		ExpectedCLI: []string{"cmd", "--readonly"},
+	},
+	{
+		Name: "optPointInTime",
+		Argument: command.NewArguments(
+			optPointInTime(func() strfmt.DateTime {
+				t, _ := strfmt.ParseDateTime("2021-02-03T01:02:03.000Z")
+				return t
+			}()),
+			optPointInTime(strfmt.DateTime{}), // no output
+		),
+		ExpectedCLI: []string{"cmd", "--point-in-time=2021-02-03T01:02:03.000Z"},
 	},
 }})
