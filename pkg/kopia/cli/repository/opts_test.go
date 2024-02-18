@@ -81,7 +81,7 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 		Name: "optReadOnly",
 		Argument: command.NewArguments(
 			optReadOnly(true),
-			optReadOnly(false), //
+			optReadOnly(false), // no output
 		),
 		ExpectedCLI: []string{"cmd", "--readonly"},
 	},
