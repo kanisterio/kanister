@@ -19,16 +19,15 @@ import (
 
 	"github.com/kanisterio/safecli"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 	"github.com/kanisterio/kanister/pkg/log"
-
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/command"
-	flagrepo "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/repository"
 )
 
 // SetParametersArgs defines the arguments for the `kopia repository set-parameters ...` command.
 type SetParametersArgs struct {
-	cli.CommonArgs
+	args.Common
 
 	RetentionMode   string        // retention mode for supported storage backends
 	RetentionPeriod time.Duration // retention period for supported storage backends
@@ -37,9 +36,10 @@ type SetParametersArgs struct {
 }
 
 // SetParameters creates a new `kopia repository set-parameters ...` command.
-func SetParameters(args SetParametersArgs) (safecli.CommandBuilder, error) {
-	return command.NewKopiaCommandBuilder(args.CommonArgs,
-		command.Repository, command.SetParameters,
-		flagrepo.BlobRetention(args.RetentionMode, args.RetentionPeriod),
+func SetParameters(args SetParametersArgs) (*safecli.Builder, error) {
+	return internal.NewKopiaCommand(
+		opts.Common(args.Common),
+		cmdRepository, subcmdSetParameters,
+		optBlobRetention(args.RetentionMode, args.RetentionPeriod),
 	)
 }
