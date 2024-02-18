@@ -155,7 +155,7 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 	@kubectl apply -f .deploy-$(DOTFILE_IMAGE)
 
 test: build-dirs
-	@$(MAKE) run CMD="./build/test.sh $(SRC_DIRS)"
+	@$(MAKE) run CMD="TEST_FILTER=$(TEST_FILTER) ./build/test.sh $(SRC_DIRS)"
 
 helm-test: build-dirs
 	@$(MAKE) run CMD="./build/helm-test.sh $(SRC_DIRS)"

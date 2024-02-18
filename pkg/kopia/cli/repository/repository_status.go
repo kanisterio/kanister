@@ -19,14 +19,14 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/log"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/command"
-	flagcommon "github.com/kanisterio/kanister/pkg/kopia/cli/internal/flag/common"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 )
 
 // StatusArgs defines the arguments for the `kopia repository status ...` command.
 type StatusArgs struct {
-	cli.CommonArgs
+	args.Common // embed common arguments
 
 	JSONOutput bool // shows the output in JSON format
 
@@ -34,9 +34,10 @@ type StatusArgs struct {
 }
 
 // Status creates a new `kopia repository status ...` command.
-func Status(args StatusArgs) (safecli.CommandBuilder, error) {
-	return command.NewKopiaCommandBuilder(args.CommonArgs,
-		command.Repository, command.Status,
-		flagcommon.JSONOutput(args.JSONOutput),
+func Status(args StatusArgs) (*safecli.Builder, error) {
+	return internal.NewKopiaCommand(
+		opts.Common(args.Common),
+		cmdRepository, subcmdStatus,
+		opts.JSON(args.JSONOutput),
 	)
 }

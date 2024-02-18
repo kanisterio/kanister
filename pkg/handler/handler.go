@@ -62,17 +62,19 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // RunWebhookServer starts the validating webhook resources for blueprint kanister resources
 func RunWebhookServer(c *rest.Config) error {
-	mgr, err := manager.New(c, manager.Options{})
-	if err != nil {
-		return errors.Wrapf(err, "Failed to create new webhook manager")
-	}
+	hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir}
 
-	hookServer := mgr.GetWebhookServer()
+	hookServer := webhook.NewServer(hookServerOptions)
 	hookServer.Register(whHandlePath, &webhook.Admission{Handler: &validatingwebhook.BlueprintValidator{}})
 	hookServer.Register(healthCheckPath, &healthCheckHandler{})
 	hookServer.Register(metricsPath, promhttp.Handler())
 
-	hookServer.CertDir = validatingwebhook.WHCertsDir
+	mgr, err := manager.New(c, manager.Options{
+		WebhookServer: hookServer,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create new webhook manager")
+	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		return err

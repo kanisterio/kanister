@@ -230,7 +230,7 @@ func (tlc TimeLogCSI) getAppPersistentVolumeClaimObj() *corev1.PersistentVolumeC
 		Spec: corev1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,
 			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: *resource.NewQuantity(1073741824, resource.BinarySI),
 				},
