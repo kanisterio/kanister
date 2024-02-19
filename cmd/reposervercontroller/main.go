@@ -31,8 +31,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -81,7 +79,7 @@ func main() {
 	config := ctrl.GetConfigOrDie()
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
-		Metrics:                server.Options{BindAddress: metricsAddr},
+		MetricsBindAddress:     metricsAddr,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         false,
 	})
@@ -140,10 +138,11 @@ func main() {
 	// we can use validating webhook for k8s server versions < 1.25
 	if k8sserverVersion.Major == "1" && minorVersion < minorK8sVersion {
 		if validatingwebhook.IsCACertMounted() {
-			hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir, Port: webhookServerPort}
-			hookServer := webhook.NewServer(hookServerOptions)
-			webhook := admission.WithCustomValidator(mgr.GetScheme(), &crv1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
+			hookServer := mgr.GetWebhookServer()
+			webhook := admission.WithCustomValidator(&crv1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
 			hookServer.Register(whHandlePath, webhook)
+			hookServer.CertDir = validatingwebhook.WHCertsDir
+			hookServer.Port = webhookServerPort
 		}
 	}
 
