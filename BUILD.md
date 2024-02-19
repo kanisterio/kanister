@@ -149,7 +149,7 @@ folder.
 
 ## New Documentation
 
-We have started experimenting, and will soon fully transition, to using [VitePress](https://vitepress.dev/) to generate Kasniter documentation.
+We have started experimenting, and will soon fully transition, to using [VitePress](https://vitepress.dev/) to generate Kanister documentation.
 This requires the documentation files to be written in [Markdown](https://www.markdownguide.org/), along with some [extensions](https://vitepress.dev/guide/markdown).
 
 This new documentation system offers a live-dev server that will dynamically render Markdown documentation files
