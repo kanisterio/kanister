@@ -166,7 +166,7 @@ To render/build the docs locally (it will generate static assets, like HTML page
 pnpm run docs:build
 ```
 
-To start a local webserver that you can use to preview the documentation that has been rendered by the command above, use this coommand:
+To start a local webserver that you can use to preview the documentation that has been rendered by the command above, use this command:
 ```sh
 pnpm run docs:preview
 ```
