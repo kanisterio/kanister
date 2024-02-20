@@ -11,8 +11,8 @@ ENV DEBIAN_FRONTEND noninteractive
 USER root
 
 RUN apt-get update && apt-get -y install curl python3 groff less jq python3-pip && \
-    pip3 install --upgrade pip && \
-    pip3 install --upgrade awscli && \
+    pip3 install --break-system-packages --upgrade pip && \
+    pip3 install --break-system-packages --upgrade awscli && \
     apt-get clean
 
 # Install restic to take backups
