@@ -76,7 +76,7 @@ func CreatePVC(
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: accessmodes,
 			VolumeMode:  volumemode,
-			Resources: corev1.VolumeResourceRequirements{
+			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): size,
 				},
@@ -165,7 +165,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 				Kind:     snapshotKind,
 				Name:     args.SnapshotName,
 			},
-			Resources: corev1.VolumeResourceRequirements{
+			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: *storageSize,
 				},

@@ -163,7 +163,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 			Name: volName,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.VolumeResourceRequirements{
+			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: size,
 				},
@@ -381,7 +381,7 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *C) {
 			Name: volName,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.VolumeResourceRequirements{
+			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: size,
 				},
@@ -599,7 +599,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.VolumeResourceRequirements{
+			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): size,
 				},
