@@ -143,7 +143,12 @@ func main() {
 			hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir, Port: webhookServerPort}
 			hookServer := webhook.NewServer(hookServerOptions)
 			webhook := admission.WithCustomValidator(mgr.GetScheme(), &crv1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
+			// registers a webhooks to a webhook server that gets ran by a controller manager.
 			hookServer.Register(whHandlePath, webhook)
+			if err := mgr.Add(hookServer); err != nil {
+				setupLog.Error(err, "Failed to add webhook server to the manager")
+				os.Exit(1)
+			}
 		}
 	}
 
