@@ -257,8 +257,7 @@ var reVslmSyncFaultFatal = regexp.MustCompile("Change tracking invalid or disk i
 func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	var res types.AnyType
 	description := generateSnapshotDescription(tags)
-
-	err := wait.PollUntilContextTimeout(ctx, time.Second, defaultRetryLimit, false, func(innerCtx context.Context) (bool, error) {
+	err := wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
 		timeOfCreateSnapshotCall := time.Now()
 		var createErr error
 		res, createErr = p.createSnapshotAndWaitForCompletion(volume, ctx, description)
@@ -336,7 +335,7 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 	if err != nil {
 		return errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
 	}
-	return wait.PollUntilContextTimeout(ctx, time.Second, defaultRetryLimit, false, func(context.Context) (bool, error) {
+	return wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
 		log.Debug().Print("SnapshotDelete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
 		task, lerr := p.Gom.DeleteSnapshot(ctx, vimID(volID), vimID(snapshotID))
 		if lerr != nil {
