@@ -20,14 +20,18 @@ import (
 	"net/http"
 
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 	"github.com/kanisterio/kanister/pkg/version"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 const (
@@ -62,18 +66,21 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // RunWebhookServer starts the validating webhook resources for blueprint kanister resources
 func RunWebhookServer(c *rest.Config) error {
-	hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir}
+	log.SetLogger(zap.New())
+	mgr, err := manager.New(c, manager.Options{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create new webhook manager")
+	}
 
+	hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir}
 	hookServer := webhook.NewServer(hookServerOptions)
-	hookServer.Register(whHandlePath, &webhook.Admission{Handler: &validatingwebhook.BlueprintValidator{}})
+	hook := admission.WithCustomValidator(mgr.GetScheme(), &crv1alpha1.Blueprint{}, &validatingwebhook.BlueprintValidator{})
+	hookServer.Register(whHandlePath, hook)
 	hookServer.Register(healthCheckPath, &healthCheckHandler{})
 	hookServer.Register(metricsPath, promhttp.Handler())
 
-	mgr, err := manager.New(c, manager.Options{
-		WebhookServer: hookServer,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "Failed to create new webhook manager")
+	if err := mgr.Add(hookServer); err != nil {
+		return errors.Wrapf(err, "Failed to add new webhook server")
 	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
