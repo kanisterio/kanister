@@ -4,44 +4,34 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/blueprint/validate"
+	"net/http"
 )
 
-//+kubebuilder:webhook:path=validate/v1alpha1/blueprint,mutating=false,failurePolicy=fail,sideEffects=None,groups=cr.kanister.io,resources=blueprints,verbs=create,versions=v1alpha1,name=blueprint.cr.kanister.io
+type BlueprintValidator struct {
+	decoder *admission.Decoder
+}
 
-type BlueprintValidator struct{}
-
-var _ webhook.CustomValidator = &BlueprintValidator{}
-
-func (b *BlueprintValidator) validate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	log := logf.FromContext(ctx)
-	bp, ok := obj.(*crv1alpha1.Blueprint)
-	if !ok {
-		return nil, fmt.Errorf("expected a Blueprint but got a %T", obj)
+func (b *BlueprintValidator) Handle(ctx context.Context, r admission.Request) admission.Response {
+	bp := &crv1alpha1.Blueprint{}
+	err := b.decoder.Decode(r, bp)
+	if err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
 	}
-	log.Info("Validating blueprint")
+
 	if err := validate.Do(bp, kanister.DefaultVersion); err != nil {
-		return nil, fmt.Errorf("invalid blueprint, %s", err.Error())
+		return admission.Denied(fmt.Sprintf("Invalid blueprint, %s\n", err.Error()))
 	}
 
-	return nil, nil
+	return admission.Allowed("")
 }
 
-func (b *BlueprintValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	return b.validate(ctx, obj)
-}
-
-func (b *BlueprintValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	return b.validate(ctx, newObj)
-}
-
-func (b BlueprintValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	return b.validate(ctx, obj)
+// InjectDecoder injects the decoder.
+func (b *BlueprintValidator) InjectDecoder(d *admission.Decoder) error {
+	b.decoder = d
+	return nil
 }

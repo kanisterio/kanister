@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 	"github.com/kanisterio/kanister/pkg/version"
 	"github.com/pkg/errors"
@@ -71,11 +70,14 @@ func RunWebhookServer(c *rest.Config) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create new webhook manager")
 	}
+	bpValidator := &validatingwebhook.BlueprintValidator{}
+	if err = bpValidator.InjectDecoder(admission.NewDecoder(mgr.GetScheme())); err != nil {
+		return errors.Wrapf(err, "Failed to inject decoder")
+	}
 
 	hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir}
 	hookServer := webhook.NewServer(hookServerOptions)
-	hook := admission.WithCustomValidator(mgr.GetScheme(), &crv1alpha1.Blueprint{}, &validatingwebhook.BlueprintValidator{})
-	hookServer.Register(whHandlePath, hook)
+	hookServer.Register(whHandlePath, &webhook.Admission{Handler: bpValidator})
 	hookServer.Register(healthCheckPath, &healthCheckHandler{})
 	hookServer.Register(metricsPath, promhttp.Handler())
 
