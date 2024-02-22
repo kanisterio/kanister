@@ -149,24 +149,31 @@ folder.
 
 ## New Documentation
 
-We have started experimenting, and will soon fully transition, to using [VitePress](https://vitepress.dev/) to generate Kanister documentation.
-This requires the documentation files to be written in [Markdown](https://www.markdownguide.org/), along with some [extensions](https://vitepress.dev/guide/markdown).
+We have started experimenting, and will soon fully transition, to using
+ [VitePress](https://vitepress.dev/) to generate Kanister documentation.
+This requires the documentation files to be written in 
+[Markdown](https://www.markdownguide.org/), along with some 
+[extensions](https://vitepress.dev/guide/markdown).
 
-This new documentation system offers a live-dev server that will dynamically render Markdown documentation files
-as you are making changes to them on your local machine/branch.
-To start this development server, place yourself in the `new_docs` folder, then run the following commands:
+This new documentation system offers a live-dev server that will dynamically
+render Markdown documentation files as you are making changes to them on your
+local machine/branch.
+To start this development server, place yourself in the `new_docs` folder, then
+run the following commands:
 
 ```sh
 pnpm install
 pnpm run docs:dev
 ```
 
-To render/build the docs locally (it will generate static assets, like HTML pages, Javascript/CSS files, etc.), use this command:
+To render/build the docs locally (it will generate static assets, like HTML
+pages, Javascript/CSS files, etc.), use this command:
 ```sh
 pnpm run docs:build
 ```
 
-To start a local webserver that you can use to preview the documentation that has been rendered by the command above, use this command:
+To start a local webserver that you can use to preview the documentation that
+has been rendered by the command above, use this command:
 ```sh
 pnpm run docs:preview
 ```
