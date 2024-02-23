@@ -16,18 +16,26 @@ package utils
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"go.uber.org/zap/zapcore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+)
+
+var (
+	defaultLogLevel = zapcore.InfoLevel
 )
 
 type indicator string
@@ -113,4 +121,26 @@ func RoundUpDuration(t time.Duration) time.Duration {
 		return t.Round(time.Minute)
 	}
 	return t.Round(time.Hour)
+}
+
+func getLogLevel() zapcore.Level {
+	logLevel := os.Getenv(log.LevelEnvName)
+	if logLevel == "" {
+		return defaultLogLevel
+	}
+	level, err := zapcore.ParseLevel(logLevel)
+	if err != nil {
+		return defaultLogLevel
+	}
+	return level
+}
+
+func GetLogger() logr.Logger {
+	logLevel := getLogLevel()
+	opts := zap.Options{
+		Level: logLevel,
+	}
+	opts.BindFlags(flag.CommandLine)
+	logger := zap.New(zap.UseFlagOptions(&opts))
+	return logger
 }
