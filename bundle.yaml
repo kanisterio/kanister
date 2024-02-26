@@ -131,4 +131,4 @@ spec:
       serviceAccountName: kanister-operator
       containers:
       - name: kanister-operator
-        image: kanisterio/controller:0.10.0
+        image: kanisterio/controller:0.44.0
