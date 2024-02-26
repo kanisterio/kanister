@@ -20,6 +20,9 @@ import (
 	"os"
 	"strconv"
 
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
@@ -27,22 +30,24 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 
 	//+kubebuilder:scaffold:imports
-	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme          = runtime.NewScheme()
+	setupLog        = ctrl.Log.WithName("setup")
+	defaultLogLevel = zapcore.InfoLevel
 )
 
 const (
@@ -62,11 +67,18 @@ func main() {
 	var metricsAddr string
 	var probeAddr string
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	logLevel := getLogLevel()
+
+	opts := zap.Options{
+		Level: logLevel,
+	}
 
 	// Disable metrics server
 	metricsAddr = "0"
+	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
-	ctrl.SetLogger(utils.GetLogger())
+	logger := zap.New(zap.UseFlagOptions(&opts))
+	ctrl.SetLogger(logger)
 	config := ctrl.GetConfigOrDie()
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
@@ -146,4 +158,16 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func getLogLevel() zapcore.Level {
+	logLevel := os.Getenv(log.LevelEnvName)
+	if logLevel == "" {
+		return defaultLogLevel
+	}
+	level, err := zapcore.ParseLevel(logLevel)
+	if err != nil {
+		return defaultLogLevel
+	}
+	return level
 }
