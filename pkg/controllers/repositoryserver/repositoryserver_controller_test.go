@@ -36,8 +36,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
@@ -116,16 +114,16 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	s.repoServerControllerNamespace = cns.Name
-	ws := webhook.NewServer(webhook.Options{Port: 9443})
+
 	// Since we are not creating the controller in a pod
 	// the repository server controller needs few env variables set explicitly
 	os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
 
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
-		Scheme:         scheme,
-		WebhookServer:  ws,
-		Metrics:        server.Options{BindAddress: "0"},
-		LeaderElection: false,
+		Scheme:             scheme,
+		Port:               9443,
+		MetricsBindAddress: "0",
+		LeaderElection:     false,
 	})
 	c.Assert(err, IsNil)
 
@@ -414,7 +412,7 @@ func (s *RepoServerControllerSuite) TestFilestoreLocationVolumeMountOnRepoServer
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.VolumeResourceRequirements{
+			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},

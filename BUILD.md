@@ -114,6 +114,14 @@ Kanister is using `check` library to extend go testing capabilities: https://git
 It's recommended to write new tests using this library for consistency.
 
 `make test` runs all tests in the repository.
+It's possible to run a specific test with `TEST_FILTER` environment variable:
+
+```
+make tests TEST_FILTER=OutputTestSuite
+```
+
+This variable will be passed to `-check.f` flag and supports regex filters.
+
 To run tests for specific package you can run `go test` in that package directory.
 It's recommended to do that in build image shell, you can run it with `make shell`.
 
@@ -138,6 +146,37 @@ make docs
 The `docs` target uses the `ghcr.io/kanisterio/docker-sphinx` public image to
 generate the HTML documents and store them in your local `/docs/_build/html`
 folder.
+
+## New Documentation
+
+We have started experimenting, and will soon fully transition, to using
+ [VitePress](https://vitepress.dev/) to generate Kanister documentation.
+This requires the documentation files to be written in 
+[Markdown](https://www.markdownguide.org/), along with some 
+[extensions](https://vitepress.dev/guide/markdown).
+
+This new documentation system offers a live-dev server that will dynamically
+render Markdown documentation files as you are making changes to them on your
+local machine/branch.
+To start this development server, place yourself in the `new_docs` folder, then
+run the following commands:
+
+```sh
+pnpm install
+pnpm run docs:dev
+```
+
+To render/build the docs locally (it will generate static assets, like HTML
+pages, Javascript/CSS files, etc.), use this command:
+```sh
+pnpm run docs:build
+```
+
+To start a local webserver that you can use to preview the documentation that
+has been rendered by the command above, use this command:
+```sh
+pnpm run docs:preview
+```
 
 ## New Blueprints
 
