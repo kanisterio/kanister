@@ -23,7 +23,11 @@ var (
 )
 
 // optBucket creates a new bucket option with a given name.
+// If the name is empty, the bucket option is not set.
 func optBucket(name string) command.Applier {
+	if name == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--bucket", name)
 }
 
@@ -37,7 +41,11 @@ func optEndpoint(endpoint string) command.Applier {
 }
 
 // optPrefix creates a new prefix option with a given prefix.
+// If the prefix is empty, the prefix option is not set.
 func optPrefix(prefix string) command.Applier {
+	if prefix == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--prefix", prefix)
 }
 
