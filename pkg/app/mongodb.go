@@ -61,6 +61,7 @@ func NewMongoDB(name string) HelmApp {
 			RepoURL:  helm.BitnamiRepoURL,
 			RepoName: helm.BitnamiRepoName,
 			Chart:    "mongodb",
+			Version:  "14.11.1",
 			Values: map[string]string{
 				"architecture":     "replicaset",
 				"image.pullPolicy": "Always",
