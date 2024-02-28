@@ -4,7 +4,7 @@ ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
 # Actual image base
-FROM postgres:16.1-bullseye
+FROM postgres:16-bullseye
 
 ENV DEBIAN_FRONTEND noninteractive
 
