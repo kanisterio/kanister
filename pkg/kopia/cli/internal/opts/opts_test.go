@@ -27,6 +27,21 @@ func TestOptions(t *testing.T) { check.TestingT(t) }
 
 var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTest{
 	{
+		Name:        "All",
+		Argument:    command.NewArguments(opts.All(true), opts.All(false)),
+		ExpectedCLI: []string{"cmd", "--all"},
+	},
+	{
+		Name:        "Delta",
+		Argument:    command.NewArguments(opts.Delta(true), opts.Delta(false)),
+		ExpectedCLI: []string{"cmd", "--delta"},
+	},
+	{
+		Name:        "ShowIdentical",
+		Argument:    command.NewArguments(opts.ShowIdentical(true), opts.ShowIdentical(false)),
+		ExpectedCLI: []string{"cmd", "--show-identical"},
+	},
+	{
 		Name:        "Readonly",
 		Argument:    command.NewArguments(opts.ReadOnly(true), opts.ReadOnly(false)),
 		ExpectedCLI: []string{"cmd", "--readonly"},
