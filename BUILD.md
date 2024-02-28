@@ -158,7 +158,7 @@ This requires the documentation files to be written in
 This new documentation system offers a live-dev server that will dynamically
 render Markdown documentation files as you are making changes to them on your
 local machine/branch.
-To start this development server, place yourself in the `new_docs` folder, then
+To start this development server, place yourself in the `docs_new` folder, then
 run the following commands:
 
 ```sh
