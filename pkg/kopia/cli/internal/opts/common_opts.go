@@ -24,7 +24,11 @@ const (
 )
 
 // LogDirectory creates a new log directory option with a given directory.
+// if the directory is empty, the log directory option is not set.
 func LogDirectory(dir string) command.Applier {
+	if dir == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--log-dir", dir)
 }
 
@@ -38,12 +42,20 @@ func LogLevel(level string) command.Applier {
 }
 
 // ConfigFilePath creates a new config file path option with a given path.
+// If the path is empty, the config file path option is not set.
 func ConfigFilePath(path string) command.Applier {
+	if path == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--config-file", path)
 }
 
 // RepoPassword creates a new repository password option with a given password.
+// If the password is empty, the repository password option is not set.
 func RepoPassword(password string) command.Applier {
+	if password == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithRedactedArgument("--password", password)
 }
 
