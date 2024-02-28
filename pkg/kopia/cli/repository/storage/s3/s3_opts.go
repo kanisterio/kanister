@@ -28,7 +28,11 @@ func optBucket(name string) command.Applier {
 }
 
 // optEndpoint creates a new endpoint option with a given endpoint.
+// If the endpoint is empty, the endpoint option is not set.
 func optEndpoint(endpoint string) command.Applier {
+	if endpoint == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--endpoint", endpoint)
 }
 
@@ -38,7 +42,11 @@ func optPrefix(prefix string) command.Applier {
 }
 
 // optRegion creates a new region option with a given region.
+// If the region is empty, the region option is not set.
 func optRegion(region string) command.Applier {
+	if region == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--region", region)
 }
 
