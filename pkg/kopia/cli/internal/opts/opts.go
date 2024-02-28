@@ -16,11 +16,20 @@ package opts
 
 import "github.com/kanisterio/safecli/command"
 
-var (
-	All           = command.NewOption("--all", true)
-	Delta         = command.NewOption("--delta", true)
-	ShowIdentical = command.NewOption("--show-identical", true)
-)
+// All creates a new all option.
+func All(enabled bool) command.Applier {
+	return command.NewOption("--all", enabled)
+}
+
+// Delta creates a new delta option.
+func Delta(enabled bool) command.Applier {
+	return command.NewOption("--delta", enabled)
+}
+
+// ShowIdentical creates a new show identical option.
+func ShowIdentical(enabled bool) command.Applier {
+	return command.NewOption("--show-identical", enabled)
+}
 
 // ReadOnly creates a new read only option.
 func ReadOnly(enabled bool) command.Applier {
