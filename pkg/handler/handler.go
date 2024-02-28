@@ -19,9 +19,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -65,14 +65,14 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // RunWebhookServer starts the validating webhook resources for blueprint kanister resources
 func RunWebhookServer(c *rest.Config) error {
-	log.SetLogger(zap.New())
+	log.SetLogger(logr.New(log.NullLogSink{}))
 	mgr, err := manager.New(c, manager.Options{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create new webhook manager")
+		return errors.Wrap(err, "Failed to create new webhook manager")
 	}
 	bpValidator := &validatingwebhook.BlueprintValidator{}
 	if err = bpValidator.InjectDecoder(admission.NewDecoder(mgr.GetScheme())); err != nil {
-		return errors.Wrapf(err, "Failed to inject decoder")
+		return errors.Wrap(err, "Failed to inject decoder")
 	}
 
 	hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir}
@@ -82,7 +82,7 @@ func RunWebhookServer(c *rest.Config) error {
 	hookServer.Register(metricsPath, promhttp.Handler())
 
 	if err := mgr.Add(hookServer); err != nil {
-		return errors.Wrapf(err, "Failed to add new webhook server")
+		return errors.Wrap(err, "Failed to add new webhook server")
 	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
