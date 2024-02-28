@@ -38,6 +38,13 @@ const (
 	ProfileResourceNamePlural   = "profiles"
 )
 
+const (
+	PVProvisionedByAnnotation = "pv.kubernetes.io/provisioned-by"
+
+	AWSEBSProvisionerInTree = "kubernetes.io/aws-ebs"
+	GCEPDProvisionerInTree  = "kubernetes.io/gce-pd"
+)
+
 // These consts are used to query Repository server API objects
 const RepositoryServerResourceName = "repositoryserver"
 const RepositoryServerResourceNamePlural = "repositoryservers"
