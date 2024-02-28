@@ -257,7 +257,7 @@ var reVslmSyncFaultFatal = regexp.MustCompile("Change tracking invalid or disk i
 func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	var res types.AnyType
 	description := generateSnapshotDescription(tags)
-	err := wait.PollUntilContextTimeout(ctx, time.Second, defaultRetryLimit, false, func(innerCtx context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, time.Second, defaultRetryLimit, false, func(context.Context) (bool, error) {
 		timeOfCreateSnapshotCall := time.Now()
 		var createErr error
 		res, createErr = p.createSnapshotAndWaitForCompletion(volume, ctx, description)
