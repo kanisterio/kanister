@@ -15,8 +15,9 @@
 package args
 
 import (
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/safecli/command"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 )
 
 // ID creates a new ID argument.

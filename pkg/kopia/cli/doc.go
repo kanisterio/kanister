@@ -1,5 +1,3 @@
-package cli
-
 // Copyright 2024 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +12,10 @@ package cli
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This package contains the implementation of the Kopia CLI using github.com/kanisterio/safecli.
+
+package cli
+
 import (
 	_ "github.com/kanisterio/safecli"
 )
-
-// This package contains the implementation of the Kopia CLI using github.com/kanisterio/safecli.
