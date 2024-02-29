@@ -42,12 +42,20 @@ var (
 )
 
 // optHostname creates a new option for the hostname of the repository.
+// If the hostname is empty, the hostname option is not set.
 func optHostname(h string) command.Applier {
+	if h == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--override-hostname", h)
 }
 
 // optUsername creates a new option for the username of the repository.
+// If the username is empty, the username option is not set.
 func optUsername(u string) command.Applier {
+	if u == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--override-username", u)
 }
 
@@ -93,19 +101,25 @@ func optReadOnly(readOnly bool) command.Applier {
 }
 
 // optPointInTime creates a new option for the point-in-time of the repository.
-func optPointInTime(tm strfmt.DateTime) command.Applier {
-	if time.Time(tm).IsZero() {
+func optPointInTime(l internal.Location, pit strfmt.DateTime) command.Applier {
+	if !l.IsPointInTypeSupported() || time.Time(pit).IsZero() {
 		return command.NewNoopArgument()
 	}
-	return command.NewOptionWithArgument("--point-in-time", tm.String())
+	return command.NewOptionWithArgument("--point-in-time", pit.String())
 }
 
 // optServerURL creates a new server URL flag with a given server URL.
 func optServerURL(serverURL string) command.Applier {
+	if serverURL == "" {
+		return command.NewErrorArgument(cli.ErrInvalidServerURL)
+	}
 	return command.NewOptionWithArgument("--url", serverURL)
 }
 
 // optServerCertFingerprint creates a new server certificate fingerprint flag with a given fingerprint.
 func optServerCertFingerprint(fingerprint string) command.Applier {
+	if fingerprint == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithRedactedArgument("--server-cert-fingerprint", fingerprint)
 }

@@ -54,6 +54,6 @@ func Connect(args ConnectArgs) (*safecli.Builder, error) {
 			args.RepoPathPrefix,
 			args.Logger,
 		),
-		optPointInTime(args.PointInTime),
+		optPointInTime(args.Location, args.PointInTime),
 	)
 }
