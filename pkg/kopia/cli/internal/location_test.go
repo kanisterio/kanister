@@ -17,9 +17,10 @@ package internal_test
 import (
 	"testing"
 
+	"gopkg.in/check.v1"
+
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	rs "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	"gopkg.in/check.v1"
 )
 
 func TestLocation(t *testing.T) { check.TestingT(t) }

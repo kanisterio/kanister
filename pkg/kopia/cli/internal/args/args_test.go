@@ -17,10 +17,11 @@ package args_test
 import (
 	"testing"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/args"
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/args"
 )
 
 func TestArgs(t *testing.T) { check.TestingT(t) }
