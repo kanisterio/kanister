@@ -28,6 +28,8 @@ var (
 var (
 	// ErrUnsupportedStorage is returned when the storage is not supported.
 	ErrUnsupportedStorage = errors.New("unsupported storage")
+	// ErrInvalidRepoPath is returned when the repoPath is empty.
+	ErrInvalidRepoPath = errors.New("repository path cannot be empty")
 	// ErrInvalidPrefix is returned when the prefix is empty.
 	ErrInvalidPrefix = errors.New("prefix cannot be empty")
 	// ErrInvalidBucketName is returned when the bucketName is empty.
