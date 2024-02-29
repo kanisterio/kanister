@@ -21,15 +21,16 @@ import (
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 )
 
 func TestNewGCS(t *testing.T) { check.TestingT(t) }
 
-func newGCS(prefix, repoPath string) command.Applier {
+func newGCS(prefix, repoPath, bucket string) command.Applier {
 	l := internal.Location{
 		"prefix": []byte(prefix),
-		"bucket": []byte("bucket"),
+		"bucket": []byte(bucket),
 	}
 	return New(l, repoPath, nil)
 }
@@ -37,17 +38,22 @@ func newGCS(prefix, repoPath string) command.Applier {
 var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTest{
 	{
 		Name:        "NewGCS",
-		Argument:    newGCS("prefix", "repoPath"),
+		Argument:    newGCS("prefix", "repoPath", "bucket"),
 		ExpectedCLI: []string{"cmd", "gcs", "--bucket=bucket", "--credentials-file=/tmp/creds.txt", "--prefix=prefix/repoPath/"},
 	},
 	{
 		Name:        "NewGCS with empty repoPath",
-		Argument:    newGCS("prefix", ""),
+		Argument:    newGCS("prefix", "", "bucket"),
 		ExpectedCLI: []string{"cmd", "gcs", "--bucket=bucket", "--credentials-file=/tmp/creds.txt", "--prefix=prefix/"},
 	},
 	{
 		Name:        "NewGCS with empty local prefix and repo prefix should return error",
-		Argument:    newGCS("", ""),
+		Argument:    newGCS("", "", "bucket"),
 		ExpectedCLI: []string{"cmd", "gcs", "--bucket=bucket", "--credentials-file=/tmp/creds.txt", "--prefix="},
+	},
+	{
+		Name:        "NewGCS with empty bucket should return ErrInvalidBucketName",
+		Argument:    newGCS("", "", ""),
+		ExpectedErr: cli.ErrInvalidBucketName,
 	},
 }})
