@@ -3,9 +3,10 @@ package internal_test
 import (
 	"testing"
 
+	"gopkg.in/check.v1"
+
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
-	"gopkg.in/check.v1"
 )
 
 func TestNewKopiaCommand(t *testing.T) { check.TestingT(t) }
