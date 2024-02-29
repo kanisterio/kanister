@@ -30,4 +30,12 @@ var (
 	ErrUnsupportedStorage = errors.New("unsupported storage")
 	// ErrInvalidRepoPath is returned when the repoPath is empty.
 	ErrInvalidRepoPath = errors.New("repository path cannot be empty")
+	// ErrInvalidPrefix is returned when the prefix is empty.
+	ErrInvalidPrefix = errors.New("prefix cannot be empty")
+	// ErrInvalidBucketName is returned when the bucketName is empty.
+	ErrInvalidBucketName = errors.New("bucket name cannot be empty")
+	// ErrInvalidCredentialsFile is returned when the credentials file is empty.
+	ErrInvalidCredentialsFile = errors.New("credentials file cannot be empty")
+	// ErrInvalidContainerName is returned when the containerName is empty.
+	ErrInvalidContainerName = errors.New("container name cannot be empty")
 )

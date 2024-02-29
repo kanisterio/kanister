@@ -59,3 +59,14 @@ func (l Location) HasSkipSSLVerify() bool {
 	v, _ := strconv.ParseBool(string(l[rs.SkipSSLVerifyKey]))
 	return v
 }
+
+// IsPointInTimeSupported returns true if the location supports point-in-time recovery.
+// Currently, only S3 and Azure support point-in-time recovery.
+func (l Location) IsPointInTypeSupported() bool {
+	switch l.Type() {
+	case rs.LocTypeAzure, rs.LocTypeS3, rs.LocTypes3Compliant:
+		return true
+	default:
+		return false
+	}
+}

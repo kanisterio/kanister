@@ -16,6 +16,8 @@ package azure
 
 import (
 	"github.com/kanisterio/safecli/command"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 )
 
 var (
@@ -28,6 +30,10 @@ func optPrefix(prefix string) command.Applier {
 }
 
 // optContainer creates a new container option with a given container name.
+// If the name is empty, it returns ErrInvalidContainerName.
 func optContainer(name string) command.Applier {
+	if name == "" {
+		return command.NewErrorArgument(cli.ErrInvalidContainerName)
+	}
 	return command.NewOptionWithArgument("--container", name)
 }
