@@ -38,4 +38,6 @@ var (
 	ErrInvalidCredentialsFile = errors.New("credentials file cannot be empty")
 	// ErrInvalidContainerName is returned when the containerName is empty.
 	ErrInvalidContainerName = errors.New("container name cannot be empty")
+	// ErrInvalidServerURL is returned when the serverURL is empty.
+	ErrInvalidServerURL = errors.New("server URL cannot be empty")
 )
