@@ -37,12 +37,20 @@ var (
 )
 
 // optHostname creates a new option for the hostname of the repository.
+// If the hostname is empty, the hostname option is not set.
 func optHostname(h string) command.Applier {
+	if h == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--override-hostname", h)
 }
 
 // optUsername creates a new option for the username of the repository.
+// If the username is empty, the username option is not set.
 func optUsername(u string) command.Applier {
+	if u == "" {
+		return command.NewNoopArgument()
+	}
 	return command.NewOptionWithArgument("--override-username", u)
 }
 
