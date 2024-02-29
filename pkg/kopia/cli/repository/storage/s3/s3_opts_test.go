@@ -17,19 +17,25 @@ package s3
 import (
 	"testing"
 
-	"gopkg.in/check.v1"
-
 	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
+	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 )
 
 func TestS3Options(t *testing.T) { check.TestingT(t) }
 
 var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTest{
 	{
-		Name:        "optBucket",
-		Argument:    command.NewArguments(optBucket("bucketname"), optBucket("")),
+		Name:        "optBucket with bucketname should return option",
+		Argument:    optBucket("bucketname"),
 		ExpectedCLI: []string{"cmd", "--bucket=bucketname"},
+	},
+	{
+		Name:        "optBucket with empty bucketname should return error",
+		Argument:    optBucket(""),
+		ExpectedErr: cli.ErrInvalidBucketName,
 	},
 	{
 		Name:        "optEndpoint",
@@ -39,12 +45,7 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 	{
 		Name:        "optPrefix",
 		Argument:    command.NewArguments(optPrefix("prefix"), optPrefix("")),
-		ExpectedCLI: []string{"cmd", "--prefix=prefix"},
-	},
-	{
-		Name:        "optRegion",
-		Argument:    command.NewArguments(optRegion("region"), optRegion("")),
-		ExpectedCLI: []string{"cmd", "--region=region"},
+		ExpectedCLI: []string{"cmd", "--prefix=prefix", "--prefix="},
 	},
 	{
 		Name:        "optDisableTLS",

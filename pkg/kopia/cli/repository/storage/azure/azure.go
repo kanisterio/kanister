@@ -17,7 +17,6 @@ package azure
 import (
 	"github.com/kanisterio/safecli/command"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -25,9 +24,6 @@ import (
 // New creates a new subcommand for the Azure storage.
 func New(location internal.Location, repoPathPrefix string, _ log.Logger) command.Applier {
 	prefix := internal.GenerateFullRepoPath(location.Prefix(), repoPathPrefix)
-	if prefix == "" {
-		return command.NewErrorArgument(cli.ErrInvalidRepoPath)
-	}
 	return command.NewArguments(subcmdAzure,
 		optContainer(location.BucketName()),
 		optPrefix(prefix),
