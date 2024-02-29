@@ -49,6 +49,6 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 	{
 		Name:        "NewGCS with empty local prefix and repo prefix should return error",
 		Argument:    newGCS("", ""),
-		ExpectedErr: cli.ErrInvalidRepoPath,
+		ExpectedErr: cli.ErrInvalidPrefix,
 	},
 }})

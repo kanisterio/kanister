@@ -19,7 +19,7 @@ import (
 
 	"gopkg.in/check.v1"
 
-	"github.com/kanisterio/safecli/command"
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/safecli/test"
 )
 
@@ -27,18 +27,33 @@ func TestGCSOptions(t *testing.T) { check.TestingT(t) }
 
 var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTest{
 	{
-		Name:        "optBucket",
-		Argument:    command.NewArguments(optBucket("bucketname"), optBucket("")),
+		Name:        "optBucket with bucketname should return option",
+		Argument:    optBucket("bucketname"),
 		ExpectedCLI: []string{"cmd", "--bucket=bucketname"},
 	},
 	{
-		Name:        "optPrefix",
-		Argument:    command.NewArguments(optPrefix("prefix"), optPrefix("")),
+		Name:        "optBucket with empty bucketname should return error",
+		Argument:    optBucket(""),
+		ExpectedErr: cli.ErrInvalidBucketName,
+	},
+	{
+		Name:        "optPrefix with prefix should return option",
+		Argument:    optPrefix("prefix"),
 		ExpectedCLI: []string{"cmd", "--prefix=prefix"},
 	},
 	{
-		Name:        "optCredentialsFile",
-		Argument:    command.NewArguments(optCredentialsFile("/tmp/file.creds"), optCredentialsFile("")),
+		Name:        "optPrefix with empty prefix should return error",
+		Argument:    optPrefix(""),
+		ExpectedErr: cli.ErrInvalidPrefix,
+	},
+	{
+		Name:        "optCredentialsFile with path should return option",
+		Argument:    optCredentialsFile("/tmp/file.creds"),
 		ExpectedCLI: []string{"cmd", "--credentials-file=/tmp/file.creds"},
+	},
+	{
+		Name:        "optCredentialsFile with empty path should return error",
+		Argument:    optCredentialsFile(""),
+		ExpectedErr: cli.ErrInvalidCredentialsFile,
 	},
 }})
