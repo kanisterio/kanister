@@ -55,9 +55,9 @@ standard go template functions, Kanister imports all the `sprig
     }
     return ras, nil
 
-Kanister will error during template rendering if FIPS non compliant
-sprig functions are used. The unsupported functions include: ``bcrypt``,
-``derivePassword``, ``htpasswd`` and ``genPrivateKey`` for key type ``dsa``.
+.. note:: Kanister will error during template rendering if FIPS non-compliant
+  sprig functions are used. The unsupported functions include: ``bcrypt``,
+  ``derivePassword``, ``htpasswd``, and ``genPrivateKey`` for key type ``dsa``.
 
 
 Objects
