@@ -17,8 +17,9 @@ package internal_test
 import (
 	"testing"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 )
 
 func TestPath(t *testing.T) { check.TestingT(t) }
