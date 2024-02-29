@@ -20,6 +20,7 @@ import (
 	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
+	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
 )
 
@@ -37,14 +38,9 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 		ExpectedErr: cli.ErrInvalidBucketName,
 	},
 	{
-		Name:        "optPrefix with prefix should return option",
-		Argument:    optPrefix("prefix"),
-		ExpectedCLI: []string{"cmd", "--prefix=prefix"},
-	},
-	{
-		Name:        "optPrefix with empty prefix should return option with empty string",
-		Argument:    optPrefix(""),
-		ExpectedCLI: []string{"cmd", "--prefix="},
+		Name:        "optPrefix",
+		Argument:    command.NewArguments(optPrefix("prefix"), optPrefix("")),
+		ExpectedCLI: []string{"cmd", "--prefix=prefix", "--prefix="},
 	},
 	{
 		Name:        "optCredentialsFile with path should return option",
