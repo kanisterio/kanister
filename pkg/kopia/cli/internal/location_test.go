@@ -37,6 +37,7 @@ func (s *LocationSuite) TestLocation(c *check.C) {
 		Prefix           string
 		IsInsecure       bool
 		HasSkipSSLVerify bool
+		IsPITSupported   bool
 	}
 
 	tests := []struct {
@@ -69,6 +70,56 @@ func (s *LocationSuite) TestLocation(c *check.C) {
 				HasSkipSSLVerify: true,
 			},
 		},
+		{
+			name: "Test PIT Support for S3 Compliant",
+			location: internal.Location{
+				rs.TypeKey: []byte(rs.LocTypes3Compliant),
+			},
+			expected: expected{
+				Type:           "s3Compliant",
+				IsPITSupported: true,
+			},
+		},
+		{
+			name: "Test PIT Support for S3",
+			location: internal.Location{
+				rs.TypeKey: []byte(rs.LocTypeS3),
+			},
+			expected: expected{
+				Type:           "s3",
+				IsPITSupported: true,
+			},
+		},
+		{
+			name: "Test PIT Support for Azure",
+			location: internal.Location{
+				rs.TypeKey: []byte(rs.LocTypeAzure),
+			},
+			expected: expected{
+				Type:           "azure",
+				IsPITSupported: true,
+			},
+		},
+		{
+			name: "Test No PIT Support for GCS",
+			location: internal.Location{
+				rs.TypeKey: []byte(rs.LocTypeGCS),
+			},
+			expected: expected{
+				Type:           "gcs",
+				IsPITSupported: false,
+			},
+		},
+		{
+			name: "Test No PIT Support for FS",
+			location: internal.Location{
+				rs.TypeKey: []byte(rs.LocTypeFilestore),
+			},
+			expected: expected{
+				Type:           "filestore",
+				IsPITSupported: false,
+			},
+		},
 	}
 	for _, test := range tests {
 		c.Check(test.location.Type(), check.Equals, test.expected.Type)
@@ -78,5 +129,6 @@ func (s *LocationSuite) TestLocation(c *check.C) {
 		c.Check(test.location.Prefix(), check.Equals, test.expected.Prefix)
 		c.Check(test.location.IsInsecureEndpoint(), check.Equals, test.expected.IsInsecure)
 		c.Check(test.location.HasSkipSSLVerify(), check.Equals, test.expected.HasSkipSSLVerify)
+		c.Check(test.location.IsPointInTypeSupported(), check.Equals, test.expected.IsPITSupported)
 	}
 }
