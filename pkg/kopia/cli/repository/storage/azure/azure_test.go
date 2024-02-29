@@ -49,6 +49,6 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 	{
 		Name:        "NewAzure with empty local prefix and repo prefix should return error",
 		Argument:    newAzure("", ""),
-		ExpectedErr: cli.ErrInvalidRepoPath,
+		ExpectedErr: cli.ErrInvalidPrefix,
 	},
 }})
