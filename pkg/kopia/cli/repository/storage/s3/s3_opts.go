@@ -16,6 +16,8 @@ package s3
 
 import (
 	"github.com/kanisterio/safecli/command"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 )
 
 var (
@@ -23,10 +25,10 @@ var (
 )
 
 // optBucket creates a new bucket option with a given name.
-// If the name is empty, the bucket option is not set.
+// If the name is empty, it returns ErrInvalidBucketName.
 func optBucket(name string) command.Applier {
 	if name == "" {
-		return command.NewNoopArgument()
+		return command.NewErrorArgument(cli.ErrInvalidBucketName)
 	}
 	return command.NewOptionWithArgument("--bucket", name)
 }
@@ -43,9 +45,6 @@ func optEndpoint(endpoint string) command.Applier {
 // optPrefix creates a new prefix option with a given prefix.
 // If the prefix is empty, the prefix option is not set.
 func optPrefix(prefix string) command.Applier {
-	if prefix == "" {
-		return command.NewNoopArgument()
-	}
 	return command.NewOptionWithArgument("--prefix", prefix)
 }
 

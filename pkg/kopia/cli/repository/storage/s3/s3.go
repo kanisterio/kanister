@@ -19,7 +19,6 @@ import (
 
 	"github.com/kanisterio/safecli/command"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	intlog "github.com/kanisterio/kanister/pkg/kopia/cli/internal/log"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -32,9 +31,6 @@ func New(location internal.Location, repoPathPrefix string, logger log.Logger) c
 	}
 	endpoint := resolveS3Endpoint(location.Endpoint(), logger)
 	prefix := internal.GenerateFullRepoPath(location.Prefix(), repoPathPrefix)
-	if prefix == "" {
-		return command.NewErrorArgument(cli.ErrInvalidRepoPath)
-	}
 	return command.NewArguments(subcmdS3,
 		optRegion(location.Region()),
 		optBucket(location.BucketName()),
