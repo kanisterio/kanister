@@ -15,6 +15,7 @@
 package gcs
 
 import (
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/safecli/command"
 )
 
@@ -23,7 +24,11 @@ var (
 )
 
 // optBucket creates a new bucket option with a given name.
+// If the name is empty, it returns ErrInvalidBucketName.
 func optBucket(name string) command.Applier {
+	if name == "" {
+		return command.NewErrorArgument(cli.ErrInvalidBucketName)
+	}
 	return command.NewOptionWithArgument("--bucket", name)
 }
 
@@ -33,6 +38,10 @@ func optPrefix(prefix string) command.Applier {
 }
 
 // optCredentialsFile creates a new GCS credentials file option with a given file path.
+// If the file path is empty, it returns ErrInvalidCredentialsFile.
 func optCredentialsFile(path string) command.Applier {
+	if path == "" {
+		return command.NewErrorArgument(cli.ErrInvalidCredentialsFile)
+	}
 	return command.NewOptionWithArgument("--credentials-file", path)
 }
