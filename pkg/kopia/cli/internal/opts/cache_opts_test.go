@@ -17,11 +17,12 @@ package opts_test
 import (
 	"testing"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 )
 
 func TestCacheOptions(t *testing.T) { check.TestingT(t) }

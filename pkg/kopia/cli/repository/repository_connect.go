@@ -17,11 +17,12 @@ package repository
 import (
 	"github.com/go-openapi/strfmt"
 
+	"github.com/kanisterio/safecli"
+
 	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/kanisterio/safecli"
 )
 
 // ConnectArgs defines the arguments for the `kopia repository connect` command.
