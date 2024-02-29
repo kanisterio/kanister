@@ -42,9 +42,9 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 		ExpectedCLI: []string{"cmd", "--prefix=prefix"},
 	},
 	{
-		Name:        "optPrefix with empty prefix should return error",
+		Name:        "optPrefix with empty prefix should return option with empty string",
 		Argument:    optPrefix(""),
-		ExpectedErr: cli.ErrInvalidPrefix,
+		ExpectedCLI: []string{"cmd", "--prefix="},
 	},
 	{
 		Name:        "optCredentialsFile with path should return option",
