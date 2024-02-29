@@ -98,9 +98,9 @@ func optReadOnly(readOnly bool) command.Applier {
 }
 
 // optPointInTime creates a new option for the point-in-time of the repository.
-func optPointInTime(tm strfmt.DateTime) command.Applier {
-	if time.Time(tm).IsZero() {
+func optPointInTime(l internal.Location, pit strfmt.DateTime) command.Applier {
+	if !l.IsPointInTypeSupported() || time.Time(pit).IsZero() {
 		return command.NewNoopArgument()
 	}
-	return command.NewOptionWithArgument("--point-in-time", tm.String())
+	return command.NewOptionWithArgument("--point-in-time", pit.String())
 }
