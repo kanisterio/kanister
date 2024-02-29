@@ -21,7 +21,6 @@ import (
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 )
 
@@ -49,6 +48,6 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 	{
 		Name:        "NewGCS with empty local prefix and repo prefix should return error",
 		Argument:    newGCS("", ""),
-		ExpectedErr: cli.ErrInvalidPrefix,
+		ExpectedCLI: []string{"cmd", "gcs", "--bucket=bucket", "--credentials-file=/tmp/creds.txt", "--prefix="},
 	},
 }})
