@@ -17,6 +17,7 @@ package azure
 import (
 	"testing"
 
+	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
 
@@ -27,7 +28,7 @@ func TestAzureOptions(t *testing.T) { check.TestingT(t) }
 
 var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTest{
 	{
-		Name:        "optContainer with containername should return option",
+		Name:        "optContainer",
 		Argument:    optContainer("containername"),
 		ExpectedCLI: []string{"cmd", "--container=containername"},
 	},
@@ -37,13 +38,8 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 		ExpectedErr: cli.ErrInvalidContainerName,
 	},
 	{
-		Name:        "optPrefix with prefix should return option",
-		Argument:    optPrefix("prefix"),
-		ExpectedCLI: []string{"cmd", "--prefix=prefix"},
-	},
-	{
-		Name:        "optPrefix with empty prefix should return error",
-		Argument:    optPrefix(""),
-		ExpectedErr: cli.ErrInvalidPrefix,
+		Name:        "optPrefix",
+		Argument:    command.NewArguments(optPrefix("prefix"), optPrefix("")),
+		ExpectedCLI: []string{"cmd", "--prefix=prefix", "--prefix="},
 	},
 }})

@@ -27,10 +27,10 @@ import (
 
 func TestNewAzure(t *testing.T) { check.TestingT(t) }
 
-func newAzure(prefix, repoPath string) command.Applier {
+func newAzure(prefix, repoPath, bucket string) command.Applier {
 	l := internal.Location{
 		"prefix": []byte(prefix),
-		"bucket": []byte("bucket"),
+		"bucket": []byte(bucket),
 	}
 	return New(l, repoPath, nil)
 }
@@ -38,17 +38,22 @@ func newAzure(prefix, repoPath string) command.Applier {
 var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTest{
 	{
 		Name:        "NewAzure",
-		Argument:    newAzure("prefix", "repoPath"),
+		Argument:    newAzure("prefix", "repoPath", "bucket"),
 		ExpectedCLI: []string{"cmd", "azure", "--container=bucket", "--prefix=prefix/repoPath/"},
 	},
 	{
 		Name:        "NewAzure with empty repoPath",
-		Argument:    newAzure("prefix", ""),
+		Argument:    newAzure("prefix", "", "bucket"),
 		ExpectedCLI: []string{"cmd", "azure", "--container=bucket", "--prefix=prefix/"},
 	},
 	{
 		Name:        "NewAzure with empty local prefix and repo prefix should return error",
-		Argument:    newAzure("", ""),
-		ExpectedErr: cli.ErrInvalidPrefix,
+		Argument:    newAzure("", "", "bucket"),
+		ExpectedCLI: []string{"cmd", "azure", "--container=bucket", "--prefix="},
+	},
+	{
+		Name:        "NewAzure with empty bucket should return ErrInvalidContainerName",
+		Argument:    newAzure("", "", ""),
+		ExpectedErr: cli.ErrInvalidContainerName,
 	},
 }})

@@ -25,11 +25,7 @@ var (
 )
 
 // optPrefix creates a new prefix option with a given prefix.
-// If the prefix is empty, it returns ErrInvalidPrefix.
 func optPrefix(prefix string) command.Applier {
-	if prefix == "" {
-		return command.NewErrorArgument(cli.ErrInvalidPrefix)
-	}
 	return command.NewOptionWithArgument("--prefix", prefix)
 }
 
