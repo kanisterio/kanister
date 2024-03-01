@@ -24,6 +24,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	intlog "github.com/kanisterio/kanister/pkg/kopia/cli/internal/log"
+	inttest "github.com/kanisterio/kanister/pkg/kopia/cli/internal/test"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 func TestNewS3(t *testing.T) { check.TestingT(t) }
@@ -38,98 +40,125 @@ func newLocation(prefix, endpoint, region, bucket string, skipSSLVerify bool) in
 	}
 }
 
-var _ = check.Suite(&ArgSuite{Cmd: "cmd", Arguments: []ArgTest{
-	{
-		test: test.ArgumentTest{
-			Name: "NewS3",
-			ExpectedCLI: []string{"cmd", "s3",
-				"--region=region",
-				"--bucket=bucket",
-				"--endpoint=endpoint/path",
-				"--prefix=prefix/repoPath/",
-				"--disable-tls",
-				"--disable-tls-verification",
-			},
+// s3test is a test case for NewS3.
+type s3test struct {
+	Name        string
+	Location    internal.Location
+	RepoPath    string
+	ExpectedCLI []string
+	ExpectedErr error
+	Logger      log.Logger
+	LoggerRegex []string
+}
+
+// newS3Test creates a new test case for NewS3.
+func newS3Test(s3t s3test) inttest.ArgumentTest {
+	return inttest.ArgumentTest{
+		ArgumentTest: test.ArgumentTest{
+			Name:        s3t.Name,
+			Argument:    New(s3t.Location, s3t.RepoPath, s3t.Logger),
+			ExpectedCLI: s3t.ExpectedCLI,
+			ExpectedErr: s3t.ExpectedErr,
 		},
-		location: newLocation("prefix", "http://endpoint/path/", "region", "bucket", true),
-		repoPath: "repoPath",
-		Logger:   &intlog.StringLogger{},
+		Logger:      s3t.Logger,
+		LoggerRegex: s3t.LoggerRegex,
+	}
+}
+
+// toArgTests converts a list of s3tests to a list of ArgumentTests.
+func toArgTests(s3tests []s3test) []inttest.ArgumentTest {
+	argTests := make([]inttest.ArgumentTest, len(s3tests))
+	for i, s3t := range s3tests {
+		argTests[i] = newS3Test(s3t)
+	}
+	return argTests
+}
+
+var _ = check.Suite(&inttest.ArgumentSuite{Cmd: "cmd", Arguments: toArgTests([]s3test{
+	{
+		Name:     "NewS3",
+		Location: newLocation("prefix", "http://endpoint/path/", "region", "bucket", true),
+		RepoPath: "repoPath",
+		ExpectedCLI: []string{"cmd", "s3",
+			"--region=region",
+			"--bucket=bucket",
+			"--endpoint=endpoint/path",
+			"--prefix=prefix/repoPath/",
+			"--disable-tls",
+			"--disable-tls-verification",
+		},
+		Logger: &intlog.StringLogger{},
 		LoggerRegex: []string{
 			"Removing leading",
 			"Removing trailing",
 		},
 	},
 	{
-		test: test.ArgumentTest{
-			Name: "NewS3 w/o logger should not panic",
-			ExpectedCLI: []string{"cmd", "s3",
-				"--region=region",
-				"--bucket=bucket",
-				"--endpoint=endpoint/path",
-				"--prefix=prefix/repoPath/",
-				"--disable-tls",
-				"--disable-tls-verification",
-			},
+		Name:     "NewS3 w/o logger should not panic",
+		Location: newLocation("prefix", "http://endpoint/path/", "region", "bucket", true),
+		RepoPath: "repoPath",
+		ExpectedCLI: []string{"cmd", "s3",
+			"--region=region",
+			"--bucket=bucket",
+			"--endpoint=endpoint/path",
+			"--prefix=prefix/repoPath/",
+			"--disable-tls",
+			"--disable-tls-verification",
 		},
-		location: newLocation("prefix", "http://endpoint/path/", "region", "bucket", true),
-		repoPath: "repoPath",
+		Logger: &intlog.StringLogger{},
 	},
 	{
-		test: test.ArgumentTest{
-			Name: "NewS3 with empty repoPath and https endpoint",
-			ExpectedCLI: []string{"cmd", "s3",
-				"--region=region",
-				"--bucket=bucket",
-				"--endpoint=endpoint/path",
-				"--prefix=prefix/",
-			},
+		Name:     "NewS3 with empty repoPath and https endpoint",
+		Location: newLocation("prefix", "https://endpoint/path/", "region", "bucket", false),
+		ExpectedCLI: []string{"cmd", "s3",
+			"--region=region",
+			"--bucket=bucket",
+			"--endpoint=endpoint/path",
+			"--prefix=prefix/",
 		},
-		location: newLocation("prefix", "https://endpoint/path/", "region", "bucket", false),
-		repoPath: "",
-		Logger:   &intlog.StringLogger{},
+		Logger: &intlog.StringLogger{},
 		LoggerRegex: []string{
 			"Removing leading",
 			"Removing trailing",
 		},
 	},
 	{
-		test: test.ArgumentTest{
-			Name: "NewS3 with empty repoPath and endpoint",
-			ExpectedCLI: []string{"cmd", "s3",
-				"--region=region",
-				"--bucket=bucket",
-				"--prefix=prefix/",
-				"--disable-tls-verification",
-			},
+		Name:     "NewS3 with empty repoPath and endpoint",
+		Location: newLocation("prefix", "", "region", "bucket", true),
+		ExpectedCLI: []string{"cmd", "s3",
+			"--region=region",
+			"--bucket=bucket",
+			"--prefix=prefix/",
+			"--disable-tls-verification",
 		},
-		location:    newLocation("prefix", "", "region", "bucket", true),
-		repoPath:    "",
 		Logger:      &intlog.StringLogger{},
 		LoggerRegex: []string{""}, // no output expected
 	},
 	{
-		test: test.ArgumentTest{
-			Name: "NewS3 with empty repoPath, prefix and endpoint",
-			ExpectedCLI: []string{"cmd", "s3",
-				"--region=region",
-				"--bucket=bucket",
-				"--prefix=",
-				"--disable-tls-verification",
-			},
+		Name:     "NewS3 with empty repoPath, prefix and endpoint",
+		Location: newLocation("", "", "region", "bucket", true),
+		ExpectedCLI: []string{"cmd", "s3",
+			"--region=region",
+			"--bucket=bucket",
+			"--prefix=",
+			"--disable-tls-verification",
 		},
-		location:    newLocation("", "", "region", "bucket", true),
-		repoPath:    "",
 		Logger:      &intlog.StringLogger{},
 		LoggerRegex: []string{""}, // no output expected
 	},
 	{
-		test: test.ArgumentTest{
-			Name:        "NewS3 with empty repoPath, prefix, endpoint and bucket",
-			ExpectedErr: cli.ErrInvalidBucketName,
-		},
-		location:    internal.Location{},
-		repoPath:    "",
+		Name:        "NewS3 with empty repoPath, prefix, endpoint and bucket",
+		ExpectedErr: cli.ErrInvalidBucketName,
 		Logger:      &intlog.StringLogger{},
 		LoggerRegex: []string{""}, // no output expected
 	},
-}})
+	{
+		Name:     "NewS3 with empty logger should not panic",
+		Location: newLocation("", "https://endpoint/path/", "", "bucket", false),
+		ExpectedCLI: []string{"cmd", "s3",
+			"--bucket=bucket",
+			"--endpoint=endpoint/path",
+			"--prefix=",
+		},
+	},
+})})
