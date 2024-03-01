@@ -20,64 +20,74 @@ import (
 	"testing"
 	"text/template"
 
+	. "gopkg.in/check.v1"
+
 	"github.com/kanisterio/kanister/pkg/ksprig"
 )
 
-func TestTemplateErrorsForUnsupportedFuncs(t *testing.T) {
+type FipsOnlySprigSuite struct{}
+
+var _ = Suite(&FipsOnlySprigSuite{})
+
+func TestFipsOnlySprigSuite(t *testing.T) { TestingT(t) }
+
+func (f *FipsOnlySprigSuite) TestUnsupportedTxtFuncMapUsage(c *C) {
+	funcMap := ksprig.TxtFuncMap()
+
 	testCases := []struct {
 		function     string
 		templateText string
+		usageErr     string
 	}{
 		{
 			function:     "bcrypt",
 			templateText: "{{bcrypt \"password\"}}",
+			usageErr:     "bcrypt",
 		},
 		{
 			function:     "derivePassword",
 			templateText: "{{derivePassword 1 \"long\" \"password\" \"user\" \"example.com\"}}",
+			usageErr:     "derivePassword",
 		},
 		{
 			function:     "genPrivateKey",
 			templateText: "{{genPrivateKey \"dsa\"}}",
+			usageErr:     "genPrivateKey for dsa",
 		},
 		{
 			function:     "htpasswd",
 			templateText: "{{htpasswd \"username\" \"password\"}}",
+			usageErr:     "htpasswd",
 		},
 	}
 
 	for _, tc := range testCases {
-		funcMap := ksprig.TxtFuncMap()
+		if _, ok := funcMap[tc.function]; !ok {
+			c.Logf("Skipping test of %s since the tested sprig version does not support it", tc.function)
+			continue
+		}
+		c.Logf("Testing %s", tc.function)
 
-		t.Run(tc.function, func(t *testing.T) {
-			if _, ok := funcMap[tc.function]; !ok {
-				t.Skipf("Function %s is not supported by sprig.TxtFuncMap()", tc.function)
-			}
+		temp, err := template.New("test").Funcs(funcMap).Parse(tc.templateText)
+		c.Assert(err, IsNil)
 
-			temp, err := template.New("test").Funcs(funcMap).Parse(tc.templateText)
-			if err != nil {
-				t.Fatalf("Unexpected template parse error: %s", err)
-			}
+		err = temp.Execute(nil, "")
 
-			err = temp.Execute(nil, "")
-			if err == nil {
-				t.Fatal("Unexpected success for template execution")
-			}
-
-			if !errors.As(err, &ksprig.UnsupportedSprigUsageErr{}) {
-				t.Fatalf("Expected error of type UnsupportedSprigFuncErr")
-			}
-		})
+		var sprigErr ksprig.UnsupportedSprigUsageErr
+		c.Assert(errors.As(err, &sprigErr), Equals, true)
+		c.Assert(sprigErr.Usage, Equals, tc.usageErr)
 	}
 }
 
-func TestTemplateWorksForSupportedFuncs(t *testing.T) {
+func (f *FipsOnlySprigSuite) TestSupportedTxtFuncMapUsage(c *C) {
+	funcMap := ksprig.TxtFuncMap()
+
 	testCases := []struct {
 		description  string
 		function     string
 		templateText string
 	}{
-		// The supported funcs are not limited to these test cases
+		// The supported usages are not limited to these test cases
 		{
 			description:  "genPrivateKey for rsa key",
 			function:     "genPrivateKey",
@@ -96,22 +106,16 @@ func TestTemplateWorksForSupportedFuncs(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		funcMap := ksprig.TxtFuncMap()
+		if _, ok := funcMap[tc.function]; !ok {
+			c.Logf("Skipping test of %s since the tested sprig version does not support it", tc.function)
+			continue
+		}
+		c.Logf("Testing %s", tc.description)
 
-		t.Run(tc.description, func(t *testing.T) {
-			if _, ok := funcMap[tc.function]; !ok {
-				t.Skipf("Function %s is not supported by sprig.TxtFuncMap()", tc.function)
-			}
+		temp, err := template.New("test").Funcs(funcMap).Parse(tc.templateText)
+		c.Assert(err, IsNil)
 
-			temp, err := template.New("test").Funcs(funcMap).Parse(tc.templateText)
-			if err != nil {
-				t.Fatalf("Unexpected template parse error: %s", err)
-			}
-
-			err = temp.Execute(&strings.Builder{}, "")
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-		})
+		err = temp.Execute(&strings.Builder{}, "")
+		c.Assert(err, IsNil)
 	}
 }

@@ -56,7 +56,7 @@ var fipsNonCompliantFuncs = map[string]interface{}{
 			}
 			return fn(typ), nil
 		}
-		return "", NewUnsupportedSprigUsageErr(fmt.Sprintf("genPrivateKey for %s key", typ))
+		return "", NewUnsupportedSprigUsageErr(fmt.Sprintf("genPrivateKey for %s", typ))
 	},
 
 	"htpasswd": func(username string, password string) (string, error) {
