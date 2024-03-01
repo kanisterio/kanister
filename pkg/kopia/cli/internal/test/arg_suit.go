@@ -12,37 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3
+package test
 
 import (
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	intlog "github.com/kanisterio/kanister/pkg/kopia/cli/internal/log"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-// ArgTest extends test.ArgumentTest to include logger tests.
-type ArgTest struct {
-	test test.ArgumentTest
+// ArgumentTest extends test.ArgumentTest to include logger tests.
+type ArgumentTest struct {
+	test.ArgumentTest
 
-	location    internal.Location // location is the location to use for the test.
-	repoPath    string            // repoPath is the repository path to use for the test.
-	Logger      log.Logger        // Logger is the logger to use for the test. (optional)
-	LoggerRegex []string          // LoggerRegex is a list of regexs to match against the log output. (optional)
+	Logger      log.Logger // Logger is the logger to use for the test. (optional)
+	LoggerRegex []string   // LoggerRegex is a list of regexs to match against the log output. (optional)
 }
 
 // Test runs the test with the given command and checks the log output.
-func (t *ArgTest) Test(c *check.C, cmd string) {
-	t.test.Argument = New(t.location, t.repoPath, t.Logger)
-	t.test.Test(c, cmd)
+func (t *ArgumentTest) Test(c *check.C, cmd string) {
+	t.ArgumentTest.Test(c, cmd)
 	t.assertLog(c)
 }
 
 // assertLog checks the log output against the expected regexs.
-func (t *ArgTest) assertLog(c *check.C) {
+func (t *ArgumentTest) assertLog(c *check.C) {
 	if t.Logger == nil {
+		if len(t.LoggerRegex) > 0 {
+			c.Fatalf("t.Logger is nil but t.LoggerRegex is %#v", t.LoggerRegex)
+		}
 		return
 	}
 
@@ -58,24 +57,24 @@ func (t *ArgTest) assertLog(c *check.C) {
 
 	// Check each regex.
 	for _, regex := range t.LoggerRegex {
-		cmtLog := check.Commentf("FAIL: %v\nlog %#v expected to match %#v", t.test.Name, log, regex)
+		cmtLog := check.Commentf("FAIL: %v\nlog %#v expected to match %#v", t.ArgumentTest.Name, log, regex)
 		c.Assert(log.MatchString(regex), check.Equals, true, cmtLog)
 	}
 }
 
 // isEmptyLogExpected returns true if the test expects an empty log.
-func (t *ArgTest) isEmptyLogExpected() bool {
+func (t *ArgumentTest) isEmptyLogExpected() bool {
 	return len(t.LoggerRegex) == 1 && t.LoggerRegex[0] == ""
 }
 
-// ArgSuite defines a suite of tests for a single ArgTest.
-type ArgSuite struct {
-	Cmd       string    // Cmd appends to the safecli.Builder before test if not empty.
-	Arguments []ArgTest // Tests to run.
+// ArgumentSuite defines a suite of tests for a single ArgumentTest.
+type ArgumentSuite struct {
+	Cmd       string         // Cmd appends to the safecli.Builder before test if not empty.
+	Arguments []ArgumentTest // Tests to run.
 }
 
 // TestArguments runs all tests in the suite.
-func (s *ArgSuite) TestArguments(c *check.C) {
+func (s *ArgumentSuite) TestArguments(c *check.C) {
 	for _, arg := range s.Arguments {
 		arg.Test(c, s.Cmd)
 	}

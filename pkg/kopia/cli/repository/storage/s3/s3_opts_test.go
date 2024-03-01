@@ -28,6 +28,11 @@ func TestS3Options(t *testing.T) { check.TestingT(t) }
 
 var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTest{
 	{
+		Name:        "optRegion",
+		Argument:    command.NewArguments(optRegion("region"), optRegion("")),
+		ExpectedCLI: []string{"cmd", "--region=region"},
+	},
+	{
 		Name:        "optBucket with bucketname should return option",
 		Argument:    optBucket("bucketname"),
 		ExpectedCLI: []string{"cmd", "--bucket=bucketname"},
