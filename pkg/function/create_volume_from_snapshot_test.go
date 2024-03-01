@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gopkg.in/check.v1"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -182,6 +181,6 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestAddPVProvisionedByAnnotation(c *
 		},
 	} {
 		op := addPVProvisionedByAnnotation(tc.annotations, tc.st)
-		c.Assert(op, check.DeepEquals, tc.expectedAnnotations)
+		c.Assert(op, DeepEquals, tc.expectedAnnotations)
 	}
 }
