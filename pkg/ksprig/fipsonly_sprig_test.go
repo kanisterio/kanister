@@ -64,7 +64,7 @@ func TestTemplateErrorsForUnsupportedFuncs(t *testing.T) {
 				t.Fatal("Unexpected success for template execution")
 			}
 
-			if !errors.As(err, &ksprig.UnsupportedSprigFuncErr{}) {
+			if !errors.As(err, &ksprig.UnsupportedSprigUsageErr{}) {
 				t.Fatalf("Expected error of type UnsupportedSprigFuncErr")
 			}
 		})

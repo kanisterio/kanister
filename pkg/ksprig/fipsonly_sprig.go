@@ -40,11 +40,11 @@ func replaceNonCompliantFuncs(m map[string]interface{}) map[string]interface{} {
 // Functions identified for Sprig v3.2.3.
 var fipsNonCompliantFuncs = map[string]interface{}{
 	"bcrypt": func(input string) (string, error) {
-		return "", NewUnsupportedSprigFuncErr("bcrypt")
+		return "", NewUnsupportedSprigUsageErr("bcrypt")
 	},
 
 	"derivePassword": func(counter uint32, password_type, password, user, site string) (string, error) {
-		return "", NewUnsupportedSprigFuncErr("derivePassword")
+		return "", NewUnsupportedSprigUsageErr("derivePassword")
 	},
 
 	"genPrivateKey": func(typ string) (string, error) {
@@ -52,29 +52,29 @@ var fipsNonCompliantFuncs = map[string]interface{}{
 		case "rsa", "ecdsa", "ed25519":
 			fn, ok := sprig.TxtFuncMap()["genPrivateKey"].(func(string) string)
 			if !ok {
-				return "", NewUnsupportedSprigFuncErr("genPrivateKey")
+				return "", NewUnsupportedSprigUsageErr("genPrivateKey")
 			}
 			return fn(typ), nil
 		}
-		return "", NewUnsupportedSprigFuncErr(fmt.Sprintf("genPrivateKey for %s key", typ))
+		return "", NewUnsupportedSprigUsageErr(fmt.Sprintf("genPrivateKey for %s key", typ))
 	},
 
 	"htpasswd": func(username string, password string) (string, error) {
-		return "", NewUnsupportedSprigFuncErr("htpasswd")
+		return "", NewUnsupportedSprigUsageErr("htpasswd")
 	},
 }
 
-// NewUnsupportedSprigFuncErr returns an UnsupportedSprigFuncErr.
-func NewUnsupportedSprigFuncErr(function string) UnsupportedSprigFuncErr {
-	return UnsupportedSprigFuncErr{function: function}
+// NewUnsupportedSprigUsageErr returns an UnsupportedSprigUsageErr.
+func NewUnsupportedSprigUsageErr(usage string) UnsupportedSprigUsageErr {
+	return UnsupportedSprigUsageErr{Usage: usage}
 }
 
-// UnsupportedSprigFuncErr indicates the usage of a FIPS non-compatible function.
-type UnsupportedSprigFuncErr struct {
-	function string
+// UnsupportedSprigUsageErr indicates a FIPS non-compatible sprig usage.
+type UnsupportedSprigUsageErr struct {
+	Usage string
 }
 
 // Error returns an error string indicating the unsupported function.
-func (err UnsupportedSprigFuncErr) Error() string {
-	return fmt.Sprintf("sprig function '%s' is not allowed by kanister as it is not FIPS compatible", err.function)
+func (err UnsupportedSprigUsageErr) Error() string {
+	return fmt.Sprintf("sprig usage of '%s' is not allowed by kanister as it is not FIPS compatible", err.Usage)
 }
