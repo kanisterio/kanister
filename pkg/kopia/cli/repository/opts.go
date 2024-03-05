@@ -34,9 +34,10 @@ import (
 var (
 	cmdRepository = command.NewArgument("repository")
 
-	subcmdCreate  = command.NewArgument("create")
-	subcmdConnect = command.NewArgument("connect")
-	subcmdServer  = command.NewArgument("server")
+	subcmdCreate        = command.NewArgument("create")
+	subcmdConnect       = command.NewArgument("connect")
+	subcmdServer        = command.NewArgument("server")
+	subcmdSetParameters = command.NewArgument("set-parameters")
 )
 
 // optHostname creates a new option for the hostname of the repository.
