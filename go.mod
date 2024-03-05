@@ -44,7 +44,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
 	github.com/vmware/govmomi v0.35.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.17.0
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/api v0.167.0
@@ -213,6 +213,8 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.14.3-0.20230601165947-6ce0bf390ce3 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
+
+require github.com/kanisterio/safecli v0.0.6
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.27 // indirect
