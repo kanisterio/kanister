@@ -17,11 +17,10 @@ package repository
 import (
 	"github.com/kanisterio/safecli"
 
-	"github.com/kanisterio/kanister/pkg/log"
-
 	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 // StatusArgs defines the arguments for the `kopia repository status ...` command.
