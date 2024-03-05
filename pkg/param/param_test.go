@@ -23,7 +23,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/Masterminds/sprig"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -38,6 +37,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crfake "github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
+	"github.com/kanisterio/kanister/pkg/ksprig"
 	"github.com/kanisterio/kanister/pkg/kube"
 	osapps "github.com/openshift/api/apps/v1"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
@@ -79,7 +79,7 @@ func (s *ParamsSuite) SetUpTest(c *C) {
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("1Gi"),
 				},
@@ -772,7 +772,7 @@ func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
 			"bar",
 		},
 	} {
-		t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(tc.arg)
+		t, err := template.New("config").Option("missingkey=error").Funcs(ksprig.TxtFuncMap()).Parse(tc.arg)
 		c.Assert(err, IsNil)
 		buf := bytes.NewBuffer(nil)
 		err = t.Execute(buf, tp)

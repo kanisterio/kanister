@@ -22,7 +22,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,6 +32,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/jsonpath"
+	"github.com/kanisterio/kanister/pkg/ksprig"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -189,7 +189,7 @@ func evaluateWaitCondition(ctx context.Context, dynCli dynamic.Interface, cond C
 		return false, err
 	}
 	log.Debug().Print(fmt.Sprintf("Resolved jsonpath: %s", rcondition))
-	t, err := template.New("config").Option("missingkey=zero").Funcs(sprig.TxtFuncMap()).Parse(rcondition)
+	t, err := template.New("config").Option("missingkey=zero").Funcs(ksprig.TxtFuncMap()).Parse(rcondition)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
