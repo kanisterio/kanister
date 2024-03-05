@@ -1,4 +1,4 @@
-// Copyright 2024 The Kanister Authors.
+// Copyright 2022 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cli
+package internal
 
 import (
-	"github.com/pkg/errors"
+	"path"
 )
 
-// Common errors
-var (
-	// ErrInvalidID is returned when the ID is empty.
-	ErrInvalidID = errors.New("invalid ID")
-)
-
-// storage errors
-var (
-	// ErrUnsupportedStorage is returned when the storage is not supported.
-	ErrUnsupportedStorage = errors.New("unsupported storage")
-)
+// GenerateFullRepoPath generates the full repository path.
+// If the location-specific prefix is empty, the repository-specific prefix is returned.
+func GenerateFullRepoPath(locPrefix, repoPathPrefix string) string {
+	if locPrefix != "" {
+		return path.Join(locPrefix, repoPathPrefix) + "/"
+	}
+	return repoPathPrefix
+}
