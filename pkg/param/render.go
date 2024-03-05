@@ -21,10 +21,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/ksprig"
 )
 
 const (
@@ -119,7 +119,7 @@ func RenderArtifacts(arts map[string]crv1alpha1.Artifact, tp TemplateParams) (ma
 }
 
 func renderStringArg(arg string, tp TemplateParams) (string, error) {
-	t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(arg)
+	t, err := template.New("config").Option("missingkey=error").Funcs(ksprig.TxtFuncMap()).Parse(arg)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}

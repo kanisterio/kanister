@@ -4,8 +4,6 @@ on:
     branches:
     - master
   pull_request:
-    branches:
-    - master
 jobs:
   ## Make sure go.mod and go.sum files are up-to-date with the code
   ## TODO: make this fail if they're not up-to-date to inform the committer to udpate them
