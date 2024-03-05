@@ -112,4 +112,22 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 			"--point-in-time=2021-02-04T01:02:03.000Z",
 		},
 	},
+	{
+		Name:        "optServerURL with ServerURL should return option",
+		Argument:    optServerURL("http://test-server"),
+		ExpectedCLI: []string{"cmd", "--url=http://test-server"},
+	},
+	{
+		Name:        "optServerURL with empty ServerURL should return error",
+		Argument:    optServerURL(""),
+		ExpectedErr: cli.ErrInvalidServerURL,
+	},
+	{
+		Name: "optServerCertFingerprint",
+		Argument: command.NewArguments(
+			optServerCertFingerprint("fingerprint"),
+			optServerCertFingerprint(""), // no output
+		),
+		ExpectedCLI: []string{"cmd", "--server-cert-fingerprint=fingerprint"},
+	},
 }})

@@ -36,6 +36,7 @@ var (
 
 	subcmdCreate  = command.NewArgument("create")
 	subcmdConnect = command.NewArgument("connect")
+	subcmdServer  = command.NewArgument("server")
 )
 
 // optHostname creates a new option for the hostname of the repository.
@@ -103,4 +104,20 @@ func optPointInTime(l internal.Location, pit strfmt.DateTime) command.Applier {
 		return command.NewNoopArgument()
 	}
 	return command.NewOptionWithArgument("--point-in-time", pit.String())
+}
+
+// optServerURL creates a new server URL flag with a given server URL.
+func optServerURL(serverURL string) command.Applier {
+	if serverURL == "" {
+		return command.NewErrorArgument(cli.ErrInvalidServerURL)
+	}
+	return command.NewOptionWithArgument("--url", serverURL)
+}
+
+// optServerCertFingerprint creates a new server certificate fingerprint flag with a given fingerprint.
+func optServerCertFingerprint(fingerprint string) command.Applier {
+	if fingerprint == "" {
+		return command.NewNoopArgument()
+	}
+	return command.NewOptionWithRedactedArgument("--server-cert-fingerprint", fingerprint)
 }
