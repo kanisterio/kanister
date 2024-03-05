@@ -36,4 +36,6 @@ var (
 	ErrInvalidBucketName = errors.New("bucket name cannot be empty")
 	// ErrInvalidCredentialsFile is returned when the credentials file is empty.
 	ErrInvalidCredentialsFile = errors.New("credentials file cannot be empty")
+	// ErrInvalidContainerName is returned when the containerName is empty.
+	ErrInvalidContainerName = errors.New("container name cannot be empty")
 )
