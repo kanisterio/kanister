@@ -38,6 +38,7 @@ var (
 	subcmdConnect       = command.NewArgument("connect")
 	subcmdServer        = command.NewArgument("server")
 	subcmdSetParameters = command.NewArgument("set-parameters")
+	subcmdStatus        = command.NewArgument("status")
 )
 
 // optHostname creates a new option for the hostname of the repository.

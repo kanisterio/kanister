@@ -12,25 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal_test
+package repository
 
 import (
-	"testing"
+	"github.com/kanisterio/safecli"
 
-	"gopkg.in/check.v1"
-
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
-func TestNewKopiaCommand(t *testing.T) { check.TestingT(t) }
+// StatusArgs defines the arguments for the `kopia repository status ...` command.
+type StatusArgs struct {
+	args.Common // embed common arguments
 
-type KopiaCommandSuite struct{}
+	JSONOutput bool // shows the output in JSON format
 
-var _ = check.Suite(&KopiaCommandSuite{})
+	Logger log.Logger
+}
 
-func (s *KopiaCommandSuite) TestNewKopiaCommandSuite(c *check.C) {
-	cmd, err := internal.NewKopiaCommand(opts.JSON(true))
-	c.Check(err, check.IsNil)
-	c.Check(cmd.Build(), check.DeepEquals, []string{"kopia", "--json"})
+// Status creates a new `kopia repository status ...` command.
+func Status(args StatusArgs) (*safecli.Builder, error) {
+	return internal.NewKopiaCommand(
+		opts.Common(args.Common),
+		cmdRepository, subcmdStatus,
+		opts.JSON(args.JSONOutput),
+	)
 }

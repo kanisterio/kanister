@@ -23,17 +23,17 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/test"
 )
 
-func TestRepositorySetParametersCommand(t *testing.T) { check.TestingT(t) }
+func TestRepositoryStatusCommand(t *testing.T) { check.TestingT(t) }
 
-// Test Repository Set Parameters command
+// Test Repository Status command
 var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	{
-		Name: "repository set-parameters with default retention",
+		Name: "repository status with default args",
 		Command: func() (*safecli.Builder, error) {
-			args := SetParametersArgs{
+			args := StatusArgs{
 				Common: common,
 			}
-			return SetParameters(args)
+			return Status(args)
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",
@@ -41,18 +41,17 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 			"--log-level=error",
 			"--password=encr-key",
 			"repository",
-			"set-parameters",
+			"status",
 		},
 	},
 	{
-		Name: "repository set-parameters with custom retention args",
+		Name: "repository status with JSON output",
 		Command: func() (*safecli.Builder, error) {
-			args := SetParametersArgs{
-				Common:          common,
-				RetentionMode:   retentionMode,
-				RetentionPeriod: retentionPeriod,
+			args := StatusArgs{
+				Common:     common,
+				JSONOutput: true,
 			}
-			return SetParameters(args)
+			return Status(args)
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",
@@ -60,29 +59,8 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 			"--log-level=error",
 			"--password=encr-key",
 			"repository",
-			"set-parameters",
-			"--retention-mode=Locked",
-			"--retention-period=15m0s",
-		},
-	},
-	{
-		Name: "repository set-parameters with custom retention mode only",
-		Command: func() (*safecli.Builder, error) {
-			args := SetParametersArgs{
-				Common:        common,
-				RetentionMode: retentionMode,
-			}
-			return SetParameters(args)
-		},
-		ExpectedCLI: []string{"kopia",
-			"--config-file=path/kopia.config",
-			"--log-dir=cache/log",
-			"--log-level=error",
-			"--password=encr-key",
-			"repository",
-			"set-parameters",
-			"--retention-mode=Locked",
-			"--retention-period=0s",
+			"status",
+			"--json",
 		},
 	},
 }))
