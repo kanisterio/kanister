@@ -25,11 +25,11 @@ import (
 
 func TestNewKopiaCommand(t *testing.T) { check.TestingT(t) }
 
-type NewKopiaCommandSuite struct{}
+type KopiaCommandSuite struct{}
 
-var _ = check.Suite(&NewKopiaCommandSuite{})
+var _ = check.Suite(&KopiaCommandSuite{})
 
-func (s *PathSuite) TestNewKopiaCommandSuite(c *check.C) {
+func (s *KopiaCommandSuite) TestNewKopiaCommandSuite(c *check.C) {
 	cmd, err := internal.NewKopiaCommand(opts.JSON(true))
 	c.Check(err, check.IsNil)
 	c.Check(cmd.Build(), check.DeepEquals, []string{"kopia", "--json"})
