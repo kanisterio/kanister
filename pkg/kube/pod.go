@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofrs/uuid"
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -153,6 +154,61 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 	})
 
 	return createPodSpec(opts, patchedSpecs, ns), nil
+}
+
+func createFilesystemModeVolumeSpecs(
+	ctx context.Context,
+	vols map[string]VolumeMountOptions,
+) (volumeMounts []corev1.VolumeMount, podVolumes []corev1.Volume, error error) {
+	// Build filesystem mode volume specs
+	for pvcName, mountOpts := range vols {
+		id, err := uuid.NewV1()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if mountOpts.ReadOnly {
+			log.Debug().WithContext(ctx).Print("PVC will be mounted in read-only mode", field.M{"pvcName": pvcName})
+		}
+
+		podVolName := fmt.Sprintf("vol-%s", id.String())
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{Name: podVolName, MountPath: mountOpts.MountPath, ReadOnly: mountOpts.ReadOnly})
+		podVolumes = append(podVolumes,
+			corev1.Volume{
+				Name: podVolName,
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+						ClaimName: pvcName,
+						ReadOnly:  mountOpts.ReadOnly,
+					},
+				},
+			},
+		)
+	}
+	return volumeMounts, podVolumes, nil
+}
+
+func createBlockModeVolumeSpecs(blockVols map[string]string) (volumeDevices []corev1.VolumeDevice, podVolumes []corev1.Volume, error error) {
+	// Build block mode volume specs
+	for pvc, devicePath := range blockVols {
+		id, err := uuid.NewV1()
+		if err != nil {
+			return nil, nil, err
+		}
+		podBlockVolName := fmt.Sprintf("block-%s", id.String())
+		volumeDevices = append(volumeDevices, corev1.VolumeDevice{Name: podBlockVolName, DevicePath: devicePath})
+		podVolumes = append(podVolumes,
+			corev1.Volume{
+				Name: podBlockVolName,
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+						ClaimName: pvc,
+					},
+				},
+			},
+		)
+	}
+	return volumeDevices, podVolumes, nil
 }
 
 func createPodSpec(opts *PodOptions, patchedSpecs corev1.PodSpec, ns string) *corev1.Pod {
