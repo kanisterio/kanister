@@ -20,9 +20,9 @@ import (
 	"text/template"
 
 	. "gopkg.in/check.v1"
-
-	"github.com/Masterminds/sprig"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kanisterio/kanister/pkg/ksprig"
 )
 
 type UnstructuredSuite struct{}
@@ -52,7 +52,7 @@ func (s *UnstructuredSuite) TestFetch(c *C) {
 		{"{{ .Unstructured.metadata.name }}"},
 		{"{{ .Unstructured.spec.clusterIP }}"},
 	} {
-		t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(tc.arg)
+		t, err := template.New("config").Option("missingkey=error").Funcs(ksprig.TxtFuncMap()).Parse(tc.arg)
 		c.Assert(err, IsNil)
 		err = t.Execute(buf, tp)
 		c.Assert(err, IsNil)

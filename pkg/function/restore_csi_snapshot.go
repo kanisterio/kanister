@@ -198,7 +198,7 @@ func newPVCManifest(args restoreCSISnapshotArgs) *corev1.PersistentVolumeClaim {
 				Name:     args.Name,
 			},
 			StorageClassName: &args.StorageClass,
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: *args.RestoreSize,
 				},
