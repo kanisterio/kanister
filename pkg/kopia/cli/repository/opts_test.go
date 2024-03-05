@@ -15,13 +15,16 @@
 package repository
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/go-openapi/strfmt"
 	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 )
 
 func TestRepositoryOptions(t *testing.T) { check.TestingT(t) }
@@ -75,5 +78,38 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 		Name:        "optStorage FTP Unsupported",
 		Argument:    optStorage(locFTP, "repoPathPrefix", nil),
 		ExpectedErr: cli.ErrUnsupportedStorage,
+	},
+	{
+		Name: "optReadOnly",
+		Argument: command.NewArguments(
+			optReadOnly(true),
+			optReadOnly(false), // no output
+		),
+		ExpectedCLI: []string{"cmd", "--readonly"},
+	},
+	{
+		Name: "optPointInTime supported only for azure and s3",
+		Argument: func() command.Arguments {
+			locations := []internal.Location{
+				locFS,          // no output
+				locAzure,       // idx: 1
+				locGCS,         // no output
+				locS3,          // idx: 3
+				locS3Compliant, // idx: 4
+			}
+			var args command.Arguments
+			for idx, l := range locations {
+				t, _ := strfmt.ParseDateTime(
+					fmt.Sprintf("2021-02-%02dT01:02:03.000Z", idx),
+				)
+				args = append(args, optPointInTime(l, t))
+			}
+			return args
+		}(),
+		ExpectedCLI: []string{"cmd",
+			"--point-in-time=2021-02-01T01:02:03.000Z",
+			"--point-in-time=2021-02-03T01:02:03.000Z",
+			"--point-in-time=2021-02-04T01:02:03.000Z",
+		},
 	},
 }})

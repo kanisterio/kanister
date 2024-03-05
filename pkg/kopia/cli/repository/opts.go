@@ -17,6 +17,7 @@ package repository
 import (
 	"time"
 
+	"github.com/go-openapi/strfmt"
 	"github.com/kanisterio/safecli/command"
 	"github.com/pkg/errors"
 
@@ -33,7 +34,8 @@ import (
 var (
 	cmdRepository = command.NewArgument("repository")
 
-	subcmdCreate = command.NewArgument("create")
+	subcmdCreate  = command.NewArgument("create")
+	subcmdConnect = command.NewArgument("connect")
 )
 
 // optHostname creates a new option for the hostname of the repository.
@@ -88,4 +90,17 @@ func optStorage(l internal.Location, repoPathPrefix string, logger log.Logger) c
 func errUnsupportedStorageType(t rs.LocType) command.Applier {
 	err := errors.Wrapf(cli.ErrUnsupportedStorage, "storage location: %v", t)
 	return command.NewErrorArgument(err)
+}
+
+// optReadOnly creates a new option for the read-only mode of the repository.
+func optReadOnly(readOnly bool) command.Applier {
+	return command.NewOption("--readonly", readOnly)
+}
+
+// optPointInTime creates a new option for the point-in-time of the repository.
+func optPointInTime(l internal.Location, pit strfmt.DateTime) command.Applier {
+	if !l.IsPointInTypeSupported() || time.Time(pit).IsZero() {
+		return command.NewNoopArgument()
+	}
+	return command.NewOptionWithArgument("--point-in-time", pit.String())
 }
