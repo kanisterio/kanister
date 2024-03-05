@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cli
+package fs
 
 import (
-	"github.com/pkg/errors"
+	"github.com/kanisterio/safecli/command"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 )
 
-// Common errors
 var (
-	// ErrInvalidID is returned when the ID is empty.
-	ErrInvalidID = errors.New("invalid ID")
+	subcmdFilesystem = command.NewArgument("filesystem")
 )
 
-// storage errors
-var (
-	// ErrUnsupportedStorage is returned when the storage is not supported.
-	ErrUnsupportedStorage = errors.New("unsupported storage")
-	// ErrInvalidRepoPath is returned when the repoPath is empty.
-	ErrInvalidRepoPath = errors.New("repository path cannot be empty")
-)
+// optRepoPath creates a new path option with a given path.
+// If the path is empty, it returns an error.
+func optRepoPath(path string) command.Applier {
+	if path == "" {
+		return command.NewErrorArgument(cli.ErrInvalidRepoPath)
+	}
+	return command.NewOptionWithArgument("--path", path)
+}
