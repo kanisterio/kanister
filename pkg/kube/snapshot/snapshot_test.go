@@ -163,7 +163,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 			Name: volName,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: size,
 				},
@@ -288,7 +288,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		contentGVR        schema.GroupVersionResource
 		snapSpec          *unstructured.Unstructured
 		snapGVR           schema.GroupVersionResource
-		snapContentObject interface{}
+		snapContentObject metav1.Object
 		fakeSs            snapshot.Snapshotter
 	}{
 		{
@@ -381,7 +381,7 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *C) {
 			Name: volName,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: size,
 				},
@@ -599,7 +599,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): size,
 				},
@@ -1466,4 +1466,16 @@ func fakePVC(name, namespace string) *corev1.PersistentVolumeClaim {
 			Namespace: namespace,
 		},
 	}
+}
+
+type SnapshotTransformUnstructuredTestSuite struct{}
+
+var _ = Suite(&SnapshotTransformUnstructuredTestSuite{})
+
+func (s *SnapshotTransformUnstructuredTestSuite) TestNilUnstructured(c *C) {
+	err := snapshot.TransformUnstructured(nil, nil)
+	c.Check(err, ErrorMatches, "Cannot deserialize nil unstructured")
+	u := &unstructured.Unstructured{}
+	err = snapshot.TransformUnstructured(u, nil)
+	c.Check(err, ErrorMatches, "Failed to Unmarshal unstructured object: json: Unmarshal\\(nil\\)")
 }
