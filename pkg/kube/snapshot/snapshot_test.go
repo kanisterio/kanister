@@ -288,7 +288,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		contentGVR        schema.GroupVersionResource
 		snapSpec          *unstructured.Unstructured
 		snapGVR           schema.GroupVersionResource
-		snapContentObject interface{}
+		snapContentObject metav1.Object
 		fakeSs            snapshot.Snapshotter
 	}{
 		{
@@ -1466,4 +1466,16 @@ func fakePVC(name, namespace string) *corev1.PersistentVolumeClaim {
 			Namespace: namespace,
 		},
 	}
+}
+
+type SnapshotTransformUnstructuredTestSuite struct{}
+
+var _ = Suite(&SnapshotTransformUnstructuredTestSuite{})
+
+func (s *SnapshotTransformUnstructuredTestSuite) TestNilUnstructured(c *C) {
+	err := snapshot.TransformUnstructured(nil, nil)
+	c.Check(err, ErrorMatches, "Cannot deserialize nil unstructured")
+	u := &unstructured.Unstructured{}
+	err = snapshot.TransformUnstructured(u, nil)
+	c.Check(err, ErrorMatches, "Failed to Unmarshal unstructured object: json: Unmarshal\\(nil\\)")
 }

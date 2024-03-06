@@ -432,13 +432,17 @@ func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string, p
 	}
 }
 
-// TransformUnstructured maps Unstructured object to object pointed by value
-func TransformUnstructured(u *unstructured.Unstructured, value interface{}) error {
+// TransformUnstructured maps Unstructured object to object pointed by obj
+func TransformUnstructured(u *unstructured.Unstructured, obj metav1.Object) error {
+	if u == nil {
+		return errors.Errorf("Cannot deserialize nil unstructured")
+	}
 	b, err := json.Marshal(u.Object)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to Marshal unstructured object")
+		gvk := u.GetObjectKind().GroupVersionKind()
+		return errors.Wrapf(err, "Failed to Marshal unstructured object GroupVersionKind: %v", gvk)
 	}
-	err = json.Unmarshal(b, value)
+	err = json.Unmarshal(b, obj)
 	return errors.Wrapf(err, "Failed to Unmarshal unstructured object")
 }
 
