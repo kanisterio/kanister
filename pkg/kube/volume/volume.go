@@ -277,14 +277,14 @@ func CreatePV(
 		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &corev1.AWSElasticBlockStoreVolumeSource{
 			VolumeID: vol.ID,
 		}
-		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
 	case blockstorage.TypeGPD:
 		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &corev1.GCEPersistentDiskVolumeSource{
 			PDName: vol.ID,
 		}
-		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
 
 	default:
 		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
