@@ -356,8 +356,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
-github.com/kanisterio/safecli v0.0.6 h1:Mq99jK7A/SBiHKZalUIlsk4qaSVZJNbBWb8rjaJv/Jk=
-github.com/kanisterio/safecli v0.0.6/go.mod h1:KBraqj8mdv2cwAr9wecknGUb8jztTzUik0r7uE6yRA8=
+github.com/kanisterio/safecli v0.0.7 h1:PsSbAs6MPox5h4zA9HT/dn5Qi5BtSVFq9c0Oh2sfRwE=
+github.com/kanisterio/safecli v0.0.7/go.mod h1:KBraqj8mdv2cwAr9wecknGUb8jztTzUik0r7uE6yRA8=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20231101232131-9321daa23aae h1:2cl4yuAJpdmLCx7G8eIsfNlQBLEfw0JDj6mTTyqc5qg=

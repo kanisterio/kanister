@@ -57,19 +57,19 @@ func (t *CommandTest) setDefaultExpectedLog() {
 
 // assertNoError makes sure there is no error.
 func (t *CommandTest) assertNoError(c *check.C, err error) {
-	c.Assert(err, check.IsNil, t)
+	c.Assert(err, check.IsNil)
 }
 
 // assertError checks the error against ExpectedErr.
 func (t *CommandTest) assertError(c *check.C, err error) {
 	actualErr := errors.Cause(err)
-	c.Assert(actualErr, check.Equals, t.ExpectedErr, t)
+	c.Assert(actualErr, check.Equals, t.ExpectedErr)
 }
 
 // assertCLI asserts the builder's CLI output against ExpectedCLI.
 func (t *CommandTest) assertCLI(c *check.C, b *safecli.Builder) {
 	if t.ExpectedCLI != nil {
-		c.Check(b.Build(), check.DeepEquals, t.ExpectedCLI, t)
+		c.Check(b.Build(), check.DeepEquals, t.ExpectedCLI)
 	}
 }
 
@@ -77,12 +77,15 @@ func (t *CommandTest) assertCLI(c *check.C, b *safecli.Builder) {
 func (t *CommandTest) assertLog(c *check.C, b *safecli.Builder) {
 	if t.ExpectedCLI != nil {
 		t.setDefaultExpectedLog()
-		c.Check(b.String(), check.Equals, t.ExpectedLog, t)
+		c.Check(b.String(), check.Equals, t.ExpectedLog)
 	}
 }
 
 func (t *CommandTest) Test(c *check.C) {
 	cmd, err := t.Command()
+	if t.Name != "" {
+		c.Log(t.Name)
+	}
 	if t.ExpectedErr == nil {
 		t.assertNoError(c, err)
 	} else {
