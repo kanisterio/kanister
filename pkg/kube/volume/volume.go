@@ -272,6 +272,9 @@ func CreatePV(
 			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 		},
 	}
+
+	fmt.Printf("zone is %s and region is %s\n", vol.Az, zoneToRegion(vol.Az))
+
 	switch volType {
 	case blockstorage.TypeEBS:
 		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &corev1.AWSElasticBlockStoreVolumeSource{
