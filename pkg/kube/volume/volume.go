@@ -43,6 +43,8 @@ const (
 	// NoPVCNameSpecified is used by the caller to indicate that the PVC name
 	// should be auto-generated
 	NoPVCNameSpecified = ""
+
+	RegionZoneSeparator = "__"
 )
 
 // CreatePVC creates a PersistentVolumeClaim and returns its name
@@ -342,7 +344,7 @@ func zoneToRegion(zone string) string {
 	// zone can have multiple zone separate by `__` that's why first call
 	// zonesFromRegions to get region for every zone and then return back
 	// by appending every region with `__` separator
-	return strings.Join(zonesFromRegions(zone), "__")
+	return strings.Join(zonesFromRegions(zone), RegionZoneSeparator)
 }
 
 func zonesFromRegions(zone string) []string {
@@ -351,7 +353,7 @@ func zonesFromRegions(zone string) []string {
 	// panics if regex cannot be compiled. We should add proper test before
 	// enabling this below so that no change to this regex results in a panic
 	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
-	for _, z := range strings.Split(zone, "__") {
+	for _, z := range strings.Split(zone, RegionZoneSeparator) {
 		zone = r.ReplaceAllString(z, "")
 		reg[zone] = struct{}{}
 	}
