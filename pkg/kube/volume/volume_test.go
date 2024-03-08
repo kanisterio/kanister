@@ -237,27 +237,6 @@ func (s *TestVolSuite) TestZoneToRegion(c *C) {
 		},
 	} {
 		reg := zonesToRegions(tc.zone)
-		c.Assert(slicesEqual(reg, tc.expectedRegion), Equals, true)
+		c.Assert(reg, DeepEquals, tc.expectedRegion)
 	}
-}
-
-// slicesEqual compares two unordered slices and returns true if
-// both of them have same elements
-func slicesEqual(one, two []string) bool {
-	if len(one) != len(two) {
-		return false
-	}
-
-	for _, o := range one {
-		var found bool
-		for _, t := range two {
-			if o == t {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }
