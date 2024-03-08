@@ -67,8 +67,8 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pv-test-1",
 				Labels: map[string]string{
-					kube.FDZoneLabelName:   "us-west-2a",
-					kube.FDRegionLabelName: "us-west-2",
+					kube.TopologyZoneLabelName:   "us-west-2a",
+					kube.TopologyRegionLabelName: "us-west-2",
 				},
 			},
 			Spec: corev1.PersistentVolumeSpec{
@@ -119,7 +119,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pv-test-3",
 				Labels: map[string]string{
-					kube.FDZoneLabelName: "us-west-2a",
+					kube.TopologyZoneLabelName: "us-west-2a",
 				},
 			},
 			Spec: corev1.PersistentVolumeSpec{
