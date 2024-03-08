@@ -236,7 +236,7 @@ func (s *TestVolSuite) TestZoneToRegion(c *C) {
 			expectedRegion: []string{"us-west1", "us-west2"},
 		},
 	} {
-		reg := zonesFromRegions(tc.zone)
+		reg := zonesToRegions(tc.zone)
 		c.Assert(slicesEqual(reg, tc.expectedRegion), Equals, true)
 	}
 }
