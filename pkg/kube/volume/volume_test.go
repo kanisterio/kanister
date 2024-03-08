@@ -203,7 +203,7 @@ func (s *TestVolSuite) fakeUnstructuredSnasphotWSize(vsName, namespace, size str
 }
 
 func (s *TestVolSuite) TestZoneToRegion(c *C) {
-	for _, tc := range []struct {
+	for idx, tc := range []struct {
 		zone           string
 		expectedRegion []string
 	}{
@@ -237,6 +237,6 @@ func (s *TestVolSuite) TestZoneToRegion(c *C) {
 		},
 	} {
 		reg := zonesToRegions(tc.zone)
-		c.Assert(reg, DeepEquals, tc.expectedRegion)
+		c.Assert(reg, DeepEquals, tc.expectedRegion, Commentf("Case #%d", idx))
 	}
 }

@@ -348,16 +348,16 @@ func zoneToRegion(zone string) string {
 }
 
 func zonesToRegions(zone string) []string {
-	reg := map[string]struct{}{}
+	reg := map[string]bool{}
+	var regions []string
 	r := regexp.MustCompile("-?[a-z]$")
 	for _, z := range strings.Split(zone, RegionZoneSeparator) {
 		zone = r.ReplaceAllString(z, "")
-		reg[zone] = struct{}{}
+		if _, ok := reg[zone]; !ok {
+			reg[zone] = true
+			regions = append(regions, zone)
+		}
 	}
 
-	var regions []string
-	for k := range reg {
-		regions = append(regions, k)
-	}
 	return regions
 }
