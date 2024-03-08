@@ -43,6 +43,8 @@ const (
 	// NoPVCNameSpecified is used by the caller to indicate that the PVC name
 	// should be auto-generated
 	NoPVCNameSpecified = ""
+
+	RegionZoneSeparator = "__"
 )
 
 // CreatePVC creates a PersistentVolumeClaim and returns its name
@@ -277,14 +279,14 @@ func CreatePV(
 		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &corev1.AWSElasticBlockStoreVolumeSource{
 			VolumeID: vol.ID,
 		}
-		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
 	case blockstorage.TypeGPD:
 		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &corev1.GCEPersistentDiskVolumeSource{
 			PDName: vol.ID,
 		}
-		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
 
 	default:
 		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
@@ -336,11 +338,29 @@ func labelSelector(labels map[string]string) string {
 	return strings.Join(ls, ",")
 }
 
-// zoneToRegion removes -latter or just last latter from provided zone.
+// zoneToRegion figures out region from a zone and to do that it
+// just removes `-[onchar]` from the end of zone.
 func zoneToRegion(zone string) string {
+	// zone can have multiple zone separate by `__` that's why first call
+	// zonesToRegions to get region for every zone and then return back
+	// by appending every region with `__` separator
+	return strings.Join(zonesToRegions(zone), RegionZoneSeparator)
+}
+
+func zonesToRegions(zone string) []string {
+	reg := map[string]struct{}{}
 	// TODO: gocritic rule below suggests to use regexp.MustCompile but it
 	// panics if regex cannot be compiled. We should add proper test before
 	// enabling this below so that no change to this regex results in a panic
 	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
-	return r.ReplaceAllString(zone, "")
+	for _, z := range strings.Split(zone, RegionZoneSeparator) {
+		zone = r.ReplaceAllString(z, "")
+		reg[zone] = struct{}{}
+	}
+
+	var regions []string
+	for k := range reg {
+		regions = append(regions, k)
+	}
+	return regions
 }

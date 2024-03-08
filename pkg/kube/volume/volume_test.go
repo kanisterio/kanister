@@ -201,3 +201,63 @@ func (s *TestVolSuite) fakeUnstructuredSnasphotWSize(vsName, namespace, size str
 	}
 	return &unstructured.Unstructured{Object: Object}
 }
+
+func (s *TestVolSuite) TestZoneToRegion(c *C) {
+	for _, tc := range []struct {
+		zone           string
+		expectedRegion []string
+	}{
+		{
+			zone:           "us-west1-b",
+			expectedRegion: []string{"us-west1"},
+		},
+		{
+			zone:           "us-west1-a",
+			expectedRegion: []string{"us-west1"},
+		},
+		{
+			zone:           "us-west2-c",
+			expectedRegion: []string{"us-west2"},
+		},
+		{
+			zone:           "us-west1-a__us-west2-b",
+			expectedRegion: []string{"us-west1", "us-west2"},
+		},
+		{
+			zone:           "us-west1-a__us-west2-b__us-west2-c",
+			expectedRegion: []string{"us-west1", "us-west2"},
+		},
+		{
+			zone:           "us-west1-a__us-west1-b__us-west2-b__us-west2-c",
+			expectedRegion: []string{"us-west1", "us-west2"},
+		},
+		{
+			zone:           "us-west1-a__us-west1-b__us-west2-b__us-west2-c__us-west2-d",
+			expectedRegion: []string{"us-west1", "us-west2"},
+		},
+	} {
+		reg := zonesToRegions(tc.zone)
+		c.Assert(slicesEqual(reg, tc.expectedRegion), Equals, true)
+	}
+}
+
+// slicesEqual compares two unordered slices and returns true if
+// both of them have same elements
+func slicesEqual(one, two []string) bool {
+	if len(one) != len(two) {
+		return false
+	}
+
+	for _, o := range one {
+		var found bool
+		for _, t := range two {
+			if o == t {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
