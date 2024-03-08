@@ -339,11 +339,29 @@ func labelSelector(labels map[string]string) string {
 	return strings.Join(ls, ",")
 }
 
-// zoneToRegion removes -latter or just last latter from provided zone.
+// zoneToRegion figures out region from a zone and to do that it
+// just removes `-[onchar]` from the end of zone.
 func zoneToRegion(zone string) string {
+	// zone can have multiple zone separate by `__` that's why first call
+	// zonesFromRegions to get region for every zone and then return back
+	// by appending every region with `__` separator
+	return strings.Join(zonesFromRegions(zone), "__")
+}
+
+func zonesFromRegions(zone string) []string {
+	reg := map[string]struct{}{}
 	// TODO: gocritic rule below suggests to use regexp.MustCompile but it
 	// panics if regex cannot be compiled. We should add proper test before
 	// enabling this below so that no change to this regex results in a panic
 	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
-	return r.ReplaceAllString(zone, "")
+	for _, z := range strings.Split(zone, "__") {
+		zone = r.ReplaceAllString(z, "")
+		reg[zone] = struct{}{}
+	}
+
+	var regions []string
+	for k := range reg {
+		regions = append(regions, k)
+	}
+	return regions
 }
