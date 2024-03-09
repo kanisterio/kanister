@@ -28,6 +28,9 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
+	"github.com/kanisterio/kanister/pkg/blockstorage/gcepd"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/testutil/mockblockstorage"
 )
@@ -131,5 +134,53 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
 			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc-2", metav1.GetOptions{})
 			c.Assert(err, IsNil)
 		}
+	}
+}
+
+func (s *CreateVolumeFromSnapshotTestSuite) TestAddPVProvisionedByAnnotation(c *C) {
+	for _, tc := range []struct {
+		st                  blockstorage.Provider
+		annotations         map[string]string
+		expectedAnnotations map[string]string
+	}{
+		{
+			st:          &gcepd.GpdStorage{},
+			annotations: nil,
+			expectedAnnotations: map[string]string{
+				consts.PVProvisionedByAnnotation: consts.GCEPDProvisionerInTree,
+			},
+		},
+		{
+			st: &gcepd.GpdStorage{},
+			annotations: map[string]string{
+				"key": "value",
+			},
+			expectedAnnotations: map[string]string{
+				"key":                            "value",
+				consts.PVProvisionedByAnnotation: consts.GCEPDProvisionerInTree,
+			},
+		},
+		{
+			st:          &gcepd.GpdStorage{},
+			annotations: map[string]string{},
+			expectedAnnotations: map[string]string{
+				consts.PVProvisionedByAnnotation: consts.GCEPDProvisionerInTree,
+			},
+		},
+		{
+			st: &awsebs.EbsStorage{},
+			annotations: map[string]string{
+				"keyone": "valueone",
+				"keytwo": "valuetwo",
+			},
+			expectedAnnotations: map[string]string{
+				"keyone":                         "valueone",
+				"keytwo":                         "valuetwo",
+				consts.PVProvisionedByAnnotation: consts.AWSEBSProvisionerInTree,
+			},
+		},
+	} {
+		op := addPVProvisionedByAnnotation(tc.annotations, tc.st)
+		c.Assert(op, DeepEquals, tc.expectedAnnotations)
 	}
 }
