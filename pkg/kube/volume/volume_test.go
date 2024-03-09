@@ -203,7 +203,7 @@ func (s *TestVolSuite) fakeUnstructuredSnasphotWSize(vsName, namespace, size str
 }
 
 func (s *TestVolSuite) TestZoneToRegion(c *C) {
-	for _, tc := range []struct {
+	for idx, tc := range []struct {
 		zone           string
 		expectedRegion []string
 	}{
@@ -237,27 +237,6 @@ func (s *TestVolSuite) TestZoneToRegion(c *C) {
 		},
 	} {
 		reg := zonesToRegions(tc.zone)
-		c.Assert(slicesEqual(reg, tc.expectedRegion), Equals, true)
+		c.Assert(reg, DeepEquals, tc.expectedRegion, Commentf("Case #%d", idx))
 	}
-}
-
-// slicesEqual compares two unordered slices and returns true if
-// both of them have same elements
-func slicesEqual(one, two []string) bool {
-	if len(one) != len(two) {
-		return false
-	}
-
-	for _, o := range one {
-		var found bool
-		for _, t := range two {
-			if o == t {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }

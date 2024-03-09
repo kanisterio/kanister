@@ -348,19 +348,16 @@ func zoneToRegion(zone string) string {
 }
 
 func zonesToRegions(zone string) []string {
-	reg := map[string]struct{}{}
-	// TODO: gocritic rule below suggests to use regexp.MustCompile but it
-	// panics if regex cannot be compiled. We should add proper test before
-	// enabling this below so that no change to this regex results in a panic
-	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
+	reg := map[string]bool{}
+	var regions []string
+	r := regexp.MustCompile("-?[a-z]$")
 	for _, z := range strings.Split(zone, RegionZoneSeparator) {
 		zone = r.ReplaceAllString(z, "")
-		reg[zone] = struct{}{}
+		if _, ok := reg[zone]; !ok {
+			reg[zone] = true
+			regions = append(regions, zone)
+		}
 	}
 
-	var regions []string
-	for k := range reg {
-		regions = append(regions, k)
-	}
 	return regions
 }
