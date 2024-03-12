@@ -279,14 +279,14 @@ func CreatePV(
 		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &corev1.AWSElasticBlockStoreVolumeSource{
 			VolumeID: vol.ID,
 		}
-		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
 	case blockstorage.TypeGPD:
 		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &corev1.GCEPersistentDiskVolumeSource{
 			PDName: vol.ID,
 		}
-		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
 
 	default:
 		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
@@ -348,19 +348,16 @@ func zoneToRegion(zone string) string {
 }
 
 func zonesToRegions(zone string) []string {
-	reg := map[string]struct{}{}
-	// TODO: gocritic rule below suggests to use regexp.MustCompile but it
-	// panics if regex cannot be compiled. We should add proper test before
-	// enabling this below so that no change to this regex results in a panic
-	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
+	reg := map[string]bool{}
+	var regions []string
+	r := regexp.MustCompile("-?[a-z]$")
 	for _, z := range strings.Split(zone, RegionZoneSeparator) {
 		zone = r.ReplaceAllString(z, "")
-		reg[zone] = struct{}{}
+		if _, ok := reg[zone]; !ok {
+			reg[zone] = true
+			regions = append(regions, zone)
+		}
 	}
 
-	var regions []string
-	for k := range reg {
-		regions = append(regions, k)
-	}
 	return regions
 }
