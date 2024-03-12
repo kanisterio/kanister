@@ -440,6 +440,68 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *C
 	}
 }
 
+func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *C) {
+	type args struct {
+		snapshotRestoreOutput string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantStats *SnapshotRestoreStats
+	}{
+		{
+			name: "Basic test case",
+			args: args{
+				snapshotRestoreOutput: "Processed 2 (397.5 MB) of 3 (3.1 GB) 14.9 MB/s (12.6%) remaining 3m3s.",
+			},
+			wantStats: &SnapshotRestoreStats{
+				FilesProcessed:  2,
+				SizeProcessedB:  397500000,
+				FilesTotal:      3,
+				SizeTotalB:      3100000000,
+				ProgressPercent: 12,
+			},
+		},
+		{
+			name: "Real test case",
+			args: args{
+				snapshotRestoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (0.4%) remaining 6m10s.",
+			},
+			wantStats: &SnapshotRestoreStats{
+				FilesProcessed:  2,
+				SizeProcessedB:  13700000,
+				FilesTotal:      2,
+				SizeTotalB:      3100000000,
+				ProgressPercent: 0,
+			},
+		},
+		{
+			name: "Ignore incomplete stats without during estimation",
+			args: args{
+				snapshotRestoreOutput: "Processed 2 (32.8 KB) of 2 (3.1 GB).",
+			},
+			wantStats: nil,
+		},
+		{
+			name: "Progress is over 100% and still not ready - set 99%",
+			args: args{
+				snapshotRestoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (120.4%) remaining 6m10s.",
+			},
+			wantStats: &SnapshotRestoreStats{
+				FilesProcessed:  2,
+				SizeProcessedB:  13700000,
+				FilesTotal:      2,
+				SizeTotalB:      3100000000,
+				ProgressPercent: 99,
+			},
+		},
+	}
+	for _, tt := range tests {
+		stats := SnapshotStatsFromSnapshotRestore(tt.args.snapshotRestoreOutput)
+		c.Check(stats, DeepEquals, tt.wantStats, Commentf("Failed for %s", tt.name))
+	}
+}
+
 func (kParse *KopiaParseUtilsTestSuite) TestPhysicalSizeFromBlobStatsRaw(c *C) {
 	for _, tc := range []struct {
 		blobStatsOutput string

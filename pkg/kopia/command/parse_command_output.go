@@ -39,6 +39,7 @@ const (
 
 	//nolint:lll
 	snapshotCreateOutputRegEx       = `(?P<spinner>[|/\-\\\*]).+[^\d](?P<numHashed>\d+) hashed \((?P<hashedSize>[^\)]+)\), (?P<numCached>\d+) cached \((?P<cachedSize>[^\)]+)\), uploaded (?P<uploadedSize>[^\)]+), (?:estimating...|estimated (?P<estimatedSize>[^\)]+) \((?P<estimatedProgress>[^\)]+)\%\).+)`
+	snapshotRestoreOutputRegEx      = `Processed (?P<processedCount>\d+) \((?P<processedSize>.*)\) of (?P<totalCount>\d+) \((?P<totalSize>.*)\) (?P<dataRate>.*) \((?P<percentage>.*)%\) remaining (?P<remainingTime>.*)\.`
 	extractSnapshotIDRegEx          = `Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`
 	repoTotalSizeFromBlobStatsRegEx = `Total: (\d+)$`
 	repoCountFromBlobStatsRegEx     = `Count: (\d+)$`
@@ -205,7 +206,10 @@ type SnapshotCreateStats struct {
 	ProgressPercent int64
 }
 
-var kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx) //nolint:lll
+var (
+	kopiaProgressPattern        = regexp.MustCompile(snapshotCreateOutputRegEx)
+	kopiaSnapshotRestorePattern = regexp.MustCompile(snapshotRestoreOutputRegEx)
+)
 
 // SnapshotStatsFromSnapshotCreate parses the output of a kopia snapshot
 // create execution for a log of the stats for that execution.
@@ -323,6 +327,92 @@ func parseKopiaProgressLine(line string, matchOnlyFinished bool) (stats *Snapsho
 		SizeCachedB:     int64(cachedSizeBytes),
 		SizeUploadedB:   int64(uploadedSizeBytes),
 		SizeEstimatedB:  int64(estimatedSizeBytes),
+		ProgressPercent: int64(progressPercent),
+	}
+}
+
+// SnapshotRestoreStats is a container for stats parsed from the output of a `kopia snapshot restore` command.
+type SnapshotRestoreStats struct {
+	FilesProcessed  int64
+	SizeProcessedB  int64
+	FilesTotal      int64
+	SizeTotalB      int64
+	ProgressPercent int64
+}
+
+// SnapshotStatsFromSnapshotRestore parses the output of a `kopia snapshot restore` execution
+// for a log of the stats for that execution.
+func SnapshotStatsFromSnapshotRestore(snapRestoreStderrOutput string) (stats *SnapshotRestoreStats) {
+	if snapRestoreStderrOutput == "" {
+		return nil
+	}
+	logs := regexp.MustCompile("[\r\n]").Split(snapRestoreStderrOutput, -1)
+
+	for _, l := range logs {
+		lineStats := parseKopiaSnapshotRestoreProgressLine(l)
+		if lineStats != nil {
+			stats = lineStats
+		}
+	}
+
+	return stats
+}
+
+func parseKopiaSnapshotRestoreProgressLine(line string) (stats *SnapshotRestoreStats) {
+	match := kopiaSnapshotRestorePattern.FindStringSubmatch(line)
+	if len(match) < 8 {
+		return nil
+	}
+
+	groups := make(map[string]string)
+	for i, name := range kopiaSnapshotRestorePattern.SubexpNames() {
+		if i != 0 && name != "" {
+			groups[name] = match[i]
+		}
+	}
+
+	processedCount, err := strconv.Atoi(groups["processedCount"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse number of processed files", field.M{"processedCount": groups["processedCount"]})
+		return nil
+	}
+
+	processedSize, err := humanize.ParseBytes(groups["processedSize"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse amount of processed bytes", field.M{"processedSize": groups["processedSize"]})
+		return nil
+	}
+
+	totalCount, err := strconv.Atoi(groups["totalCount"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse expected number of files", field.M{"totalCount": groups["totalCount"]})
+		return nil
+	}
+
+	totalSize, err := humanize.ParseBytes(groups["totalSize"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse expected amount of bytes", field.M{"totalSize": groups["totalSize"]})
+		return nil
+	}
+
+	progressPercent, err := strconv.ParseFloat(groups["percentage"], 64)
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse progress percent string", field.M{"progressPercent": groups["progressPercent"]})
+		return nil
+	}
+
+	if progressPercent >= 100 {
+		// It may happen that kopia reports progress of 100 or higher without actual completing the task.
+		// This can occur due to inaccurate estimation.
+		// In such case, we will return the progress as 99% to avoid confusion.
+		progressPercent = 99
+	}
+
+	return &SnapshotRestoreStats{
+		FilesProcessed:  int64(processedCount),
+		SizeProcessedB:  int64(processedSize),
+		FilesTotal:      int64(totalCount),
+		SizeTotalB:      int64(totalSize),
 		ProgressPercent: int64(progressPercent),
 	}
 }
