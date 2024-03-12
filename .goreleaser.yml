@@ -80,7 +80,6 @@ dockers:
   - 'ghcr.io/kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
   build_flag_templates:
-  - "--pull"
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - image_templates:
   - 'ghcr.io/kanisterio/postgresql:{{ .Tag }}'
@@ -93,7 +92,6 @@ dockers:
   - 'ghcr.io/kanisterio/es-sidecar:{{ .Tag }}'
   dockerfile: 'docker/kanister-elasticsearch/image/Dockerfile'
   build_flag_templates:
-  - "--pull"
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - ids:
   - kando
@@ -101,13 +99,11 @@ dockers:
   - 'ghcr.io/kanisterio/mysql-sidecar:{{ .Tag }}'
   dockerfile: 'docker/kanister-mysql/image/Dockerfile'
   build_flag_templates:
-  - "--pull"
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - image_templates:
   - 'ghcr.io/kanisterio/kanister-kubectl-1.18:{{ .Tag }}'
   dockerfile: 'docker/kanister-kubectl/Dockerfile'
   build_flag_templates:
-  - "--pull"
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - ids:
   - kando
@@ -115,7 +111,6 @@ dockers:
   - 'ghcr.io/kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
   build_flag_templates:
-  - "--pull"
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - ids:
   - kando
@@ -123,7 +118,6 @@ dockers:
   - 'ghcr.io/kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
   build_flag_templates:
-  - "--pull"
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - image_templates:
   - 'ghcr.io/kanisterio/kafka-adobe-s3-source-connector:{{ .Tag }}'

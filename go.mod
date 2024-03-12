@@ -19,7 +19,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.3.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/aws/aws-sdk-go v1.50.32
+	github.com/aws/aws-sdk-go v1.50.36
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-logr/logr v1.4.1
 	github.com/go-openapi/strfmt v0.22.2
@@ -47,7 +47,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.18.0
 	gonum.org/v1/gonum v0.14.0
-	google.golang.org/api v0.168.0
+	google.golang.org/api v0.169.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
@@ -214,7 +214,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
-require github.com/kanisterio/safecli v0.0.6
+require github.com/kanisterio/safecli v0.0.7
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.27 // indirect

@@ -38,12 +38,19 @@ const (
 	ProfileResourceNamePlural   = "profiles"
 )
 
+const (
+	PVProvisionedByAnnotation = "pv.kubernetes.io/provisioned-by"
+
+	AWSEBSProvisionerInTree = "kubernetes.io/aws-ebs"
+	GCEPDProvisionerInTree  = "kubernetes.io/gce-pd"
+)
+
 // These consts are used to query Repository server API objects
 const RepositoryServerResourceName = "repositoryserver"
 const RepositoryServerResourceNamePlural = "repositoryservers"
 
 const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
-const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.105.0"
+const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.106.0"
 
 // KanisterToolsImageEnvName is used to set up a custom kanister-tools image
 const KanisterToolsImageEnvName = "KANISTER_TOOLS"
