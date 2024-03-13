@@ -202,7 +202,7 @@ type PhaseProgress struct {
 	// EstimatedUploadSizeB represents the total estimated size of data in Bytes
 	// that will be uploaded during the phase execution.
 	// This field will be empty for phases which do not involve data movement.
-	EstimatedUploadSizeB int64 `json:"estinatedUploadSizeB,omitempty"`
+	EstimatedUploadSizeB int64 `json:"estimatedUploadSizeB,omitempty"`
 	// EstimatedTimeSeconds is the estimated time required in seconds to upload the
 	// remaining data estimated with EstimatedUploadSizeB.
 	// This field will be empty for phases which do not involve data movement.
