@@ -153,7 +153,7 @@ type ActionProgress struct {
 	// RunningPhase represents which phase of the action is being run
 	RunningPhase string `json:"runningPhase,omitempty"`
 	// PercentCompleted is computed by assessing the number of completed phases
-	// against the the total number of phases.
+	// against the total number of phases.
 	PercentCompleted string `json:"percentCompleted,omitempty"`
 	// LastTransitionTime represents the last date time when the progress status
 	// was received.
