@@ -22,6 +22,7 @@ The TemplateParam struct is defined as:
     Secrets          map[string]v1.Secret
     Time             string
     Profile          *Profile
+    RepositoryServer *RepositoryServer
     Options          map[string]string
     Object           map[string]interface{}
     Phases           map[string]*Phase
@@ -493,7 +494,7 @@ Unlike Secrets and ConfigMaps, only a single profile can optionally be
 referenced by an ActionSet. As a result, there it is not necessary to
 name the Profiles in the Blueprint.
 
-The following examples should be helpful.
+The following examples should be helpful:
 
 .. code-block:: yaml
 
@@ -548,6 +549,54 @@ The currently supported Profile template is based on the following definitions
     IDField     string
     SecretField string
     Secret      ObjectReference
+  }
+
+RepositoryServers
+-----------------
+
+RepositoryServers are Kanister CustomResource that store information about storage,
+repository, and server details. These details are required to run a Kopia repository
+server instance, which can then be further used for data operation artifacts.
+
+In contrast to Secrets and ConfigMaps, an ActionSet can optionally reference only a
+single repository server, eliminating the need to name the RepositoryServer in the
+Blueprint.
+
+The following examples should be helpful.
+
+.. code-block:: yaml
+
+  # Access the RepositoryServer name
+  "{{ .RepositoryServer.Name }}"
+
+  # Access the RepositoryServer service name
+  "{{ .RepositoryServer.ServerInfo.ServiceName }}"
+
+The currently supported RepositoryServer template is based on the following definitions:
+
+.. code-block:: go
+  :linenos:
+
+  // RepositoryServer contains fields from Repository server CR that will be used to resolve go templates for repository server in blueprint
+  type RepositoryServer struct {
+    Name            string
+    Namespace       string
+    ServerInfo      crv1alpha1.ServerInfo
+    Username        string
+    Credentials     RepositoryServerCredentials
+    Address         string
+    ContentCacheMB  int
+    MetadataCacheMB int
+  }
+
+  type RepositoryServerCredentials struct {
+    ServerTLS        v1.Secret
+    ServerUserAccess v1.Secret
+  }
+
+  type ServerInfo struct {
+    PodName     string `json:"podName,omitempty"`
+    ServiceName string `json:"serviceName,omitempty"`
   }
 
 Options

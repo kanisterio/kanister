@@ -35,7 +35,7 @@ Getting Started
 
 Follow the instructions in the :ref:`install` section to get Kanister up and
 running on your Kubernetes cluster. Then see Kanister in action by going through
-the walkthrough under :ref:`tutorial`.
+the walkthrough under :ref:`tutorials`.
 
 The :ref:`architecture` section provides architectural insights into how things
 work. We recommend that you take a look at it.
