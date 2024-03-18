@@ -105,5 +105,6 @@ jobs:
     - run: sudo rm -rf /usr/share/dotnet
     - run: sudo rm -rf "$AGENT_TOOLSDIRECTORY"
     - run: docker image prune -af
+    - run: docker builder prune -af
     - run: make release-snapshot
     - run: ./build/push_images.sh
