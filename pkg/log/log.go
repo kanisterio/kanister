@@ -12,7 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/caller"
-	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
@@ -92,10 +91,6 @@ func initEnvVarFields() {
 		if ev, ok := os.LookupEnv(e); ok {
 			envVarFields = field.Add(envVarFields, strings.ToLower(e), ev)
 		}
-	}
-
-	if clsName, err := config.GetClusterName(nil); err == nil {
-		envVarFields = field.Add(envVarFields, "cluster_name", clsName)
 	}
 }
 

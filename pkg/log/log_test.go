@@ -42,6 +42,21 @@ func (s *LogSuite) TestWithNilContext(c *C) {
 	WithContext(nil).Print("Message")
 }
 
+func (s *LogSuite) TestInitEnvVarFields(c *C) {
+	os.Setenv("HOSTNAME", "host")
+	os.Setenv("SERVICE_NAME", "sservice")
+	os.Setenv("VERSION", "v0.0.1")
+
+	initEnvVarFields()
+	fields := envVarFields.Fields()
+	fmt.Println(fields)
+	c.Assert(len(fields), Equals, 3)
+
+	c.Assert(fields[0].Key(), Equals, "hostname")
+	c.Assert(fields[1].Key(), Equals, "service_name")
+	c.Assert(fields[2].Key(), Equals, "version")
+}
+
 func (s *LogSuite) TestLogMessage(c *C) {
 	const text = "Some useful text."
 	testLogMessage(c, text, Print)
