@@ -53,7 +53,7 @@ func (s *LogSuite) TestInitEnvVarFields(c *C) {
 
 	initEnvVarFields()
 	fields := envVarFields.Fields()
-	fmt.Println(fields)
+
 	c.Assert(len(fields), Equals, 3)
 
 	c.Assert(fields[0].Key(), Equals, "hostname")
