@@ -52,13 +52,15 @@ func NewPostgresDB(name string, subPath string) App {
 			Values: map[string]string{
 				"image.pullPolicy":                                     "Always",
 				"auth.postgresPassword":                                "test@54321",
-				"volumePermissions.enabled":                            "true",
 				"persistence.subPath":                                  subPath,
+				// The following values are customized to allow snapshot/restore operations.
+				"volumePermissions.enabled":                            "true",
 				"primary.networkPolicy.enabled":                        "false",
 				"primary.containerSecurityContext.seccompProfile.type": "Unconfined",
 				"primary.containerSecurityContext.capabilities.add[0]": "CHOWN",
 				"primary.containerSecurityContext.capabilities.add[1]": "FOWNER",
 				"primary.containerSecurityContext.capabilities.add[2]": "DAC_OVERRIDE",
+				"primary.containerSecurityContext.readOnlyRootFilesystem": "false",
 			},
 		},
 	}
