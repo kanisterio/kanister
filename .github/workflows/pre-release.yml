@@ -1,0 +1,48 @@
+name: Pre release
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Image tag in the format x.x.x'
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag }}
+  PRERELEASE_DOCS_BRANCH: 'test'
+  ## PRERELEASE_DOCS_BRANCH: 'dg8d45z'
+
+jobs:
+  ## TODO we can add a condition like github.actor.role == 'Maintainer' to limit trigger to maintainers only
+  create_pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+    - name: checkout_repo
+      uses: actions/checkout@v4
+      with:
+        fetch-tags: true
+        fetch-depth: 0
+    - name: fetch_tags
+      run: git fetch --tags origin
+    - name: bump_version
+      run: |
+        export CURRENT_TAG=$(git describe --abbrev=0 --tags)
+        echo ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
+        ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
+    - name: commit_changes
+      run: |
+        git config --global user.name 'Kasten Production'
+        git config --global user.email 'infra@kasten.io'
+        git checkout -B "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
+        git add -A
+        git commit -s -m "TESTING: Kanister docs update to version ${RELEASE_TAG}" ## -m "Kanister docs update to version ${RELEASE_TAG}"
+    - name: create_pr
+      run: |
+        git push origin "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
+        gh pr create --title "TEST: Kanister docs update to version ${RELEASE_TAG}" --body "Kanister docs update to version ${RELEASE_TAG}"  --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" --base master --draft # --reviewer tdmanv,pavannd1,viveksinghggits --label kueue 
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
