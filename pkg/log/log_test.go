@@ -43,7 +43,11 @@ func (s *LogSuite) TestWithNilContext(c *C) {
 }
 
 func (s *LogSuite) TestInitEnvVarFields(c *C) {
-	os.Setenv("HOSTNAME", "host")
+	// HOSTNAME is set automatically when the test is run from CI
+	host := os.Getenv("HOSTNAME")
+	if host == "" {
+		os.Setenv("HOSTNAME", "host")
+	}
 	os.Setenv("SERVICE_NAME", "sservice")
 	os.Setenv("VERSION", "v0.0.1")
 
