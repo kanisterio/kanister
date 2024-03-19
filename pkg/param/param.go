@@ -23,13 +23,12 @@ import (
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
@@ -51,8 +50,8 @@ type TemplateParams struct {
 	PVC              *PVCParams
 	Namespace        *NamespaceParams
 	ArtifactsIn      map[string]crv1alpha1.Artifact
-	ConfigMaps       map[string]v1.ConfigMap
-	Secrets          map[string]v1.Secret
+	ConfigMaps       map[string]corev1.ConfigMap
+	Secrets          map[string]corev1.Secret
 	Time             string
 	Profile          *Profile
 	RepositoryServer *RepositoryServer
@@ -123,7 +122,7 @@ const (
 type Credential struct {
 	Type              CredentialType
 	KeyPair           *KeyPair
-	Secret            *v1.Secret
+	Secret            *corev1.Secret
 	KopiaServerSecret *KopiaServerCreds
 }
 
@@ -155,13 +154,13 @@ type RepositoryServer struct {
 }
 
 type RepositoryServerCredentials struct {
-	ServerTLS        v1.Secret
-	ServerUserAccess v1.Secret
+	ServerTLS        corev1.Secret
+	ServerUserAccess corev1.Secret
 }
 
 // Phase represents a Blueprint phase and contains the phase output
 type Phase struct {
-	Secrets map[string]v1.Secret
+	Secrets map[string]corev1.Secret
 	Output  map[string]interface{}
 }
 
@@ -315,9 +314,9 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	}, nil
 }
 
-func getKopiaRepositoryCacheSize(rs *crv1alpha1.RepositoryServer) v1alpha1.CacheSizeSettings {
+func getKopiaRepositoryCacheSize(rs *crv1alpha1.RepositoryServer) crv1alpha1.CacheSizeSettings {
 	defaultContentCacheMB, defaultMetadataCacheMB := command.GetGeneralCacheSizeSettings()
-	cacheSizeSettings := v1alpha1.CacheSizeSettings{
+	cacheSizeSettings := crv1alpha1.CacheSizeSettings{
 		Metadata: &defaultMetadataCacheMB,
 		Content:  &defaultContentCacheMB,
 	}
@@ -383,7 +382,7 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 	}, nil
 }
 
-func secretFromSecretRef(ctx context.Context, cli kubernetes.Interface, ref v1.SecretReference) (*v1.Secret, error) {
+func secretFromSecretRef(ctx context.Context, cli kubernetes.Interface, ref corev1.SecretReference) (*corev1.Secret, error) {
 	secret, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
@@ -402,8 +401,8 @@ func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[s
 	return filtered
 }
 
-func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]v1.Secret, error) {
-	secrets := make(map[string]v1.Secret, len(refs))
+func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]corev1.Secret, error) {
+	secrets := make(map[string]corev1.Secret, len(refs))
 	for name, ref := range refs {
 		s, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 		if err != nil {
@@ -414,8 +413,8 @@ func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string
 	return secrets, nil
 }
 
-func fetchConfigMaps(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]v1.ConfigMap, error) {
-	configs := make(map[string]v1.ConfigMap, len(refs))
+func fetchConfigMaps(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]corev1.ConfigMap, error) {
+	configs := make(map[string]corev1.ConfigMap, len(refs))
 	for name, ref := range refs {
 		c, err := cli.CoreV1().ConfigMaps(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 		if err != nil {
@@ -526,7 +525,7 @@ func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namesp
 	return dp, nil
 }
 
-func containerNames(pod v1.Pod) []string {
+func containerNames(pod corev1.Pod) []string {
 	cs := make([]string, 0, len(pod.Status.ContainerStatuses))
 	for _, c := range pod.Status.ContainerStatuses {
 		cs = append(cs, c.Name)
@@ -534,7 +533,7 @@ func containerNames(pod v1.Pod) []string {
 	return cs
 }
 
-func volumes(pod v1.Pod, volToPvc map[string]string) map[string]string {
+func volumes(pod corev1.Pod, volToPvc map[string]string) map[string]string {
 	pvcToMountPath := make(map[string]string)
 	for _, c := range pod.Spec.Containers {
 		for _, v := range c.VolumeMounts {

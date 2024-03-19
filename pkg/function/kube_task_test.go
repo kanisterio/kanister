@@ -16,11 +16,13 @@ package function
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -43,7 +45,7 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	s.cli = cli
 
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterkubetasktest-",
 		},
@@ -61,6 +63,24 @@ func (s *KubeTaskSuite) TearDownSuite(c *C) {
 	}
 }
 
+func bigOutputPhase(namespace string) crv1alpha1.BlueprintPhase {
+	longstring := strings.Repeat("a", 100000)
+	return crv1alpha1.BlueprintPhase{
+		Name: "testOutput",
+		Func: KubeTaskFuncName,
+		Args: map[string]interface{}{
+			KubeTaskNamespaceArg: namespace,
+			KubeTaskImageArg:     consts.LatestKanisterToolsImage,
+			KubeTaskCommandArg: []string{
+				"sh",
+				"-c",
+				// We output a line for log only, and a line with output at the tail
+				fmt.Sprintf("echo -n %s > tmpfile; cat tmpfile; echo; cat tmpfile; kando output longstring $(cat tmpfile)", longstring),
+			},
+		},
+	}
+}
+
 func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "testOutput",
@@ -71,7 +91,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.101.0",
+				"kando output version 0.106.0",
 			},
 		},
 	}
@@ -144,10 +164,52 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				{
-					"version": "0.101.0",
+					"version": "0.106.0",
 				},
 				{},
 				{},
+			},
+		},
+	} {
+		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
+		c.Assert(err, IsNil)
+		c.Assert(phases, HasLen, len(tc.outs))
+		for i, p := range phases {
+			out, err := p.Exec(ctx, *tc.bp, action, tp)
+			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+			c.Assert(out, DeepEquals, tc.outs[i])
+		}
+	}
+}
+
+func (s *KubeTaskSuite) TestKubeTaskWithBigOutput(c *C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	tp := param.TemplateParams{
+		StatefulSet: &param.StatefulSetParams{
+			Namespace: s.namespace,
+		},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []map[string]interface{}{
+				{
+					"name":            "container",
+					"imagePullPolicy": "Always",
+				},
+			},
+		},
+	}
+	expectedOut := strings.Repeat("a", 100000)
+	action := "test"
+	for _, tc := range []struct {
+		bp   *crv1alpha1.Blueprint
+		outs []map[string]interface{}
+	}{
+		{
+			bp: newTaskBlueprint(bigOutputPhase(s.namespace)),
+			outs: []map[string]interface{}{
+				{
+					"longstring": expectedOut,
+				},
 			},
 		},
 	} {

@@ -16,7 +16,7 @@ package secrets
 
 import (
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -44,7 +44,7 @@ const (
 //
 // Optional field:
 // - azure_storage_environment
-func ValidateAzureCredentials(secret *v1.Secret) error {
+func ValidateAzureCredentials(secret *corev1.Secret) error {
 	if string(secret.Type) != AzureSecretType {
 		return errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AzureSecretType, secret.Namespace, secret.Name)
 	}
@@ -73,7 +73,7 @@ func ValidateAzureCredentials(secret *v1.Secret) error {
 //
 // If the type of the secret is not "secrets.kanister.io/azure", it returns an error.
 // If the required types are not available in the secrets, it returns an error.
-func ExtractAzureCredentials(secret *v1.Secret) (*objectstore.SecretAzure, error) {
+func ExtractAzureCredentials(secret *corev1.Secret) (*objectstore.SecretAzure, error) {
 	if err := ValidateAzureCredentials(secret); err != nil {
 		return nil, err
 	}

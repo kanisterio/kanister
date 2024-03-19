@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -47,34 +47,43 @@ func shCommand(command string) []string {
 }
 
 // BackupCommandByTag returns restic backup command with tag
-func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePath, encryptionKey string) ([]string, error) {
+func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "backup", "--tag", backupTag, includePath)
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
 
 // RestoreCommandByID returns restic restore command with snapshotID as the identifier
-func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, encryptionKey string) ([]string, error) {
+func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "restore", id, "--target", restorePath)
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
 
 // RestoreCommandByTag returns restic restore command with tag as the identifier
-func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, encryptionKey string) ([]string, error) {
+func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "restore", "--tag", tag, "latest", "--target", restorePath)
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
@@ -91,56 +100,71 @@ func SnapshotsCommand(profile *param.Profile, repository, encryptionKey string) 
 }
 
 // LatestSnapshotsCommand returns restic snapshots command for last snapshots
-func LatestSnapshotsCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+func LatestSnapshotsCommand(profile *param.Profile, repository, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "snapshots", "--last", "--json")
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
 
 // SnapshotsCommandByTag returns restic snapshots command
-func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) ([]string, error) {
+func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "snapshots", "--tag", tag, "--json")
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
 
 // InitCommand returns restic init command
-func InitCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+func InitCommand(profile *param.Profile, repository, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "init")
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
 
 // ForgetCommandByID returns restic forget command
-func ForgetCommandByID(profile *param.Profile, repository, id, encryptionKey string) ([]string, error) {
+func ForgetCommandByID(profile *param.Profile, repository, id, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "forget", id)
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
 
 // PruneCommand returns restic prune command
-func PruneCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+func PruneCommand(profile *param.Profile, repository, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "prune")
+	if insecureTLS {
+		cmd = append(cmd, "--insecure-tls")
+	}
 	command := strings.Join(cmd, " ")
 	return shCommand(command), nil
 }
@@ -213,7 +237,7 @@ func resticS3CredentialArgs(creds param.Credential) ([]string, error) {
 	}
 }
 
-func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
+func resticS3CredentialSecretArgs(secret *corev1.Secret) ([]string, error) {
 	creds, err := secrets.ExtractAWSCredentials(context.Background(), secret, aws.AssumeRoleDurationDefault)
 	if err != nil {
 		return nil, err
@@ -259,13 +283,13 @@ func resticAzureArgs(profile *param.Profile, repository string) ([]string, error
 }
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
-func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
-	_, _, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, insecureTLS bool, profile *param.Profile) error {
+	_, _, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, insecureTLS, cli, namespace, pod, container)
 	if err == nil {
 		return nil
 	}
 	// Create a repository
-	cmd, err := InitCommand(profile, artifactPrefix, encryptionKey)
+	cmd, err := InitCommand(profile, artifactPrefix, encryptionKey, insecureTLS)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create init command")
 	}
@@ -276,8 +300,8 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 }
 
 // CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots
-func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) error {
-	_, stderr, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, insecureTLS bool, cli kubernetes.Interface, namespace string, pod string, container string) error {
+	_, stderr, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, insecureTLS, cli, namespace, pod, container)
 	if IsPasswordIncorrect(stderr) { // If password didn't work
 		return errors.New(PasswordIncorrect)
 	}
@@ -291,9 +315,9 @@ func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encry
 }
 
 //nolint:unparam
-func getLatestSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
+func getLatestSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, insecureTLS bool, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
 	// Use the latest snapshots command to check if the repository exists
-	cmd, err := LatestSnapshotsCommand(profile, artifactPrefix, encryptionKey)
+	cmd, err := LatestSnapshotsCommand(profile, artifactPrefix, encryptionKey, insecureTLS)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to create snapshot command")
 	}

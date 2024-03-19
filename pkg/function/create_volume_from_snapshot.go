@@ -28,6 +28,7 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
@@ -115,7 +116,9 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PVC for volume %v", *vol)
 		}
-		pv, err := kubevolume.CreatePV(ctx, cli, vol, vol.Type, annotations, nil, nil)
+
+		pvAnnotations := addPVProvisionedByAnnotation(nil, provider)
+		pv, err := kubevolume.CreatePV(ctx, cli, vol, vol.Type, pvAnnotations, nil, nil)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PV for volume %v", *vol)
 		}
@@ -123,6 +126,22 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		providerList[pvcInfo.PVCName] = provider
 	}
 	return providerList, nil
+}
+
+func addPVProvisionedByAnnotation(annotations map[string]string, provider blockstorage.Provider) map[string]string {
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+
+	storageType := provider.Type()
+	switch storageType {
+	case blockstorage.TypeGPD:
+		annotations[consts.PVProvisionedByAnnotation] = consts.GCEPDProvisionerInTree
+	case blockstorage.TypeEBS:
+		annotations[consts.PVProvisionedByAnnotation] = consts.AWSEBSProvisionerInTree
+	}
+
+	return annotations
 }
 
 func (c *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

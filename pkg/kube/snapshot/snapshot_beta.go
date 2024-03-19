@@ -21,7 +21,6 @@ import (
 	"github.com/kanisterio/errkit"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	pkglabels "k8s.io/apimachinery/pkg/labels"
@@ -82,9 +81,20 @@ func (sna *SnapshotBeta) Create(ctx context.Context, name, namespace, volumeName
 	return createSnapshot(ctx, sna.dynCli, sna.kubeCli, v1beta1.VolSnapGVR, name, namespace, volumeName, snapshotClass, waitForReady, labels)
 }
 
-func createSnapshot(ctx context.Context, dynCli dynamic.Interface, kubeCli kubernetes.Interface, snapGVR schema.GroupVersionResource, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) error {
+func createSnapshot(
+	ctx context.Context,
+	dynCli dynamic.Interface,
+	kubeCli kubernetes.Interface,
+	snapGVR schema.GroupVersionResource,
+	name,
+	namespace,
+	volumeName string,
+	snapshotClass *string,
+	waitForReady bool,
+	labels map[string]string,
+) error {
 	if _, err := kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeName, metav1.GetOptions{}); err != nil {
-		if k8errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return errkit.New("Failed to find PVC", "pvc", volumeName, "namespace", namespace)
 		}
 		return errkit.Wrap(err, "Failed to query PVC", "pvc", volumeName, "namespace", namespace)
@@ -186,7 +196,7 @@ func (sna *SnapshotBeta) Clone(ctx context.Context, name, namespace, cloneName, 
 	if err == nil {
 		return errkit.New("Target snapshot already exists in target namespace", "volumeSnapshot", cloneName, "namespace", cloneNamespace)
 	}
-	if !k8errors.IsNotFound(err) {
+	if !apierrors.IsNotFound(err) {
 		return errkit.Wrap(err, "Failed to query target Volumesnapshot", "volumeSnapshot", cloneName, "namespace", cloneNamespace)
 	}
 
@@ -245,15 +255,6 @@ func (sna *SnapshotBeta) CreateFromSource(ctx context.Context, source *Source, s
 	}
 	if !waitForReady {
 		return nil
-	}
-	if source.Driver == DellFlexOSDriver {
-		// Temporary work around till upstream issue is resolved-
-		// github- https://github.com/dell/csi-vxflexos/pull/11
-		// forum- https://www.dell.com/community/Containers/Issue-where-volumeSnapshots-have-ReadyToUse-field-set-to-false/m-p/7685881#M249
-		err := sna.UpdateVolumeSnapshotStatusBeta(ctx, namespace, snap.GetName(), true)
-		if err != nil {
-			return err
-		}
 	}
 	err = sna.WaitOnReadyToUse(ctx, snapshotName, namespace)
 	return err

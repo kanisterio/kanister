@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 
 	// importing go check to bypass the testing flags
 	_ "gopkg.in/check.v1"
@@ -64,6 +65,7 @@ type Context struct {
 	APIExtensionClientset apiextensionsclient.Interface
 	Interval              time.Duration
 	Timeout               time.Duration
+	Context               contextpkg.Context
 }
 
 // CreateCustomResources creates the given custom resources and waits for them to initialize
@@ -123,37 +125,42 @@ func createCRD(context Context, resource CustomResource) error {
 		return errors.Wrap(err, "Getting CRD object from CRD bytes")
 	}
 
-	ctx := contextpkg.Background()
-	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
+	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Context, crd, metav1.CreateOptions{})
 	if err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return errors.Errorf("Failed to create %s CRD. %+v", resource.Name, err)
 		}
 
-		// if CRD already exists, get the resource version and create the CRD with that resource version
-		c, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("Failed to get CRD to get resource version: %s\n", err.Error())
-		}
+		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// if CRD already exists, get the resource version and create the CRD with that resource version
+			c, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(context.Context, crd.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 
-		crd.ResourceVersion = c.ResourceVersion
-		_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
+			crd.ResourceVersion = c.ResourceVersion
+			_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Update(context.Context, crd, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 		if err != nil {
-			return fmt.Errorf("Failed to delete already present CRD: %s\n", err.Error())
+			return fmt.Errorf("Failed to update existing CRD: %s\n", err.Error())
 		}
 	}
 	return nil
 }
 
 func rawCRDFromFile(path string) ([]byte, error) {
-	// yamls is the variable that has embeded custom resource manifest. More at `embed.go`
+	// yamls is the variable that has embedded custom resource manifest. More at `embed.go`
 	return yamls.ReadFile(path)
 }
 
 func waitForCRDInit(context Context, resource CustomResource) error {
 	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
-	return wait.Poll(context.Interval, context.Timeout, func() (bool, error) {
-		crd, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(contextpkg.TODO(), crdName, metav1.GetOptions{})
+	return wait.PollUntilContextTimeout(context.Context, context.Interval, context.Timeout, false, func(contextpkg.Context) (bool, error) {
+		crd, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(context.Context, crdName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

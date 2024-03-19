@@ -264,10 +264,17 @@ func cloneGlobalLogger() *logrus.Logger {
 	cloned.SetLevel(log.Level)
 	cloned.SetOutput(log.Out)
 	cloned.ExitFunc = log.ExitFunc
+
+	globalHooks := make(map[logrus.Hook]bool)
+
 	for _, hooks := range log.Hooks {
 		for _, hook := range hooks {
-			cloned.Hooks.Add(hook)
+			globalHooks[hook] = true
 		}
+	}
+
+	for hook := range globalHooks {
+		cloned.Hooks.Add(hook)
 	}
 
 	return cloned

@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/kanisterio/errkit"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,13 +43,25 @@ const (
 	// NoPVCNameSpecified is used by the caller to indicate that the PVC name
 	// should be auto-generated
 	NoPVCNameSpecified = ""
+
+	RegionZoneSeparator = "__"
 )
 
 // CreatePVC creates a PersistentVolumeClaim and returns its name
 // An empty 'targetVolID' indicates the caller would like the PV to be dynamically provisioned
 // An empty 'name' indicates the caller would like the name to be auto-generated
 // An error indicating that the PVC already exists is ignored (for idempotency)
-func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, name string, sizeInBytes int64, targetVolID string, annotations map[string]string, accessmodes []v1.PersistentVolumeAccessMode, volumemode *v1.PersistentVolumeMode) (string, error) {
+func CreatePVC(
+	ctx context.Context,
+	kubeCli kubernetes.Interface,
+	ns,
+	name string,
+	sizeInBytes int64,
+	targetVolID string,
+	annotations map[string]string,
+	accessmodes []corev1.PersistentVolumeAccessMode,
+	volumemode *corev1.PersistentVolumeMode,
+) (string, error) {
 	sizeFmt := fmt.Sprintf("%d", sizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	emptyStorageClass := ""
@@ -57,18 +69,18 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 		return "", errkit.Wrap(err, "Unable to parse sizeFmt", "sizeFmt", sizeFmt)
 	}
 	if len(accessmodes) == 0 {
-		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+		accessmodes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
-	pvc := v1.PersistentVolumeClaim{
+	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: annotations,
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
+		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: accessmodes,
 			VolumeMode:  volumemode,
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): size,
+			Resources: corev1.VolumeResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceName(corev1.ResourceStorage): size,
 				},
 			},
 		},
@@ -115,8 +127,8 @@ type CreatePVCFromSnapshotArgs struct {
 	RestoreSize      string
 	Labels           map[string]string
 	Annotations      map[string]string
-	VolumeMode       *v1.PersistentVolumeMode
-	AccessModes      []v1.PersistentVolumeAccessMode
+	VolumeMode       *corev1.PersistentVolumeMode
+	AccessModes      []corev1.PersistentVolumeAccessMode
 	GroupVersion     schema.GroupVersion
 }
 
@@ -129,7 +141,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 	}
 
 	if len(args.AccessModes) == 0 {
-		args.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+		args.AccessModes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
 	snapshotKind := "VolumeSnapshot"
 
@@ -142,22 +154,22 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		snapshotAPIGroup = args.GroupVersion.String()
 	}
 
-	pvc := &v1.PersistentVolumeClaim{
+	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      args.Labels,
 			Annotations: args.Annotations,
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
+		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: args.AccessModes,
 			VolumeMode:  args.VolumeMode,
-			DataSource: &v1.TypedLocalObjectReference{
+			DataSource: &corev1.TypedLocalObjectReference{
 				APIGroup: &snapshotAPIGroup,
 				Kind:     snapshotKind,
 				Name:     args.SnapshotName,
 			},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: *storageSize,
+			Resources: corev1.VolumeResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: *storageSize,
 				},
 			},
 		},
@@ -219,7 +231,15 @@ func getPVCRestoreSize(ctx context.Context, args *CreatePVCFromSnapshotArgs) (*r
 
 // CreatePV creates a PersistentVolume and returns its name
 // For retry idempotency, checks whether PV associated with volume already exists
-func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstorage.Volume, volType blockstorage.Type, annotations map[string]string, accessmodes []v1.PersistentVolumeAccessMode, volumemode *v1.PersistentVolumeMode) (string, error) {
+func CreatePV(
+	ctx context.Context,
+	kubeCli kubernetes.Interface,
+	vol *blockstorage.Volume,
+	volType blockstorage.Type,
+	annotations map[string]string,
+	accessmodes []corev1.PersistentVolumeAccessMode,
+	volumemode *corev1.PersistentVolumeMode,
+) (string, error) {
 	sizeFmt := fmt.Sprintf("%d", vol.SizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	if err != nil {
@@ -236,37 +256,37 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 	}
 
 	if len(accessmodes) == 0 {
-		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+		accessmodes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	}
 
-	pv := v1.PersistentVolume{
+	pv := corev1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanister-pv-",
 			Labels:       matchLabels,
 			Annotations:  annotations,
 		},
-		Spec: v1.PersistentVolumeSpec{
-			Capacity: v1.ResourceList{
-				v1.ResourceName(v1.ResourceStorage): size,
+		Spec: corev1.PersistentVolumeSpec{
+			Capacity: corev1.ResourceList{
+				corev1.ResourceName(corev1.ResourceStorage): size,
 			},
 			AccessModes:                   accessmodes,
 			VolumeMode:                    volumemode,
-			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 		},
 	}
 	switch volType {
 	case blockstorage.TypeEBS:
-		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &v1.AWSElasticBlockStoreVolumeSource{
+		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &corev1.AWSElasticBlockStoreVolumeSource{
 			VolumeID: vol.ID,
 		}
-		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
 	case blockstorage.TypeGPD:
-		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &v1.GCEPersistentDiskVolumeSource{
+		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &corev1.GCEPersistentDiskVolumeSource{
 			PDName: vol.ID,
 		}
-		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
 
 	default:
 		return "", errkit.New("Volume type not supported", "volumeType", volType, "type", fmt.Sprintf("%T", volType))
@@ -318,11 +338,26 @@ func labelSelector(labels map[string]string) string {
 	return strings.Join(ls, ",")
 }
 
-// zoneToRegion removes -latter or just last latter from provided zone.
+// zoneToRegion figures out region from a zone and to do that it
+// just removes `-[onchar]` from the end of zone.
 func zoneToRegion(zone string) string {
-	// TODO: gocritic rule below suggests to use regexp.MustCompile but it
-	// panics if regex cannot be compiled. We should add proper test before
-	// enabling this below so that no change to this regex results in a panic
-	r, _ := regexp.Compile("-?[a-z]$") //nolint:gocritic
-	return r.ReplaceAllString(zone, "")
+	// zone can have multiple zone separate by `__` that's why first call
+	// zonesToRegions to get region for every zone and then return back
+	// by appending every region with `__` separator
+	return strings.Join(zonesToRegions(zone), RegionZoneSeparator)
+}
+
+func zonesToRegions(zone string) []string {
+	reg := map[string]bool{}
+	var regions []string
+	r := regexp.MustCompile("-?[a-z]$")
+	for _, z := range strings.Split(zone, RegionZoneSeparator) {
+		zone = r.ReplaceAllString(z, "")
+		if _, ok := reg[zone]; !ok {
+			reg[zone] = true
+			regions = append(regions, zone)
+		}
+	}
+
+	return regions
 }

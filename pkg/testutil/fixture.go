@@ -22,7 +22,7 @@ import (
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	"gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
@@ -116,7 +116,7 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 func GetEnvOrSkip(c *check.C, varName string) string {
 	v := os.Getenv(varName)
 	if v == "" {
-		reason := fmt.Sprintf("Test %s requires the environemnt variable '%s'", c.TestName(), varName)
+		reason := fmt.Sprintf("Test %s requires the environment variable '%s'", c.TestName(), varName)
 		c.Skip(reason)
 	}
 	return v
@@ -127,7 +127,7 @@ func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, se
 		Location: location,
 		Credential: param.Credential{
 			Type: param.CredentialTypeSecret,
-			Secret: &v1.Secret{
+			Secret: &corev1.Secret{
 				Type: "secrets.kanister.io/aws",
 				Data: map[string][]byte{
 					secrets.AWSAccessKeyID:     []byte(accessKeyID),

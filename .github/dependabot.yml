@@ -41,11 +41,140 @@ updates:
     open-pull-requests-limit: 3
     schedule:
       interval: daily
+    commit-message:
+      prefix: "deps(github):"
     groups:
       github-actions:
         patterns:
-        - "^actions/*"
-        - "^github/codeql-action"
+        - "actions/*"
+        - "github/codeql-action"
       docker:
         patterns:
         - "docker/*"
+  ## Currently dependabot does not support wildcard or multiple directories
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/build"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/cassandra"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/controller"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/couchbase-tools"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/docs-build"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/foundationdb"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/kafka-adobe3Connector/image"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/kanister-elasticsearch/image"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/kanister-kubectl"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/kanister-mongodb-replicaset"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/kanister-mysql"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/license_extractor"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/mongodb"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/mongodb-atlas"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/mssql-tools"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/postgres-kanister-tools"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/postgresql"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/redis-tools"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/repo-server-controller"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"
+  - package-ecosystem: "docker"
+    directory: "/docker/tools"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker):"

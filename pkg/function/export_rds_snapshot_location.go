@@ -64,7 +64,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.101.0"
+	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.106.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct {
@@ -81,7 +81,20 @@ func (*exportRDSSnapshotToLocationFunc) Name() string {
 	return ExportRDSSnapshotToLocFuncName
 }
 
-func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password string, databases []string, dbSubnetGroup, backupPrefix string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
+func exportRDSSnapshotToLoc(
+	ctx context.Context,
+	namespace,
+	instanceID,
+	snapshotID,
+	username,
+	password string,
+	databases []string,
+	dbSubnetGroup,
+	backupPrefix string,
+	dbEngine RDSDBEngine,
+	sgIDs []string,
+	profile *param.Profile,
+) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -234,7 +247,20 @@ func (d *exportRDSSnapshotToLocationFunc) ExecutionProgress() (crv1alpha1.PhaseP
 	}, nil
 }
 
-func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile, dbEngineVersion string) (map[string]interface{}, error) {
+func execDumpCommand(
+	ctx context.Context,
+	dbEngine RDSDBEngine,
+	action RDSAction,
+	namespace,
+	dbEndpoint,
+	username,
+	password string,
+	databases []string,
+	backupPrefix,
+	backupID string,
+	profile *param.Profile,
+	dbEngineVersion string,
+) (map[string]interface{}, error) {
 	// Trim "\n" from creds
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)

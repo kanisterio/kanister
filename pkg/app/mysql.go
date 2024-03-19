@@ -83,7 +83,7 @@ func (mdb *MysqlDB) Init(ctx context.Context) error {
 	return nil
 }
 
-func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
+func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error { //nolint:dupl // Not a duplicate, common code already extracted
 	mdb.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {
@@ -215,7 +215,9 @@ func (mdb *MysqlDB) Reset(ctx context.Context) error {
 // Initialize is used to initialize the database or create schema
 func (mdb *MysqlDB) Initialize(ctx context.Context) error {
 	// create the database and a pets table
-	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
+	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e " +
+		"'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), " +
+		"species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
 	_, stderr, err := mdb.execCommand(ctx, createTableCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while creating the mysql table: %s", stderr)

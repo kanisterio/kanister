@@ -7,7 +7,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/errkitchecker"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -29,7 +29,7 @@ type cliParams struct {
 	statusAvailableReplicas int32
 	generation              int64
 	observedGeneration      int64
-	podStatus               v1.PodPhase
+	podStatus               corev1.PodPhase
 }
 
 // These tests can be used to force the various error states
@@ -139,13 +139,13 @@ func getCli(cp cliParams) kubernetes.Interface {
 				ObservedGeneration: cp.observedGeneration,
 			},
 		},
-		&v1.Pod{
+		&corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "pod",
 				Namespace:       cp.namespace,
 				OwnerReferences: []metav1.OwnerReference{{UID: pUID}},
 			},
-			Status: v1.PodStatus{
+			Status: corev1.PodStatus{
 				Phase: cp.podStatus,
 			},
 		},

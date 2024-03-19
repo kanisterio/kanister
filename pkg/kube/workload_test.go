@@ -6,7 +6,7 @@ import (
 	osapps "github.com/openshift/api/apps/v1"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -31,7 +31,7 @@ func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
 	}
 
 	// Create a test namespace
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "dc-scale-test-",
 		},
@@ -66,14 +66,14 @@ func newDeploymentConfig() *osapps.DeploymentConfig {
 			Selector: map[string]string{
 				"app": "test",
 			},
-			Template: &v1.PodTemplateSpec{
+			Template: &corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"app": "test",
 					},
 				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
 							Image:   "alpine",
 							Name:    "container",

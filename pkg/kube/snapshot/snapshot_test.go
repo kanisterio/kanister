@@ -26,9 +26,8 @@ import (
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	scv1 "k8s.io/api/storage/v1"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -164,7 +163,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 			Name: volName,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: size,
 				},
@@ -289,7 +288,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		contentGVR        schema.GroupVersionResource
 		snapSpec          *unstructured.Unstructured
 		snapGVR           schema.GroupVersionResource
-		snapContentObject interface{}
+		snapContentObject metav1.Object
 		fakeSs            snapshot.Snapshotter
 	}{
 		{
@@ -382,7 +381,7 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *C) {
 			Name: volName,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: size,
 				},
@@ -600,7 +599,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): size,
 				},
@@ -790,7 +789,8 @@ func (s *SnapshotTestSuite) TestNewSnapshotter(c *C) {
 			check:    IsNil,
 		},
 	} {
-		fakeCli.Resources = []*metav1.APIResourceList{&tc.apiResources}
+		apiRes := tc.apiResources
+		fakeCli.Resources = []*metav1.APIResourceList{&apiRes}
 		ss, err := snapshot.NewSnapshotter(fakeCli, nil)
 		c.Assert(err, tc.check)
 		c.Assert(reflect.TypeOf(ss).String(), Equals, tc.expected)
@@ -1073,7 +1073,7 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 func findSnapshotClassName(c *C, ctx context.Context, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
 	// Find alpha VolumeSnapshotClass name
 	us, err := dynCli.Resource(gvr).List(ctx, metav1.ListOptions{})
-	if err != nil && !k8errors.IsNotFound(err) {
+	if err != nil && !apierrors.IsNotFound(err) {
 		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 		c.Fail()
 	}
@@ -1459,11 +1459,23 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 	}
 }
 
-func fakePVC(name, namespace string) *v1.PersistentVolumeClaim {
-	return &v1.PersistentVolumeClaim{
+func fakePVC(name, namespace string) *corev1.PersistentVolumeClaim {
+	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 	}
+}
+
+type SnapshotTransformUnstructuredTestSuite struct{}
+
+var _ = Suite(&SnapshotTransformUnstructuredTestSuite{})
+
+func (s *SnapshotTransformUnstructuredTestSuite) TestNilUnstructured(c *C) {
+	err := snapshot.TransformUnstructured(nil, nil)
+	c.Check(err, ErrorMatches, "Cannot deserialize nil unstructured")
+	u := &unstructured.Unstructured{}
+	err = snapshot.TransformUnstructured(u, nil)
+	c.Check(err, ErrorMatches, "Failed to Unmarshal unstructured object: json: Unmarshal\\(nil\\)")
 }

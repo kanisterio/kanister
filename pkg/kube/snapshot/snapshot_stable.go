@@ -21,7 +21,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -104,7 +103,7 @@ func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace, cloneName
 	if err == nil {
 		return errkit.New("Target snapshot already exists in target namespace", "volumeSnapshot", cloneName, "namespace", cloneNamespace)
 	}
-	if !k8errors.IsNotFound(err) {
+	if !apierrors.IsNotFound(err) {
 		return errkit.Wrap(err, "Failed to query target", "volumeSnapshot", cloneName, "namespace", cloneNamespace)
 	}
 
@@ -145,15 +144,6 @@ func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source,
 	}
 	if !waitForReady {
 		return nil
-	}
-	if source.Driver == DellFlexOSDriver {
-		// Temporary work around till upstream issue is resolved-
-		// github- https://github.com/dell/csi-vxflexos/pull/11
-		// forum- https://www.dell.com/community/Containers/Issue-where-volumeSnapshots-have-ReadyToUse-field-set-to-false/m-p/7685881#M249
-		err := sna.UpdateVolumeSnapshotStatusStable(ctx, namespace, snap.GetName(), true)
-		if err != nil {
-			return err
-		}
 	}
 	err = sna.WaitOnReadyToUse(ctx, snapshotName, namespace)
 	return err

@@ -39,6 +39,7 @@ const (
 	filterFlag                 = "--filter"
 	globalFlag                 = "--global"
 	jsonFlag                   = "--json"
+	legacyAPIFlag              = "--legacy-api"
 	logDirectoryFlag           = "--log-dir"
 	logLevelFlag               = "--log-level"
 	LogLevelError              = "error"
@@ -76,6 +77,8 @@ const (
 	tlsGenerateCertFlag       = "--tls-generate-cert"
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
+	enablePprof               = "--enable-pprof"
+	metricsListerAddress      = "--metrics-listen-addr"
 
 	// Repository specific
 	repositorySubCommand      = "repository"

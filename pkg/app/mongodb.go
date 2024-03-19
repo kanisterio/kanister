@@ -61,6 +61,7 @@ func NewMongoDB(name string) HelmApp {
 			RepoURL:  helm.BitnamiRepoURL,
 			RepoName: helm.BitnamiRepoName,
 			Chart:    "mongodb",
+			Version:  "14.11.1",
 			Values: map[string]string{
 				"architecture":     "replicaset",
 				"image.pullPolicy": "Always",
@@ -180,7 +181,9 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 
 func (mongo *MongoDB) Insert(ctx context.Context) error {
 	log.Print("Inserting documents into collection.", field.M{"app": mongo.name})
-	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.insertOne({'_id': '%s','name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username, uuid.New())}
+	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p "+
+		"$MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.insertOne({'_id': '%s','name' : 'Tom', "+
+		"'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while inserting data data into mongodb collection.", stderr)

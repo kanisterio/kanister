@@ -134,7 +134,9 @@ func (mongo *MongoDBDepConfig) Ping(ctx context.Context) error {
 
 func (mongo *MongoDBDepConfig) Insert(ctx context.Context) error {
 	log.Print("Inserting documents into collection.", field.M{"app": mongo.name})
-	insertCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"db.restaurants.insert({'_id': '%s','name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.user, uuid.New())}
+	insertCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p "+
+		"$MONGODB_ADMIN_PASSWORD --quiet --eval \"db.restaurants.insert({'_id': '%s','name' : 'Tom', "+
+		"'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.user, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while inserting data data into mongodb collection.", stderr)
@@ -182,7 +184,7 @@ func (mongo *MongoDBDepConfig) execCommand(ctx context.Context, command []string
 		return "", "", err
 	}
 	stdout, stderr, err := kube.Exec(mongo.cli, mongo.namespace, podName, containerName, command, nil)
-	log.Print("Executing the command in pod and contianer", field.M{"pod": podName, "container": containerName, "cmd": command})
+	log.Print("Executing the command in pod and container", field.M{"pod": podName, "container": containerName, "cmd": command})
 
 	return stdout, stderr, errors.Wrapf(err, "Error executing command in the pod")
 }

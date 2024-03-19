@@ -1,8 +1,10 @@
 # Build Kopia binary
-FROM golang:1.21-bullseye AS builder
+FROM golang:1.22-bullseye AS builder
 
 ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
+ARG restic_vsn=v0.16.4
+ARG gosu_vsn=1.17
 ENV CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GO_EXTLINK_ENABLED=0
 RUN apt-get install git
 
@@ -17,8 +19,24 @@ ENV GITHUB_REPOSITORY=https://github.com/restic/restic
 
 WORKDIR /restic
 
-RUN git checkout v0.16.2
-RUN go run build.go
+RUN git checkout ${restic_vsn} && \
+    echo 'package main' > cmd/restic/fipsonly.go && \
+    echo 'import _ "crypto/tls/fipsonly"' >> cmd/restic/fipsonly.go
+# use debug flag to preserve symbols
+RUN go run build.go --tags debug
+
+# Build restic binary from source - released version
+# This will allow us to bring in security fixes more up to date then apt repos
+WORKDIR /
+
+RUN git clone https://github.com/tianon/gosu.git
+
+ENV GITHUB_REPOSITORY=https://github.com/tianon/gosu
+
+WORKDIR /gosu
+
+RUN git checkout ${gosu_vsn}
+RUN go build -o gosu
 
 # Build kopia binary from specific commit
 WORKDIR /
@@ -29,7 +47,9 @@ ENV GITHUB_REPOSITORY=https://github.com/${kopia_repo_org}/kopia
 
 WORKDIR /kopia
 
-RUN git checkout ${kopia_build_commit}
+RUN git checkout ${kopia_build_commit} && \
+    echo 'package main' > fipsonly.go && \
+    echo 'import _ "crypto/tls/fipsonly"' >> fipsonly.go
 
 RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
   -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
@@ -54,7 +74,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3-1361.1699548032
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3-1612
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
@@ -65,6 +85,7 @@ LABEL name="kanister-tools" \
     description="Tools for application-specific data protection"
 
 COPY --from=builder /restic/restic /usr/local/bin/restic
+COPY --from=builder /gosu/gosu /usr/local/bin/gosu
 COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 
