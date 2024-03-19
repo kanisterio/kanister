@@ -47,6 +47,7 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 
 	// TODO: Remove when GRPC support is added
 	args = args.AppendLoggable(noGrpcFlag)
+	args = args.AppendLoggable(legacyAPIFlag)
 
 	if cmdArgs.EnablePprof {
 		args = args.AppendLoggable(enablePprof)

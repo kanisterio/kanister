@@ -39,6 +39,7 @@ const (
 	filterFlag                 = "--filter"
 	globalFlag                 = "--global"
 	jsonFlag                   = "--json"
+	legacyAPIFlag              = "--legacy-api"
 	logDirectoryFlag           = "--log-dir"
 	logLevelFlag               = "--log-level"
 	LogLevelError              = "error"
