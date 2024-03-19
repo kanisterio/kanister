@@ -310,7 +310,7 @@ func FetchReplicationController(cli kubernetes.Interface, namespace string, uid 
 	return nil, nil
 }
 
-var errNotFound = errkit.NewPureError("not found")
+var errNotFound = errkit.NewSentinelErr("not found")
 
 // FetchReplicaSet fetches the replicaset matching the specified owner UID
 func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*appsv1.ReplicaSet, error) {
@@ -518,7 +518,7 @@ func IsPodRunning(cli kubernetes.Interface, podName, podNamespace string) (bool,
 func StatefulSetReplicas(ctx context.Context, kubeCli kubernetes.Interface, namespace, name string) (int32, error) {
 	sts, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return 0, errors.Wrapf(err, "Could not get StatefulSet{Namespace %s, Name: %s}, to figure out replicas", namespace, name)
+		return 0, errkit.Wrap(err, "Could not get StatefulSet, to figure out replicas", "Namespace", namespace, "StatefulSet", name)
 	}
 	return *sts.Spec.Replicas, nil
 }
@@ -526,7 +526,7 @@ func StatefulSetReplicas(ctx context.Context, kubeCli kubernetes.Interface, name
 func DeploymentReplicas(ctx context.Context, kubeCli kubernetes.Interface, namespace, name string) (int32, error) {
 	d, err := kubeCli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return 0, errors.Wrapf(err, "Could not get Deployment{Namespace %s, Name: %s}, to figure out replicas", namespace, name)
+		return 0, errkit.Wrap(err, "Could not get Deployment, to figure out replicas", "Namespace", namespace, "Deployment", name)
 	}
 	return *d.Spec.Replicas, nil
 }
@@ -534,7 +534,7 @@ func DeploymentReplicas(ctx context.Context, kubeCli kubernetes.Interface, names
 func DeploymentConfigReplicas(ctx context.Context, osCli osversioned.Interface, namespace, name string) (int32, error) {
 	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return 0, errors.Wrapf(err, "Could not get DeploymentConfig{Namespace %s, Name: %s}, to figure out replicas", namespace, name)
+		return 0, errkit.Wrap(err, "Could not get DeploymentConfig, to figure out replicas", "Namespace", namespace, "DeploymentConfig", name)
 	}
 	return dc.Spec.Replicas, nil
 }

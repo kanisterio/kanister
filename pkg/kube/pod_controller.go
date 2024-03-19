@@ -29,10 +29,10 @@ import (
 )
 
 var (
-	ErrPodControllerNotInitialized    = errkit.NewPureError("pod has not been initialized")
-	ErrPodControllerPodAlreadyStarted = errkit.NewPureError("pod has already been started")
-	ErrPodControllerPodNotReady       = errkit.NewPureError("pod is not yet ready")
-	ErrPodControllerPodNotStarted     = errkit.NewPureError("pod is not yet started")
+	ErrPodControllerNotInitialized    = errkit.NewSentinelErr("pod has not been initialized")
+	ErrPodControllerPodAlreadyStarted = errkit.NewSentinelErr("pod has already been started")
+	ErrPodControllerPodNotReady       = errkit.NewSentinelErr("pod is not yet ready")
+	ErrPodControllerPodNotStarted     = errkit.NewSentinelErr("pod is not yet started")
 	PodControllerDefaultStopTime      = 30 * time.Second
 	PodControllerInfiniteStopTime     = 0 * time.Second
 )

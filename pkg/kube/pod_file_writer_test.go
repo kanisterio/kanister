@@ -79,7 +79,7 @@ func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
-	simulatedError := errkit.NewPureError("SimulatedError")
+	simulatedError := errkit.NewSentinelErr("SimulatedError")
 
 	cases := map[string]func(pfwp *fakePodFileWriterProcessor, pfw PodFileWriter){
 		"Write to pod failed": func(pfwp *fakePodFileWriterProcessor, pfw PodFileWriter) {
