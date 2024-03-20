@@ -214,7 +214,7 @@ require (
 )
 
 require (
-	github.com/kanisterio/errkit v0.0.0-20240319102630-5ea0bbcfe0c3
+	github.com/kanisterio/errkit v0.0.1
 	github.com/kanisterio/safecli v0.0.7
 )
 
