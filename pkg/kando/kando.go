@@ -18,10 +18,10 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/kanisterio/kanister/pkg/log"
+	_ "github.com/kanisterio/kanister/pkg/logrus"
 	"github.com/kanisterio/kanister/pkg/version"
 )
 
@@ -44,7 +44,7 @@ func newRootCommand() *cobra.Command {
 	}
 
 	var v string
-	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", logrus.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentPreRunE = func(*cobra.Command, []string) error {
 		return setLogLevel(v)
 	}
@@ -57,10 +57,10 @@ func newRootCommand() *cobra.Command {
 }
 
 func setLogLevel(v string) error {
-	l, err := logrus.ParseLevel(v)
+	l, err := log.ParseLevel(v)
 	if err != nil {
 		return errors.Wrap(err, "Invalid log level: "+v)
 	}
-	logrus.SetLevel(l)
+	log.SetLevel(l)
 	return nil
 }
