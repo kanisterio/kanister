@@ -58,7 +58,9 @@ func (s *LogSuite) TestInitEnvVarFields(c *C) {
 
 	c.Assert(fields[0].Key(), Equals, "hostname")
 	c.Assert(fields[1].Key(), Equals, "service_name")
+	c.Assert(fields[1].Value(), Equals, "sservice")
 	c.Assert(fields[2].Key(), Equals, "version")
+	c.Assert(fields[2].Value(), Equals, "v0.0.1")
 }
 
 func (s *LogSuite) TestLogMessage(c *C) {
