@@ -1,4 +1,5 @@
 name: Pre release
+
 on:
   workflow_dispatch:
     inputs:
@@ -38,11 +39,11 @@ jobs:
         git config --global user.email 'infra@kasten.io'
         git checkout -B "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
         git add -A
-        git commit -s -m "TESTING: Kanister docs update to version ${RELEASE_TAG}" ## -m "Kanister docs update to version ${RELEASE_TAG}"
+        git commit -s -m "TESTING: pre-release: Update version to ${RELEASE_TAG}" ## -m "pre-release: Update version to ${RELEASE_TAG}"
     - name: create_pr
       run: |
         git push origin "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
-        gh pr create --title "TEST: Kanister docs update to version ${RELEASE_TAG}" --body "Kanister docs update to version ${RELEASE_TAG}"  --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" --base master --draft # --reviewer tdmanv,pavannd1,viveksinghggits --label kueue 
+        gh pr create --title "TEST: pre-release: Update version to ${RELEASE_TAG}" --body "Update version to ${RELEASE_TAG}"  --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" --base master --draft # --reviewer tdmanv,pavannd1,viveksinghggits --label kueue
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
