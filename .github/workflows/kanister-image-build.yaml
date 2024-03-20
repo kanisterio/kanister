@@ -7,6 +7,14 @@ on:
         description: 'Image tag in the format vx.x.x'
         required: true
         type: string
+      latest_tag:
+        description: 'Tag image as latest or dev_latest'
+        required: true
+        default: dev_latest
+        type: choice
+        options:
+        - latest
+        - dev_latest
 
 env:
   REGISTRY: ghcr.io
@@ -52,6 +60,7 @@ jobs:
           type=sha
           {{date 'YYYY.MM.DD-HHmm'}}
           ${{ inputs.tag }}
+          ${{ inputs.latest_tag }}
     - name: Login to GHCR
       uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
       with:
