@@ -20,7 +20,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/kanisterio/errkit"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -132,9 +131,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			c.Assert(pcp.InWaitForPodReadyNamespace, Equals, podControllerNS)
 			c.Assert(errors.Is(err, pcp.WaitForPodReadyErr), Equals, true)
 
-			ee, ok := err.(*errkit.Error)
-			c.Assert(ok, Equals, true)
-			c.Assert(ee.Message(), Equals, "Pod failed to become ready in time")
+			c.Assert(err.Error(), Equals, "Pod failed to become ready in time: SimulatedError")
 			// Check that POD deletion was also invoked with expected arguments
 		},
 		"Waiting succeeded": func(pcp *FakePodControllerProcessor, pc PodController) {

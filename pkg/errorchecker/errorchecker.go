@@ -1,33 +1,32 @@
-package errkitchecker
+package errorchecker
 
 import (
 	"fmt"
 	"regexp"
 
-	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 )
 
-type errkitMatchesChecker struct {
+type errorMatchesChecker struct {
 	*check.CheckerInfo
 }
 
-var ErrkitErrorMatches check.Checker = errkitMatchesChecker{
+var ErrorMessageMatcher check.Checker = errorMatchesChecker{
 	&check.CheckerInfo{Name: "ErrorMatches", Params: []string{"value", "regex"}},
 }
 
-func (checker errkitMatchesChecker) Check(
+func (checker errorMatchesChecker) Check(
 	params []interface{},
 	names []string,
 ) (result bool, errStr string) {
 	if params[0] == nil {
 		return false, "Error value is nil"
 	}
-	err, ok := params[0].(*errkit.Error)
+	err, ok := params[0].(error)
 	if !ok {
 		return false, "Value is not an error"
 	}
-	params[0] = err.Message()
+	params[0] = err.Error()
 	names[0] = "error"
 	return matches(params[0], params[1])
 }
