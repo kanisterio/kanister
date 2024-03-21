@@ -29,7 +29,7 @@ changes, this can slow down the process if there are multiple reviewers.
 We use `kueue` bot to merge approved PRs.
 
 If PR is approved, all checks are passing and it has the `kueue` label, it will
-be automatically suqashed and merged.
+be automatically squashed and merged.
 
 For PRs from Kanister developers, the committer should add the `kueue` label after
 PR was approved.
