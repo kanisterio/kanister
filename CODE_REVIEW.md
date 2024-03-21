@@ -14,7 +14,7 @@ Pull request process is described in [contributing guide](./CONTRIBUTING.md#subm
 - New feature or fix has tests proving it works
     - Reviewer should request changes from contributor to add tests
 - If PR changes documented behaviour, there should be update to `/docs` or inline comments
-    - Reviewer should request changes from contributor to add tests
+    - Reviewer should request changes from contributor to update docs
 - If PR introduces breaking changes, fixes a bug or adds a new feature, there should be a [release note](#release-notes)
     - Reviewer may add a release note by themself
 
