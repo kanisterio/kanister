@@ -38,7 +38,7 @@ For PRs from community, the reviewer should add the `kueue` label.
 
 ## Release notes
 
-Kanister is using [reno](https://docs.openstack.org/reno/latest/) tool to generate changelogs from release note files.
+Kanister is using the [reno](https://docs.openstack.org/reno/latest/) tool to generate changelogs from release note files.
 
 To add release note one could run:
 
