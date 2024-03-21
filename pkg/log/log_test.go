@@ -197,28 +197,7 @@ func (s *LogSuite) TestLogLevel(c *C) {
 }
 
 func (s *LogSuite) TestCloneGlobalLogger(c *C) {
-	done := make(chan struct{})
-	defer close(done)
-
-	capturedMessages := make([]*logrus.Entry, 0)
-	newTestHook := func(ctx context.Context) *FluentbitHook {
-		ec := make(chan *logrus.Entry, defaultEntryBufferCount)
-
-		go func(in <-chan *logrus.Entry) {
-			for {
-				select {
-				case e := <-in:
-					capturedMessages = append(capturedMessages, e)
-				case <-done:
-					return
-				}
-			}
-		}(ec)
-
-		return &FluentbitHook{logs: ec}
-	}
-
-	hook := newTestHook(context.TODO())
+	hook := newTestLogHook()
 	log.AddHook(hook)
 	actual := cloneGlobalLogger()
 	c.Assert(actual.Formatter, Equals, log.Formatter)
@@ -241,11 +220,19 @@ func (s *LogSuite) TestCloneGlobalLogger(c *C) {
 	c.Assert(actual.Hooks, Not(DeepEquals), log.Hooks)
 
 	log.Println("Test message")
-	c.Assert(len(capturedMessages), Equals, 1)
-	c.Assert(capturedMessages[0].Message, Equals, "Test message")
+	c.Assert(len(hook.capturedMessages), Equals, 1)
+	c.Assert(hook.capturedMessages[0].Message, Equals, "Test message")
 }
 
-type testLogHook struct{}
+type testLogHook struct {
+	capturedMessages []*logrus.Entry
+}
+
+func newTestLogHook() *testLogHook {
+	return &testLogHook{
+		capturedMessages: make([]*logrus.Entry, 0),
+	}
+}
 
 func (t *testLogHook) Levels() []logrus.Level {
 	return []logrus.Level{
@@ -254,6 +241,9 @@ func (t *testLogHook) Levels() []logrus.Level {
 	}
 }
 
-func (t *testLogHook) Fire(*logrus.Entry) error {
+func (t *testLogHook) Fire(entry *logrus.Entry) error {
+	if t.capturedMessages != nil {
+		t.capturedMessages = append(t.capturedMessages, entry)
+	}
 	return nil
 }
