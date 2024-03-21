@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"strings"
 )
 
 const (
@@ -63,6 +64,17 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		Image:        image,
 		Command:      command,
 		PodOverride:  podOverride,
+	}
+	// Mark labels to pods with prefix `jobPrefix`. Add the jobID as reference to the origin for the pod.
+	fields := field.FromContext(ctx)
+	for _, f := range fields.Fields() {
+		if strings.HasPrefix(f.Key(), consts.LabelPrefix) {
+			jobID := f.Value().(string)
+			if options.Labels == nil {
+				options.Labels = make(map[string]string)
+			}
+			options.Labels[consts.LabelPrefix+"JobID"] = jobID
+		}
 	}
 
 	pr := kube.NewPodRunner(cli, options)
