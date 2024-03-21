@@ -66,14 +66,15 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		PodOverride:  podOverride,
 	}
 	// Mark labels to pods with prefix `jobPrefix`. Add the jobID as reference to the origin for the pod.
-	fields := field.FromContext(ctx)
-	for _, f := range fields.Fields() {
-		if strings.HasPrefix(f.Key(), consts.LabelPrefix) {
-			jobID := f.Value().(string)
-			if options.Labels == nil {
-				options.Labels = make(map[string]string)
+	if fields := field.FromContext(ctx); fields != nil {
+		for _, f := range fields.Fields() {
+			if strings.HasPrefix(f.Key(), consts.LabelPrefix) {
+				jobID := f.Value().(string)
+				if options.Labels == nil {
+					options.Labels = make(map[string]string)
+				}
+				options.Labels[consts.LabelPrefix+"JobID"] = jobID
 			}
-			options.Labels[consts.LabelPrefix+"JobID"] = jobID
 		}
 	}
 
