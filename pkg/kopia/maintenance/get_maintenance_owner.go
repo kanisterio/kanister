@@ -18,11 +18,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 
+	"github.com/kanisterio/errkit"
 	kopiacli "github.com/kopia/kopia/cli"
 	"github.com/kopia/kopia/repo/manifest"
-	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
@@ -76,7 +75,7 @@ func GetMaintenanceOwnerForConnectedRepository(
 func parseOwner(output []byte) (string, error) {
 	maintInfo := kopiacli.MaintenanceInfo{}
 	if err := json.Unmarshal(output, &maintInfo); err != nil {
-		return "", errors.New(fmt.Sprintf("failed to unmarshal maintenance info output: %v", err))
+		return "", errkit.Wrap(err, "failed to unmarshal maintenance info output")
 	}
 	return maintInfo.Owner, nil
 }

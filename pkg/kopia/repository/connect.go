@@ -3,7 +3,7 @@ package repository
 import (
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/format"
@@ -22,7 +22,7 @@ func ConnectToKopiaRepository(
 ) error {
 	cmd, err := command.RepositoryConnectCommand(cmdArgs)
 	if err != nil {
-		return errors.Wrap(err, "Failed to generate repository connect command")
+		return errkit.Wrap(err, "Failed to generate repository connect command")
 	}
 
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
@@ -34,15 +34,15 @@ func ConnectToKopiaRepository(
 
 	switch {
 	case strings.Contains(stderr, kerrors.ErrInvalidPasswordStr):
-		err = errors.WithMessage(err, kerrors.ErrInvalidPasswordStr)
+		err = errkit.Wrap(err, kerrors.ErrInvalidPasswordStr) // TODO: Why it was not done using Wrap ?
 	case err != nil && strings.Contains(err.Error(), kerrors.ErrCodeOutOfMemoryStr):
-		err = errors.WithMessage(err, kerrors.ErrOutOfMemoryStr)
+		err = errkit.Wrap(err, kerrors.ErrOutOfMemoryStr) // TODO: Why it was not done using Wrap ?
 	case strings.Contains(stderr, kerrors.ErrAccessDeniedStr):
-		err = errors.WithMessage(err, kerrors.ErrAccessDeniedStr)
+		err = errkit.Wrap(err, kerrors.ErrAccessDeniedStr) // TODO: Why it was not done using Wrap ?
 	case kerrors.RepoNotInitialized(stderr):
-		err = errors.WithMessage(err, kerrors.ErrRepoNotFoundStr)
+		err = errkit.Wrap(err, kerrors.ErrRepoNotFoundStr) // TODO: Why it was not done using Wrap ?
 	case kerrors.BucketDoesNotExist(stderr):
-		err = errors.WithMessage(err, kerrors.ErrBucketDoesNotExistStr)
+		err = errkit.Wrap(err, kerrors.ErrBucketDoesNotExistStr) // TODO: Why it was not done using Wrap ?
 	}
-	return errors.Wrap(err, "Failed to connect to the backup repository")
+	return errkit.Wrap(err, "Failed to connect to the backup repository")
 }
