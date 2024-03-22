@@ -16,7 +16,6 @@ package function
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -65,18 +64,9 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		Command:      command,
 		PodOverride:  podOverride,
 	}
+
 	// Mark labels to pods with prefix `kanister.io`. Add the jobID as reference to the origin for the pod.
-	if fields := field.FromContext(ctx); fields != nil {
-		for _, f := range fields.Fields() {
-			if strings.HasPrefix(f.Key(), consts.LabelPrefix) {
-				jobID := f.Value().(string)
-				if options.Labels == nil {
-					options.Labels = make(map[string]string)
-				}
-				options.Labels[consts.LabelPrefix+"JobID"] = jobID
-			}
-		}
-	}
+	kube.AddDebugLabelsToPodOptions(ctx, options, consts.LabelPrefix, "JobID")
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := kubeTaskPodFunc()
