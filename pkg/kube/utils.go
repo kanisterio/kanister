@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
@@ -179,14 +178,15 @@ func PVCContainsReadOnlyAccessMode(pvc *corev1.PersistentVolumeClaim) bool {
 // AddDebugLabelsToPodOptions adds additional label selector to `PodOptions`,
 // provided the context has a key starting with `keyPrefix`.
 func AddDebugLabelsToPodOptions(ctx context.Context, options *PodOptions, keyPrefix, keySuffix string) {
-	if fields := field.FromContext(ctx); fields != nil {
+	fields := field.FromContext(ctx)
+	if fields != nil {
 		for _, f := range fields.Fields() {
 			if strings.HasPrefix(f.Key(), keyPrefix) {
 				value := f.Value().(string)
 				if options.Labels == nil {
 					options.Labels = make(map[string]string)
 				}
-				options.Labels[consts.LabelPrefix+keySuffix] = value
+				options.Labels[keyPrefix+keySuffix] = value
 			}
 		}
 	}
