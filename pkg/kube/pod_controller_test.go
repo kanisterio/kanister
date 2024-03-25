@@ -16,11 +16,10 @@ package kube
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -131,7 +130,8 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			c.Assert(pcp.InWaitForPodReadyPodName, Equals, podControllerPodName)
 			c.Assert(pcp.InWaitForPodReadyNamespace, Equals, podControllerNS)
 			c.Assert(errors.Is(err, pcp.WaitForPodReadyErr), Equals, true)
-			c.Assert(err.Error(), Equals, fmt.Sprintf("Pod failed to become ready in time: %s", simulatedError.Error()))
+
+			c.Assert(err.Error(), Equals, "Pod failed to become ready in time: SimulatedError")
 			// Check that POD deletion was also invoked with expected arguments
 		},
 		"Waiting succeeded": func(pcp *FakePodControllerProcessor, pc PodController) {

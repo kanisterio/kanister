@@ -26,6 +26,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	json "github.com/json-iterator/go"
+	"github.com/kanisterio/errkit"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -87,7 +88,7 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get controller namespace")
+		return nil, errkit.Wrap(err, "Failed to get controller namespace")
 	}
 	ns := opts.Namespace
 	if ns == "" {
@@ -100,7 +101,7 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 	if sa == "" && ns == cns {
 		sa, err = GetControllerServiceAccount(cli)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get Controller Service Account")
+			return nil, errkit.Wrap(err, "Failed to get Controller Service Account")
 		}
 	}
 
@@ -110,11 +111,11 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 
 	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(ctx, opts.Volumes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create volume spec")
+		return nil, errkit.Wrap(err, "Failed to create volume spec")
 	}
 	volumeDevices, blockVolumes, err := createBlockModeVolumeSpecs(opts.BlockVolumes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create raw block volume spec")
+		return nil, errkit.Wrap(err, "Failed to create raw block volume spec")
 	}
 	podVolumes = append(podVolumes, blockVolumes...)
 	defaultSpecs := corev1.PodSpec{
@@ -145,7 +146,7 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 	// Patch default Pod Specs if needed
 	patchedSpecs, err := patchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+		return nil, errkit.Wrap(err, "Failed to create pod. Failed to override pod specs.", "namespace", opts.Namespace, "nameFmt", opts.GenerateName)
 	}
 
 	// Always put the main container the first
@@ -274,7 +275,7 @@ func ContainerNameFromPodOptsOrDefault(po *PodOptions) string {
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*corev1.Pod, error) {
 	pod, err := GetPodObjectFromPodOptions(ctx, cli, opts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+		return nil, errkit.Wrap(err, "Failed to get pod from podOptions", "namespace", opts.Namespace, "nameFmt", opts.GenerateName)
 	}
 
 	log.Debug().WithContext(ctx).Print("Creating POD", field.M{"name": pod.Name, "namespace": pod.Namespace})
@@ -282,7 +283,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		log.Error().WithContext(ctx).WithError(err).Print("Failed to create pod.", field.M{"pod": getRedactedPod(pod), "options": getRedactedOptions(opts)})
-		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+		return nil, errkit.Wrap(err, "Failed to create pod", "namespace", opts.Namespace, "nameFmt", opts.GenerateName)
 	}
 	return pod, nil
 }
@@ -321,7 +322,7 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podNam
 func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string, err error, errorMessage string) error {
 	r, logErr := StreamPodLogs(ctx, cli, namespace, podName, containerName)
 	if logErr != nil {
-		return errors.Wrapf(logErr, "Failed to fetch logs from the pod")
+		return errkit.Wrap(logErr, "Failed to fetch logs from the pod")
 	}
 	defer r.Close()
 
@@ -330,7 +331,7 @@ func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, 
 	// We are not interested in log extraction error
 	io.Copy(lt, r) // nolint: errcheck
 
-	return errors.Wrap(errors.Wrap(err, lt.ToString()), errorMessage)
+	return errkit.Wrap(errkit.Wrap(err, lt.ToString()), errorMessage)
 }
 
 // WaitForPodReady waits for a pod to exit the pending state
@@ -358,7 +359,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		if p.Status.Phase == corev1.PodPending {
 			if p.Status.Reason == "OutOfmemory" || p.Status.Reason == "OutOfcpu" {
 				attachLog = false
-				return false, errors.Errorf("Pod stuck in pending state, reason: %s", p.Status.Reason)
+				return false, errkit.New("Pod stuck in pending state", "reason", p.Status.Reason)
 			}
 		}
 
@@ -380,7 +381,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		return getErrorFromLogs(ctx, cli, namespace, name, containerForLogs, err, errorMessage)
 	}
 
-	return errors.Wrap(err, errorMessage)
+	return errkit.Wrap(err, errorMessage)
 }
 
 func checkNodesStatus(p *corev1.Pod, cli kubernetes.Interface) error {
@@ -388,10 +389,10 @@ func checkNodesStatus(p *corev1.Pod, cli kubernetes.Interface) error {
 	if n[0] != "" {
 		node, err := cli.CoreV1().Nodes().Get(context.TODO(), n[0], metav1.GetOptions{})
 		if err != nil {
-			return errors.Wrapf(err, "%s %s", errAccessingNode, n[0])
+			return errkit.Wrap(err, errAccessingNode, "node", n[0])
 		}
 		if !IsNodeReady(node) || !IsNodeSchedulable(node) {
-			return errors.Errorf("Node %s is currently not ready/schedulable", n[0])
+			return errkit.New("Node is currently not ready/schedulable", "node", n[0])
 		}
 	}
 	return nil
@@ -425,14 +426,14 @@ func checkPVCAndPVStatus(ctx context.Context, vol corev1.Volume, p *corev1.Pod, 
 		if apierrors.IsNotFound(errors.Cause(err)) {
 			// Do not return err, wait for timeout, since sometimes in case of statefulsets, they trigger creation of a volume
 			return nil
-		} else {
-			return errors.Wrapf(err, "Failed to get PVC %s", pvcName)
 		}
+
+		return errkit.Wrap(err, "Failed to get PVC", "pvcName", pvcName)
 	}
 
 	switch pvc.Status.Phase {
 	case corev1.ClaimLost:
-		return errors.Errorf("PVC %s associated with pod %s has status: %s", pvcName, p.Name, corev1.ClaimLost)
+		return errkit.New("PVC associated with pod has unexpected status", "pvcName", pvcName, "podName", p.Name, "status", corev1.ClaimLost)
 	case corev1.ClaimPending:
 		pvName := pvc.Spec.VolumeName
 		if pvName == "" {
@@ -444,12 +445,14 @@ func checkPVCAndPVStatus(ctx context.Context, vol corev1.Volume, p *corev1.Pod, 
 			if apierrors.IsNotFound(errors.Cause(err)) {
 				// wait for timeout
 				return nil
-			} else {
-				return errors.Wrapf(err, "Failed to get PV %s", pvName)
 			}
+
+			return errkit.Wrap(err, "Failed to get PV", "pvName", pvName)
 		}
 		if pv.Status.Phase == corev1.VolumeFailed {
-			return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, corev1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
+			return errkit.New("PV associated with PVC has unexpected status",
+				"pvName", pvName, "pvcName", pvcName, "status", corev1.VolumeFailed,
+				"message", pv.Status.Message, "reason", pv.Status.Reason, "namespace", namespace)
 		}
 	}
 
@@ -468,16 +471,20 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		}
 		containerForLogs = p.Spec.Containers[0].Name
 		if p.Status.Phase == corev1.PodFailed {
-			return false, errors.Errorf("Pod %s failed. Pod status: %s", name, p.Status.String())
+			return false, errkit.New("Pod failed", "podName", name, "status", p.Status.String())
 		}
 		return p.Status.Phase == corev1.PodSucceeded, nil
 	})
+
+	if err == nil {
+		return err
+	}
 
 	errorMessage := "Pod failed or did not transition into complete state"
 	if attachLog {
 		return getErrorFromLogs(ctx, cli, namespace, name, containerForLogs, err, errorMessage)
 	}
-	return errors.Wrap(err, errorMessage)
+	return errkit.Wrap(err, errorMessage)
 }
 
 // use Strategic Merge to patch default pod specs with the passed specs

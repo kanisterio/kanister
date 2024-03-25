@@ -3,7 +3,7 @@ package kube
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"io"
 
 	. "gopkg.in/check.v1"
@@ -39,7 +39,7 @@ func (frw *fakeResponseWrapper) Stream(context.Context) (io.ReadCloser, error) {
 }
 
 func (s *LogReaderSuite) TestLogReader(c *C) {
-	err := fmt.Errorf("TEST")
+	err := errors.New("TEST")
 	for _, tc := range []struct {
 		rw  *fakeResponseWrapper
 		err error

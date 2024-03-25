@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/kanisterio/kanister/pkg/errorchecker"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -53,7 +54,7 @@ func (s *WorkloadReadySuite) TestWaitOnStatefulSetReady(c *C) {
 		defer cancel()
 		err := WaitOnStatefulSetReady(ctx, getCli(tc.input), tc.input.namespace, tc.input.name)
 		if tc.want != "" {
-			c.Assert(err, ErrorMatches, tc.want)
+			c.Assert(err, errorchecker.ErrorMessageMatcher, tc.want)
 		} else {
 			c.Assert(err, IsNil)
 		}
@@ -99,7 +100,7 @@ func (s *WorkloadReadySuite) TestWaitOnDeploymentReady(c *C) {
 		defer cancel()
 		err := WaitOnDeploymentReady(ctx, getCli(tc.input), tc.input.namespace, tc.input.name)
 		if tc.want != "" {
-			c.Assert(err, ErrorMatches, tc.want)
+			c.Assert(err, errorchecker.ErrorMessageMatcher, tc.want)
 		} else {
 			c.Assert(err, IsNil)
 		}

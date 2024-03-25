@@ -15,7 +15,7 @@
 package kube
 
 import (
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -36,7 +36,7 @@ func ConfigNamespace() (string, error) {
 	cc := newClientConfig()
 	ns, _, err := cc.Namespace()
 	if err != nil {
-		return "", errors.Wrap(err, "Could not get namespace from config")
+		return "", errkit.Wrap(err, "Could not get namespace from config")
 	}
 	return ns, nil
 }

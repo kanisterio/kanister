@@ -17,11 +17,11 @@ package kube
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
