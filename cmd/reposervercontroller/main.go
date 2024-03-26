@@ -68,6 +68,8 @@ func main() {
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	logLevel := getLogLevel()
 
+	log.SetupClusterNameInLogVars()
+
 	opts := zap.Options{
 		Level: logLevel,
 	}

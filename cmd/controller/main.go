@@ -17,8 +17,11 @@ package main
 
 import (
 	"github.com/kanisterio/kanister/pkg/kancontroller"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 func main() {
+	log.SetupClusterNameInLogVars()
+
 	kancontroller.Execute()
 }
