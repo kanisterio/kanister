@@ -93,7 +93,11 @@ func initEnvVarFields() {
 			envVarFields = field.Add(envVarFields, strings.ToLower(e), ev)
 		}
 	}
+}
 
+// SetupClusterNameInLogVars sets up the `cluster_name` field in `envVarFields`
+// so that it can be printed with the logs.
+func SetupClusterNameInLogVars() {
 	if clsName, err := config.GetClusterName(nil); err == nil {
 		envVarFields = field.Add(envVarFields, "cluster_name", clsName)
 	}
