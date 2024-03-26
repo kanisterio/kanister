@@ -64,6 +64,7 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		Command:      command,
 		PodOverride:  podOverride,
 	}
+
 	// Mark labels to pods with prefix `kanister.io`. Add the jobID as reference to the origin for the pod.
 	kube.AddDebugLabelsToPodOptions(ctx, options, consts.LabelPrefix, "JobID")
 

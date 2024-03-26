@@ -97,9 +97,6 @@ func deleteData(
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 	}
-	// Mark labels to pods with prefix `kanister.io`. Add the jobID as reference to the origin for the pod.
-	kube.AddDebugLabelsToPodOptions(ctx, options, consts.LabelPrefix, "JobID")
-
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataPodFunc(tp, reclaimSpace, encryptionKey, insecureTLS, targetPaths, deleteTags, deleteIdentifiers)
 	return pr.Run(ctx, podFunc)

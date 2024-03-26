@@ -25,7 +25,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
@@ -159,9 +158,6 @@ func deleteDataFromServer(
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 	}
-	// Mark labels to pods with prefix `kanister.io`. Add the jobID as reference to the origin for the pod.
-	kube.AddDebugLabelsToPodOptions(ctx, options, consts.LabelPrefix, "JobID")
-
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataFromServerPodFunc(
 		hostname,

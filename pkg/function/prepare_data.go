@@ -20,14 +20,14 @@ import (
 	"io"
 	"time"
 
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -107,9 +107,6 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		ServiceAccountName: serviceAccount,
 		PodOverride:        podOverride,
 	}
-	// Mark labels to pods with prefix `kanister.io`. Add the jobID as reference to the origin for the pod.
-	kube.AddDebugLabelsToPodOptions(ctx, options, consts.LabelPrefix, "JobID")
-
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)
 	return pr.Run(ctx, podFunc)
