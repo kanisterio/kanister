@@ -54,6 +54,8 @@ Parameter | Description | Default
 `image.tag` | controller container image tag | `0.10.0`
 `image.pullPolicy` | controller container image pull policy | `IfNotPresent`
 `resources` | k8s pod resources | `None`
+`nodeSelector` | node labels for pod assignment. Evaluated as template | `{}` |
+`tolerations` | tolerations for pod assignment. Evaluated as a template | `[]` |
 
 Specify each parameter you'd like to override using a YAML file as described above in the [installation](#installing-the-chart) section.
 
