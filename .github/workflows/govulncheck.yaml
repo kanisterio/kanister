@@ -1,0 +1,24 @@
+
+name: 'govulncheck'
+on:
+  ## Nightly
+  schedule:
+    - cron: '42 1 * * *'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - id: govulncheck
+        name: 'Govulncheck'
+        uses: golang/govulncheck-action@3a32958c2706f7048305d5a2e53633d7e37e97d0 # v1.0.2
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        with:
+          repo-checkout: false
+          cache: false
