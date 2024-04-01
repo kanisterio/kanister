@@ -175,19 +175,21 @@ func PVCContainsReadOnlyAccessMode(pvc *corev1.PersistentVolumeClaim) bool {
 	return false
 }
 
-// AddDebugLabelsToPodOptions adds additional label selector to `PodOptions`,
+// AddLabelsToPodOptionsFromContext adds additional label selector to `PodOptions`,
 // provided the context has a key starting with `keyPrefix`.
-func AddDebugLabelsToPodOptions(ctx context.Context, options *PodOptions, keyPrefix, keySuffix string) {
+func AddLabelsToPodOptionsFromContext(ctx context.Context, options *PodOptions, keyPrefix, keySuffix string) {
 	fields := field.FromContext(ctx)
-	if fields != nil {
-		for _, f := range fields.Fields() {
-			if strings.HasPrefix(f.Key(), keyPrefix) {
-				value := f.Value().(string)
-				if options.Labels == nil {
-					options.Labels = make(map[string]string)
-				}
-				options.Labels[keyPrefix+keySuffix] = value
+	if fields == nil {
+		return
+	}
+	for _, f := range fields.Fields() {
+		if strings.HasPrefix(f.Key(), keyPrefix) {
+			value := f.Value().(string)
+			if options.Labels == nil {
+				options.Labels = make(map[string]string)
 			}
+			options.Labels[keyPrefix+keySuffix] = value
 		}
 	}
+
 }
