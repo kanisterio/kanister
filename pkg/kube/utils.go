@@ -17,6 +17,7 @@ package kube
 import (
 	"context"
 	"fmt"
+
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"

@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -30,7 +31,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
-	"strings"
 )
 
 const (
