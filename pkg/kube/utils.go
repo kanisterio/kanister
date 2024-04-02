@@ -183,13 +183,13 @@ func AddLabelsToPodOptionsFromContext(ctx context.Context, options *PodOptions, 
 		return
 	}
 	for _, f := range fields.Fields() {
-		if strings.HasPrefix(f.Key(), keyPrefix) {
-			value := f.Value().(string)
-			if options.Labels == nil {
-				options.Labels = make(map[string]string)
-			}
-			options.Labels[keyPrefix+keySuffix] = value
+		if !strings.HasPrefix(f.Key(), keyPrefix) {
+			continue
 		}
+		value := f.Value().(string)
+		if options.Labels == nil {
+			options.Labels = make(map[string]string)
+		}
+		options.Labels[keyPrefix+keySuffix] = value
 	}
-
 }

@@ -119,6 +119,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerWithJobIDDebugLabelForSuccessCase(c *C
 	ctx, cancel := context.WithCancel(context.Background())
 	randomUUID := "xyz123"
 	ctx = field.Context(ctx, consts.LabelPrefix+"JobID", randomUUID)
+	ctx = field.Context(ctx, "some-test-key", "some-test-value")
 
 	cli := fake.NewSimpleClientset()
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
