@@ -116,44 +116,65 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 // TestPodRunnerWithJobIDDebugLabelForSuccessCase: This test adds a debug entry (kanister.io/JobID) into the context and verifies the
 // pod got created with corresponding label using the entry or not.
 func (s *PodRunnerTestSuite) TestPodRunnerWithJobIDDebugLabelForSuccessCase(c *C) {
-	ctx, cancel := context.WithCancel(context.Background())
 	randomUUID := "xyz123"
-	ctx = field.Context(ctx, consts.LabelPrefix+"JobID", randomUUID)
-	ctx = field.Context(ctx, "some-test-key", "some-test-value")
-
-	cli := fake.NewSimpleClientset()
-	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		return false, nil, nil
-	})
-	cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		p := &corev1.Pod{
-			Status: corev1.PodStatus{
-				Phase: corev1.PodRunning,
+	for _, tc := range []struct {
+		name              string
+		validateFn        func(_ context.Context) (bool, string)
+		afterPodRunTestFn func(labelKey, labelValue string, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error)
+	}{
+		{
+			name: "test key not present in context",
+			validateFn: func(_ context.Context) (bool, string) {
+				return false, ""
 			},
+			afterPodRunTestFn: afterPodRunTestKeyAbsentFunc,
+		},
+		{
+			name: "test key is present in context",
+			validateFn: func(_ context.Context) (bool, string) {
+				return true, randomUUID
+			},
+			afterPodRunTestFn: afterPodRunTestKeyPresentFunc,
+		},
+	} {
+		ctx, cancel := context.WithCancel(context.Background())
+		ctx = field.Context(ctx, consts.LabelPrefix+"JobID", randomUUID)
+		ctx = field.Context(ctx, "some-test-key", "some-test-value")
+
+		cli := fake.NewSimpleClientset()
+		cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+			return false, nil, nil
+		})
+		cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+			p := &corev1.Pod{
+				Status: corev1.PodStatus{
+					Phase: corev1.PodRunning,
+				},
+			}
+			return true, p, nil
+		})
+		po := &PodOptions{
+			Namespace: podRunnerNS,
+			Name:      podName,
+			Command:   []string{"sh", "-c", "tail -f /dev/null"},
 		}
-		return true, p, nil
-	})
-	deleted := make(chan struct{})
-	cli.PrependReactor("delete", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		c.Log("Pod deleted due to Context Cancelled")
-		close(deleted)
-		return true, nil, nil
-	})
-	po := &PodOptions{
-		Namespace: podRunnerNS,
-		Name:      podName,
-		Command:   []string{"sh", "-c", "tail -f /dev/null"},
+		deleted := make(chan struct{})
+		cli.PrependReactor("delete", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+			c.Log("Pod deleted due to Context Cancelled")
+			close(deleted)
+			return true, nil, nil
+		})
+		AddLabelsToPodOptionsFromContext(ctx, po, consts.LabelPrefix+"JobID", tc.validateFn)
+		pr := NewPodRunner(cli, po)
+		errorCh := make(chan error)
+		go func() {
+			_, err := pr.Run(ctx, tc.afterPodRunTestFn(consts.LabelPrefix+"JobID", randomUUID, deleted))
+			errorCh <- err
+		}()
+		deleted <- struct{}{}
+		c.Assert(<-errorCh, IsNil)
+		cancel()
 	}
-	AddLabelsToPodOptionsFromContext(ctx, po, consts.LabelPrefix, "JobID")
-	pr := NewPodRunner(cli, po)
-	errorCh := make(chan error)
-	go func() {
-		_, err := pr.Run(ctx, makePodRunnerTestForKeyPresence(consts.LabelPrefix+"JobID", randomUUID, deleted))
-		errorCh <- err
-	}()
-	deleted <- struct{}{}
-	c.Assert(<-errorCh, IsNil)
-	cancel()
 }
 
 func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
@@ -163,7 +184,7 @@ func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pc PodCon
 	}
 }
 
-func makePodRunnerTestForKeyPresence(labelKey, labelValue string, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
+func afterPodRunTestKeyPresentFunc(labelKey, labelValue string, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 		<-ch
 		value, ok := pc.Pod().Labels[labelKey]
@@ -172,6 +193,17 @@ func makePodRunnerTestForKeyPresence(labelKey, labelValue string, ch chan struct
 		}
 		if value != labelValue {
 			return nil, errors.New("Value mismatch")
+		}
+		return nil, nil
+	}
+}
+
+func afterPodRunTestKeyAbsentFunc(labelKey, labelValue string, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
+	return func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
+		<-ch
+		_, present := pc.Pod().Labels[labelKey]
+		if present {
+			return nil, errors.New("Key should not be present")
 		}
 		return nil, nil
 	}

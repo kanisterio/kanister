@@ -17,13 +17,9 @@ package kube
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/field"
 )
 
 const (
@@ -176,20 +172,19 @@ func PVCContainsReadOnlyAccessMode(pvc *corev1.PersistentVolumeClaim) bool {
 }
 
 // AddLabelsToPodOptionsFromContext adds additional label selector to `PodOptions`,
-// provided the context has a key starting with `keyPrefix`.
-func AddLabelsToPodOptionsFromContext(ctx context.Context, options *PodOptions, keyPrefix, keySuffix string) {
-	fields := field.FromContext(ctx)
-	if fields == nil {
+// provided the validationFunc passes successfully.
+func AddLabelsToPodOptionsFromContext(
+	ctx context.Context,
+	options *PodOptions,
+	targetKey string,
+	validateFn func(context.Context) (bool, string),
+) {
+	ok, value := validateFn(ctx)
+	if !ok {
 		return
 	}
-	for _, f := range fields.Fields() {
-		if !strings.HasPrefix(f.Key(), keyPrefix) {
-			continue
-		}
-		value := f.Value().(string)
-		if options.Labels == nil {
-			options.Labels = make(map[string]string)
-		}
-		options.Labels[keyPrefix+keySuffix] = value
+	if options.Labels == nil {
+		options.Labels = make(map[string]string)
 	}
+	options.Labels[targetKey] = value
 }
