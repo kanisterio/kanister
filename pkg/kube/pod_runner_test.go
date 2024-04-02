@@ -27,6 +27,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
+	"path"
 )
 
 type PodRunnerTestSuite struct{}
@@ -164,11 +165,12 @@ func (s *PodRunnerTestSuite) TestPodRunnerWithJobIDDebugLabelForSuccessCase(c *C
 			close(deleted)
 			return true, nil, nil
 		})
-		AddLabelsToPodOptionsFromContext(ctx, po, consts.LabelPrefix+"JobID", tc.validateFn)
+		var targetKey = path.Join(consts.LabelPrefix, "JobID")
+		AddLabelsToPodOptionsFromContext(ctx, po, targetKey, tc.validateFn)
 		pr := NewPodRunner(cli, po)
 		errorCh := make(chan error)
 		go func() {
-			_, err := pr.Run(ctx, tc.afterPodRunTestFn(consts.LabelPrefix+"JobID", randomUUID, deleted))
+			_, err := pr.Run(ctx, tc.afterPodRunTestFn(targetKey, randomUUID, deleted))
 			errorCh <- err
 		}()
 		deleted <- struct{}{}
