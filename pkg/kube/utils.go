@@ -172,20 +172,14 @@ func PVCContainsReadOnlyAccessMode(pvc *corev1.PersistentVolumeClaim) bool {
 	return false
 }
 
-// AddLabelsToPodOptionsFromContext adds additional label selector to `PodOptions`,
-// provided the validationFunc passes successfully.
-func AddLabelsToPodOptionsFromContext(
-	ctx context.Context,
+// AddLabelsToPodOptions adds additional label selector to `PodOptions`,
+func AddLabelsToPodOptions(
 	options *PodOptions,
-	targetKey string,
-	validateFn func(context.Context) (bool, string),
+	targetKey,
+	targetValue string,
 ) {
-	ok, value := validateFn(ctx)
-	if !ok {
-		return
-	}
 	if options.Labels == nil {
 		options.Labels = make(map[string]string)
 	}
-	options.Labels[targetKey] = value
+	options.Labels[targetKey] = targetValue
 }
