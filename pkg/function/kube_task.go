@@ -68,10 +68,7 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		PodOverride:  podOverride,
 	}
 	// Mark labels to pods with prefix `kanister.io`. Add the jobID as reference to the origin for the pod.
-	ok, val := kube.ValidateLabelKeyIsPresentFromContext(ctx, consts.LabelPrefix)
-	if ok {
-		kube.AddLabelsToPodOptions(options, path.Join(consts.LabelPrefix, jobIDSuffix), val)
-	}
+	kube.AddLabelsToPodOptionsFromContext(ctx, options, path.Join(consts.LabelPrefix, jobIDSuffix))
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := kubeTaskPodFunc()
 	return pr.Run(ctx, podFunc)

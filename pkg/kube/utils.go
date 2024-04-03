@@ -17,7 +17,6 @@ package kube
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
@@ -175,29 +174,29 @@ func PVCContainsReadOnlyAccessMode(pvc *corev1.PersistentVolumeClaim) bool {
 	return false
 }
 
-// AddLabelsToPodOptions adds additional label selector to `PodOptions`.
-func AddLabelsToPodOptions(
+// AddLabelsToPodOptions adds additional label selector to `PodOptions`. It extracts the value from the context
+// if targetkey is present and assigns to the podoptions.
+func AddLabelsToPodOptionsFromContext(
+	ctx context.Context,
 	options *PodOptions,
-	targetKey,
-	targetValue string,
+	targetKey string,
 ) {
+	fields := field.FromContext(ctx)
+	if fields == nil {
+		return
+	}
+	var targetValue = ""
+	for _, f := range fields.Fields() {
+		if f.Key() == targetKey {
+			targetValue = f.Value().(string)
+		}
+	}
+	// Not found
+	if targetValue == "" {
+		return
+	}
 	if options.Labels == nil {
 		options.Labels = make(map[string]string)
 	}
 	options.Labels[targetKey] = targetValue
-}
-
-// ValidateLabelKeyIsPresentFromContext: This is a helper validation function used to validate the presence of a
-// label key. Result of this is used to add target label selector to the pod.
-func ValidateLabelKeyIsPresentFromContext(ctx context.Context, keyPrefix string) (bool, string) {
-	fields := field.FromContext(ctx)
-	if fields == nil {
-		return false, ""
-	}
-	for _, f := range fields.Fields() {
-		if strings.HasPrefix(f.Key(), keyPrefix) {
-			return true, f.Value().(string)
-		}
-	}
-	return false, ""
 }

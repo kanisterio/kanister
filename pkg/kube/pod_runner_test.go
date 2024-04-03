@@ -118,42 +118,62 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 // pod got created with corresponding label using the entry or not.
 func (s *PodRunnerTestSuite) TestPodRunnerWithJobIDDebugLabelForSuccessCase(c *C) {
 	randomUUID := "xyz123"
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx = field.Context(ctx, path.Join(consts.LabelPrefix, "JobID"), randomUUID)
-	cli := fake.NewSimpleClientset()
-	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		return false, nil, nil
-	})
-	cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		p := &corev1.Pod{
-			Status: corev1.PodStatus{
-				Phase: corev1.PodRunning,
-			},
+	for _, tc := range []struct {
+		name        string
+		targetKey   string
+		targetValue string
+		hasError    bool
+	}{
+		{
+			name:        "target key present",
+			targetKey:   path.Join(consts.LabelPrefix, "JobID"),
+			targetValue: randomUUID,
+			hasError:    false,
+		},
+		{
+			name:        "target key not present",
+			targetKey:   path.Join(consts.LabelPrefix, "NonJobID"),
+			targetValue: "some-other-value",
+			hasError:    true,
+		},
+	} {
+		ctx, cancel := context.WithCancel(context.Background())
+		ctx = field.Context(ctx, tc.targetKey, randomUUID)
+		cli := fake.NewSimpleClientset()
+		cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+			return false, nil, nil
+		})
+		cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+			p := &corev1.Pod{
+				Status: corev1.PodStatus{
+					Phase: corev1.PodRunning,
+				},
+			}
+			return true, p, nil
+		})
+		po := &PodOptions{
+			Namespace: podRunnerNS,
+			Name:      podName,
+			Command:   []string{"sh", "-c", "tail -f /dev/null"},
 		}
-		return true, p, nil
-	})
-	po := &PodOptions{
-		Namespace: podRunnerNS,
-		Name:      podName,
-		Command:   []string{"sh", "-c", "tail -f /dev/null"},
+		deleted := make(chan struct{})
+		cli.PrependReactor("delete", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+			c.Log("Pod deleted due to Context Cancelled")
+			close(deleted)
+			return true, nil, nil
+		})
+		var targetKey = path.Join(consts.LabelPrefix, "JobID")
+		AddLabelsToPodOptionsFromContext(ctx, po, targetKey)
+		pr := NewPodRunner(cli, po)
+		errorCh := make(chan error)
+		go func() {
+			_, err := pr.Run(ctx, afterPodRunTestKeyPresentFunc(targetKey, randomUUID, tc.hasError, deleted))
+			errorCh <- err
+		}()
+		deleted <- struct{}{}
+		c.Assert(<-errorCh, IsNil)
+		cancel()
 	}
-	deleted := make(chan struct{})
-	cli.PrependReactor("delete", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		c.Log("Pod deleted due to Context Cancelled")
-		close(deleted)
-		return true, nil, nil
-	})
-	var targetKey = path.Join(consts.LabelPrefix, "JobID")
-	AddLabelsToPodOptions(po, targetKey, randomUUID)
-	pr := NewPodRunner(cli, po)
-	errorCh := make(chan error)
-	go func() {
-		_, err := pr.Run(ctx, afterPodRunTestKeyPresentFunc(targetKey, randomUUID, deleted))
-		errorCh <- err
-	}()
-	deleted <- struct{}{}
-	c.Assert(<-errorCh, IsNil)
-	cancel()
 }
 
 func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
@@ -163,9 +183,12 @@ func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pc PodCon
 	}
 }
 
-func afterPodRunTestKeyPresentFunc(labelKey, labelValue string, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
+func afterPodRunTestKeyPresentFunc(labelKey, labelValue string, ignoreError bool, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 		<-ch
+		if ignoreError {
+			return nil, nil
+		}
 		value, ok := pc.Pod().Labels[labelKey]
 		if !ok {
 			return nil, errors.New("Key not present")
