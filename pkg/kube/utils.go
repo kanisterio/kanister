@@ -17,10 +17,13 @@ package kube
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/field"
 )
 
 const (
@@ -172,7 +175,7 @@ func PVCContainsReadOnlyAccessMode(pvc *corev1.PersistentVolumeClaim) bool {
 	return false
 }
 
-// AddLabelsToPodOptions adds additional label selector to `PodOptions`,
+// AddLabelsToPodOptions adds additional label selector to `PodOptions`.
 func AddLabelsToPodOptions(
 	options *PodOptions,
 	targetKey,
@@ -182,4 +185,19 @@ func AddLabelsToPodOptions(
 		options.Labels = make(map[string]string)
 	}
 	options.Labels[targetKey] = targetValue
+}
+
+// ValidateLabelKeyIsPresentFromContext: This is a helper validation function used to validate the presence of a
+// label key. Result of this is used to add target label selector to the pod.
+func ValidateLabelKeyIsPresentFromContext(ctx context.Context, keyPrefix string) (bool, string) {
+	fields := field.FromContext(ctx)
+	if fields == nil {
+		return false, ""
+	}
+	for _, f := range fields.Fields() {
+		if strings.HasPrefix(f.Key(), keyPrefix) {
+			return true, f.Value().(string)
+		}
+	}
+	return false, ""
 }

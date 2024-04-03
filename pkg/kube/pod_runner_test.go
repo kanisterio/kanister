@@ -17,6 +17,7 @@ package kube
 import (
 	"context"
 	"os"
+	"path"
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
@@ -27,7 +28,6 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
-	"path"
 )
 
 type PodRunnerTestSuite struct{}

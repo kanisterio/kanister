@@ -17,7 +17,6 @@ package function
 import (
 	"context"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -69,7 +68,7 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		PodOverride:  podOverride,
 	}
 	// Mark labels to pods with prefix `kanister.io`. Add the jobID as reference to the origin for the pod.
-	ok, val := validateLabelKeyIsPresentFromContext(ctx, consts.LabelPrefix)
+	ok, val := kube.ValidateLabelKeyIsPresentFromContext(ctx, consts.LabelPrefix)
 	if ok {
 		kube.AddLabelsToPodOptions(options, path.Join(consts.LabelPrefix, jobIDSuffix), val)
 	}
@@ -99,21 +98,6 @@ func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[str
 		}
 		return out, err
 	}
-}
-
-// validateLabelKeyIsPresent: This is a helper validation function used by kubetask to validate the presence of
-// label key. Result of this is used to add target label selector to the pod
-func validateLabelKeyIsPresentFromContext(ctx context.Context, keyPrefix string) (bool, string) {
-	fields := field.FromContext(ctx)
-	if fields == nil {
-		return false, ""
-	}
-	for _, f := range fields.Fields() {
-		if strings.HasPrefix(f.Key(), keyPrefix) {
-			return true, f.Value().(string)
-		}
-	}
-	return false, ""
 }
 
 func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
