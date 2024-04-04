@@ -114,33 +114,30 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 	cancel()
 }
 
-// TestPodRunnerWithDebugLabelForSuccessCase: This test adds a debug entry into the context and verifies the
+// TestPodRunnerWithDebugLabelForSuccessCase adds a debug entry into the context and verifies the
 // pod got created with corresponding label using the entry or not.
 func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *C) {
 	jobIDSuffix := "JobID"
 	for _, tc := range []struct {
-		name               string
-		targetKey          string
-		contextKey         string
-		contextValue       string
-		expectedLabel      bool
-		validationErrorMsg string
+		name          string
+		targetKey     string
+		contextKey    string
+		contextValue  string
+		expectedLabel bool
 	}{
 		{
-			name:               "target key (kanister.io/JobID) present in pod labels",
-			targetKey:          path.Join(consts.LabelPrefix, jobIDSuffix),
-			contextKey:         path.Join(consts.LabelPrefix, jobIDSuffix),
-			contextValue:       "xyz123",
-			expectedLabel:      true,
-			validationErrorMsg: "Expected label to be set",
+			name:          "target key (kanister.io/JobID) present in pod labels",
+			targetKey:     path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextKey:    path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextValue:  "xyz123",
+			expectedLabel: true,
 		},
 		{
-			name:               "target key (kanister.io/JobID) not present in pod labels",
-			targetKey:          path.Join(consts.LabelPrefix, jobIDSuffix),
-			contextKey:         path.Join(consts.LabelPrefix, "NonJobID"),
-			contextValue:       "some-other-value",
-			expectedLabel:      false,
-			validationErrorMsg: "Expected label to be not set",
+			name:          "target key (kanister.io/JobID) not present in pod labels",
+			targetKey:     path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextKey:    path.Join(consts.LabelPrefix, "NonJobID"),
+			contextValue:  "some-other-value",
+			expectedLabel: false,
 		},
 	} {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -172,7 +169,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *C) {
 		pr := NewPodRunner(cli, po)
 		errorCh := make(chan error)
 		go func() {
-			_, err := pr.Run(ctx, afterPodRunTestKeyPresentFunc(tc.targetKey, tc.validationErrorMsg, tc.expectedLabel, deleted))
+			_, err := pr.Run(ctx, afterPodRunTestKeyPresentFunc(tc.targetKey, tc.expectedLabel, deleted))
 			errorCh <- err
 		}()
 		deleted <- struct{}{}
@@ -188,13 +185,12 @@ func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pc PodCon
 	}
 }
 
-func afterPodRunTestKeyPresentFunc(labelKey, validationErrorMsg string, expectedLabel bool, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
+func afterPodRunTestKeyPresentFunc(labelKey string, expectedLabel bool, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 		<-ch
-
 		_, got := pc.Pod().Labels[labelKey]
 		if got != expectedLabel {
-			return nil, errors.New(validationErrorMsg)
+			return nil, errors.New("Got different label than expected")
 		}
 		return nil, nil
 	}
