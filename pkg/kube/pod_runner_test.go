@@ -114,31 +114,37 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 	cancel()
 }
 
-// TestPodRunnerWithJobIDDebugLabelForSuccessCase: This test adds a debug entry (kanister.io/JobID) into the context and verifies the
+// TestPodRunnerWithDebugLabelForSuccessCase: This test adds a debug entry into the context and verifies the
 // pod got created with corresponding label using the entry or not.
-func (s *PodRunnerTestSuite) TestPodRunnerWithJobIDDebugLabelForSuccessCase(c *C) {
-	randomUUID := "xyz123"
+func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *C) {
+	jobIDSuffix := "JobID"
 	for _, tc := range []struct {
-		name        string
-		targetKey   string
-		targetValue string
-		hasError    bool
+		name               string
+		targetKey          string
+		contextKey         string
+		contextValue       string
+		expectedLabel      bool
+		validationErrorMsg string
 	}{
 		{
-			name:        "target key present",
-			targetKey:   path.Join(consts.LabelPrefix, "JobID"),
-			targetValue: randomUUID,
-			hasError:    false,
+			name:               "target key (kanister.io/JobID) present in pod labels",
+			targetKey:          path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextKey:         path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextValue:       "xyz123",
+			expectedLabel:      true,
+			validationErrorMsg: "Expected label to be set",
 		},
 		{
-			name:        "target key not present",
-			targetKey:   path.Join(consts.LabelPrefix, "NonJobID"),
-			targetValue: "some-other-value",
-			hasError:    true,
+			name:               "target key (kanister.io/JobID) not present in pod labels",
+			targetKey:          path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextKey:         path.Join(consts.LabelPrefix, "NonJobID"),
+			contextValue:       "some-other-value",
+			expectedLabel:      false,
+			validationErrorMsg: "Expected label to be not set",
 		},
 	} {
 		ctx, cancel := context.WithCancel(context.Background())
-		ctx = field.Context(ctx, tc.targetKey, randomUUID)
+		ctx = field.Context(ctx, tc.contextKey, tc.contextValue)
 		cli := fake.NewSimpleClientset()
 		cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 			return false, nil, nil
@@ -162,12 +168,11 @@ func (s *PodRunnerTestSuite) TestPodRunnerWithJobIDDebugLabelForSuccessCase(c *C
 			close(deleted)
 			return true, nil, nil
 		})
-		var targetKey = path.Join(consts.LabelPrefix, "JobID")
-		AddLabelsToPodOptionsFromContext(ctx, po, targetKey)
+		AddLabelsToPodOptionsFromContext(ctx, po, tc.targetKey)
 		pr := NewPodRunner(cli, po)
 		errorCh := make(chan error)
 		go func() {
-			_, err := pr.Run(ctx, afterPodRunTestKeyPresentFunc(targetKey, randomUUID, tc.hasError, deleted))
+			_, err := pr.Run(ctx, afterPodRunTestKeyPresentFunc(tc.targetKey, tc.validationErrorMsg, tc.expectedLabel, deleted))
 			errorCh <- err
 		}()
 		deleted <- struct{}{}
@@ -183,18 +188,13 @@ func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pc PodCon
 	}
 }
 
-func afterPodRunTestKeyPresentFunc(labelKey, labelValue string, ignoreError bool, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
+func afterPodRunTestKeyPresentFunc(labelKey, validationErrorMsg string, expectedLabel bool, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 		<-ch
-		if ignoreError {
-			return nil, nil
-		}
-		value, ok := pc.Pod().Labels[labelKey]
-		if !ok {
-			return nil, errors.New("Key not present")
-		}
-		if value != labelValue {
-			return nil, errors.New("Value mismatch")
+
+		_, got := pc.Pod().Labels[labelKey]
+		if got != expectedLabel {
+			return nil, errors.New(validationErrorMsg)
 		}
 		return nil, nil
 	}

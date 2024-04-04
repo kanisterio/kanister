@@ -174,8 +174,8 @@ func PVCContainsReadOnlyAccessMode(pvc *corev1.PersistentVolumeClaim) bool {
 	return false
 }
 
-// AddLabelsToPodOptions adds additional label selector to `PodOptions`. It extracts the value from the context
-// if targetkey is present and assigns to the podoptions.
+// AddLabelsToPodOptionsFromContext adds a label to `PodOptions`. It extracts the value from the context
+// if targetKey is present and assigns to the options.
 func AddLabelsToPodOptionsFromContext(
 	ctx context.Context,
 	options *PodOptions,
@@ -185,18 +185,13 @@ func AddLabelsToPodOptionsFromContext(
 	if fields == nil {
 		return
 	}
-	var targetValue = ""
-	for _, f := range fields.Fields() {
-		if f.Key() == targetKey {
-			targetValue = f.Value().(string)
-		}
-	}
-	// Not found
-	if targetValue == "" {
-		return
-	}
 	if options.Labels == nil {
 		options.Labels = make(map[string]string)
 	}
-	options.Labels[targetKey] = targetValue
+	for _, f := range fields.Fields() {
+		if f.Key() == targetKey {
+			options.Labels[targetKey] = f.Value().(string)
+			return
+		}
+	}
 }
