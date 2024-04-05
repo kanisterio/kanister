@@ -119,25 +119,25 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *C) {
 	jobIDSuffix := "JobID"
 	for _, tc := range []struct {
-		name          string
-		targetKey     string
-		contextKey    string
-		contextValue  string
-		expectedLabel bool
+		name            string
+		targetKey       string
+		contextKey      string
+		contextValue    string
+		isLabelExpected bool
 	}{
 		{
-			name:          "target key (kanister.io/JobID) present in pod labels",
-			targetKey:     path.Join(consts.LabelPrefix, jobIDSuffix),
-			contextKey:    path.Join(consts.LabelPrefix, jobIDSuffix),
-			contextValue:  "xyz123",
-			expectedLabel: true,
+			name:            "target key (kanister.io/JobID) present in pod labels",
+			targetKey:       path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextKey:      path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextValue:    "xyz123",
+			isLabelExpected: true,
 		},
 		{
-			name:          "target key (kanister.io/JobID) not present in pod labels",
-			targetKey:     path.Join(consts.LabelPrefix, jobIDSuffix),
-			contextKey:    path.Join(consts.LabelPrefix, "NonJobID"),
-			contextValue:  "some-other-value",
-			expectedLabel: false,
+			name:            "target key (kanister.io/JobID) not present in pod labels",
+			targetKey:       path.Join(consts.LabelPrefix, jobIDSuffix),
+			contextKey:      path.Join(consts.LabelPrefix, "NonJobID"),
+			contextValue:    "some-other-value",
+			isLabelExpected: false,
 		},
 	} {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -169,7 +169,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *C) {
 		pr := NewPodRunner(cli, po)
 		errorCh := make(chan error)
 		go func() {
-			_, err := pr.Run(ctx, afterPodRunTestKeyPresentFunc(tc.targetKey, tc.expectedLabel, deleted))
+			_, err := pr.Run(ctx, afterPodRunTestKeyPresentFunc(tc.targetKey, tc.contextValue, tc.isLabelExpected, deleted))
 			errorCh <- err
 		}()
 		deleted <- struct{}{}
@@ -185,12 +185,15 @@ func makePodRunnerTestFunc(ch chan struct{}) func(ctx context.Context, pc PodCon
 	}
 }
 
-func afterPodRunTestKeyPresentFunc(labelKey string, expectedLabel bool, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
+func afterPodRunTestKeyPresentFunc(labelKey, expectedLabelValue string, isLabelExpected bool, ch chan struct{}) func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc PodController) (map[string]interface{}, error) {
 		<-ch
-		_, got := pc.Pod().Labels[labelKey]
-		if got != expectedLabel {
+		labelValue, found := pc.Pod().Labels[labelKey]
+		if found != isLabelExpected {
 			return nil, errors.New("Got different label than expected")
+		}
+		if isLabelExpected && labelValue != expectedLabelValue {
+			return nil, errors.New("Found label doesn't match with expected label")
 		}
 		return nil, nil
 	}
