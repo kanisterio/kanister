@@ -8,3 +8,4 @@
 /dist
 **/*.swp
 /.idea
+/releasenotes/config.yaml
