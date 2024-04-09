@@ -23,17 +23,19 @@ When reviewing a PR, a reviewer should check if there are change notes added if 
 Changelog can be generated using:
 
 ```
-reno report ./ > CHANGELOG.md
-```
-OR
-```
 make reno-report
 ```
+or to mark specific current version:
+```
+make reno-report VERSION=$CURRENT_VERSION
+```
 
-This will create a CHANGELOG.md file with changes from committed release notes.
+This will create a CHANGELOG.md and CHANGELOG_CURRENT.md files with changes from committed release notes.
+CHANGELOG_CURRENT.md only containing changes for the current version.
 
-It can later be passed to goreleaser build as `CHANGELOG_FILE` variable:
+It will be used when running goreleaser build using make (will use `CHANGELOG_CURRENT.md` by default):
 
 ```
-make gorelease CHANGELOG_FILE=./CHANGELOG.md
+make gorelease CHANGELOG_FILE=./CHANGELOG_CURRENT.md
 ```
+

@@ -31,7 +31,7 @@ RUN GOBIN=/usr/local/bin go install github.com/ahmetb/gen-crd-api-reference-docs
 
 RUN apt-get update && apt-get install -y pip
 
-RUN pip install reno
+RUN pip install reno nb2plots
 
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \
