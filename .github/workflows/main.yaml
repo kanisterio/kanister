@@ -42,6 +42,17 @@ jobs:
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - run: make golint
+  reno_lint:
+    runs-on: ubuntu-20.04
+    needs: gomod
+    steps:
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+    - name: reno_lint
+      run: make reno-lint
+    ## Reno lint does not catch some errors which make reno report fail
+    - name: reno_report_check
+      run: make reno-report
+
   test:
     runs-on: ubuntu-20.04
     needs: gomod
