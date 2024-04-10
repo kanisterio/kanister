@@ -32,6 +32,7 @@ jobs:
         export CURRENT_TAG=$(git describe --abbrev=0 --tags)
         echo ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
         ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
+        make reno-report VERSION="${RELEASE_TAG}"
     - name: commit_changes
       run: |
         git config --global user.name 'Kasten Production'
@@ -39,10 +40,18 @@ jobs:
         git checkout -B "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
         git add -A
         git commit -s -m "pre-release: Update version to ${RELEASE_TAG}"
+    - name: push_changes
+      run: git push origin "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
+    - name: create_pr_body
+      run: |
+        echo "Update version to ${RELEASE_TAG}" > PR_BODY_FILE
+        echo "" > PR_BODY_FILE
+        echo "Please check the changelog for the following merges:" >> PR_BODY_FILE
+        export CURRENT_TAG=$(git describe --abbrev=0 --tags)
+        git log ${CURRENT_TAG}..kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG} --pretty="- %h: %s"  | grep -v ': test' | grep -v ': doc' | grep -v ': build' | grep -v ': deps'  >> PR_BODY_FILE
     - name: create_pr
       run: |
-        git push origin "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
-        gh pr create --title "pre-release: Update version to ${RELEASE_TAG}" --body "Update version to ${RELEASE_TAG}"  --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" --base master --reviewer tdmanv,pavannd1,viveksinghggits --label kueue
+        gh pr create --title "pre-release: Update version to ${RELEASE_TAG}" -F PR_BODY_FILE --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" --base master --reviewer tdmanv,pavannd1,viveksinghggits,hairyhum --label kueue
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
