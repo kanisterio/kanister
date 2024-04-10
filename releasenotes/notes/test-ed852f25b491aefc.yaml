@@ -1,0 +1,7 @@
+---
+release_summary: test release notes
+features:
+ - test release notes
+ - test pre-release generation
+fixes:
+ - test fixes field
