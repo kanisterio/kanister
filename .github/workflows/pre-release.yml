@@ -32,7 +32,7 @@ jobs:
         export CURRENT_TAG=$(git describe --abbrev=0 --tags)
         echo ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
         ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
-        ./build/reno_report.sh "${RELEASE_TAG}"
+        make reno-report VERSION="${RELEASE_TAG}"
     - name: commit_changes
       run: |
         git config --global user.name 'Kasten Production'
