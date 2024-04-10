@@ -192,7 +192,7 @@ func (tlc TimeLogCSI) getAppDeploymentObj() *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:    "test-container",
-							Image:   "ghcr.io/kanisterio/kanister-tools:0.107.0",
+							Image:   "ghcr.io/kanisterio/kanister-tools:0.0.0",
 							Command: []string{"sh", "-c"},
 							Args:    []string{"while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"},
 							VolumeMounts: []corev1.VolumeMount{
