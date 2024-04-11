@@ -7,6 +7,8 @@ Current known vulnerabilities are listed in the
 You can report a new vulnerability using
 [Report a vulnerability](https://github.com/kanisterio/kanister/security/advisories/new) tool.
 
+Alternatively you can report it via kanisterio google group "Contact owners and managers" button: https://groups.google.com/g/kanisterio/about
+
 The maintainers will help diagnose the severity of the issue and determine how
 to address the issue. Issues deemed to be non-critical will be filed as GitHub
 issues. Critical issues will receive immediate attention and be fixed as quickly
