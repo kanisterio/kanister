@@ -15,6 +15,7 @@ Release process:
 - Once the job is complete, a Slack notification will be sent to the kanister channel on the Kasten workspace.
 	- **NOTE** We need to update the GVS blueprint version in the kio/kanister/blueprint.go file to ensure that the new kanister-tools image will be used for Kopia operations. Push a commit to the PR opened above to do this. Example: https://github.com/kastenhq/k10/pull/23956/commits/83a62ccb17af52fd331012239dea97e02180817b
 - Once the PR is approved, the Kanister release is complete.
+- Post release announcement in kanister slack and https://groups.google.com/g/kanisterio 
 - Additionally, we could also approve the K10 go.mod update to bring in the latest changes in K10. Example PR: https://github.com/kastenhq/k10/pull/24589
 
 ### Pre-release workflow
