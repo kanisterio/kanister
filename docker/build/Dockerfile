@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y pip
 
 RUN pip install reno nb2plots
 
+RUN apt-get install -y vim
+
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \
     GOROOT="/usr/local/go" \

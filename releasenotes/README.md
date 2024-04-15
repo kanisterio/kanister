@@ -13,12 +13,14 @@ When submitting a PR with some changes worthy of mentioning in the notes (new fe
 committer should add a new note file using `reno new <note_name>` or `make reno-new note=<note_name>`.
 
 New file will be created in `releasenotes/notes` directory with default template.
-Change notes should be added to this file to reflect the change and additional information such as deprecations or upgrade requirements.
+Summary of the change should be added to this file to reflect the change and additional information such as deprecations or upgrade requirements.
 It's recommended to remove unused template fields.
 
 When reviewing a PR, a reviewer should check if there are change notes added if necessary and either request or add a new note if they have push access to the branch
 
 ## Generating changelogs
+
+Changelogs would be generated for each release by maintainers as a part of the release process.
 
 Changelog can be generated using:
 
