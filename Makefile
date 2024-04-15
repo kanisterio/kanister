@@ -289,7 +289,7 @@ manifests: ## Generates CustomResourceDefinition objects.
 	@$(MAKE) run CMD="./build/generate_crds.sh ${CONTROLLER_TOOLS_VERSION}"
 
 reno-new:
-	@$(MAKE) run CMD="reno new $(note)"
+	@PWD=$(PWD) ARCH=$(ARCH) PKG=$(PKG) GITHUB_TOKEN=$(GITHUB_TOKEN) CMD="EDITOR=vim reno new $(note) --edit" /bin/bash ./build/run_container.sh shell
 
 reno-report:
 	@$(MAKE) run CMD="./build/reno_report.sh $(VERSION)"
