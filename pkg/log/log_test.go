@@ -197,6 +197,8 @@ func (s *LogSuite) TestLogLevel(c *C) {
 }
 
 func (s *LogSuite) TestCloneGlobalLogger(c *C) {
+	hook := newTestLogHook()
+	log.AddHook(hook)
 	actual := cloneGlobalLogger()
 	c.Assert(actual.Formatter, Equals, log.Formatter)
 	c.Assert(actual.ReportCaller, Equals, log.ReportCaller)
@@ -209,24 +211,39 @@ func (s *LogSuite) TestCloneGlobalLogger(c *C) {
 	actual.SetReportCaller(true)
 	actual.SetLevel(logrus.ErrorLevel)
 	actual.SetOutput(&bytes.Buffer{})
-	actual.AddHook(&testLogHook{})
+	actual.AddHook(&logHook{})
 
 	c.Assert(actual.Formatter, Not(Equals), log.Formatter)
 	c.Assert(actual.ReportCaller, Not(Equals), log.ReportCaller)
 	c.Assert(actual.Level, Not(Equals), log.Level)
 	c.Assert(actual.Out, Not(Equals), log.Out)
 	c.Assert(actual.Hooks, Not(DeepEquals), log.Hooks)
+
+	log.Println("Test message")
+	c.Assert(len(hook.capturedMessages), Equals, 1)
+	c.Assert(hook.capturedMessages[0].Message, Equals, "Test message")
 }
 
-type testLogHook struct{}
+type logHook struct {
+	capturedMessages []*logrus.Entry
+}
 
-func (t *testLogHook) Levels() []logrus.Level {
+func newTestLogHook() *logHook {
+	return &logHook{
+		capturedMessages: make([]*logrus.Entry, 0),
+	}
+}
+
+func (t *logHook) Levels() []logrus.Level {
 	return []logrus.Level{
 		logrus.InfoLevel,
 		logrus.DebugLevel,
 	}
 }
 
-func (t *testLogHook) Fire(*logrus.Entry) error {
+func (t *logHook) Fire(entry *logrus.Entry) error {
+	if t.capturedMessages != nil {
+		t.capturedMessages = append(t.capturedMessages, entry)
+	}
 	return nil
 }

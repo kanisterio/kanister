@@ -4,15 +4,16 @@ ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
 # Actual image base
-FROM postgres:16.1-bullseye
+FROM postgres:16-bullseye
 
 ENV DEBIAN_FRONTEND noninteractive
 
 USER root
 
 RUN apt-get update && apt-get -y install curl python3 groff less jq python3-pip && \
-    pip3 install --upgrade pip && \
+    pip3 install --upgrade pip setuptools wheel && \
     pip3 install --upgrade awscli && \
+    apt-get remove -y python3-setuptools python3-wheel \
     apt-get clean
 
 # Install restic to take backups
