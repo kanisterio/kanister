@@ -129,7 +129,7 @@ func (h CliClient) UpdateRepo(ctx context.Context) error {
 }
 
 // Install installs helm chart with given release name
-func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait bool) error {
+func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait, dryRun bool) error {
 	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
@@ -140,13 +140,25 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 	if wait {
 		cmd = append(cmd, "--wait")
 	}
-
-	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
-	if err != nil {
-		log.Error().Print("Error installing helm chart", field.M{"output": out})
-		return err
+	if dryRun {
+		cmd = append(cmd, "--dry-run")
 	}
-	log.Debug().Print("Result", field.M{"output": out})
+	if !dryRun {
+		out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
+		if err != nil {
+			log.Error().Print("Error installing helm chart", field.M{"output": out})
+			return err
+		}
+		log.Debug().Print("Result", field.M{"output": out})
+	} else {
+		log.Info().Print("Helm dry-run. Executing to capture output:")
+		out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
+		if err != nil {
+			log.Error().Print("Error capturing output during Helm dry-run", field.M{"output": out, "error": err})
+			return err
+		}
+		log.Info().Print("Helm dry-run output:", field.M{"command": h.helmBin, "args": cmd, "output": out})
+	}
 	return nil
 }
 
