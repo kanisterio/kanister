@@ -22,9 +22,9 @@ operations are executed inside a pod using the `kubectl exec` function.
 
 We can get following benefits if we start using Kopia SDK instead of CLI:
 - Better error handling
-- Upgrading/Maintaining SDK libraries is better than using CLI
+- Dependency management
 
-The goal over here is to start the kopia server by executing a pre-built binary. The binary would execute most of the 
+The goal over here is to start the Kopia server by executing a pre-built binary. The binary would execute most of the 
 operations to start the server using kopia SDK and reduce the dependency on Kopia CLI and gain more flexibility over the operations
 
 ## Scope
