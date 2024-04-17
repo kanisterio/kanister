@@ -54,3 +54,10 @@ const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.107.0"
 
 // KanisterToolsImageEnvName is used to set up a custom kanister-tools image
 const KanisterToolsImageEnvName = "KANISTER_TOOLS"
+
+// Azure Clouds
+const (
+	AzureChinaCloud        = "AzureChinaCloud"
+	AzureUSGovernmentCloud = "AzureUSGovernmentCloud"
+	AzurePublic            = "AzurePublic"
+)

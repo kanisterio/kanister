@@ -15,9 +15,12 @@
 package azure
 
 import (
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/consts"
 )
 
 type AuthSuite struct{}
@@ -80,7 +83,7 @@ func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 		blockstorage.AzureClientID:     "some-client-id",
 		blockstorage.AzureClientSecret: "some-client-secret",
 	}
-	authenticator, err := NewAzureAuthenticator(config)
+	authenticator, err := NewAzureAuthenticator(config, nil)
 	c.Assert(err, IsNil)
 	_, ok := authenticator.(*ClientSecretAuthenticator)
 	c.Assert(ok, Equals, true)
@@ -89,7 +92,7 @@ func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 	config = map[string]string{
 		blockstorage.AzureClientID: "some-client-id",
 	}
-	authenticator, err = NewAzureAuthenticator(config)
+	authenticator, err = NewAzureAuthenticator(config, nil)
 	c.Assert(err, IsNil)
 	_, ok = authenticator.(*MsiAuthenticator)
 	c.Assert(ok, Equals, true)
@@ -98,13 +101,13 @@ func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 	config = map[string]string{
 		blockstorage.AzureClientID: "",
 	}
-	authenticator, err = NewAzureAuthenticator(config)
+	authenticator, err = NewAzureAuthenticator(config, nil)
 	c.Assert(err, IsNil)
 	c.Assert(authenticator, NotNil)
 
 	// unsuccessful with no creds
 	config = map[string]string{}
-	authenticator, err = NewAzureAuthenticator(config)
+	authenticator, err = NewAzureAuthenticator(config, nil)
 	c.Assert(err, NotNil)
 	c.Assert(authenticator, IsNil)
 
@@ -112,7 +115,7 @@ func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 	config = map[string]string{
 		blockstorage.AzureClientSecret: "some-client-secret",
 	}
-	authenticator, err = NewAzureAuthenticator(config)
+	authenticator, err = NewAzureAuthenticator(config, nil)
 	c.Assert(err, NotNil)
 	c.Assert(authenticator, IsNil)
 
@@ -121,7 +124,84 @@ func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 		blockstorage.AzureClientID:     "some-client-id",
 		blockstorage.AzureClientSecret: "some-client-secret",
 	}
-	authenticator, err = NewAzureAuthenticator(config)
+	authenticator, err = NewAzureAuthenticator(config, nil)
 	c.Assert(err, NotNil)
 	c.Assert(authenticator, IsNil)
+}
+
+func (s *AuthSuite) TestNewAzureAuthenticatorCloudConfig(c *C) {
+	msiCfg := map[string]string{
+		blockstorage.AzureClientID: "id",
+	}
+	secretCfg := map[string]string{
+		blockstorage.AzureClientID:     "id",
+		blockstorage.AzureClientSecret: "sec",
+		blockstorage.AzureTenantID:     "tenant",
+	}
+
+	for ti, tc := range []struct {
+		name                string
+		cfg                 map[string]string
+		cloudEnv            string
+		expectedCloudConfig cloud.Configuration
+	}{
+		{
+			name:                "China env runs on China cloud for MSI",
+			cfg:                 msiCfg,
+			cloudEnv:            consts.AzureChinaCloud,
+			expectedCloudConfig: cloud.AzureChina,
+		},
+		{
+			name:                "USGov env runs on USGov cloud for MSI",
+			cfg:                 msiCfg,
+			cloudEnv:            consts.AzureUSGovernmentCloud,
+			expectedCloudConfig: cloud.AzureGovernment,
+		},
+		{
+			name:                "Unset env runs on public cloud for MSI",
+			cfg:                 msiCfg,
+			expectedCloudConfig: cloud.AzurePublic,
+		},
+		{
+			name:                "China env runs on China cloud for client secret",
+			cfg:                 secretCfg,
+			cloudEnv:            consts.AzureChinaCloud,
+			expectedCloudConfig: cloud.AzureChina,
+		},
+		{
+			name:                "USGov env runs on USGov cloud for client secret",
+			cfg:                 secretCfg,
+			cloudEnv:            consts.AzureUSGovernmentCloud,
+			expectedCloudConfig: cloud.AzureGovernment,
+		},
+		{
+			name:                "Unset env runs on public cloud for client secret",
+			cfg:                 secretCfg,
+			expectedCloudConfig: cloud.AzurePublic,
+		},
+	} {
+		c.Logf("%d: %s", ti, tc.name)
+		newCfg := make(map[string]string)
+		for k, v := range tc.cfg {
+			newCfg[k] = v
+		}
+		newCfg[blockstorage.AzureCloudEnvironmentID] = tc.cloudEnv
+
+		azIdentity := &AzIdentityType{
+			NewManagedIdentityCredential: func(opts *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error) {
+				c.Assert(opts.ClientOptions.Cloud.ActiveDirectoryAuthorityHost, Equals, tc.expectedCloudConfig.ActiveDirectoryAuthorityHost)
+				return nil, nil
+			},
+			NewClientSecretCredential: func(tenantID, clientID, clientSecret string, opts *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {
+				c.Assert(opts.ClientOptions.Cloud.ActiveDirectoryAuthorityHost, Equals, tc.expectedCloudConfig.ActiveDirectoryAuthorityHost)
+				return nil, nil
+			},
+		}
+
+		auth, err := NewAzureAuthenticator(newCfg, azIdentity)
+		c.Assert(err, IsNil)
+
+		err = auth.Authenticate(newCfg)
+		c.Assert(err, IsNil)
+	}
 }

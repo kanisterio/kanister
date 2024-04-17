@@ -22,7 +22,9 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/pkg/errors"
@@ -49,7 +51,20 @@ var (
 	subscriptionsClientFactory *armsubscriptions.ClientFactory
 )
 
-func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
+type ComputeNewClientFactoryFunc func(subscriptionID string, credential azcore.TokenCredential, options *arm.ClientOptions) (*armcompute.ClientFactory, error)
+type SubscriptionsNewClientFactoryFunc func(credential azcore.TokenCredential, options *arm.ClientOptions) (*armsubscriptions.ClientFactory, error)
+type AzClientFactoriesType struct {
+	ComputeNewClientFactory       ComputeNewClientFactoryFunc
+	SubscriptionsNewClientFactory SubscriptionsNewClientFactoryFunc
+}
+
+func NewClient(ctx context.Context, config map[string]string, azClientFactories *AzClientFactoriesType) (*Client, error) {
+	if azClientFactories == nil {
+		azClientFactories = &AzClientFactoriesType{
+			ComputeNewClientFactory:       armcompute.NewClientFactory,
+			SubscriptionsNewClientFactory: armsubscriptions.NewClientFactory,
+		}
+	}
 	var resourceGroup string
 	var subscriptionID string
 	var ok bool
@@ -73,7 +88,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
-	authenticator, err := NewAzureAuthenticator(config)
+	authenticator, err := NewAzureAuthenticator(config, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -82,12 +97,14 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		return nil, err
 	}
 	cred := authenticator.GetAuthorizer()
-	computeClientFactory, err = armcompute.NewClientFactory(subscriptionID, cred, nil)
+	opts := &arm.ClientOptions{ClientOptions: policy.ClientOptions{}}
+	opts.ClientOptions.Cloud = GetCloudConfig(config[blockstorage.AzureCloudEnvironmentID])
+	computeClientFactory, err = azClientFactories.ComputeNewClientFactory(subscriptionID, cred, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	subscriptionsClientFactory, err = armsubscriptions.NewClientFactory(cred, nil)
+	subscriptionsClientFactory, err = armsubscriptions.NewClientFactory(cred, opts)
 
 	if err != nil {
 		return nil, err

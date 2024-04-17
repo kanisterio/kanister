@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/consts"
 )
 
 const ActiveDirectory = "activeDirectory"
@@ -55,12 +56,26 @@ type AzureAuthenticator interface {
 	GetAuthorizer() azcore.TokenCredential
 }
 
-func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error) {
+type NewManagedIdentityCredentialFunc func(opts *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
+type NewClientSecretCredentialFunc func(tenantID, clientID, clientSecret string, opts *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
+type AzIdentityType struct {
+	NewManagedIdentityCredential NewManagedIdentityCredentialFunc
+	NewClientSecretCredential    NewClientSecretCredentialFunc
+}
+
+func NewAzureAuthenticator(config map[string]string, identity *AzIdentityType) (AzureAuthenticator, error) {
+	if identity == nil {
+		identity = &AzIdentityType{
+			NewManagedIdentityCredential: azidentity.NewManagedIdentityCredential,
+			NewClientSecretCredential:    azidentity.NewClientSecretCredential,
+		}
+	}
+
 	switch {
 	case isMSICredsAvailable(config):
-		return &MsiAuthenticator{}, nil
+		return &MsiAuthenticator{azIdentity: identity}, nil
 	case isClientCredsAvailable(config):
-		return &ClientSecretAuthenticator{}, nil
+		return &ClientSecretAuthenticator{azIdentity: identity}, nil
 	default:
 		return nil, errors.New("Fail to get an authenticator for provided creds combination")
 	}
@@ -69,6 +84,7 @@ func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error)
 // authenticate with MSI creds
 type MsiAuthenticator struct {
 	azcore.TokenCredential
+	azIdentity *AzIdentityType
 }
 
 func (m *MsiAuthenticator) GetAuthorizer() azcore.TokenCredential {
@@ -81,7 +97,8 @@ func (m *MsiAuthenticator) Authenticate(config map[string]string) error {
 		return errors.New("Failed to fetch azure clientID")
 	}
 	azClientID := azidentity.ClientID(clientID)
-	opts := azidentity.ManagedIdentityCredentialOptions{ID: azClientID}
+	opts := azidentity.ManagedIdentityCredentialOptions{ID: azClientID, ClientOptions: azcore.ClientOptions{}}
+	opts.ClientOptions.Cloud = GetCloudConfig(config[blockstorage.AzureCloudEnvironmentID])
 	cred, err := azidentity.NewManagedIdentityCredential(&opts)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create an Azure Managed Identity credential")
@@ -94,6 +111,7 @@ func (m *MsiAuthenticator) Authenticate(config map[string]string) error {
 // authenticate with client secret creds
 type ClientSecretAuthenticator struct {
 	azcore.TokenCredential
+	azIdentity *AzIdentityType
 }
 
 func (c *ClientSecretAuthenticator) GetAuthorizer() azcore.TokenCredential {
@@ -104,7 +122,9 @@ func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error 
 	if err != nil {
 		return errors.Wrap(err, "Failed to get Client Secret config")
 	}
-	cred, err := azidentity.NewClientSecretCredential(credConfig.TenantID, credConfig.ClientID, credConfig.ClientSecret, nil)
+	opts := &azidentity.ClientSecretCredentialOptions{ClientOptions: azcore.ClientOptions{}}
+	opts.ClientOptions.Cloud = GetCloudConfig(creds[blockstorage.AzureCloudEnvironmentID])
+	cred, err := azidentity.NewClientSecretCredential(credConfig.TenantID, credConfig.ClientID, credConfig.ClientSecret, opts)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create an Azure Client Secret credential")
 	}
@@ -131,4 +151,15 @@ func getCredConfigForAuth(config map[string]string) (ClientCredentialsConfig, er
 
 	credConfig := NewClientCredentialsConfig(clientID, clientSecret, tenantID)
 	return credConfig, nil
+}
+
+func GetCloudConfig(cloudEnv string) cloud.Configuration {
+	switch cloudEnv {
+	case consts.AzureChinaCloud:
+		return cloud.AzureChina
+	case consts.AzureUSGovernmentCloud:
+		return cloud.AzureGovernment
+	default:
+		return cloud.AzurePublic
+	}
 }

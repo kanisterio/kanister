@@ -20,11 +20,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
+	"github.com/kanisterio/kanister/pkg/consts"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -46,7 +51,7 @@ func (s *ClientSuite) TestClient(c *C) {
 	config[blockstorage.AzureClientSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClientSecret)
 	config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
 	config[blockstorage.AzureCloudEnvironmentID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCloudEnvironmentID)
-	azCli, err := NewClient(context.Background(), config)
+	azCli, err := NewClient(context.Background(), config, nil)
 	c.Assert(err, IsNil)
 	c.Assert(azCli.Cred, NotNil)
 	c.Assert(azCli.SubscriptionID, NotNil)
@@ -182,5 +187,59 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			c.Assert(ccc.Resource, Equals, tc.expCCC.Resource)
 			c.Assert(ccc.AADEndpoint, Equals, tc.expCCC.AADEndpoint)
 		}
+	}
+}
+
+func (s *ClientSuite) TestNewAzureAuthenticatorCloudConfig(c *C) {
+	cfg := map[string]string{
+		blockstorage.AzureClientID:       "id",
+		blockstorage.AzureResurceGroup:   "rg",
+		blockstorage.AzureSubscriptionID: "sub",
+	}
+
+	for ti, tc := range []struct {
+		name                string
+		cfg                 map[string]string
+		cloudEnv            string
+		expectedCloudConfig cloud.Configuration
+	}{
+		{
+			name:                "China env runs on China cloud",
+			cfg:                 cfg,
+			cloudEnv:            consts.AzureChinaCloud,
+			expectedCloudConfig: cloud.AzureChina,
+		},
+		{
+			name:                "USGov env runs on USGov cloud",
+			cfg:                 cfg,
+			cloudEnv:            consts.AzureUSGovernmentCloud,
+			expectedCloudConfig: cloud.AzureGovernment,
+		},
+		{
+			name:                "Unset env runs on public cloud",
+			cfg:                 cfg,
+			expectedCloudConfig: cloud.AzurePublic,
+		},
+	} {
+		c.Logf("%d: %s", ti, tc.name)
+		newCfg := make(map[string]string)
+		for k, v := range tc.cfg {
+			newCfg[k] = v
+		}
+		newCfg[blockstorage.AzureCloudEnvironmentID] = tc.cloudEnv
+
+		azClientFactories := &AzClientFactoriesType{
+			ComputeNewClientFactory: func(subscriptionID string, credential azcore.TokenCredential, options *arm.ClientOptions) (*armcompute.ClientFactory, error) {
+				c.Assert(options.ClientOptions.Cloud.ActiveDirectoryAuthorityHost, Equals, tc.expectedCloudConfig.ActiveDirectoryAuthorityHost)
+				return armcompute.NewClientFactory(subscriptionID, credential, options)
+			},
+			SubscriptionsNewClientFactory: func(credential azcore.TokenCredential, options *arm.ClientOptions) (*armsubscriptions.ClientFactory, error) {
+				c.Assert(options.ClientOptions.Cloud.ActiveDirectoryAuthorityHost, Equals, tc.expectedCloudConfig.ActiveDirectoryAuthorityHost)
+				return armsubscriptions.NewClientFactory(credential, options)
+			},
+		}
+
+		_, err := NewClient(context.TODO(), newCfg, azClientFactories)
+		c.Assert(err, IsNil)
 	}
 }

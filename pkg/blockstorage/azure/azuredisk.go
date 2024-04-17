@@ -52,7 +52,7 @@ func (s *AdStorage) Type() blockstorage.Type {
 
 // NewProvider returns a provider for the Azure blockstorage type
 func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
-	azCli, err := NewClient(ctx, config)
+	azCli, err := NewClient(ctx, config, nil)
 	if err != nil {
 		return nil, err
 	}
