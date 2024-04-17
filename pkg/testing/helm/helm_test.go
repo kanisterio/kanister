@@ -72,9 +72,9 @@ func (h *HelmTestSuite) TestUpgrade(c *C) {
 
 	// install released version of kanister
 	c.Log("Installing kanister release")
-	err := h.helmApp.Install()
+	// TODO: Use manifests to test the helm charts
+	_, err := h.helmApp.Install()
 	c.Assert(err, IsNil)
-
 	// wait for kanister deployment to be ready
 	err = kube.WaitOnDeploymentReady(ctx, h.kubeClient, h.helmApp.namespace, h.deploymentName)
 	c.Assert(err, IsNil)
