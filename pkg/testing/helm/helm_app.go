@@ -52,7 +52,7 @@ func (h *HelmApp) AddRepo(name, url string) error {
 
 func (h *HelmApp) Install() error {
 	ctx := context.Background()
-	return h.client.Install(ctx, h.chart, "", h.name, h.namespace, h.helmValues, true)
+	return h.client.Install(ctx, h.chart, "", h.name, h.namespace, h.helmValues, true, false)
 }
 
 func (h *HelmApp) Upgrade(chart string, updatedValues map[string]string) error {

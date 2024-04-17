@@ -95,7 +95,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 	// Install helm chart
-	return cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values, true)
+	return cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values, true, false)
 }
 
 func (pdb *PostgresDB) IsReady(ctx context.Context) (bool, error) {
