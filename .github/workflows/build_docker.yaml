@@ -1,0 +1,72 @@
+name: Build docker image
+
+on:
+  workflow_call:
+    inputs:
+      image_file:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+      build-args:
+        required: true
+        type: string
+      labels:
+        required: true
+        type: string
+      extra-tags:
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ inputs.image_name }}
+
+jobs:
+  build_image:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      with:
+        ref: ${{ inputs.ref }}
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    - name: Login to GHCR
+      uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Image metadata
+      id: meta
+      uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=sha
+          {{date 'YYYY.MM.DD-HHmm'}}
+          ${{ inputs.image_tag }}
+          ${{ inputs.extra-tags }}
+        labels: ${{ inputs.labels }}
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ${{ inputs.image_file }}
+        platforms: linux/amd64,linux/arm64
+        push: true
+        pull: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: ${{ inputs.build-args }}

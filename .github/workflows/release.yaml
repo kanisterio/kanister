@@ -1,0 +1,182 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+  workflow_dispatch:
+     inputs:
+      release_tag:
+        description: 'Image tag in the format x.x.x(-rcx)'
+        required: true
+        type: string
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  run_if:
+    if: "${{ (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'pre-release: Update version to')) || github.event_name == 'workflow_dispatch' }}"
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.release_tag.outputs.release_tag }}
+    steps:
+      - run: echo "Triggered by ${{ github.event_name }}"
+      - id: release_tag
+        run: |
+          if [[ ${{github.event_name}} == "push" ]]
+          then
+            [[ "${{github.event.head_commit.message}}" =~ ^pre-release:\ Update\ version\ to\ ([0-9]*\.[0-9]*\.[0-9]*(\-[0-9a-z]+)?)\ .*$ ]] && echo "release_tag=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+          else
+            echo "release_tag=${{inputs.release_tag}}" >> $GITHUB_OUTPUT
+          fi
+
+  create_tag:
+    needs: run_if
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.run_if.outputs.release_tag }}
+    outputs:
+      tag_url: ${{ steps.output_tag.outputs.tag_url }}
+    environment:
+      name: release
+      url: ${{ steps.output_tag.outputs.tag_url }}
+    steps:
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+    - id: create_tag
+      run: |
+        git config --global user.name 'Kasten Production'
+        git config --global user.email 'infra@kasten.io'
+        git tag -a "${RELEASE_TAG}" -m "Release version"
+        git push origin "${RELEASE_TAG}"
+    - id: output_tag
+      run: echo "tag_url=https://github.com/kanisterio/kanister/releases/tag/${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+
+  release_packages:
+    runs-on: ubuntu-latest
+    needs: [run_if, create_tag]
+    permissions:
+      packages: write
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.run_if.outputs.release_tag }}
+    outputs:
+      release: ${{ steps.output_release.outputs.release_url }}
+    environment:
+      name: release
+      url: ${{ steps.output_release.outputs.release_url }}
+    steps:
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      with:
+        ref: ${{ env.RELEASE_TAG }}
+        fetch-depth: 0
+    - name: build helm charts
+      run: |
+        export PACKAGE_FOLDER=helm_package
+        export HELM_RELEASE_REPO_URL=https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}
+        export HELM_RELEASE_REPO_INDEX=https://charts.kanister.io/
+        make package-helm VERSION=${RELEASE_TAG}
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+    - name: gorelease
+      run: make gorelease
+      env:
+        GHCR_LOGIN_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GHCR_LOGIN_USER: ${{ github.actor }}
+    ## Upload to use in docs publishing
+    - uses: actions/upload-artifact@v4
+      with:
+        name: helm-index
+        path: helm_package/index.yaml
+    - id: output_release
+      run: echo "release_url=https://github.com/kanisterio/kanister/releases/tag/${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+
+  build_docs:
+    runs-on: ubuntu-latest
+    needs: [run_if, release_packages]
+    env:
+      RELEASE_TAG: ${{ needs.run_if.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          run_install: false
+          package_json_file: docs_new/package.json
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: ./docs_new
+      - name: Build with VitePress
+        run: pnpm docs:build
+        working-directory: ./docs_new
+      - name: download helm index
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-index
+          path: docs_new/.vitepress/dist/helm_charts/
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs_new/.vitepress/dist
+
+  publish_docs_and_charts:
+    needs: build_docs
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 # or specific "vX.X.X" version tag for this action
+
+  ## TODO: using https://github.com/slackapi/slack-github-action/blob/main/README.md#technique-3-slack-incoming-webhook
+  ## we need to set up incoming webhook
+  ## Alternatively we can also configure a bot token https://github.com/slackapi/slack-github-action/blob/main/README.md#technique-2-slack-app
+  # notify_slack:
+  #   needs: [release_packages, build_docs]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Send slack notification
+  #       id: slack
+  #       uses: slackapi/slack-github-action@v1.26.0
+  #       with:
+  #         ## TODO: optionally include more information?
+  #         payload: |
+  #           {
+  #             "text": "Kanister release published: ${RELEASE_URL}",
+  #           }
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+  #         RELEASE_URL: ${{ needs.release_packages.outputs.release_url }}
+
+  release_example_docker_images:
+    needs: [run_if, release_packages]
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_example_images.yaml
+    with:
+      image_tag: ${{ needs.run_if.outputs.release_tag }}
+      ref: ${{ needs.run_if.outputs.release_tag }}
