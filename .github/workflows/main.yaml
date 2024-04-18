@@ -108,3 +108,11 @@ jobs:
     - run: docker builder prune -af
     - run: make release-snapshot
     - run: ./build/push_images.sh
+  release_example_docker_images:
+    needs: release 
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_example_images.yaml
+    with:
+      image_tag: v9.99.9-dev
+      ref: ${{ github.ref }}

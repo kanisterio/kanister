@@ -5,6 +5,9 @@ export default defineConfig({
   title: "Kanister",
   description: "Application-Specific Data Management",
 
+  // FIXME: remove that whan switching to DNS
+  base: '/kanister/',
+
   head: [["link", { rel: "icon", href: "favicon.ico" }]],
 
   themeConfig: {

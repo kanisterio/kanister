@@ -14,4 +14,4 @@ COPY --from=TOOLS_IMAGE /usr/local/bin/restic /usr/local/bin/restic
 COPY --from=TOOLS_IMAGE /usr/local/bin/gosu /usr/local/bin/gosu
 
 # Install kando
-ADD kando /usr/local/bin/
+COPY --from=TOOLS_IMAGE /usr/local/bin/kando /usr/local/bin/kando
