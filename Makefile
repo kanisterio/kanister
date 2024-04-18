@@ -239,8 +239,11 @@ release-docs: docs
 release-helm:
 	@/bin/bash ./build/release_helm.sh $(VERSION)
 
+package-helm:
+	@$(MAKE) run CMD="PACKAGE_FOLDER=${PACKAGE_FOLDER} HELM_RELEASE_REPO_URL=${HELM_RELEASE_REPO_URL} HELM_RELEASE_REPO_INDEX=${HELM_RELEASE_REPO_INDEX} ./build/package_helm.sh $(VERSION)"
+
 gorelease:
-	@$(MAKE) run CMD="CHANGELOG_FILE=$(CHANGELOG_FILE) ./build/gorelease.sh"
+	@$(MAKE) run CMD="CHANGELOG_FILE=$(CHANGELOG_FILE) GHCR_LOGIN_TOKEN=${GHCR_LOGIN_TOKEN} GHCR_LOGIN_USER=${GHCR_LOGIN_USER} ./build/gorelease.sh"
 
 release-snapshot:
 	@$(MAKE) run CMD="GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot --timeout=60m0s"
