@@ -42,6 +42,7 @@ const (
 	legacyAPIFlag              = "--legacy-api"
 	logDirectoryFlag           = "--log-dir"
 	logLevelFlag               = "--log-level"
+	fileLogLevelFlag           = "--file-log-level"
 	LogLevelError              = "error"
 	LogLevelInfo               = "info"
 	noGrpcFlag                 = "--no-grpc"

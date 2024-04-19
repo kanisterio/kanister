@@ -15,16 +15,34 @@
 package command
 
 import (
+	"os"
+
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/logsafe"
 )
+
+const (
+	// LogLevelVarName is the environment variable that controls Kopia log level.
+	LogLevelVarName = "KOPIA_LOG_LEVEL"
+	// FileLogLevelVarName is the environment variable that controls Kopia file log level.
+	FileLogLevelVarName = "KOPIA_FILE_LOG_LEVEL"
+)
+
+func LogLevel() string {
+	return os.Getenv(LogLevelVarName)
+}
+
+func FileLogLevel() string {
+	return os.Getenv(FileLogLevelVarName)
+}
 
 type CommandArgs struct {
 	RepoPassword   string
 	ConfigFilePath string
 	LogDirectory   string
 	LogLevel       string
+	FileLogLevel   string
 }
 
 func bashCommand(args logsafe.Cmd) []string {
@@ -40,10 +58,24 @@ func stringSliceCommand(args logsafe.Cmd) []string {
 func commonArgs(cmdArgs *CommandArgs) logsafe.Cmd {
 	c := logsafe.NewLoggable(kopiaCommand)
 
-	if cmdArgs.LogLevel != "" {
-		c = c.AppendLoggableKV(logLevelFlag, cmdArgs.LogLevel)
+	logLevel := cmdArgs.LogLevel
+	if logLevel == "" {
+		logLevel = LogLevel()
+	}
+
+	if logLevel != "" {
+		c = c.AppendLoggableKV(logLevelFlag, logLevel)
 	} else {
 		c = c.AppendLoggableKV(logLevelFlag, LogLevelError)
+	}
+
+	fileLogLevel := cmdArgs.FileLogLevel
+	if fileLogLevel == "" {
+		fileLogLevel = FileLogLevel()
+	}
+
+	if fileLogLevel != "" {
+		c = c.AppendLoggableKV(fileLogLevelFlag, fileLogLevel)
 	}
 
 	if cmdArgs.ConfigFilePath != "" {
