@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           fetch-depth: 0
-      - uses: tj-actions/changed-files@e052d30e1c0bdf27cd806b01ca3b393f47b50c62 # v44.1.0
+      - uses: tj-actions/changed-files@0874344d6ebbaa00a27da73276ae7162fadcaf69 # v44.3.0
         name: Get changed files
         id: changed-files
         with:
