@@ -36,11 +36,6 @@ func ReadOnly(enabled bool) command.Applier {
 	return command.NewOption("--readonly", enabled)
 }
 
-// GRPC creates a new gRPC option.
-func GRPC(enabled bool) command.Applier {
-	return command.NewToggleOption("--grpc", "--no-grpc", enabled)
-}
-
 // CheckForUpdates creates a new check for updates option.
 func CheckForUpdates(enabled bool) command.Applier {
 	return command.NewToggleOption("--check-for-updates", "--no-check-for-updates", enabled)
