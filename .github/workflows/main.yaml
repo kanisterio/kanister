@@ -56,7 +56,7 @@ jobs:
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
-    - uses: helm/kind-action@v1.9.0
+    - uses: helm/kind-action@v1.10.0
     - run: |
         make install-csi-hostpath-driver
         make install-minio
