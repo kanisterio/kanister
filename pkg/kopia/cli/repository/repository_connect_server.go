@@ -43,6 +43,7 @@ func ConnectServer(args ConnectServerArgs) (*safecli.Builder, error) {
 		opts.Common(args.Common),
 		cmdRepository, subcmdConnect, subcmdServer,
 		opts.CheckForUpdates(false),
+		opts.GRPC(false),
 		optReadOnly(args.ReadOnly),
 		opts.Cache(args.Cache),
 		optHostname(args.Hostname),
