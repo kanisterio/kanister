@@ -382,10 +382,10 @@ github.com/klauspost/pgzip v1.2.6 h1:8RXeL5crjEUFnR2/Sn6GJNWtSQ3Dk8pq4CL3jvdDyjU
 github.com/klauspost/pgzip v1.2.6/go.mod h1:Ch1tH69qFZu15pkjo5kYi6mth2Zzwzt50oCQKQE9RUs=
 github.com/klauspost/reedsolomon v1.12.1 h1:NhWgum1efX1x58daOBGCFWcxtEhOhXKKl1HAPQUp03Q=
 github.com/klauspost/reedsolomon v1.12.1/go.mod h1:nEi5Kjb6QqtbofI6s+cbG/j1da11c96IBYBSnVGtuBs=
-github.com/kopia/htmluibuild v0.0.1-0.20240324231127-d8300f5781d0 h1:3oJD2VtlEBxdmP/YA5bNk2SMyxwH1OU5JVDNoGzki1U=
-github.com/kopia/htmluibuild v0.0.1-0.20240324231127-d8300f5781d0/go.mod h1:h53A5JM3t2qiwxqxusBe+PFgGcgZdS+DWCQvG5PTlto=
-github.com/kopia/kopia v0.16.2-0.20240402061620-5c85ca6bb087 h1:lWgnjQBT1XIlBwxtX4kj8CPLhvaa19YEmd8+JjWx8lI=
-github.com/kopia/kopia v0.16.2-0.20240402061620-5c85ca6bb087/go.mod h1:i9kp2FwIDJfMgQ6UwgzzZzYqyitcWZUZrm/Pz/7f6mU=
+github.com/kopia/htmluibuild v0.0.1-0.20240405040759-90bfbf000696 h1:MaLdTP4HVGUomnowX7k1i4SOXOdtgSi/ekp1gWgubNU=
+github.com/kopia/htmluibuild v0.0.1-0.20240405040759-90bfbf000696/go.mod h1:h53A5JM3t2qiwxqxusBe+PFgGcgZdS+DWCQvG5PTlto=
+github.com/kopia/kopia v0.17.1-0.20240426004512-1e98511c2ea0 h1:X6Un9movKWBDHqX5gIszfOb975kbmNgJW9BdgFhk7e4=
+github.com/kopia/kopia v0.17.1-0.20240426004512-1e98511c2ea0/go.mod h1:Q+RHV7mVkJov89etXdKtEbLCJdNJA/8JnDIvYs+c0Q4=
 github.com/kr/fs v0.1.0 h1:Jskdu9ieNAYnjxsi0LbQp1ulIKZV1LAFgK1tWhpZgl8=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

@@ -1,6 +1,8 @@
 module github.com/kanisterio/kanister
 
-go 1.21.9
+go 1.22
+
+toolchain go1.22.2
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
@@ -30,7 +32,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/kopia/kopia v0.16.2-0.20240402061620-5c85ca6bb087
+	github.com/kopia/kopia v0.17.1-0.20240426004512-1e98511c2ea0
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
