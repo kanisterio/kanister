@@ -45,6 +45,10 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 	args = args.AppendLoggableKV(serverControlUsernameFlag, cmdArgs.ServerUsername)
 	args = args.AppendRedactedKV(serverControlPasswordFlag, cmdArgs.ServerPassword)
 
+	// TODO: Remove when GRPC support is added
+	args = args.AppendLoggable(noGrpcFlag)
+	args = args.AppendLoggable(legacyAPIFlag)
+
 	if cmdArgs.EnablePprof {
 		args = args.AppendLoggable(enablePprof)
 	}
