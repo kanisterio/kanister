@@ -117,7 +117,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 // TestPodRunnerWithDebugLabelForSuccessCase adds a debug entry into the context and verifies the
 // pod got created with corresponding label using the entry or not.
 func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *C) {
-	jobIDSuffix := "JobID"
+	jobIDSuffix := consts.JobIDLabelSuffix
 	for _, tc := range []struct {
 		name            string
 		targetKey       string

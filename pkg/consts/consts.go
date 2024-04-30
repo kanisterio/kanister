@@ -26,6 +26,7 @@ const (
 	LabelKeyCreatedBy        = "createdBy"
 	LabelValueKanister       = "kanister"
 	LabelPrefix              = "kanister.io/"
+	JobIDLabelSuffix         = "JobID"
 )
 
 // These names are used to query ActionSet API objects.
