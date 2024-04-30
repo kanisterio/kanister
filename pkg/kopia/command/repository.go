@@ -132,7 +132,6 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 		ConfigFilePath: cmdArgs.ConfigFilePath,
 		LogDirectory:   cmdArgs.LogDirectory,
 	})
-	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
 
 	if cmdArgs.ReadOnly {
 		args = args.AppendLoggable(readOnlyFlag)
