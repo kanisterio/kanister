@@ -15,9 +15,12 @@
 package command
 
 import (
+	"fmt"
 	"strings"
 
 	. "gopkg.in/check.v1"
+
+	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
 )
 
 type KopiaServerTestSuite struct{}
@@ -32,8 +35,9 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 	}
 
 	for _, tc := range []struct {
-		f           func() []string
-		expectedLog string
+		f                 func() []string
+		addRegisteredArgs bool
+		expectedLog       string
 	}{
 		{
 			f: func() []string {
@@ -127,6 +131,18 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 		},
 		{
 			f: func() []string {
+				args := ServerAddUserCommandArgs{
+					CommandArgs:  commandArgs,
+					NewUsername:  "a-username@a-hostname",
+					UserPassword: "a-user-password",
+				}
+				return ServerAddUser(args)
+			},
+			addRegisteredArgs: true,
+			expectedLog:       "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user add a-username@a-hostname --user-password=a-user-password --testflag=testvalue",
+		},
+		{
+			f: func() []string {
 				args := ServerSetUserCommandArgs{
 					CommandArgs:  commandArgs,
 					NewUsername:  "a-username@a-hostname",
@@ -135,6 +151,18 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 				return ServerSetUser(args)
 			},
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user set a-username@a-hostname --user-password=a-user-password",
+		},
+		{
+			f: func() []string {
+				args := ServerSetUserCommandArgs{
+					CommandArgs:  commandArgs,
+					NewUsername:  "a-username@a-hostname",
+					UserPassword: "a-user-password",
+				}
+				return ServerSetUser(args)
+			},
+			addRegisteredArgs: true,
+			expectedLog:       "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user set a-username@a-hostname --user-password=a-user-password --testflag=testvalue",
 		},
 		{
 			f: func() []string {
@@ -159,6 +187,13 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server refresh --server-cert-fingerprint=a-fingerprint --address=a-server-address --server-username=a-username@a-hostname --server-password=a-user-password",
 		},
 	} {
+		if tc.addRegisteredArgs {
+			cliArgs.RegisterKopiaUserAddSetArgs("--testflag", "testvalue")
+			defer cliArgs.UnRegisterKopiaUserAddSetArgs("--testflag")
+		} else {
+			cliArgs.UnRegisterKopiaUserAddSetArgs("--testflag")
+		}
+		fmt.Println(cliArgs.ExtraKopiaUserAddSetArgs(), tc.addRegisteredArgs)
 		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, Equals, tc.expectedLog)
 	}

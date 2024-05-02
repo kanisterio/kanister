@@ -20,6 +20,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
 
+	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 )
 
@@ -98,6 +99,10 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
 
+	for k, v := range cliArgs.ExtraKopiaRepositoryCreateArgs() {
+		args = args.AppendLoggableKV(k, v)
+	}
+
 	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
 		Location:       cmdArgs.Location,
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
@@ -148,6 +153,10 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 	args = args.AppendLoggableKV(urlFlag, cmdArgs.ServerURL)
+
+	for k, v := range cliArgs.ExtraKopiaRepositoryConnectServerArgs() {
+		args = args.AppendLoggableKV(k, v)
+	}
 
 	args = args.AppendRedactedKV(serverCertFingerprint, cmdArgs.Fingerprint)
 

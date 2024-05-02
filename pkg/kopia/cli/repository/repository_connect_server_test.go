@@ -20,6 +20,7 @@ import (
 	"github.com/kanisterio/safecli"
 	"gopkg.in/check.v1"
 
+	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/test"
 )
 
@@ -58,6 +59,43 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 			"--override-username=test-username",
 			"--url=http://test-server",
 			"--server-cert-fingerprint=test-fingerprint",
+		},
+	},
+	{
+		Name: "repository connect server, with additonal args",
+		Command: func() (*safecli.Builder, error) {
+			args := ConnectServerArgs{
+				Common:      common,
+				Cache:       cache,
+				Hostname:    "test-hostname",
+				Username:    "test-username",
+				ServerURL:   "http://test-server",
+				Fingerprint: "test-fingerprint",
+				ReadOnly:    true,
+			}
+			cliArgs.RegisterKopiaRepositoryConnectServerArgs("--testflag", "testvalue")
+			defer cliArgs.UnRegisterKopiaRepositoryConnectServerArgs("--testflag")
+			return ConnectServer(args)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-dir=cache/log",
+			"--log-level=error",
+			"--password=encr-key",
+			"repository",
+			"connect",
+			"server",
+			"--no-check-for-updates",
+			"--no-grpc",
+			"--readonly",
+			"--cache-directory=/tmp/cache.dir",
+			"--content-cache-size-limit-mb=0",
+			"--metadata-cache-size-limit-mb=0",
+			"--override-hostname=test-hostname",
+			"--override-username=test-username",
+			"--url=http://test-server",
+			"--server-cert-fingerprint=test-fingerprint",
+			"--testflag=testvalue",
 		},
 	},
 }))

@@ -69,6 +69,13 @@ func ConnectToAPIServer(
 		TrustedServerCertificateFingerprint: fingerprint,
 	}
 
+	// TODO(@sirish): Uncomment the following code once APIServerInfo is extended (kopia 0.8 release)
+	// for k, v := range cliArgs.ExtraKopiaRepositoryConnectServerArgs() {
+	// 	if k == "--local-cache-key-derivation-algorithm" {
+	// 		serverInfo.LocalCahceKeyDerivationAlgorithm = v
+	// 	}
+	// }
+
 	opts := &repo.ConnectOptions{
 		CachingOptions: content.CachingOptions{
 			CacheDirectory:              kopia.DefaultClientCacheDirectory,

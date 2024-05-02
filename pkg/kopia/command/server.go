@@ -14,6 +14,10 @@
 
 package command
 
+import (
+	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
+)
+
 type ServerStartCommandArgs struct {
 	*CommandArgs
 	ServerAddress        string
@@ -126,6 +130,10 @@ func ServerSetUser(cmdArgs ServerSetUserCommandArgs) []string {
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, cmdArgs.NewUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
 
+	for k, v := range cliArgs.ExtraKopiaUserAddSetArgs() {
+		args = args.AppendLoggableKV(k, v)
+	}
+
 	return stringSliceCommand(args)
 }
 
@@ -140,6 +148,10 @@ func ServerAddUser(cmdArgs ServerAddUserCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, cmdArgs.NewUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
+
+	for k, v := range cliArgs.ExtraKopiaUserAddSetArgs() {
+		args = args.AppendLoggableKV(k, v)
+	}
 
 	return stringSliceCommand(args)
 }

@@ -18,8 +18,9 @@ import (
 	"time"
 
 	"github.com/kanisterio/safecli"
+	"github.com/kanisterio/safecli/command"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -27,8 +28,8 @@ import (
 
 // CreateArgs defines the arguments for the `kopia repository create` command.
 type CreateArgs struct {
-	args.Common // embeds common arguments
-	args.Cache  // embeds cache arguments
+	cliArgs.Common // embeds common arguments
+	cliArgs.Cache  // embeds cache arguments
 
 	Hostname        string            // the hostname of the repository
 	Username        string            // the username of the repository
@@ -42,7 +43,7 @@ type CreateArgs struct {
 
 // Create creates a new `kopia repository create ...` command.
 func Create(args CreateArgs) (*safecli.Builder, error) {
-	return internal.NewKopiaCommand(
+	appliers := []command.Applier{
 		opts.Common(args.Common),
 		cmdRepository, subcmdCreate,
 		opts.CheckForUpdates(false),
@@ -55,5 +56,11 @@ func Create(args CreateArgs) (*safecli.Builder, error) {
 			args.RepoPathPrefix,
 			args.Logger,
 		),
+	}
+	for k, v := range cliArgs.ExtraKopiaRepositoryCreateArgs() {
+		appliers = append(appliers, command.NewOptionWithArgument(k, v))
+	}
+	return internal.NewKopiaCommand(
+		appliers...,
 	)
 }
