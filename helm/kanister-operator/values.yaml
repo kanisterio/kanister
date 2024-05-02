@@ -76,3 +76,13 @@ resources:
 # requests:
 #  cpu: 100m
 #  memory: 128Mi
+#  
+# tolerations for pod assignment. Evaluated as a template  
+tolerations: []
+#- effect: NoSchedule
+#  key: CriticalAddonsOnly
+#  operator: Equal
+#  value: "true"        
+#
+# node labels for pod assignment. Evaluated as template
+nodeSelector: {}

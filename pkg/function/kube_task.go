@@ -34,8 +34,7 @@ import (
 )
 
 const (
-	jobPrefix   = "kanister-job-"
-	jobIDSuffix = "JobID"
+	jobPrefix = "kanister-job-"
 
 	// KubeTaskFuncName gives the function name
 	KubeTaskFuncName       = "KubeTask"
@@ -68,7 +67,7 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		PodOverride:  podOverride,
 	}
 	// Mark pod with label having key `kanister.io/JobID`, the value of which is a reference to the origin of the pod.
-	kube.AddLabelsToPodOptionsFromContext(ctx, options, path.Join(consts.LabelPrefix, jobIDSuffix))
+	kube.AddLabelsToPodOptionsFromContext(ctx, options, path.Join(consts.LabelPrefix, consts.LabelSuffixJobID))
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := kubeTaskPodFunc()
 	return pr.Run(ctx, podFunc)
