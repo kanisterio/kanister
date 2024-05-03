@@ -29,6 +29,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -91,11 +92,12 @@ func deleteData(
 	}
 
 	options := &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: jobPrefix,
-		Image:        consts.GetKanisterToolsImage(),
-		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		PodOverride:  podOverride,
+		Namespace:            namespace,
+		GenerateName:         jobPrefix,
+		Image:                consts.GetKanisterToolsImage(),
+		Command:              []string{"sh", "-c", "tail -f /dev/null"},
+		PodOverride:          podOverride,
+		EnvironmentVariables: ephemeral.GlobalEnvVars(),
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataPodFunc(tp, reclaimSpace, encryptionKey, insecureTLS, targetPaths, deleteTags, deleteIdentifiers)

@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -213,7 +214,8 @@ func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.V
 			RunAsUser:    &uidguid,
 			RunAsNonRoot: &nonRootBool,
 		},
-		Volumes: vols,
+		Volumes:              vols,
+		EnvironmentVariables: ephemeral.GlobalEnvVars(),
 	}
 }
 

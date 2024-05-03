@@ -26,6 +26,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -60,11 +61,12 @@ func (*kubeTaskFunc) Name() string {
 
 func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: jobPrefix,
-		Image:        image,
-		Command:      command,
-		PodOverride:  podOverride,
+		Namespace:            namespace,
+		GenerateName:         jobPrefix,
+		Image:                image,
+		Command:              command,
+		PodOverride:          podOverride,
+		EnvironmentVariables: ephemeral.GlobalEnvVars(),
 	}
 	// Mark pod with label having key `kanister.io/JobID`, the value of which is a reference to the origin of the pod.
 	kube.AddLabelsToPodOptionsFromContext(ctx, options, path.Join(consts.LabelPrefix, consts.LabelSuffixJobID))

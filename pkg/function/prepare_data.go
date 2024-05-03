@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,13 +100,14 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 	}
 
 	options := &kube.PodOptions{
-		Namespace:          namespace,
-		GenerateName:       prepareDataJobPrefix,
-		Image:              image,
-		Command:            command,
-		Volumes:            validatedVols,
-		ServiceAccountName: serviceAccount,
-		PodOverride:        podOverride,
+		Namespace:            namespace,
+		GenerateName:         prepareDataJobPrefix,
+		Image:                image,
+		Command:              command,
+		Volumes:              validatedVols,
+		ServiceAccountName:   serviceAccount,
+		PodOverride:          podOverride,
+		EnvironmentVariables: ephemeral.GlobalEnvVars(),
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)

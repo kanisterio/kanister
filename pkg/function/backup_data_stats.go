@@ -26,6 +26,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -69,11 +70,12 @@ func (*BackupDataStatsFunc) Name() string {
 
 func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID, mode, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: jobPrefix,
-		Image:        consts.GetKanisterToolsImage(),
-		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		PodOverride:  podOverride,
+		Namespace:            namespace,
+		GenerateName:         jobPrefix,
+		Image:                consts.GetKanisterToolsImage(),
+		Command:              []string{"sh", "-c", "tail -f /dev/null"},
+		PodOverride:          podOverride,
+		EnvironmentVariables: ephemeral.GlobalEnvVars(),
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := backupDataStatsPodFunc(tp, encryptionKey, backupArtifactPrefix, backupID, mode)

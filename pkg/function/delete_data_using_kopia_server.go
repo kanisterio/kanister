@@ -25,6 +25,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
@@ -153,10 +154,11 @@ func deleteDataFromServer(
 	userPassphrase string,
 ) (map[string]any, error) {
 	options := &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: jobPrefix,
-		Image:        image,
-		Command:      []string{"bash", "-c", "tail -f /dev/null"},
+		Namespace:            namespace,
+		GenerateName:         jobPrefix,
+		Image:                image,
+		Command:              []string{"bash", "-c", "tail -f /dev/null"},
+		EnvironmentVariables: ephemeral.GlobalEnvVars(),
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataFromServerPodFunc(

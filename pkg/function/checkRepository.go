@@ -12,6 +12,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
@@ -52,11 +53,12 @@ func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		return nil, errors.Wrapf(err, "Failed to get controller namespace")
 	}
 	options := &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: jobPrefix,
-		Image:        consts.GetKanisterToolsImage(),
-		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		PodOverride:  podOverride,
+		Namespace:            namespace,
+		GenerateName:         jobPrefix,
+		Image:                consts.GetKanisterToolsImage(),
+		Command:              []string{"sh", "-c", "tail -f /dev/null"},
+		PodOverride:          podOverride,
+		EnvironmentVariables: ephemeral.GlobalEnvVars(),
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := CheckRepositoryPodFunc(cli, tp, encryptionKey, targetPaths, insecureTLS)
