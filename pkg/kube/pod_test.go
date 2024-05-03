@@ -18,9 +18,11 @@
 package kube
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -36,6 +38,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 )
 
 type PodSuite struct {
@@ -1050,6 +1053,44 @@ func (s *PodSuite) TestGetRedactedPod(c *C) {
 			},
 		},
 	})
+}
+
+func (s *PodSuite) TestSetPodRegisteredEnvVars(c *C) {
+	expectedEnvVars := []corev1.EnvVar{
+		{
+			Name:  "KANISTER_TEST_OS_ENV_VAR",
+			Value: "1",
+		},
+		{
+			Name:  "KANISTER_TEST_STATIC_ENV_VAR",
+			Value: "1",
+		},
+	}
+
+	os.Setenv(expectedEnvVars[0].Name, expectedEnvVars[0].Value)
+	defer func() {
+		os.Unsetenv(expectedEnvVars[0].Name)
+	}()
+
+	ephemeral.RegisterOSEnvVar(expectedEnvVars[0].Name)
+	ephemeral.RegisterStaticEnvVar(expectedEnvVars[1].Name, expectedEnvVars[1].Value)
+
+	po := &PodOptions{
+		Namespace:            s.namespace,
+		GenerateName:         "test-",
+		Image:                consts.LatestKanisterToolsImage,
+		Command:              []string{"sh", "-c", "tail -f /dev/null"},
+		EnvironmentVariables: ephemeral.GlobalEnvVars(),
+	}
+
+	pod, err := CreatePod(context.Background(), s.cli, po)
+	c.Assert(err, IsNil)
+	slices.SortFunc(
+		pod.Spec.Containers[0].Env,
+		func(a, b corev1.EnvVar) int { return cmp.Compare(a.Name, b.Name) },
+	)
+
+	c.Assert(pod.Spec.Containers[0].Env, DeepEquals, expectedEnvVars)
 }
 
 func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
