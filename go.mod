@@ -32,7 +32,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/kopia/kopia v0.17.1-0.20240430023259-dc0dea4419ba
+	github.com/kopia/kopia v0.17.1-0.20240502180128-4cf9582a49ca
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0

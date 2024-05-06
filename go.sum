@@ -386,8 +386,8 @@ github.com/klauspost/reedsolomon v1.12.1 h1:NhWgum1efX1x58daOBGCFWcxtEhOhXKKl1HA
 github.com/klauspost/reedsolomon v1.12.1/go.mod h1:nEi5Kjb6QqtbofI6s+cbG/j1da11c96IBYBSnVGtuBs=
 github.com/kopia/htmluibuild v0.0.1-0.20240405040759-90bfbf000696 h1:MaLdTP4HVGUomnowX7k1i4SOXOdtgSi/ekp1gWgubNU=
 github.com/kopia/htmluibuild v0.0.1-0.20240405040759-90bfbf000696/go.mod h1:h53A5JM3t2qiwxqxusBe+PFgGcgZdS+DWCQvG5PTlto=
-github.com/kopia/kopia v0.17.1-0.20240430023259-dc0dea4419ba h1:aNNLCbt16a+UwhzqZFAu2Zu9FDitkJWIaZD60PhOxuU=
-github.com/kopia/kopia v0.17.1-0.20240430023259-dc0dea4419ba/go.mod h1:MitCuOn4v6QbJlr7mZUi09f6uS51KnVs5Q8GkppJeUw=
+github.com/kopia/kopia v0.17.1-0.20240502180128-4cf9582a49ca h1:B0/ZAiD1+3Re3Fmh4UK/g4Vxvtn2aexZKKfGEc48S+0=
+github.com/kopia/kopia v0.17.1-0.20240502180128-4cf9582a49ca/go.mod h1:MitCuOn4v6QbJlr7mZUi09f6uS51KnVs5Q8GkppJeUw=
 github.com/kr/fs v0.1.0 h1:Jskdu9ieNAYnjxsi0LbQp1ulIKZV1LAFgK1tWhpZgl8=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

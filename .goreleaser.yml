@@ -69,8 +69,8 @@ dockers:
   build_flag_templates:
   - "--pull"
   - "--build-arg=kan_tools_version={{ .Tag }}"
-# Refers to https://github.com/kopia/kopia/commit/dc0dea4419ba6074c950f53debd194b17afcde7f
-  - "--build-arg=kopia_build_commit=dc0dea4"
+# Refers to https://github.com/kopia/kopia/commit/4cf9582a49ca53fa69a4eb0aca0f91c71cb98f00
+  - "--build-arg=kopia_build_commit=4cf9582"
   - "--build-arg=kopia_repo_org=kopia"
   extra_files:
   - 'LICENSE'
