@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
+	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -69,12 +70,11 @@ func ConnectToAPIServer(
 		TrustedServerCertificateFingerprint: fingerprint,
 	}
 
-	// TODO(@sirish): Uncomment the following code once APIServerInfo is extended (kopia 0.8 release)
-	// for k, v := range cliArgs.ExtraKopiaRepositoryConnectServerArgs() {
-	// 	if k == "--local-cache-key-derivation-algorithm" {
-	// 		serverInfo.LocalCahceKeyDerivationAlgorithm = v
-	// 	}
-	// }
+	for k, v := range cliArgs.ExtraKopiaRepositoryConnectServerArgs() {
+		if k == "--local-cache-key-derivation-algorithm" {
+			serverInfo.LocalCacheKeyDerivationAlgorithm = v
+		}
+	}
 
 	opts := &repo.ConnectOptions{
 		CachingOptions: content.CachingOptions{

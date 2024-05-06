@@ -278,23 +278,24 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 }
 
 func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
-
-	cmd := RepositoryConnectServerCommand(RepositoryServerCommandArgs{
-		UserPassword:   "testpass123",
-		ConfigFilePath: "/tmp/config.file",
-		LogDirectory:   "/tmp/log.dir",
-		CacheDirectory: "/tmp/cache.dir",
-		Hostname:       "test-hostname",
-		Username:       "test-username",
-		ServerURL:      "https://127.0.0.1:51515",
-		Fingerprint:    "test-fingerprint",
-		ReadOnly:       true,
-		CacheArgs: CacheArgs{
-			ContentCacheLimitMB:  0,
-			MetadataCacheLimitMB: 0,
-		},
-	})
-	c.Assert(cmd, check.DeepEquals, []string{"kopia",
+	cmd := func() []string {
+		return RepositoryConnectServerCommand(RepositoryServerCommandArgs{
+			UserPassword:   "testpass123",
+			ConfigFilePath: "/tmp/config.file",
+			LogDirectory:   "/tmp/log.dir",
+			CacheDirectory: "/tmp/cache.dir",
+			Hostname:       "test-hostname",
+			Username:       "test-username",
+			ServerURL:      "https://127.0.0.1:51515",
+			Fingerprint:    "test-fingerprint",
+			ReadOnly:       true,
+			CacheArgs: CacheArgs{
+				ContentCacheLimitMB:  0,
+				MetadataCacheLimitMB: 0,
+			},
+		})
+	}
+	c.Assert(cmd(), check.DeepEquals, []string{"kopia",
 		"--log-level=error",
 		"--config-file=/tmp/config.file",
 		"--log-dir=/tmp/log.dir",
@@ -318,7 +319,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
 	defer cliArgs.UnRegisterKopiaRepositoryConnectServerArgs("--testflag")
 
 	// ensure they are set
-	c.Assert(cmd, check.DeepEquals, []string{"kopia",
+	c.Assert(cmd(), check.DeepEquals, []string{"kopia",
 		"--log-level=error",
 		"--config-file=/tmp/config.file",
 		"--log-dir=/tmp/log.dir",
