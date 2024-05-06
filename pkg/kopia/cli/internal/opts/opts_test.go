@@ -48,11 +48,6 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 		ExpectedCLI: []string{"cmd", "--readonly"},
 	},
 	{
-		Name:        "GRPC",
-		Argument:    command.NewArguments(opts.GRPC(true), opts.GRPC(false)),
-		ExpectedCLI: []string{"cmd", "--grpc", "--no-grpc"},
-	},
-	{
 		Name:        "CheckForUpdates",
 		Argument:    command.NewArguments(opts.CheckForUpdates(true), opts.CheckForUpdates(false)),
 		ExpectedCLI: []string{"cmd", "--check-for-updates", "--no-check-for-updates"},

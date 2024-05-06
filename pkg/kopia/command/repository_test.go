@@ -251,7 +251,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
 		"connect",
 		"server",
 		"--no-check-for-updates",
-		"--no-grpc",
 		"--readonly",
 		"--cache-directory=/tmp/cache.dir",
 		"--content-cache-size-limit-mb=0",
