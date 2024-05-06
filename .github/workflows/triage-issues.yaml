@@ -1,5 +1,8 @@
 name: Triage Issues
 
+permissions:
+  contents: read
+
 on:
   issues:
     types:

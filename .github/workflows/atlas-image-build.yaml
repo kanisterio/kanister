@@ -1,5 +1,8 @@
 name: build-mongodb-atlas-tools-image
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
