@@ -210,7 +210,10 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
-require github.com/kanisterio/safecli v0.0.8
+require (
+	github.com/kanisterio/errkit v0.0.1
+	github.com/kanisterio/safecli v0.0.8
+)
 
 require (
 	cloud.google.com/go/auth v0.3.0 // indirect
