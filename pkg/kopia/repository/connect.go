@@ -34,15 +34,15 @@ func ConnectToKopiaRepository(
 
 	switch {
 	case strings.Contains(stderr, kerrors.ErrInvalidPasswordStr):
-		err = errkit.Wrap(err, kerrors.ErrInvalidPasswordStr) // TODO: Why it was not done using Wrap ?
+		err = errkit.Wrap(err, kerrors.ErrInvalidPasswordStr)
 	case err != nil && strings.Contains(err.Error(), kerrors.ErrCodeOutOfMemoryStr):
-		err = errkit.Wrap(err, kerrors.ErrOutOfMemoryStr) // TODO: Why it was not done using Wrap ?
+		err = errkit.Wrap(err, kerrors.ErrOutOfMemoryStr)
 	case strings.Contains(stderr, kerrors.ErrAccessDeniedStr):
-		err = errkit.Wrap(err, kerrors.ErrAccessDeniedStr) // TODO: Why it was not done using Wrap ?
+		err = errkit.Wrap(err, kerrors.ErrAccessDeniedStr)
 	case kerrors.RepoNotInitialized(stderr):
-		err = errkit.Wrap(err, kerrors.ErrRepoNotFoundStr) // TODO: Why it was not done using Wrap ?
+		err = errkit.Wrap(err, kerrors.ErrRepoNotFoundStr)
 	case kerrors.BucketDoesNotExist(stderr):
-		err = errkit.Wrap(err, kerrors.ErrBucketDoesNotExistStr) // TODO: Why it was not done using Wrap ?
+		err = errkit.Wrap(err, kerrors.ErrBucketDoesNotExistStr)
 	}
 	return errkit.Wrap(err, "Failed to connect to the backup repository")
 }

@@ -41,7 +41,7 @@ func ConnectToOrCreateKopiaRepository(
 	case err == nil:
 		// If repository connect was successful, we're done!
 		return nil
-	case kerrors.IsInvalidPasswordError(err): // TODO: Verify
+	case kerrors.IsInvalidPasswordError(err):
 		// If connect failed due to invalid password, no need to attempt creation
 		return err
 	}
