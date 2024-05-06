@@ -62,6 +62,7 @@ func NewCassandraInstance(name string) App {
 				"image.tag":        "v9.99.9-dev",
 				"image.pullPolicy": "Always",
 				"replicaCount":     "1",
+				"resourcesPreset":  "xlarge",
 			},
 		},
 	}

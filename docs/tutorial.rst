@@ -52,7 +52,7 @@ application is installed in the ``default`` namespace.
       spec:
         containers:
         - name: test-container
-          image: containerlabs/aws-sdk
+          image: amazon/aws-cli
           command: ["sh", "-c"]
           args: ["while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"]
   EOF

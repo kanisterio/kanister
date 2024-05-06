@@ -95,7 +95,7 @@ updates:
     commit-message:
       prefix: "deps(docker):"
   - package-ecosystem: "docker"
-    directory: "/docker/kafka-adobe3Connector/image"
+    directory: "/docker/kafka-adobes3Connector/image"
     schedule:
       interval: weekly
     commit-message:
