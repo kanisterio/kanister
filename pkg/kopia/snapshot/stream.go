@@ -204,7 +204,11 @@ func Read(ctx context.Context, target io.Writer, backupID, path, password string
 
 	_, err = copy(target, r)
 
-	return errkit.Wrap(err, "Failed to copy snapshot data to the target")
+	if err != nil {
+		return errkit.Wrap(err, "Failed to copy snapshot data to the target")
+	}
+
+	return nil
 }
 
 // ReadFile restores a kopia snapshot with the given ID to the given target
@@ -235,7 +239,12 @@ func ReadFile(ctx context.Context, backupID, target, password string) error {
 	_, err = restore.Entry(ctx, rep, output, rootEntry, restore.Options{
 		Parallel: 8,
 	})
-	return errkit.Wrap(err, "Failed to copy snapshot data to the target")
+
+	if err != nil {
+		return errkit.Wrap(err, "Failed to copy snapshot data to the target")
+	}
+
+	return nil
 }
 
 // bufferPool is a pool of shared buffers used during kopia read
