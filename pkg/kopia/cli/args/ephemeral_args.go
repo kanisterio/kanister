@@ -15,47 +15,42 @@
 package args
 
 import (
-	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/args"
+	"fmt"
+
+	"github.com/kanisterio/kanister/pkg/logsafe"
+	"github.com/kanisterio/safecli/command"
 )
 
-// The following function can be used to register additional
-// kopia arguments.
-func RegisterKopiaRepositoryCreateArgs(flag, value string) {
-	args.KopiaRepositoryCreateFlagValueMap[flag] = value
+var (
+	RepositoryCreate        Args
+	RepositoryConnectServer Args
+	UserAddSet              Args
+)
+
+type Args struct {
+	args map[string]string
 }
 
-func RegisterKopiaRepositoryConnectServerArgs(flag, value string) {
-	args.KopiaRepositoryConnectServerFlagValueMap[flag] = value
+func (a *Args) Set(key, value string) {
+	if a.args == nil {
+		a.args = make(map[string]string)
+	}
+	if _, ok := a.args[key]; ok {
+		panic(fmt.Sprintf("key %q already registered", key))
+	}
+	a.args[key] = value
 }
 
-func RegisterKopiaUserAddSetArgs(flag, value string) {
-	args.KopiaUserAddSetFlagValueMap[flag] = value
+func (a *Args) AppendToCmd(cmd *logsafe.Cmd) {
+	for k, v := range a.args {
+		*cmd = cmd.AppendLoggableKV(k, v)
+	}
 }
 
-// The following functions cna be used to unregister
-// additional kopia arguments.
-func UnRegisterKopiaRepositoryCreateArgs(flag string) {
-	delete(args.KopiaRepositoryCreateFlagValueMap, flag)
-}
-
-func UnRegisterKopiaRepositoryConnectServerArgs(flag string) {
-	delete(args.KopiaRepositoryConnectServerFlagValueMap, flag)
-}
-
-func UnRegisterKopiaUserAddSetArgs(flag string) {
-	delete(args.KopiaUserAddSetFlagValueMap, flag)
-}
-
-// The following functions return a key-value map of additional
-// registered kopia arguments.
-func ExtraKopiaRepositoryCreateArgs() map[string]string {
-	return args.KopiaRepositoryCreateFlagValueMap
-}
-
-func ExtraKopiaRepositoryConnectServerArgs() map[string]string {
-	return args.KopiaRepositoryConnectServerFlagValueMap
-}
-
-func ExtraKopiaUserAddSetArgs() map[string]string {
-	return args.KopiaUserAddSetFlagValueMap
+func (a *Args) CommandAppliers() []command.Applier {
+	appliers := make([]command.Applier, len(a.args))
+	for k, v := range a.args {
+		appliers = append(appliers, command.NewOptionWithArgument(k, v))
+	}
+	return appliers
 }

@@ -20,7 +20,7 @@ import (
 	"github.com/kanisterio/safecli"
 	"github.com/kanisterio/safecli/command"
 
-	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -28,8 +28,8 @@ import (
 
 // CreateArgs defines the arguments for the `kopia repository create` command.
 type CreateArgs struct {
-	cliArgs.Common // embeds common arguments
-	cliArgs.Cache  // embeds cache arguments
+	args.Common // embeds common arguments
+	args.Cache  // embeds cache arguments
 
 	Hostname        string            // the hostname of the repository
 	Username        string            // the username of the repository
@@ -42,24 +42,22 @@ type CreateArgs struct {
 }
 
 // Create creates a new `kopia repository create ...` command.
-func Create(args CreateArgs) (*safecli.Builder, error) {
+func Create(createArgs CreateArgs) (*safecli.Builder, error) {
 	appliers := []command.Applier{
-		opts.Common(args.Common),
+		opts.Common(createArgs.Common),
 		cmdRepository, subcmdCreate,
 		opts.CheckForUpdates(false),
-		opts.Cache(args.Cache),
-		optHostname(args.Hostname),
-		optUsername(args.Username),
-		optBlobRetention(args.RetentionMode, args.RetentionPeriod),
+		opts.Cache(createArgs.Cache),
+		optHostname(createArgs.Hostname),
+		optUsername(createArgs.Username),
+		optBlobRetention(createArgs.RetentionMode, createArgs.RetentionPeriod),
 		optStorage(
-			args.Location,
-			args.RepoPathPrefix,
-			args.Logger,
+			createArgs.Location,
+			createArgs.RepoPathPrefix,
+			createArgs.Logger,
 		),
 	}
-	for k, v := range cliArgs.ExtraKopiaRepositoryCreateArgs() {
-		appliers = append(appliers, command.NewOptionWithArgument(k, v))
-	}
+	appliers = append(appliers, args.RepositoryCreate.CommandAppliers()...)
 	return internal.NewKopiaCommand(
 		appliers...,
 	)

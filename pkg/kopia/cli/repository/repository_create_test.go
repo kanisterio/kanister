@@ -21,7 +21,7 @@ import (
 	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/test"
 )
 
@@ -225,7 +225,7 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	{
 		Name: "repository create with filestore location and additional args",
 		Command: func() (*safecli.Builder, error) {
-			args := CreateArgs{
+			arguments := CreateArgs{
 				Common:          common,
 				Cache:           cache,
 				Hostname:        "test-hostname",
@@ -235,9 +235,12 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 				RetentionMode:   retentionMode,
 				RetentionPeriod: retentionPeriod,
 			}
-			cliArgs.RegisterKopiaRepositoryCreateArgs("--testflag", "testvalue")
-			defer cliArgs.UnRegisterKopiaRepositoryCreateArgs("--testflag")
-			return Create(args)
+			flags := args.RepositoryCreate
+			args.RepositoryCreate = args.Args{}
+			args.RepositoryCreate.Set("--testflag", "testvalue")
+			defer func() { args.RepositoryCreate = flags }()
+
+			return Create(arguments)
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",

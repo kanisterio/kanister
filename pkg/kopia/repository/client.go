@@ -27,7 +27,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
-	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -35,6 +34,7 @@ import (
 const (
 	defaultConnectMaxListCacheDuration time.Duration = time.Second * 600
 	connectionRefusedError                           = "connection refused"
+	pbkdf2Algorithm                                  = "pbkdf2-sha256-600000"
 
 	// maxConnectRetries with value 100 results in ~23 total minutes of
 	// retries with the apiConnectBackoff settings defined below.
@@ -68,12 +68,7 @@ func ConnectToAPIServer(
 	serverInfo := &repo.APIServerInfo{
 		BaseURL:                             serverAddress,
 		TrustedServerCertificateFingerprint: fingerprint,
-	}
-
-	for k, v := range cliArgs.ExtraKopiaRepositoryConnectServerArgs() {
-		if k == "--local-cache-key-derivation-algorithm" {
-			serverInfo.LocalCacheKeyDerivationAlgorithm = v
-		}
+		LocalCacheKeyDerivationAlgorithm:    pbkdf2Algorithm,
 	}
 
 	opts := &repo.ConnectOptions{

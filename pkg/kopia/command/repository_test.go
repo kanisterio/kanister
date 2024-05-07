@@ -22,7 +22,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"gopkg.in/check.v1"
 
-	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 )
 
 func Test(t *testing.T) { check.TestingT(t) }
@@ -184,11 +184,14 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 		},
 	} {
 		if tc.addRegisteredArgs {
-			cliArgs.RegisterKopiaRepositoryCreateArgs("--testflag", "testvalue")
-			defer cliArgs.UnRegisterKopiaRepositoryCreateArgs("--testflag")
-		} else {
-			cliArgs.UnRegisterKopiaRepositoryCreateArgs("--testflag")
+			flags := args.RepositoryCreate
+			args.RepositoryCreate = args.Args{}
+			args.RepositoryCreate.Set("--testflag", "testvalue")
+			defer func() { args.RepositoryCreate = flags }()
 		}
+		// else {
+		// 	defer func() { args.RepositoryCreate = flags }()
+		// }
 		cmd, err := RepositoryCreateCommand(tc.cmdArg)
 		c.Assert(err, tc.Checker)
 		if tc.Checker == check.IsNil {
@@ -315,8 +318,10 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
 	})
 
 	// register additional arguments
-	cliArgs.RegisterKopiaRepositoryConnectServerArgs("--testflag", "testvalue")
-	defer cliArgs.UnRegisterKopiaRepositoryConnectServerArgs("--testflag")
+	flags := args.RepositoryConnectServer
+	args.RepositoryConnectServer = args.Args{}
+	args.RepositoryConnectServer.Set("--testflag", "testvalue")
+	defer func() { args.RepositoryConnectServer = flags }()
 
 	// ensure they are set
 	c.Assert(cmd(), check.DeepEquals, []string{"kopia",

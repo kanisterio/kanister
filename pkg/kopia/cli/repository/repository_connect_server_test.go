@@ -20,7 +20,7 @@ import (
 	"github.com/kanisterio/safecli"
 	"gopkg.in/check.v1"
 
-	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/test"
 )
 
@@ -64,7 +64,7 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	{
 		Name: "repository connect server, with additonal args",
 		Command: func() (*safecli.Builder, error) {
-			args := ConnectServerArgs{
+			arguments := ConnectServerArgs{
 				Common:      common,
 				Cache:       cache,
 				Hostname:    "test-hostname",
@@ -73,9 +73,13 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 				Fingerprint: "test-fingerprint",
 				ReadOnly:    true,
 			}
-			cliArgs.RegisterKopiaRepositoryConnectServerArgs("--testflag", "testvalue")
-			defer cliArgs.UnRegisterKopiaRepositoryConnectServerArgs("--testflag")
-			return ConnectServer(args)
+
+			flags := args.RepositoryConnectServer
+			args.RepositoryConnectServer = args.Args{}
+			args.RepositoryConnectServer.Set("--testflag", "testvalue")
+			defer func() { args.RepositoryConnectServer = flags }()
+
+			return ConnectServer(arguments)
 		},
 		ExpectedCLI: []string{"kopia",
 			"--config-file=path/kopia.config",

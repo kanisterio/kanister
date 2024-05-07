@@ -18,7 +18,7 @@ import (
 	"github.com/kanisterio/safecli"
 	"github.com/kanisterio/safecli/command"
 
-	cliArgs "github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/opts"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -26,8 +26,8 @@ import (
 
 // ConnectServerArgs defines the arguments for the `kopia repository connect server` command.
 type ConnectServerArgs struct {
-	cliArgs.Common
-	cliArgs.Cache
+	args.Common
+	args.Cache
 
 	Hostname    string // hostname of the repository
 	Username    string // username of the repository
@@ -39,21 +39,19 @@ type ConnectServerArgs struct {
 }
 
 // ConnectServer creates a new `kopia repository connect server...` command.
-func ConnectServer(args ConnectServerArgs) (*safecli.Builder, error) {
+func ConnectServer(connectServerArgs ConnectServerArgs) (*safecli.Builder, error) {
 	appliers := []command.Applier{
-		opts.Common(args.Common),
+		opts.Common(connectServerArgs.Common),
 		cmdRepository, subcmdConnect, subcmdServer,
 		opts.CheckForUpdates(false),
-		optReadOnly(args.ReadOnly),
-		opts.Cache(args.Cache),
-		optHostname(args.Hostname),
-		optUsername(args.Username),
-		optServerURL(args.ServerURL),
-		optServerCertFingerprint(args.Fingerprint),
+		optReadOnly(connectServerArgs.ReadOnly),
+		opts.Cache(connectServerArgs.Cache),
+		optHostname(connectServerArgs.Hostname),
+		optUsername(connectServerArgs.Username),
+		optServerURL(connectServerArgs.ServerURL),
+		optServerCertFingerprint(connectServerArgs.Fingerprint),
 	}
-	for k, v := range cliArgs.ExtraKopiaRepositoryConnectServerArgs() {
-		appliers = append(appliers, command.NewOptionWithArgument(k, v))
-	}
+	appliers = append(appliers, args.RepositoryConnectServer.CommandAppliers()...)
 	return internal.NewKopiaCommand(
 		appliers...,
 	)
