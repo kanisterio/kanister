@@ -91,7 +91,12 @@ func ConnectToAPIServer(
 		}
 		return true, nil
 	})
-	return errkit.Wrap(err, "Failed connecting to the Kopia API Server")
+
+	if err != nil {
+		return errkit.Wrap(err, "Failed connecting to the Kopia API Server")
+	}
+
+	return nil
 }
 
 // Open connects to the kopia repository based on the config stored in the config file
@@ -117,7 +122,11 @@ func Open(ctx context.Context, configFile, password, purpose string) (repo.Repos
 		OnUpload: func(i int64) {},
 	})
 
-	return rw, errkit.Wrap(err, "Failed to open kopia repository writer")
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to open kopia repository writer")
+	}
+
+	return rw, nil
 }
 
 func repositoryConfigFileName(configFile string) string {
