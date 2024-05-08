@@ -25,6 +25,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -140,6 +141,10 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 		Volumes:      validatedVols,
 		PodOverride:  podOverride,
 	}
+
+	// Apply the registered ephemeral pod changes.
+	ephemeral.Options.Apply(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, insecureTLS)
 	return pr.Run(ctx, podFunc)

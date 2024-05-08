@@ -28,6 +28,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -99,6 +100,10 @@ func copyVolumeData(
 		}},
 		PodOverride: podOverride,
 	}
+
+	// Apply the registered ephemeral pod changes.
+	ephemeral.Options.Apply(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := copyVolumeDataPodFunc(cli, tp, mountPoint, targetPath, encryptionKey, insecureTLS)
 	return pr.Run(ctx, podFunc)

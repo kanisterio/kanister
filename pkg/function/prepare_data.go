@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,6 +108,10 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		ServiceAccountName: serviceAccount,
 		PodOverride:        podOverride,
 	}
+
+	// Apply the registered ephemeral pod changes.
+	ephemeral.Options.Apply(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)
 	return pr.Run(ctx, podFunc)

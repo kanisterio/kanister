@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -202,7 +203,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.VolumeMountOptions) *kube.PodOptions {
 	uidguid := int64(0)
 	nonRootBool := false
-	return &kube.PodOptions{
+	options := &kube.PodOptions{
 		Namespace:     namespace,
 		GenerateName:  fmt.Sprintf("%s-", repoServerPod),
 		Image:         consts.GetKanisterToolsImage(),
@@ -215,6 +216,10 @@ func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.V
 		},
 		Volumes: vols,
 	}
+	// Apply the registered ephemeral pod changes.
+	ephemeral.Options.Apply(options)
+
+	return options
 }
 
 func getPodAddress(ctx context.Context, cli kubernetes.Interface, namespace, podName string) (string, error) {
