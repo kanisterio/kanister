@@ -78,7 +78,7 @@ func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.Options.Apply(options)
+	ephemeral.PodOptions.Apply(options)
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := backupDataStatsPodFunc(tp, encryptionKey, backupArtifactPrefix, backupID, mode)

@@ -143,7 +143,7 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.Options.Apply(options)
+	ephemeral.PodOptions.Apply(options)
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, insecureTLS)

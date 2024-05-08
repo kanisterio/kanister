@@ -2,7 +2,6 @@ package ephemeral_test
 
 import (
 	"os"
-	"testing"
 
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
@@ -11,14 +10,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+type EnvVarSuite struct{}
 
-type EphemeralSuite struct{}
+var _ = Suite(&EnvVarSuite{})
 
-var _ = Suite(&EphemeralSuite{})
-
-func (s *EphemeralSuite) TestRegisteringOSEnvVarKubePodOptions(c *C) {
+func (s *EnvVarSuite) TestOSEnvVarKubePodOptions(c *C) {
 	expected := []corev1.EnvVar{
 		{
 			Name:  "KANISTER_REGISTERED_OS_ENVVAR",
@@ -26,27 +22,24 @@ func (s *EphemeralSuite) TestRegisteringOSEnvVarKubePodOptions(c *C) {
 		},
 	}
 
-	var options kube.PodOptions
-
 	// OS environment variable not set
-	var registeredAppliers ephemeral.ApplierList
-	registeredAppliers.Register(ephemeral.OSEnvVar(expected[0].Name))
-	registeredAppliers.Apply(&options)
+	var registeredAppliers ephemeral.ApplierList[kube.PodOptions]
+	set := ephemeral.OSEnvVar(expected[0].Name)
+	registeredAppliers.Register(set.PodOptions)
 
+	var options kube.PodOptions
+	registeredAppliers.Apply(&options)
 	c.Assert(options.EnvironmentVariables, DeepEquals, []corev1.EnvVar(nil))
 
 	// OS environment variable set
 	os.Setenv(expected[0].Name, expected[0].Value)
 	defer os.Unsetenv(expected[0].Name)
 
-	registeredAppliers = ephemeral.ApplierList{}
-	registeredAppliers.Register(ephemeral.OSEnvVar(expected[0].Name))
 	registeredAppliers.Apply(&options)
-
 	c.Assert(options.EnvironmentVariables, DeepEquals, expected)
 }
 
-func (s *EphemeralSuite) TestRegisteringOSEnvVarCoreV1Container(c *C) {
+func (s *EnvVarSuite) TestOSEnvVarCoreV1Container(c *C) {
 	expected := []corev1.EnvVar{
 		{
 			Name:  "KANISTER_REGISTERED_OS_ENVVAR",
@@ -54,27 +47,24 @@ func (s *EphemeralSuite) TestRegisteringOSEnvVarCoreV1Container(c *C) {
 		},
 	}
 
-	var options corev1.Container
-
 	// OS environment variable not set
-	var registeredAppliers ephemeral.ApplierList
-	registeredAppliers.Register(ephemeral.OSEnvVar(expected[0].Name))
-	registeredAppliers.Apply(&options)
+	var registeredAppliers ephemeral.ApplierList[corev1.Container]
+	set := ephemeral.OSEnvVar(expected[0].Name)
+	registeredAppliers.Register(set.Container)
 
+	var options corev1.Container
+	registeredAppliers.Apply(&options)
 	c.Assert(options.Env, DeepEquals, []corev1.EnvVar(nil))
 
 	// OS environment variable set
 	os.Setenv(expected[0].Name, expected[0].Value)
 	defer os.Unsetenv(expected[0].Name)
 
-	registeredAppliers = ephemeral.ApplierList{}
-	registeredAppliers.Register(ephemeral.OSEnvVar(expected[0].Name))
 	registeredAppliers.Apply(&options)
-
 	c.Assert(options.Env, DeepEquals, expected)
 }
 
-func (s *EphemeralSuite) TestRegisteringStaticEnvVarKubePodOptions(c *C) {
+func (s *EnvVarSuite) TestStaticEnvVarKubePodOptions(c *C) {
 	expected := []corev1.EnvVar{
 		{
 			Name:  "KANISTER_REGISTERED_STATIC_ENVVAR",
@@ -82,16 +72,16 @@ func (s *EphemeralSuite) TestRegisteringStaticEnvVarKubePodOptions(c *C) {
 		},
 	}
 
+	var registeredAppliers ephemeral.ApplierList[kube.PodOptions]
+	set := ephemeral.StaticEnvVar(expected[0].Name, expected[0].Value)
+	registeredAppliers.Register(set.PodOptions)
+
 	var options kube.PodOptions
-
-	var registeredAppliers ephemeral.ApplierList
-	registeredAppliers.Register(ephemeral.StaticEnvVar(expected[0].Name, expected[0].Value))
 	registeredAppliers.Apply(&options)
-
 	c.Assert(options.EnvironmentVariables, DeepEquals, expected)
 }
 
-func (s *EphemeralSuite) TestRegisteringStaticEnvVarCoreV1Container(c *C) {
+func (s *EnvVarSuite) TestRegisteringStaticEnvVarCoreV1Container(c *C) {
 	expected := []corev1.EnvVar{
 		{
 			Name:  "KANISTER_REGISTERED_STATIC_ENVVAR",
@@ -99,11 +89,11 @@ func (s *EphemeralSuite) TestRegisteringStaticEnvVarCoreV1Container(c *C) {
 		},
 	}
 
+	var registeredAppliers ephemeral.ApplierList[corev1.Container]
+	set := ephemeral.StaticEnvVar(expected[0].Name, expected[0].Value)
+	registeredAppliers.Register(set.Container)
+
 	var options corev1.Container
-
-	var registeredAppliers ephemeral.ApplierList
-	registeredAppliers.Register(ephemeral.StaticEnvVar(expected[0].Name, expected[0].Value))
 	registeredAppliers.Apply(&options)
-
 	c.Assert(options.Env, DeepEquals, expected)
 }

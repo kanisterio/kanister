@@ -110,7 +110,7 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.Options.Apply(options)
+	ephemeral.PodOptions.Apply(options)
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)

@@ -100,7 +100,7 @@ func deleteData(
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.Options.Apply(options)
+	ephemeral.PodOptions.Apply(options)
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataPodFunc(tp, reclaimSpace, encryptionKey, insecureTLS, targetPaths, deleteTags, deleteIdentifiers)

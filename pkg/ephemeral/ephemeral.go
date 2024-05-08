@@ -1,28 +1,67 @@
 package ephemeral
 
+import (
+	"github.com/kanisterio/kanister/pkg/kube"
+	corev1 "k8s.io/api/core/v1"
+)
+
+var (
+	Container  ApplierList[corev1.Container]
+	PodOptions ApplierList[kube.PodOptions]
+)
+
+// ApplierSet is a group of Appliers, typically returned by an constructor.
+type ApplierSet struct {
+	Container  Applier[corev1.Container]
+	PodOptions Applier[kube.PodOptions]
+}
+
+// Register generically registers an Applier.
+func Register[T Constraint](applier Applier[T]) {
+	switch applier := any(applier).(type) {
+	case Applier[corev1.Container]:
+		Container.Register(applier)
+	case Applier[kube.PodOptions]:
+		PodOptions.Register(applier)
+	default:
+		panic("Unknown applier type")
+	}
+}
+
+// RegisterSet registers each of the Appliers contained in the set.
+func RegisterSet(set ApplierSet) {
+	if set.Container != nil {
+		Container.Register(set.Container)
+	}
+
+	if set.PodOptions != nil {
+		PodOptions.Register(set.PodOptions)
+	}
+}
+
+// Constraint provides the set of types allowed for appliers and filterers.
+type Constraint interface {
+	kube.PodOptions | corev1.Container
+}
+
 // Applier is the interface which applies a manipulation to the PodOption to be
 // used to run ephemeral pdos.
-type Applier interface {
-	Apply(any)
+type Applier[T Constraint] interface {
+	Apply(*T)
 }
 
 // ApplierFunc is a function which implements the Applier interface and can be
 // used to generically manipulate the PodOptions.
-type ApplierFunc func(any)
+type ApplierFunc[T Constraint] func(*T)
 
-func (f ApplierFunc) Apply(options any) { f(options) }
-
-var (
-	// Options holds the registered Appliers.
-	Options ApplierList
-)
+func (f ApplierFunc[T]) Apply(options *T) { f(options) }
 
 // ApplierList is an array of registered Appliers which will be applied on
 // a PodOption.
-type ApplierList []Applier
+type ApplierList[T Constraint] []Applier[T]
 
 // Apply calls the Applier::Apply method on all registered appliers.
-func (l ApplierList) Apply(options any) {
+func (l ApplierList[T]) Apply(options *T) {
 	for _, applier := range l {
 		applier.Apply(options)
 	}
@@ -30,38 +69,27 @@ func (l ApplierList) Apply(options any) {
 
 // Register adds the applier to the list of Appliers to be used when
 // manipulating the PodOptions.
-func (l *ApplierList) Register(applier Applier) {
+func (l *ApplierList[T]) Register(applier Applier[T]) {
 	*l = append(*l, applier)
 }
 
 // Filterer is the interface which filters the use of registered appliers to
 // only those PodOptions that match the filter criteria.
-type Filterer interface {
-	Filter(any) bool
+type Filterer[T Constraint] interface {
+	Filter(*T) bool
 }
 
 // FiltererFunc is a function which implements the Filterer interface and can be
 // used to generically filter PodOptions to manipulate using the ApplierList.
-type FiltererFunc func(any) bool
+type FiltererFunc[T Constraint] func(*T) bool
 
-func (f FiltererFunc) Filter(options any) bool {
+func (f FiltererFunc[T]) Filter(options *T) bool {
 	return f(options)
 }
 
-// PodNameFilter is a Filterer that filters based on the PodOptions.Name.
-type PodNameFilter string
-
-func (f PodNameFilter) Filter(options any) bool {
-	if v, ok := options.(struct{ Name string }); ok {
-		return string(f) == v.Name
-	}
-
-	return false
-}
-
 // Filter applies the Applier's if the Filterer criterion is met.
-func Filter(filterer Filterer, appliers ...Applier) Applier {
-	return ApplierFunc(func(options any) {
+func Filter[T Constraint](filterer Filterer[T], appliers ...Applier[T]) Applier[T] {
+	return ApplierFunc[T](func(options *T) {
 		if !filterer.Filter(options) {
 			return
 		}
@@ -70,4 +98,18 @@ func Filter(filterer Filterer, appliers ...Applier) Applier {
 			applier.Apply(options)
 		}
 	})
+}
+
+// PodOptionsNameFilter is a Filterer that filters based on the PodOptions.Name.
+type PodOptionsNameFilter string
+
+func (n PodOptionsNameFilter) Filter(options *kube.PodOptions) bool {
+	return string(n) == options.Name
+}
+
+// ContainerNameFilter is a Filterer that filters based on the Container.Name.
+type ContainerNameFilter string
+
+func (n ContainerNameFilter) Filter(container *corev1.Container) bool {
+	return string(n) == container.Name
 }

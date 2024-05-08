@@ -69,7 +69,7 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.Options.Apply(options)
+	ephemeral.PodOptions.Apply(options)
 
 	// Mark pod with label having key `kanister.io/JobID`, the value of which is a reference to the origin of the pod.
 	kube.AddLabelsToPodOptionsFromContext(ctx, options, path.Join(consts.LabelPrefix, consts.LabelSuffixJobID))

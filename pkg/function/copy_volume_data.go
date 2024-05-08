@@ -102,7 +102,7 @@ func copyVolumeData(
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.Options.Apply(options)
+	ephemeral.PodOptions.Apply(options)
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := copyVolumeDataPodFunc(cli, tp, mountPoint, targetPath, encryptionKey, insecureTLS)
