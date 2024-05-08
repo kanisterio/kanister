@@ -1,10 +1,11 @@
-package repository
+package repository_test
 
 import (
 	"testing"
 
 	"gopkg.in/check.v1"
 
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kopia/kopia/repo"
 )
 
@@ -17,7 +18,7 @@ var _ = check.Suite(&RepositoryClientSuite{})
 func (s *RepositoryClientSuite) TestKopiaAllowedAlgorithms(c *check.C) {
 	pbkdf2Supported := false
 	for _, algorithm := range repo.SupportedLocalCacheKeyDerivationAlgorithms() {
-		if algorithm == pbkdf2Algorithm {
+		if algorithm == repository.Pbkdf2Algorithm {
 			pbkdf2Supported = true
 		}
 	}

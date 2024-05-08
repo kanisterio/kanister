@@ -41,10 +41,11 @@ func (a *Args) Set(key, value string) {
 	a.args[key] = value
 }
 
-func (a *Args) AppendToCmd(cmd *logsafe.Cmd) {
+func (a *Args) AppendToCmd(cmd logsafe.Cmd) logsafe.Cmd {
 	for k, v := range a.args {
-		*cmd = cmd.AppendLoggableKV(k, v)
+		cmd = cmd.AppendLoggableKV(k, v)
 	}
+	return cmd
 }
 
 func (a *Args) CommandAppliers() []command.Applier {

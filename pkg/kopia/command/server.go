@@ -130,7 +130,7 @@ func ServerSetUser(cmdArgs ServerSetUserCommandArgs) []string {
 	command = command.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, cmdArgs.NewUsername)
 	command = command.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
 
-	args.UserAddSet.AppendToCmd(&command)
+	command = args.UserAddSet.AppendToCmd(command)
 
 	return stringSliceCommand(command)
 }
@@ -147,7 +147,7 @@ func ServerAddUser(cmdArgs ServerAddUserCommandArgs) []string {
 	command = command.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, cmdArgs.NewUsername)
 	command = command.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
 
-	args.UserAddSet.AppendToCmd(&command)
+	command = args.UserAddSet.AppendToCmd(command)
 
 	return stringSliceCommand(command)
 }

@@ -99,7 +99,7 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		command = command.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
 
-	args.RepositoryCreate.AppendToCmd(&command)
+	command = args.RepositoryCreate.AppendToCmd(command)
 
 	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
 		Location:       cmdArgs.Location,
@@ -152,7 +152,7 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 	}
 	command = command.AppendLoggableKV(urlFlag, cmdArgs.ServerURL)
 
-	args.RepositoryConnectServer.AppendToCmd(&command)
+	command = args.RepositoryConnectServer.AppendToCmd(command)
 
 	command = command.AppendRedactedKV(serverCertFingerprint, cmdArgs.Fingerprint)
 

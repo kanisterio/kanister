@@ -189,9 +189,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 			args.RepositoryCreate.Set("--testflag", "testvalue")
 			defer func() { args.RepositoryCreate = flags }()
 		}
-		// else {
-		// 	defer func() { args.RepositoryCreate = flags }()
-		// }
 		cmd, err := RepositoryCreateCommand(tc.cmdArg)
 		c.Assert(err, tc.Checker)
 		if tc.Checker == check.IsNil {

@@ -34,7 +34,7 @@ import (
 const (
 	defaultConnectMaxListCacheDuration time.Duration = time.Second * 600
 	connectionRefusedError                           = "connection refused"
-	pbkdf2Algorithm                                  = "pbkdf2-sha256-600000"
+	Pbkdf2Algorithm                                  = "pbkdf2-sha256-600000"
 
 	// maxConnectRetries with value 100 results in ~23 total minutes of
 	// retries with the apiConnectBackoff settings defined below.
@@ -68,7 +68,7 @@ func ConnectToAPIServer(
 	serverInfo := &repo.APIServerInfo{
 		BaseURL:                             serverAddress,
 		TrustedServerCertificateFingerprint: fingerprint,
-		LocalCacheKeyDerivationAlgorithm:    pbkdf2Algorithm,
+		LocalCacheKeyDerivationAlgorithm:    Pbkdf2Algorithm,
 	}
 
 	opts := &repo.ConnectOptions{
