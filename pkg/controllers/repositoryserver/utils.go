@@ -139,6 +139,10 @@ func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]inter
 				Name:         "container",
 				VolumeMounts: mountList,
 			}
+
+			// Apply the registered ephemeral pod changes.
+			ephemeral.Options.Apply(&ctr)
+
 			podOverride["containers"] = []corev1.Container{*ctr}
 			return mount.Name, true
 		}
@@ -178,9 +182,14 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	})
 
 	if len(podOverrideSpec.Containers) == 0 {
-		podOverrideSpec.Containers = append(podOverrideSpec.Containers, corev1.Container{
+		options := corev1.Container{
 			Name: kube.ContainerNameFromPodOptsOrDefault(po),
-		})
+		}
+
+		// Apply the registered ephemeral pod changes.
+		ephemeral.Options.Apply(&options)
+
+		podOverrideSpec.Containers = append(podOverrideSpec.Containers, options)
 	}
 
 	podOverrideSpec.Containers[0].VolumeMounts = append(podOverrideSpec.Containers[0].VolumeMounts, corev1.VolumeMount{
