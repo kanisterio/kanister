@@ -33,8 +33,19 @@ import (
 
 const (
 	defaultConnectMaxListCacheDuration time.Duration = time.Second * 600
-	kopiaGetRepoParametersError                      = "unable to get repository parameters"
+	connectionRefusedError                           = "connection refused"
+
+	// maxConnectRetries with value 100 results in ~23 total minutes of
+	// retries with the apiConnectBackoff settings defined below.
+	maxConnectionRetries = 100
 )
+
+var apiConnectBackoff = backoff.Backoff{
+	Factor: 2,
+	Jitter: false,
+	Min:    100 * time.Millisecond,
+	Max:    15 * time.Second,
+}
 
 // ConnectToAPIServer connects to the Kopia API server running at the given address
 func ConnectToAPIServer(
@@ -56,8 +67,6 @@ func ConnectToAPIServer(
 	serverInfo := &repo.APIServerInfo{
 		BaseURL:                             serverAddress,
 		TrustedServerCertificateFingerprint: fingerprint,
-		// TODO(@pavan): Remove once GRPC support is added (kopia 0.8 release)
-		DisableGRPC: true,
 	}
 
 	opts := &repo.ConnectOptions{
@@ -75,19 +84,11 @@ func ConnectToAPIServer(
 		},
 	}
 
-	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
-		Factor: 2,
-		Jitter: false,
-		Min:    100 * time.Millisecond,
-		Max:    15 * time.Second,
-	}, func(c context.Context) (bool, error) {
+	err = poll.WaitWithBackoffWithRetries(ctx, apiConnectBackoff, maxConnectionRetries, isErrConnectionRefused, func(c context.Context) (bool, error) {
 		// TODO(@pavan): Modify this to use custom config file path, if required
 		err := repo.ConnectAPIServer(ctx, kopia.DefaultClientConfigFilePath, serverInfo, userPassphrase, opts)
-		switch {
-		case isGetRepoParametersError(err):
+		if err != nil {
 			log.Debug().WithError(err).Print("Connecting to the Kopia API Server")
-			return false, nil
-		case err != nil:
 			return false, err
 		}
 		return true, nil
@@ -128,6 +129,6 @@ func repositoryConfigFileName(configFile string) string {
 	return filepath.Join(os.Getenv("HOME"), ".config", "kopia", "repository.config")
 }
 
-func isGetRepoParametersError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), kopiaGetRepoParametersError)
+func isErrConnectionRefused(err error) bool {
+	return err != nil && strings.Contains(err.Error(), connectionRefusedError)
 }
