@@ -287,3 +287,33 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 	c.Assert(strings.Contains(stdout, "Policy for (global):"), Equals, true)
 	c.Assert(strings.Contains(stderr, "Initializing repository with:"), Equals, true)
 }
+
+// TestContextTimeout verifies that when context is cancelled during command execution,
+// execution will be interrupted and proper error will be returned. The stdout, stderr streams should be captured.
+func (s *ExecSuite) TestContextTimeout(c *C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	cmd := []string{"sh", "-c", "echo abc && sleep 2 && echo def"}
+	for _, cs := range s.pod.Status.ContainerStatuses {
+		stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		c.Assert(err, NotNil)
+		c.Assert(stdout, Equals, "abc")
+		c.Assert(stderr, Equals, "")
+		c.Assert(err.Error(), Equals, "Failed to exec command in pod: context deadline exceeded.\nstdout: abc\nstderr: ")
+	}
+}
+
+// TestCancelledContext verifies that when execution is proceeded with context which is already cancelled,
+// proper error will be returned. The stdout, stderr streams should remain empty, because command has not been executed.
+func (s *ExecSuite) TestCancelledContext(c *C) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	cmd := []string{"sh", "-c", "echo abc && sleep 2"}
+	for _, cs := range s.pod.Status.ContainerStatuses {
+		stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		c.Assert(err, NotNil)
+		c.Assert(stdout, Equals, "")
+		c.Assert(stderr, Equals, "")
+		c.Assert(err.Error(), Matches, "Failed to exec command in pod: error sending request: Post \".*\": .*: operation was canceled.\nstdout: \nstderr: ")
+	}
+}
