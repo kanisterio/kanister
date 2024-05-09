@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
@@ -90,6 +91,40 @@ func (h *HelmTestSuite) TestUpgrade(c *C) {
 	// wait for kanister deployment to be ready
 	err = kube.WaitOnDeploymentReady(ctx, h.kubeClient, h.helmApp.namespace, h.deploymentName)
 	c.Assert(err, IsNil)
+}
+
+func (h *HelmTestSuite) TestDryRunInstall(c *C) {
+	defer func() {
+		h.helmApp.dryRun = false
+	}()
+	c.Log("Installing kanister release - Dry run")
+	h.helmApp.dryRun = true
+	out, err := h.helmApp.Install()
+	c.Assert(err, IsNil)
+	releaseName := helm.ParseReleaseNameFromHelmStatus(out)
+	c.Assert(releaseName, Equals, kanisterName)
+}
+
+func (h *HelmTestSuite) TestComponentsFromManifestAfterDryRunHelmInstall(c *C) {
+	defer func() {
+		h.helmApp.dryRun = false
+	}()
+	c.Log("Installing kanister release - Dry run")
+	h.helmApp.dryRun = true
+	out, err := h.helmApp.Install()
+	c.Assert(err, IsNil)
+	components := helm.ComponentsFromManifest(out)
+	/*
+		Following are components from kanister include :
+		1. kanister-kanister-operator (serviceaccount)
+		2. kanister-kanister-operator-cluster-role (clusterrole)
+		3. kanister-kanister-operator-edit-role (clusterrolebinding)
+		4. kanister-kanister-operator-cr-role (clusterrolebinding)
+		5. kanister-kanister-operator-pv-provisioner (clusterrolebinding)
+		6. kanister-kanister-operator (service)
+		7. kanister-kanister-operator (deployment)
+	*/
+	c.Assert(len(components), Equals, 7)
 }
 
 func (h *HelmTestSuite) TearDownSuite(c *C) {

@@ -128,8 +128,10 @@ func (h CliClient) UpdateRepo(ctx context.Context) error {
 	return nil
 }
 
-// Install installs helm chart with given release name
-func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait, dryRun bool) (string, error) {
+// Install installs helm chart with given release name.
+// The output string is to check the generated manifests of a release without installing the chart when ‘dryRun’ flags combined.
+// For normal installation, this output string is blank.
+func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait, dryRun bool) (out string, err error) {
 	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
@@ -141,24 +143,23 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 		cmd = append(cmd, "--wait")
 	}
 	if !dryRun {
-		out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
+		out, err = RunCmdWithTimeout(ctx, h.helmBin, cmd)
 		if err != nil {
 			log.Error().Print("Error installing helm chart", field.M{"output": out})
 			return "", err
 		}
 		log.Debug().Print("Result", field.M{"output": out})
-	} else {
-		cmd = append(cmd, "--dry-run")
-		log.Info().Print("Helm dry-run. Executing to capture output:")
-		out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
-		if err != nil {
-			log.Error().Print("Error capturing output during Helm dry-run", field.M{"output": out, "error": err})
-			return "", err
-		}
-		log.Info().Print("Helm dry-run output:", field.M{"command": h.helmBin, "args": cmd, "output": out})
-		return out, nil
+		return
 	}
-	return "", nil
+	cmd = append(cmd, "--dry-run")
+	log.Debug().Print("Helm dry-run. Executing to capture output:")
+	out, err = RunCmdWithTimeout(ctx, h.helmBin, cmd)
+	if err != nil {
+		log.Error().Print("Error capturing output during Helm dry-run", field.M{"output": out, "error": err})
+		return "", err
+	}
+	log.Debug().Print("Helm dry-run output:", field.M{"command": h.helmBin, "args": cmd, "output": out})
+	return out, nil
 }
 
 func (h CliClient) Upgrade(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
