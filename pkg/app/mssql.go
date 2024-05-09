@@ -245,7 +245,7 @@ func (m MssqlDB) execCommand(ctx context.Context, command []string) (string, str
 	if err != nil || podName == "" {
 		return "", "", errors.Wrapf(err, "Error getting pod and container name for app %s.", m.name)
 	}
-	return kube.Exec(m.cli, m.namespace, podName, containerName, command, nil)
+	return kube.Exec(ctx, m.cli, m.namespace, podName, containerName, command, nil)
 }
 
 func (m *MssqlDB) getDeploymentObj() (*appsv1.Deployment, error) {

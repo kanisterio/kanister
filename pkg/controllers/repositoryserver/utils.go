@@ -232,8 +232,8 @@ func WaitTillCommandSucceed(ctx context.Context, cli kubernetes.Interface, cmd [
 		Jitter: false,
 		Min:    100 * time.Millisecond,
 		Max:    180 * time.Second,
-	}, func(context.Context) (bool, error) {
-		stdout, stderr, exErr := kube.Exec(cli, namespace, podName, container, cmd, nil)
+	}, func(localCtx context.Context) (bool, error) {
+		stdout, stderr, exErr := kube.Exec(localCtx, cli, namespace, podName, container, cmd, nil)
 		format.Log(podName, container, stdout)
 		format.Log(podName, container, stderr)
 		if exErr != nil {
