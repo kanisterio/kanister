@@ -156,7 +156,7 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
 		log.Error().Print("Error capturing output during Helm dry-run", field.M{"output": out, "error": err})
-		return "", nil
+		return "", err
 	}
 	log.Debug().Print("Helm dry-run output:", field.M{"command": h.helmBin, "args": cmd, "output": out})
 	return out, nil
