@@ -21,6 +21,8 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 )
 
 func Test(t *testing.T) { check.TestingT(t) }
@@ -33,8 +35,9 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 	retentionMode := "Locked"
 	retentionPeriod := 10 * time.Second
 	for _, tc := range []struct {
-		cmdArg   RepositoryCommandArgs
-		location map[string]string
+		cmdArg            RepositoryCommandArgs
+		location          map[string]string
+		addRegisteredArgs bool
 		check.Checker
 		expectedCmd   []string
 		expectedError string
@@ -137,7 +140,55 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 				"--path=/mnt/data/test-prefix/test-path/prefix/",
 			},
 		},
+		{
+			cmdArg: RepositoryCommandArgs{
+				CommandArgs: &CommandArgs{
+					RepoPassword:   "pass123",
+					ConfigFilePath: "/tmp/config.file",
+					LogDirectory:   "/tmp/log.dir",
+				},
+				CacheDirectory:  "/tmp/cache.dir",
+				Hostname:        "test-hostname",
+				ContentCacheMB:  0,
+				MetadataCacheMB: 0,
+				Username:        "test-username",
+				RepoPathPrefix:  "test-path/prefix",
+				Location: map[string][]byte{
+					"prefix": []byte("test-prefix"),
+					"type":   []byte("filestore"),
+				},
+				RetentionMode:   retentionMode,
+				RetentionPeriod: retentionPeriod,
+			},
+			Checker: check.IsNil,
+			expectedCmd: []string{"kopia",
+				"--log-level=error",
+				"--config-file=/tmp/config.file",
+				"--log-dir=/tmp/log.dir",
+				"--password=pass123",
+				"repository",
+				"create",
+				"--no-check-for-updates",
+				"--cache-directory=/tmp/cache.dir",
+				"--content-cache-size-limit-mb=0",
+				"--metadata-cache-size-limit-mb=0",
+				"--override-hostname=test-hostname",
+				"--override-username=test-username",
+				"--retention-mode=Locked",
+				"--retention-period=10s",
+				"--testflag=testvalue",
+				"filesystem",
+				"--path=/mnt/data/test-prefix/test-path/prefix/",
+			},
+			addRegisteredArgs: true,
+		},
 	} {
+		if tc.addRegisteredArgs {
+			flags := args.RepositoryCreate
+			args.RepositoryCreate = args.Args{}
+			args.RepositoryCreate.Set("--testflag", "testvalue")
+			defer func() { args.RepositoryCreate = flags }()
+		}
 		cmd, err := RepositoryCreateCommand(tc.cmdArg)
 		c.Assert(err, tc.Checker)
 		if tc.Checker == check.IsNil {
@@ -227,22 +278,24 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 }
 
 func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
-	cmd := RepositoryConnectServerCommand(RepositoryServerCommandArgs{
-		UserPassword:   "testpass123",
-		ConfigFilePath: "/tmp/config.file",
-		LogDirectory:   "/tmp/log.dir",
-		CacheDirectory: "/tmp/cache.dir",
-		Hostname:       "test-hostname",
-		Username:       "test-username",
-		ServerURL:      "https://127.0.0.1:51515",
-		Fingerprint:    "test-fingerprint",
-		ReadOnly:       true,
-		CacheArgs: CacheArgs{
-			ContentCacheLimitMB:  0,
-			MetadataCacheLimitMB: 0,
-		},
-	})
-	c.Assert(cmd, check.DeepEquals, []string{"kopia",
+	cmd := func() []string {
+		return RepositoryConnectServerCommand(RepositoryServerCommandArgs{
+			UserPassword:   "testpass123",
+			ConfigFilePath: "/tmp/config.file",
+			LogDirectory:   "/tmp/log.dir",
+			CacheDirectory: "/tmp/cache.dir",
+			Hostname:       "test-hostname",
+			Username:       "test-username",
+			ServerURL:      "https://127.0.0.1:51515",
+			Fingerprint:    "test-fingerprint",
+			ReadOnly:       true,
+			CacheArgs: CacheArgs{
+				ContentCacheLimitMB:  0,
+				MetadataCacheLimitMB: 0,
+			},
+		})
+	}
+	c.Assert(cmd(), check.DeepEquals, []string{"kopia",
 		"--log-level=error",
 		"--config-file=/tmp/config.file",
 		"--log-dir=/tmp/log.dir",
@@ -258,6 +311,33 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
 		"--override-hostname=test-hostname",
 		"--override-username=test-username",
 		"--url=https://127.0.0.1:51515",
+		"--server-cert-fingerprint=test-fingerprint",
+	})
+
+	// register additional arguments
+	flags := args.RepositoryConnectServer
+	args.RepositoryConnectServer = args.Args{}
+	args.RepositoryConnectServer.Set("--testflag", "testvalue")
+	defer func() { args.RepositoryConnectServer = flags }()
+
+	// ensure they are set
+	c.Assert(cmd(), check.DeepEquals, []string{"kopia",
+		"--log-level=error",
+		"--config-file=/tmp/config.file",
+		"--log-dir=/tmp/log.dir",
+		"--password=testpass123",
+		"repository",
+		"connect",
+		"server",
+		"--no-check-for-updates",
+		"--readonly",
+		"--cache-directory=/tmp/cache.dir",
+		"--content-cache-size-limit-mb=0",
+		"--metadata-cache-size-limit-mb=0",
+		"--override-hostname=test-hostname",
+		"--override-username=test-username",
+		"--url=https://127.0.0.1:51515",
+		"--testflag=testvalue", // additional flag is set
 		"--server-cert-fingerprint=test-fingerprint",
 	})
 }
