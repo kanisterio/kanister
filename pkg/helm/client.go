@@ -152,7 +152,7 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 		return //nolint:nakedret // Not a naked return, common code already extracted
 	}
 	cmd = append(cmd, "--dry-run")
-	log.Debug().Print("Helm dry-run. Executing to capture output:")
+	log.Debug().Print("Executing helm install command with dry-run enabled to capture rendered manifests:")
 	out, err = RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
 		log.Error().Print("Error capturing output during Helm dry-run", field.M{"output": out, "error": err})

@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/kanisterio/kanister/pkg/helm"
-	"time"
 )
 
 type HelmApp struct {
@@ -52,8 +51,7 @@ func (h *HelmApp) AddRepo(name, url string) error {
 }
 
 func (h *HelmApp) Install() (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
+	ctx := context.Background()
 	return h.client.Install(ctx, h.chart, "", h.name, h.namespace, h.helmValues, true, h.dryRun)
 }
 
