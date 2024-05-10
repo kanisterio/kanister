@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -125,6 +127,102 @@ func (h *HelmTestSuite) TestComponentsFromManifestAfterDryRunHelmInstall(c *C) {
 		7. kanister-kanister-operator (deployment)
 	*/
 	c.Assert(len(components), Equals, 7)
+}
+
+// TestComponentsFromKanisterHelmDryRunInstall test case does a dry run install of the kanister helm chart and validates
+// use cases for `nodeSelector` and `toleration` attributes in the helmValues.yaml
+func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
+	nodeSelector := map[string]string{
+		"selector-key": "selector-value",
+	}
+	toleration := []corev1.Toleration{
+		{
+			Key:      "taint-key",
+			Operator: corev1.TolerationOpEqual,
+			Value:    "taint-value",
+			Effect:   corev1.TaintEffectNoSchedule,
+		},
+	}
+
+	var testCases = []struct {
+		testName             string
+		helmValues           map[string]string
+		expectedNodeSelector map[string]string
+		expectedToleration   []corev1.Toleration
+	}{
+		{
+			testName: "Both nodeSelector and tolerations are present",
+			helmValues: map[string]string{
+				"image.tag":                   "200.7",
+				"bpValidatingWebhook.enabled": "false",
+				"nodeSelector.selector-key":   "selector-value",
+				"tolerations[0].key":          "taint-key",
+				"tolerations[0].operator":     "Equal",
+				"tolerations[0].value":        "taint-value",
+				"tolerations[0].effect":       "NoSchedule",
+			},
+			expectedNodeSelector: nodeSelector,
+			expectedToleration:   toleration,
+		},
+		{
+			testName: "Only nodeSelector is present",
+			helmValues: map[string]string{
+				"bpValidatingWebhook.enabled": "false",
+				"nodeSelector.selector-key":   "selector-value",
+			},
+			expectedNodeSelector: nodeSelector,
+			expectedToleration:   []corev1.Toleration{},
+		},
+		{
+			testName: "Only tolerations is present",
+			helmValues: map[string]string{
+				"bpValidatingWebhook.enabled": "false",
+				"tolerations[0].key":          "taint-key",
+				"tolerations[0].operator":     "Equal",
+				"tolerations[0].value":        "taint-value",
+				"tolerations[0].effect":       "NoSchedule",
+			},
+			expectedNodeSelector: map[string]string{},
+			expectedToleration:   toleration,
+		},
+		{
+			testName: "Both nodeSelector and tolerations are not present",
+			helmValues: map[string]string{
+				"bpValidatingWebhook.enabled": "false",
+			},
+			expectedNodeSelector: map[string]string{},
+			expectedToleration:   []corev1.Toleration{},
+		},
+	}
+	for _, tc := range testCases {
+		c.Logf("Test name:%s ", tc.testName)
+		defer func() {
+			h.helmApp.dryRun = false
+		}()
+		c.Log("Installing kanister release - Dry run")
+		testApp, err := NewHelmApp(tc.helmValues, kanisterName, "../../../helm/kanister-operator", kanisterName, "", true)
+		c.Assert(err, IsNil)
+		err = testApp.AddRepo(kanisterName, kanisterChartURL)
+		c.Assert(err, IsNil)
+
+		out, err := testApp.Install()
+		c.Assert(err, IsNil)
+		components := helm.ComponentsFromManifest(out)
+		c.Assert(len(components), Equals, 7)
+		// Take the deployment component
+		testComponent := components[6]
+		c.Log("...")
+		c.Log(testComponent)
+		c.Log("...")
+		obj, err := helm.ExtractObjectFromComponent[*appsv1.Deployment](testComponent)
+		c.Assert(err, IsNil)
+
+		c.Logf("Node selector is : %v \n", obj.Spec.Template.Spec.NodeSelector)
+		c.Logf("Toleration is : %v \n", obj.Spec.Template.Spec.Tolerations)
+
+		c.Assert(obj.Spec.Template.Spec.NodeSelector, Equals, tc.expectedNodeSelector)
+		c.Assert(len(obj.Spec.Template.Spec.Tolerations), Equals, len(tc.expectedToleration))
+	}
 }
 
 func (h *HelmTestSuite) TearDownSuite(c *C) {

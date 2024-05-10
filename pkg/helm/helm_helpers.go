@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kanisterio/kanister/pkg/field"
@@ -33,8 +34,9 @@ type k8sObj struct {
 type K8sObjectType string
 
 type Component struct {
-	k8sType K8sObjectType
-	name    string
+	k8sType      K8sObjectType
+	name         string
+	originalDump string // This holds the dry run string output of the resource
 }
 
 /*
@@ -97,7 +99,16 @@ func ComponentsFromManifest(manifest string) []Component {
 			log.Error().Print("failed to Unmarshal k8s obj", field.M{"Error": err})
 			continue
 		}
-		ret = append(ret, Component{k8sType: K8sObjectType(strings.ToLower(tmpK8s.ObjKind)), name: tmpK8s.MetaData.Name})
+		ret = append(ret, Component{k8sType: K8sObjectType(strings.ToLower(tmpK8s.ObjKind)), name: tmpK8s.MetaData.Name, originalDump: objYaml})
 	}
 	return ret
+}
+
+func ExtractObjectFromComponent[T runtime.Object](component Component) (T, error) {
+	var obj T
+	var err error
+	if err = yaml.Unmarshal([]byte(component.originalDump), &obj); err != nil {
+		log.Error().Print("failed to Unmarshal k8s obj", field.M{"Error": err})
+	}
+	return obj, err
 }
