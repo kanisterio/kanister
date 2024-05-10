@@ -129,9 +129,9 @@ func (h *HelmTestSuite) TestComponentsFromManifestAfterDryRunHelmInstall(c *C) {
 	c.Assert(len(components), Equals, 7)
 }
 
-// TestComponentsFromKanisterHelmDryRunInstall test case does a dry run install of the kanister helm chart and validates
-// use cases for `nodeSelector` and `toleration` attributes in the helmValues.yaml
-func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
+// TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall test case does a dry run install of the `kanister` helm chart and validates
+// use cases for `nodeSelector` and `toleration` attributes in the helmValues.yaml. This function is specific to `deployment` resource.
+func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(c *C) {
 	nodeSelector := map[string]string{
 		"selector-key": "selector-value",
 	}
@@ -148,12 +148,11 @@ func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
 		testName             string
 		helmValues           map[string]string
 		expectedNodeSelector map[string]string
-		expectedToleration   []corev1.Toleration
+		expectedTolerations  []corev1.Toleration
 	}{
 		{
 			testName: "Both nodeSelector and tolerations are present",
 			helmValues: map[string]string{
-				"image.tag":                   "200.7",
 				"bpValidatingWebhook.enabled": "false",
 				"nodeSelector.selector-key":   "selector-value",
 				"tolerations[0].key":          "taint-key",
@@ -162,7 +161,7 @@ func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
 				"tolerations[0].effect":       "NoSchedule",
 			},
 			expectedNodeSelector: nodeSelector,
-			expectedToleration:   toleration,
+			expectedTolerations:  toleration,
 		},
 		{
 			testName: "Only nodeSelector is present",
@@ -171,7 +170,7 @@ func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
 				"nodeSelector.selector-key":   "selector-value",
 			},
 			expectedNodeSelector: nodeSelector,
-			expectedToleration:   []corev1.Toleration{},
+			expectedTolerations:  []corev1.Toleration{},
 		},
 		{
 			testName: "Only tolerations is present",
@@ -183,7 +182,7 @@ func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
 				"tolerations[0].effect":       "NoSchedule",
 			},
 			expectedNodeSelector: map[string]string{},
-			expectedToleration:   toleration,
+			expectedTolerations:  toleration,
 		},
 		{
 			testName: "Both nodeSelector and tolerations are not present",
@@ -191,7 +190,7 @@ func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
 				"bpValidatingWebhook.enabled": "false",
 			},
 			expectedNodeSelector: map[string]string{},
-			expectedToleration:   []corev1.Toleration{},
+			expectedTolerations:  []corev1.Toleration{},
 		},
 	}
 	for _, tc := range testCases {
@@ -199,10 +198,8 @@ func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
 		defer func() {
 			h.helmApp.dryRun = false
 		}()
-		c.Log("Installing kanister release - Dry run")
+		c.Log("Installing kanister release from local kanister-operator - Dry run")
 		testApp, err := NewHelmApp(tc.helmValues, kanisterName, "../../../helm/kanister-operator", kanisterName, "", true)
-		c.Assert(err, IsNil)
-		err = testApp.AddRepo(kanisterName, kanisterChartURL)
 		c.Assert(err, IsNil)
 
 		out, err := testApp.Install()
@@ -211,17 +208,22 @@ func (h *HelmTestSuite) TestComponentsFromKanisterHelmDryRunInstall(c *C) {
 		c.Assert(len(components), Equals, 7)
 		// Take the deployment component
 		testComponent := components[6]
-		c.Log("...")
-		c.Log(testComponent)
-		c.Log("...")
 		obj, err := helm.ExtractObjectFromComponent[*appsv1.Deployment](testComponent)
 		c.Assert(err, IsNil)
 
-		c.Logf("Node selector is : %v \n", obj.Spec.Template.Spec.NodeSelector)
-		c.Logf("Toleration is : %v \n", obj.Spec.Template.Spec.Tolerations)
+		c.Assert(len(obj.Spec.Template.Spec.NodeSelector), Equals, len(tc.expectedNodeSelector))
+		for k, v := range tc.expectedNodeSelector {
+			c.Assert(obj.Spec.Template.Spec.NodeSelector[k], Equals, v)
+		}
 
-		c.Assert(obj.Spec.Template.Spec.NodeSelector, Equals, tc.expectedNodeSelector)
-		c.Assert(len(obj.Spec.Template.Spec.Tolerations), Equals, len(tc.expectedToleration))
+		c.Assert(len(obj.Spec.Template.Spec.Tolerations), Equals, len(tc.expectedTolerations))
+		for i, toleration := range tc.expectedTolerations {
+			got := obj.Spec.Template.Spec.Tolerations[i]
+			c.Assert(got.Key, Equals, toleration.Key)
+			c.Assert(got.Operator, Equals, toleration.Operator)
+			c.Assert(got.Value, Equals, toleration.Value)
+			c.Assert(got.Effect, Equals, toleration.Effect)
+		}
 	}
 }
 
