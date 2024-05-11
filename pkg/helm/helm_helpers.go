@@ -39,6 +39,10 @@ type Component struct {
 	originalDump string // This holds the dry run string output of the resource
 }
 
+const (
+	K8sObjectTypeDeployment K8sObjectType = "deployment"
+)
+
 // ReleaseNameFromRenderedOutput takes as input the rendered output from a dry-run enabled HelmApp Install and tries to
 // extract the release name from it for validation.
 func ReleaseNameFromRenderedOutput(helmStatus string) string {
@@ -97,11 +101,20 @@ func ComponentsFromManifest(manifest string) []Component {
 	return ret
 }
 
-func ExtractObjectFromComponent[T runtime.Object](component Component) (T, error) {
+func GetObjectFromComponent[T runtime.Object](component Component) (T, error) {
 	var obj T
 	var err error
 	if err = yaml.Unmarshal([]byte(component.originalDump), &obj); err != nil {
 		log.Error().Print("failed to Unmarshal k8s obj", field.M{"Error": err})
 	}
 	return obj, err
+}
+
+func GetFirstComponentOf(kind K8sObjectType, components []Component) *Component {
+	for _, component := range components {
+		if component.k8sType == kind {
+			return &component
+		}
+	}
+	return nil
 }

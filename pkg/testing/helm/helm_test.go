@@ -198,17 +198,18 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 		defer func() {
 			h.helmApp.dryRun = false
 		}()
-		c.Log("Installing kanister release from local kanister-operator - Dry run")
+		// Installing kanister release from local kanister-operator - Dry run"
 		testApp, err := NewHelmApp(tc.helmValues, kanisterName, "../../../helm/kanister-operator", kanisterName, "", true)
 		c.Assert(err, IsNil)
 
 		out, err := testApp.Install()
 		c.Assert(err, IsNil)
 		components := helm.ComponentsFromManifest(out)
-		c.Assert(len(components), Equals, 7)
+		c.Assert(len(components) > 0, Equals, true)
 		// Take the deployment component
-		testComponent := components[6]
-		obj, err := helm.ExtractObjectFromComponent[*appsv1.Deployment](testComponent)
+		testComponent := helm.GetFirstComponentOf(helm.K8sObjectTypeDeployment, components)
+		c.Assert(testComponent, NotNil)
+		obj, err := helm.GetObjectFromComponent[*appsv1.Deployment](*testComponent)
 		c.Assert(err, IsNil)
 
 		c.Assert(len(obj.Spec.Template.Spec.NodeSelector), Equals, len(tc.expectedNodeSelector))
