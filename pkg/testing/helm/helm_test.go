@@ -103,7 +103,7 @@ func (h *HelmTestSuite) TestDryRunInstall(c *C) {
 	h.helmApp.dryRun = true
 	out, err := h.helmApp.Install()
 	c.Assert(err, IsNil)
-	releaseName := helm.ParseReleaseNameFromHelmStatus(out)
+	releaseName := helm.ReleaseNameFromRenderedOutput(out)
 	c.Assert(releaseName, Equals, kanisterName)
 }
 

@@ -39,16 +39,9 @@ type Component struct {
 	originalDump string // This holds the dry run string output of the resource
 }
 
-/*
-	This file contains utility functions primarily to be used to help write test cases.
-	These are to be used in conjunction with helm install --dry-run mode.
-	The output from dry run will be sent to each of these functions that would generate either `release` name or slice
-	of `Component`struct that help to run tests and validate.
-*/
-
-// ParseReleaseNameFromHelmStatus takes as input the rendered output from a dry-run enabled HelmApp Install and tries to
+// ReleaseNameFromRenderedOutput takes as input the rendered output from a dry-run enabled HelmApp Install and tries to
 // extract the release name from it for validation.
-func ParseReleaseNameFromHelmStatus(helmStatus string) string {
+func ReleaseNameFromRenderedOutput(helmStatus string) string {
 	re := regexp.MustCompile(`.*NAME:\s+(.*)\n`)
 	withNameRE := regexp.MustCompile(`^Release\s+"(.*)"\s+`)
 	tmpRelease := re.FindAllStringSubmatch(helmStatus, -1)
