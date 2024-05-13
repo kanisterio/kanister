@@ -18,6 +18,8 @@ import (
 	"strings"
 
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 )
 
 type KopiaServerTestSuite struct{}
@@ -145,6 +147,21 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 		},
 		{
 			f: func() []string {
+				flags := args.UserAddSet
+				args.UserAddSet = args.Args{}
+				args.UserAddSet.Set("--testflag", "testvalue")
+				defer func() { args.UserAddSet = flags }()
+				args := ServerAddUserCommandArgs{
+					CommandArgs:  commandArgs,
+					NewUsername:  "a-username@a-hostname",
+					UserPassword: "a-user-password",
+				}
+				return ServerAddUser(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user add a-username@a-hostname --user-password=a-user-password --testflag=testvalue",
+		},
+		{
+			f: func() []string {
 				args := ServerSetUserCommandArgs{
 					CommandArgs:  commandArgs,
 					NewUsername:  "a-username@a-hostname",
@@ -153,6 +170,21 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 				return ServerSetUser(args)
 			},
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user set a-username@a-hostname --user-password=a-user-password",
+		},
+		{
+			f: func() []string {
+				flags := args.UserAddSet
+				args.UserAddSet = args.Args{}
+				args.UserAddSet.Set("--testflag", "testvalue")
+				defer func() { args.UserAddSet = flags }()
+				args := ServerSetUserCommandArgs{
+					CommandArgs:  commandArgs,
+					NewUsername:  "a-username@a-hostname",
+					UserPassword: "a-user-password",
+				}
+				return ServerSetUser(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user set a-username@a-hostname --user-password=a-user-password --testflag=testvalue",
 		},
 		{
 			f: func() []string {

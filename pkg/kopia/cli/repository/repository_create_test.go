@@ -21,6 +21,7 @@ import (
 	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal/test"
 )
 
@@ -219,6 +220,46 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 			"--bucket=test-bucket",
 			"--endpoint=test-endpoint",
 			"--prefix=test-prefix/test-path/prefix/",
+		},
+	},
+	{
+		Name: "repository create with filestore location and additional args",
+		Command: func() (*safecli.Builder, error) {
+			arguments := CreateArgs{
+				Common:          common,
+				Cache:           cache,
+				Hostname:        "test-hostname",
+				Username:        "test-username",
+				RepoPathPrefix:  "test-path/prefix",
+				Location:        locFS,
+				RetentionMode:   retentionMode,
+				RetentionPeriod: retentionPeriod,
+			}
+			flags := args.RepositoryCreate
+			args.RepositoryCreate = args.Args{}
+			args.RepositoryCreate.Set("--testflag", "testvalue")
+			defer func() { args.RepositoryCreate = flags }()
+
+			return Create(arguments)
+		},
+		ExpectedCLI: []string{"kopia",
+			"--config-file=path/kopia.config",
+			"--log-dir=cache/log",
+			"--log-level=error",
+			"--password=encr-key",
+			"repository",
+			"create",
+			"--no-check-for-updates",
+			"--cache-directory=/tmp/cache.dir",
+			"--content-cache-size-limit-mb=0",
+			"--metadata-cache-size-limit-mb=0",
+			"--override-hostname=test-hostname",
+			"--override-username=test-username",
+			"--retention-mode=Locked",
+			"--retention-period=15m0s",
+			"filesystem",
+			"--path=/mnt/data/test-prefix/test-path/prefix/",
+			"--testflag=testvalue",
 		},
 	},
 }))
