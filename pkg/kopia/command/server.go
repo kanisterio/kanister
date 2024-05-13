@@ -25,6 +25,8 @@ type ServerStartCommandArgs struct {
 	TLSKeyFile           string
 	ServerUsername       string
 	ServerPassword       string
+	HtpasswdFilePath     string
+	ReadOnly             bool
 	AutoGenerateCert     bool
 	Background           bool
 	EnablePprof          bool
@@ -43,11 +45,20 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 	args = args.AppendLoggableKV(addressFlag, cmdArgs.ServerAddress)
 	args = args.AppendLoggableKV(tlsCertFilePath, cmdArgs.TLSCertFile)
 	args = args.AppendLoggableKV(tlsKeyFilePath, cmdArgs.TLSKeyFile)
+
+	if cmdArgs.HtpasswdFilePath != "" {
+		args = args.AppendLoggableKV(htpasswdFilePath, cmdArgs.HtpasswdFilePath)
+	}
+
 	args = args.AppendLoggableKV(serverUsernameFlag, cmdArgs.ServerUsername)
 	args = args.AppendRedactedKV(serverPasswordFlag, cmdArgs.ServerPassword)
 
 	args = args.AppendLoggableKV(serverControlUsernameFlag, cmdArgs.ServerUsername)
 	args = args.AppendRedactedKV(serverControlPasswordFlag, cmdArgs.ServerPassword)
+
+	if cmdArgs.ReadOnly {
+		args = args.AppendLoggable(readOnlyFlag)
+	}
 
 	if cmdArgs.EnablePprof {
 		args = args.AppendLoggable(enablePprof)
