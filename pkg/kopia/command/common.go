@@ -46,7 +46,7 @@ func LogLevel() string {
 	return GetEnvOrDefault(LogLevelVarName, LogLevelError)
 }
 
-// FileLogLevel will return either value from env
+// FileLogLevel will return value from env
 func FileLogLevel() string {
 	return os.Getenv(FileLogLevelVarName)
 }
