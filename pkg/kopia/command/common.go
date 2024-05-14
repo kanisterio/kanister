@@ -29,10 +29,24 @@ const (
 	FileLogLevelVarName = "KOPIA_FILE_LOG_LEVEL"
 )
 
-func LogLevel() string {
-	return os.Getenv(LogLevelVarName)
+func NonEmptyOrDefault[T comparable](t T, def T) T {
+	var empty T
+	if t != empty {
+		return t
+	}
+	return def
 }
 
+func GetEnvOrDefault(name, def string) string {
+	return NonEmptyOrDefault(os.Getenv(name), def)
+}
+
+// LogLevel will return either value from env or "error" as default value
+func LogLevel() string {
+	return GetEnvOrDefault(LogLevelVarName, LogLevelError)
+}
+
+// FileLogLevel will return either value from env
 func FileLogLevel() string {
 	return os.Getenv(FileLogLevelVarName)
 }
@@ -58,22 +72,10 @@ func stringSliceCommand(args logsafe.Cmd) []string {
 func commonArgs(cmdArgs *CommandArgs) logsafe.Cmd {
 	c := logsafe.NewLoggable(kopiaCommand)
 
-	logLevel := cmdArgs.LogLevel
-	if logLevel == "" {
-		logLevel = LogLevel()
-	}
+	logLevel := NonEmptyOrDefault(cmdArgs.LogLevel, LogLevel())
+	c = c.AppendLoggableKV(logLevelFlag, logLevel)
 
-	if logLevel != "" {
-		c = c.AppendLoggableKV(logLevelFlag, logLevel)
-	} else {
-		c = c.AppendLoggableKV(logLevelFlag, LogLevelError)
-	}
-
-	fileLogLevel := cmdArgs.FileLogLevel
-	if fileLogLevel == "" {
-		fileLogLevel = FileLogLevel()
-	}
-
+	fileLogLevel := NonEmptyOrDefault(cmdArgs.FileLogLevel, FileLogLevel())
 	if fileLogLevel != "" {
 		c = c.AppendLoggableKV(fileLogLevelFlag, fileLogLevel)
 	}
