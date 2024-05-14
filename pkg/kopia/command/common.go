@@ -23,10 +23,10 @@ import (
 )
 
 const (
-	// LogLevelVarName is the environment variable that controls Kopia log level.
-	LogLevelVarName = "KOPIA_LOG_LEVEL"
-	// FileLogLevelVarName is the environment variable that controls Kopia file log level.
-	FileLogLevelVarName = "KOPIA_FILE_LOG_LEVEL"
+	// LogLevelVarName is the environment variable that controls datastore log level.
+	LogLevelVarName = "DATA_STORE_LOG_LEVEL"
+	// FileLogLevelVarName is the environment variable that controls datastore file log level.
+	FileLogLevelVarName = "DATA_STORE_FILE_LOG_LEVEL"
 )
 
 func NonEmptyOrDefault[T comparable](t T, def T) T {
