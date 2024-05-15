@@ -41,6 +41,7 @@ const (
 	jsonFlag                   = "--json"
 	logDirectoryFlag           = "--log-dir"
 	logLevelFlag               = "--log-level"
+	fileLogLevelFlag           = "--file-log-level"
 	LogLevelError              = "error"
 	LogLevelInfo               = "info"
 	parallelFlag               = "--parallel"
