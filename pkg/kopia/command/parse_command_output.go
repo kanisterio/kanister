@@ -331,7 +331,8 @@ func parseKopiaProgressLine(line string, matchOnlyFinished bool) (stats *Snapsho
 	}
 }
 
-// SnapshotRestoreStats is a container for stats parsed from the output of a `kopia snapshot restore` command.
+// SnapshotRestoreStats is a container for stats parsed from the output of a
+// `kopia snapshot restore` command.
 type SnapshotRestoreStats struct {
 	FilesProcessed  int64
 	SizeProcessedB  int64
@@ -340,8 +341,8 @@ type SnapshotRestoreStats struct {
 	ProgressPercent int64
 }
 
-// SnapshotStatsFromSnapshotRestore parses the output of a `kopia snapshot restore` execution
-// for a log of the stats for that execution.
+// SnapshotStatsFromSnapshotRestore parses the output of a `kopia snapshot
+// restore` execution for a log of the stats for that execution.
 func SnapshotStatsFromSnapshotRestore(snapRestoreStderrOutput string) (stats *SnapshotRestoreStats) {
 	if snapRestoreStderrOutput == "" {
 		return nil
@@ -402,8 +403,8 @@ func parseKopiaSnapshotRestoreProgressLine(line string) (stats *SnapshotRestoreS
 	}
 
 	if progressPercent >= 100 {
-		// It may happen that kopia reports progress of 100 or higher without actual completing the task.
-		// This can occur due to inaccurate estimation.
+		// It may happen that kopia reports progress of 100 or higher without actual
+		// completing the task. This can occur due to inaccurate estimation.
 		// In such case, we will return the progress as 99% to avoid confusion.
 		progressPercent = 99
 	}
