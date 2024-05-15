@@ -1,5 +1,8 @@
 name: build-kanister-image
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
