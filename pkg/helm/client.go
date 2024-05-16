@@ -148,17 +148,17 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 			log.Error().Print("Error installing helm chart", field.M{"output": out})
 			return "", err
 		}
-		log.Debug().Print("Result", field.M{"output": out})
+		log.Debug().Print("Helm install output:", field.M{"output": out})
 		return out, nil
 	}
 	cmd = append(cmd, "--dry-run")
 	log.Debug().Print("Executing helm install command with dry-run enabled to capture rendered manifests:")
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
-		log.Error().Print("Error capturing output during Helm dry-run", field.M{"output": out, "error": err})
+		log.Error().Print("Error installing chart with dry-run enabled", field.M{"output": out, "error": err})
 		return "", err
 	}
-	log.Debug().Print("Helm dry-run output:", field.M{"command": h.helmBin, "args": cmd, "output": out})
+	log.Debug().Print("Helm install dry-run enabled output:", field.M{"command": h.helmBin, "args": cmd, "output": out})
 	return out, nil
 }
 

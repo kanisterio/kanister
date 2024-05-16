@@ -64,8 +64,6 @@ func ComponentsFromManifest(manifest string) []Component {
 	var ret []Component
 	// Get rid of the notes section
 	parts := strings.Split(manifest, "NOTES:")
-	// Now only take the resources to be deployed
-	parts = strings.Split(parts[0], "---")
 	/*
 		Ignore the part that includes:
 		  NAME: something
@@ -84,6 +82,10 @@ func ComponentsFromManifest(manifest string) []Component {
 
 		  MANIFEST:
 	*/
+
+	// The actual rendered manifests start after first occurrence of `---`.
+	// Before this we have chart details, for example Name, Last Deployed, Status etc.
+	parts = strings.Split(parts[0], "---")
 	for _, objYaml := range parts[1:] {
 		tmpK8s := k8sObj{}
 		if err := yaml.Unmarshal([]byte(objYaml), &tmpK8s); err != nil {
