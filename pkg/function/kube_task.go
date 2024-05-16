@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"path"
 	"time"
 
 	"github.com/pkg/errors"
@@ -25,6 +26,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -34,6 +36,7 @@ import (
 
 const (
 	jobPrefix = "kanister-job-"
+
 	// KubeTaskFuncName gives the function name
 	KubeTaskFuncName       = "KubeTask"
 	KubeTaskNamespaceArg   = "namespace"
@@ -65,6 +68,11 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		PodOverride:  podOverride,
 	}
 
+	// Apply the registered ephemeral pod changes.
+	ephemeral.PodOptions.Apply(options)
+
+	// Mark pod with label having key `kanister.io/JobID`, the value of which is a reference to the origin of the pod.
+	kube.AddLabelsToPodOptionsFromContext(ctx, options, path.Join(consts.LabelPrefix, consts.LabelSuffixJobID))
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := kubeTaskPodFunc()
 	return pr.Run(ctx, podFunc)

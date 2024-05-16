@@ -26,6 +26,7 @@ const (
 	LabelKeyCreatedBy        = "createdBy"
 	LabelValueKanister       = "kanister"
 	LabelPrefix              = "kanister.io/"
+	LabelSuffixJobID         = "JobID"
 )
 
 // These names are used to query ActionSet API objects.
@@ -50,7 +51,7 @@ const RepositoryServerResourceName = "repositoryserver"
 const RepositoryServerResourceNamePlural = "repositoryservers"
 
 const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
-const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.106.0"
+const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.107.0"
 
 // KanisterToolsImageEnvName is used to set up a custom kanister-tools image
 const KanisterToolsImageEnvName = "KANISTER_TOOLS"

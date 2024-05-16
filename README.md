@@ -5,6 +5,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kanisterio/kanister)](https://goreportcard.com/report/github.com/kanisterio/kanister)
 [![GitHub Actions](https://github.com/kanisterio/kanister/actions/workflows/main.yaml/badge.svg)](https://github.com/kanisterio/kanister/actions)
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8699/badge)](https://www.bestpractices.dev/projects/8699)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kanisterio/kanister/badge)](https://securityscorecards.dev/viewer/?uri=github.com/kanisterio/kanister)
+
 Kanister is a data protection workflow management tool. It provides a set of
 cohesive APIs for defining and curating data operations by abstracting away
 tedious details around executing data operations on Kubernetes. It's extensible

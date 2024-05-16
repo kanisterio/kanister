@@ -1,5 +1,8 @@
 name: Manage Stale Issues and PRs
 
+permissions:
+  contents: read
+
 on:
   schedule:
   - cron: "0 0 * * *"
@@ -19,11 +22,14 @@ jobs:
         close-pr-label: rotten
         stale-issue-label: stale
         stale-pr-label: stale
-        exempt-issue-labels: frozen
+        exempt-issue-labels:
+          - frozen
+          - accepted
         exempt-pr-labels: frozen
-        close-issue-message: This issue is closed due to inactivity. Feel free to reopen it, if it's still relevant.
-        close-pr-message: This PR is closed due to inactivity. Feel free to reopen it, if it's still relevant.
-        stale-issue-message: This issue is marked as stale due to inactivity. Add a new comment to reactivate it.
-        stale-pr-message: This PR is marked as stale due to inactivity. Add a new comment to reactivate it.
+        close-issue-message: This issue is closed due to inactivity. Feel free to reopen it, if it's still relevant. CC @kanisterio/maintainers
+        close-pr-message: This PR is closed due to inactivity. Feel free to reopen it, if it's still relevant. CC @kanisterio/maintainers
+        stale-issue-message: This issue is marked as stale due to inactivity. Add a new comment to reactivate it. CC @kanisterio/maintainers
+        stale-pr-message: This PR is marked as stale due to inactivity. Add a new comment to reactivate it. CC @kanisterio/maintainers
         remove-issue-stale-when-updated: true
         remove-pr-stale-when-updated: true
+        exempt-all-assignees: true
