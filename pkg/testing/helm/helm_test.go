@@ -114,7 +114,7 @@ func (h *HelmTestSuite) TestComponentsFromManifestAfterDryRunHelmInstall(c *C) {
 	out, err := h.helmApp.Install()
 	c.Assert(err, IsNil)
 	// Fetch all components
-	components := helm.ComponentsFromManifest(out, nil)
+	components := helm.ResourcesFromRenderedManifest(out, nil)
 	/*
 		Following are components from kanister include :
 		1. kanister-kanister-operator (serviceaccount)

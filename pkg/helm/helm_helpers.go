@@ -32,23 +32,18 @@ type k8sObj struct {
 
 type K8sObjectType string
 
-type Component struct {
-	k8sType      K8sObjectType
-	name         string
-	originalDump string // This holds the dry run string output of the resource
+type RenderedResource struct {
+	name             string
+	renderedManifest string // This holds the dry run string output of the resource
 }
 
-const (
-	K8sObjectTypeDeployment K8sObjectType = "deployment"
-)
+type ResourceFilter func(kind K8sObjectType) bool
 
-type FilterComponent func(name string, kind K8sObjectType) bool
-
-// ComponentsFromManifest is helper utility function that takes input the rendered output from dry-run enabled HelmApp Install and
-// return a slice of struct Component. This struct holds basic information about all the resources that are going to be deployed when
+// ResourcesFromRenderedManifest is helper utility function that takes input the rendered output from dry-run enabled HelmApp Install and
+// return a slice of struct RenderedResource. This struct holds basic information about all the resources that are going to be deployed when
 // helm install is run in actual. The second parameter adds criteria to filter out the components. Pass `nil` to fetch all.
-func ComponentsFromManifest(manifest string, filter FilterComponent) []Component {
-	var ret []Component
+func ResourcesFromRenderedManifest(manifest string, filter ResourceFilter) []RenderedResource {
+	var ret []RenderedResource
 	// Get rid of the notes section
 	parts := strings.Split(manifest, "NOTES:")
 	/*
@@ -80,20 +75,24 @@ func ComponentsFromManifest(manifest string, filter FilterComponent) []Component
 			continue
 		}
 		k8sType := K8sObjectType(strings.ToLower(tmpK8s.ObjKind))
-		resourceName := tmpK8s.MetaData.Name
-		// Either append all components or filter using the filter func
-		if filter == nil || filter(resourceName, k8sType) {
-			ret = append(ret, Component{k8sType: k8sType, name: resourceName, originalDump: objYaml})
+		// Either append all rendered resource or filter using the filter func
+		if filter == nil || filter(k8sType) {
+			ret = append(ret, RenderedResource{name: tmpK8s.MetaData.Name, renderedManifest: objYaml})
 		}
 	}
 	return ret
 }
 
-func GetObjectFromComponent[T runtime.Object](component Component) (T, error) {
-	var obj T
+func GetK8sObjectsFromRenderedManifest[T runtime.Object](components []RenderedResource) (map[string]T, error) {
+	var mapOfObjects = make(map[string]T)
 	var err error
-	if err = yaml.Unmarshal([]byte(component.originalDump), &obj); err != nil {
-		log.Error().Print("Failed to unmarshal k8s obj", field.M{"Error": err})
+	for _, cmp := range components {
+		var obj T
+		if err = yaml.Unmarshal([]byte(cmp.renderedManifest), &obj); err != nil {
+			log.Error().Print("Failed to unmarshal k8s obj", field.M{"Error": err})
+			return nil, err
+		}
+		mapOfObjects[cmp.name] = obj
 	}
-	return obj, err
+	return mapOfObjects, nil
 }
