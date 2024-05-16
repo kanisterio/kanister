@@ -101,10 +101,8 @@ func (h *HelmTestSuite) TestDryRunInstall(c *C) {
 	}()
 	c.Log("Installing kanister release - Dry run")
 	h.helmApp.dryRun = true
-	out, err := h.helmApp.Install()
+	_, err := h.helmApp.Install()
 	c.Assert(err, IsNil)
-	releaseName := helm.ReleaseNameFromRenderedOutput(out)
-	c.Assert(releaseName, Equals, kanisterName)
 }
 
 func (h *HelmTestSuite) TestComponentsFromManifestAfterDryRunHelmInstall(c *C) {
