@@ -42,10 +42,12 @@ const (
 	K8sObjectTypeDeployment K8sObjectType = "deployment"
 )
 
+type FilterComponent func(name string, kind K8sObjectType) bool
+
 // ComponentsFromManifest is helper utility function that takes input the rendered output from dry-run enabled HelmApp Install and
 // return a slice of struct Component. This struct holds basic information about all the resources that are going to be deployed when
-// helm install is run in actual.
-func ComponentsFromManifest(manifest string) []Component {
+// helm install is run in actual. The second parameter adds criteria to filter out the components. Pass `nil` to fetch all.
+func ComponentsFromManifest(manifest string, filter FilterComponent) []Component {
 	var ret []Component
 	// Get rid of the notes section
 	parts := strings.Split(manifest, "NOTES:")
@@ -77,7 +79,12 @@ func ComponentsFromManifest(manifest string) []Component {
 			log.Error().Print("failed to Unmarshal k8s obj", field.M{"Error": err})
 			continue
 		}
-		ret = append(ret, Component{k8sType: K8sObjectType(strings.ToLower(tmpK8s.ObjKind)), name: tmpK8s.MetaData.Name, originalDump: objYaml})
+		k8sType := K8sObjectType(strings.ToLower(tmpK8s.ObjKind))
+		resourceName := tmpK8s.MetaData.Name
+		// Either append all components or filter using the filter func
+		if filter == nil || filter(resourceName, k8sType) {
+			ret = append(ret, Component{k8sType: k8sType, name: resourceName, originalDump: objYaml})
+		}
 	}
 	return ret
 }
@@ -86,16 +93,7 @@ func GetObjectFromComponent[T runtime.Object](component Component) (T, error) {
 	var obj T
 	var err error
 	if err = yaml.Unmarshal([]byte(component.originalDump), &obj); err != nil {
-		log.Error().Print("failed to Unmarshal k8s obj", field.M{"Error": err})
+		log.Error().Print("Failed to unmarshal k8s obj", field.M{"Error": err})
 	}
 	return obj, err
-}
-
-func GetFirstComponentOf(kind K8sObjectType, components []Component) *Component {
-	for _, component := range components {
-		if component.k8sType == kind {
-			return &component
-		}
-	}
-	return nil
 }

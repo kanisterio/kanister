@@ -113,7 +113,8 @@ func (h *HelmTestSuite) TestComponentsFromManifestAfterDryRunHelmInstall(c *C) {
 	h.helmApp.dryRun = true
 	out, err := h.helmApp.Install()
 	c.Assert(err, IsNil)
-	components := helm.ComponentsFromManifest(out)
+	// Fetch all components
+	components := helm.ComponentsFromManifest(out, nil)
 	/*
 		Following are components from kanister include :
 		1. kanister-kanister-operator (serviceaccount)
@@ -202,12 +203,17 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 
 		out, err := testApp.Install()
 		c.Assert(err, IsNil)
-		components := helm.ComponentsFromManifest(out)
-		c.Assert(len(components) > 0, Equals, true)
+		components := helm.ComponentsFromManifest(out, func(name string, kind helm.K8sObjectType) bool {
+			if kind == helm.K8sObjectTypeDeployment && name == h.deploymentName {
+				return true
+			}
+			return false
+		})
+		c.Assert(len(components), Equals, 1)
 		// Take the deployment component
-		testComponent := helm.GetFirstComponentOf(helm.K8sObjectTypeDeployment, components)
+		testComponent := components[0]
 		c.Assert(testComponent, NotNil)
-		obj, err := helm.GetObjectFromComponent[*appsv1.Deployment](*testComponent)
+		obj, err := helm.GetObjectFromComponent[*appsv1.Deployment](testComponent)
 		c.Assert(err, IsNil)
 
 		c.Assert(len(obj.Spec.Template.Spec.NodeSelector), Equals, len(tc.expectedNodeSelector))
