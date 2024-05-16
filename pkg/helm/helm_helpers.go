@@ -15,7 +15,6 @@
 package helm
 
 import (
-	"regexp"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,26 +34,6 @@ type K8sObjectType string
 type Component struct {
 	k8sType K8sObjectType
 	name    string
-}
-
-// ReleaseNameFromRenderedOutput takes as input the rendered output from a dry-run enabled HelmApp Install and tries to
-// extract the release name from it for validation.
-func ReleaseNameFromRenderedOutput(helmStatus string) string {
-	re := regexp.MustCompile(`.*NAME:\s+(.*)\n`)
-	withNameRE := regexp.MustCompile(`^Release\s+"(.*)"\s+`)
-	tmpRelease := re.FindAllStringSubmatch(helmStatus, -1)
-	log.Debug().Print("Parsed output for generate name install")
-	if len(tmpRelease) < 1 {
-		tmpRelease = withNameRE.FindAllStringSubmatch(helmStatus, -1)
-		log.Debug().Print("Parsed output for specified name install/upgrade")
-		if len(tmpRelease) < 1 {
-			return ""
-		}
-	}
-	if len(tmpRelease[0]) == 2 {
-		return tmpRelease[0][1]
-	}
-	return ""
 }
 
 // ComponentsFromManifest is helper utility function that takes input the rendered output from dry-run enabled HelmApp Install and
