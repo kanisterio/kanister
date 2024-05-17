@@ -200,7 +200,7 @@ func (fdb *FoundationDB) Insert(ctx context.Context) error {
 	insertCMD := []string{"sh", "-c", fmt.Sprintf("fdbcli --exec 'writemode on; set %s vivek; '", uuid.New())}
 	_, stderr, err := fdb.execCommand(ctx, insertCMD)
 
-	return errors.Wrapf(err, "Error %s inserting data into the database.", stderr)
+	return errkit.Wrap(err, "Error inserting data into the database.", "stderr", stderr)
 }
 
 // Count is used to count the number of records

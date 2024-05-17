@@ -164,7 +164,7 @@ func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
 	pingCMD := []string{"sh", "-c", esi.curlCommand("GET", "")}
 	_, stderr, err := esi.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to ping the application. Error:%s", stderr)
+		return errkit.Wrap(err, "Failed to ping the application", "stderr", stderr)
 	}
 
 	log.Print("Ping to the application was successful.", field.M{"app": esi.name})
@@ -187,7 +187,7 @@ func (esi *ElasticsearchInstance) Count(ctx context.Context) (int, error) {
 	documentCountCMD := []string{"sh", "-c", esi.curlCommand("GET", esi.indexname+"/_search?pretty")}
 	stdout, stderr, err := esi.execCommand(ctx, documentCountCMD)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error %s Counting the documents in an index.", stderr)
+		return 0, errkit.Wrap(err, "Error Counting the documents in an index.", "stderr", stderr)
 	}
 
 	// convert the output to ElasticsearchPingOutput object so that we can get the document count
@@ -220,7 +220,7 @@ func (esi *ElasticsearchInstance) Initialize(ctx context.Context) error {
 	createIndexCMD := []string{"sh", "-c", esi.curlCommand("PUT", esi.indexname+"/?pretty")}
 	_, stderr, err := esi.execCommand(ctx, createIndexCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s: Resetting the application.", stderr)
+		return errkit.Wrap(err, "Error Resetting the application.", "stderr", stderr)
 	}
 	return nil
 }

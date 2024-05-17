@@ -150,7 +150,7 @@ func (cas *CassandraInstance) Ping(ctx context.Context) error {
 	pingCMD := []string{"sh", "-c", "cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e 'describe cluster'"}
 	_, stderr, err := cas.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s while pinging the database.", stderr)
+		return errkit.Wrap(err, "Error while pinging the database.", "stderr", stderr)
 	}
 	log.Print("Ping to the application was successful.", field.M{"app": cas.name})
 	return nil
@@ -164,7 +164,7 @@ func (cas *CassandraInstance) Insert(ctx context.Context) error {
 		"'2015-02-18');\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, insertCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s inserting records into the database.", stderr)
+		return errkit.Wrap(err, "Error inserting records into the database.", "stderr", stderr)
 	}
 	return nil
 }
@@ -174,7 +174,7 @@ func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
 	countCMD := []string{"sh", "-c", "cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"select count(*) from restaurants.guests;\" "}
 	stdout, stderr, err := cas.execCommand(ctx, countCMD)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error %s counting the number of records in the database.", stderr)
+		return 0, errkit.Wrap(err, "Error counting the number of records in the database.", "stderr", stderr)
 	}
 	// parse stdout to get the number of rows in the table
 	// the count output from cqlsh is in below format
@@ -198,7 +198,7 @@ func (cas *CassandraInstance) Reset(ctx context.Context) error {
 		"'drop table if exists restaurants.guests; drop keyspace if exists restaurants;' --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, delRes)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s, deleting resources while reseting application.", stderr)
+		return errkit.Wrap(err, "Error deleting resources while reseting application.", "stderr", stderr)
 	}
 	return nil
 }
@@ -210,7 +210,7 @@ func (cas *CassandraInstance) Initialize(ctx context.Context) error {
 		"restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 1};\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, createKS)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s while creating the keyspace for application.", stderr)
+		return errkit.Wrap(err, "Error while creating the keyspace for application.", "stderr", stderr)
 	}
 
 	// create the table
@@ -218,7 +218,7 @@ func (cas *CassandraInstance) Initialize(ctx context.Context) error {
 		"restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err = cas.execCommand(ctx, createTab)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s creating table.", stderr)
+		return errkit.Wrap(err, "Error creating table.", "stderr", stderr)
 	}
 	return nil
 }

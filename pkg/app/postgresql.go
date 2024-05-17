@@ -136,7 +136,7 @@ func (pdb *PostgresDB) Ping(ctx context.Context) error {
 	cmd := "pg_isready -U 'postgres' -h 127.0.0.1 -p 5432"
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to ping postgresql DB. %s", stderr)
+		return errkit.Wrap(err, "Failed to ping postgresql DB", "stderr", stderr)
 	}
 	log.Info().Print("Connected to database.", field.M{"app": pdb.name})
 	return nil
@@ -146,7 +146,7 @@ func (pdb PostgresDB) Insert(ctx context.Context) error {
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\""
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create db in postgresql. %s", stderr)
+		return errkit.Wrap(err, "Failed to create db in postgresql", "stderr", stderr)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
@@ -156,7 +156,7 @@ func (pdb PostgresDB) Count(ctx context.Context) (int, error) {
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c 'SELECT COUNT(*) FROM company;'"
 	stdout, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return 0, errors.Wrapf(err, "Failed to count db entries in postgresql. %s ", stderr)
+		return 0, errkit.Wrap(err, "Failed to count db entries in postgresql", "stderr", stderr)
 	}
 
 	out := strings.Fields(stdout)
@@ -165,7 +165,7 @@ func (pdb PostgresDB) Count(ctx context.Context) (int, error) {
 	}
 	count, err := strconv.Atoi(out[2])
 	if err != nil {
-		return 0, errors.Wrapf(err, "Failed to count db entries in postgresql. %s ", stderr)
+		return 0, errkit.Wrap(err, "Failed to count db entries in postgresql", "stderr", stderr)
 	}
 	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": count})
 	return count, nil
@@ -176,7 +176,7 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -c 'DROP DATABASE IF EXISTS test;'"
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to drop db from postgresql. %s ", stderr)
+		return errkit.Wrap(err, "Failed to drop db from postgresql", "stderr", stderr)
 	}
 
 	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
@@ -189,14 +189,14 @@ func (pdb PostgresDB) Initialize(ctx context.Context) error {
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -c 'CREATE DATABASE test;'"
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create db in postgresql. %s ", stderr)
+		return errkit.Wrap(err, "Failed to create db in postgresql", "stderr", stderr)
 	}
 
 	// Create table
 	cmd = "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c 'CREATE TABLE COMPANY(ID SERIAL PRIMARY KEY NOT NULL, NAME TEXT NOT NULL, AGE INT NOT NULL, CREATED_AT TIMESTAMP);'"
 	_, stderr, err = pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create table in postgresql. %s ", stderr)
+		return errkit.Wrap(err, "Failed to create table in postgresql", "stderr", stderr)
 	}
 	return nil
 }

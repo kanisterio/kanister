@@ -139,7 +139,7 @@ func (mongo *MongoDBDepConfig) Insert(ctx context.Context) error {
 		"'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.user, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s while inserting data data into mongodb collection.", stderr)
+		return errkit.Wrap(err, "Error while inserting data data into mongodb collection.", "stderr", stderr)
 	}
 
 	log.Print("Insertion of documents into collection was successful.", field.M{"app": mongo.name})
@@ -151,7 +151,7 @@ func (mongo *MongoDBDepConfig) Count(ctx context.Context) (int, error) {
 	countCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.count()\"", mongo.user)}
 	stdout, stderr, err := mongo.execCommand(ctx, countCMD)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error %s while counting the data in mongodb collection.", stderr)
+		return 0, errkit.Wrap(err, "Error while counting the data in mongodb collection.", "stderr", stderr)
 	}
 
 	count, err := strconv.Atoi(stdout)

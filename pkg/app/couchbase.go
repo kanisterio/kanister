@@ -144,7 +144,7 @@ func (cb *CouchbaseDB) Ping(ctx context.Context) error {
 	cmd := fmt.Sprintf("cbc-ping -u %s -P %s -c %d", cb.username, cb.password, numPings)
 	_, stderr, err := cb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to ping couchbase DB. %s", stderr)
+		return errkit.Wrap(err, "Failed to ping couchbase DB", "stderr", stderr)
 	}
 	log.Info().Print("Connected to database.", field.M{"app": cb.name})
 	return nil
@@ -160,7 +160,7 @@ func (cb CouchbaseDB) Insert(ctx context.Context) error {
 	cmd := fmt.Sprintf("cbc-create -u %s -P %s %s -V '{\"name\":\"test\", \"age\": 25}'", cb.username, cb.password, uuid.New().String())
 	_, stderr, err := cb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to add document in couchbase default bucket. %s", stderr)
+		return errkit.Wrap(err, "Failed to add document in couchbase default bucket", "stderr", stderr)
 	}
 
 	// We'll wait till count correct result
@@ -177,7 +177,7 @@ func (cb CouchbaseDB) Count(ctx context.Context) (int, error) {
 	cmd := fmt.Sprintf("cbc-n1ql -u %s -P %s 'select count(*) from default'", cb.username, cb.password)
 	stdout, stderr, err := cb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return 0, errors.Wrapf(err, "Failed to count db entries in couchbase. %s ", stderr)
+		return 0, errkit.Wrap(err, "Failed to count db entries in couchbase", "stderr", stderr)
 	}
 
 	// Parse output
@@ -201,7 +201,7 @@ func (cb CouchbaseDB) Count(ctx context.Context) (int, error) {
 
 	count, err := strconv.Atoi(matched[0][1])
 	if err != nil {
-		return 0, errors.Wrapf(err, "Failed to count db entries in couchbase. %s ", stderr)
+		return 0, errkit.Wrap(err, "Failed to count db entries in couchbase", "stderr", stderr)
 	}
 	log.Info().Print("Counting rows in test db.", field.M{"app": cb.name, "count": count})
 	return count, nil

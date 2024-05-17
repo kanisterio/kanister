@@ -137,7 +137,7 @@ func (mdep *MysqlDepConfig) Insert(ctx context.Context) error {
 	insertRecordCMD := []string{"bash", "-c", "mysql -u root -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '"}
 	_, stderr, err := mdep.execCommand(ctx, insertRecordCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting the data into msyql deployment config database: %s", stderr)
+		return errkit.Wrap(err, "Error while inserting the data into msyql deployment config database", "stderr", stderr)
 	}
 
 	log.Print("Successfully inserted record in the application.", field.M{"app": mdep.name})
@@ -150,7 +150,7 @@ func (mdep *MysqlDepConfig) Count(ctx context.Context) (int, error) {
 	selectRowsCMD := []string{"bash", "-c", "mysql -u root -e 'use testdb; select count(*) from pets; '"}
 	stdout, stderr, err := mdep.execCommand(ctx, selectRowsCMD)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
+		return 0, errkit.Wrap(err, "Error while counting the data of the database", "stderr", stderr)
 	}
 
 	// get the returned count and convert it to int, to return
@@ -170,14 +170,14 @@ func (mdep *MysqlDepConfig) Reset(ctx context.Context) error {
 	deleteCMD := []string{"bash", "-c", "mysql -u root -e 'DROP DATABASE IF EXISTS testdb'"}
 	_, stderr, err := mdep.execCommand(ctx, deleteCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while dropping the mysql table: %s", stderr)
+		return errkit.Wrap(err, "Error while dropping the mysql table", "stderr", stderr)
 	}
 
 	// create the database and a pets table
 	createCMD := []string{"bash", "-c", "mysql -u root -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
 	_, stderr, err = mdep.execCommand(ctx, createCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating the mysql table: %s", stderr)
+		return errkit.Wrap(err, "Error while creating the mysql table", "stderr", stderr)
 	}
 
 	log.Print("Reset of the application was successful.", field.M{"app": mdep.name})

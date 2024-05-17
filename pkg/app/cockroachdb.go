@@ -117,42 +117,42 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	createCrtDir := []string{"sh", "-c", createCrtDirCmd}
 	_, stderr, err := c.execCommand(ctx, createCrtDir)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while Creating Cert Directory %s", stderr)
+		return false, errkit.Wrap(err, "Error while Creating Cert Directory", "stderr", stderr)
 	}
 
 	createCaCrtCmd := fmt.Sprintf("echo '%s' >> /cockroach/cockroach-client-certs/ca.crt", c.cacrt)
 	createCaCrt := []string{"sh", "-c", createCaCrtCmd}
 	_, stderr, err = c.execCommand(ctx, createCaCrt)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while Creating ca.crt %s", stderr)
+		return false, errkit.Wrap(err, "Error while Creating ca.crt", "stderr", stderr)
 	}
 
 	createTlsCrtCmd := fmt.Sprintf("echo '%s'>> /cockroach/cockroach-client-certs/client.root.crt", c.tlscrt)
 	createTlsCrt := []string{"sh", "-c", createTlsCrtCmd}
 	_, stderr, err = c.execCommand(ctx, createTlsCrt)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while Creating tls.crt %s", stderr)
+		return false, errkit.Wrap(err, "Error while Creating tls.crt", "stderr", stderr)
 	}
 
 	createTlsKeyCmd := fmt.Sprintf("echo '%s' >> /cockroach/cockroach-client-certs/client.root.key", c.tlskey)
 	createTlsKey := []string{"sh", "-c", createTlsKeyCmd}
 	_, stderr, err = c.execCommand(ctx, createTlsKey)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while Creating tls.key %s", stderr)
+		return false, errkit.Wrap(err, "Error while Creating tls.key", "stderr", stderr)
 	}
 
 	changeFilePermCmd := "cd /cockroach/cockroach-client-certs/ && chmod 0600 *"
 	changeFilePerm := []string{"sh", "-c", changeFilePermCmd}
 	_, stderr, err = c.execCommand(ctx, changeFilePerm)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while changing certificate file permissions %s", stderr)
+		return false, errkit.Wrap(err, "Error while changing certificate file permissions", "stderr", stderr)
 	}
 
 	changeDefaultGCTimeCmd := "./cockroach sql --certs-dir=/cockroach/cockroach-client-certs -e 'ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = 10;'"
 	changeDefaultGCTime := []string{"sh", "-c", changeDefaultGCTimeCmd}
 	_, stderr, err = c.execCommand(ctx, changeDefaultGCTime)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while setting up Garbage Collection time %s", stderr)
+		return false, errkit.Wrap(err, "Error while setting up Garbage Collection time", "stderr", stderr)
 	}
 
 	return err == nil, err
@@ -192,7 +192,7 @@ func (c *CockroachDB) Ping(ctx context.Context) error {
 	login := []string{"sh", "-c", loginCmd}
 	_, stderr, err := c.execCommand(ctx, login)
 	if err != nil {
-		return errors.Wrapf(err, "Error while pinging database %s", stderr)
+		return errkit.Wrap(err, "Error while pinging database", "stderr", stderr)
 	}
 
 	log.Print("Ping to the application was success.", field.M{"app": c.name})
@@ -205,7 +205,7 @@ func (c *CockroachDB) Initialize(ctx context.Context) error {
 	createDatabase := []string{"sh", "-c", createDatabaseCMD}
 	_, stderr, err := c.execCommand(ctx, createDatabase)
 	if err != nil {
-		return errors.Wrapf(err, "Error while initializing: %s", stderr)
+		return errkit.Wrap(err, "Error while initializing", "stderr", stderr)
 	}
 	return nil
 }
@@ -217,7 +217,7 @@ func (c *CockroachDB) Insert(ctx context.Context) error {
 	insertRecord := []string{"sh", "-c", insertRecordCMD}
 	_, stderr, err := c.execCommand(ctx, insertRecord)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting the data into database: %s", stderr)
+		return errkit.Wrap(err, "Error while inserting the data into database", "stderr", stderr)
 	}
 
 	log.Print("Successfully inserted records in the application.", field.M{"app": c.name})
@@ -231,7 +231,7 @@ func (c *CockroachDB) Count(ctx context.Context) (int, error) {
 	selectRows := []string{"sh", "-c", selectRowsCMD}
 	stdout, stderr, err := c.execCommand(ctx, selectRows)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
+		return 0, errkit.Wrap(err, "Error while counting the data of the database", "stderr", stderr)
 	}
 	// output returned from above query is "count\n3"
 	// get the returned count and convert it to int, to return
@@ -262,7 +262,7 @@ func (c *CockroachDB) Reset(ctx context.Context) error {
 	deleteFromTable := []string{"sh", "-c", deleteFromTableCMD}
 	_, stderr, err := c.execCommand(ctx, deleteFromTable)
 	if err != nil {
-		return errors.Wrapf(err, "Error while dropping the table: %s", stderr)
+		return errkit.Wrap(err, "Error while dropping the table", "stderr", stderr)
 	}
 	// Even though the table is deleted from the database, it's present in the
 	// descriptor table. We will have to wait for it to be deleted from there  as
@@ -305,7 +305,7 @@ func (c *CockroachDB) waitForGC(ctx context.Context) error {
 	getDescriptor := []string{"sh", "-c", getDescriptorCMD}
 	stdout, stderr, err := c.execCommand(ctx, getDescriptor)
 	if err != nil {
-		return errors.Wrapf(err, "Error while getiing descriptor table data: %s", stderr)
+		return errkit.Wrap(err, "Error while getiing descriptor table data", "stderr", stderr)
 	}
 	bankInDescriptor := strings.Contains(stdout, "bank") || strings.Contains(stdout, "account")
 	log.Info().Print("bankInDescriptor:  ", field.M{"value": bankInDescriptor})

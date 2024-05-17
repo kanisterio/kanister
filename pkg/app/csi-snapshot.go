@@ -86,7 +86,7 @@ func (tlc *TimeLogCSI) Reset(ctx context.Context) error {
 	removeLogFileCmd := []string{"sh", "-c", "rm /var/log/time.log"}
 	stderr, err := tlc.execCommand(ctx, removeLogFileCmd)
 	if err != nil {
-		return errors.Wrapf(err, "Error while deleting log file: %s", stderr)
+		return errkit.Wrap(err, "Error while deleting log file", "stderr", stderr)
 	}
 
 	log.Print("Reset of the application was successful.", field.M{"app": tlc.name})
@@ -133,7 +133,7 @@ func (tlc *TimeLogCSI) Ping(ctx context.Context) error {
 	listDirectories := []string{"sh", "-c", "ls /var/log"}
 	stderr, err := tlc.execCommand(ctx, listDirectories)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the application %s", stderr)
+		return errkit.Wrap(err, "Error while Pinging the application", "stderr", stderr)
 	}
 
 	log.Print("Ping to the application was success.", field.M{"app": tlc.name})

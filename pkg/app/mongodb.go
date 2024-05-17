@@ -154,7 +154,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db\"", mongo.username)}
 	_, stderr, err := mongo.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while pinging the mongodb application %s", stderr)
+		return errkit.Wrap(err, "Error while pinging the mongodb application", "stderr", stderr)
 	}
 
 	// even after ping is successful, it takes some time for primary pod to becomd the master
@@ -162,7 +162,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 	isMasterCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"JSON.stringify(db.isMaster())\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, isMasterCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s checking if the pod is master.", stderr)
+		return errkit.Wrap(err, "Error checking if the pod is master.", "stderr", stderr)
 	}
 
 	// convert the mongo's output to go struct so that we can check if the pod has become master or not.
@@ -186,7 +186,7 @@ func (mongo *MongoDB) Insert(ctx context.Context) error {
 		"'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s while inserting data data into mongodb collection.", stderr)
+		return errkit.Wrap(err, "Error while inserting data data into mongodb collection.", "stderr", stderr)
 	}
 
 	log.Print("Insertion of documents into collection was successful.", field.M{"app": mongo.name})
@@ -198,7 +198,7 @@ func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 	countCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.countDocuments()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, countCMD)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error %s while counting the data in mongodb collection.", stderr)
+		return 0, errkit.Wrap(err, "Error while counting the data in mongodb collection.", "stderr", stderr)
 	}
 
 	count, err := strconv.Atoi(stdout)
