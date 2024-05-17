@@ -351,7 +351,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
 				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": a.name, "name": a.dbSubnetGroup})
 			default:
-				return errors.Wrapf(err, "Failed to delete subnet group. You may need to delete it manually. app=%s name=%s", a.name, a.dbSubnetGroup)
+				return errkit.Wrap(err, "Failed to delete subnet group. You may need to delete it manually.", "app", a.name, "name", a.dbSubnetGroup)
 			}
 		}
 	}
@@ -365,7 +365,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 			case "InvalidGroup.NotFound":
 				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": a.name, "name": a.securityGroupName})
 			default:
-				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=%s name=%s", a.name, a.securityGroupName)
+				return errkit.Wrap(err, "Failed to delete security group. You may need to delete it manually.", "app", a.name, "name", a.securityGroupName)
 			}
 		}
 	}

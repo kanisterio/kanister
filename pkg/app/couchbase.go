@@ -92,12 +92,12 @@ func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error { //nolint:
 
 	// Add helm repo and fetch charts
 	if err = cli.AddRepo(ctx, cb.chart.RepoName, cb.chart.RepoURL); err != nil {
-		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", cb.name, cb.chart.RepoName)
+		return errkit.Wrap(err, "Failed to install helm repo.", "app", cb.name, "repo", cb.chart.RepoName)
 	}
 
 	// Install cb operator, admission controller and cluster
 	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.chart.RepoName, cb.chart.Chart), cb.chart.Version, cb.chart.Release, cb.namespace, cb.chart.Values, true)
-	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", cb.name, cb.chart.Chart, cb.chart.Release)
+	return errkit.Wrap(err, "Failed to install helm chart.", "app", cb.name, "chart", cb.chart.Chart, "release", cb.chart.Release)
 }
 
 func (cb *CouchbaseDB) IsReady(ctx context.Context) (bool, error) {

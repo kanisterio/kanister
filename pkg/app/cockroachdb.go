@@ -67,11 +67,11 @@ func (c *CockroachDB) Install(ctx context.Context, namespace string) error { //n
 	}
 
 	if err = cli.AddRepo(ctx, c.chart.RepoName, c.chart.RepoURL); err != nil {
-		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", c.name, c.chart.RepoName)
+		return errkit.Wrap(err, "Failed to install helm repo.", "app", c.name, "repo", c.chart.RepoName)
 	}
 
 	err = cli.Install(ctx, fmt.Sprintf("%s/%s", c.chart.RepoName, c.chart.Chart), c.chart.Version, c.chart.Release, c.namespace, c.chart.Values, false)
-	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", c.name, c.chart.Chart, c.chart.Release)
+	return errkit.Wrap(err, "Failed to install helm chart.", "app", c.name, "chart", c.chart.Chart, "release", c.chart.Release)
 }
 
 func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {

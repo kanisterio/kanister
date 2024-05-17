@@ -445,7 +445,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Remove workload object created for executing commands
 	err = pdb.cli.AppsV1().Deployments(pdb.namespace).Delete(ctx, pdb.bastionDebugWorkloadName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting Workload name=%s app=%s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errkit.Wrap(err, "Error deleting Workload", "name", pdb.bastionDebugWorkloadName, "app", pdb.name)
 	}
 
 	return nil
