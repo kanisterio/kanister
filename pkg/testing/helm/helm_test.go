@@ -183,15 +183,15 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 
 		out, err := testApp.Install()
 		c.Assert(err, IsNil)
-		components := helm.ResourcesFromRenderedManifest(out, func(kind helm.K8sObjectType) bool {
+		resources := helm.ResourcesFromRenderedManifest(out, func(kind helm.K8sObjectType) bool {
 			return kind == helm.K8sObjectTypeDeployment
 		})
-		c.Assert(len(components) > 0, Equals, true)
-		// Take the deployment components
-		mapOfObjs, err := helm.GetK8sObjectsFromRenderedManifest[*appsv1.Deployment](components)
+		c.Assert(len(resources) > 0, Equals, true)
+		// Take the deployment resources
+		deployments, err := helm.GetK8sObjectsFromRenderedManifest[*appsv1.Deployment](resources)
 		c.Assert(err, IsNil)
 		// Use only the required deployment
-		var obj = mapOfObjs[h.deploymentName]
+		var obj = deployments[h.deploymentName]
 		c.Assert(obj, NotNil)
 
 		c.Assert(len(obj.Spec.Template.Spec.NodeSelector), Equals, len(tc.expectedNodeSelector))
