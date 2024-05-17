@@ -128,7 +128,7 @@ func dbSubnetGroup(ctx context.Context, ec2Cli *ec2.EC2, rdsCli *rds.RDS, vpcID,
 	// describe subnets in the VPC
 	resp, err := ec2Cli.DescribeSubnets(ctx, vpcID)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to describe subnets")
+		return "", errkit.Wrap(err, "Failed to describe subnets")
 	}
 
 	// Extract subnet IDs from the response
@@ -140,7 +140,7 @@ func dbSubnetGroup(ctx context.Context, ec2Cli *ec2.EC2, rdsCli *rds.RDS, vpcID,
 	// create a subnetgroup with subnets in the VPC
 	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", name), subnetGroupDescription, subnetIDs)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to create subnet group")
+		return "", errkit.Wrap(err, "Failed to create subnet group")
 	}
 
 	return *subnetGroup.DBSubnetGroup.DBSubnetGroupName, nil

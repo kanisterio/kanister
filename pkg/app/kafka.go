@@ -111,11 +111,11 @@ func (kc *KafkaCluster) Init(context.Context) error {
 	}
 	kc.cli, err = kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to get a k8s client")
+		return errkit.Wrap(err, "failed to get a k8s client")
 	}
 	kc.dynClient, err = dynamic.NewForConfig(cfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to get a k8s dynamic client")
+		return errkit.Wrap(err, "failed to get a k8s dynamic client")
 	}
 	return nil
 }
@@ -124,7 +124,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	kc.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	log.Print("Adding repo.", field.M{"app": kc.name})
 	err = cli.AddRepo(ctx, kc.chart.RepoName, kc.chart.RepoURL)
@@ -310,7 +310,7 @@ func (kc *KafkaCluster) Secrets() map[string]crv1alpha1.ObjectReference {
 func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	err = kc.cli.CoreV1().ConfigMaps(kc.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
@@ -516,37 +516,37 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 
 	cfg, err := kube.LoadConfig()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to Load config")
+		return nil, errkit.Wrap(err, "Failed to Load config")
 	}
 
 	clientset, err := kubernetes.NewForConfig(cfg)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Clienset for k8s config")
+		return nil, errkit.Wrap(err, "Failed to create Clienset for k8s config")
 	}
 	roundTripper, upgrader, err := spdy.RoundTripperFor(cfg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create RoundTripper for k8s config")
+		return nil, errkit.Wrap(err, "Failed to create RoundTripper for k8s config")
 	}
 
 	svc, err := clientset.CoreV1().Services(ns).Get(ctx, svcName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get service for component")
+		return nil, errkit.Wrap(err, "Failed to get service for component")
 	}
 
 	pods, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(svc.Spec.Selector)),
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to list pods for component")
+		return nil, errkit.Wrap(err, "Failed to list pods for component")
 	}
 	if len(pods.Items) == 0 {
-		return nil, errors.Wrapf(err, "Empty pods list for component")
+		return nil, errkit.Wrap(err, "Empty pods list for component")
 	}
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", ns, pods.Items[0].Name)
 	u, err := url.Parse(cfg.Host)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to parse url struct from k8s config")
+		return nil, errkit.Wrap(err, "Failed to parse url struct from k8s config")
 	}
 	hostIP := fmt.Sprintf("%s:%s", u.Hostname(), u.Port())
 	serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
@@ -570,7 +570,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 
 	f, err := portforward.New(dialer, []string{fmt.Sprintf(":%s", pPort)}, ctx.Done(), readyChan, pwo, pwe)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create port forward")
+		return nil, errkit.Wrap(err, "Failed to create port forward")
 	}
 
 	go func() {
@@ -581,7 +581,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	case <-readyChan:
 		log.Print("PortForward is Ready")
 	case err = <-errCh:
-		return nil, errors.Wrapf(err, "Failed to get ports from forwarded ports")
+		return nil, errkit.Wrap(err, "Failed to get ports from forwarded ports")
 	}
 
 	return f, nil

@@ -156,7 +156,7 @@ func (mdep *MysqlDepConfig) Count(ctx context.Context) (int, error) {
 	// get the returned count and convert it to int, to return
 	rowsReturned, err := strconv.Atoi((strings.Split(stdout, "\n")[1]))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting row count to int.")
+		return 0, errkit.Wrap(err, "Error while converting row count to int.")
 	}
 
 	log.Print("Count that we received from application is.", field.M{"app": mdep.name, "count": rowsReturned})
@@ -196,7 +196,7 @@ func (mdep *MysqlDepConfig) execCommand(ctx context.Context, command []string) (
 	}
 	stdout, stderr, err := kube.Exec(mdep.cli, mdep.namespace, podName, containerName, command, nil)
 	if err != nil {
-		return stdout, stderr, errors.Wrapf(err, "Error executing command in the pod.")
+		return stdout, stderr, errkit.Wrap(err, "Error executing command in the pod.")
 	}
 	return stdout, stderr, err
 }

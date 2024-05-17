@@ -87,7 +87,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error { //nol
 	mdb.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	log.Print("Adding repo.", field.M{"app": mdb.name})
 	err = cli.AddRepo(ctx, mdb.chart.RepoName, mdb.chart.RepoURL)
@@ -127,7 +127,7 @@ func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	err = cli.Uninstall(ctx, mdb.chart.Release, mdb.namespace)
 	if err != nil {
@@ -181,7 +181,7 @@ func (mdb *MysqlDB) Count(ctx context.Context) (int, error) {
 	// get the returned count and convert it to int, to return
 	rowsReturned, err := strconv.Atoi((strings.Split(stdout, "\n")[1]))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting row count to int.")
+		return 0, errkit.Wrap(err, "Error while converting row count to int.")
 	}
 	log.Print("Count that we received from application is.", field.M{"app": mdb.name, "count": rowsReturned})
 	return rowsReturned, nil

@@ -63,7 +63,7 @@ func (c *CockroachDB) Install(ctx context.Context, namespace string) error { //n
 
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	if err = cli.AddRepo(ctx, c.chart.RepoName, c.chart.RepoURL); err != nil {
@@ -169,7 +169,7 @@ func (c *CockroachDB) Object() crv1alpha1.ObjectReference {
 func (c *CockroachDB) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	err = cli.Uninstall(ctx, c.chart.Release, c.namespace)
 	if err != nil {
@@ -237,7 +237,7 @@ func (c *CockroachDB) Count(ctx context.Context) (int, error) {
 	// get the returned count and convert it to int, to return
 	rowsReturned, err := strconv.Atoi(strings.Split(stdout, "\n")[1])
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting row count to int.")
+		return 0, errkit.Wrap(err, "Error while converting row count to int.")
 	}
 	log.Print("Count that we received from application is.", field.M{"app": c.name, "count": rowsReturned})
 	return rowsReturned, nil

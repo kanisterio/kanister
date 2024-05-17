@@ -86,7 +86,7 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 	log.Print("Installing application.", field.M{"app": cas.name})
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	err = cli.AddRepo(ctx, cas.chart.RepoName, cas.chart.RepoURL)
 	if err != nil {
@@ -129,11 +129,11 @@ func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 	log.Print("Uninstalling application.", field.M{"app": cas.name})
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	err = cli.Uninstall(ctx, cas.chart.Release, cas.namespace)
 	if err != nil {
-		return errors.Wrapf(err, "Error uninstalling cassandra app.")
+		return errkit.Wrap(err, "Error uninstalling cassandra app.")
 	}
 	log.Print("Application was uninstalled successfully.", field.M{"app": cas.name})
 	return nil
@@ -185,7 +185,7 @@ func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
 
 	count, err := strconv.Atoi(strings.Trim(strings.Split(stdout, "\n")[2], " "))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error, converting count value into int.")
+		return 0, errkit.Wrap(err, "Error, converting count value into int.")
 	}
 	log.Print("Counted number of records in the database.", field.M{"app": cas.name, "count": count})
 	return count, nil

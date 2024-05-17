@@ -383,7 +383,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
+		return errkit.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
 	}
 
 	// Delete rds instance
@@ -412,7 +412,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Create ec2 client
 	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
+		return errkit.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
 
 	log.Info().Print("Deleting db subnet group.", field.M{"app": pdb.name})

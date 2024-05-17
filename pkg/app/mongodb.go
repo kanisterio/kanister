@@ -92,7 +92,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	log.Print("Adding repo for the application.", field.M{"app": mongo.name})
@@ -138,11 +138,11 @@ func (mongo *MongoDB) Object() crv1alpha1.ObjectReference {
 func (mongo *MongoDB) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	log.Print("Uninstalling application.", field.M{"app": mongo.name})
 	err = cli.Uninstall(ctx, mongo.chart.Release, mongo.namespace)
-	return errors.Wrapf(err, "Error while uninstalling the application.")
+	return errkit.Wrap(err, "Error while uninstalling the application.")
 }
 
 func (mongo *MongoDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
@@ -169,7 +169,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 	op := IsMasterOutput{}
 	err = json.Unmarshal([]byte(stdout), &op)
 	if err != nil {
-		return errors.Wrapf(err, "Error unmarshalling the ismaster ouptut.")
+		return errkit.Wrap(err, "Error unmarshalling the ismaster ouptut.")
 	}
 	if !op.Ismaster {
 		return errkit.New("the pod is not master yet")

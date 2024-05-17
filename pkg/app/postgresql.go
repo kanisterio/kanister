@@ -87,7 +87,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	// Create helm client
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	// Add helm repo and fetch charts
@@ -207,7 +207,7 @@ func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 	// Create helm client
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	// Uninstall helm chart

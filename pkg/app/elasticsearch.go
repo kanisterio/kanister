@@ -90,7 +90,7 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 	// Get the HELM cli
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	log.Print("Installing the application using helm.", field.M{"app": esi.name})
@@ -132,7 +132,7 @@ func (esi *ElasticsearchInstance) Object() crv1alpha1.ObjectReference {
 func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	log.Print("UnInstalling the application using helm.", field.M{"app": esi.name})

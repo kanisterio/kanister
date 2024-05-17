@@ -163,36 +163,36 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
 	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster", a.vpcID)
 	if err != nil {
-		return errors.Wrap(err, "Error creating security group")
+		return errkit.Wrap(err, "Error creating security group")
 	}
 	a.securityGroupID = *sg.GroupId
 
 	// Add ingress rule
 	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupID, "0.0.0.0/0", "tcp", 3306)
 	if err != nil {
-		return errors.Wrap(err, "Error authorizing security group")
+		return errkit.Wrap(err, "Error authorizing security group")
 	}
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS Aurora DB cluster.", field.M{"app": a.name, "id": a.id})
 	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, a.dbSubnetGroup, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID})
 	if err != nil {
-		return errors.Wrap(err, "Error creating DB cluster")
+		return errkit.Wrap(err, "Error creating DB cluster")
 	}
 
 	err = rdsCli.WaitUntilDBClusterAvailable(ctx, a.id)
 	if err != nil {
-		return errors.Wrap(err, "Error waiting for DB cluster to be available")
+		return errkit.Wrap(err, "Error waiting for DB cluster to be available")
 	}
 
 	_, err = rdsCli.CreateDBInstance(ctx, nil, AuroraDBInstanceClass, fmt.Sprintf("%s-instance-1", a.id), string(function.DBEngineAuroraMySQL), "", "", nil, awssdk.Bool(a.publicAccess), awssdk.String(a.id), a.dbSubnetGroup)
 	if err != nil {
-		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
+		return errkit.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}
 
 	err = rdsCli.WaitUntilDBInstanceAvailable(ctx, fmt.Sprintf("%s-instance-1", a.id))
 	if err != nil {
-		return errors.Wrap(err, "Error waiting for DB instance to be available")
+		return errkit.Wrap(err, "Error waiting for DB instance to be available")
 	}
 
 	dbCluster, err := rdsCli.DescribeDBClusters(ctx, a.id)
@@ -318,7 +318,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
+		return errkit.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
 	}
 
 	descOp, err := rdsCli.DescribeDBClusters(ctx, a.id)
@@ -339,7 +339,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	// Create ec2 client
 	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create ec2 client.")
+		return errkit.Wrap(err, "Failed to create ec2 client.")
 	}
 
 	log.Info().Print("Deleting db subnet group.", field.M{"app": a.name})

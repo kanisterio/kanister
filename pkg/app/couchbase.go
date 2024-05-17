@@ -87,7 +87,7 @@ func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error { //nolint:
 	// Create helm client
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	// Add helm repo and fetch charts
@@ -238,7 +238,7 @@ func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 	// Create helm client
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	// Uninstall couchbase-operator helm chart
@@ -292,5 +292,5 @@ func (cb CouchbaseDB) waitForCount(ctx context.Context, result int) error {
 		count, err := cb.Count(ctx)
 		return count == result, err
 	})
-	return errors.Wrapf(err, "Timed out while waiting for Couchbase cluster to be in sync")
+	return errkit.Wrap(err, "Timed out while waiting for Couchbase cluster to be in sync")
 }
