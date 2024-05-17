@@ -149,7 +149,7 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 				"nodeSelector.selector-key":   "selector-value",
 			},
 			expectedNodeSelector: nodeSelector,
-			expectedTolerations:  []corev1.Toleration{},
+			expectedTolerations:  nil,
 		},
 		{
 			testName: "Only tolerations is present",
@@ -160,7 +160,7 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 				"tolerations[0].value":        "taint-value",
 				"tolerations[0].effect":       "NoSchedule",
 			},
-			expectedNodeSelector: map[string]string{},
+			expectedNodeSelector: nil,
 			expectedTolerations:  toleration,
 		},
 		{
@@ -168,8 +168,8 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 			helmValues: map[string]string{
 				"bpValidatingWebhook.enabled": "false",
 			},
-			expectedNodeSelector: map[string]string{},
-			expectedTolerations:  []corev1.Toleration{},
+			expectedNodeSelector: nil,
+			expectedTolerations:  nil,
 		},
 	}
 	for _, tc := range testCases {
@@ -194,19 +194,8 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 		var obj = deployments[h.deploymentName]
 		c.Assert(obj, NotNil)
 
-		c.Assert(len(obj.Spec.Template.Spec.NodeSelector), Equals, len(tc.expectedNodeSelector))
-		for k, v := range tc.expectedNodeSelector {
-			c.Assert(obj.Spec.Template.Spec.NodeSelector[k], Equals, v)
-		}
-
-		c.Assert(len(obj.Spec.Template.Spec.Tolerations), Equals, len(tc.expectedTolerations))
-		for i, toleration := range tc.expectedTolerations {
-			got := obj.Spec.Template.Spec.Tolerations[i]
-			c.Assert(got.Key, Equals, toleration.Key)
-			c.Assert(got.Operator, Equals, toleration.Operator)
-			c.Assert(got.Value, Equals, toleration.Value)
-			c.Assert(got.Effect, Equals, toleration.Effect)
-		}
+		c.Assert(obj.Spec.Template.Spec.NodeSelector, DeepEquals, tc.expectedNodeSelector)
+		c.Assert(obj.Spec.Template.Spec.Tolerations, DeepEquals, tc.expectedTolerations)
 	}
 }
 
