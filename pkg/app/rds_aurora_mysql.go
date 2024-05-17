@@ -122,7 +122,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	// Get aws config
 	awsConfig, region, err := a.getAWSConfig(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "Error getting aws config app=%s", a.name)
+		return errkit.Wrap(err, "Error getting aws config", "app", a.name)
 	}
 
 	// Create ec2 client
@@ -313,7 +313,7 @@ func (a *RDSAuroraMySQLDB) Object() crv1alpha1.ObjectReference {
 func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	awsConfig, region, err := a.getAWSConfig(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "app=%s", a.name)
+		return errkit.Wrap(err, "Error getting aws config", "app", a.name)
 	}
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)

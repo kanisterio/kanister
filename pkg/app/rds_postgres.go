@@ -127,7 +127,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	// Create AWS config
 	awsConfig, region, err := pdb.getAWSConfig(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "app=%s", pdb.name)
+		return errkit.Wrap(err, "Error getting aws config", "app", pdb.name)
 	}
 
 	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
@@ -378,7 +378,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Create AWS config
 	awsConfig, region, err := pdb.getAWSConfig(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "app=%s", pdb.name)
+		return errkit.Wrap(err, "Error getting aws config", "app", pdb.name)
 	}
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
