@@ -61,7 +61,7 @@ func ResourcesFromRenderedManifest(manifest string, filter ResourceFilter) []Ren
 	for _, resourceYaml := range renderedResourcesYaml[1:] {
 		obj := k8sObj{}
 		if err := yaml.Unmarshal([]byte(resourceYaml), &obj); err != nil {
-			log.Error().Print("failed to Unmarshal k8s obj", field.M{"Error": err})
+			log.Error().Print("Failed to unmarshal k8s obj", field.M{"Error": err})
 			continue
 		}
 		k8sType := K8sObjectType(strings.ToLower(obj.ObjKind))
