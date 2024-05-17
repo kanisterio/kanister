@@ -92,23 +92,24 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	// cluster, and executing queries like Creating Database and Table,
 	// Inserting Data, Setting up Garbage Collection Time,
 	// Delete Database etc
-	secret, err := c.cli.CoreV1().Secrets(c.namespace).Get(ctx, fmt.Sprintf("%s-client-secret", c.chart.Release), metav1.GetOptions{})
+	secretName := fmt.Sprintf("%s-client-secret", c.chart.Release)
+	secret, err := c.cli.CoreV1().Secrets(c.namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
 
 	if _, exist := secret.Data["ca.crt"]; !exist {
-		return false, errors.Errorf("Error: ca.crt not found in the cluster credential %s-client-secret", c.chart.Release)
+		return false, errkit.New("Error: ca.crt not found in the cluster credential", "secret", secretName)
 	}
 	c.cacrt = string(secret.Data["ca.crt"])
 
 	if _, exist := secret.Data["tls.crt"]; !exist {
-		return false, errors.Errorf("Error: tls.crt not found in the cluster credential %s-client-secret", c.chart.Release)
+		return false, errkit.New("Error: tls.crt not found in the cluster credential", "secret", secretName)
 	}
 	c.tlscrt = string(secret.Data["tls.crt"])
 
 	if _, exist := secret.Data["tls.key"]; !exist {
-		return false, errors.Errorf("Error: tls.key not found in the cluster credential %s-client-secret", c.chart.Release)
+		return false, errkit.New("Error: tls.key not found in the cluster credential", "secret", secretName)
 	}
 	c.tlskey = string(secret.Data["tls.key"])
 
