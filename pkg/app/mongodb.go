@@ -216,7 +216,7 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 	// and deletion admin database is prohibited
 	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
-	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
+	return errkit.Wrap(err, "Error resetting the mongodb application.", "stdout", stdout, "stderr", stderr)
 }
 
 // Initialize is used to initialize the database or create schema
