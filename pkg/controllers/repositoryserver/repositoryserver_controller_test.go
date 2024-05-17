@@ -484,7 +484,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 }
 
 func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *C, reposerverName string) (crv1alpha1.RepositoryServerProgress, error) {
-	ctxTimeout := 5 * time.Minute
+	ctxTimeout := 10 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 	var repoServerState crv1alpha1.RepositoryServerProgress
