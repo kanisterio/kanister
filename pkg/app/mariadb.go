@@ -83,13 +83,13 @@ func (m *MariaDB) Install(ctx context.Context, namespace string) error { //nolin
 	log.Print("Adding repo.", field.M{"app": m.name})
 	err = cli.AddRepo(ctx, m.chart.RepoName, m.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error adding helm repo for app %s.", m.name)
+		return errkit.Wrap(err, "Error adding helm repo for app.", "app", m.name)
 	}
 
 	log.Print("Installing maria instance using helm.", field.M{"app": m.name})
 	err = cli.Install(ctx, m.chart.RepoName+"/"+m.chart.Chart, m.chart.Version, m.chart.Release, m.namespace, m.chart.Values, true)
 	if err != nil {
-		return errors.Wrapf(err, "Error intalling application %s through helm.", m.name)
+		return errkit.Wrap(err, "Error intalling application through helm.", "app", m.name)
 	}
 
 	return nil
@@ -186,7 +186,7 @@ func (m *MariaDB) Reset(ctx context.Context) error {
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", m.name)
+		return errkit.Wrap(err, "Error waiting for application to be ready to reset it", "app", m.name)
 	}
 
 	log.Print("Resetting the maria instance.", field.M{"app": m.name})

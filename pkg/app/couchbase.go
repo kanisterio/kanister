@@ -244,7 +244,7 @@ func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 	// Uninstall couchbase-operator helm chart
 	log.Info().Print("Uninstalling helm charts.", field.M{"app": cb.name, "release": cb.chart.Release, "namespace": cb.namespace})
 	err = cli.Uninstall(ctx, cb.chart.Release, cb.namespace)
-	return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.chart.Release)
+	return errkit.Wrap(err, "Failed to uninstall helm release", "release", cb.chart.Release)
 }
 
 func (cb CouchbaseDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {

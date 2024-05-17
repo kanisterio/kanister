@@ -86,7 +86,7 @@ func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) er
 
 	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, dbTemplate, nil, mongo.params)
 
-	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mongo.name)
+	return errkit.Wrap(err, "Error installing app on openshift cluster.", "app", mongo.name)
 }
 
 func (mongo *MongoDBDepConfig) IsReady(ctx context.Context) (bool, error) {
@@ -126,7 +126,7 @@ func (mongo *MongoDBDepConfig) Ping(ctx context.Context) error {
 	pingCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db\"", mongo.user)}
 	_, stderr, err := mongo.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database %s, %s", stderr, err)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr)
 	}
 	log.Print("Ping to the application was successful.")
 	return nil

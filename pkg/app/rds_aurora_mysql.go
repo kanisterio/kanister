@@ -136,11 +136,11 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	deploymentSpec := bastionDebugWorkloadSpec(ctx, a.bastionDebugWorkloadName, "mysql", a.namespace)
 	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create deployment %s, app=%s", a.bastionDebugWorkloadName, a.name)
+		return errkit.Wrap(err, "Failed to create deployment", "deployment", a.bastionDebugWorkloadName, "app", a.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, a.cli, a.namespace, a.bastionDebugWorkloadName); err != nil {
-		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app=%s", a.bastionDebugWorkloadName, a.name)
+		return errkit.Wrap(err, "Failed while waiting for deployment to be ready", "deployment", a.bastionDebugWorkloadName, "app", a.name)
 	}
 
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
@@ -373,7 +373,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	// Remove workload object created for executing commands
 	err = a.cli.AppsV1().Deployments(a.namespace).Delete(ctx, a.bastionDebugWorkloadName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting Workload %s, app=%s", a.bastionDebugWorkloadName, a.name)
+		return errkit.Wrap(err, "Error deleting Workload", "deployment", a.bastionDebugWorkloadName, "app", a.name)
 	}
 	return nil
 }

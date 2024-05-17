@@ -145,11 +145,11 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	deploymentSpec := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create deployment %s, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errkit.Wrap(err, "Failed to create deployment", "deployment", pdb.bastionDebugWorkloadName, "app", pdb.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName); err != nil {
-		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errkit.Wrap(err, "Failed while waiting for deployment to be ready", "deployment", pdb.bastionDebugWorkloadName, "app", pdb.name)
 	}
 
 	pdb.vpcID, err = vpcIDForRDSInstance(ctx, ec2Cli)
@@ -395,7 +395,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			case awsrds.ErrCodeDBInstanceNotFoundFault:
 				log.Info().Print("RDS instance already deleted: ErrCodeDBInstanceNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
 			default:
-				return errors.Wrapf(err, "Failed to delete rds instance. You may need to delete it manually. app=rds-postgresql id=%s", pdb.id)
+				return errkit.Wrap(err, "Failed to delete rds instance. You may need to delete it manually.", "app", "rds-postgresql", "id", pdb.id)
 			}
 		}
 	}
@@ -405,7 +405,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		log.Info().Print("Waiting for rds to be deleted", field.M{"app": pdb.name})
 		err = rdsCli.WaitUntilDBInstanceDeleted(ctx, pdb.id)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to wait for rds instance till delete succeeds. app=rds-postgresql id=%s", pdb.id)
+			return errkit.Wrap(err, "Failed to wait for rds instance till delete succeeds.", "app", "rds-postgresql", "id", pdb.id)
 		}
 	}
 
@@ -424,7 +424,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
 				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
 			default:
-				return errors.Wrapf(err, "Failed to delete db subnet group. You may need to delete it manually. app=rds-postgresql name=%s", pdb.dbSubnetGroup)
+				return errkit.Wrap(err, "Failed to delete db subnet group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.dbSubnetGroup)
 			}
 		}
 	}
@@ -438,7 +438,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			case "InvalidGroup.NotFound":
 				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
 			default:
-				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=%s", pdb.securityGroupName)
+				return errkit.Wrap(err, "Failed to delete security group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.securityGroupName)
 			}
 		}
 	}

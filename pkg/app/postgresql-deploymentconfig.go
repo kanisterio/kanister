@@ -90,7 +90,7 @@ func (pgres *PostgreSQLDepConfig) Install(ctx context.Context, namespace string)
 
 	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, dbTemplate, pgres.envVar, pgres.params)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing application %s on openshift cluster", pgres.name)
+		return errkit.Wrap(err, "Error installing application on openshift cluster", "app", pgres.name)
 	}
 	// The secret that get created after installation doesnt have the creds that are mentioned in the
 	// POSTGRESQL_ADMIN_PASSWORD above, we are creating another secret that will have this detail
@@ -125,7 +125,7 @@ func (pgres *PostgreSQLDepConfig) IsReady(ctx context.Context) (bool, error) {
 
 	err := kube.WaitOnDeploymentConfigReady(ctx, pgres.osCli, pgres.cli, pgres.namespace, postgresDepConfigName)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error %s waiting for application to be ready.", pgres.name)
+		return false, errkit.Wrap(err, "Error waiting for application to be ready.", "app", pgres.name)
 	}
 
 	log.Print("Application is ready", field.M{"app": pgres.name})

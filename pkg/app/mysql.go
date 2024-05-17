@@ -92,13 +92,13 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error { //nol
 	log.Print("Adding repo.", field.M{"app": mdb.name})
 	err = cli.AddRepo(ctx, mdb.chart.RepoName, mdb.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error adding helm repo for app %s.", mdb.name)
+		return errkit.Wrap(err, "Error adding helm repo for app.", "app", mdb.name)
 	}
 
 	log.Print("Installing mysql instance using helm.", field.M{"app": mdb.name})
 	err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values, true)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing application %s through helm.", mdb.name)
+		return errkit.Wrap(err, "Error installing application through helm.", "app", mdb.name)
 	}
 
 	return nil
@@ -196,7 +196,7 @@ func (mdb *MysqlDB) Reset(ctx context.Context) error {
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", mdb.name)
+		return errkit.Wrap(err, "Error waiting for application to be ready to reset it", "app", mdb.name)
 	}
 
 	log.Print("Resetting the mysql instance.", field.M{"app": "mysql"})

@@ -85,7 +85,7 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 	oc := openshift.NewOpenShiftClient()
 	_, err := oc.NewApp(ctx, mdep.namespace, dbTemplate, nil, mdep.params)
 
-	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
+	return errkit.Wrap(err, "Error installing app on openshift cluster.", "app", mdep.name)
 }
 
 func (mdep *MysqlDepConfig) IsReady(ctx context.Context) (bool, error) {
@@ -125,7 +125,7 @@ func (mdep *MysqlDepConfig) Ping(ctx context.Context) error {
 	pingCMD := []string{"bash", "-c", "mysql -u root -e 'show databases;'"}
 	_, stderr, err := mdep.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database %s, %s", stderr, err)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr)
 	}
 	log.Print("Ping to the application was successful.")
 	return nil

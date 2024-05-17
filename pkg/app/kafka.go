@@ -129,12 +129,12 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	log.Print("Adding repo.", field.M{"app": kc.name})
 	err = cli.AddRepo(ctx, kc.chart.RepoName, kc.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error adding helm repo for app %s.", kc.name)
+		return errkit.Wrap(err, "Error adding helm repo for app.", "app", kc.name)
 	}
 	log.Print("Installing kafka operator using helm.", field.M{"app": kc.name})
 	err = cli.Install(ctx, kc.chart.RepoName+"/"+kc.chart.Chart, kc.chart.Version, kc.chart.Release, kc.namespace, kc.chart.Values, true)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing operator %s through helm.", kc.name)
+		return errkit.Wrap(err, "Error installing operator through helm.", "app", kc.name)
 	}
 	createKafka := []string{
 		"create",
@@ -143,7 +143,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", createKafka)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
+		return errkit.Wrap(err, "Error installing the application", "app", kc.name, "out", out)
 	}
 	createConfig := []string{
 		"create",
@@ -156,7 +156,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	}
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createConfig)
 	if err != nil {
-		return errors.Wrapf(err, "Error creating ConfigMap %s, %s", kc.name, out)
+		return errkit.Wrap(err, "Error creating ConfigMap", "app", kc.name, "out", out)
 	}
 	createKafkaBridge := []string{
 		"create",
@@ -166,7 +166,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createKafkaBridge)
 
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
+		return errkit.Wrap(err, "Error installing the application", "app", kc.name, "out", out)
 	}
 	log.Print("Application was installed successfully.", field.M{"app": kc.name})
 	return nil
@@ -315,7 +315,7 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 
 	err = kc.cli.CoreV1().ConfigMaps(kc.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting ConfigMap %s", configMapName)
+		return errkit.Wrap(err, "Error deleting ConfigMap", "configMap", configMapName)
 	}
 
 	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
@@ -357,7 +357,7 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 	}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", pingKafka)
 	if err != nil {
-		return errors.Wrapf(err, "Error Pinging the app for %s, %s.", kc.name, out)
+		return errkit.Wrap(err, "Error Pinging the app", "app", kc.name, "out", out)
 	}
 	log.Print("Ping to the application was successful.")
 	return nil
@@ -368,7 +368,7 @@ func (kc *KafkaCluster) Insert(ctx context.Context) error {
 
 	err := kc.InsertRecord(ctx, kc.namespace)
 	if err != nil {
-		return errors.Wrapf(err, "Error inserting the record for %s", kc.name)
+		return errkit.Wrap(err, "Error inserting the record for", "app", kc.name)
 	}
 
 	log.Print("Successfully inserted record in the application.", field.M{"app": kc.name})
@@ -408,7 +408,7 @@ func (kc *KafkaCluster) Count(ctx context.Context) (int, error) {
 
 	count, err := consumeTopic(ctx, kc.namespace)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error counting the records for %s, %s.", kc.name, err)
+		return 0, errkit.Wrap(err, "Error counting the records.", "app", kc.name)
 	}
 
 	log.Print("Count that we received from application is.", field.M{"app": kc.name, "count": count})

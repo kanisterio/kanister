@@ -138,7 +138,7 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 	log.Print("UnInstalling the application using helm.", field.M{"app": esi.name})
 	err = cli.Uninstall(ctx, esi.chart.Release, esi.namespace)
 	if err != nil {
-		return errors.Wrapf(err, "Error uninstalling the application %s", esi.name)
+		return errkit.Wrap(err, "Error uninstalling the application", "app", esi.name)
 	}
 
 	return nil
@@ -176,7 +176,7 @@ func (esi *ElasticsearchInstance) Insert(ctx context.Context) error {
 	if err != nil {
 		// even one insert failed we will have to return because
 		// the count won't  match anyway and the test will fail
-		return errors.Wrapf(err, "Error %s inserting document to an index %s.", stderr, esi.indexname)
+		return errkit.Wrap(err, "Error inserting document to an index.", "stderr", stderr, "index", esi.indexname)
 	}
 
 	log.Print("A document was inserted into the elastics search index.", field.M{"app": esi.name})
@@ -208,7 +208,7 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 	deleteIndexCMD := []string{"sh", "-c", esi.curlCommand("DELETE", esi.indexname+"/?pretty")}
 	_, stderr, err := esi.execCommand(ctx, deleteIndexCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s while deleting the index %s to reset the application.", stderr, esi.indexname)
+		return errkit.Wrap(err, "Error while deleting the index to reset the application.", "stderr", stderr, "index", esi.indexname)
 	}
 
 	return nil

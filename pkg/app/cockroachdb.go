@@ -252,7 +252,7 @@ func (c *CockroachDB) Reset(ctx context.Context) error {
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", c.name)
+		return errkit.Wrap(err, "Error waiting for application to be ready to reset it", "app", c.name)
 	}
 
 	log.Print("Resetting the cockroachdb instance.", field.M{"app": "cockroachdb"})
