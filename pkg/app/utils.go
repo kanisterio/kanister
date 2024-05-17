@@ -118,7 +118,7 @@ func vpcIDForRDSInstance(ctx context.Context, ec2Cli *ec2.EC2) (string, error) {
 		return "", err
 	}
 	if len(defaultVpc.Vpcs) == 0 {
-		return "", fmt.Errorf("No default VPC found")
+		return "", errkit.New("No default VPC found")
 	}
 	return *defaultVpc.Vpcs[0].VpcId, nil
 }

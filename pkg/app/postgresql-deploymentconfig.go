@@ -178,7 +178,7 @@ func (pgres *PostgreSQLDepConfig) Count(ctx context.Context) (int, error) {
 
 	out := strings.Fields(stdout)
 	if len(out) < 4 {
-		return 0, fmt.Errorf("unknown response for count query")
+		return 0, errkit.New("unknown response for count query")
 	}
 	count, err := strconv.Atoi(out[2])
 	if err != nil {
