@@ -128,10 +128,29 @@ func (h CliClient) UpdateRepo(ctx context.Context) error {
 	return nil
 }
 
-// Install installs helm chart with given release name.
-// The output string is to check the generated manifests of a release without installing the chart when ‘dryRun’ flags combined.
-// For normal installation, this output string is blank.
-func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait, dryRun bool) (string, error) {
+// Install installs a Helm chart using the provided parameters.
+//
+// This method installs a Helm chart in the specified namespace with the given release name and chart version.
+// It allows setting custom values, waiting for the installation to complete, and performing a dry-run to preview
+// the installation.
+//
+// The method constructs the Helm install command with the provided parameters. If `wait` is true, the `--wait` flag
+// is added to the command. If `dryRun` is true, the `--dry-run` flag is added to the command, and the method returns
+// the rendered manifests instead of performing the actual installation.
+//
+// Returns:
+//
+// - A string containing the output of the Helm command.
+// - An error if the installation fails.
+func (h CliClient) Install(
+	ctx context.Context,
+	chart,
+	version,
+	release,
+	namespace string,
+	values map[string]string,
+	wait,
+	dryRun bool) (string, error) {
 	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {

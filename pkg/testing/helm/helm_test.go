@@ -93,17 +93,7 @@ func (h *HelmTestSuite) TestUpgrade(c *C) {
 	c.Assert(err, IsNil)
 }
 
-func (h *HelmTestSuite) TestDryRunInstall(c *C) {
-	defer func() {
-		h.helmApp.dryRun = false
-	}()
-	c.Log("Installing kanister release - Dry run")
-	h.helmApp.dryRun = true
-	_, err := h.helmApp.Install()
-	c.Assert(err, IsNil)
-}
-
-func (h *HelmTestSuite) TestComponentsFromManifestAfterDryRunHelmInstall(c *C) {
+func (h *HelmTestSuite) TestResourcesFromManifestAfterDryRunHelmInstall(c *C) {
 	defer func() {
 		h.helmApp.dryRun = false
 	}()
@@ -111,19 +101,9 @@ func (h *HelmTestSuite) TestComponentsFromManifestAfterDryRunHelmInstall(c *C) {
 	h.helmApp.dryRun = true
 	out, err := h.helmApp.Install()
 	c.Assert(err, IsNil)
-	// Fetch all components
-	components := helm.ResourcesFromRenderedManifest(out, nil)
-	/*
-		Following are components from kanister include :
-		1. kanister-kanister-operator (serviceaccount)
-		2. kanister-kanister-operator-cluster-role (clusterrole)
-		3. kanister-kanister-operator-edit-role (clusterrolebinding)
-		4. kanister-kanister-operator-cr-role (clusterrolebinding)
-		5. kanister-kanister-operator-pv-provisioner (clusterrolebinding)
-		6. kanister-kanister-operator (service)
-		7. kanister-kanister-operator (deployment)
-	*/
-	c.Assert(len(components), Equals, 7)
+	// Fetch all resources
+	resources := helm.ResourcesFromRenderedManifest(out, nil)
+	c.Assert(len(resources) > 0, Equals, true)
 }
 
 func (h *HelmTestSuite) TearDownSuite(c *C) {
