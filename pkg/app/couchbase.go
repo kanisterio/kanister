@@ -274,10 +274,10 @@ func (cb CouchbaseDB) getRunningCBPod() (string, error) {
 	}
 
 	if len(pod.Status.ContainerStatuses) == 0 {
-		return "", errors.New(fmt.Sprintf("Could not find ready pod. name=%s namespace=%s", podName, cb.namespace))
+		return "", errkit.New("Could not find ready pod.", "name", podName, "namespace", cb.namespace)
 	}
 	if !pod.Status.ContainerStatuses[0].Ready {
-		return "", errors.New(fmt.Sprintf("Could not find ready pod. name=%s namespace=%s", podName, cb.namespace))
+		return "", errkit.New("Could not find ready pod.", podName, cb.namespace)
 	}
 
 	return pod.GetName(), nil

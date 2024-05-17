@@ -163,10 +163,10 @@ func (fdb *FoundationDB) getRunningFDBPod() (string, error) {
 	}
 
 	if len(pod.Status.ContainerStatuses) == 0 {
-		return "", errors.New(fmt.Sprintf("Couldn't find ready pod. name=%s namespace=%s", fdb.name, fdb.namespace))
+		return "", errkit.New("Couldn't find ready pod.", "name", fdb.name, "namespace", fdb.namespace)
 	}
 	if !pod.Status.ContainerStatuses[0].Ready {
-		return "", errors.New(fmt.Sprintf("Couldn't find ready pod. name=%s namespace=%s", fdb.name, fdb.namespace))
+		return "", errkit.New("Couldn't find ready pod.", "name", fdb.name, "namespace", fdb.namespace)
 	}
 
 	return pod.GetName(), nil
@@ -188,7 +188,7 @@ func (fdb *FoundationDB) Ping(ctx context.Context) error {
 	// Welcome to the fdbcli. For help, type `help'.
 
 	if !strings.Contains(stdout, "The database is available") {
-		return errors.New(fmt.Sprintf("Database %s is still not ready.", fdb.name))
+		return errkit.New("Database is still not ready.", "name", fdb.name)
 	}
 
 	return nil

@@ -94,7 +94,7 @@ func (a *RDSAuroraMySQLDB) Init(context.Context) error {
 	if a.region == "" {
 		a.region, ok = os.LookupEnv(aws.Region)
 		if !ok {
-			return errors.New(fmt.Sprintf("Env var %s is not set", aws.Region))
+			return errkit.New("Env var is not set", "name", aws.Region)
 		}
 	}
 
@@ -106,11 +106,11 @@ func (a *RDSAuroraMySQLDB) Init(context.Context) error {
 
 	a.accessID, ok = os.LookupEnv(aws.AccessKeyID)
 	if !ok {
-		return errors.New(fmt.Sprintf("Env var %s is not set", aws.AccessKeyID))
+		return errkit.New("Env var is not set", "name", aws.AccessKeyID)
 	}
 	a.secretKey, ok = os.LookupEnv(aws.SecretAccessKey)
 	if !ok {
-		return errors.New(fmt.Sprintf("Env var %s is not set", aws.SecretAccessKey))
+		return errkit.New("Env var is not set", "name", aws.SecretAccessKey)
 	}
 
 	return nil
@@ -200,7 +200,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 	if len(dbCluster.DBClusters) == 0 {
-		return errors.New(fmt.Sprintf("Error installing application %s, DBCluster not available", a.name))
+		return errkit.New("Error installing application %s, DBCluster not available", "name", a.name)
 	}
 	a.host = *dbCluster.DBClusters[0].Endpoint
 
