@@ -279,7 +279,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 		return err
 	}
 	if databases == nil {
-		return errors.New("Databases are missing from configmap")
+		return errkit.New("Databases are missing from configmap")
 	}
 
 	isReadyQuery := fmt.Sprintf(postgresConnectionString+"'SELECT version();'", dbsecret.Data["password"], dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])

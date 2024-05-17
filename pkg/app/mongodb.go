@@ -172,7 +172,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 		return errors.Wrapf(err, "Error unmarshalling the ismaster ouptut.")
 	}
 	if !op.Ismaster {
-		return errors.New("the pod is not master yet")
+		return errkit.New("the pod is not master yet")
 	}
 
 	log.Print("Ping was successful to application.", field.M{"app": mongo.name})
