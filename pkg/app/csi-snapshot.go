@@ -17,7 +17,7 @@ package app
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

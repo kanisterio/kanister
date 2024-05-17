@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"

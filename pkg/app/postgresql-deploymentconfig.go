@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
