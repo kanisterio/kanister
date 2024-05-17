@@ -288,7 +288,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 
 	_, stderr, err := pdb.execCommand(ctx, pingCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database: %s, app: %s", stderr, pdb.name)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr, "app", pdb.name)
 	}
 	log.Print("Ping to the application was successful.", field.M{"app": pdb.name})
 	return nil
@@ -303,7 +303,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	insertCommand := []string{"sh", "-c", insertQuery}
 	_, stderr, err := pdb.execCommand(ctx, insertCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, pdb.name)
+		return errkit.Wrap(err, "Error while inserting data into table", "stderr", stderr, "app", pdb.name)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
@@ -317,12 +317,12 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	countCommand := []string{"sh", "-c", countQuery}
 	stdout, stderr, err := pdb.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, pdb.name)
+		return 0, errkit.Wrap(err, "Error while counting data of table", "stderr", stderr, "app", pdb.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting response of count query: %s, app: %s", stderr, pdb.name)
+		return 0, errkit.Wrap(err, "Error while converting response of count query", "stderr", stderr, "app", pdb.name)
 	}
 
 	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": rowsReturned})
@@ -335,7 +335,7 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 	deleteCommand := []string{"sh", "-c", deleteQuery}
 	_, stderr, err := pdb.execCommand(ctx, deleteCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while deleting data from table: %s, app: %s", stderr, pdb.name)
+		return errkit.Wrap(err, "Error while deleting data from table", "stderr", stderr, "app", pdb.name)
 	}
 	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
@@ -349,7 +349,7 @@ func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	createCommand := []string{"sh", "-c", createQuery}
 	_, stderr, err := pdb.execCommand(ctx, createCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while initializing the database: %s, app: %s", stderr, pdb.name)
+		return errkit.Wrap(err, "Error while initializing the database", "stderr", stderr, "app", pdb.name)
 	}
 	return nil
 }

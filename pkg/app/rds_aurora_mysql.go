@@ -235,7 +235,7 @@ func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
 
 	_, stderr, err := a.execCommand(ctx, pingCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database: %s, app: %s", stderr, a.name)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr, "app", a.name)
 	}
 
 	log.Print("Ping to the application was success.", field.M{"app": a.name})
@@ -250,7 +250,7 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 	insertCommand := []string{"sh", "-c", insertQuery}
 	_, stderr, err := a.execCommand(ctx, insertCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, a.name)
+		return errkit.Wrap(err, "Error while inserting data into table", "stderr", stderr, "app", a.name)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": a.name})
 	return nil
@@ -264,12 +264,12 @@ func (a *RDSAuroraMySQLDB) Count(ctx context.Context) (int, error) {
 	countCommand := []string{"sh", "-c", countQuery}
 	stdout, stderr, err := a.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, a.name)
+		return 0, errkit.Wrap(err, "Error while counting data of table", "stderr", stderr, "app", a.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting response of count query to int: %s, app: %s", stderr, a.name)
+		return 0, errkit.Wrap(err, "Error while converting response of count query to int", "stderr", stderr, "app", a.name)
 	}
 
 	log.Info().Print("Number of rows in test DB.", field.M{"app": a.name, "count": rowsReturned})
@@ -283,7 +283,7 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 	deleteCommand := []string{"sh", "-c", deleteQuery}
 	_, stderr, err := a.execCommand(ctx, deleteCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while deleting data from table: %s, app: %s", stderr, a.name)
+		return errkit.Wrap(err, "Error while deleting data from table", "stderr", stderr, "app", a.name)
 	}
 
 	log.Info().Print("Database reset was successful!", field.M{"app": a.name})
@@ -296,7 +296,7 @@ func (a *RDSAuroraMySQLDB) Initialize(ctx context.Context) error {
 	createCommand := []string{"sh", "-c", createQuery}
 	_, stderr, err := a.execCommand(ctx, createCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating the database: %s, app: %s", stderr, a.name)
+		return errkit.Wrap(err, "Error while creating the database", "stderr", stderr, "app", a.name)
 	}
 	return nil
 }

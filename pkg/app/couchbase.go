@@ -215,14 +215,14 @@ func (cb CouchbaseDB) Reset(ctx context.Context) error {
 	cmd := fmt.Sprintf("cbc-n1ql -u %s -P %s 'create primary index on default'", cb.username, cb.password)
 	_, stderr, err := cb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create index on default. %s app=%s", stderr, cb.name)
+		return errkit.Wrap(err, "Failed to create index on default", "stderr", stderr, "app", cb.name)
 	}
 
 	// Delete all documents
 	cmd = fmt.Sprintf("cbc-n1ql -u %s -P %s 'delete from default'", cb.username, cb.password)
 	_, stderr, err = cb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to delete documents from default bucket. %s app=%s", stderr, cb.name)
+		return errkit.Wrap(err, "Failed to delete documents from default bucket", "stderr", stderr, "app", cb.name)
 	}
 
 	// We'll wait till count returns zero
