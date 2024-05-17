@@ -243,7 +243,7 @@ func (m *MssqlDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.Ob
 func (m MssqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, m.cli, m.namespace, m.deployment.Name)
 	if err != nil || podName == "" {
-		return "", "", errors.Wrapf(err, "Error getting pod and container name for app %s.", m.name)
+		return "", "", errkit.Wrap(err, "Error getting pod and container name for app.", "app", m.name)
 	}
 	return kube.Exec(m.cli, m.namespace, podName, containerName, command, nil)
 }

@@ -218,7 +218,7 @@ func (m *MariaDB) Initialize(ctx context.Context) error {
 func (m *MariaDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, m.cli, m.namespace, mariaDBSTSName(m.chart.Release))
 	if err != nil || podname == "" {
-		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", m.name)
+		return "", "", errkit.Wrap(err, "Error  getting pod and containername.", "app", m.name)
 	}
 	return kube.Exec(m.cli, m.namespace, podname, containername, command, nil)
 }

@@ -242,7 +242,7 @@ func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
 	if err != nil || podname == "" {
-		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
+		return "", "", errkit.Wrap(err, "Error  getting pod and containername.", "app", mdb.name)
 	}
 	return kube.Exec(mdb.cli, mdb.namespace, podname, containername, command, nil)
 }

@@ -294,7 +294,7 @@ func (c *CockroachDB) Secrets() map[string]crv1alpha1.ObjectReference {
 func (c *CockroachDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, c.cli, c.namespace, c.chart.Release)
 	if err != nil || podName == "" {
-		return "", "", errors.Wrapf(err, "Error  getting pod and container name %s.", c.name)
+		return "", "", errkit.Wrap(err, "Error getting pod and container name.", "app", c.name)
 	}
 	return kube.Exec(c.cli, c.namespace, podName, containerName, command, nil)
 }

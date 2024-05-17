@@ -167,7 +167,7 @@ func (tlc *TimeLogCSI) GetClusterScopedResources(ctx context.Context) []crv1alph
 func (tlc *TimeLogCSI) execCommand(ctx context.Context, command []string) (string, error) {
 	podname, containername, err := kube.GetPodContainerFromDeployment(ctx, tlc.cli, tlc.namespace, tlc.name)
 	if err != nil || podname == "" {
-		return "", errors.Wrapf(err, "Error getting pod and containername %s.", tlc.name)
+		return "", errkit.Wrap(err, "Error getting pod and containername.", "deployment", tlc.name)
 	}
 	_, stderr, err := kube.Exec(tlc.cli, tlc.namespace, podname, containername, command, nil)
 	return stderr, err
