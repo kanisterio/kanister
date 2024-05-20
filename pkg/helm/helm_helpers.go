@@ -32,6 +32,10 @@ type k8sObj struct {
 
 type K8sObjectType string
 
+const (
+	K8sObjectTypeDeployment K8sObjectType = "deployment"
+)
+
 type RenderedResource struct {
 	name string
 	// renderedManifest holds the dry run raw yaml of the resource.
