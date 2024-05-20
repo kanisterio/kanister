@@ -50,9 +50,9 @@ func (h *HelmApp) AddRepo(name, url string) error {
 	return h.client.AddRepo(context.Background(), name, url)
 }
 
-func (h *HelmApp) Install() error {
+func (h *HelmApp) Install() (string, error) {
 	ctx := context.Background()
-	return h.client.Install(ctx, h.chart, "", h.name, h.namespace, h.helmValues, true)
+	return h.client.Install(ctx, h.chart, "", h.name, h.namespace, h.helmValues, true, h.dryRun)
 }
 
 func (h *HelmApp) Upgrade(chart string, updatedValues map[string]string) error {

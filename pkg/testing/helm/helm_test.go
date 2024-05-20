@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
@@ -72,9 +73,9 @@ func (h *HelmTestSuite) TestUpgrade(c *C) {
 
 	// install released version of kanister
 	c.Log("Installing kanister release")
-	err := h.helmApp.Install()
+	// TODO: Use manifests to test the helm charts
+	_, err := h.helmApp.Install()
 	c.Assert(err, IsNil)
-
 	// wait for kanister deployment to be ready
 	err = kube.WaitOnDeploymentReady(ctx, h.kubeClient, h.helmApp.namespace, h.deploymentName)
 	c.Assert(err, IsNil)
@@ -90,6 +91,19 @@ func (h *HelmTestSuite) TestUpgrade(c *C) {
 	// wait for kanister deployment to be ready
 	err = kube.WaitOnDeploymentReady(ctx, h.kubeClient, h.helmApp.namespace, h.deploymentName)
 	c.Assert(err, IsNil)
+}
+
+func (h *HelmTestSuite) TestResourcesFromManifestAfterDryRunHelmInstall(c *C) {
+	defer func() {
+		h.helmApp.dryRun = false
+	}()
+	c.Log("Installing kanister release - Dry run")
+	h.helmApp.dryRun = true
+	out, err := h.helmApp.Install()
+	c.Assert(err, IsNil)
+	// Fetch all resources
+	resources := helm.ResourcesFromRenderedManifest(out, nil)
+	c.Assert(len(resources) > 0, Equals, true)
 }
 
 func (h *HelmTestSuite) TearDownSuite(c *C) {
