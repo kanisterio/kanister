@@ -211,9 +211,14 @@ var (
 	kopiaRestorePattern  = regexp.MustCompile(snapshotRestoreOutputRegEx)
 )
 
-// SnapshotStatsFromSnapshotCreate parses the output of a kopia snapshot
-// create execution for a log of the stats for that execution.
-func SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput string, matchOnlyFinished bool) (stats *SnapshotCreateStats) {
+// SnapshotStatsFromSnapshotCreate parses the output of a `kopia snapshot
+// create` line-by-line in search of progress statistics.
+// It returns nil if no statistics are found, or the most recent statistic
+// if multiple are encountered.
+func SnapshotStatsFromSnapshotCreate(
+	snapCreateStderrOutput string,
+	matchOnlyFinished bool,
+) (stats *SnapshotCreateStats) {
 	if snapCreateStderrOutput == "" {
 		return nil
 	}
@@ -342,15 +347,19 @@ type RestoreStats struct {
 }
 
 // RestoreStatsFromRestoreOutput parses the output of a `kopia restore`
-// execution for a log of the stats for that execution.
-func RestoreStatsFromRestoreOutput(restoreStderrOutput string) (stats *RestoreStats) {
+// line-by-line in search of progress statistics.
+// It returns nil if no statistics are found, or the most recent statistic
+// if multiple are encountered.
+func RestoreStatsFromRestoreOutput(
+	restoreStderrOutput string,
+) (stats *RestoreStats) {
 	if restoreStderrOutput == "" {
 		return nil
 	}
 	logs := regexp.MustCompile("[\r\n]").Split(restoreStderrOutput, -1)
 
 	for _, l := range logs {
-		lineStats := parseKopiaSnapshotRestoreProgressLine(l)
+		lineStats := parseKopiaRestoreProgressLine(l)
 		if lineStats != nil {
 			stats = lineStats
 		}
@@ -359,10 +368,10 @@ func RestoreStatsFromRestoreOutput(restoreStderrOutput string) (stats *RestoreSt
 	return stats
 }
 
-// parseKopiaSnapshotRestoreProgressLine parses restore stats from line
-// which expected to be in the following format:
+// parseKopiaRestoreProgressLine parses restore stats from the output log line,
+// which is expected to be in the following format:
 // Processed 5 (1.4 GB) of 5 (1.8 GB) 291.1 MB/s (75.2%) remaining 1s.
-func parseKopiaSnapshotRestoreProgressLine(line string) (stats *RestoreStats) {
+func parseKopiaRestoreProgressLine(line string) (stats *RestoreStats) {
 	match := kopiaRestorePattern.FindStringSubmatch(line)
 	if len(match) < 8 {
 		return nil
