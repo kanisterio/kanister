@@ -33,8 +33,9 @@ type k8sObj struct {
 type K8sObjectType string
 
 type RenderedResource struct {
-	name             string
-	renderedManifest string // This holds the dry run string output of the resource.
+	name string
+	// renderedManifest holds the dry run raw yaml of the resource.
+	renderedManifest string
 }
 
 type ResourceFilter func(kind K8sObjectType) bool
@@ -73,7 +74,7 @@ func K8sObjectsFromRenderedResources[T runtime.Object](resources []RenderedResou
 	for _, resource := range resources {
 		var obj T
 		if err = yaml.Unmarshal([]byte(resource.renderedManifest), &obj); err != nil {
-			log.Error().Print("Failed to unmarshal k8s obj", field.M{"Error": err})
+			log.Error().Print("Failed to unmarshal rendered resource yaml to K8s obj", field.M{"Error": err})
 			return nil, err
 		}
 		nameAndObj[resource.name] = obj
