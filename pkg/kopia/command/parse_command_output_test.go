@@ -447,14 +447,14 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *
 	tests := []struct {
 		name      string
 		args      args
-		wantStats *SnapshotRestoreStats
+		wantStats *RestoreStats
 	}{
 		{
 			name: "Basic test case",
 			args: args{
 				snapshotRestoreOutput: "Processed 2 (397.5 MB) of 3 (3.1 GB) 14.9 MB/s (12.6%) remaining 3m3s.",
 			},
-			wantStats: &SnapshotRestoreStats{
+			wantStats: &RestoreStats{
 				FilesProcessed:  2,
 				SizeProcessedB:  397500000,
 				FilesTotal:      3,
@@ -467,7 +467,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *
 			args: args{
 				snapshotRestoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (0.4%) remaining 6m10s.",
 			},
-			wantStats: &SnapshotRestoreStats{
+			wantStats: &RestoreStats{
 				FilesProcessed:  2,
 				SizeProcessedB:  13700000,
 				FilesTotal:      2,
@@ -487,7 +487,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *
 			args: args{
 				snapshotRestoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (120.4%) remaining 6m10s.",
 			},
-			wantStats: &SnapshotRestoreStats{
+			wantStats: &RestoreStats{
 				FilesProcessed:  2,
 				SizeProcessedB:  13700000,
 				FilesTotal:      2,
@@ -497,7 +497,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *
 		},
 	}
 	for _, tt := range tests {
-		stats := SnapshotStatsFromSnapshotRestore(tt.args.snapshotRestoreOutput)
+		stats := RestoreStatsFromRestoreOutput(tt.args.snapshotRestoreOutput)
 		c.Check(stats, DeepEquals, tt.wantStats, Commentf("Failed for %s", tt.name))
 	}
 }

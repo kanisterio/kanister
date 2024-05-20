@@ -331,9 +331,9 @@ func parseKopiaProgressLine(line string, matchOnlyFinished bool) (stats *Snapsho
 	}
 }
 
-// SnapshotRestoreStats is a container for stats parsed from the output of a
-// `kopia snapshot restore` command.
-type SnapshotRestoreStats struct {
+// RestoreStats is a container for stats parsed from the output of a
+// `kopia restore` command.
+type RestoreStats struct {
 	FilesProcessed  int64
 	SizeProcessedB  int64
 	FilesTotal      int64
@@ -341,9 +341,9 @@ type SnapshotRestoreStats struct {
 	ProgressPercent int64
 }
 
-// SnapshotStatsFromSnapshotRestore parses the output of a `kopia snapshot
-// restore` execution for a log of the stats for that execution.
-func SnapshotStatsFromSnapshotRestore(snapRestoreStderrOutput string) (stats *SnapshotRestoreStats) {
+// RestoreStatsFromRestoreOutput parses the output of a `kopia restore`
+// execution for a log of the stats for that execution.
+func RestoreStatsFromRestoreOutput(snapRestoreStderrOutput string) (stats *RestoreStats) {
 	if snapRestoreStderrOutput == "" {
 		return nil
 	}
@@ -359,7 +359,10 @@ func SnapshotStatsFromSnapshotRestore(snapRestoreStderrOutput string) (stats *Sn
 	return stats
 }
 
-func parseKopiaSnapshotRestoreProgressLine(line string) (stats *SnapshotRestoreStats) {
+// parseKopiaSnapshotRestoreProgressLine parses restore stats from line
+// which expected to be in the following format:
+// Processed 5 (1.4 GB) of 5 (1.8 GB) 291.1 MB/s (75.2%) remaining 1s.
+func parseKopiaSnapshotRestoreProgressLine(line string) (stats *RestoreStats) {
 	match := kopiaSnapshotRestorePattern.FindStringSubmatch(line)
 	if len(match) < 8 {
 		return nil
@@ -409,7 +412,7 @@ func parseKopiaSnapshotRestoreProgressLine(line string) (stats *SnapshotRestoreS
 		progressPercent = 99
 	}
 
-	return &SnapshotRestoreStats{
+	return &RestoreStats{
 		FilesProcessed:  int64(processedCount),
 		SizeProcessedB:  int64(processedSize),
 		FilesTotal:      int64(totalCount),
