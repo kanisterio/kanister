@@ -225,7 +225,7 @@ type PhaseProgress struct {
 	// This field will be empty for phases which do not involve data movement.
 	EstimatedUploadSizeB int64 `json:"estimatedUploadSizeB,omitempty"`
 	// EstimatedTimeSeconds is the estimated time required in seconds to transfer the
-	// remaining data estimated with EstimatedUploadSizeB / EstimatedDownloadSizeB.
+	// remaining data estimated with EstimatedUploadSizeB/EstimatedDownloadSizeB.
 	// This field will be empty for phases which do not involve data movement.
 	EstimatedTimeSeconds int64 `json:"estinatedTimeSeconds,omitempty"`
 	// LastTransitionTime represents the last date time when the progress status
