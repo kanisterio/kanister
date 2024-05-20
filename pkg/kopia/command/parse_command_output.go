@@ -406,9 +406,9 @@ func parseKopiaSnapshotRestoreProgressLine(line string) (stats *RestoreStats) {
 	}
 
 	if progressPercent >= 100 {
-		// It may happen that kopia reports progress of 100 or higher without actual
+		// It may happen that kopia reports progress of 100 or higher without actually
 		// completing the task. This can occur due to inaccurate estimation.
-		// In such case, we will return the progress as 99% to avoid confusion.
+		// In such cases, we will return the progress as 99% to avoid confusion.
 		progressPercent = 99
 	}
 
