@@ -188,7 +188,7 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 		})
 		c.Assert(len(resources) > 0, Equals, true)
 		// Take the deployment resources
-		deployments, err := helm.GetK8sObjectsFromRenderedManifest[*appsv1.Deployment](resources)
+		deployments, err := helm.K8sObjectsFromRenderedResources[*appsv1.Deployment](resources)
 		c.Assert(err, IsNil)
 		// Use only the required deployment
 		var obj = deployments[h.deploymentName]
