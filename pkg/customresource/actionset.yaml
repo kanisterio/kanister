@@ -343,19 +343,19 @@ spec:
           jsonPath: .status.progress.percentCompleted
         - name: SizeDownloadedB
           type: integer
-          description: Amount of data downloaded during action execution
+          description: Amount of data that has been downloaded
           jsonPath: .status.progress.sizeDownloadedB
         - name: SizeUploadedB
           type: integer
-          description: Amount of data uploaded during action execution
+          description: Amount of data that has been uploaded
           jsonPath: .status.progress.sizeUploadedB
         - name: EstimatedDownloadSizeB
           type: integer
-          description: Estimated amount of data to be downloaded during action execution
+          description: Estimated amount of data to be downloaded
           jsonPath: .status.progress.estimatedDownloadSizeB
         - name: EstimatedUploadSizeB
           type: integer
-          description: Estimated amount of data to be uploaded during action execution
+          description: Estimated amount of data to be uploaded
           jsonPath: .status.progress.estimatedUploadSizeB
         - name: Running Phase
           type: string
