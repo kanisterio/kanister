@@ -39,9 +39,7 @@ type RenderedResource struct {
 
 type ResourceFilter func(kind K8sObjectType) bool
 
-// ResourcesFromRenderedManifest extracts and optionally filters rendered resources from a given rendered manifest.
-// Returns:
-// - A slice of RenderedResource structs containing the name and the YAML of each resource that passes the filter.
+// ResourcesFromRenderedManifest extracts optionally filtered raw resource yamls from a given rendered manifest.
 func ResourcesFromRenderedManifest(manifest string, filter ResourceFilter) []RenderedResource {
 	var ret []RenderedResource
 	// Get rid of the notes section, shown at the very end of the output.
@@ -67,15 +65,10 @@ func ResourcesFromRenderedManifest(manifest string, filter ResourceFilter) []Ren
 	return ret
 }
 
-// GetK8sObjectsFromRenderedManifest unmarshals a list of rendered Kubernetes manifests
-// into a map of Kubernetes objects. It unmarshals each manifest into an object of the specified type `T`,
-// which must implement the runtime.Object interface.
-//
-// Returns:
-//   - A map where the keys are the names of the resources and the values are the unmarshaled K8S objects of type `T`.
-//   - An error if any manifest fails to unmarshal.
-func GetK8sObjectsFromRenderedManifest[T runtime.Object](resources []RenderedResource) (map[string]T, error) {
-	var mapOfObjects = make(map[string]T)
+// K8sObjectsFromRenderedResources unmarshals a list of rendered Kubernetes manifests
+// into a map of Kubernetes objects name and object itself.
+func K8sObjectsFromRenderedResources[T runtime.Object](resources []RenderedResource) (map[string]T, error) {
+	var nameAndObj = make(map[string]T)
 	var err error
 	for _, resource := range resources {
 		var obj T
@@ -83,7 +76,7 @@ func GetK8sObjectsFromRenderedManifest[T runtime.Object](resources []RenderedRes
 			log.Error().Print("Failed to unmarshal k8s obj", field.M{"Error": err})
 			return nil, err
 		}
-		mapOfObjects[resource.name] = obj
+		nameAndObj[resource.name] = obj
 	}
-	return mapOfObjects, nil
+	return nameAndObj, nil
 }
