@@ -343,11 +343,11 @@ type RestoreStats struct {
 
 // RestoreStatsFromRestoreOutput parses the output of a `kopia restore`
 // execution for a log of the stats for that execution.
-func RestoreStatsFromRestoreOutput(snapRestoreStderrOutput string) (stats *RestoreStats) {
-	if snapRestoreStderrOutput == "" {
+func RestoreStatsFromRestoreOutput(restoreStderrOutput string) (stats *RestoreStats) {
+	if restoreStderrOutput == "" {
 		return nil
 	}
-	logs := regexp.MustCompile("[\r\n]").Split(snapRestoreStderrOutput, -1)
+	logs := regexp.MustCompile("[\r\n]").Split(restoreStderrOutput, -1)
 
 	for _, l := range logs {
 		lineStats := parseKopiaSnapshotRestoreProgressLine(l)
