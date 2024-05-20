@@ -34,26 +34,17 @@ type K8sObjectType string
 
 type RenderedResource struct {
 	name             string
-	renderedManifest string // This holds the dry run string output of the resource
+	renderedManifest string // This holds the dry run string output of the resource.
 }
 
 type ResourceFilter func(kind K8sObjectType) bool
 
 // ResourcesFromRenderedManifest extracts and optionally filters rendered resources from a given rendered manifest.
-//
-// This function processes a manifest string, splits it into individual resource YAMLs, and parses each resource into
-// a RenderedResource struct. It can optionally filter resources based on a provided ResourceFilter function.
-//
-// Parameters:
-//   - manifest: A string containing the full rendered manifest, which may include notes and multiple YAML documents.
-//   - filter: A ResourceFilter function that returns true for the types of resources to include in the result. If nil,
-//     all resources are included.
-//
 // Returns:
 // - A slice of RenderedResource structs containing the name and the YAML of each resource that passes the filter.
 func ResourcesFromRenderedManifest(manifest string, filter ResourceFilter) []RenderedResource {
 	var ret []RenderedResource
-	// Get rid of the notes section, shown at the very end of the output
+	// Get rid of the notes section, shown at the very end of the output.
 	manifestSections := strings.Split(manifest, "NOTES:")
 	// The actual rendered manifests start after first occurrence of `---`.
 	// Before this we have chart details, for example Name, Last Deployed, Status etc.
@@ -65,7 +56,7 @@ func ResourcesFromRenderedManifest(manifest string, filter ResourceFilter) []Ren
 			continue
 		}
 		k8sType := K8sObjectType(strings.ToLower(obj.ObjKind))
-		// Either append all rendered resource or filter using the filter func
+		// Either append all rendered resource or filter.
 		if filter == nil || filter(k8sType) {
 			ret = append(ret, RenderedResource{
 				name:             obj.MetaData.Name,
@@ -77,27 +68,12 @@ func ResourcesFromRenderedManifest(manifest string, filter ResourceFilter) []Ren
 }
 
 // GetK8sObjectsFromRenderedManifest unmarshals a list of rendered Kubernetes manifests
-// into a map of Kubernetes objects.
-//
-// This function takes a slice of RenderedResource, each containing a rendered manifest
-// in YAML format. It then unmarshals each manifest into an object of the specified type `T`,
-// which must implement the runtime.Object interface. The unmarshaled objects are stored in
-// a map where the keys are the names of the resources and the values are the unmarshaled objects.
-//
-// Type Parameters:
-//
-//	T - The type of Kubernetes objects to unmarshal, which must implement runtime.Object.
-//
-// Parameters:
-//
-//	resources - A slice of RenderedResource, where each element contains the name and
-//	             the rendered manifest of a Kubernetes resource.
+// into a map of Kubernetes objects. It unmarshals each manifest into an object of the specified type `T`,
+// which must implement the runtime.Object interface.
 //
 // Returns:
-//
-//	A map where the keys are the names of the resources and the values are the unmarshaled
-//	Kubernetes objects of type `T`.
-//	An error if any manifest fails to unmarshal.
+//   - A map where the keys are the names of the resources and the values are the unmarshaled K8S objects of type `T`.
+//   - An error if any manifest fails to unmarshal.
 func GetK8sObjectsFromRenderedManifest[T runtime.Object](resources []RenderedResource) (map[string]T, error) {
 	var mapOfObjects = make(map[string]T)
 	var err error
