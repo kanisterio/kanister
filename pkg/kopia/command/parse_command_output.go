@@ -207,8 +207,8 @@ type SnapshotCreateStats struct {
 }
 
 var (
-	kopiaProgressPattern        = regexp.MustCompile(snapshotCreateOutputRegEx)
-	kopiaSnapshotRestorePattern = regexp.MustCompile(snapshotRestoreOutputRegEx)
+	kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx)
+	kopiaRestorePattern  = regexp.MustCompile(snapshotRestoreOutputRegEx)
 )
 
 // SnapshotStatsFromSnapshotCreate parses the output of a kopia snapshot
@@ -363,13 +363,13 @@ func RestoreStatsFromRestoreOutput(snapRestoreStderrOutput string) (stats *Resto
 // which expected to be in the following format:
 // Processed 5 (1.4 GB) of 5 (1.8 GB) 291.1 MB/s (75.2%) remaining 1s.
 func parseKopiaSnapshotRestoreProgressLine(line string) (stats *RestoreStats) {
-	match := kopiaSnapshotRestorePattern.FindStringSubmatch(line)
+	match := kopiaRestorePattern.FindStringSubmatch(line)
 	if len(match) < 8 {
 		return nil
 	}
 
 	groups := make(map[string]string)
-	for i, name := range kopiaSnapshotRestorePattern.SubexpNames() {
+	for i, name := range kopiaRestorePattern.SubexpNames() {
 		if i != 0 && name != "" {
 			groups[name] = match[i]
 		}
