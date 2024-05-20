@@ -128,20 +128,9 @@ func (h CliClient) UpdateRepo(ctx context.Context) error {
 	return nil
 }
 
-// Install installs a Helm chart using the provided parameters.
-//
-// This method installs a Helm chart in the specified namespace with the given release name and chart version.
-// It allows setting custom values, waiting for the installation to complete, and performing a dry-run to preview
-// the installation.
-//
-// The method constructs the Helm install command with the provided parameters. If `wait` is true, the `--wait` flag
-// is added to the command. If `dryRun` is true, the `--dry-run` flag is added to the command, and the method returns
-// the rendered manifests instead of performing the actual installation.
-//
-// Returns:
-//
-// - A string containing the output of the Helm command.
-// - An error if the installation fails.
+// Install installs a Helm chart in the specified namespace with the given release name and chart version.
+// `wait` and `dryRun` can be set to `true` to make sure it adds `--wait` and `--dry-run` flags to the
+// `helm install command`.
 func (h CliClient) Install(
 	ctx context.Context,
 	chart,
