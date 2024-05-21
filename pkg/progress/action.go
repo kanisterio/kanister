@@ -144,7 +144,7 @@ func completedOrFailed(aIDX int, actionSet *crv1alpha1.ActionSet, phaseName stri
 	return false
 }
 
-func isPhaseProgressDifferent(a, b crv1alpha1.PhaseProgress) bool {
+func arePhaseProgressesDifferent(a, b crv1alpha1.PhaseProgress) bool {
 	if a.ProgressPercent != b.ProgressPercent {
 		return true
 	}
@@ -176,7 +176,7 @@ func setActionSetPhaseProgress(actionSet *crv1alpha1.ActionSet, phaseName string
 				actionSet.Status.Actions[i].Phases[j].State == crv1alpha1.StateFailed {
 				continue
 			}
-			if isPhaseProgressDifferent(actionSet.Status.Actions[i].Phases[j].Progress, phaseProgress) {
+			if arePhaseProgressesDifferent(actionSet.Status.Actions[i].Phases[j].Progress, phaseProgress) {
 				actionSet.Status.Actions[i].Phases[j].Progress = phaseProgress
 				if err := SetActionSetPercentCompleted(actionSet); err != nil {
 					return err
