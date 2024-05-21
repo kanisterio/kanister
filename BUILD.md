@@ -132,6 +132,59 @@ The `check` library handles arguments differently from standard `go test`
 
 See https://github.com/kastenhq/check and https://github.com/kastenhq/check/blob/v1/run.go#L30 for more information
 
+Absolutely! The `usage()` function within `integration-test.sh` provides instructions on how to use the script. Here's the corresponding documentation you can add to `BUILD.MD`, taking the `usage()` function into account:
+
+## Integration Tests
+
+Integration tests verify that different components of Kanister work together as expected. They are located in the `pkg/testing` directory.
+
+### Prerequisites
+
+Before running integration tests, ensure the following:
+
+* **MinIO:** Make sure MinIO is installed and running. Use the following command to install it:
+   ```bash
+   make install-minio
+   ```
+
+### Running Tests
+
+To execute the integration tests, use the following Makefile target:
+
+```bash
+make integration-test [app-type]
+```
+
+Replace `[app-type]` with one of the following options:
+
+* **`all`:** Runs all integration tests.
+* **`short`:** Runs a quick subset of tests for common applications (PostgreSQL, MySQL, MongoDB, MSSQL).
+* **`openshift ocp_version=<ocp_version>`:** Runs tests specifically for a certain OpenShift version. Replace `<ocp_version>` with the version you want to test (e.g., `openshift ocp_version=4.13`). Currently supported versions are 3.11, 4.4, 4.5, 4.10, 4.11, 4.12, and 4.13.
+
+### Test Selection
+
+You can also control which integration tests are run by setting the `TEST_APPS` environment variable.
+
+### Examples
+
+**Running all integration tests:**
+
+```bash
+make integration-test all
+```
+
+**Running the short suite of tests:**
+
+```bash
+make integration-test short  # Or simply 'make integration-test'
+```
+
+**Running tests for OpenShift 4.13:**
+
+```bash
+make integration-test openshift ocp_version=4.13
+```
+
 ## Documentation
 
 The source of the documentation is found in the `docs` folder. They are written
