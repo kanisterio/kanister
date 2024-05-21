@@ -440,9 +440,9 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *C
 	}
 }
 
-func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *C) {
+func (kParse *KopiaParseUtilsTestSuite) TestRestoreStatsFromRestoreOutput(c *C) {
 	type args struct {
-		snapshotRestoreOutput string
+		restoreOutput string
 	}
 	tests := []struct {
 		name      string
@@ -452,7 +452,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *
 		{
 			name: "Basic test case",
 			args: args{
-				snapshotRestoreOutput: "Processed 2 (397.5 MB) of 3 (3.1 GB) 14.9 MB/s (12.6%) remaining 3m3s.",
+				restoreOutput: "Processed 2 (397.5 MB) of 3 (3.1 GB) 14.9 MB/s (12.6%) remaining 3m3s.",
 			},
 			wantStats: &RestoreStats{
 				FilesProcessed:  2,
@@ -465,7 +465,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *
 		{
 			name: "Real test case",
 			args: args{
-				snapshotRestoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (0.4%) remaining 6m10s.",
+				restoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (0.4%) remaining 6m10s.",
 			},
 			wantStats: &RestoreStats{
 				FilesProcessed:  2,
@@ -478,14 +478,14 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *
 		{
 			name: "Ignore incomplete stats without during estimation",
 			args: args{
-				snapshotRestoreOutput: "Processed 2 (32.8 KB) of 2 (3.1 GB).",
+				restoreOutput: "Processed 2 (32.8 KB) of 2 (3.1 GB).",
 			},
 			wantStats: nil,
 		},
 		{
 			name: "Progress is over 100% and still not ready - set 99%",
 			args: args{
-				snapshotRestoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (120.4%) remaining 6m10s.",
+				restoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (120.4%) remaining 6m10s.",
 			},
 			wantStats: &RestoreStats{
 				FilesProcessed:  2,
@@ -497,7 +497,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotRestore(c *
 		},
 	}
 	for _, tt := range tests {
-		stats := RestoreStatsFromRestoreOutput(tt.args.snapshotRestoreOutput)
+		stats := RestoreStatsFromRestoreOutput(tt.args.restoreOutput)
 		c.Check(stats, DeepEquals, tt.wantStats, Commentf("Failed for %s", tt.name))
 	}
 }

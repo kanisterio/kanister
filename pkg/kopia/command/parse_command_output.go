@@ -39,7 +39,7 @@ const (
 
 	//nolint:lll
 	snapshotCreateOutputRegEx       = `(?P<spinner>[|/\-\\\*]).+[^\d](?P<numHashed>\d+) hashed \((?P<hashedSize>[^\)]+)\), (?P<numCached>\d+) cached \((?P<cachedSize>[^\)]+)\), uploaded (?P<uploadedSize>[^\)]+), (?:estimating...|estimated (?P<estimatedSize>[^\)]+) \((?P<estimatedProgress>[^\)]+)\%\).+)`
-	snapshotRestoreOutputRegEx      = `Processed (?P<processedCount>\d+) \((?P<processedSize>.*)\) of (?P<totalCount>\d+) \((?P<totalSize>.*)\) (?P<dataRate>.*) \((?P<percentage>.*)%\) remaining (?P<remainingTime>.*)\.`
+	restoreOutputRegEx              = `Processed (?P<processedCount>\d+) \((?P<processedSize>.*)\) of (?P<totalCount>\d+) \((?P<totalSize>.*)\) (?P<dataRate>.*) \((?P<percentage>.*)%\) remaining (?P<remainingTime>.*)\.`
 	extractSnapshotIDRegEx          = `Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`
 	repoTotalSizeFromBlobStatsRegEx = `Total: (\d+)$`
 	repoCountFromBlobStatsRegEx     = `Count: (\d+)$`
@@ -208,7 +208,7 @@ type SnapshotCreateStats struct {
 
 var (
 	kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx)
-	kopiaRestorePattern  = regexp.MustCompile(snapshotRestoreOutputRegEx)
+	kopiaRestorePattern  = regexp.MustCompile(restoreOutputRegEx)
 )
 
 // SnapshotStatsFromSnapshotCreate parses the output of a `kopia snapshot
