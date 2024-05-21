@@ -132,7 +132,6 @@ The `check` library handles arguments differently from standard `go test`
 
 See https://github.com/kastenhq/check and https://github.com/kastenhq/check/blob/v1/run.go#L30 for more information
 
-Absolutely! The `usage()` function within `integration-test.sh` provides instructions on how to use the script. Here's the corresponding documentation you can add to `BUILD.MD`, taking the `usage()` function into account:
 
 ## Integration Tests
 
