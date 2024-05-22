@@ -41,6 +41,7 @@ const (
 	jsonFlag                   = "--json"
 	logDirectoryFlag           = "--log-dir"
 	logLevelFlag               = "--log-level"
+	fileLogLevelFlag           = "--file-log-level"
 	LogLevelError              = "error"
 	LogLevelInfo               = "info"
 	parallelFlag               = "--parallel"
@@ -77,6 +78,7 @@ const (
 	userPasswordFlag          = "--user-password"
 	enablePprof               = "--enable-pprof"
 	metricsListerAddress      = "--metrics-listen-addr"
+	htpasswdFilePath          = "--htpasswd-file"
 
 	// Repository specific
 	repositorySubCommand      = "repository"
@@ -121,4 +123,7 @@ const (
 
 	// DefaultLogDirectory is the directory where kopia log file is created
 	DefaultLogDirectory = "/tmp/kopia-log"
+
+	// DefaultHtpasswdFilePath is the path to the generated htpasswd file
+	DefaultHtpasswdFilePath = "/tmp/kopia-htpasswd"
 )
