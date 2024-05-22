@@ -158,107 +158,200 @@ func (s *TestSuiteMultiActions) createFixtures(blueprint *crv1alpha1.Blueprint, 
 }
 
 func (s *TestSuiteMultiActions) TestUpdateActionsProgress(c *C) {
+	// This test simulates ActionSet consisting of two actions with two phases in each
 	var testCases = []struct {
-		indexAction           int
-		indexPhase            int
-		phaseState            crv1alpha1.State
-		phasePercent          string
-		expectedPhasePercent  string
-		expectedActionPercent string
+		indexAction                   int
+		indexPhase                    int
+		phaseState                    crv1alpha1.State
+		phaseProgress                 crv1alpha1.PhaseProgress
+		expectedPhasePercent          string
+		expectedActionPercent         string
+		expectedSizeUploadedB         int64
+		expectedSizeDownloadedB       int64
+		expectedEstimatedUploadSizeB  int64
+		expectedEstimateDownloadSizeB int64
 	}{
+		// The first phase of the first action is in a pending state.
 		{
-			indexAction:           0,
-			indexPhase:            0,
-			phaseState:            crv1alpha1.StatePending,
-			expectedPhasePercent:  "",
-			expectedActionPercent: "",
+			indexAction:                  0,
+			indexPhase:                   0,
+			phaseState:                   crv1alpha1.StatePending,
+			expectedPhasePercent:         "",
+			expectedActionPercent:        "",
+			expectedSizeUploadedB:        0,
+			expectedEstimatedUploadSizeB: 0,
 		},
+		// The first phase of the first action is in a running state.
 		{
-			indexAction:           0,
-			indexPhase:            0,
-			phaseState:            crv1alpha1.StateRunning,
-			phasePercent:          "40",
-			expectedPhasePercent:  "40",
-			expectedActionPercent: "10", // Total 4 phases, calculating average to set action progress
+			indexAction: 0,
+			indexPhase:  0,
+			phaseState:  crv1alpha1.StateRunning,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      "40",
+				SizeUploadedB:        2345,
+				EstimatedUploadSizeB: 12345,
+			},
+			expectedPhasePercent:         "40",
+			expectedActionPercent:        "10", // Total 4 phases, calculating average to set action progress
+			expectedSizeUploadedB:        2345,
+			expectedEstimatedUploadSizeB: 12345,
 		},
+		// The first phase of the first action is in a complete state.
 		{
-			indexAction:           0,
-			indexPhase:            0,
-			phaseState:            crv1alpha1.StateComplete,
-			phasePercent:          CompletedPercent,
-			expectedPhasePercent:  CompletedPercent,
-			expectedActionPercent: "25",
+			indexAction: 0,
+			indexPhase:  0,
+			phaseState:  crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      CompletedPercent,
+				SizeUploadedB:        12345,
+				EstimatedUploadSizeB: 12345,
+			},
+			expectedPhasePercent:         CompletedPercent,
+			expectedActionPercent:        "25",
+			expectedSizeUploadedB:        12345,
+			expectedEstimatedUploadSizeB: 12345,
 		},
+		// The second phase of the first action is in a pending state.
 		{
-			indexAction:           0,
-			indexPhase:            1,
-			phaseState:            crv1alpha1.StatePending,
-			phasePercent:          "0",
-			expectedPhasePercent:  "",
-			expectedActionPercent: "25",
+			indexAction: 0,
+			indexPhase:  1,
+			phaseState:  crv1alpha1.StatePending,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent: "0",
+			},
+			expectedPhasePercent:         "",
+			expectedActionPercent:        "25",
+			expectedSizeUploadedB:        12345,
+			expectedEstimatedUploadSizeB: 12345,
 		},
+		// The second phase of the first action is in a running state.
 		{
-			indexAction:           0,
-			indexPhase:            1,
-			phaseState:            crv1alpha1.StateRunning,
-			phasePercent:          "60",
-			expectedPhasePercent:  "60",
-			expectedActionPercent: "40",
+			indexAction: 0,
+			indexPhase:  1,
+			phaseState:  crv1alpha1.StateRunning,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:        "60",
+				SizeDownloadedB:        1000,
+				EstimatedDownloadSizeB: 10000,
+			},
+			expectedPhasePercent:          "60",
+			expectedActionPercent:         "40",
+			expectedSizeDownloadedB:       1000,
+			expectedSizeUploadedB:         12345,
+			expectedEstimateDownloadSizeB: 10000,
+			expectedEstimatedUploadSizeB:  12345,
 		},
+		// The second phase of the first action is in a completed state.
 		{
-			indexAction:           0,
-			indexPhase:            1,
-			phaseState:            crv1alpha1.StateComplete,
-			phasePercent:          CompletedPercent,
-			expectedPhasePercent:  CompletedPercent,
-			expectedActionPercent: "50",
+			indexAction: 0,
+			indexPhase:  1,
+			phaseState:  crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:        CompletedPercent,
+				SizeDownloadedB:        10000,
+				EstimatedDownloadSizeB: 10000,
+			},
+			expectedPhasePercent:          CompletedPercent,
+			expectedActionPercent:         "50",
+			expectedSizeDownloadedB:       10000,
+			expectedSizeUploadedB:         12345,
+			expectedEstimateDownloadSizeB: 10000,
+			expectedEstimatedUploadSizeB:  12345,
 		},
+		// The first phase of the second action is in a completed state.
 		{
-			indexAction:           1,
-			indexPhase:            0,
-			phaseState:            crv1alpha1.StatePending,
-			expectedPhasePercent:  "",
-			expectedActionPercent: "50",
+			indexAction:                   1,
+			indexPhase:                    0,
+			phaseState:                    crv1alpha1.StatePending,
+			expectedPhasePercent:          "",
+			expectedActionPercent:         "50",
+			expectedSizeDownloadedB:       10000,
+			expectedSizeUploadedB:         12345,
+			expectedEstimateDownloadSizeB: 10000,
+			expectedEstimatedUploadSizeB:  12345,
 		},
+		// The first phase of the second action is in a running state.
 		{
-			indexAction:           1,
-			indexPhase:            0,
-			phaseState:            crv1alpha1.StateRunning,
-			phasePercent:          "37",
-			expectedPhasePercent:  "37",
-			expectedActionPercent: "59",
+			indexAction: 1,
+			indexPhase:  0,
+			phaseState:  crv1alpha1.StateRunning,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      "37",
+				SizeUploadedB:        1000,
+				EstimatedUploadSizeB: 10000,
+			},
+			expectedPhasePercent:          "37",
+			expectedActionPercent:         "59",
+			expectedSizeDownloadedB:       10000,
+			expectedSizeUploadedB:         13345,
+			expectedEstimateDownloadSizeB: 10000,
+			expectedEstimatedUploadSizeB:  22345,
 		},
+		// The first phase of the second action is in a complete state.
 		{
-			indexAction:           1,
-			indexPhase:            0,
-			phaseState:            crv1alpha1.StateComplete,
-			phasePercent:          CompletedPercent,
-			expectedPhasePercent:  CompletedPercent,
-			expectedActionPercent: "75",
+			indexAction: 1,
+			indexPhase:  0,
+			phaseState:  crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      CompletedPercent,
+				SizeUploadedB:        10000,
+				EstimatedUploadSizeB: 10000,
+			},
+			expectedPhasePercent:          CompletedPercent,
+			expectedActionPercent:         "75",
+			expectedSizeDownloadedB:       10000,
+			expectedSizeUploadedB:         22345,
+			expectedEstimateDownloadSizeB: 10000,
+			expectedEstimatedUploadSizeB:  22345,
 		},
+		// The second phase of the second action is in a pending state.
 		{
-			indexAction:           1,
-			indexPhase:            1,
-			phaseState:            crv1alpha1.StatePending,
-			phasePercent:          "0",
-			expectedPhasePercent:  "",
-			expectedActionPercent: "75",
+			indexAction: 1,
+			indexPhase:  1,
+			phaseState:  crv1alpha1.StatePending,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent: "0",
+			},
+			expectedPhasePercent:          "",
+			expectedActionPercent:         "75",
+			expectedSizeDownloadedB:       10000,
+			expectedSizeUploadedB:         22345,
+			expectedEstimateDownloadSizeB: 10000,
+			expectedEstimatedUploadSizeB:  22345,
 		},
+		// The second phase of the second action is in a running state.
 		{
-			indexAction:           1,
-			indexPhase:            1,
-			phaseState:            crv1alpha1.StateRunning,
-			phasePercent:          "23",
-			expectedPhasePercent:  "23",
-			expectedActionPercent: "80",
+			indexAction: 1,
+			indexPhase:  1,
+			phaseState:  crv1alpha1.StateRunning,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:        "23",
+				SizeDownloadedB:        1000,
+				EstimatedDownloadSizeB: 10000,
+			},
+			expectedPhasePercent:          "23",
+			expectedActionPercent:         "80",
+			expectedSizeDownloadedB:       11000,
+			expectedSizeUploadedB:         22345,
+			expectedEstimateDownloadSizeB: 20000,
+			expectedEstimatedUploadSizeB:  22345,
 		},
+		// The second phase of the second action is in a complete state.
 		{
-			indexAction:           1,
-			indexPhase:            1,
-			phaseState:            crv1alpha1.StateComplete,
-			phasePercent:          CompletedPercent,
-			expectedPhasePercent:  CompletedPercent,
-			expectedActionPercent: CompletedPercent,
+			indexAction: 1,
+			indexPhase:  1,
+			phaseState:  crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:        CompletedPercent,
+				SizeDownloadedB:        10000,
+				EstimatedDownloadSizeB: 10000,
+			},
+			expectedPhasePercent:          CompletedPercent,
+			expectedActionPercent:         CompletedPercent,
+			expectedSizeDownloadedB:       20000,
+			expectedSizeUploadedB:         22345,
+			expectedEstimateDownloadSizeB: 20000,
+			expectedEstimatedUploadSizeB:  22345,
 		},
 	}
 
@@ -273,53 +366,89 @@ func (s *TestSuiteMultiActions) TestUpdateActionsProgress(c *C) {
 			tc.indexAction,
 			tc.indexPhase,
 			tc.phaseState,
-			tc.phasePercent,
+			tc.phaseProgress,
 			tc.expectedPhasePercent,
 			tc.expectedActionPercent,
+			tc.expectedSizeDownloadedB,
+			tc.expectedSizeUploadedB,
+			tc.expectedEstimateDownloadSizeB,
+			tc.expectedEstimatedUploadSizeB,
 			id)
 	}
 }
 
 func (s *TestSuiteMultiActions) TestUpdateActionsProgressWithFailures(c *C) {
 	var testCases = []struct {
-		indexAction           int
-		indexPhase            int
-		phaseState            crv1alpha1.State
-		phasePercent          string
-		expectedPhasePercent  string
-		expectedActionPercent string
+		indexAction                    int
+		indexPhase                     int
+		phaseState                     crv1alpha1.State
+		phaseProgress                  crv1alpha1.PhaseProgress
+		expectedPhasePercent           string
+		expectedActionPercent          string
+		expectedDownloadedB            int64
+		expectedSizeUploadB            int64
+		expectedEstimatedUploadSizeB   int64
+		expectedEstimatedDownloadSizeB int64
 	}{
 		{
-			indexAction:           0,
-			indexPhase:            0,
-			phaseState:            crv1alpha1.StateComplete,
-			phasePercent:          CompletedPercent,
-			expectedPhasePercent:  CompletedPercent,
-			expectedActionPercent: "25",
+			indexAction: 0,
+			indexPhase:  0,
+			phaseState:  crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      CompletedPercent,
+				SizeUploadedB:        10000,
+				EstimatedUploadSizeB: 10000,
+			},
+			expectedPhasePercent:         CompletedPercent,
+			expectedActionPercent:        "25",
+			expectedSizeUploadB:          10000,
+			expectedEstimatedUploadSizeB: 10000,
 		},
 		{
-			indexAction:           0,
-			indexPhase:            1,
-			phaseState:            crv1alpha1.StateComplete,
-			phasePercent:          CompletedPercent,
-			expectedPhasePercent:  CompletedPercent,
-			expectedActionPercent: "50",
+			indexAction: 0,
+			indexPhase:  1,
+			phaseState:  crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      CompletedPercent,
+				SizeUploadedB:        1000,
+				EstimatedUploadSizeB: 1000,
+			},
+			expectedPhasePercent:         CompletedPercent,
+			expectedActionPercent:        "50",
+			expectedSizeUploadB:          11000,
+			expectedEstimatedUploadSizeB: 11000,
 		},
 		{
-			indexAction:           1,
-			indexPhase:            0,
-			phaseState:            crv1alpha1.StateComplete,
-			phasePercent:          CompletedPercent,
-			expectedPhasePercent:  CompletedPercent,
-			expectedActionPercent: "75",
+			indexAction: 1,
+			indexPhase:  0,
+			phaseState:  crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:        CompletedPercent,
+				SizeDownloadedB:        2000,
+				EstimatedDownloadSizeB: 2000,
+			},
+			expectedPhasePercent:           CompletedPercent,
+			expectedActionPercent:          "75",
+			expectedDownloadedB:            2000,
+			expectedSizeUploadB:            11000,
+			expectedEstimatedDownloadSizeB: 2000,
+			expectedEstimatedUploadSizeB:   11000,
 		},
 		{
-			indexAction:           1,
-			indexPhase:            1,
-			phaseState:            crv1alpha1.StateFailed,
-			phasePercent:          "30",
-			expectedPhasePercent:  "",
-			expectedActionPercent: "75",
+			indexAction: 1,
+			indexPhase:  1,
+			phaseState:  crv1alpha1.StateFailed,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:        "30",
+				SizeDownloadedB:        3000,
+				EstimatedDownloadSizeB: 9000,
+			},
+			expectedPhasePercent:           "",
+			expectedActionPercent:          "75",
+			expectedDownloadedB:            2000,
+			expectedSizeUploadB:            11000,
+			expectedEstimatedDownloadSizeB: 2000,
+			expectedEstimatedUploadSizeB:   11000,
 		},
 	}
 
@@ -334,9 +463,13 @@ func (s *TestSuiteMultiActions) TestUpdateActionsProgressWithFailures(c *C) {
 			tc.indexAction,
 			tc.indexPhase,
 			tc.phaseState,
-			tc.phasePercent,
+			tc.phaseProgress,
 			tc.expectedPhasePercent,
 			tc.expectedActionPercent,
+			tc.expectedDownloadedB,
+			tc.expectedSizeUploadB,
+			tc.expectedEstimatedDownloadSizeB,
+			tc.expectedEstimatedUploadSizeB,
 			id)
 	}
 }
