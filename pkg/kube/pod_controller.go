@@ -230,7 +230,65 @@ func (p *podController) StreamPodLogs(ctx context.Context) (io.ReadCloser, error
 		return nil, ErrPodControllerPodNotStarted
 	}
 
-	return StreamPodLogs(ctx, p.cli, p.pod.Namespace, p.pod.Name, ContainerNameFromPodOptsOrDefault(p.podOptions))
+	return newRestoreLogStreamReader(ctx, p.cli, p.pod.Namespace, p.pod.Name, ContainerNameFromPodOptsOrDefault(p.podOptions))
+}
+
+// newRestoreLogStreamReader creates a new restoreLogStreamReader instance which is used to stream logs from a pod.
+// restoreLogStreamReader will automatically try to establish a new log stream if the current one is closed and the pod is still alive.
+// This wrapper has to exist as there is hardcoded 4h timeout in kubelet for streaming logs.
+func newRestoreLogStreamReader(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string) (io.ReadCloser, error) {
+	reader, err := StreamPodLogs(ctx, cli, namespace, podName, containerName, false)
+	if err != nil {
+		return nil, err
+	}
+	return &restoreLogStreamReader{
+		ctx:           ctx,
+		cli:           cli,
+		namespace:     namespace,
+		podName:       podName,
+		containerName: containerName,
+		reader:        reader,
+	}, nil
+}
+
+type restoreLogStreamReader struct {
+	ctx           context.Context
+	cli           kubernetes.Interface
+	namespace     string
+	podName       string
+	containerName string
+	reader        io.ReadCloser
+}
+
+func (s *restoreLogStreamReader) Read(p []byte) (n int, err error) {
+	n, err = s.reader.Read(p)
+	if err == io.EOF {
+		pod, err := s.cli.CoreV1().Pods(s.namespace).Get(s.ctx, s.podName, metav1.GetOptions{})
+		if err != nil {
+			return 0, err
+		}
+
+		if pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {
+			return n, io.EOF
+		}
+
+		err = s.reader.Close()
+		if err != nil {
+			return 0, err
+		}
+		s.reader, err = StreamPodLogs(s.ctx, s.cli, s.namespace, s.podName, s.containerName, true)
+		if err != nil {
+			return 0, err
+		}
+
+		return s.reader.Read(p)
+	}
+
+	return n, err
+}
+
+func (s *restoreLogStreamReader) Close() error {
+	return s.reader.Close()
 }
 
 // GetCommandExecutor returns PodCommandExecutor instance which is configured to execute commands within pod controlled
