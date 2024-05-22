@@ -22,4 +22,4 @@ jobs:
         with:
           repo-checkout: false
           cache: false
-          go-version-input: 1.22
+          go-version-file: go.mod
