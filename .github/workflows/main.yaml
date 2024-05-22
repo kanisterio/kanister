@@ -1,4 +1,6 @@
 name: Build and test
+permissions:
+  contents: read
 on:
   push:
     branches:
@@ -13,7 +15,7 @@ jobs:
       gomod: ${{ steps.gomod.outputs.gomod }}
       gosum: ${{ steps.gosum.outputs.gosum }}
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
     - run: make go-mod-tidy
     - id: gomod
       run: |
@@ -35,7 +37,7 @@ jobs:
     runs-on: ubuntu-20.04
     needs: gomod
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -50,7 +52,7 @@ jobs:
       matrix:
         testSuite: [test, integration-test, helm-test]
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -76,7 +78,7 @@ jobs:
       matrix:
         bin: [controller, kanctl, kando]
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -86,7 +88,7 @@ jobs:
   docs:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
     - run: make docs
   release:
     runs-on: ubuntu-20.04
@@ -95,7 +97,7 @@ jobs:
     permissions:
       packages: write
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
     - run: make go-mod-tidy
     - uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
       with:
