@@ -135,13 +135,15 @@ See https://github.com/kastenhq/check and https://github.com/kastenhq/check/blob
 
 ## Integration Tests
 
-Integration tests verify that different components of Kanister work together as expected. They are located in the `pkg/testing` directory.
+Integration tests verify that different components of Kanister work together as
+expected. They are located in the `pkg/testing` directory.
 
 ### Prerequisites
 
 Before running integration tests, ensure the following:
 
-* **MinIO:** Make sure MinIO is installed and running. Use the following command to install it:
+* **MinIO:** Make sure MinIO is installed and running. Use the following 
+  command to install it:
    ```bash
    make install-minio
    ```
@@ -157,12 +159,17 @@ make integration-test [app-type]
 Replace `[app-type]` with one of the following options:
 
 * **`all`:** Runs all integration tests.
-* **`short`:** Runs a quick subset of tests for common applications (PostgreSQL, MySQL, MongoDB, MSSQL).
-* **`openshift ocp_version=<ocp_version>`:** Runs tests specifically for a certain OpenShift version. Replace `<ocp_version>` with the version you want to test (e.g., `openshift ocp_version=4.13`). Currently supported versions are 3.11, 4.4, 4.5, 4.10, 4.11, 4.12, and 4.13.
+* **`short`:** Runs a quick subset of tests for common applications
+  (PostgreSQL, MySQL, MongoDB, MSSQL).
+* **`openshift ocp_version=<ocp_version>`:** Runs tests specifically for a 
+  certain OpenShift version. Replace `<ocp_version>` with the version you 
+  want to test (e.g., `openshift ocp_version=4.13`). Currently supported 
+  versions are 3.11, 4.4, 4.5, 4.10, 4.11, 4.12, and 4.13.
 
 ### Test Selection
 
-You can also control which integration tests are run by setting the `TEST_APPS` environment variable.
+You can also control which integration tests are run by setting the 
+`TEST_APPS` environment variable.
 
 ### Examples
 
