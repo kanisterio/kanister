@@ -24,14 +24,14 @@ It has a required input of `release_tag`, which should be set to a version next 
 This will result in creating a PR with a version bump, like https://github.com/kanisterio/kanister/pull/2629
 **NOTE** PR description would look like `pre-release: Update version to ...`
 
-This PR would contain an update of version in various files.
+This PR would update the older Kanister version reference in various files.
 
 ### Release workflow
 
 `release` workflow tags the repo using `release_tag` variable either from the merged pre-release PR or from workflow dispatch.
 It then uses the `goreleaser` tool to produce a github release and core images such as `ghcr.io/kanisterio/controller`, `ghcr.io/kanisterio/repo-server-controller`, `ghcr.io/kanisterio/kanister-tools` and `ghcr.io/kanisterio/kanister-kubectl-1.18`
 
-Published release artifacts include helm charts for operator and profile.
+Published release artifacts include helm chart for the operator.
 
 Release workflow also builds and publishes docs and helm chart index into GH pages.
 
@@ -71,7 +71,27 @@ Prerequisites:
 - Make sure you have admin access or access to push tags on Kanister
 - Make sure you have access to [push images to GHCR](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) 
 
-### Kanister Repo
+### Create pre-release
+
+If pre-release pipeline does not work.
+
+```
+$ export PREV_TAG="0.42.0"
+$ git checkout -b "kan-docs-${RELEASE_TAG}"
+$ ./build/bump_version.sh "${PREV_TAG}" "${RELEASE_TAG}"
+$ make reno-report VERSION="${RELEASE_TAG}"
+$ git add -A
+$ git commit -m"pre-release: Update version to ${RELEASE_TAG}"
+$ git push origin kan-docs-${RELEASE_TAG}
+```
+
+Create PR from this branch.
+
+### Create release binaries and images
+
+If release pipeline does not work
+
+1. Make sure to merge pre-release PR first.
 
 1. Create a release tag
 
@@ -83,30 +103,28 @@ $ git tag -a "${RELEASE_TAG}" -m "Release version";
 $ git push origin "${RELEASE_TAG}"
 ```
 
-2. Release binaries and docker images
+1. Build helm charts
 
 ```
-$ make reno-report
-$ make gorelease CHANGELOG_FILE=./CHANGELOG.md
+$ export PACKAGE_FOLDER=helm_package
+$ export HELM_RELEASE_REPO_URL=https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}
+$ export HELM_RELEASE_REPO_INDEX=https://charts.kanister.io/
+$ make package-helm VERSION=${RELEASE_TAG}
 ```
 
-3. Update and release docs and helms charts
+1. Release binaries and docker images
 
 ```
-$ export PREV_TAG="0.42.0"
-$ git checkout -b "kan-docs-${RELEASE_TAG}"
-$ ./build/bump_version.sh "${PREV_TAG}" "${RELEASE_TAG}"
-$ git add -A
-$ git commit -m"Kanister docs update to version ${RELEASE_TAG}"
-$ git push origin kan-docs-${RELEASE_TAG}
-
+$ make gorelease CHANGELOG_FILE=./CHANGELOG.md GORELEASE_PARAMS='--draft'
 ```
 
-Go ahead and raise PR against master through GitHub UI
+1. Update and release docs and helms charts
+
+**Currently Github pages publishing is only supported via Github actions**
 
 ### Publish Kanister Release
 
-Finally, go to https://github.com/kanisterio/kanister/releases, and publish the draft release
+Finally, go to https://github.com/kanisterio/kanister/releases, and publish the draft release.
 
 ## Post-release Checks
 
