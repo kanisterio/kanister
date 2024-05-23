@@ -3,10 +3,10 @@ package repository_test
 import (
 	"testing"
 
+	"github.com/kopia/kopia/repo"
 	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
-	"github.com/kopia/kopia/repo"
 )
 
 func Test(t *testing.T) { check.TestingT(t) }

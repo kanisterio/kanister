@@ -19,10 +19,10 @@ import (
 	"context"
 	"text/template"
 
-	"github.com/kanisterio/kanister/pkg/ksprig"
 	. "gopkg.in/check.v1"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kanisterio/kanister/pkg/ksprig"
 )
 
 type UnstructuredSuite struct{}

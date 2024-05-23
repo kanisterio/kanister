@@ -17,11 +17,11 @@ package gcs
 import (
 	"testing"
 
+	"github.com/kanisterio/safecli/command"
+	"github.com/kanisterio/safecli/test"
 	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
-	"github.com/kanisterio/safecli/command"
-	"github.com/kanisterio/safecli/test"
 )
 
 func TestGCSOptions(t *testing.T) { check.TestingT(t) }
