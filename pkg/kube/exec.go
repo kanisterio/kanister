@@ -82,14 +82,21 @@ type ExecOptions struct {
 // Exec is our version of the call to `kubectl exec` that does not depend on
 // k8s.io/kubernetes.
 func Exec(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader) (string, string, error) {
+	outbuf := &bytes.Buffer{}
+	errbuf := &bytes.Buffer{}
 	opts := ExecOptions{
 		Command:       command,
 		Namespace:     namespace,
 		PodName:       pod,
 		ContainerName: container,
 		Stdin:         stdin,
+		Stdout:        outbuf,
+		Stderr:        errbuf,
 	}
-	return ExecWithOptions(cli, opts)
+
+	err := ExecWithOptions(cli, opts)
+
+	return strings.TrimSpace(outbuf.String()), strings.TrimSpace(errbuf.String()), err
 }
 
 // ExecOutput is similar to Exec, except that inbound outputs are written to the
@@ -114,32 +121,20 @@ func ExecOutput(cli kubernetes.Interface, namespace, pod, container string, comm
 		},
 	}
 
-	_, _, err := ExecWithOptions(cli, opts)
-	return err
+	return ExecWithOptions(cli, opts)
 }
 
-// ExecWithOptions executes a command in the specified container,
-// returning stdout, stderr and error. `options` allowed for
-// additional parameters to be passed.
-func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string, string, error) {
+// ExecWithOptions executes a command in the specified container, returning an error.
+// `options` allowed for additional parameters to be passed.
+func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) error {
 	config, err := LoadConfig()
 	if err != nil {
-		return "", "", err
-	}
-
-	outbuf := &bytes.Buffer{}
-	if options.Stdout == nil {
-		options.Stdout = outbuf
-	}
-
-	errbuf := &bytes.Buffer{}
-	if options.Stderr == nil {
-		options.Stderr = errbuf
+		return err
 	}
 
 	errCh := execStream(kubeCli, config, options)
 	err = <-errCh
-	return strings.TrimSpace(outbuf.String()), strings.TrimSpace(errbuf.String()), errors.Wrap(err, "Failed to exec command in pod")
+	return errors.Wrap(err, "Failed to exec command in pod")
 }
 
 func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) chan error {

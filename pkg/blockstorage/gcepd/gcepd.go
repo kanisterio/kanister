@@ -36,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -409,7 +410,7 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	if err != nil {
 		return nil, err
 	}
-	volZone := strings.Join(zones, "__")
+	volZone := strings.Join(zones, volume.RegionZoneSeparator)
 	// Validates new Zones
 	region, err = getRegionFromZones(volZone)
 	if err != nil {
@@ -627,7 +628,7 @@ func (s *GpdStorage) dynamicRegionToZoneMap(ctx context.Context) (map[string][]s
 }
 
 func isMultiZone(az string) bool {
-	return strings.Contains(az, "__")
+	return strings.Contains(az, volume.RegionZoneSeparator)
 }
 
 // getRegionFromZones function is used from the link below
@@ -666,5 +667,5 @@ func (s *GpdStorage) getSelfLinks(ctx context.Context, zones []string) ([]string
 }
 
 func splitZones(az string) []string {
-	return strings.Split(az, "__")
+	return strings.Split(az, volume.RegionZoneSeparator)
 }

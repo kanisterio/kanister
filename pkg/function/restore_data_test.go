@@ -110,7 +110,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 		},
 	}
 	for _, tc := range testCases {
-		_, _, _, _, _, _, _, err := validateAndGetOptArgs(tc.args, tc.tp)
+		_, _, _, _, _, _, _, _, err := validateAndGetOptArgs(tc.args, tc.tp)
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 	}
 }

@@ -56,7 +56,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-b"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west2", kube.TopologyZoneLabelName: "us-west2-b"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -70,7 +70,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west2", kube.TopologyZoneLabelName: "us-west2-c"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -85,7 +85,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	node4 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west2", kube.TopologyZoneLabelName: "us-west2-c"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -99,7 +99,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	node5 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node5",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west2", kube.TopologyZoneLabelName: "us-west2-c"},
 		},
 		Spec: corev1.NodeSpec{
 			Unschedulable: true,
@@ -133,7 +133,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2a"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west-2", kube.TopologyZoneLabelName: "us-west-2a"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -147,7 +147,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2b"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west-2", kube.TopologyZoneLabelName: "us-west-2b"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -161,7 +161,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west-2", kube.TopologyZoneLabelName: "us-west-2c"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -176,7 +176,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node4 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west-2", kube.TopologyZoneLabelName: "us-west-2c"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -224,7 +224,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-1"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "westus2", kube.TopologyZoneLabelName: "westus2-1"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -252,7 +252,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-3"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "westus2", kube.TopologyZoneLabelName: "westus2-3"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -267,7 +267,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	node4 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
-			Labels: map[string]string{kube.FDRegionLabelName: "westus", kube.FDZoneLabelName: "0"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "westus", kube.TopologyZoneLabelName: "0"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -282,7 +282,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	node5 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node5",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-4"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west2", kube.TopologyZoneLabelName: "us-west2-4"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -432,7 +432,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2a"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west-2", kube.TopologyZoneLabelName: "us-west-2a"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -446,7 +446,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2b"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west-2", kube.TopologyZoneLabelName: "us-west-2b"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -460,7 +460,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 	node3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west-2", kube.TopologyZoneLabelName: "us-west-2c"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -475,7 +475,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 	gceNode1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-a"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west2", kube.TopologyZoneLabelName: "us-west2-a"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -490,7 +490,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 	gceNode2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-b"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west2", kube.TopologyZoneLabelName: "us-west2-b"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -505,7 +505,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 	gceNode3 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "us-west2", kube.TopologyZoneLabelName: "us-west2-c"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -676,7 +676,7 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-1"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "westus2", kube.TopologyZoneLabelName: "westus2-1"},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
@@ -690,7 +690,7 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	node2 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-2"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "westus2", kube.TopologyZoneLabelName: "westus2-2"},
 		},
 		Spec: corev1.NodeSpec{
 			Unschedulable: true,

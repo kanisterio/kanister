@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/kustomize/kyaml/sets"
+	"k8s.io/kube-openapi/pkg/util/sets"
 
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia"

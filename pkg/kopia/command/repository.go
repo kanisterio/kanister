@@ -20,6 +20,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
 
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 )
 
@@ -79,24 +80,26 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 
 // RepositoryCreateCommand returns the kopia command for creation of a repo
 func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
-	args := commonArgs(cmdArgs.CommandArgs)
-	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
+	command := commonArgs(cmdArgs.CommandArgs)
+	command = command.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
-	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
+	command = cmdArgs.kopiaCacheArgs(command, cmdArgs.CacheDirectory)
 
 	if cmdArgs.Hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
+		command = command.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
 	}
 
 	if cmdArgs.Username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
+		command = command.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
 	// During creation, both should be set. Technically RetentionPeriod should be >= 24 * time.Hour
 	if cmdArgs.RetentionMode != "" && cmdArgs.RetentionPeriod > 0 {
-		args = args.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
-		args = args.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
+		command = command.AppendLoggableKV(retentionModeFlag, cmdArgs.RetentionMode)
+		command = command.AppendLoggableKV(retentionPeriodFlag, cmdArgs.RetentionPeriod.String())
 	}
+
+	command = args.RepositoryCreate.AppendToCmd(command)
 
 	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
 		Location:       cmdArgs.Location,
@@ -106,7 +109,7 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		return nil, errors.Wrap(err, "Failed to generate storage args")
 	}
 
-	return stringSliceCommand(args.Combine(bsArgs)), nil
+	return stringSliceCommand(command.Combine(bsArgs)), nil
 }
 
 // RepositoryServerCommandArgs contains fields required for connecting
@@ -127,31 +130,33 @@ type RepositoryServerCommandArgs struct {
 // RepositoryConnectServerCommand returns the kopia command for connecting to a remote
 // repository on Kopia Repository API server
 func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []string {
-	args := commonArgs(&CommandArgs{
+	command := commonArgs(&CommandArgs{
 		RepoPassword:   cmdArgs.UserPassword,
 		ConfigFilePath: cmdArgs.ConfigFilePath,
 		LogDirectory:   cmdArgs.LogDirectory,
 	})
-	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
+	command = command.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag)
 
 	if cmdArgs.ReadOnly {
-		args = args.AppendLoggable(readOnlyFlag)
+		command = command.AppendLoggable(readOnlyFlag)
 	}
 
-	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
+	command = cmdArgs.kopiaCacheArgs(command, cmdArgs.CacheDirectory)
 
 	if cmdArgs.Hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
+		command = command.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
 	}
 
 	if cmdArgs.Username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
+		command = command.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
-	args = args.AppendLoggableKV(urlFlag, cmdArgs.ServerURL)
+	command = command.AppendLoggableKV(urlFlag, cmdArgs.ServerURL)
 
-	args = args.AppendRedactedKV(serverCertFingerprint, cmdArgs.Fingerprint)
+	command = args.RepositoryConnectServer.AppendToCmd(command)
 
-	return stringSliceCommand(args)
+	command = command.AppendRedactedKV(serverCertFingerprint, cmdArgs.Fingerprint)
+
+	return stringSliceCommand(command)
 }
 
 type RepositoryStatusCommandArgs struct {

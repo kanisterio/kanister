@@ -1,4 +1,4 @@
-FROM bitnami/postgresql:15
+FROM bitnami/postgresql:16
 
 USER root
 
@@ -9,9 +9,9 @@ RUN useradd -r --gid=0 --uid=1001 postgres
 RUN set -x \
 	&& apt-get update \
 	&& apt-get install -y curl groff lzop pv postgresql-client python3-pip daemontools \
-	&& pip3 install --upgrade pip \
+	&& pip3 install --break-system-packages --upgrade pip \
 	&& hash -r pip3 \
-	&& pip3 install wal-e[aws] \
-	&& pip3 install awscli
+	&& pip3 install --break-system-packages wal-e[aws] \
+	&& pip3 install --break-system-packages awscli
 
 USER postgres

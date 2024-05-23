@@ -93,7 +93,11 @@ func initEnvVarFields() {
 			envVarFields = field.Add(envVarFields, strings.ToLower(e), ev)
 		}
 	}
+}
 
+// SetupClusterNameInLogVars sets up the `cluster_name` field in `envVarFields`
+// so that it can be printed with the logs.
+func SetupClusterNameInLogVars() {
 	if clsName, err := config.GetClusterName(nil); err == nil {
 		envVarFields = field.Add(envVarFields, "cluster_name", clsName)
 	}
@@ -264,10 +268,17 @@ func cloneGlobalLogger() *logrus.Logger {
 	cloned.SetLevel(log.Level)
 	cloned.SetOutput(log.Out)
 	cloned.ExitFunc = log.ExitFunc
+
+	globalHooks := make(map[logrus.Hook]bool)
+
 	for _, hooks := range log.Hooks {
 		for _, hook := range hooks {
-			cloned.Hooks.Add(hook)
+			globalHooks[hook] = true
 		}
+	}
+
+	for hook := range globalHooks {
+		cloned.Hooks.Add(hook)
 	}
 
 	return cloned

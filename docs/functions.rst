@@ -147,7 +147,9 @@ Example:
 ScaleWorkload
 -------------
 
-ScaleWorkload is used to scale up or scale down a Kubernetes workload.
+ScaleWorkload is used to scale up or scale down a Kubernetes workload. It
+also sets the original replica count of the workload as output artifact with
+the key ``originalReplicaCount``.
 The function only returns after the desired replica state is achieved:
 
 * When reducing the replica count, wait until all terminating pods
@@ -155,7 +157,8 @@ The function only returns after the desired replica state is achieved:
 
 * When increasing the replica count, wait until all pods are ready.
 
-Currently the function supports Deployments and StatefulSets.
+Currently the function supports Deployments, StatefulSets and
+DeploymentConfigs.
 
 It is similar to running
 
@@ -165,7 +168,8 @@ It is similar to running
 
 This can be useful if the workload needs to be shutdown before processing
 certain data operations. For example, it may be useful to use ``ScaleWorkload``
-to stop a database process before restoring files.
+to stop a database process before restoring files. See
+:ref:`scaleworkloadexample` for an example with new ``ScaleWorkload`` function.
 
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
@@ -302,6 +306,7 @@ Arguments:
    `includePath`, Yes, `string`, path of the data to be backed up
    `backupArtifactPrefix`, Yes, `string`, path to store the backup on the object store
    `encryptionKey`, No, `string`, encryption key to be used for backups
+   `insecureTLS`, No, `bool`, enables insecure connection for data mover
 
 Outputs:
 
@@ -364,6 +369,7 @@ Arguments:
    `includePath`, Yes, `string`, path of the data to be backed up
    `backupArtifactPrefix`, Yes, `string`, path to store the backup on the object store appended by pod name later
    `encryptionKey`, No, `string`, encryption key to be used for backups
+   `insecureTLS`, No, `bool`, enables insecure connection for data mover
 
 Outputs:
 
@@ -426,6 +432,7 @@ and restores data to the specified path.
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `insecureTLS`, No, `bool`, enables insecure connection for data mover
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
@@ -501,6 +508,7 @@ respective PVCs and restores data to the specified path.
    `pods`, No, `string`, pods to which the volumes are attached
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
+   `insecureTLS`, No, `bool`, enables insecure connection for data mover
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
@@ -571,6 +579,7 @@ Arguments:
    `volume`, Yes, `string`, name of the source PVC
    `dataArtifactPrefix`, Yes, `string`, path on the object store to store the data in
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `insecureTLS`, No, `bool`, enables insecure connection for data mover
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Outputs:
@@ -616,6 +625,7 @@ This function deletes the snapshot data backed up by the :ref:`backupdata` funct
    `backupID`, No, `string`, (required if backupTag not provided) unique snapshot id generated during backup
    `backupTag`, No, `string`, (required if backupID not provided) unique tag added during the backup
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `insecureTLS`, No, `bool`, enables insecure connection for data mover
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
@@ -653,6 +663,7 @@ BackupDataAll function.
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `reclaimSpace`, No, `bool`, provides a way to specify if space should be reclaimed
+   `insecureTLS`, No, `bool`, enables insecure connection for data mover
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
