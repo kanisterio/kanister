@@ -117,6 +117,7 @@ We welcome contributions to Kanister! If you're interested in getting involved, 
 
 - **CONTRIBUTING.md:**  Provides essential information on how to contribute code, documentation, or bug reports, as well as our coding style and commit message conventions.
   [Contribution Guidelines](CONTRIBUTING.md)
+
 ## Resources
 
 - [CNCF - Enhancing data protection workflows with Kanister and Argo workflows](https://youtu.be/nqfP1e9jeU4)
