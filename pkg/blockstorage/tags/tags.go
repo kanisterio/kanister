@@ -102,16 +102,3 @@ func IsSubset(set map[string]string, subset map[string]string) bool {
 	}
 	return true
 }
-
-// Union returns union of first and second as a new map.
-// second's values have priority if a key from first and second collides.
-func Union(first map[string]string, second map[string]string) map[string]string {
-	result := make(map[string]string)
-	for k, v := range first {
-		result[k] = v
-	}
-	for k, v := range second {
-		result[k] = v
-	}
-	return result
-}

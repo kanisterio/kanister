@@ -51,7 +51,7 @@ actions:
           - -c
           - |
             nodetool cleanup
-            nodetool clearsnapshot
+            nodetool clearsnapshot --all
             nodetool snapshot -t ${HOSTNAME}
             snapshot_prefix="{{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}"
             mkdir -p ${snapshot_prefix}/${HOSTNAME}
@@ -62,7 +62,7 @@ actions:
               cd ${snapshot_prefix}/${HOSTNAME}/
               cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e "DESCRIBE SCHEMA" > schema.cql
             fi
-            nodetool clearsnapshot
+            nodetool clearsnapshot --all
     - func: BackupDataAll
       name: backupToObjectStore
       args:
@@ -91,6 +91,34 @@ actions:
     inputArtifactNames:
       - params
     phases:
+    - func: KubeExec
+      name: waitForConnectionReady
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        command:
+          - bash
+          - -o
+          - pipefail
+          - -c
+          - |
+            timeout=300
+            while true
+            do
+              VAR=$((cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e "DESCRIBE keyspaces;" --request-timeout=300) 2>&1)
+              if [[ $VAR != *"Unable to connect to any servers"* ]]
+              then
+                break
+              fi
+              if [[ $timeout -le 0 ]]
+              then
+                 echo "Timed out waiting for cqlsh to configure.."
+                 exit 1
+              fi
+              sleep 2
+              timeout=$((timeout-2))
+            done
+            nodetool scrub
     - func: ScaleWorkload
       name: shutdownPod
       args:
@@ -102,7 +130,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/kanister-tools:0.103.0
+        image: ghcr.io/kanisterio/kanister-tools:0.109.0
         backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
         pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
         restorePath: "{{ .ArtifactsIn.params.KeyValue.restorePathPrefix }}"

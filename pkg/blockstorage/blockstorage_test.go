@@ -28,6 +28,7 @@ import (
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -306,7 +307,7 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 }
 
 func (b *BlockStorageProviderSuite) isRegional(az string) bool {
-	return strings.Contains(az, "__")
+	return strings.Contains(az, volume.RegionZoneSeparator)
 }
 
 func (b *BlockStorageProviderSuite) TestFilterSnasphotWithTags(c *C) {

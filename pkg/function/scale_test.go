@@ -85,7 +85,7 @@ func (s *ScaleSuite) TearDownTest(c *C) {
 	}
 }
 
-func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
+func newScaleBlueprint(kind string, scaleUpCount string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"echoHello": {
@@ -122,7 +122,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 						Name: "testScale",
 						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
-							ScaleWorkloadReplicas: "2",
+							ScaleWorkloadReplicas: scaleUpCount,
 						},
 					},
 				},
@@ -133,7 +133,8 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 
 func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	ctx := context.Background()
-	d := testutil.NewTestDeployment(1)
+	var originalReplicaCount int32 = 1
+	d := testutil.NewTestDeployment(originalReplicaCount)
 	d.Spec.Template.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
 		PreStop: &corev1.LifecycleHandler{
 			Exec: &corev1.ExecAction{
@@ -160,15 +161,27 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 			Namespace: s.namespace,
 		},
 	}
+	var scaleUpToReplicas int32 = 2
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, s.osCli, as)
 		c.Assert(err, IsNil)
-		bp := newScaleBlueprint(kind)
+		bp := newScaleBlueprint(kind, fmt.Sprintf("%d", scaleUpToReplicas))
 		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			_, err = p.Exec(context.Background(), *bp, action, *tp)
+			out, err := p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
+			// at the start workload has `originalReplicaCount` replicas, the first phase that is going to get executed is
+			// `scaleUp` which would change that count to 2, but the function would return the count that workload originally had
+			// i.e., `originalReplicaCount`
+			if action == "scaleUp" {
+				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, originalReplicaCount)
+			}
+			// `scaleDown` is going to change the replica count to 0 from 2. Because the workload already had 2 replicas
+			//  (previous phase), so ouptut artifact from the function this time would be what the workload already had i.e., 2
+			if action == "scaleDown" {
+				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, scaleUpToReplicas)
+			}
 		}
 		ok, _, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
 		c.Assert(err, IsNil)
@@ -182,7 +195,8 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 
 func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	ctx := context.Background()
-	ss := testutil.NewTestStatefulSet(1)
+	var originalReplicaCount int32 = 1
+	ss := testutil.NewTestStatefulSet(originalReplicaCount)
 	ss.Spec.Template.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
 		PreStop: &corev1.LifecycleHandler{
 			Exec: &corev1.ExecAction{
@@ -209,15 +223,27 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		},
 	}
 
+	var scaleUpToReplicas int32 = 2
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
 		c.Assert(err, IsNil)
-		bp := newScaleBlueprint(kind)
+		bp := newScaleBlueprint(kind, fmt.Sprintf("%d", scaleUpToReplicas))
 		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			_, err = p.Exec(context.Background(), *bp, action, *tp)
+			out, err := p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
+			// at the start workload has `originalReplicaCount` replicas, the first phase that is going to get executed is
+			// `scaleUp` which would change that count to 2, but the function would return the count that workload originally had
+			// i.e., `originalReplicaCount`
+			if action == "scaleUp" {
+				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, originalReplicaCount)
+			}
+			// `scaleDown` is going to change the replica count to 0 from 2. Because the workload already had 2 replicas
+			//  (previous phase), so ouptut artifact from the function this time would be what the workload already had i.e., 2
+			if action == "scaleDown" {
+				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, scaleUpToReplicas)
+			}
 		}
 		ok, _, err := kube.StatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 		c.Assert(err, IsNil)

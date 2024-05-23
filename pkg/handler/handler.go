@@ -19,15 +19,18 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/go-logr/logr"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 	"github.com/kanisterio/kanister/pkg/version"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -62,17 +65,25 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // RunWebhookServer starts the validating webhook resources for blueprint kanister resources
 func RunWebhookServer(c *rest.Config) error {
+	log.SetLogger(logr.New(log.NullLogSink{}))
 	mgr, err := manager.New(c, manager.Options{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create new webhook manager")
+		return errors.Wrap(err, "Failed to create new webhook manager")
+	}
+	bpValidator := &validatingwebhook.BlueprintValidator{}
+	if err = bpValidator.InjectDecoder(admission.NewDecoder(mgr.GetScheme())); err != nil {
+		return errors.Wrap(err, "Failed to inject decoder")
 	}
 
-	hookServer := mgr.GetWebhookServer()
-	hookServer.Register(whHandlePath, &webhook.Admission{Handler: &validatingwebhook.BlueprintValidator{}})
+	hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir}
+	hookServer := webhook.NewServer(hookServerOptions)
+	hookServer.Register(whHandlePath, &webhook.Admission{Handler: bpValidator})
 	hookServer.Register(healthCheckPath, &healthCheckHandler{})
 	hookServer.Register(metricsPath, promhttp.Handler())
 
-	hookServer.CertDir = validatingwebhook.WHCertsDir
+	if err := mgr.Add(hookServer); err != nil {
+		return errors.Wrap(err, "Failed to add new webhook server")
+	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		return err

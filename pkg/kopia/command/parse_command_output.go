@@ -39,6 +39,7 @@ const (
 
 	//nolint:lll
 	snapshotCreateOutputRegEx       = `(?P<spinner>[|/\-\\\*]).+[^\d](?P<numHashed>\d+) hashed \((?P<hashedSize>[^\)]+)\), (?P<numCached>\d+) cached \((?P<cachedSize>[^\)]+)\), uploaded (?P<uploadedSize>[^\)]+), (?:estimating...|estimated (?P<estimatedSize>[^\)]+) \((?P<estimatedProgress>[^\)]+)\%\).+)`
+	restoreOutputRegEx              = `Processed (?P<processedCount>\d+) \((?P<processedSize>.*)\) of (?P<totalCount>\d+) \((?P<totalSize>.*)\) (?P<dataRate>.*) \((?P<percentage>.*)%\) remaining (?P<remainingTime>.*)\.`
 	extractSnapshotIDRegEx          = `Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`
 	repoTotalSizeFromBlobStatsRegEx = `Total: (\d+)$`
 	repoCountFromBlobStatsRegEx     = `Count: (\d+)$`
@@ -205,11 +206,19 @@ type SnapshotCreateStats struct {
 	ProgressPercent int64
 }
 
-var kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx)
+var (
+	kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx)
+	kopiaRestorePattern  = regexp.MustCompile(restoreOutputRegEx)
+)
 
-// SnapshotStatsFromSnapshotCreate parses the output of a kopia snapshot
-// create execution for a log of the stats for that execution.
-func SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput string, matchOnlyFinished bool) (stats *SnapshotCreateStats) {
+// SnapshotStatsFromSnapshotCreate parses the output of a `kopia snapshot
+// create` line-by-line in search of progress statistics.
+// It returns nil if no statistics are found, or the most recent statistic
+// if multiple are encountered.
+func SnapshotStatsFromSnapshotCreate(
+	snapCreateStderrOutput string,
+	matchOnlyFinished bool,
+) (stats *SnapshotCreateStats) {
 	if snapCreateStderrOutput == "" {
 		return nil
 	}
@@ -323,6 +332,100 @@ func parseKopiaProgressLine(line string, matchOnlyFinished bool) (stats *Snapsho
 		SizeCachedB:     int64(cachedSizeBytes),
 		SizeUploadedB:   int64(uploadedSizeBytes),
 		SizeEstimatedB:  int64(estimatedSizeBytes),
+		ProgressPercent: int64(progressPercent),
+	}
+}
+
+// RestoreStats is a container for stats parsed from the output of a
+// `kopia restore` command.
+type RestoreStats struct {
+	FilesProcessed  int64
+	SizeProcessedB  int64
+	FilesTotal      int64
+	SizeTotalB      int64
+	ProgressPercent int64
+}
+
+// RestoreStatsFromRestoreOutput parses the output of a `kopia restore`
+// line-by-line in search of progress statistics.
+// It returns nil if no statistics are found, or the most recent statistic
+// if multiple are encountered.
+func RestoreStatsFromRestoreOutput(
+	restoreStderrOutput string,
+) (stats *RestoreStats) {
+	if restoreStderrOutput == "" {
+		return nil
+	}
+	logs := regexp.MustCompile("[\r\n]").Split(restoreStderrOutput, -1)
+
+	for _, l := range logs {
+		lineStats := parseKopiaRestoreProgressLine(l)
+		if lineStats != nil {
+			stats = lineStats
+		}
+	}
+
+	return stats
+}
+
+// parseKopiaRestoreProgressLine parses restore stats from the output log line,
+// which is expected to be in the following format:
+// Processed 5 (1.4 GB) of 5 (1.8 GB) 291.1 MB/s (75.2%) remaining 1s.
+func parseKopiaRestoreProgressLine(line string) (stats *RestoreStats) {
+	match := kopiaRestorePattern.FindStringSubmatch(line)
+	if len(match) < 8 {
+		return nil
+	}
+
+	groups := make(map[string]string)
+	for i, name := range kopiaRestorePattern.SubexpNames() {
+		if i != 0 && name != "" {
+			groups[name] = match[i]
+		}
+	}
+
+	processedCount, err := strconv.Atoi(groups["processedCount"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse number of processed files", field.M{"processedCount": groups["processedCount"]})
+		return nil
+	}
+
+	processedSize, err := humanize.ParseBytes(groups["processedSize"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse amount of processed bytes", field.M{"processedSize": groups["processedSize"]})
+		return nil
+	}
+
+	totalCount, err := strconv.Atoi(groups["totalCount"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse expected number of files", field.M{"totalCount": groups["totalCount"]})
+		return nil
+	}
+
+	totalSize, err := humanize.ParseBytes(groups["totalSize"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse expected amount of bytes", field.M{"totalSize": groups["totalSize"]})
+		return nil
+	}
+
+	progressPercent, err := strconv.ParseFloat(groups["percentage"], 64)
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse progress percent string", field.M{"progressPercent": groups["progressPercent"]})
+		return nil
+	}
+
+	if progressPercent >= 100 {
+		// It may happen that kopia reports progress of 100 or higher without actually
+		// completing the task. This can occur due to inaccurate estimation.
+		// In such cases, we will return the progress as 99% to avoid confusion.
+		progressPercent = 99
+	}
+
+	return &RestoreStats{
+		FilesProcessed:  int64(processedCount),
+		SizeProcessedB:  int64(processedSize),
+		FilesTotal:      int64(totalCount),
+		SizeTotalB:      int64(totalSize),
 		ProgressPercent: int64(progressPercent),
 	}
 }

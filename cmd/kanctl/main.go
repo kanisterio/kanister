@@ -17,6 +17,7 @@ package main
 
 import (
 	"github.com/kanisterio/kanister/pkg/kanctl"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 func init() {
@@ -25,5 +26,7 @@ func init() {
 }
 
 func main() {
+	log.SetupClusterNameInLogVars()
+
 	kanctl.Execute()
 }

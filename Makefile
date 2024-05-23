@@ -94,8 +94,8 @@ build: bin/$(ARCH)/$(BIN)
 
 build-controller:
 	@$(MAKE) run CMD=" \
-	goreleaser build --id $(BIN) --rm-dist --debug --snapshot \
-	&& cp dist/$(BIN)_linux_$(ARCH)_*/$(BIN) bin/$(ARCH)/$(BIN) \
+	GOOS=linux GOARCH=$(ARCH) goreleaser build --id $(BIN) --rm-dist --debug --snapshot --single-target \
+	&& cp dist/$(BIN)_linux_$(ARCH)*/$(BIN) bin/$(ARCH)/$(BIN) \
 	"
 
 bin/$(ARCH)/$(BIN):
@@ -155,7 +155,7 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 	@kubectl apply -f .deploy-$(DOTFILE_IMAGE)
 
 test: build-dirs
-	@$(MAKE) run CMD="./build/test.sh $(SRC_DIRS)"
+	@$(MAKE) run CMD="TEST_FILTER=$(TEST_FILTER) ./build/test.sh $(SRC_DIRS)"
 
 helm-test: build-dirs
 	@$(MAKE) run CMD="./build/helm-test.sh $(SRC_DIRS)"

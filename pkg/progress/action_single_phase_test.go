@@ -129,12 +129,14 @@ func (s *TestSuiteSinglePhase) createFixtures(blueprint *crv1alpha1.Blueprint, a
 
 func (s *TestSuiteSinglePhase) TestUpdateActionPhaseProgress(c *C) {
 	var testCases = []struct {
-		indexAction           int
-		indexPhase            int
-		phaseState            crv1alpha1.State
-		phasePercent          string
-		expectedPhasePercent  string
-		expectedActionPercent string
+		indexAction                  int
+		indexPhase                   int
+		phaseState                   crv1alpha1.State
+		phaseProgress                crv1alpha1.PhaseProgress
+		expectedPhasePercent         string
+		expectedActionPercent        string
+		expectedSizeUploadB          int64
+		expectedEstimatedUploadSizeB int64
 	}{
 		{
 			phaseState:            crv1alpha1.StatePending,
@@ -142,28 +144,52 @@ func (s *TestSuiteSinglePhase) TestUpdateActionPhaseProgress(c *C) {
 			expectedActionPercent: "",
 		},
 		{
-			phaseState:            crv1alpha1.StateRunning,
-			phasePercent:          "20",
-			expectedPhasePercent:  "20",
-			expectedActionPercent: "20",
+			phaseState: crv1alpha1.StateRunning,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      "20",
+				SizeUploadedB:        2000,
+				EstimatedUploadSizeB: 10000,
+			},
+			expectedPhasePercent:         "20",
+			expectedActionPercent:        "20",
+			expectedSizeUploadB:          2000,
+			expectedEstimatedUploadSizeB: 10000,
 		},
 		{
-			phaseState:            crv1alpha1.StateRunning,
-			phasePercent:          "50",
-			expectedPhasePercent:  "50",
-			expectedActionPercent: "50",
+			phaseState: crv1alpha1.StateRunning,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      "50",
+				SizeUploadedB:        5000,
+				EstimatedUploadSizeB: 10000,
+			},
+			expectedPhasePercent:         "50",
+			expectedActionPercent:        "50",
+			expectedSizeUploadB:          5000,
+			expectedEstimatedUploadSizeB: 10000,
 		},
 		{
-			phaseState:            crv1alpha1.StateFailed,
-			phasePercent:          "50",
-			expectedPhasePercent:  "",
-			expectedActionPercent: "",
+			phaseState: crv1alpha1.StateFailed,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      "50",
+				SizeUploadedB:        5000,
+				EstimatedUploadSizeB: 10000,
+			},
+			expectedPhasePercent:         "",
+			expectedActionPercent:        "",
+			expectedSizeUploadB:          0,
+			expectedEstimatedUploadSizeB: 0,
 		},
 		{
-			phaseState:            crv1alpha1.StateComplete,
-			phasePercent:          CompletedPercent,
-			expectedPhasePercent:  CompletedPercent,
-			expectedActionPercent: CompletedPercent,
+			phaseState: crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent:      CompletedPercent,
+				SizeUploadedB:        10000,
+				EstimatedUploadSizeB: 10000,
+			},
+			expectedPhasePercent:         CompletedPercent,
+			expectedActionPercent:        CompletedPercent,
+			expectedSizeUploadB:          10000,
+			expectedEstimatedUploadSizeB: 10000,
 		},
 	}
 	for id, tc := range testCases {
@@ -174,9 +200,13 @@ func (s *TestSuiteSinglePhase) TestUpdateActionPhaseProgress(c *C) {
 			tc.indexAction,
 			tc.indexPhase,
 			tc.phaseState,
-			tc.phasePercent,
+			tc.phaseProgress,
 			tc.expectedPhasePercent,
 			tc.expectedActionPercent,
+			0, // Since the phase is upload only, download size expected to remain 0.
+			tc.expectedSizeUploadB,
+			0, // Since the phase is upload only, download size expected to remain 0.
+			tc.expectedEstimatedUploadSizeB,
 			id)
 	}
 }
@@ -188,16 +218,22 @@ func assertActionProgress(
 	indexAction int,
 	indexPhase int,
 	phaseState crv1alpha1.State,
-	phasePercent string,
+	phaseProgress crv1alpha1.PhaseProgress,
 	expectedPhasePercent string,
 	expectedActionPercent string,
-	testCaseID int) {
+	expectedSizeDownloadedB int64,
+	expectedSizeUploadedB int64,
+	expectedEstimatedDownloadSizeB int64,
+	expectedEstimatedUploadSizeB int64,
+	testCaseID int,
+) {
 	now := metav1.Now()
 	actionSet.Status.Actions[indexAction].Phases[indexPhase].State = phaseState
 	updated, err := clientset.CrV1alpha1().ActionSets(actionSet.GetNamespace()).Update(context.Background(), actionSet, metav1.UpdateOptions{})
 	c.Assert(err, IsNil)
 	phaseName := fmt.Sprintf("echo-hello-%d-%d", indexAction, indexPhase)
-	err1 := updateActionSetStatus(context.Background(), clientset, actionSet, phaseName, crv1alpha1.PhaseProgress{ProgressPercent: phasePercent, LastTransitionTime: &now})
+	phaseProgress.LastTransitionTime = &now
+	err1 := updateActionSetStatus(context.Background(), clientset, actionSet, phaseName, phaseProgress)
 	c.Assert(err1, IsNil, Commentf("test case #: %d", testCaseID))
 	actual, err := clientset.CrV1alpha1().ActionSets(actionSet.GetNamespace()).Get(context.Background(), updated.GetName(), metav1.GetOptions{})
 	c.Assert(err, IsNil)
@@ -205,6 +241,10 @@ func assertActionProgress(
 	c.Assert(actual.Status.Actions[indexAction].Phases[indexPhase].Progress.ProgressPercent, Equals, expectedPhasePercent, Commentf("test case #: %d", testCaseID))
 	// Check action progress percent
 	c.Assert(actual.Status.Progress.PercentCompleted, Equals, expectedActionPercent, Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.SizeDownloadedB, Equals, expectedSizeDownloadedB, Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.SizeUploadedB, Equals, expectedSizeUploadedB, Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.EstimatedDownloadSizeB, Equals, expectedEstimatedDownloadSizeB, Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.EstimatedUploadSizeB, Equals, expectedEstimatedUploadSizeB, Commentf("test case #: %d", testCaseID))
 	if phaseState != crv1alpha1.StateFailed &&
 		phaseState != crv1alpha1.StatePending {
 		c.Assert(actual.Status.Actions[indexAction].Phases[indexPhase].Progress.LastTransitionTime, NotNil)

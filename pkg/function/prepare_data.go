@@ -20,18 +20,19 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -107,6 +108,10 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		ServiceAccountName: serviceAccount,
 		PodOverride:        podOverride,
 	}
+
+	// Apply the registered ephemeral pod changes.
+	ephemeral.PodOptions.Apply(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)
 	return pr.Run(ctx, podFunc)

@@ -46,7 +46,6 @@ const (
 	DeletionPolicyDelete              = "Delete"
 	DeletionPolicyRetain              = "Retain"
 	CloneVolumeSnapshotClassLabelName = "kanister-cloned-from"
-	DellFlexOSDriver                  = "csi-vxflexos.dellemc.com"
 )
 
 type SnapshotAlpha struct {
@@ -276,16 +275,6 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 	if !waitForReady {
 		return nil
 	}
-	if source.Driver == DellFlexOSDriver {
-		// Temporary work around till upstream issue is resolved-
-		// github- https://github.com/dell/csi-vxflexos/pull/11
-		// forum- https://www.dell.com/community/Containers/Issue-where-volumeSnapshots-have-ReadyToUse-field-set-to-false/m-p/7685881#M249
-		err := sna.UpdateVolumeSnapshotStatusAlpha(ctx, namespace, snap.GetName(), true)
-		if err != nil {
-			return err
-		}
-	}
-
 	return sna.WaitOnReadyToUse(ctx, snapshotName, namespace)
 }
 
@@ -443,13 +432,17 @@ func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string, p
 	}
 }
 
-// TransformUnstructured maps Unstructured object to object pointed by value
-func TransformUnstructured(u *unstructured.Unstructured, value interface{}) error {
+// TransformUnstructured maps Unstructured object to object pointed by obj
+func TransformUnstructured(u *unstructured.Unstructured, obj metav1.Object) error {
+	if u == nil {
+		return errors.Errorf("Cannot deserialize nil unstructured")
+	}
 	b, err := json.Marshal(u.Object)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to Marshal unstructured object")
+		gvk := u.GetObjectKind().GroupVersionKind()
+		return errors.Wrapf(err, "Failed to Marshal unstructured object GroupVersionKind: %v", gvk)
 	}
-	err = json.Unmarshal(b, value)
+	err = json.Unmarshal(b, obj)
 	return errors.Wrapf(err, "Failed to Unmarshal unstructured object")
 }
 

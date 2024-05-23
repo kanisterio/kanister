@@ -192,7 +192,7 @@ func (tlc TimeLogCSI) getAppDeploymentObj() *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:    "test-container",
-							Image:   "ghcr.io/kanisterio/kanister-tools:0.103.0",
+							Image:   "ghcr.io/kanisterio/kanister-tools:0.109.0",
 							Command: []string{"sh", "-c"},
 							Args:    []string{"while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"},
 							VolumeMounts: []corev1.VolumeMount{
@@ -230,7 +230,7 @@ func (tlc TimeLogCSI) getAppPersistentVolumeClaimObj() *corev1.PersistentVolumeC
 		Spec: corev1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,
 			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: *resource.NewQuantity(1073741824, resource.BinarySI),
 				},

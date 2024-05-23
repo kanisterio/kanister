@@ -50,14 +50,17 @@ func NewPostgresDB(name string, subPath string) App {
 			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "postgresql",
 			Values: map[string]string{
-				"image.pullPolicy":                                     "Always",
-				"auth.postgresPassword":                                "test@54321",
-				"volumePermissions.enabled":                            "true",
-				"persistence.subPath":                                  subPath,
-				"primary.containerSecurityContext.seccompProfile.type": "Unconfined",
-				"primary.containerSecurityContext.capabilities.add[0]": "CHOWN",
-				"primary.containerSecurityContext.capabilities.add[1]": "FOWNER",
-				"primary.containerSecurityContext.capabilities.add[2]": "DAC_OVERRIDE",
+				"image.pullPolicy":      "Always",
+				"auth.postgresPassword": "test@54321",
+				"persistence.subPath":   subPath,
+				// The following values are customized to allow snapshot/restore operations.
+				"volumePermissions.enabled":                               "true",
+				"primary.networkPolicy.enabled":                           "false",
+				"primary.containerSecurityContext.seccompProfile.type":    "Unconfined",
+				"primary.containerSecurityContext.capabilities.add[0]":    "CHOWN",
+				"primary.containerSecurityContext.capabilities.add[1]":    "FOWNER",
+				"primary.containerSecurityContext.capabilities.add[2]":    "DAC_OVERRIDE",
+				"primary.containerSecurityContext.readOnlyRootFilesystem": "false",
 			},
 		},
 	}
@@ -92,7 +95,8 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 	// Install helm chart
-	return cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values, true)
+	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values, true, false)
+	return err
 }
 
 func (pdb *PostgresDB) IsReady(ctx context.Context) (bool, error) {
