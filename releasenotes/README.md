@@ -10,7 +10,7 @@ This makes it easier to review and edit release notes.
 ## Development flow
 
 When submitting a PR with some changes worthy of mentioning in the notes (new feature, bugfix, deprecation, update requirements),
-committer should add a new note file using `reno new <note_name>` or `make reno-new note=<note_name>`.
+committer should add a new note file using `reno new <note_name> --edit` or `make reno-new note=<note_name>`.
 
 New file will be created in `releasenotes/notes` directory with default template.
 Summary of the change should be added to this file to reflect the change and additional information such as deprecations or upgrade requirements.

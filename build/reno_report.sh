@@ -30,9 +30,9 @@ reno report --output ./CHANGELOG.rst
 ## Convert rst to markdown
 rst2md ./CHANGELOG.rst --output ./CHANGELOG.md
 
-# Generate changelof for current version only:
+# Generate changelog for current version only:
 
-## Reno `--version` flag does not support "unreleased" setting and requires specific version, event if it's dynamic
+## Reno `--version` flag does not support "unreleased" setting and requires specific version, even if it's dynamic
 ## To generate dynamic version, use `reno list`.
 ## It will be replaced by `unreleased_version_title` setting in the actual report file
 UNRELEASED_VERSION=$(reno list 2>/dev/null | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\-[0-9]+")
