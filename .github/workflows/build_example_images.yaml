@@ -1,4 +1,4 @@
-name: Build example images
+name: Build integration app example images
 
 on:
   workflow_dispatch:
