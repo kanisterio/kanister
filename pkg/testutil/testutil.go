@@ -301,6 +301,49 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, ver
 	}
 }
 
+func NewTestMultiActionActionSet(namespace, blueprintName, actionName, blueprintName1, actionName1, poKind, poName, poNamespace, version string) *crv1alpha1.ActionSet {
+	return &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-actionset-",
+			Namespace:    namespace,
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				{
+					Blueprint: blueprintName,
+					Name:      actionName,
+					Object: crv1alpha1.ObjectReference{
+						Kind:      poKind,
+						Name:      poName,
+						Namespace: poNamespace,
+					},
+					Profile: &crv1alpha1.ObjectReference{
+						Kind:      consts.ProfileResourceName,
+						Name:      TestProfileName,
+						Namespace: namespace,
+					},
+					PreferredVersion: version,
+				},
+				{
+					Blueprint: blueprintName1,
+					Name:      actionName1,
+					Object: crv1alpha1.ObjectReference{
+						Kind:      poKind,
+						Name:      poName,
+						Namespace: poNamespace,
+					},
+					Profile: &crv1alpha1.ObjectReference{
+						Kind:      consts.ProfileResourceName,
+						Name:      TestProfileName,
+						Namespace: namespace,
+					},
+					PreferredVersion: version,
+				},
+			},
+		},
+	}
+}
+
 // NewTestConfigMap function returns a pointer to a new ConfigMap test object
 func NewTestConfigMap() *corev1.ConfigMap {
 	cm := &corev1.ConfigMap{
@@ -340,11 +383,13 @@ func NewTestBlueprint(poKind string, phaseFuncs ...string) *crv1alpha1.Blueprint
 
 // ActionSetWithConfigMap function returns a pointer to a new ActionSet test object with CongigMap
 func ActionSetWithConfigMap(as *crv1alpha1.ActionSet, name string) *crv1alpha1.ActionSet {
-	as.Spec.Actions[0].ConfigMaps = map[string]crv1alpha1.ObjectReference{
-		"myCM": {
-			Name:      name,
-			Namespace: as.GetNamespace(),
-		},
+	for action := range as.Spec.Actions {
+		as.Spec.Actions[action].ConfigMaps = map[string]crv1alpha1.ObjectReference{
+			"myCM": {
+				Name:      name,
+				Namespace: as.GetNamespace(),
+			},
+		}
 	}
 	return as
 }
