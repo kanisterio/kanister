@@ -20,12 +20,12 @@ import "fmt"
 
 // The below variables will be overrriden using ldflags set by goreleaser during the build process
 
-var VERSION = "DEV"
-var GIT_COMMIT = "NONE"    //nolint:stylecheck // Validate goreleaser works find after the change
-var BUILD_DATE = "UNKNOWN" //nolint:stylecheck // Validate goreleaser works find after the change
+var Version = "DEV"
+var GitCommit = "NONE"
+var BuildDate = "UNKNOWN"
 
 const versionStringFmt = `{"version": "%s", "gitCommit": "%s", "buildDate": "%s"}`
 
 func VersionString() string {
-	return fmt.Sprintf(versionStringFmt, VERSION, GIT_COMMIT, BUILD_DATE)
+	return fmt.Sprintf(versionStringFmt, Version, GitCommit, BuildDate)
 }

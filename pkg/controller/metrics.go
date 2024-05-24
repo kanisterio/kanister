@@ -27,7 +27,7 @@ type metrics struct {
 }
 
 const (
-	ActionSetCounterVecLabelRes        = "resolution"
+	ACTION_SET_COUNTER_VEC_LABEL_RES   = "resolution" //nolint:stylecheck // Already defined in docs
 	ActionSetCounterVecLabelResSuccess = "success"
 	ActionSetCounterVecLabelResFailure = "failure"
 )
@@ -78,7 +78,7 @@ func getActionTypeBucket(aType string) string {
 func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
 	bl := make([]kanistermetrics.BoundedLabel, 1)
 	bl[0] = kanistermetrics.BoundedLabel{
-		LabelName: ActionSetCounterVecLabelRes,
+		LabelName: ACTION_SET_COUNTER_VEC_LABEL_RES,
 		LabelValues: []string{
 			ActionSetCounterVecLabelResSuccess,
 			ActionSetCounterVecLabelResFailure,
