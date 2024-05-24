@@ -441,12 +441,12 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
 	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, c.osClient, action)
 	if err != nil {
-		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
+		c.incrementActionSetResolutionCounterVec(ActionSetCounterVecLabelResFailure)
 		return err
 	}
 	phases, err := kanister.GetPhases(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
-		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
+		c.incrementActionSetResolutionCounterVec(ActionSetCounterVecLabelResFailure)
 		return err
 	}
 
@@ -454,7 +454,7 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	// can be specified in blueprint using actions[name].deferPhase
 	deferPhase, err := kanister.GetDeferPhase(*bp, action.Name, action.PreferredVersion, *tp)
 	if err != nil {
-		c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
+		c.incrementActionSetResolutionCounterVec(ActionSetCounterVecLabelResFailure)
 		return err
 	}
 
@@ -471,9 +471,9 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			if deferErr == nil && coreErr == nil {
 				c.renderActionsetArtifacts(ctx, as, aIDX, as.Namespace, as.Name, action.Name, bp, tp)
 				c.maybeSetActionSetStateComplete(ctx, as, aIDX, bp, coreErr, deferErr)
-				c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS)
+				c.incrementActionSetResolutionCounterVec(ActionSetCounterVecLabelResSuccess)
 			} else {
-				c.incrementActionSetResolutionCounterVec(ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE)
+				c.incrementActionSetResolutionCounterVec(ActionSetCounterVecLabelResFailure)
 			}
 		}()
 

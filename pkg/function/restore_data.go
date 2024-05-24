@@ -232,7 +232,7 @@ func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	// Check if PodOverride specs are passed through actionset
 	// If yes, override podOverride specs
 	if tp.PodOverride != nil {
-		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
+		podOverride, err = kube.CreateAndMergeJSONPatch(podOverride, tp.PodOverride)
 		if err != nil {
 			return nil, err
 		}

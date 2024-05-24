@@ -27,46 +27,46 @@ type metrics struct {
 }
 
 const (
-	ACTION_SET_COUNTER_VEC_LABEL_RES         = "resolution" //nolint:stylecheck // Already defined in docs
-	ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS = "success"    //nolint:stylecheck // Already defined in docs
-	ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE = "failure"    //nolint:stylecheck // Already defined in docs
+	ActionSetCounterVecLabelRes        = "resolution"
+	ActionSetCounterVecLabelResSuccess = "success"
+	ActionSetCounterVecLabelResFailure = "failure"
 )
 
 const (
-	ACTION_TYPE_BACKUP              = "backup"              //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_RESTORE             = "restore"             //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_DELETE              = "delete"              //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_BACKUP_TO_SERVER    = "backupToServer"      //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_RESTORE_FROM_SERVER = "restoreFromServer"   //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_BEFORE_BACKUP       = "before-backup"       //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_ON_SUCCESS          = "on-success"          //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_ON_FAILURE          = "on-failure"          //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_PRE_RESTORE         = "pre-restore"         //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_POST_RESTORE        = "post-restore"        //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_POST_RESTORE_FAILED = "post-restore-failed" //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_BACKUP_PREHOOK      = "backupPrehook"       //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_BACKUP_POSTHOOK     = "backupPosthook"      //nolint:stylecheck // Already defined in docs
-	ACTION_TYPE_BACKUP_OTHER        = "other"               //nolint:stylecheck // Already defined in docs
+	ActionTypeBackup            = "backup"
+	ActionTypeRestore           = "restore"
+	ActionTypeDelete            = "delete"
+	ActionTypeBackupToServer    = "backupToServer"
+	ActionTypeRestoreFromServer = "restoreFromServer"
+	ActionTypeBeforeBackup      = "before-backup"
+	ActionTypeOnSuccess         = "on-success"
+	ActionTypeOnFailure         = "on-failure"
+	ActionTypePreRestore        = "pre-restore"
+	ActionTypePostRestore       = "post-restore"
+	ActionTypePostRestoreFailed = "post-restore-failed"
+	ActionTypeBackupPrehook     = "backupPrehook"
+	ActionTypeBackupPosthook    = "backupPosthook"
+	ActionTypeBackupOther       = "other"
 )
 
 var knownActionsList = map[string]bool{
-	ACTION_TYPE_BACKUP:              true,
-	ACTION_TYPE_RESTORE:             true,
-	ACTION_TYPE_DELETE:              true,
-	ACTION_TYPE_BACKUP_TO_SERVER:    true,
-	ACTION_TYPE_RESTORE_FROM_SERVER: true,
-	ACTION_TYPE_BEFORE_BACKUP:       true,
-	ACTION_TYPE_ON_SUCCESS:          true,
-	ACTION_TYPE_ON_FAILURE:          true,
-	ACTION_TYPE_PRE_RESTORE:         true,
-	ACTION_TYPE_POST_RESTORE:        true,
-	ACTION_TYPE_POST_RESTORE_FAILED: true,
-	ACTION_TYPE_BACKUP_PREHOOK:      true,
-	ACTION_TYPE_BACKUP_POSTHOOK:     true,
+	ActionTypeBackup:            true,
+	ActionTypeRestore:           true,
+	ActionTypeDelete:            true,
+	ActionTypeBackupToServer:    true,
+	ActionTypeRestoreFromServer: true,
+	ActionTypeBeforeBackup:      true,
+	ActionTypeOnSuccess:         true,
+	ActionTypeOnFailure:         true,
+	ActionTypePreRestore:        true,
+	ActionTypePostRestore:       true,
+	ActionTypePostRestoreFailed: true,
+	ActionTypeBackupPrehook:     true,
+	ActionTypeBackupPosthook:    true,
 }
 
 func getActionTypeBucket(aType string) string {
-	actionTypeBucket := ACTION_TYPE_BACKUP_OTHER
+	actionTypeBucket := ActionTypeBackupOther
 	if _, ok := knownActionsList[aType]; ok {
 		actionTypeBucket = aType
 	}
@@ -78,10 +78,10 @@ func getActionTypeBucket(aType string) string {
 func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
 	bl := make([]kanistermetrics.BoundedLabel, 1)
 	bl[0] = kanistermetrics.BoundedLabel{
-		LabelName: ACTION_SET_COUNTER_VEC_LABEL_RES,
+		LabelName: ActionSetCounterVecLabelRes,
 		LabelValues: []string{
-			ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
-			ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
+			ActionSetCounterVecLabelResSuccess,
+			ActionSetCounterVecLabelResFailure,
 		},
 	}
 	return bl

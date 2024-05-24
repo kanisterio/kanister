@@ -840,7 +840,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 	// Run tests
 	for _, test := range tests {
-		override, err := CreateAndMergeJsonPatch(test.BlueprintPodSpecs, test.ActionsetPodSpecs)
+		override, err := CreateAndMergeJSONPatch(test.BlueprintPodSpecs, test.ActionsetPodSpecs)
 		c.Assert(err, IsNil)
 		podSpec, err := patchDefaultPodSpecs(defaultSpecs, override)
 		c.Assert(err, IsNil)

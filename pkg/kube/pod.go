@@ -497,8 +497,8 @@ func patchDefaultPodSpecs(defaultPodSpecs corev1.PodSpec, override crv1alpha1.JS
 	return podSpec, err
 }
 
-// CreateAndMergeJsonPatch uses Strategic Merge to merge two Pod spec configuration
-func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.JSONMap, error) { //nolint:stylecheck // Validate workflows before enabling stylecheck
+// CreateAndMergeJSONPatch uses Strategic Merge to merge two Pod spec configuration
+func CreateAndMergeJSONPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.JSONMap, error) {
 	// Merge json specs with StrategicMerge
 	mergedPatch, err := strategicMergeJSONPatch(original, override)
 	if err != nil {
