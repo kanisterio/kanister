@@ -19,12 +19,21 @@ set -o nounset
 
 IMAGE_REGISTRY="ghcr.io/kanisterio"
 
-IMAGES_NAME_PATH="build/valid_images.json"
-
-IMAGES=(`cat ${IMAGES_NAME_PATH} | jq -r .images[]`)
+PUBLISHED_IMAGES_NAME_PATH="build/published_images.json"
+EXAMPLE_IMAGES_NAME_PATH="build/example_images.json"
 
 TAG=${1:-"v9.99.9-dev"}
 
-for i in ${IMAGES[@]}; do
-   docker push $IMAGE_REGISTRY/$i:$TAG
-done
+push_images() {
+   images_file_path=$1
+
+   images=(`cat ${images_file_path} | jq -r .images[]`)
+
+   for i in ${images[@]}; do
+      docker push $IMAGE_REGISTRY/$i:$TAG
+   done
+}
+
+push_images $PUBLISHED_IMAGES_NAME_PATH
+
+push_images $EXAMPLE_IMAGES_NAME_PATH
