@@ -19,19 +19,28 @@ set -o nounset
 
 IMAGE_REGISTRY="ghcr.io/kanisterio"
 
-IMAGES_NAME_PATH="build/valid_images.json"
-
-IMAGES=(`cat ${IMAGES_NAME_PATH} | jq -r .images[]`)
+PUBLISHED_IMAGES_NAME_PATH="build/published_images.json"
+EXAMPLE_IMAGES_NAME_PATH="build/example_images.json"
 
 TAG=${1:-"v9.99.9-dev"}
 
 COMMIT_SHA_TAG=commit-${COMMIT_SHA:?"COMMIT_SHA is required"}
 SHORT_COMMIT_SHA_TAG=short-commit-${COMMIT_SHA::12}
 
-for i in ${IMAGES[@]}; do
-   docker tag $IMAGE_REGISTRY/$i:$TAG $IMAGE_REGISTRY/$i:$COMMIT_SHA_TAG
-   docker tag $IMAGE_REGISTRY/$i:$TAG $IMAGE_REGISTRY/$i:$SHORT_COMMIT_SHA_TAG
-   docker push $IMAGE_REGISTRY/$i:$TAG
-   docker push $IMAGE_REGISTRY/$i:$COMMIT_SHA_TAG
-   docker push $IMAGE_REGISTRY/$i:$SHORT_COMMIT_SHA_TAG
-done
+push_images() {
+   images_file_path=$1
+
+   images=(`cat ${images_file_path} | jq -r .images[]`)
+
+   for i in ${images[@]}; do
+      docker tag $IMAGE_REGISTRY/$i:$TAG $IMAGE_REGISTRY/$i:$COMMIT_SHA_TAG
+      docker tag $IMAGE_REGISTRY/$i:$TAG $IMAGE_REGISTRY/$i:$SHORT_COMMIT_SHA_TAG
+      docker push $IMAGE_REGISTRY/$i:$TAG
+      docker push $IMAGE_REGISTRY/$i:$COMMIT_SHA_TAG
+      docker push $IMAGE_REGISTRY/$i:$SHORT_COMMIT_SHA_TAG
+   done
+}
+
+push_images $PUBLISHED_IMAGES_NAME_PATH
+
+push_images $EXAMPLE_IMAGES_NAME_PATH
