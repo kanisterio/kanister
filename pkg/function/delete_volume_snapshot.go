@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -84,7 +85,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 		}
 		snapshot, err := provider.SnapshotGet(ctx, pvcInfo.SnapshotID)
 		if err != nil {
-			if strings.Contains(err.Error(), SnapshotDoesNotExistError) {
+			if strings.Contains(err.Error(), SnapshotDoesNotExistError) || apierrors.IsNotFound(err) {
 				log.WithContext(ctx).Print("Snapshot already deleted", field.M{"SnapshotID": pvcInfo.SnapshotID})
 			} else {
 				return nil, errors.Wrapf(err, "Failed to get Snapshot from Provider")
