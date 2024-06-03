@@ -33,9 +33,6 @@ main() {
     fi
     mkdir ${PACKAGE_FOLDER}
 
-    # Build profile chart archive
-    helm package helm/profile --version ${version} -d ${PACKAGE_FOLDER}
-
     # Build kanister-operator chart archive
     helm package helm/kanister-operator --version ${version} -d ${PACKAGE_FOLDER}
 
