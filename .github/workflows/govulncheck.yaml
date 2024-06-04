@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - id: govulncheck
         name: 'Govulncheck'
-        uses: golang/govulncheck-action@3a32958c2706f7048305d5a2e53633d7e37e97d0 # v1.0.2
+        uses: golang/govulncheck-action@dd0578b371c987f96d1185abb54344b44352bd58 # v1.0.3
         continue-on-error: ${{ github.event_name == 'pull_request' }}
         with:
           repo-checkout: false
