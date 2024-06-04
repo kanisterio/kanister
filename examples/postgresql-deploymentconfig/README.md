@@ -104,6 +104,8 @@ Create Blueprint in the same namespace as the controller (`kanister`)
 blueprint.cr.kanister.io/postgres-bp created
 ```
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Now that we have created the Profile and Blueprint Kanister resources we will insert some data into
 PostgreSQL database that we will take backup of.
 To insert the data into the PostgreSQL database we will `exec` into the PostgreSQL pod, please follow below commands

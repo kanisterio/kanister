@@ -196,6 +196,8 @@ $ kubectl create -f ./mssql-blueprint.yaml -n kanister
 ```
 Blueprint with name `mssql-blueprint` will be created in `kanister` namespace
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 ## Protect the Application
 
 You can now take a backup of the SQL Server data using an ActionSet defining backup for this application. 

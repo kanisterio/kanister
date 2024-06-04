@@ -67,6 +67,8 @@ Create Blueprint in the same namespace as the controller
 $ kubectl create -f ./postgres-blueprint.yaml -n kanister
 ```
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
 ```
 ## Log in into postgresql container and get shell access

@@ -139,6 +139,8 @@ You can create the Blueprint using the command below.
 kubectl create -f foundationdb-blueprint.yaml -n <kanister-op-ns>
 ```
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Once we have created the Blueprint let's go ahead and insert some data into the foundationDB
 database.
 

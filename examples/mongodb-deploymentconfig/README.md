@@ -112,6 +112,8 @@ Create Blueprint in the same namespace as the controller (`kanister`)
 blueprint.cr.kanister.io/mongodb-blueprint created
 ```
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Now that we have created the Profile and Blueprint Kanister resources we will insert some data into
 MongoDB database that we will take backup of.
 To insert the data into the MongoDB database we will `exec` into the MongoDB pod, please follow below commands

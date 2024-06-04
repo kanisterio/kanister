@@ -61,6 +61,8 @@ Create Blueprint in the same namespace as the controller
 $ kubectl create -f ./mongo-blueprint.yaml -n kanister
 ```
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Once MongoDB is running, you can populate it with some data. Let's add a collection called "restaurants" to a test database:
 
 ```bash

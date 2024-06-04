@@ -72,6 +72,8 @@ Create Blueprint in the same namespace as the Kanister controller
 $ kubectl create -f ./mysql-blueprint.yaml -n kanister
 ```
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Once MySQL is running, you can populate it with some data. Let's add a table called "pets" to a test database:
 
 ```bash
