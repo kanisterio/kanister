@@ -144,6 +144,26 @@ func completedOrFailed(aIDX int, actionSet *crv1alpha1.ActionSet, phaseName stri
 	return false
 }
 
+func arePhaseProgressesDifferent(a, b crv1alpha1.PhaseProgress) bool {
+	if a.ProgressPercent != b.ProgressPercent {
+		return true
+	}
+
+	if a.SizeDownloadedB != b.SizeDownloadedB || a.SizeUploadedB != b.SizeUploadedB {
+		return true
+	}
+
+	if a.EstimatedDownloadSizeB != b.EstimatedDownloadSizeB || a.EstimatedUploadSizeB != b.EstimatedUploadSizeB {
+		return true
+	}
+
+	if a.EstimatedTimeSeconds != b.EstimatedTimeSeconds {
+		return true
+	}
+
+	return false
+}
+
 func setActionSetPhaseProgress(actionSet *crv1alpha1.ActionSet, phaseName string, phaseProgress crv1alpha1.PhaseProgress) error {
 	// Update or create phase status in ActionSet status
 	// Update phase progress if there is a change
@@ -156,7 +176,7 @@ func setActionSetPhaseProgress(actionSet *crv1alpha1.ActionSet, phaseName string
 				actionSet.Status.Actions[i].Phases[j].State == crv1alpha1.StateFailed {
 				continue
 			}
-			if actionSet.Status.Actions[i].Phases[j].Progress.ProgressPercent != phaseProgress.ProgressPercent {
+			if arePhaseProgressesDifferent(actionSet.Status.Actions[i].Phases[j].Progress, phaseProgress) {
 				actionSet.Status.Actions[i].Phases[j].Progress = phaseProgress
 				if err := SetActionSetPercentCompleted(actionSet); err != nil {
 					return err
@@ -170,30 +190,43 @@ func setActionSetPhaseProgress(actionSet *crv1alpha1.ActionSet, phaseName string
 // SetActionSetPercentCompleted calculate and set percent completion of the action. The action completion percentage
 // is calculated by taking an average of all the involved phases.
 func SetActionSetPercentCompleted(actionSet *crv1alpha1.ActionSet) error {
-	actionProgress := 0
-	totalPhases := 0
+	var actionProgress, totalPhases int
+	var sizeUploadedB, sizeDownloadedB, estimatedUploadSizeB, estimatedDownloadSizeB int64
 	for _, actions := range actionSet.Status.Actions {
 		for _, phase := range actions.Phases {
+			sizeUploadedB += phase.Progress.SizeUploadedB
+			sizeDownloadedB += phase.Progress.SizeDownloadedB
+			estimatedUploadSizeB += phase.Progress.EstimatedUploadSizeB
+			estimatedDownloadSizeB += phase.Progress.EstimatedDownloadSizeB
+			totalPhases++
+
 			if phase.Progress.ProgressPercent == "" {
-				totalPhases++
 				continue
 			}
+
 			pp, err := strconv.Atoi(phase.Progress.ProgressPercent)
 			if err != nil {
 				return errors.Wrap(err, "Invalid phase progress percent")
 			}
 			actionProgress += pp
-			totalPhases++
 		}
 	}
 	actionProgress /= totalPhases
 
-	// Update LastTransitionTime only if there is a change in action PercentCompleted
-	if strconv.Itoa(actionProgress) == actionSet.Status.Progress.PercentCompleted {
+	// Update LastTransitionTime only if there is a change in action progress
+	if strconv.Itoa(actionProgress) == actionSet.Status.Progress.PercentCompleted &&
+		actionSet.Status.Progress.SizeDownloadedB == sizeDownloadedB &&
+		actionSet.Status.Progress.SizeUploadedB == sizeUploadedB &&
+		actionSet.Status.Progress.EstimatedDownloadSizeB == estimatedDownloadSizeB &&
+		actionSet.Status.Progress.EstimatedUploadSizeB == estimatedUploadSizeB {
 		return nil
 	}
 	metav1Time := metav1.NewTime(time.Now())
 	actionSet.Status.Progress.LastTransitionTime = &metav1Time
 	actionSet.Status.Progress.PercentCompleted = strconv.Itoa(actionProgress)
+	actionSet.Status.Progress.SizeDownloadedB = sizeDownloadedB
+	actionSet.Status.Progress.SizeUploadedB = sizeUploadedB
+	actionSet.Status.Progress.EstimatedDownloadSizeB = estimatedDownloadSizeB
+	actionSet.Status.Progress.EstimatedUploadSizeB = estimatedUploadSizeB
 	return nil
 }

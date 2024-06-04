@@ -14,6 +14,10 @@
 
 package command
 
+import (
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+)
+
 type ServerStartCommandArgs struct {
 	*CommandArgs
 	ServerAddress        string
@@ -21,6 +25,8 @@ type ServerStartCommandArgs struct {
 	TLSKeyFile           string
 	ServerUsername       string
 	ServerPassword       string
+	HtpasswdFilePath     string
+	ReadOnly             bool
 	AutoGenerateCert     bool
 	Background           bool
 	EnablePprof          bool
@@ -39,11 +45,20 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 	args = args.AppendLoggableKV(addressFlag, cmdArgs.ServerAddress)
 	args = args.AppendLoggableKV(tlsCertFilePath, cmdArgs.TLSCertFile)
 	args = args.AppendLoggableKV(tlsKeyFilePath, cmdArgs.TLSKeyFile)
+
+	if cmdArgs.HtpasswdFilePath != "" {
+		args = args.AppendLoggableKV(htpasswdFilePath, cmdArgs.HtpasswdFilePath)
+	}
+
 	args = args.AppendLoggableKV(serverUsernameFlag, cmdArgs.ServerUsername)
 	args = args.AppendRedactedKV(serverPasswordFlag, cmdArgs.ServerPassword)
 
 	args = args.AppendLoggableKV(serverControlUsernameFlag, cmdArgs.ServerUsername)
 	args = args.AppendRedactedKV(serverControlPasswordFlag, cmdArgs.ServerPassword)
+
+	if cmdArgs.ReadOnly {
+		args = args.AppendLoggable(readOnlyFlag)
+	}
 
 	if cmdArgs.EnablePprof {
 		args = args.AppendLoggable(enablePprof)
@@ -122,11 +137,13 @@ type ServerSetUserCommandArgs struct {
 
 // ServerSetUser returns the kopia command setting password for existing user for the Kopia API Server
 func ServerSetUser(cmdArgs ServerSetUserCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs)
-	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, cmdArgs.NewUsername)
-	args = args.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
+	command := commonArgs(cmdArgs.CommandArgs)
+	command = command.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, cmdArgs.NewUsername)
+	command = command.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
 
-	return stringSliceCommand(args)
+	command = args.UserAddSet.AppendToCmd(command)
+
+	return stringSliceCommand(command)
 }
 
 type ServerAddUserCommandArgs struct {
@@ -137,9 +154,11 @@ type ServerAddUserCommandArgs struct {
 
 // ServerAddUser returns the kopia command adding a new user to the Kopia API Server
 func ServerAddUser(cmdArgs ServerAddUserCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs)
-	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, cmdArgs.NewUsername)
-	args = args.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
+	command := commonArgs(cmdArgs.CommandArgs)
+	command = command.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, cmdArgs.NewUsername)
+	command = command.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
 
-	return stringSliceCommand(args)
+	command = args.UserAddSet.AppendToCmd(command)
+
+	return stringSliceCommand(command)
 }

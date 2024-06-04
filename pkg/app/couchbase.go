@@ -96,7 +96,7 @@ func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error { //nolint:
 	}
 
 	// Install cb operator, admission controller and cluster
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.chart.RepoName, cb.chart.Chart), cb.chart.Version, cb.chart.Release, cb.namespace, cb.chart.Values, true)
+	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.chart.RepoName, cb.chart.Chart), cb.chart.Version, cb.chart.Release, cb.namespace, cb.chart.Values, true, false)
 	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", cb.name, cb.chart.Chart, cb.chart.Release)
 }
 
