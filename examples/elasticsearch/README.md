@@ -98,14 +98,14 @@ Kanister-enabled application instances.
 
 ### Create Blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 In order to perform backup, restore, and delete operations on the running
 elasticsearch, we need to create a blueprint.
 
 ```bash
 $ kubectl create -f ./elasticsearch-blueprint.yaml -n kanister
 ```
-
-**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 Once Elasticsearch is running, you can populate it with some data. Follow the
 instructions that get displayed by running command

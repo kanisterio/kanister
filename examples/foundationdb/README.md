@@ -130,6 +130,8 @@ can be shared between Kanister-enabled application instances.
 
 ## Create blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 In order to perform `backup`, `restore`, and `delete` operations on the running foundationDB,
 we need to create a Blueprint Kanister resource.
 You can create the Blueprint using the command below.
@@ -138,8 +140,6 @@ You can create the Blueprint using the command below.
 # replace kanister-op-ns with the namespace where kanister is installed
 kubectl create -f foundationdb-blueprint.yaml -n <kanister-op-ns>
 ```
-
-**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 Once we have created the Blueprint let's go ahead and insert some data into the foundationDB
 database.

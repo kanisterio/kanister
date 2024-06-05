@@ -77,14 +77,14 @@ The command will configure a location where artifacts resulting from Kanister da
 
 ### Create Blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Create Blueprint in the same namespace as the controller
 
 ```bash
 $ kubectl create -f couchbase-blueprint.yaml -n kasten-io
 blueprint.cr.kanister.io/couchbase-blueprint created
 ```
-
-**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 Once Couchbase is running, you can populate it with some data. Let's add some documents to the default bucket:
 

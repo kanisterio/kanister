@@ -95,6 +95,8 @@ can be shared between Kanister-enabled application instances.
 
 ### Create Blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Create Blueprint in the same namespace as the controller
 
 ```bash
@@ -102,8 +104,6 @@ Create Blueprint in the same namespace as the controller
 
 blueprint.cr.kanister.io/mysql-dep-config-blueprint created
 ```
-
-**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 Now that we have created the Profile and Blueprint Kanister resources we will insert some data into
 MySQL database that we will take backup of.

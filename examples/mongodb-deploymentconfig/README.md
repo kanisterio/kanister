@@ -105,14 +105,14 @@ actions.restore.phases[0].objects.mongosecret.name: <mongo-secret-name>
 
 ### Create Blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Create Blueprint in the same namespace as the controller (`kanister`)
 
 ```bash
 ~ oc create -f mongo-dep-config-blueprint.yaml -n kanister
 blueprint.cr.kanister.io/mongodb-blueprint created
 ```
-
-**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 Now that we have created the Profile and Blueprint Kanister resources we will insert some data into
 MongoDB database that we will take backup of.

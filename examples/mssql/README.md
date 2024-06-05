@@ -188,6 +188,8 @@ can be shared between Kanister-enabled application instances.
 
 ### Create Blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Create Blueprint in the same namespace as the Kanister controller
 
 Execute following command to create the blueprint
@@ -195,8 +197,6 @@ Execute following command to create the blueprint
 $ kubectl create -f ./mssql-blueprint.yaml -n kanister
 ```
 Blueprint with name `mssql-blueprint` will be created in `kanister` namespace
-
-**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 ## Protect the Application
 
