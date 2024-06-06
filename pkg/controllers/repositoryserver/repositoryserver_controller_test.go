@@ -273,7 +273,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *C
 	err = kube.WaitForPodReady(ctx, s.kubeCli, s.repoServerControllerNamespace, repoServerCRCreated.Status.ServerInfo.PodName)
 	c.Assert(err, IsNil)
 
-	err = testutil.CreateTestKopiaRepository(s.kubeCli, repoServerCRCreated, testutil.GetDefaultS3CompliantStorageLocation())
+	err = testutil.CreateTestKopiaRepository(ctx, s.kubeCli, repoServerCRCreated, testutil.GetDefaultS3CompliantStorageLocation())
 	c.Assert(err, IsNil)
 
 	_, err = s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)

@@ -56,7 +56,7 @@ func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin i
 	)
 
 	go func() {
-		err = p.pcep.ExecWithOptions(opts)
+		err = p.pcep.ExecWithOptions(ctx, opts)
 		close(cmdDone)
 	}()
 

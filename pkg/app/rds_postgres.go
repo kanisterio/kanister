@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	aws "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/aws/ec2"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -477,5 +477,5 @@ func (pdb RDSPostgresDB) execCommand(ctx context.Context, command []string) (str
 	if err != nil || podName == "" {
 		return "", "", err
 	}
-	return kube.Exec(pdb.cli, pdb.namespace, podName, containerName, command, nil)
+	return kube.Exec(ctx, pdb.cli, pdb.namespace, podName, containerName, command, nil)
 }
