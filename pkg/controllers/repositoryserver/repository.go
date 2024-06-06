@@ -15,13 +15,15 @@
 package repositoryserver
 
 import (
+	"context"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
-func (h *RepoServerHandler) connectToKopiaRepository() error {
+func (h *RepoServerHandler) connectToKopiaRepository(ctx context.Context) error {
 	repoConfiguration := h.getRepositoryConfiguration()
 	cacheSizeSettings := h.getRepositoryCacheSettings()
 	args := command.RepositoryCommandArgs{
@@ -43,6 +45,7 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 	}
 
 	return repository.ConnectToKopiaRepository(
+		ctx,
 		h.KubeCli,
 		h.RepositoryServer.Namespace,
 		h.RepositoryServer.Status.ServerInfo.PodName,
