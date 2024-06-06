@@ -35,6 +35,8 @@ can be shared between Kanister-enabled application instances.
 
 ## Create Blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Before actually creating the Blueprint, we will have to create a secret in a new or an existing namespace. This
 secret is going to have the details about the ETCD members that are running on your cluster
 
