@@ -536,7 +536,7 @@ func getSnapshots(ctx context.Context, ec2Cli *EC2, snapIDs []*string) ([]*ec2.S
 	if len(dso.Snapshots) != len(snapIDs) {
 		log.Error().Print("Did not find all requested snapshots", field.M{"snapshots_requested": snapIDs, "snapshots_found": dso.Snapshots})
 		// TODO: Move mapping to HTTP error to the caller
-		return nil, errors.New("Object not found")
+		return nil, errors.New(blockstorage.SnapshotDoesNotExistError)
 	}
 	return dso.Snapshots, nil
 }
@@ -615,7 +615,7 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 			return false, errors.Wrapf(err, "Failed to describe snapshot, snapshot_id: %s", snapID)
 		}
 		if len(dso.Snapshots) != 1 {
-			return false, errors.New("Object not found")
+			return false, errors.New(blockstorage.SnapshotDoesNotExistError)
 		}
 		s := dso.Snapshots[0]
 		if *s.State == ec2.SnapshotStateError {
