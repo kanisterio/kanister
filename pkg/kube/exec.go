@@ -81,7 +81,15 @@ type ExecOptions struct {
 
 // Exec is our version of the call to `kubectl exec` that does not depend on
 // k8s.io/kubernetes.
-func Exec(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader) (string, string, error) {
+func Exec(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace,
+	pod,
+	container string,
+	command []string,
+	stdin io.Reader,
+) (string, string, error) {
 	outbuf := &bytes.Buffer{}
 	errbuf := &bytes.Buffer{}
 	opts := ExecOptions{
@@ -94,7 +102,7 @@ func Exec(cli kubernetes.Interface, namespace, pod, container string, command []
 		Stderr:        errbuf,
 	}
 
-	err := ExecWithOptions(cli, opts)
+	err := ExecWithOptions(ctx, cli, opts)
 
 	return strings.TrimSpace(outbuf.String()), strings.TrimSpace(errbuf.String()), err
 }
@@ -102,7 +110,17 @@ func Exec(cli kubernetes.Interface, namespace, pod, container string, command []
 // ExecOutput is similar to Exec, except that inbound outputs are written to the
 // provided stdout and stderr. Unlike Exec, the outputs are not returned to the
 // caller.
-func ExecOutput(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
+func ExecOutput(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace,
+	pod,
+	container string,
+	command []string,
+	stdin io.Reader,
+	stdout,
+	stderr io.Writer,
+) error {
 	opts := ExecOptions{
 		Command:       command,
 		Namespace:     namespace,
@@ -121,23 +139,28 @@ func ExecOutput(cli kubernetes.Interface, namespace, pod, container string, comm
 		},
 	}
 
-	return ExecWithOptions(cli, opts)
+	return ExecWithOptions(ctx, cli, opts)
 }
 
 // ExecWithOptions executes a command in the specified container, returning an error.
 // `options` allowed for additional parameters to be passed.
-func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) error {
+func ExecWithOptions(ctx context.Context, kubeCli kubernetes.Interface, options ExecOptions) error {
 	config, err := LoadConfig()
 	if err != nil {
 		return err
 	}
 
-	errCh := execStream(kubeCli, config, options)
+	errCh := execStream(ctx, kubeCli, config, options)
 	err = <-errCh
 	return errors.Wrap(err, "Failed to exec command in pod")
 }
 
-func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) chan error {
+func execStream(
+	ctx context.Context,
+	kubeCli kubernetes.Interface,
+	config *restclient.Config,
+	options ExecOptions,
+) chan error {
 	const tty = false
 	req := kubeCli.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -174,6 +197,7 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 	errCh := make(chan error, 1)
 	go func() {
 		err := execute(
+			ctx,
 			"POST",
 			req.URL(),
 			config,
@@ -192,13 +216,22 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 	return errCh
 }
 
-func execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
+func execute(
+	ctx context.Context,
+	method string,
+	url *url.URL,
+	config *restclient.Config,
+	stdin io.Reader,
+	stdout,
+	stderr io.Writer,
+	tty bool,
+) error {
 	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
 		return err
 	}
 	// Get context from a caller function. Issue to track: https://github.com/kanisterio/kanister/issues/1930
-	return exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
+	return exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  stdin,
 		Stdout: stdout,
 		Stderr: stderr,

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -14,6 +15,7 @@ import (
 
 // ConnectToKopiaRepository connects to an already existing kopia repository
 func ConnectToKopiaRepository(
+	ctx context.Context,
 	cli kubernetes.Interface,
 	namespace,
 	pod,
@@ -25,7 +27,7 @@ func ConnectToKopiaRepository(
 		return errors.Wrap(err, "Failed to generate repository connect command")
 	}
 
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err == nil {

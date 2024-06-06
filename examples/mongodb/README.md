@@ -55,6 +55,9 @@ actions.backup.phases[0].objects.mongosecret.name: <mongo-secret-name>
 actions.restore.phases[0].objects.mongosecret.name: <mongo-secret-name>
 ```
 ### Create Blueprint
+
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Create Blueprint in the same namespace as the controller
 
 ```bash

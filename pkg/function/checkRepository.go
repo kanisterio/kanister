@@ -92,6 +92,7 @@ func CheckRepositoryPodFunc(
 		defer remover.Remove(context.Background()) //nolint:errcheck
 
 		err = restic.CheckIfRepoIsReachable(
+			ctx,
 			tp.Profile,
 			targetPath,
 			encryptionKey,

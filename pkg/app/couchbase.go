@@ -262,7 +262,7 @@ func (cb CouchbaseDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil || len(container) == 0 {
 		return "", "", err
 	}
-	return kube.Exec(cb.cli, cb.namespace, podName, container[0].Name, command, nil)
+	return kube.Exec(ctx, cb.cli, cb.namespace, podName, container[0].Name, command, nil)
 }
 
 // getRunningCBPod name of running couchbase cluster pod if its in ready state
