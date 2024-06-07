@@ -109,4 +109,4 @@ jobs:
     - run: docker image prune -af
     - run: docker builder prune -af
     - run: make release-snapshot
-    - run: ./build/push_images.sh
+    - run: COMMIT_SHA=${{ github.sha }} ./build/push_images.sh
