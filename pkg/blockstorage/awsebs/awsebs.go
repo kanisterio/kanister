@@ -530,7 +530,7 @@ func getSnapshots(ctx context.Context, ec2Cli *EC2, snapIDs []*string) ([]*ec2.S
 	dsi := &ec2.DescribeSnapshotsInput{SnapshotIds: snapIDs}
 	dso, err := ec2Cli.DescribeSnapshotsWithContext(ctx, dsi)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get snapshot, snapshot_ids: %p", snapIDs)
+		return nil, errors.Wrapf(err, blockstorage.SnapshotDoesNotExistError+", snapshot_ids: %p", snapIDs)
 	}
 	// TODO: handle paging and continuation
 	if len(dso.Snapshots) != len(snapIDs) {
