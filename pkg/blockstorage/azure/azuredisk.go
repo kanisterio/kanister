@@ -8,10 +8,12 @@ package azure
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	azto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -391,6 +393,9 @@ func (s *AdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.S
 	}
 	snapRes, err := s.azCli.SnapshotsClient.Get(ctx, rg, name, nil)
 	if err != nil {
+		if isNotFoundError(err) {
+			err = errors.Wrap(err, blockstorage.SnapshotDoesNotExistError)
+		}
 		return nil, errors.Wrapf(err, "SnapshotsClient.Get: Failed to get snapshot with ID %s", id)
 	}
 
@@ -805,4 +810,12 @@ func (s *AdStorage) mapLocationToZone(skuResult *armcompute.ResourceSKU, regionM
 			rm[location] = val
 		}
 	}
+}
+
+func isNotFoundError(err error) bool {
+	var azerr azcore.ResponseError
+	if errors.As(err, azerr) {
+		return azerr.StatusCode == http.StatusNotFound
+	}
+	return false
 }

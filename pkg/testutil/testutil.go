@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"golang.org/x/oauth2/google"
-	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/compute/v1"
 	"gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -513,7 +513,12 @@ func GetDefaultS3CompliantStorageLocation() map[string][]byte {
 	}
 }
 
-func CreateTestKopiaRepository(cli kubernetes.Interface, rs *crv1alpha1.RepositoryServer, storageLocation map[string][]byte) error {
+func CreateTestKopiaRepository(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	rs *crv1alpha1.RepositoryServer,
+	storageLocation map[string][]byte,
+) error {
 	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
 
 	commandArgs := command.RepositoryCommandArgs{
@@ -533,6 +538,7 @@ func CreateTestKopiaRepository(cli kubernetes.Interface, rs *crv1alpha1.Reposito
 		Location:       storageLocation,
 	}
 	return repository.ConnectToOrCreateKopiaRepository(
+		ctx,
 		cli,
 		rs.Namespace,
 		rs.Status.ServerInfo.PodName,

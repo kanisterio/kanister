@@ -134,6 +134,7 @@ func copyVolumeDataPodFunc(
 		pod := pc.Pod()
 		// Get restic repository
 		if err := restic.GetOrCreateRepository(
+			ctx,
 			cli,
 			pod.Namespace,
 			pod.Name,

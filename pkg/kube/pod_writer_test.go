@@ -87,7 +87,7 @@ func (p *PodWriteSuite) TestPodWriter(c *C) {
 		err := pw.Write(context.Background(), p.pod.Namespace, p.pod.Name, cs.Name)
 		c.Assert(err, IsNil)
 		cmd := []string{"sh", "-c", "cat " + filepath.Clean(path)}
-		stdout, stderr, err := Exec(p.cli, p.pod.Namespace, p.pod.Name, cs.Name, cmd, nil)
+		stdout, stderr, err := Exec(context.Background(), p.cli, p.pod.Namespace, p.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, IsNil)
 		c.Assert(stdout, Equals, "badabing")
 		c.Assert(stderr, Equals, "")
