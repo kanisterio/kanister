@@ -30,7 +30,7 @@ SHORT_COMMIT_SHA_TAG=short-commit-${COMMIT_SHA::12}
 push_images() {
    images_file_path=$1
 
-   images=(`cat ${images_file_path} | jq -r .images[]`)
+   images=$(jq -r .images[] "${images_file_path}")
 
    for i in ${images[@]}; do
       docker tag $IMAGE_REGISTRY/$i:$TAG $IMAGE_REGISTRY/$i:$COMMIT_SHA_TAG
