@@ -27,7 +27,7 @@ TAG=${1:-"v9.99.9-dev"}
 push_images() {
    images_file_path=$1
 
-   images=(`cat ${images_file_path} | jq -r .images[]`)
+   images=$(jq -r .images[] "${images_file_path}")
 
    for i in ${images[@]}; do
       docker push $IMAGE_REGISTRY/$i:$TAG
