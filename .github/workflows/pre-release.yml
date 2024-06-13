@@ -53,5 +53,5 @@ jobs:
       run: |
         gh pr create --title "pre-release: Update version to ${RELEASE_TAG}" -F PR_BODY_FILE --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" --base master --reviewer pavannd1,viveksinghggits,hairyhum --label kueue
       env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
