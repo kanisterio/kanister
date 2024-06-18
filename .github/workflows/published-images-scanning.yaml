@@ -1,4 +1,4 @@
-name: Published images vulnerability scanning
+name: Published images scanning
 permissions:
   contents: read
 on:
@@ -14,4 +14,4 @@ jobs:
   scan-images:
     uses: ./.github/workflows/images-vulnerability-scanning.yaml
     with:
-      images_file: "build/example_images.json"
+      images_file: "build/published_images.json"
