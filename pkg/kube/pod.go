@@ -295,10 +295,16 @@ func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *corev1.Pod) e
 	return nil
 }
 
-func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string) (io.ReadCloser, error) {
+func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string, sinceNow bool) (io.ReadCloser, error) {
 	plo := &corev1.PodLogOptions{
 		Follow:    true,
 		Container: containerName,
+	}
+	if sinceNow {
+		plo.SinceTime = func() *metav1.Time {
+			now := metav1.Now()
+			return &now
+		}()
 	}
 	return cli.CoreV1().Pods(namespace).GetLogs(podName, plo).Stream(ctx)
 }
@@ -319,7 +325,7 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podNam
 
 // getErrorFromLogs fetches logs from pod and constructs error containing last ten lines of log and specified error message
 func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string, err error, errorMessage string) error {
-	r, logErr := StreamPodLogs(ctx, cli, namespace, podName, containerName)
+	r, logErr := StreamPodLogs(ctx, cli, namespace, podName, containerName, false)
 	if logErr != nil {
 		return errors.Wrapf(logErr, "Failed to fetch logs from the pod")
 	}
