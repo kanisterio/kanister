@@ -12,7 +12,9 @@ replace (
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
-// Direct and indirect dependencies are in separate require sections
+// Direct and indirect dependencies are in separate require sections.
+// Keep *all* direct dependencies in this section; and all indirect
+// dependencies in the require block following this one.
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.12.0
