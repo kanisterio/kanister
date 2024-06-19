@@ -18,7 +18,7 @@ COPY --from=goreleaser/goreleaser:v1.12.3 /usr/bin/goreleaser /usr/local/bin/
 
 COPY --from=alpine/helm:3.12.2 /usr/bin/helm /usr/local/bin/
 
-COPY --from=golangci/golangci-lint:v1.55 /usr/bin/golangci-lint /usr/local/bin/
+COPY --from=golangci/golangci-lint:v1.57.2 /usr/bin/golangci-lint /usr/local/bin/
 
 RUN wget -O /usr/local/bin/kind \
       https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -) \
@@ -28,6 +28,12 @@ RUN git config --global --add safe.directory /go/src/github.com/kanisterio/kanis
 
 # Adding CRD documentation generation tool.
 RUN GOBIN=/usr/local/bin go install github.com/ahmetb/gen-crd-api-reference-docs@v0.3.0
+
+RUN apt-get update && apt-get install -y pip
+
+RUN pip install reno nb2plots
+
+RUN apt-get install -y vim
 
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \

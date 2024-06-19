@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	aws "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/aws/ec2"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -396,5 +396,5 @@ func (a RDSAuroraMySQLDB) execCommand(ctx context.Context, command []string) (st
 	if err != nil || podName == "" {
 		return "", "", err
 	}
-	return kube.Exec(a.cli, a.namespace, podName, containerName, command, nil)
+	return kube.Exec(ctx, a.cli, a.namespace, podName, containerName, command, nil)
 }

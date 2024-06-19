@@ -14,7 +14,7 @@ cluster's DeploymentConfig resources.
 
 - Setup OpenShift, you can follow steps mentioned below
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.107.0 installed in your cluster in namespace `kanister`
+- Kanister controller version 0.109.0 installed in your cluster in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 **Note**
@@ -94,6 +94,8 @@ requires a Profile reference to complete the action. This CR (`profiles.cr.kanis
 can be shared between Kanister-enabled application instances.
 
 ### Create Blueprint
+
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 Create Blueprint in the same namespace as the controller
 

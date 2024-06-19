@@ -17,9 +17,11 @@ package kube
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,7 +107,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
-	simulatedError := errors.New("SimulatedError")
+	simulatedError := errkit.Wrap(errors.New("SimulatedError"), "Wrapped")
 
 	cases := map[string]func(pcp *FakePodControllerProcessor, pc PodController){
 		"Waiting failed because pod not started yet": func(pcp *FakePodControllerProcessor, pc PodController) {
@@ -131,7 +133,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			c.Assert(pcp.InWaitForPodReadyNamespace, Equals, podControllerNS)
 			c.Assert(errors.Is(err, pcp.WaitForPodReadyErr), Equals, true)
 
-			c.Assert(err.Error(), Equals, "Pod failed to become ready in time: SimulatedError")
+			c.Assert(err.Error(), Equals, fmt.Sprintf("Pod failed to become ready in time: %s", simulatedError.Error()))
 			// Check that POD deletion was also invoked with expected arguments
 		},
 		"Waiting succeeded": func(pcp *FakePodControllerProcessor, pc PodController) {
