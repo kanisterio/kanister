@@ -19,7 +19,7 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/format"
@@ -57,7 +57,11 @@ func (p *podWriter) Write(ctx context.Context, namespace, podName, containerName
 	stdout, stderr, err := Exec(ctx, p.cli, namespace, podName, containerName, cmd, p.content)
 	format.LogWithCtx(ctx, podName, containerName, stdout)
 	format.LogWithCtx(ctx, podName, containerName, stderr)
-	return errors.Wrap(err, "Failed to write contents to file")
+	if err != nil {
+		return errkit.Wrap(err, "Failed to write contents to file")
+	}
+
+	return nil
 }
 
 // Remove will delete the file created by Write() func
@@ -66,5 +70,9 @@ func (p *podWriter) Remove(ctx context.Context, namespace, podName, containerNam
 	stdout, stderr, err := Exec(ctx, p.cli, namespace, podName, containerName, cmd, nil)
 	format.LogWithCtx(ctx, podName, containerName, stdout)
 	format.LogWithCtx(ctx, podName, containerName, stderr)
-	return errors.Wrap(err, "Failed to delete file")
+	if err != nil {
+		return errkit.Wrap(err, "Failed to delete file")
+	}
+
+	return nil
 }

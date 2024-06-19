@@ -18,7 +18,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -67,7 +67,7 @@ type podFileWriter struct {
 func (p *podFileWriter) Write(ctx context.Context, filePath string, content io.Reader) (PodFileRemover, error) {
 	pw := p.fileWriterProcessor.NewPodWriter(filePath, content)
 	if err := pw.Write(ctx, p.namespace, p.podName, p.containerName); err != nil {
-		return nil, errors.Wrap(err, "Write file to pod failed")
+		return nil, errkit.Wrap(err, "Write file to pod failed")
 	}
 
 	return &podFileRemover{
