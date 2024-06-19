@@ -32,6 +32,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
+	github.com/kanisterio/safecli v0.0.8
 	github.com/kopia/kopia v0.17.1-0.20240514043650-951f126b3c5e
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
@@ -210,8 +211,6 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.14.3-0.20230601165947-6ce0bf390ce3 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
-
-require github.com/kanisterio/safecli v0.0.8
 
 require (
 	cloud.google.com/go/auth v0.5.1 // indirect
