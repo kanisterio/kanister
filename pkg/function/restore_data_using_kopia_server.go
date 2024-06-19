@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kanisterio/kanister/pkg/utils"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -286,6 +287,7 @@ func restoreDataFromServerPodFunc(
 				TargetPath:             restorePath,
 				SparseRestore:          sparseRestore,
 				IgnorePermissionErrors: true,
+				Parallelism:            utils.GetEnvAsIntOrDefault(kankopia.DataStoreParallelDownloadName, kankopia.DefaultDataStoreParallelDownload),
 			})
 
 		stdout.Reset()
