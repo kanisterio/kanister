@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -138,6 +139,10 @@ func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]inter
 				Name:         "container",
 				VolumeMounts: mountList,
 			}
+
+			// Apply the registered ephemeral pod changes.
+			ephemeral.Container.Apply(ctr)
+
 			podOverride["containers"] = []corev1.Container{*ctr}
 			return mount.Name, true
 		}
@@ -177,9 +182,14 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	})
 
 	if len(podOverrideSpec.Containers) == 0 {
-		podOverrideSpec.Containers = append(podOverrideSpec.Containers, corev1.Container{
+		container := corev1.Container{
 			Name: kube.ContainerNameFromPodOptsOrDefault(po),
-		})
+		}
+
+		// Apply the registered ephemeral pod changes.
+		ephemeral.Container.Apply(&container)
+
+		podOverrideSpec.Containers = append(podOverrideSpec.Containers, container)
 	}
 
 	podOverrideSpec.Containers[0].VolumeMounts = append(podOverrideSpec.Containers[0].VolumeMounts, corev1.VolumeMount{
@@ -202,7 +212,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.VolumeMountOptions) *kube.PodOptions {
 	uidguid := int64(0)
 	nonRootBool := false
-	return &kube.PodOptions{
+	options := &kube.PodOptions{
 		Namespace:     namespace,
 		GenerateName:  fmt.Sprintf("%s-", repoServerPod),
 		Image:         consts.GetKanisterToolsImage(),
@@ -215,6 +225,11 @@ func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.V
 		},
 		Volumes: vols,
 	}
+
+	// Apply the registered ephemeral pod changes.
+	ephemeral.PodOptions.Apply(options)
+
+	return options
 }
 
 func getPodAddress(ctx context.Context, cli kubernetes.Interface, namespace, podName string) (string, error) {
@@ -232,8 +247,8 @@ func WaitTillCommandSucceed(ctx context.Context, cli kubernetes.Interface, cmd [
 		Jitter: false,
 		Min:    100 * time.Millisecond,
 		Max:    180 * time.Second,
-	}, func(context.Context) (bool, error) {
-		stdout, stderr, exErr := kube.Exec(cli, namespace, podName, container, cmd, nil)
+	}, func(localCtx context.Context) (bool, error) {
+		stdout, stderr, exErr := kube.Exec(localCtx, cli, namespace, podName, container, cmd, nil)
 		format.Log(podName, container, stdout)
 		format.Log(podName, container, stderr)
 		if exErr != nil {

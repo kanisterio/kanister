@@ -1,5 +1,8 @@
 name: Manage Stale Issues and PRs
 
+permissions:
+  contents: read
+
 on:
   schedule:
   - cron: "0 0 * * *"

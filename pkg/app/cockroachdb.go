@@ -70,7 +70,7 @@ func (c *CockroachDB) Install(ctx context.Context, namespace string) error { //n
 		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", c.name, c.chart.RepoName)
 	}
 
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", c.chart.RepoName, c.chart.Chart), c.chart.Version, c.chart.Release, c.namespace, c.chart.Values, false)
+	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", c.chart.RepoName, c.chart.Chart), c.chart.Version, c.chart.Release, c.namespace, c.chart.Values, false, false)
 	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", c.name, c.chart.Chart, c.chart.Release)
 }
 
@@ -295,7 +295,7 @@ func (c *CockroachDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil || podName == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and container name %s.", c.name)
 	}
-	return kube.Exec(c.cli, c.namespace, podName, containerName, command, nil)
+	return kube.Exec(ctx, c.cli, c.namespace, podName, containerName, command, nil)
 }
 
 func (c *CockroachDB) waitForGC(ctx context.Context) error {

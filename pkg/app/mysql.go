@@ -96,7 +96,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error { //nol
 	}
 
 	log.Print("Installing mysql instance using helm.", field.M{"app": mdb.name})
-	err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values, true)
+	_, err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values, true, false)
 	if err != nil {
 		return errors.Wrapf(err, "Error intalling application %s through helm.", mdb.name)
 	}
@@ -244,5 +244,5 @@ func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, 
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
 	}
-	return kube.Exec(mdb.cli, mdb.namespace, podname, containername, command, nil)
+	return kube.Exec(ctx, mdb.cli, mdb.namespace, podname, containername, command, nil)
 }

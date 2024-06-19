@@ -4,7 +4,7 @@ ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
 # Actual image base
-FROM bitnami/cassandra:4.1.4
+FROM bitnami/cassandra:4.1.5
 
 MAINTAINER "Tom Manville <tom@kasten.io>"
 

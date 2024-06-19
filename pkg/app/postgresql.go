@@ -95,7 +95,8 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 	// Install helm chart
-	return cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values, true)
+	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values, true, false)
+	return err
 }
 
 func (pdb *PostgresDB) IsReady(ctx context.Context) (bool, error) {
@@ -224,5 +225,5 @@ func (pdb PostgresDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil {
 		return "", "", err
 	}
-	return kube.Exec(pdb.cli, pdb.namespace, pod, container, command, nil)
+	return kube.Exec(ctx, pdb.cli, pdb.namespace, pod, container, command, nil)
 }

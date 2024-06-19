@@ -16,6 +16,7 @@ package repository
 
 import (
 	"github.com/kanisterio/safecli"
+	"github.com/kanisterio/safecli/command"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
@@ -38,17 +39,20 @@ type ConnectServerArgs struct {
 }
 
 // ConnectServer creates a new `kopia repository connect server...` command.
-func ConnectServer(args ConnectServerArgs) (*safecli.Builder, error) {
-	return internal.NewKopiaCommand(
-		opts.Common(args.Common),
+func ConnectServer(connectServerArgs ConnectServerArgs) (*safecli.Builder, error) {
+	appliers := []command.Applier{
+		opts.Common(connectServerArgs.Common),
 		cmdRepository, subcmdConnect, subcmdServer,
 		opts.CheckForUpdates(false),
-		opts.GRPC(false),
-		optReadOnly(args.ReadOnly),
-		opts.Cache(args.Cache),
-		optHostname(args.Hostname),
-		optUsername(args.Username),
-		optServerURL(args.ServerURL),
-		optServerCertFingerprint(args.Fingerprint),
+		optReadOnly(connectServerArgs.ReadOnly),
+		opts.Cache(connectServerArgs.Cache),
+		optHostname(connectServerArgs.Hostname),
+		optUsername(connectServerArgs.Username),
+		optServerURL(connectServerArgs.ServerURL),
+		optServerCertFingerprint(connectServerArgs.Fingerprint),
+	}
+	appliers = append(appliers, args.RepositoryConnectServer.CommandAppliers()...)
+	return internal.NewKopiaCommand(
+		appliers...,
 	)
 }

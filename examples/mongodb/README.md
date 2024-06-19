@@ -7,7 +7,7 @@
 * Kubernetes 1.20+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.107.0 installed in your cluster
+* Kanister controller version 0.109.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Chart Details
@@ -55,6 +55,9 @@ actions.backup.phases[0].objects.mongosecret.name: <mongo-secret-name>
 actions.restore.phases[0].objects.mongosecret.name: <mongo-secret-name>
 ```
 ### Create Blueprint
+
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 Create Blueprint in the same namespace as the controller
 
 ```bash

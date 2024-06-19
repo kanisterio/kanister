@@ -54,7 +54,7 @@ func NewPodWriter(cli kubernetes.Interface, path string, content io.Reader) PodW
 // Write will create a new file(if not present) and write the provided content to the file
 func (p *podWriter) Write(ctx context.Context, namespace, podName, containerName string) error {
 	cmd := []string{"sh", "-c", "cat - > " + p.path}
-	stdout, stderr, err := Exec(p.cli, namespace, podName, containerName, cmd, p.content)
+	stdout, stderr, err := Exec(ctx, p.cli, namespace, podName, containerName, cmd, p.content)
 	format.LogWithCtx(ctx, podName, containerName, stdout)
 	format.LogWithCtx(ctx, podName, containerName, stderr)
 	if err != nil {
@@ -67,7 +67,7 @@ func (p *podWriter) Write(ctx context.Context, namespace, podName, containerName
 // Remove will delete the file created by Write() func
 func (p *podWriter) Remove(ctx context.Context, namespace, podName, containerName string) error {
 	cmd := []string{"sh", "-c", "rm " + p.path}
-	stdout, stderr, err := Exec(p.cli, namespace, podName, containerName, cmd, nil)
+	stdout, stderr, err := Exec(ctx, p.cli, namespace, podName, containerName, cmd, nil)
 	format.LogWithCtx(ctx, podName, containerName, stdout)
 	format.LogWithCtx(ctx, podName, containerName, stderr)
 	if err != nil {

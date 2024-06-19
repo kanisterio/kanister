@@ -108,6 +108,16 @@ pull request.
 Kanister is for everyone. We ask that our users and contributors take a few
 minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
+## Contributing to Kanister
+
+We welcome contributions to Kanister! If you're interested in getting involved, please take a look at our guidelines:
+
+- **BUILD.md:** Contains detailed instructions on how to build and test Kanister locally or within a CI/CD pipeline.  Please refer to this guide if you want to make changes to Kanister's codebase.
+  [Build and Test Instructions](BUILD.md)
+
+- **CONTRIBUTING.md:**  Provides essential information on how to contribute code, documentation, or bug reports, as well as our coding style and commit message conventions.
+  [Contribution Guidelines](CONTRIBUTING.md)
+
 ## Resources
 
 - [CNCF - Enhancing data protection workflows with Kanister and Argo workflows](https://youtu.be/nqfP1e9jeU4)

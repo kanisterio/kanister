@@ -15,6 +15,8 @@
 package repository
 
 import (
+	"context"
+
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/kopia/command"
@@ -23,6 +25,7 @@ import (
 
 // ConnectToOrCreateKopiaRepository connects to a kopia repository if present or creates if not already present
 func ConnectToOrCreateKopiaRepository(
+	ctx context.Context,
 	cli kubernetes.Interface,
 	namespace,
 	pod,
@@ -30,6 +33,7 @@ func ConnectToOrCreateKopiaRepository(
 	cmdArgs command.RepositoryCommandArgs,
 ) error {
 	err := ConnectToKopiaRepository(
+		ctx,
 		cli,
 		namespace,
 		pod,
@@ -47,6 +51,7 @@ func ConnectToOrCreateKopiaRepository(
 
 	// Create a new repository
 	err = CreateKopiaRepository(
+		ctx,
 		cli,
 		namespace,
 		pod,
@@ -62,6 +67,7 @@ func ConnectToOrCreateKopiaRepository(
 	// Creation failed. Repository may already exist or may have been
 	// created by some parallel operation. Attempt connecting again.
 	connectErr := ConnectToKopiaRepository(
+		ctx,
 		cli,
 		namespace,
 		pod,

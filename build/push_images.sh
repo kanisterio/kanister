@@ -25,6 +25,13 @@ IMAGES=(`cat ${IMAGES_NAME_PATH} | jq -r .images[]`)
 
 TAG=${1:-"v9.99.9-dev"}
 
+COMMIT_SHA_TAG=commit-${COMMIT_SHA:?"COMMIT_SHA is required"}
+SHORT_COMMIT_SHA_TAG=short-commit-${COMMIT_SHA::12}
+
 for i in ${IMAGES[@]}; do
+   docker tag $IMAGE_REGISTRY/$i:$TAG $IMAGE_REGISTRY/$i:$COMMIT_SHA_TAG
+   docker tag $IMAGE_REGISTRY/$i:$TAG $IMAGE_REGISTRY/$i:$SHORT_COMMIT_SHA_TAG
    docker push $IMAGE_REGISTRY/$i:$TAG
+   docker push $IMAGE_REGISTRY/$i:$COMMIT_SHA_TAG
+   docker push $IMAGE_REGISTRY/$i:$SHORT_COMMIT_SHA_TAG
 done

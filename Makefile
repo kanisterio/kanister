@@ -31,7 +31,7 @@ REGISTRY ?= kanisterio
 ARCH ?= amd64
 
 # This version-strategy uses git tags to set the version string
-VERSION := $(shell git describe --tags --always --dirty)
+VERSION ?= $(shell git describe --tags --always --dirty)
 #
 # This version-strategy uses a manual value to set the version string
 #VERSION := 1.2.3
@@ -69,6 +69,10 @@ GOBORING ?= ""
 ## Tool Versions
 
 CONTROLLER_TOOLS_VERSION ?= "v0.12.0"
+
+## Changelog file for goreleaser
+
+CHANGELOG_FILE ?= ./CHANGELOG_CURRENT.md
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
@@ -207,7 +211,7 @@ ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
 	@PWD=$(PWD) ARCH=$(ARCH) PKG=$(PKG) GITHUB_TOKEN=$(GITHUB_TOKEN) CMD="$(CMD)" /bin/bash ./build/run_container.sh run
 else
-	@/bin/bash $(CMD)
+	@/bin/bash -c "$(CMD)"
 endif
 
 clean: dotfile-clean bin-clean
@@ -236,7 +240,7 @@ release-helm:
 	@/bin/bash ./build/release_helm.sh $(VERSION)
 
 gorelease:
-	@$(MAKE) run CMD="./build/gorelease.sh"
+	@$(MAKE) run CMD="CHANGELOG_FILE=$(CHANGELOG_FILE) ./build/gorelease.sh"
 
 release-snapshot:
 	@$(MAKE) run CMD="GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot --timeout=60m0s"
@@ -284,3 +288,8 @@ uninstall-crds: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/conf
 manifests: ## Generates CustomResourceDefinition objects.
 	@$(MAKE) run CMD="./build/generate_crds.sh ${CONTROLLER_TOOLS_VERSION}"
 
+reno-new:
+	@PWD=$(PWD) ARCH=$(ARCH) PKG=$(PKG) GITHUB_TOKEN=$(GITHUB_TOKEN) CMD="EDITOR=vim reno new $(note) --edit" /bin/bash ./build/run_container.sh shell
+
+reno-report:
+	@$(MAKE) run CMD="./build/reno_report.sh $(VERSION)"

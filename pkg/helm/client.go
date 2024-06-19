@@ -128,8 +128,18 @@ func (h CliClient) UpdateRepo(ctx context.Context) error {
 	return nil
 }
 
-// Install installs helm chart with given release name
-func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait bool) error {
+// Install installs a Helm chart in the specified namespace with the given release name and chart version.
+// `wait` and `dryRun` can be set to `true` to make sure it adds `--wait` and `--dry-run` flags to the
+// `helm install` command.
+func (h CliClient) Install(
+	ctx context.Context,
+	chart,
+	version,
+	release,
+	namespace string,
+	values map[string]string,
+	wait,
+	dryRun bool) (string, error) {
 	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
@@ -140,14 +150,24 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 	if wait {
 		cmd = append(cmd, "--wait")
 	}
-
+	if !dryRun {
+		out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
+		if err != nil {
+			log.Error().Print("Error installing helm chart", field.M{"output": out})
+			return "", err
+		}
+		log.Debug().Print("Helm install output:", field.M{"output": out})
+		return out, nil
+	}
+	cmd = append(cmd, "--dry-run")
+	log.Debug().Print("Executing helm install command with dry-run enabled to capture rendered manifests:")
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
-		log.Error().Print("Error installing helm chart", field.M{"output": out})
-		return err
+		log.Error().Print("Error installing chart with dry-run enabled", field.M{"output": out, "error": err})
+		return "", err
 	}
-	log.Debug().Print("Result", field.M{"output": out})
-	return nil
+	log.Debug().Print("Helm install dry-run enabled output:", field.M{"command": h.helmBin, "args": cmd, "output": out})
+	return out, nil
 }
 
 func (h CliClient) Upgrade(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
