@@ -30,6 +30,7 @@ var ErrorMessageMatcher check.Checker = errorMatchesChecker{
 	&check.CheckerInfo{Name: "ErrorMatches", Params: []string{"value", "regex"}},
 }
 
+// Check implements the checker interface and contains the main logic of the ErrorMessageMatcher checker.
 func (checker errorMatchesChecker) Check(
 	params []interface{},
 	names []string,
