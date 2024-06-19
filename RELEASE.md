@@ -9,10 +9,10 @@ Release process:
 	- Make sure that CHANGELOG.md and CHANGELOG_CURRENT.md contain release notes for the release version
 	- **NOTE** While we establish the new process of release notes, it may be required to add notes in pre-release step by commiting them into pre-release branch
 - Approve and merge the pre-release PR (it will be merged by `kueue` when approved)
-- Merging of pre-release PR will trigger the `release.yaml` pipeline, which will create a github release and publish the images 
+- Merging of pre-release PR will trigger the `release.yaml` pipeline, which will create a github release and publish the images
 - The Kanister release job will publish a new tag, update documentation, build all the docker images, and push them to the [ghcr.io](https://github.com/orgs/kanisterio/packages) registry.
 - Once the job is complete, a Slack notification will be sent to the kanister channel.
-- Post release announcement in kanister slack and https://groups.google.com/g/kanisterio 
+- Post release announcement in kanister slack and https://groups.google.com/g/kanisterio
 
 ### Pre-release workflow
 
@@ -69,7 +69,7 @@ Before rerunning the release job manually, do the following:
 Prerequisites:
 
 - Make sure you have admin access or access to push tags on Kanister
-- Make sure you have access to [push images to GHCR](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) 
+- Make sure you have access to [push images to GHCR](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 
 ### Create pre-release
 
@@ -93,7 +93,7 @@ If release pipeline does not work
 
 1. Make sure to merge pre-release PR first.
 
-1. Create a release tag
+2. Create a release tag
 
 ```
 $ export RELEASE_TAG="0.43.0"
@@ -103,7 +103,7 @@ $ git tag -a "${RELEASE_TAG}" -m "Release version";
 $ git push origin "${RELEASE_TAG}"
 ```
 
-1. Build helm charts
+3. Build helm charts
 
 ```
 $ export PACKAGE_FOLDER=helm_package
@@ -112,13 +112,13 @@ $ export HELM_RELEASE_REPO_INDEX=https://charts.kanister.io/
 $ make package-helm VERSION=${RELEASE_TAG}
 ```
 
-1. Release binaries and docker images
+4. Release binaries and docker images
 
 ```
 $ make gorelease CHANGELOG_FILE=./CHANGELOG.md GORELEASE_PARAMS='--draft'
 ```
 
-1. Update and release docs and helms charts
+5. Update and release docs and helms charts
 
 **Currently Github pages publishing is only supported via Github actions**
 
