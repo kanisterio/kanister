@@ -230,7 +230,7 @@ func (esi *ElasticsearchInstance) execCommand(ctx context.Context, command []str
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", esi.name)
 	}
-	return kube.Exec(esi.cli, esi.namespace, podname, containername, command, nil)
+	return kube.Exec(ctx, esi.cli, esi.namespace, podname, containername, command, nil)
 }
 
 func (esi *ElasticsearchInstance) curlCommand(method, path string) string {

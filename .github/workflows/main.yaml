@@ -15,7 +15,7 @@ jobs:
       gomod: ${{ steps.gomod.outputs.gomod }}
       gosum: ${{ steps.gosum.outputs.gosum }}
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - run: make go-mod-tidy
     - id: gomod
       run: |
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-20.04
     needs: gomod
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -52,7 +52,7 @@ jobs:
       matrix:
         testSuite: [test, integration-test, helm-test]
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -78,7 +78,7 @@ jobs:
       matrix:
         bin: [controller, kanctl, kando]
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -88,7 +88,7 @@ jobs:
   docs:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - run: make docs
   release:
     runs-on: ubuntu-20.04
@@ -97,9 +97,9 @@ jobs:
     permissions:
       packages: write
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - run: make go-mod-tidy
-    - uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+    - uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -109,4 +109,4 @@ jobs:
     - run: docker image prune -af
     - run: docker builder prune -af
     - run: make release-snapshot
-    - run: ./build/push_images.sh
+    - run: COMMIT_SHA=${{ github.sha }} ./build/push_images.sh

@@ -98,6 +98,8 @@ Kanister-enabled application instances.
 
 ### Create Blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 In order to perform backup, restore, and delete operations on the running
 elasticsearch, we need to create a blueprint.
 

@@ -130,6 +130,8 @@ can be shared between Kanister-enabled application instances.
 
 ## Create blueprint
 
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
+
 In order to perform `backup`, `restore`, and `delete` operations on the running foundationDB,
 we need to create a Blueprint Kanister resource.
 You can create the Blueprint using the command below.
