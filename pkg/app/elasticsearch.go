@@ -99,7 +99,7 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 		return err
 	}
 
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values, true)
+	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values, true, false)
 	if err != nil {
 		return err
 	}
@@ -230,7 +230,7 @@ func (esi *ElasticsearchInstance) execCommand(ctx context.Context, command []str
 	if err != nil || podname == "" {
 		return "", "", errkit.Wrap(err, "Error getting the pod and container name.", "app", esi.name)
 	}
-	return kube.Exec(esi.cli, esi.namespace, podname, containername, command, nil)
+	return kube.Exec(ctx, esi.cli, esi.namespace, podname, containername, command, nil)
 }
 
 func (esi *ElasticsearchInstance) curlCommand(method, path string) string {

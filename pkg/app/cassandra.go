@@ -92,7 +92,7 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 	if err != nil {
 		return err
 	}
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cas.chart.RepoName, cas.chart.Chart), cas.chart.Version, cas.chart.Release, cas.namespace, cas.chart.Values, true)
+	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", cas.chart.RepoName, cas.chart.Chart), cas.chart.Version, cas.chart.Release, cas.namespace, cas.chart.Values, true, false)
 	if err != nil {
 		return err
 	}
@@ -228,5 +228,5 @@ func (cas *CassandraInstance) execCommand(ctx context.Context, command []string)
 	if err != nil || podname == "" {
 		return "", "", errkit.Wrap(err, "Error getting the pod and container name.", "app", cas.name)
 	}
-	return kube.Exec(cas.cli, cas.namespace, podname, containername, command, nil)
+	return kube.Exec(ctx, cas.cli, cas.namespace, podname, containername, command, nil)
 }

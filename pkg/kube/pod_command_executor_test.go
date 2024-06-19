@@ -77,7 +77,7 @@ type fakePodCommandExecutorProcessor struct {
 	execWithOptionsSyncEnd   testBarrier
 }
 
-func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(opts ExecOptions) error {
+func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(ctx context.Context, opts ExecOptions) error {
 	fprp.inExecWithOptionsOpts = &opts
 	fprp.execWithOptionsSyncStart.SyncWithController()
 	if opts.Stdout != nil && len(fprp.execWithOptionsStdout) > 0 {

@@ -96,7 +96,7 @@ func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error { //nolint:
 	}
 
 	// Install cb operator, admission controller and cluster
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.chart.RepoName, cb.chart.Chart), cb.chart.Version, cb.chart.Release, cb.namespace, cb.chart.Values, true)
+	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.chart.RepoName, cb.chart.Chart), cb.chart.Version, cb.chart.Release, cb.namespace, cb.chart.Values, true, false)
 	return errkit.Wrap(err, "Failed to install helm chart.", "app", cb.name, "chart", cb.chart.Chart, "release", cb.chart.Release)
 }
 
@@ -262,7 +262,7 @@ func (cb CouchbaseDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil || len(container) == 0 {
 		return "", "", err
 	}
-	return kube.Exec(cb.cli, cb.namespace, podName, container[0].Name, command, nil)
+	return kube.Exec(ctx, cb.cli, cb.namespace, podName, container[0].Name, command, nil)
 }
 
 // getRunningCBPod name of running couchbase cluster pod if its in ready state

@@ -72,7 +72,7 @@ func (s *FIPSSuite) SetUpSuite(c *C) {
 	// install go in kanister-tools pod
 	cmd := []string{"microdnf", "install", "-y", "go"}
 	for _, cs := range s.pod.Status.ContainerStatuses {
-		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, IsNil)
 		c.Log(stderr)
 		c.Log(stdout)
@@ -94,7 +94,7 @@ func (s *FIPSSuite) TestFIPSBoringEnabled(c *C) {
 		c.Logf("Testing %s", tool)
 		cmd := []string{"go", "tool", "nm", tool}
 		for _, cs := range s.pod.Status.ContainerStatuses {
-			stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+			stdout, stderr, err := Exec(context.Background(), s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
 			c.Assert(err, IsNil)
 			c.Assert(stderr, Equals, "")
 			scanner := bufio.NewScanner(strings.NewReader(stdout))

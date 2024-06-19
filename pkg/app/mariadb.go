@@ -87,7 +87,7 @@ func (m *MariaDB) Install(ctx context.Context, namespace string) error { //nolin
 	}
 
 	log.Print("Installing maria instance using helm.", field.M{"app": m.name})
-	err = cli.Install(ctx, m.chart.RepoName+"/"+m.chart.Chart, m.chart.Version, m.chart.Release, m.namespace, m.chart.Values, true)
+	_, err = cli.Install(ctx, m.chart.RepoName+"/"+m.chart.Chart, m.chart.Version, m.chart.Release, m.namespace, m.chart.Values, true, false)
 	if err != nil {
 		return errkit.Wrap(err, "Error intalling application through helm.", "app", m.name)
 	}
@@ -220,7 +220,7 @@ func (m *MariaDB) execCommand(ctx context.Context, command []string) (string, st
 	if err != nil || podname == "" {
 		return "", "", errkit.Wrap(err, "Error  getting pod and containername.", "app", m.name)
 	}
-	return kube.Exec(m.cli, m.namespace, podname, containername, command, nil)
+	return kube.Exec(ctx, m.cli, m.namespace, podname, containername, command, nil)
 }
 
 func mariaDBSTSName(release string) string {

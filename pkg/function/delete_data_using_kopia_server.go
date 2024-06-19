@@ -25,6 +25,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
@@ -158,6 +159,10 @@ func deleteDataFromServer(
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 	}
+
+	// Apply the registered ephemeral pod changes.
+	ephemeral.PodOptions.Apply(options)
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataFromServerPodFunc(
 		hostname,

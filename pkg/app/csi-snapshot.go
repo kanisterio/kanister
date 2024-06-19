@@ -169,7 +169,7 @@ func (tlc *TimeLogCSI) execCommand(ctx context.Context, command []string) (strin
 	if err != nil || podname == "" {
 		return "", errkit.Wrap(err, "Error getting pod and containername.", "deployment", tlc.name)
 	}
-	_, stderr, err := kube.Exec(tlc.cli, tlc.namespace, podname, containername, command, nil)
+	_, stderr, err := kube.Exec(ctx, tlc.cli, tlc.namespace, podname, containername, command, nil)
 	return stderr, err
 }
 
@@ -192,7 +192,7 @@ func (tlc TimeLogCSI) getAppDeploymentObj() *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:    "test-container",
-							Image:   "ghcr.io/kanisterio/kanister-tools:0.107.0",
+							Image:   "ghcr.io/kanisterio/kanister-tools:0.109.0",
 							Command: []string{"sh", "-c"},
 							Args:    []string{"while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"},
 							VolumeMounts: []corev1.VolumeMount{

@@ -24,7 +24,7 @@ cluster.
 on you cluster.
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.107.0 with `profiles.cr.kanister.io` CRD installed.
+* Kanister version 0.109.0 with `profiles.cr.kanister.io` CRD installed.
 * Docker CLI installed
 * A docker image containing the required tools to back up FoundationDB.
 The Dockerfile for the image can be found [here](https://raw.githubusercontent.com/kanisterio/kanister/master/docker/foundationdb/Dockerfile).
@@ -129,6 +129,8 @@ can be shared between Kanister-enabled application instances.
 
 
 ## Create blueprint
+
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 In order to perform `backup`, `restore`, and `delete` operations on the running foundationDB,
 we need to create a Blueprint Kanister resource.

@@ -245,5 +245,5 @@ func (fdb *FoundationDB) execCommand(ctx context.Context, command []string) (str
 		return "", "", err
 	}
 
-	return kube.Exec(fdb.cli, fdb.namespace, podName, containers[0].Name, command, nil)
+	return kube.Exec(ctx, fdb.cli, fdb.namespace, podName, containers[0].Name, command, nil)
 }

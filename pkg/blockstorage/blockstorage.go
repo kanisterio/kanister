@@ -50,3 +50,5 @@ type RestoreTargeter interface {
 	// If not globally restorable, returns a map of the regions and zones to which snapshot can be restored.
 	SnapshotRestoreTargets(context.Context, *Snapshot) (global bool, regionsAndZones map[string][]string, err error)
 }
+
+const SnapshotDoesNotExistError = "Snapshot does not exist"

@@ -102,7 +102,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	}
 
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values, true)
+	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values, true, false)
 	if err != nil {
 		return err
 	}
@@ -229,5 +229,5 @@ func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil || podName == "" {
 		return "", "", err
 	}
-	return kube.Exec(mongo.cli, mongo.namespace, podName, containerName, command, nil)
+	return kube.Exec(ctx, mongo.cli, mongo.namespace, podName, containerName, command, nil)
 }

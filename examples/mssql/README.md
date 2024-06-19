@@ -9,7 +9,7 @@ This document will cover how to install SQL Server and how to run backup/restore
 
 - Kubernetes 1.16+ with Beta APIs enabled
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.107.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanister controller version 0.109.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Installing Microsoft SQL Server
@@ -187,6 +187,8 @@ requires a Profile reference to complete the action. This CR (`profiles.cr.kanis
 can be shared between Kanister-enabled application instances.
 
 ### Create Blueprint
+
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 Create Blueprint in the same namespace as the Kanister controller
 

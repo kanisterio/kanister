@@ -20,7 +20,7 @@ moving on to Elasticsearch 6.0.
 
 * Kubernetes 1.20+
 * PV provisioner support in the underlying infrastructure
-* Kanister controller version 0.107.0 installed in your cluster
+* Kanister controller version 0.109.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## StatefulSets Details
@@ -74,7 +74,7 @@ Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
 $ helm install kanister --namespace kanister --create-namespace \
-  kanister/kanister-operator --set image.tag=0.107.0
+  kanister/kanister-operator --set image.tag=0.109.0
 ```
 
 ### Create Profile
@@ -97,6 +97,8 @@ the action. This CR (`profiles.cr.kanister.io`) can be shared between
 Kanister-enabled application instances.
 
 ### Create Blueprint
+
+**NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
 
 In order to perform backup, restore, and delete operations on the running
 elasticsearch, we need to create a blueprint.
