@@ -1,21 +1,21 @@
 package errorchecker
 
 import (
-	. "gopkg.in/check.v1"
 	"testing"
 
 	"github.com/kanisterio/errkit"
+	checkv1 "github.com/kastenhq/check"
 	"github.com/pkg/errors"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { checkv1.TestingT(t) }
 
 type ErrorsTestSuite struct{}
 
-var _ = Suite(&ErrorsTestSuite{})
+var _ = checkv1.Suite(&ErrorsTestSuite{})
 
-func (ts *ErrorsTestSuite) TestErrorMessageMatcher(c *C) {
+func (ts *ErrorsTestSuite) TestErrorMessageMatcher(c *checkv1.C) {
 	errkitError := errkit.New("Some errkit error")
 	for _, tc := range []struct {
 		params         []any
@@ -49,21 +49,21 @@ func (ts *ErrorsTestSuite) TestErrorMessageMatcher(c *C) {
 		},
 	} {
 		r, s := ErrorMessageMatcher.Check(tc.params, tc.names)
-		c.Assert(r, Equals, tc.expectedResult)
-		c.Assert(s, Equals, tc.expectedError)
+		c.Assert(r, checkv1.Equals, tc.expectedResult)
+		c.Assert(s, checkv1.Equals, tc.expectedError)
 	}
 }
 
-func (ts *ErrorsTestSuite) TestWrappingAndMatching(c *C) {
+func (ts *ErrorsTestSuite) TestWrappingAndMatching(c *checkv1.C) {
 	errkitErr := errkit.New("Errkit error")
 	errkitWrappedErr := errkit.Wrap(errkitErr, "errkit wrapped")
 	errorsWrappedErr := errors.Wrap(errkitWrappedErr, "errors wrapped")
 	errorsWrappedErr1 := errors.Wrap(errorsWrappedErr, "errors wrapped 1")
 
 	// Ensure that errors from 'errkit' wrapped by the older 'errors' package remain matchable.
-	c.Assert(errors.Is(errorsWrappedErr, errkitErr), Equals, true)
+	c.Assert(errors.Is(errorsWrappedErr, errkitErr), checkv1.Equals, true)
 	// Ensure that transformation to string still works
-	c.Assert(errorsWrappedErr1.Error(), Equals, "errors wrapped 1: errors wrapped: errkit wrapped: Errkit error")
+	c.Assert(errorsWrappedErr1.Error(), checkv1.Equals, "errors wrapped 1: errors wrapped: errkit wrapped: Errkit error")
 	// Ensure that error message matching does work as expected
 	c.Assert(errorsWrappedErr1, ErrorMessageMatcher, ".*errkit wrapped.*")
 	c.Assert(errorsWrappedErr1, ErrorMessageMatcher, ".*Errkit error")

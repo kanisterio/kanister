@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"gopkg.in/check.v1"
+	"github.com/kastenhq/check"
 )
 
 type errorMatchesChecker struct {
