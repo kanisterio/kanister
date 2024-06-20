@@ -293,3 +293,6 @@ reno-new:
 
 reno-report:
 	@$(MAKE) run CMD="./build/reno_report.sh $(VERSION)"
+
+reno-lint:
+	@$(MAKE) run CMD="reno lint"
