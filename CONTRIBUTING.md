@@ -95,6 +95,16 @@ We are using squash and merge approach to PRs which means that commit descriptio
 
 It's recommended to use conventional commits when strarting a PR, but follow-up commits in the PR don't have to follow the convention.
 
+### Release notes
+
+If submitted change fixes a bug, introduces a new feature or breaking change, contributor should add a release note.
+Kanister is using the [reno](https://docs.openstack.org/reno/latest/) tool to track release notes.
+
+Release note can be added with `make reno-new note=<note_name>` command, which will create a note file.
+Contributor should edit and commit the note file.
+
+See [release notes](./releasenotes/README.md) for more info.
+
 ### Submitting Pull Requests
 
 **PR titles should be in following format:**

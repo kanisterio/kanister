@@ -1,0 +1,29 @@
+---
+collapse_pre_releases: false
+earliest_version: 0.104.0
+add_release_date: false
+stop_at_branch_base: true
+ignore_notes: []
+
+sections:
+  - [features, New Features]
+  - [fixes, Bug Fixes]
+  - [security, Security Issues]
+  - [issues, Known Issues]
+  - [upgrade, Upgrade Notes]
+  - [deprecations, Deprecations]
+  - [other, Other Notes]
+
+unreleased_version_title: ''
+
+prelude_section_name: release_summary
+template: |
+  ---
+  release_summary:
+  features:
+  issues:
+  upgrade:
+  deprecations:
+  security:
+  fixes:
+  other:
