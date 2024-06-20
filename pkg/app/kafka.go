@@ -500,7 +500,7 @@ func (kc *KafkaCluster) InsertRecord(ctx context.Context, namespace string) erro
 	if resp.StatusCode != 200 {
 		return errors.New("Error inserting records in topic")
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
@@ -617,7 +617,7 @@ func createConsumerGroup(uri string) error {
 		// we are checking if consumer is already present and if not present it should be created
 		return errors.New("Error creating consumer")
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
@@ -650,7 +650,7 @@ func subscribe(uri string) error {
 	if resp.StatusCode != 204 {
 		return errors.New("Error subscribing to the topic")
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
@@ -674,7 +674,7 @@ func consumeMessage(uri string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, err

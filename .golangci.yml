@@ -35,6 +35,7 @@ run:
     - "integration"
 
 issues:
+  exclude-use-default: false
   exclude-rules:
     - path: '_test.go'
       linters:
@@ -44,7 +45,7 @@ issues:
         - dupl
         - misspell
         - nestif
-
+        - gci
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
         - unparam
@@ -74,3 +75,12 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/kanisterio/kanister)
+      - blank
+      - dot
+    skip-generated: true
+
+exclude-dirs:
+  - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen
+  - pkg/client/clientset # generated from code-gen
+  - pkg/client/informers # generated from code-gen
+  - pkg/client/listers # generated from code-gen
