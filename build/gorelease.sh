@@ -26,6 +26,9 @@ then
 	exit 1
 fi
 
+## Set default changelog file
+CHANGELOG_FILE=${CHANGELOG_FILE:-./CHANGELOG_CURRENT.md}
+
 RELEASE_NOTES=""
 if [ -n "${CHANGELOG_FILE:-}" ]
 then
