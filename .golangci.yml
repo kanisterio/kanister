@@ -82,7 +82,7 @@ linters-settings:
       - dot
     skip-generated: true
   stylecheck:
-    checks: [ "all", "-ST1001", "-ST1005", "-ST1016", "-ST1023" ]
+    checks: [ "all", "-ST1001", "-ST1005", "-ST1016", "-ST1023", "-ST1000"]
 
 exclude-dirs:
   - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen

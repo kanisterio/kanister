@@ -51,8 +51,9 @@ type MongoDB struct {
 	chart     helm.ChartInfo
 }
 
-//nolint:stylecheck
 // Last tested working version "9.0.0"
+//
+//nolint:stylecheck
 func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
 		username: "root",
