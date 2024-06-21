@@ -215,7 +215,7 @@ controller/metrics.go
 
 ```golang
 const (
-    ActionSetCounterVecLabelRes     = "resolution"
+	ActionSetCounterVecLabelRes     = "resolution"
 	ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE = "operation_type"
 )
 
