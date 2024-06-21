@@ -8,3 +8,6 @@
 /dist
 **/*.swp
 /.idea
+/releasenotes/config.yaml
+CHANGELOG.rst
+CHANGELOG_CURRENT.rst
