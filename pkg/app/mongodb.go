@@ -36,7 +36,7 @@ const (
 	mongoWaitTimeout = 5 * time.Minute
 )
 
-// IsMaster struct gets mapped to the output of the mongo command that checks if node is master or not.
+// IsMasterOutput struct gets mapped to the output of the mongo command that checks if node is master or not.
 type IsMasterOutput struct {
 	Ismaster bool `json:"ismaster"`
 }
@@ -52,6 +52,8 @@ type MongoDB struct {
 }
 
 // Last tested working version "9.0.0"
+//
+//nolint:stylecheck
 func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
 		username: "root",

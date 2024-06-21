@@ -43,7 +43,7 @@ func FindJsonpathArgs(s string) map[string]string {
 	return matchMap
 }
 
-// ResolveJsonpath resolves jsonpath value from the k8s resource object
+// ResolveJsonpathToString resolves jsonpath value from the k8s resource object
 func ResolveJsonpathToString(obj runtime.Object, jsonpathStr string) (string, error) {
 	var buff bytes.Buffer
 	jp, err := printers.NewJSONPathPrinter(jsonpathStr)

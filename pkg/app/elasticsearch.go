@@ -56,6 +56,8 @@ type ElasticsearchInstance struct {
 }
 
 // Last tested on 8.5.1
+//
+//nolint:stylecheck
 func NewElasticsearchInstance(name string) App {
 	return &ElasticsearchInstance{
 		name:      name,

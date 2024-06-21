@@ -38,7 +38,7 @@ func s3Args(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
 		s3Endpoint := ResolveS3Endpoint(e)
 		args = args.AppendLoggableKV(s3EndpointFlag, s3Endpoint)
 
-		if HttpInsecureEndpoint(e) {
+		if httpInsecureEndpoint(e) {
 			args = args.AppendLoggable(s3DisableTLSFlag)
 		}
 	}
@@ -75,6 +75,6 @@ func ResolveS3Endpoint(endpoint string) string {
 	return sp[len(sp)-1]
 }
 
-func HttpInsecureEndpoint(endpoint string) bool {
+func httpInsecureEndpoint(endpoint string) bool {
 	return strings.HasPrefix(endpoint, "http:")
 }

@@ -51,7 +51,7 @@ var _ http.Handler = (*healthCheckHandler)(nil)
 type healthCheckHandler struct{}
 
 func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	version := version.VERSION
+	version := version.Version
 	info := Info{true, version}
 	js, err := json.Marshal(info)
 	if err != nil {

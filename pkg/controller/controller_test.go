@@ -528,85 +528,85 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				funcNames:        []string{testutil.WaitFuncName},
 				name:             "WaitFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+				metricResolution: ActionSetCounterVecLabelResSuccess,
 			},
 			{
 				funcNames:        []string{testutil.WaitFuncName, testutil.WaitFuncName},
 				name:             "WaitWait",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+				metricResolution: ActionSetCounterVecLabelResSuccess,
 			},
 			{
 				funcNames:        []string{testutil.FailFuncName},
 				name:             "FailFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
+				metricResolution: ActionSetCounterVecLabelResFailure,
 			},
 			{
 				funcNames:        []string{testutil.WaitFuncName, testutil.FailFuncName},
 				name:             "WaitFail",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
+				metricResolution: ActionSetCounterVecLabelResFailure,
 			},
 			{
 				funcNames:        []string{testutil.FailFuncName, testutil.WaitFuncName},
 				name:             "FailWait",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
+				metricResolution: ActionSetCounterVecLabelResFailure,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName},
 				name:             "ArgFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+				metricResolution: ActionSetCounterVecLabelResSuccess,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName, testutil.FailFuncName},
 				name:             "ArgFail",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
+				metricResolution: ActionSetCounterVecLabelResFailure,
 			},
 			{
 				funcNames:        []string{testutil.OutputFuncName},
 				name:             "OutputFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+				metricResolution: ActionSetCounterVecLabelResSuccess,
 			},
 			{
 				funcNames:        []string{testutil.CancelFuncName},
 				name:             "CancelFunc",
 				version:          kanister.DefaultVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
+				metricResolution: ActionSetCounterVecLabelResFailure,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName},
 				name:             "ArgFuncVersion",
 				version:          testutil.TestVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+				metricResolution: ActionSetCounterVecLabelResSuccess,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName},
 				name:             "ArgFuncVersionFallback",
 				version:          "v1.2.3",
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+				metricResolution: ActionSetCounterVecLabelResSuccess,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName},
 				name:             "ArgFuncNoActionSetVersion",
 				version:          "",
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+				metricResolution: ActionSetCounterVecLabelResSuccess,
 			},
 			{
 				funcNames:        []string{testutil.VersionMismatchFuncName},
 				name:             "VersionMismatchFunc",
 				version:          "v1.2.3",
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_FAILURE,
+				metricResolution: ActionSetCounterVecLabelResFailure,
 			},
 			{
 				funcNames:        []string{testutil.ArgFuncName, testutil.OutputFuncName},
 				name:             "ArgOutputFallbackOnlyOutput",
 				version:          testutil.TestVersion,
-				metricResolution: ACTION_SET_COUNTER_VEC_LABEL_RES_SUCCESS,
+				metricResolution: ActionSetCounterVecLabelResSuccess,
 			},
 		} {
 			var err error
@@ -1043,77 +1043,77 @@ func (s *ControllerSuite) TestGetActionTypeBucket(c *C) {
 		actionType string
 	}{
 		{
-			actionType: ACTION_TYPE_BACKUP,
+			actionType: ActionTypeBackup,
 		},
 		{
-			actionType: ACTION_TYPE_RESTORE,
+			actionType: ActionTypeRestore,
 		},
 		{
-			actionType: ACTION_TYPE_DELETE,
+			actionType: ActionTypeDelete,
 		},
 		{
-			actionType: ACTION_TYPE_BACKUP_TO_SERVER,
+			actionType: ActionTypeBackupToServer,
 		},
 		{
-			actionType: ACTION_TYPE_RESTORE_FROM_SERVER,
+			actionType: ActionTypeRestoreFromServer,
 		},
 		{
-			actionType: ACTION_TYPE_BEFORE_BACKUP,
+			actionType: ActionTypeBeforeBackup,
 		},
 		{
-			actionType: ACTION_TYPE_ON_SUCCESS,
+			actionType: ActionTypeOnSuccess,
 		},
 		{
-			actionType: ACTION_TYPE_ON_FAILURE,
+			actionType: ActionTypeOnFailure,
 		},
 		{
-			actionType: ACTION_TYPE_PRE_RESTORE,
+			actionType: ActionTypePreRestore,
 		},
 		{
-			actionType: ACTION_TYPE_POST_RESTORE,
+			actionType: ActionTypePostRestore,
 		},
 		{
-			actionType: ACTION_TYPE_POST_RESTORE_FAILED,
+			actionType: ActionTypePostRestoreFailed,
 		},
 		{
-			actionType: ACTION_TYPE_BACKUP_PREHOOK,
+			actionType: ActionTypeBackupPrehook,
 		},
 		{
-			actionType: ACTION_TYPE_BACKUP_POSTHOOK,
+			actionType: ActionTypeBackupPosthook,
 		},
 		{
 			actionType: "random-action",
 		},
 	} {
 		switch tc.actionType {
-		case ACTION_TYPE_BACKUP:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP)
-		case ACTION_TYPE_RESTORE:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_RESTORE)
-		case ACTION_TYPE_DELETE:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_DELETE)
-		case ACTION_TYPE_BACKUP_TO_SERVER:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_TO_SERVER)
-		case ACTION_TYPE_RESTORE_FROM_SERVER:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_RESTORE_FROM_SERVER)
-		case ACTION_TYPE_BEFORE_BACKUP:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BEFORE_BACKUP)
-		case ACTION_TYPE_ON_SUCCESS:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_ON_SUCCESS)
-		case ACTION_TYPE_ON_FAILURE:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_ON_FAILURE)
-		case ACTION_TYPE_PRE_RESTORE:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_PRE_RESTORE)
-		case ACTION_TYPE_POST_RESTORE:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_POST_RESTORE)
-		case ACTION_TYPE_POST_RESTORE_FAILED:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_POST_RESTORE_FAILED)
-		case ACTION_TYPE_BACKUP_PREHOOK:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_PREHOOK)
-		case ACTION_TYPE_BACKUP_POSTHOOK:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_POSTHOOK)
+		case ActionTypeBackup:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackup)
+		case ActionTypeRestore:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeRestore)
+		case ActionTypeDelete:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeDelete)
+		case ActionTypeBackupToServer:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackupToServer)
+		case ActionTypeRestoreFromServer:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeRestoreFromServer)
+		case ActionTypeBeforeBackup:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBeforeBackup)
+		case ActionTypeOnSuccess:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeOnSuccess)
+		case ActionTypeOnFailure:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeOnFailure)
+		case ActionTypePreRestore:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypePreRestore)
+		case ActionTypePostRestore:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypePostRestore)
+		case ActionTypePostRestoreFailed:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypePostRestoreFailed)
+		case ActionTypeBackupPrehook:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackupPrehook)
+		case ActionTypeBackupPosthook:
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackupPosthook)
 		default:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ACTION_TYPE_BACKUP_OTHER)
+			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackupOther)
 		}
 	}
 }

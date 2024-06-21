@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package consts declares all the constants.
 package consts
 
 const (
@@ -47,6 +48,7 @@ const (
 )
 
 // These consts are used to query Repository server API objects
+
 const RepositoryServerResourceName = "repositoryserver"
 const RepositoryServerResourceNamePlural = "repositoryservers"
 

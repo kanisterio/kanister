@@ -215,7 +215,7 @@ controller/metrics.go
 
 ```golang
 const (
-	ACTION_SET_COUNTER_VEC_LABEL_RES     = "resolution"
+	ActionSetCounterVecLabelRes     = "resolution"
 	ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE = "operation_type"
 )
 
@@ -228,7 +228,7 @@ type metrics struct {
 func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
 	bl := make([]kanistermetrics.BoundedLabel, 2)
 	bl[0] = kanistermetrics.BoundedLabel{
-		LabelName:   ACTION_SET_COUNTER_VEC_LABEL_RES,
+		LabelName:   ActionSetCounterVecLabelRes,
 		LabelValues: []string{"success", "failure"},
 	}
 	bl[1] = kanistermetrics.BoundedLabel{
@@ -244,7 +244,7 @@ func getActionSetCounterVecLabels() []kanistermetrics.BoundedLabel {
 func constructActionSetCounterVecLabels(operation_type string, resolution string) prometheus.Labels {
 	return prometheus.Labels{
 		ACTION_SET_COUNTER_VEC_LABEL_OP_TYPE: operation_type,
-		ACTION_SET_COUNTER_VEC_LABEL_RES:     resolution,
+		ActionSetCounterVecLabelRes:     resolution,
 	}
 }
 

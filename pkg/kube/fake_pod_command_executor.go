@@ -27,7 +27,6 @@ type FakePodCommandExecutor struct {
 	ExecStderr string
 }
 
-// Exec
 func (fce *FakePodCommandExecutor) Exec(_ context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	fce.inExecCommand = make([]string, len(command))
 	copy(fce.inExecCommand, command)

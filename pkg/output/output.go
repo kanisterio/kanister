@@ -71,7 +71,7 @@ func PrintOutput(key, value string) error {
 	return fPrintOutput(os.Stdout, key, value)
 }
 
-// PrintOutput prints the output of the `kando output` command to w.
+// PrintOutputTo prints the output of the `kando output` command to w.
 func PrintOutputTo(w io.Writer, key, value string) error {
 	return fPrintOutput(w, key, value)
 }

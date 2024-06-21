@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package repositoryserver validates the secret credentials for all location profiles.
 package repositoryserver
 
 import (

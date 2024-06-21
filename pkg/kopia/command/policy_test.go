@@ -62,7 +62,7 @@ func (kPolicy *KopiaPolicyTestSuite) TestPolicyShowCommands(c *C) {
 						ConfigFilePath: "path/kopia.config",
 						LogDirectory:   "cache/log",
 					},
-					GetJsonOutput: true,
+					GetJSONOutput: true,
 				}
 				return PolicyShowGlobal(args)
 			},
