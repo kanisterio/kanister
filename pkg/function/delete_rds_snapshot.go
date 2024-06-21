@@ -54,7 +54,7 @@ func (*deleteRDSSnapshotFunc) Name() string {
 	return DeleteRDSSnapshotFuncName
 }
 
-//nolint:unparam
+//nolint:unparam,nolintlint
 func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Profile, dbEngine RDSDBEngine) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
