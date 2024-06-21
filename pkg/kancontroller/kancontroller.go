@@ -19,7 +19,7 @@ Some of the code below came from https://github.com/coreos/etcd-operator
 which also has the apache 2.0 license.
 */
 
-// Package for a kanister operator
+// Package kancontroller is for a kanister operator.
 package kancontroller
 
 import (
@@ -34,12 +34,13 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kanisterio/kanister/pkg/controller"
-	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
+
+	_ "github.com/kanisterio/kanister/pkg/function"
 )
 
 const (

@@ -12,6 +12,7 @@ Please check the type of change your PR introduces:
 - [ ] :sunflower: Feature
 - [ ] :world_map: Documentation
 - [ ] :robot: Test
+- [ ] :building_construction: Build
 
 ## Issues <!-- to auto-close the issue, add the "fixes" keyword -->
 

@@ -62,7 +62,7 @@ func getSecretFromFile(ctx context.Context, filename string) (*corev1.Secret, er
 		if err != nil {
 			return nil, err
 		}
-		defer f.Close()
+		defer f.Close() //nolint:errcheck
 	}
 	d := k8sYAML.NewYAMLOrJSONDecoder(f, 4096)
 	secret := &corev1.Secret{}

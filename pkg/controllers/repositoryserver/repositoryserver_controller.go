@@ -105,7 +105,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	logger.Info("Connect to Kopia Repository")
-	if err := repoServerHandler.connectToKopiaRepository(); err != nil {
+	if err := repoServerHandler.connectToKopiaRepository(ctx); err != nil {
 		condition := getCondition(metav1.ConditionFalse, conditionReasonRepositoryConnectedErr, err.Error(), crv1alpha1.RepositoryConnected)
 		if uerr := repoServerHandler.setCondition(ctx, condition, crv1alpha1.Failed); uerr != nil {
 			return ctrl.Result{}, uerr

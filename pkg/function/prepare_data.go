@@ -132,7 +132,7 @@ func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc k
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}
-		defer r.Close()
+		defer r.Close() //nolint:errcheck
 
 		bytes, err := io.ReadAll(r)
 		if err != nil {

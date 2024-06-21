@@ -30,7 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-// Integration test app for CSI Snapshot functions
+// TimeLogCSI is integration test app for CSI Snapshot functions.
 type TimeLogCSI struct {
 	cli        kubernetes.Interface
 	namespace  string
@@ -169,7 +169,7 @@ func (tlc *TimeLogCSI) execCommand(ctx context.Context, command []string) (strin
 	if err != nil || podname == "" {
 		return "", errors.Wrapf(err, "Error getting pod and containername %s.", tlc.name)
 	}
-	_, stderr, err := kube.Exec(tlc.cli, tlc.namespace, podname, containername, command, nil)
+	_, stderr, err := kube.Exec(ctx, tlc.cli, tlc.namespace, podname, containername, command, nil)
 	return stderr, err
 }
 

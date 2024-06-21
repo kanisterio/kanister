@@ -1,3 +1,4 @@
+// Package progress
 package progress
 
 import (

@@ -40,7 +40,8 @@ type PostgresDB struct {
 	namespace string
 }
 
-// Last tested chart version "10.12.3". Also we are using postgres version 13.4
+//nolint:stylecheck
+// Last tested chart version "10.12.3". Also, we are using postgres version 13.4
 func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
@@ -225,5 +226,5 @@ func (pdb PostgresDB) execCommand(ctx context.Context, command []string) (string
 	if err != nil {
 		return "", "", err
 	}
-	return kube.Exec(pdb.cli, pdb.namespace, pod, container, command, nil)
+	return kube.Exec(ctx, pdb.cli, pdb.namespace, pod, container, command, nil)
 }

@@ -33,7 +33,7 @@ type EC2 struct {
 	DryRun bool
 }
 
-// NewEC2Client returns ec2 client struct.
+// NewClient returns ec2 client struct.
 func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*EC2, error) {
 	s, err := session.NewSession(awsConfig)
 	if err != nil {

@@ -111,6 +111,6 @@ func (i *InstanceMetadata) queryMetadataBytes(path, format string) ([]byte, erro
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("Failed to get instance metadata with statusCode: %d, Path: %s", resp.StatusCode, path)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	return io.ReadAll(resp.Body)
 }

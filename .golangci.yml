@@ -1,5 +1,5 @@
 linters:
-  disable-all: false                    # This enabled 7 default linters as of golangci-lint@v1.50.0:
+  disable-all: true                    # This enabled 7 default linters as of golangci-lint@v1.50.0:
                                         #   1. errcheck
                                         #   2. gosimple
                                         #   3. govet
@@ -36,6 +36,7 @@ run:
     - "integration"
 
 issues:
+  exclude-use-default: false
   exclude-rules:
     - path: '_test.go'
       linters:
@@ -45,6 +46,7 @@ issues:
         - dupl
         - misspell
         - nestif
+        - gci
         - stylecheck
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
@@ -76,5 +78,14 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/kanisterio/kanister)
+      - blank
+      - dot
+    skip-generated: true
   stylecheck:
     checks: [ "all", "-ST1001", "-ST1005", "-ST1016", "-ST1023" ]
+
+exclude-dirs:
+  - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen
+  - pkg/client/clientset # generated from code-gen
+  - pkg/client/informers # generated from code-gen
+  - pkg/client/listers # generated from code-gen

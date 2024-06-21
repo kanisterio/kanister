@@ -201,7 +201,7 @@ func Read(ctx context.Context, target io.Writer, backupID, path, password string
 		return errors.Wrapf(err, "Failed to open kopia object: %v", oid)
 	}
 
-	defer r.Close()
+	defer r.Close() //nolint:errcheck
 
 	_, err = copy(target, r)
 

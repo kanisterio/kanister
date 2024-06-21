@@ -71,7 +71,7 @@ func PrintOutput(key, value string) error {
 	return fPrintOutput(os.Stdout, key, value)
 }
 
-// PrintOutput prints the output of the `kando output` command to w.
+// PrintOutputTo prints the output of the `kando output` command to w.
 func PrintOutputTo(w io.Writer, key, value string) error {
 	return fPrintOutput(w, key, value)
 }
@@ -81,6 +81,6 @@ func fPrintOutput(w io.Writer, key, value string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(w, PhaseOpString, outString)
+	fmt.Fprintln(w, PhaseOpString, outString) //nolint:errcheck
 	return nil
 }

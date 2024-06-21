@@ -22,7 +22,6 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
-	_ "gopkg.in/check.v1" // importing go check to bypass the testing flags
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
+
+	_ "gopkg.in/check.v1" // importing go check to bypass the testing flags
 )
 
 const serverVersionV170 = "v1.7.0"

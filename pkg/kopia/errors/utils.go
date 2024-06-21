@@ -129,7 +129,7 @@ func RepoNotInitialized(stderr string) bool {
 
 var regexpBucketDoesNotExist = regexp.MustCompile(`bucket ".*" does not exist`)
 
-// bucketDoesNotExist returns true if the stderr logs contain either `bucket doesn't exist`
+// BucketDoesNotExist returns true if the stderr logs contain either `bucket doesn't exist`
 // or `bucket "<bucket_name>" does not exist` messages.
 func BucketDoesNotExist(stderr string) bool {
 	return strings.Contains(stderr, ErrBucketDoesNotExistStr) ||

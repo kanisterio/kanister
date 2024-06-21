@@ -18,14 +18,14 @@
 package testing
 
 import (
-	. "gopkg.in/check.v1"
-
 	"github.com/kanisterio/kanister/pkg/app"
+
+	. "gopkg.in/check.v1"
 )
 
 // Register Applications to Integration Suite
 
-// pitr-postgresql app
+// PITRPostgreSQL registers pitr-postgresql app
 type PITRPostgreSQL struct {
 	IntegrationSuite
 }
@@ -40,7 +40,7 @@ var _ = Suite(&PITRPostgreSQL{
 	},
 })
 
-// postgres app
+// PostgreSQL registers postgres app
 type PostgreSQL struct {
 	IntegrationSuite
 }
@@ -55,7 +55,7 @@ var _ = Suite(&PostgreSQL{
 	},
 })
 
-// mysql app
+// MySQL registers mysql app.
 type MySQL struct {
 	IntegrationSuite
 }
@@ -70,7 +70,7 @@ var _ = Suite(&MySQL{
 	},
 })
 
-// cockroachdb app
+// CockroachDB registers cockroachdb app
 type CockroachDB struct {
 	IntegrationSuite
 }
@@ -85,7 +85,7 @@ var _ = Suite(&CockroachDB{
 	},
 })
 
-// time-log app for csi volumesnapshot
+// TimeLogCSI registers time-log app for csi volumesnapshot.
 type TimeLogCSI struct {
 	IntegrationSuite
 }
@@ -100,7 +100,7 @@ var _ = Suite(&TimeLogCSI{
 	},
 })
 
-// mariaDB app
+// Maria registers mariaDB app.
 type Maria struct {
 	IntegrationSuite
 }
@@ -174,7 +174,7 @@ var _ = Suite(&Couchbase{
 	},
 })
 
-// rds-postgres app
+// RDSPostgreSQL registers rds-postgres app.
 type RDSPostgreSQL struct {
 	IntegrationSuite
 }
@@ -217,8 +217,8 @@ var _ = Suite(&RDSAuroraMySQL{
 	},
 })
 
-// rds-postgres-dump app
-// Create snapshot, export data and restore from dump
+// RDSPostgreSQLDump registers rds-postgres-dump app.
+// It creates snapshot, export data and restore from dump.
 type RDSPostgreSQLDump struct {
 	IntegrationSuite
 }
@@ -233,8 +233,8 @@ var _ = Suite(&RDSPostgreSQLDump{
 	},
 })
 
-// rds-postgres-snap app
-// Create snapshot and restore from snapshot
+// RDSPostgreSQLSnap registers rds-postgres-snap app.
+// It creates snapshot and restore from snapshot.
 type RDSPostgreSQLSnap struct {
 	IntegrationSuite
 }
@@ -263,8 +263,8 @@ var _ = Suite(&MSSQL{
 	},
 })
 
-// OpenShift apps for version 3.11
-// Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+// MysqlDBDepConfig registers mysql Instance that is deployed through DeploymentConfig on OpenShift cluster.
+// OpenShifts apps for version 3.11.
 type MysqlDBDepConfig struct {
 	IntegrationSuite
 }
@@ -279,7 +279,7 @@ var _ = Suite(&MysqlDBDepConfig{
 	},
 })
 
-// MongoDB deployed on openshift cluster
+// MongoDBDepConfig deploys MongoDB on openshift cluster
 type MongoDBDepConfig struct {
 	IntegrationSuite
 }
@@ -294,7 +294,7 @@ var _ = Suite(&MongoDBDepConfig{
 	},
 })
 
-// PostgreSQL deployed on openshift cluster
+// PostgreSQLDepConfig deploys PostgreSQL on openshift cluster.
 type PostgreSQLDepConfig struct {
 	IntegrationSuite
 }
@@ -309,8 +309,8 @@ var _ = Suite(&PostgreSQLDepConfig{
 	},
 })
 
+// MysqlDBDepConfig4_4 deploys Mysql Instance through DeploymentConfig on OpenShift cluster.
 // OpenShift apps for version 4.4
-// Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
 type MysqlDBDepConfig4_4 struct {
 	IntegrationSuite
 }
@@ -325,7 +325,7 @@ var _ = Suite(&MysqlDBDepConfig4_4{
 	},
 })
 
-// MongoDB deployed on openshift cluster
+// MongoDBDepConfig4_4 deploys MongoDB on openshift cluster
 type MongoDBDepConfig4_4 struct {
 	IntegrationSuite
 }
@@ -340,7 +340,7 @@ var _ = Suite(&MongoDBDepConfig4_4{
 	},
 })
 
-// PostgreSQL deployed on openshift cluster
+// PostgreSQLDepConfig4_4 deploys PostgreSQL on openshift cluster
 type PostgreSQLDepConfig4_4 struct {
 	IntegrationSuite
 }
@@ -355,8 +355,8 @@ var _ = Suite(&PostgreSQLDepConfig4_4{
 	},
 })
 
+// MysqlDBDepConfig4_5 deploys Mysql Instance that through DeploymentConfig on OpenShift cluster.
 // OpenShift apps for version 4.5
-// Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
 type MysqlDBDepConfig4_5 struct {
 	IntegrationSuite
 }
@@ -371,7 +371,7 @@ var _ = Suite(&MysqlDBDepConfig4_5{
 	},
 })
 
-// MongoDB deployed on openshift cluster
+// MongoDBDepConfig4_5 deploys MongoDB on openshift cluster
 type MongoDBDepConfig4_5 struct {
 	IntegrationSuite
 }
@@ -386,7 +386,7 @@ var _ = Suite(&MongoDBDepConfig4_5{
 	},
 })
 
-// PostgreSQL deployed on openshift cluster
+// PostgreSQLDepConfig4_5 deploys PostgreSQL on openshift cluster.
 type PostgreSQLDepConfig4_5 struct {
 	IntegrationSuite
 }
@@ -416,7 +416,7 @@ var _ = Suite(&Kafka{
 	},
 })
 
-// Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+// MysqlDBDepConfig4_10 deploys Mysql Instance through DeploymentConfig on OpenShift cluster.
 type MysqlDBDepConfig4_10 struct {
 	IntegrationSuite
 }
@@ -431,7 +431,7 @@ var _ = Suite(&MysqlDBDepConfig4_10{
 	},
 })
 
-// MongoDB deployed on openshift cluster
+// MongoDBDepConfig4_10 deploys MongoDB on openshift cluster
 type MongoDBDepConfig4_10 struct {
 	IntegrationSuite
 }
@@ -446,7 +446,7 @@ var _ = Suite(&MongoDBDepConfig4_10{
 	},
 })
 
-// PostgreSQL deployed on openshift cluster
+// PostgreSQLDepConfig4_10 deploys PostgreSQL on openshift cluster.
 type PostgreSQLDepConfig4_10 struct {
 	IntegrationSuite
 }
