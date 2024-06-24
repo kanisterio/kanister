@@ -1,8 +1,9 @@
 package errorchecker
 
 import (
-	. "gopkg.in/check.v1"
 	"testing"
+
+	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/errkit"
 	"github.com/pkg/errors"
@@ -15,45 +16,6 @@ type ErrorsTestSuite struct{}
 
 var _ = Suite(&ErrorsTestSuite{})
 
-func (ts *ErrorsTestSuite) TestErrorMessageMatcher(c *C) {
-	errkitError := errkit.New("Some errkit error")
-	for _, tc := range []struct {
-		params         []any
-		names          []string
-		expectedResult bool
-		expectedError  string
-	}{
-		{
-			params:         []any{nil},
-			names:          []string{},
-			expectedResult: false,
-			expectedError:  "Error value is nil",
-		},
-		{
-			params:         []any{10},
-			names:          []string{},
-			expectedResult: false,
-			expectedError:  "Value is not an error",
-		},
-		{
-			params:         []any{errkitError, ".* errkit .*"},
-			names:          []string{""},
-			expectedResult: true,
-			expectedError:  "",
-		},
-		{
-			params:         []any{errkitError, 1},
-			names:          []string{""},
-			expectedResult: false,
-			expectedError:  "Regex must be a string",
-		},
-	} {
-		r, s := ErrorMessageMatcher.Check(tc.params, tc.names)
-		c.Assert(r, Equals, tc.expectedResult)
-		c.Assert(s, Equals, tc.expectedError)
-	}
-}
-
 func (ts *ErrorsTestSuite) TestWrappingAndMatching(c *C) {
 	errkitErr := errkit.New("Errkit error")
 	errkitWrappedErr := errkit.Wrap(errkitErr, "errkit wrapped")
@@ -65,7 +27,7 @@ func (ts *ErrorsTestSuite) TestWrappingAndMatching(c *C) {
 	// Ensure that transformation to string still works
 	c.Assert(errorsWrappedErr1.Error(), Equals, "errors wrapped 1: errors wrapped: errkit wrapped: Errkit error")
 	// Ensure that error message matching does work as expected
-	c.Assert(errorsWrappedErr1, ErrorMessageMatcher, ".*errkit wrapped.*")
-	c.Assert(errorsWrappedErr1, ErrorMessageMatcher, ".*Errkit error")
-	c.Assert(errorsWrappedErr1, ErrorMessageMatcher, "errors wrapped 1.*")
+	AssertErrorMessage(c, errorsWrappedErr1, ".*errkit wrapped.*")
+	AssertErrorMessage(c, errorsWrappedErr1, ".*Errkit error")
+	AssertErrorMessage(c, errorsWrappedErr1, "errors wrapped 1.*")
 }
