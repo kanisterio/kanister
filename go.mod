@@ -1,15 +1,15 @@
 module github.com/kanisterio/kanister
 
-go 1.22.0
+go 1.22
 
-toolchain go1.22.4
+toolchain go1.22.2
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
 	github.com/graymeta/stow => github.com/kastenhq/stow v0.2.6-kasten.1.0.20231101232131-9321daa23aae
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 	golang.org/x/net => golang.org/x/net v0.23.0
-	gopkg.in/check.v1 => ./kancheck
+	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
 // Direct and indirect dependencies are in separate require sections.
@@ -36,7 +36,6 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/kanisterio/errkit v0.0.1
 	github.com/kanisterio/safecli v0.0.8
-	github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 	github.com/kopia/kopia v0.17.1-0.20240514043650-951f126b3c5e
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9

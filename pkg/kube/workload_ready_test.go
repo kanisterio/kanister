@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/kanisterio/kanister/pkg/errorchecker"
-	checkv1 "github.com/kastenhq/check"
+	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +17,7 @@ import (
 
 type WorkloadReadySuite struct{}
 
-var _ = checkv1.Suite(&WorkloadReadySuite{})
+var _ = Suite(&WorkloadReadySuite{})
 
 type cliParams struct {
 	name                    string
@@ -33,7 +33,7 @@ type cliParams struct {
 }
 
 // These tests can be used to force the various error states
-func (s *WorkloadReadySuite) TestWaitOnStatefulSetReady(c *checkv1.C) {
+func (s *WorkloadReadySuite) TestWaitOnStatefulSetReady(c *C) {
 	testCases := []struct {
 		input cliParams
 		want  string
@@ -56,21 +56,21 @@ func (s *WorkloadReadySuite) TestWaitOnStatefulSetReady(c *checkv1.C) {
 		if tc.want != "" {
 			c.Assert(err, errorchecker.ErrorMessageMatcher, tc.want)
 		} else {
-			c.Assert(err, checkv1.IsNil)
+			c.Assert(err, IsNil)
 		}
 	}
 }
 
-func (s *WorkloadReadySuite) TestStatefulSetReady(c *checkv1.C) {
+func (s *WorkloadReadySuite) TestStatefulSetReady(c *C) {
 	cp := cliParams{"ss", "default", true, 1, 1, 1, 1, 1, 1, "Running"}
 	ctx := context.Background()
 	ready, status, err := StatefulSetReady(ctx, getCli(cp), cp.namespace, cp.name)
-	c.Assert(status, checkv1.DeepEquals, "")
-	c.Assert(ready, checkv1.DeepEquals, true)
-	c.Assert(err, checkv1.IsNil)
+	c.Assert(status, DeepEquals, "")
+	c.Assert(ready, DeepEquals, true)
+	c.Assert(err, IsNil)
 }
 
-func (s *WorkloadReadySuite) TestWaitOnDeploymentReady(c *checkv1.C) {
+func (s *WorkloadReadySuite) TestWaitOnDeploymentReady(c *C) {
 	testCases := []struct {
 		input cliParams
 		want  string
@@ -102,18 +102,18 @@ func (s *WorkloadReadySuite) TestWaitOnDeploymentReady(c *checkv1.C) {
 		if tc.want != "" {
 			c.Assert(err, errorchecker.ErrorMessageMatcher, tc.want)
 		} else {
-			c.Assert(err, checkv1.IsNil)
+			c.Assert(err, IsNil)
 		}
 	}
 }
 
-func (s *WorkloadReadySuite) TestDeploymentReady(c *checkv1.C) {
+func (s *WorkloadReadySuite) TestDeploymentReady(c *C) {
 	cp := cliParams{"dep", "default", false, 1, 1, 1, 1, 1, 1, "Running"}
 	ctx := context.Background()
 	ready, status, err := DeploymentReady(ctx, getCli(cp), cp.namespace, cp.name)
-	c.Assert(ready, checkv1.DeepEquals, true)
-	c.Assert(status, checkv1.DeepEquals, "")
-	c.Assert(err, checkv1.IsNil)
+	c.Assert(ready, DeepEquals, true)
+	c.Assert(status, DeepEquals, "")
+	c.Assert(err, IsNil)
 }
 
 // Returns a fake k8s cli that contains a Deployment, ReplicaSet or StatefulSet, and Pod
