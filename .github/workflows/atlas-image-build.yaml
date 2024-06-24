@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
-      - uses: tj-actions/changed-files@d6babd6899969df1a11d14c368283ea4436bca78 # v44.5.2
+      - uses: tj-actions/changed-files@cc3bbb0c526f8ee1d282f8c5f9f4e50745a5b457 # v44.5.4
         name: Get changed files
         id: changed-files
         with:
@@ -57,7 +57,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and push
-      uses: docker/build-push-action@94f8f8c2eec4bc3f1d78c1755580779804cb87b2 # v6.0.1
+      uses: docker/build-push-action@31159d49c0d4756269a0940a750801a1ea5d7003 # v6.1.0
       with:
         context: "{{defaultContext}}:docker/mongodb-atlas"
         push: true
