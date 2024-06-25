@@ -15,62 +15,16 @@
 package errors
 
 import (
-	"bytes"
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
-
-type errorList []error
-
-var _ error = errorList{}
-
-func (e errorList) String() string {
-	sep := ""
-	var buf bytes.Buffer
-	buf.WriteRune('[')
-	for _, err := range e {
-		buf.WriteString(sep)
-		sep = ","
-		buf.WriteRune('"')
-		buf.WriteString(err.Error())
-		buf.WriteRune('"')
-	}
-	buf.WriteRune(']')
-	return buf.String()
-}
-
-func (e errorList) Error() string {
-	return e.String()
-}
-
-// Append creates a new combined error from err1, err2. If either error is nil,
-// then the other error is returned.
-func Append(err1, err2 error) error {
-	if err1 == nil {
-		return err2
-	}
-	if err2 == nil {
-		return err1
-	}
-	el1, ok1 := err1.(errorList)
-	el2, ok2 := err2.(errorList)
-	switch {
-	case ok1 && ok2:
-		return append(el1, el2...)
-	case ok1:
-		return append(el1, err2)
-	case ok2:
-		return append(el2, err1)
-	}
-	return errorList{err1, err2}
-}
 
 // FirstMatching returns the first error that matches the predicate in a
 // causal dependency err->Cause()->Cause() ....
 func FirstMatching(err error, predicate func(error) bool) error {
-	for ; err != nil; err = errors.Unwrap(err) {
+	for ; err != nil; err = errkit.Unwrap(err) {
 		if predicate(err) {
 			return err
 		}
