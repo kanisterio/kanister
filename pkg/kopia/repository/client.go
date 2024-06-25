@@ -23,11 +23,12 @@ import (
 
 	"github.com/jpillora/backoff"
 	"github.com/kanisterio/errkit"
+	"github.com/kopia/kopia/repo"
+	"github.com/kopia/kopia/repo/content"
+
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
-	"github.com/kopia/kopia/repo"
-	"github.com/kopia/kopia/repo/content"
 )
 
 const (
