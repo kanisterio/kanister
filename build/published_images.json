@@ -1,0 +1,10 @@
+{
+    "image_registry": "ghcr.io/kanisterio",
+    "images": [
+        "kanister-kubectl-1.18",
+        "controller",
+        "kanister-tools",
+        "repo-server-controller"
+    ],
+    "tag": "v9.99.9-dev"
+}
