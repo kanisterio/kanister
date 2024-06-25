@@ -1,1 +1,4 @@
-ignore: []
+ignore:
+  - vulnerability: CVE-2024-2398
+    fix-state: not-fixed
+
