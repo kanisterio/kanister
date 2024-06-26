@@ -31,12 +31,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (

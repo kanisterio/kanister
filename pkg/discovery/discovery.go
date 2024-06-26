@@ -17,11 +17,12 @@ package discovery
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/filter"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+
+	"github.com/kanisterio/kanister/pkg/filter"
 )
 
 func AllGVRs(ctx context.Context, cli discovery.DiscoveryInterface) ([]schema.GroupVersionResource, error) {
