@@ -37,8 +37,11 @@ rst2md ./CHANGELOG.rst --output ./CHANGELOG.md
 ## It will be replaced by `unreleased_version_title` setting in the actual report file
 UNRELEASED_VERSION=$(reno list 2>/dev/null | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\-[0-9]+")
 
-## Generate rst report
-echo reno report --version=${UNRELEASED_VERSION} --output ./CHANGELOG_CURRENT.rst
-reno report --version=${UNRELEASED_VERSION} --output ./CHANGELOG_CURRENT.rst
-## Convert rst to markdown
-rst2md ./CHANGELOG_CURRENT.rst --output ./CHANGELOG_CURRENT.md
+if [ -n "${UNRELEASED_VERSION}" ]
+then
+	## Generate rst report
+	echo reno report --version=${UNRELEASED_VERSION} --output ./CHANGELOG_CURRENT.rst
+	reno report --version=${UNRELEASED_VERSION} --output ./CHANGELOG_CURRENT.rst
+	## Convert rst to markdown
+	rst2md ./CHANGELOG_CURRENT.rst --output ./CHANGELOG_CURRENT.md
+fi

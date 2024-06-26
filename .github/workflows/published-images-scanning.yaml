@@ -1,0 +1,17 @@
+name: Published images scanning
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build and test"]
+    types:
+      - completed
+    branches:
+      - master
+
+jobs:
+  scan-images:
+    uses: ./.github/workflows/images-vulnerability-scanning.yaml
+    with:
+      images_file: "build/published_images.json"

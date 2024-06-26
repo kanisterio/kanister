@@ -26,6 +26,11 @@ const (
 	DataStoreParallelUploadName = "DATA_STORE_PARALLEL_UPLOAD"
 	// DefaultDataStoreParallelUpload is the Default Value of Parallelism
 	DefaultDataStoreParallelUpload = 8
+	// DataStoreParallelDownloadName is the Environmental Variable set in Kanister
+	// for Parallelism to be used by Kopia for restore action
+	DataStoreParallelDownloadName = "DATA_STORE_PARALLEL_DOWNLOAD"
+	// DefaultDataStoreParallelDownload is the Default Value of Parallelism
+	DefaultDataStoreParallelDownload = 8
 )
 
 const (

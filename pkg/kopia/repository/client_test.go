@@ -5,8 +5,9 @@ import (
 
 	"gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kopia/kopia/repo"
+
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 )
 
 func Test(t *testing.T) { check.TestingT(t) }
