@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package args
+package errorchecker
 
 import (
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
+	"regexp"
 
-	"github.com/kanisterio/safecli/command"
+	"gopkg.in/check.v1"
 )
 
-// ID creates a new ID argument.
-func ID(id string) command.Applier {
-	if id == "" {
-		return command.NewErrorArgument(cli.ErrInvalidID)
-	}
-	return command.NewArgument(id)
+// AssertErrorMessage is purposed to verify that error message matches wanted pattern
+func AssertErrorMessage(c *check.C, err error, wanted string) {
+	matches, err := regexp.MatchString("^"+wanted+"$", err.Error())
+	c.Assert(err, check.IsNil)
+	c.Assert(matches, check.Equals, true)
 }

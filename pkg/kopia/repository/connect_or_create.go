@@ -19,6 +19,8 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/errkit"
+
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 )
@@ -80,6 +82,6 @@ func ConnectToOrCreateKopiaRepository(
 		return nil
 	}
 
-	err = kerrors.Append(err, connectErr)
+	err = errkit.Append(err, connectErr)
 	return err
 }

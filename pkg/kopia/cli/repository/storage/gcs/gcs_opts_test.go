@@ -19,9 +19,10 @@ import (
 
 	"gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/safecli/command"
 	"github.com/kanisterio/safecli/test"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli"
 )
 
 func TestGCSOptions(t *testing.T) { check.TestingT(t) }
