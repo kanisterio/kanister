@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -86,7 +86,7 @@ func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) er
 
 	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, dbTemplate, nil, mongo.params)
 
-	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mongo.name)
+	return errkit.Wrap(err, "Error installing app on openshift cluster.", "app", mongo.name)
 }
 
 func (mongo *MongoDBDepConfig) IsReady(ctx context.Context) (bool, error) {
@@ -126,7 +126,7 @@ func (mongo *MongoDBDepConfig) Ping(ctx context.Context) error {
 	pingCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db\"", mongo.user)}
 	_, stderr, err := mongo.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database %s, %s", stderr, err)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr)
 	}
 	log.Print("Ping to the application was successful.")
 	return nil
@@ -139,7 +139,7 @@ func (mongo *MongoDBDepConfig) Insert(ctx context.Context) error {
 		"'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.user, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s while inserting data data into mongodb collection.", stderr)
+		return errkit.Wrap(err, "Error while inserting data data into mongodb collection.", "stderr", stderr)
 	}
 
 	log.Print("Insertion of documents into collection was successful.", field.M{"app": mongo.name})
@@ -151,7 +151,7 @@ func (mongo *MongoDBDepConfig) Count(ctx context.Context) (int, error) {
 	countCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.count()\"", mongo.user)}
 	stdout, stderr, err := mongo.execCommand(ctx, countCMD)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error %s while counting the data in mongodb collection.", stderr)
+		return 0, errkit.Wrap(err, "Error while counting the data in mongodb collection.", "stderr", stderr)
 	}
 
 	count, err := strconv.Atoi(stdout)
@@ -170,7 +170,7 @@ func (mongo *MongoDBDepConfig) Reset(ctx context.Context) error {
 	// and deletion admin database is prohibited
 	deleteDBCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.user)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
-	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
+	return errkit.Wrap(err, "Error resetting the mongodb application.", "stdout", stdout, "stderr", stderr)
 }
 
 // Initialize is used to initialize the database or create schema
@@ -186,5 +186,5 @@ func (mongo *MongoDBDepConfig) execCommand(ctx context.Context, command []string
 	stdout, stderr, err := kube.Exec(ctx, mongo.cli, mongo.namespace, podName, containerName, command, nil)
 	log.Print("Executing the command in pod and container", field.M{"pod": podName, "container": containerName, "cmd": command})
 
-	return stdout, stderr, errors.Wrapf(err, "Error executing command in the pod")
+	return stdout, stderr, errkit.Wrap(err, "Error executing command in the pod")
 }

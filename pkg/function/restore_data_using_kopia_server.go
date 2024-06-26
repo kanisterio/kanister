@@ -33,6 +33,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -286,6 +287,7 @@ func restoreDataFromServerPodFunc(
 				TargetPath:             restorePath,
 				SparseRestore:          sparseRestore,
 				IgnorePermissionErrors: true,
+				Parallelism:            utils.GetEnvAsIntOrDefault(kankopia.DataStoreParallelDownloadName, kankopia.DefaultDataStoreParallelDownload),
 			})
 
 		stdout.Reset()
