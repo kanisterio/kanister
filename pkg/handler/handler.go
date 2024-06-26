@@ -27,10 +27,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kanisterio/kanister/pkg/validatingwebhook"
-	"github.com/kanisterio/kanister/pkg/version"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/kanisterio/kanister/pkg/validatingwebhook"
+	"github.com/kanisterio/kanister/pkg/version"
 )
 
 const (
