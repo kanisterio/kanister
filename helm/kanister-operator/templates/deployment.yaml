@@ -42,7 +42,7 @@ spec:
         - name: DATA_STORE_PARALLEL_UPLOAD
           value: {{ .Values.controller.parallelism | quote }}
         - name: DATA_STORE_PARALLEL_DOWNLOAD
-          value: {{ .Values.controller.parallelism | quote }}
+          value: {{ .Values.controller.parallelDownloads | quote }}
         - name: KANISTER_METRICS_ENABLED
           value: {{ .Values.controller.metrics.enabled | quote }}
 {{- if .Values.resources }}
