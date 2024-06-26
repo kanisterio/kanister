@@ -14,11 +14,14 @@
 
 package command
 
+import "strconv"
+
 type RestoreCommandArgs struct {
 	*CommandArgs
 	RootID                 string
 	TargetPath             string
 	IgnorePermissionErrors bool
+	Parallelism            int
 }
 
 // Restore returns the kopia command for restoring root of a snapshot with given root ID
@@ -29,6 +32,11 @@ func Restore(cmdArgs RestoreCommandArgs) []string {
 		args = args.AppendLoggable(ignorePermissionsError)
 	} else {
 		args = args.AppendLoggable(noIgnorePermissionsError)
+	}
+
+	if cmdArgs.Parallelism > 0 {
+		parallelismStr := strconv.Itoa(cmdArgs.Parallelism)
+		args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	}
 
 	return stringSliceCommand(args)
