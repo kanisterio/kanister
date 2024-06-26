@@ -40,9 +40,9 @@ spec:
         - name: LOG_LEVEL
           value: {{ .Values.controller.logLevel }}
         - name: DATA_STORE_PARALLEL_UPLOAD
-          value: {{ .Values.controller.parallelism | quote }}
+          value: {{ .Values.dataStore.parallelism.upload | quote }}
         - name: DATA_STORE_PARALLEL_DOWNLOAD
-          value: {{ .Values.controller.parallelDownloads | quote }}
+          value: {{ .Values.dataStore.parallelism.download | quote }}
         - name: KANISTER_METRICS_ENABLED
           value: {{ .Values.controller.metrics.enabled | quote }}
 {{- if .Values.resources }}
