@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -63,15 +63,15 @@ func (c *CockroachDB) Install(ctx context.Context, namespace string) error { //n
 
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	if err = cli.AddRepo(ctx, c.chart.RepoName, c.chart.RepoURL); err != nil {
-		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", c.name, c.chart.RepoName)
+		return errkit.Wrap(err, "Failed to install helm repo.", "app", c.name, "repo", c.chart.RepoName)
 	}
 
 	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", c.chart.RepoName, c.chart.Chart), c.chart.Version, c.chart.Release, c.namespace, c.chart.Values, false, false)
-	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", c.name, c.chart.Chart, c.chart.Release)
+	return errkit.Wrap(err, "Failed to install helm chart.", "app", c.name, "chart", c.chart.Chart, "release", c.chart.Release)
 }
 
 func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
@@ -92,23 +92,24 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	// cluster, and executing queries like Creating Database and Table,
 	// Inserting Data, Setting up Garbage Collection Time,
 	// Delete Database etc
-	secret, err := c.cli.CoreV1().Secrets(c.namespace).Get(ctx, fmt.Sprintf("%s-client-secret", c.chart.Release), metav1.GetOptions{})
+	secretName := fmt.Sprintf("%s-client-secret", c.chart.Release)
+	secret, err := c.cli.CoreV1().Secrets(c.namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
 
 	if _, exist := secret.Data["ca.crt"]; !exist {
-		return false, errors.Errorf("Error: ca.crt not found in the cluster credential %s-client-secret", c.chart.Release)
+		return false, errkit.New("Error: ca.crt not found in the cluster credential", "secret", secretName)
 	}
 	c.cacrt = string(secret.Data["ca.crt"])
 
 	if _, exist := secret.Data["tls.crt"]; !exist {
-		return false, errors.Errorf("Error: tls.crt not found in the cluster credential %s-client-secret", c.chart.Release)
+		return false, errkit.New("Error: tls.crt not found in the cluster credential", "secret", secretName)
 	}
 	c.tlscrt = string(secret.Data["tls.crt"])
 
 	if _, exist := secret.Data["tls.key"]; !exist {
-		return false, errors.Errorf("Error: tls.key not found in the cluster credential %s-client-secret", c.chart.Release)
+		return false, errkit.New("Error: tls.key not found in the cluster credential", "secret", secretName)
 	}
 	c.tlskey = string(secret.Data["tls.key"])
 
@@ -116,42 +117,42 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	createCrtDir := []string{"sh", "-c", createCrtDirCmd}
 	_, stderr, err := c.execCommand(ctx, createCrtDir)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while Creating Cert Directory %s", stderr)
+		return false, errkit.Wrap(err, "Error while Creating Cert Directory", "stderr", stderr)
 	}
 
 	createCaCrtCmd := fmt.Sprintf("echo '%s' >> /cockroach/cockroach-client-certs/ca.crt", c.cacrt)
 	createCaCrt := []string{"sh", "-c", createCaCrtCmd}
 	_, stderr, err = c.execCommand(ctx, createCaCrt)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while Creating ca.crt %s", stderr)
+		return false, errkit.Wrap(err, "Error while Creating ca.crt", "stderr", stderr)
 	}
 
 	createTlsCrtCmd := fmt.Sprintf("echo '%s'>> /cockroach/cockroach-client-certs/client.root.crt", c.tlscrt)
 	createTlsCrt := []string{"sh", "-c", createTlsCrtCmd}
 	_, stderr, err = c.execCommand(ctx, createTlsCrt)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while Creating tls.crt %s", stderr)
+		return false, errkit.Wrap(err, "Error while Creating tls.crt", "stderr", stderr)
 	}
 
 	createTlsKeyCmd := fmt.Sprintf("echo '%s' >> /cockroach/cockroach-client-certs/client.root.key", c.tlskey)
 	createTlsKey := []string{"sh", "-c", createTlsKeyCmd}
 	_, stderr, err = c.execCommand(ctx, createTlsKey)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while Creating tls.key %s", stderr)
+		return false, errkit.Wrap(err, "Error while Creating tls.key", "stderr", stderr)
 	}
 
 	changeFilePermCmd := "cd /cockroach/cockroach-client-certs/ && chmod 0600 *"
 	changeFilePerm := []string{"sh", "-c", changeFilePermCmd}
 	_, stderr, err = c.execCommand(ctx, changeFilePerm)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while changing certificate file permissions %s", stderr)
+		return false, errkit.Wrap(err, "Error while changing certificate file permissions", "stderr", stderr)
 	}
 
 	changeDefaultGCTimeCmd := "./cockroach sql --certs-dir=/cockroach/cockroach-client-certs -e 'ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = 10;'"
 	changeDefaultGCTime := []string{"sh", "-c", changeDefaultGCTimeCmd}
 	_, stderr, err = c.execCommand(ctx, changeDefaultGCTime)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while setting up Garbage Collection time %s", stderr)
+		return false, errkit.Wrap(err, "Error while setting up Garbage Collection time", "stderr", stderr)
 	}
 
 	return err == nil, err
@@ -168,7 +169,7 @@ func (c *CockroachDB) Object() crv1alpha1.ObjectReference {
 func (c *CockroachDB) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	err = cli.Uninstall(ctx, c.chart.Release, c.namespace)
 	if err != nil {
@@ -191,7 +192,7 @@ func (c *CockroachDB) Ping(ctx context.Context) error {
 	login := []string{"sh", "-c", loginCmd}
 	_, stderr, err := c.execCommand(ctx, login)
 	if err != nil {
-		return errors.Wrapf(err, "Error while pinging database %s", stderr)
+		return errkit.Wrap(err, "Error while pinging database", "stderr", stderr)
 	}
 
 	log.Print("Ping to the application was success.", field.M{"app": c.name})
@@ -204,7 +205,7 @@ func (c *CockroachDB) Initialize(ctx context.Context) error {
 	createDatabase := []string{"sh", "-c", createDatabaseCMD}
 	_, stderr, err := c.execCommand(ctx, createDatabase)
 	if err != nil {
-		return errors.Wrapf(err, "Error while initializing: %s", stderr)
+		return errkit.Wrap(err, "Error while initializing", "stderr", stderr)
 	}
 	return nil
 }
@@ -216,7 +217,7 @@ func (c *CockroachDB) Insert(ctx context.Context) error {
 	insertRecord := []string{"sh", "-c", insertRecordCMD}
 	_, stderr, err := c.execCommand(ctx, insertRecord)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting the data into database: %s", stderr)
+		return errkit.Wrap(err, "Error while inserting the data into database", "stderr", stderr)
 	}
 
 	log.Print("Successfully inserted records in the application.", field.M{"app": c.name})
@@ -230,13 +231,13 @@ func (c *CockroachDB) Count(ctx context.Context) (int, error) {
 	selectRows := []string{"sh", "-c", selectRowsCMD}
 	stdout, stderr, err := c.execCommand(ctx, selectRows)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
+		return 0, errkit.Wrap(err, "Error while counting the data of the database", "stderr", stderr)
 	}
 	// output returned from above query is "count\n3"
 	// get the returned count and convert it to int, to return
 	rowsReturned, err := strconv.Atoi(strings.Split(stdout, "\n")[1])
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting row count to int.")
+		return 0, errkit.Wrap(err, "Error while converting row count to int.")
 	}
 	log.Print("Count that we received from application is.", field.M{"app": c.name, "count": rowsReturned})
 	return rowsReturned, nil
@@ -251,7 +252,7 @@ func (c *CockroachDB) Reset(ctx context.Context) error {
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", c.name)
+		return errkit.Wrap(err, "Error waiting for application to be ready to reset it", "app", c.name)
 	}
 
 	log.Print("Resetting the cockroachdb instance.", field.M{"app": "cockroachdb"})
@@ -261,7 +262,7 @@ func (c *CockroachDB) Reset(ctx context.Context) error {
 	deleteFromTable := []string{"sh", "-c", deleteFromTableCMD}
 	_, stderr, err := c.execCommand(ctx, deleteFromTable)
 	if err != nil {
-		return errors.Wrapf(err, "Error while dropping the table: %s", stderr)
+		return errkit.Wrap(err, "Error while dropping the table", "stderr", stderr)
 	}
 	// Even though the table is deleted from the database, it's present in the
 	// descriptor table. We will have to wait for it to be deleted from there  as
@@ -293,7 +294,7 @@ func (c *CockroachDB) Secrets() map[string]crv1alpha1.ObjectReference {
 func (c *CockroachDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, c.cli, c.namespace, c.chart.Release)
 	if err != nil || podName == "" {
-		return "", "", errors.Wrapf(err, "Error  getting pod and container name %s.", c.name)
+		return "", "", errkit.Wrap(err, "Error getting pod and container name.", "app", c.name)
 	}
 	return kube.Exec(ctx, c.cli, c.namespace, podName, containerName, command, nil)
 }
@@ -304,12 +305,12 @@ func (c *CockroachDB) waitForGC(ctx context.Context) error {
 	getDescriptor := []string{"sh", "-c", getDescriptorCMD}
 	stdout, stderr, err := c.execCommand(ctx, getDescriptor)
 	if err != nil {
-		return errors.Wrapf(err, "Error while getiing descriptor table data: %s", stderr)
+		return errkit.Wrap(err, "Error while getiing descriptor table data", "stderr", stderr)
 	}
 	bankInDescriptor := strings.Contains(stdout, "bank") || strings.Contains(stdout, "account")
 	log.Info().Print("bankInDescriptor:  ", field.M{"value": bankInDescriptor})
 	if bankInDescriptor {
-		return errors.New("Bank Database exists. Waiting for garbage collector to run and remove the database")
+		return errkit.New("Bank Database exists. Waiting for garbage collector to run and remove the database")
 	}
 	return nil
 }

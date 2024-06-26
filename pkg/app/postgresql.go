@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -87,7 +87,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	// Create helm client
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	// Add helm repo and fetch charts
@@ -137,7 +137,7 @@ func (pdb *PostgresDB) Ping(ctx context.Context) error {
 	cmd := "pg_isready -U 'postgres' -h 127.0.0.1 -p 5432"
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to ping postgresql DB. %s", stderr)
+		return errkit.Wrap(err, "Failed to ping postgresql DB", "stderr", stderr)
 	}
 	log.Info().Print("Connected to database.", field.M{"app": pdb.name})
 	return nil
@@ -147,7 +147,7 @@ func (pdb PostgresDB) Insert(ctx context.Context) error {
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\""
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create db in postgresql. %s", stderr)
+		return errkit.Wrap(err, "Failed to create db in postgresql", "stderr", stderr)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
@@ -157,16 +157,16 @@ func (pdb PostgresDB) Count(ctx context.Context) (int, error) {
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c 'SELECT COUNT(*) FROM company;'"
 	stdout, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return 0, errors.Wrapf(err, "Failed to count db entries in postgresql. %s ", stderr)
+		return 0, errkit.Wrap(err, "Failed to count db entries in postgresql", "stderr", stderr)
 	}
 
 	out := strings.Fields(stdout)
 	if len(out) < 4 {
-		return 0, fmt.Errorf("unknown response for count query")
+		return 0, errkit.New("unknown response for count query")
 	}
 	count, err := strconv.Atoi(out[2])
 	if err != nil {
-		return 0, errors.Wrapf(err, "Failed to count db entries in postgresql. %s ", stderr)
+		return 0, errkit.Wrap(err, "Failed to count db entries in postgresql", "stderr", stderr)
 	}
 	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": count})
 	return count, nil
@@ -177,7 +177,7 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -c 'DROP DATABASE IF EXISTS test;'"
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to drop db from postgresql. %s ", stderr)
+		return errkit.Wrap(err, "Failed to drop db from postgresql", "stderr", stderr)
 	}
 
 	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
@@ -190,14 +190,14 @@ func (pdb PostgresDB) Initialize(ctx context.Context) error {
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -c 'CREATE DATABASE test;'"
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create db in postgresql. %s ", stderr)
+		return errkit.Wrap(err, "Failed to create db in postgresql", "stderr", stderr)
 	}
 
 	// Create table
 	cmd = "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c 'CREATE TABLE COMPANY(ID SERIAL PRIMARY KEY NOT NULL, NAME TEXT NOT NULL, AGE INT NOT NULL, CREATED_AT TIMESTAMP);'"
 	_, stderr, err = pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create table in postgresql. %s ", stderr)
+		return errkit.Wrap(err, "Failed to create table in postgresql", "stderr", stderr)
 	}
 	return nil
 }
@@ -208,11 +208,11 @@ func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 	// Create helm client
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	// Uninstall helm chart
-	return errors.Wrapf(cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace), "Failed to uninstall %s helm release", pdb.chart.Release)
+	return errkit.Wrap(cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace), "Failed to uninstall helm release", "release", pdb.chart.Release)
 }
 
 func (pdp *PostgresDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {

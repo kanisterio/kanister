@@ -19,11 +19,12 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/rand"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	bp "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
-	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 const (
