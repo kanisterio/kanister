@@ -245,7 +245,7 @@ func (s *KanXSuite) TestParallelStdout(c *C) {
 	nw := &nilWriter{}
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
-	for _, _ = range make([]struct{}, 100) {
+	for range make([]struct{}, 100) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
