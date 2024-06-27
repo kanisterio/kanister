@@ -137,8 +137,9 @@ jobs:
     - id: image_tags
       env:
         COMMIT_SHA: ${{ github.sha }}
-      run: echo "tag_short=short-commit-${COMMIT_SHA::12}" >> $GITHUB_OUTPUT
-      run: echo "tag_long=commit-${COMMIT_SHA}" >> $GITHUB_OUTPUT
+      run: |
+        echo "tag_short=short-commit-${COMMIT_SHA::12}" >> $GITHUB_OUTPUT
+        echo "tag_long=commit-${COMMIT_SHA}" >> $GITHUB_OUTPUT
   release_example_docker_images:
     needs: [release, image_tags]
     permissions:
