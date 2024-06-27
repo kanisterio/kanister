@@ -33,11 +33,11 @@ func newProcessClientListCommand() *cobra.Command {
 	return cmd
 }
 
-func runProcessClientList(cmd *cobra.Command, args []string) error {
-	return runProcessClientListWithOutput(os.Stdout, cmd, args)
+func runProcessClientList(cmd *cobra.Command, _args []string) error {
+	return runProcessClientListWithOutput(os.Stdout, cmd)
 }
 
-func runProcessClientListWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
+func runProcessClientListWithOutput(out io.Writer, cmd *cobra.Command) error {
 	addr, err := processAddressFlagValue(cmd)
 	if err != nil {
 		return err
