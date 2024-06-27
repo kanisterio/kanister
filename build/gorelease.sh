@@ -39,4 +39,4 @@ then
 	docker login https://ghcr.io -u ${GHCR_LOGIN_USER:?"GHCR_LOGIN_USER not specified"} -p ${GHCR_LOGIN_TOKEN}
 fi
 
-goreleaser release --parallelism=1 --rm-dist --debug --timeout 120m ${RELEASE_NOTES} ${GORELEASE_PARAMS}
+goreleaser release --parallelism=1 --clean --debug --timeout 120m ${RELEASE_NOTES} ${GORELEASE_PARAMS}
