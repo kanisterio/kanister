@@ -1,0 +1,162 @@
+name: Build integration app example images
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+      extra_tags:
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      image_tag:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+      extra_tags:
+        required: false
+        type: string
+
+jobs:
+  build_cassandra:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/cassandra/Dockerfile
+      image_name: kanisterio/cassandra
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister cassandra
+        org.opencontainers.image.description=Image for kanister cassandra example blueprints
+
+  build_mysql_sidecar:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/kanister-mysql/image/Dockerfile
+      image_name: kanisterio/mysql-sidecar
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister mysql sidecar
+        org.opencontainers.image.description=Image for kanister maysql example blueprints
+
+  build_kafka-adobe-s3-sink-connector:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/kafka-adobes3Connector/image/adobeSink.Dockerfile
+      image_name: kanisterio/kafka-adobe-s3-sink-connector
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister kafka sink connector
+        org.opencontainers.image.description=Image for kanister kafka example blueprints
+
+  build_kafka-adobe-s3-source-connector:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/kafka-adobes3Connector/image/adobeSource.Dockerfile
+      image_name: kanisterio/kafka-adobe-s3-source-connector
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister kafka source connector
+        org.opencontainers.image.description=Image for kanister kafka example blueprints
+
+  build_postgres-kanister-tools:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/postgres-kanister-tools/Dockerfile
+      image_name: kanisterio/postgres-kanister-tools
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister tools for postgresql
+        org.opencontainers.image.description=Image for kanister postgresql example blueprints
+
+  build_postgresql:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/postgresql/Dockerfile
+      image_name: kanisterio/postgresql
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister postgresql example
+        org.opencontainers.image.description=Image for kanister postgresql example blueprints
+
+  build_mongodb:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/mongodb/Dockerfile
+      image_name: kanisterio/mongodb
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      platforms: linux/amd64
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister mongodb
+        org.opencontainers.image.description=Image for kanister mongodb example blueprints
+
+  build_es-sidecar:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/kanister-elasticsearch/image/Dockerfile
+      image_name: kanisterio/es-sidecar
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister es-sidecar
+        org.opencontainers.image.description=Image for kanister elasticsearch example blueprints
+
+  build_mssql-tools:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/mssql-tools/Dockerfile
+      image_name: kanisterio/mssql-tools
+      image_tag: ${{ inputs.image_tag }}
+      ref:  ${{ inputs.ref }}
+      build-args: |
+        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
+      labels: |
+        org.opencontainers.image.title=kanister mssql-tools
+        org.opencontainers.image.description=Image for kanister mssql example blueprints

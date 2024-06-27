@@ -21,6 +21,7 @@ COPY --from=TOOLS_IMAGE /usr/local/bin/restic /usr/local/bin/restic
 # Update gosu from recent version
 COPY --from=TOOLS_IMAGE /usr/local/bin/gosu /usr/local/bin/gosu
 
-ADD kando /usr/local/bin/
+# Install kando
+COPY --from=TOOLS_IMAGE /usr/local/bin/kando /usr/local/bin/kando
 
 CMD ["tail", "-f", "/dev/null"]
