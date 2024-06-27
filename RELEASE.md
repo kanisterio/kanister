@@ -3,20 +3,19 @@
 Release process:
 
 - Verify the release version by looking at the [releases page](https://github.com/kanisterio/kanister/releases) on the Kanister repo.
-- Trigger the [pre-release](#pre-release-workflow) workflow with the desired version number (e.g. bump the minor version portion 0.106.0 -> 0.107.0)
+- Trigger the [pre-release](#pre-release-workflow) workflow with the desired version number (e.g. bump the minor version portion 0.106.0 -> 0.107.0), which will result in a PR getting created in Kanister repo
 - Review and validate created PR that it doesn't have any unintended changes
 - Make sure to validate that all merged PRs in the release have [release notes](#release-notes)
 	- Make sure that CHANGELOG.md and CHANGELOG_CURRENT.md contain release notes for the release version
 	- **NOTE** While we establish the new process of release notes, it may be required to add notes in pre-release step by commiting them into pre-release branch
 - Approve and merge the pre-release PR (it will be merged by `kueue` when approved)
 - Merging of pre-release PR will trigger the `release.yaml` pipeline, which will create a github release and publish the images
-- The Kanister release job will publish a new tag, update documentation, build all the docker images, and push them to the [ghcr.io](https://github.com/orgs/kanisterio/packages) registry.
-- Once the job is complete, a Slack notification will be sent to the kanister channel.
+- The Kanister release job will publish a new tag, update documentation, build all the docker images, and push them to the [ghcr.io](https://github.com/orgs/kanisterio/packages) registry
 - Post release announcement in kanister slack and https://groups.google.com/g/kanisterio
 
 ### Pre-release workflow
 
-`pre-release` workflow serves to create a new version of kanister, it updates version number and creates a PR in kanister repo.
+`pre-release` workflow serves to create a new version of kanister, and updates the older version number in source files of kanister repo with new version and creates a PR in kanister repo.
 
 The workflow can be triggered using workflow dispatch from the `Actions` tab in the repo: https://github.com/kanisterio/kanister/actions/workflows/pre-release.yml
 It has a required input of `release_tag`, which should be set to a version next to the current version.
@@ -75,8 +74,11 @@ Prerequisites:
 
 If pre-release pipeline does not work.
 
+Assuming previous version is `0.42.0` and new release version is `0.43.0`
+
 ```
 $ export PREV_TAG="0.42.0"
+$ export RELEASE_TAG="0.43.0"
 $ git checkout -b "kan-docs-${RELEASE_TAG}"
 $ ./build/bump_version.sh "${PREV_TAG}" "${RELEASE_TAG}"
 $ make reno-report VERSION="${RELEASE_TAG}"
@@ -132,4 +134,11 @@ Finally, go to https://github.com/kanisterio/kanister/releases, and publish the 
 
 - Verify if the docker [images](https://github.com/orgs/kanisterio/packages?repo_name=kanister) have a new tag. NOTE: Not all docker images are relevant.
 	TODO: Add a list of the most relevant docker images to be verified here.
+
+- Update the helm repo and check that helm charts version is up to date
+
+```
+helm repo update kanister
+helm show chart kanister/kanister-operator
+```
 
