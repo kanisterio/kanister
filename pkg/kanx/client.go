@@ -16,8 +16,7 @@ func newGRPCConnection(addr string) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	opts = append(opts, grpc.WithContextDialer(unixDialer))
-
-	return grpc.Dial(addr, opts...)
+	return grpc.NewClient(addr, opts...)
 }
 
 func CreateProcess(ctx context.Context, addr string, name string, args []string) (*Process, error) {
