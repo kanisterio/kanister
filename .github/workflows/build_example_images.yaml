@@ -124,6 +124,7 @@ jobs:
       image_name: kanisterio/mongodb
       image_tag: ${{ inputs.image_tag }}
       ref:  ${{ inputs.ref }}
+      platforms: linux/amd64
       build-args: |
         TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
       labels: |
