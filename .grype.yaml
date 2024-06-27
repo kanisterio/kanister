@@ -1,4 +1,27 @@
 ignore:
+  ## Libcurl memory leak in UBI8-minimal, not relevant for kanister images
   - vulnerability: CVE-2024-2398
     fix-state: not-fixed
+  ## Issue for GLib GD-bus services, not relevant for kanister images
+  - vulnerability: CVE-2024-34397
+    fix-state: not-fixed
+  ## memory leak in krb5
+  - vulnerability: CVE-2024-26462
+    fix-state: not-fixed
+  ## libarchive issue, not relevant for kanister images
+  - vulnerability: CVE-2023-30571
+    fix-state: wont-fix
+  ## libyaml issues, not relevant for kanister images
+  - vulnerability: CVE-2024-35325
+    fix-state: not-fixed
+  - vulnerability: CVE-2024-35329
+    fix-state: not-fixed
+  - vulnerability: CVE-2024-35328
+    fix-state: not-fixed
+  - vulnerability: CVE-2024-35326
+    fix-state: not-fixed
+  ## systemd recursion, not relevant for kanister images
+  - vulnerability: CVE-2021-3997
+    fix-state: not-fixed
+
 
