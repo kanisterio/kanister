@@ -4,19 +4,18 @@ import (
 	"context"
 	"io"
 	"net"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func unixDialer(addr string, t time.Duration) (net.Conn, error) {
+func unixDialer(ctx context.Context, addr string) (net.Conn, error) {
 	return net.Dial("unix", addr)
 }
 func newGRPCConnection(addr string) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	opts = append(opts, grpc.WithDialer(unixDialer))
+	opts = append(opts, grpc.WithContextDialer(unixDialer))
 
 	return grpc.Dial(addr, opts...)
 }
@@ -74,7 +73,7 @@ func Stdout(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return output(ctx, addr, out, sc)
+	return output(ctx, out, sc)
 }
 
 func Stderr(ctx context.Context, addr string, pid int64, out io.Writer) error {
@@ -91,14 +90,14 @@ func Stderr(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return output(ctx, addr, out, sc)
+	return output(ctx, out, sc)
 }
 
 type recver interface {
 	Recv() (*Output, error)
 }
 
-func output(ctx context.Context, addr string, out io.Writer, sc recver) error {
+func output(ctx context.Context, out io.Writer, sc recver) error {
 	for {
 		p, err := sc.Recv()
 		switch {

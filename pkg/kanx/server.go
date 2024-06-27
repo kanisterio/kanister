@@ -56,7 +56,7 @@ func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreatePro
 	cmd := exec.CommandContext(ctx, cpr.GetName(), cpr.GetArgs()...)
 	p := &process{
 		cmd:    cmd,
-		doneCh: make(chan struct{}, 0),
+		doneCh: make(chan struct{}),
 		stdout: stdout,
 		stderr: stderr,
 		cancel: can,
@@ -171,7 +171,6 @@ func processToProto(p *process) *Process {
 			ps.State = ProcessState_PROCESS_STATE_FAILED
 			ps.ExitErr = p.err.Error()
 			ps.ExitCode = int64(p.exitCode)
-
 		}
 	default:
 		ps.State = ProcessState_PROCESS_STATE_RUNNING
@@ -193,7 +192,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) Serve(ctx context.Context, addr string) error {
-	stopChan := make(chan os.Signal)
+	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		select {
