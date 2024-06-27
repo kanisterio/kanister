@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     branches:
+      - ci-release-test
       - master
 
   workflow_dispatch:
@@ -11,8 +12,14 @@ on:
         description: 'Image tag in the format x.x.x(-rcx)'
         required: true
         type: string
+      draft_release:
+        description: 'Publish as a draft'
+        required: true
+        default: true
+        type: boolean
 
 env:
+  DRAFT_RELEASE: ${{ github.event_name == 'push' && github.ref_name == 'ci-release-test' && 'true' || github.event_name == 'workflow_dispatch' && inputs.draft_release == true && 'true' || 'false' }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
@@ -23,6 +30,7 @@ jobs:
       release_tag: ${{ steps.release_tag.outputs.release_tag }}
     steps:
       - run: echo "Triggered by ${{ github.event_name }}"
+      - run: 'echo "Draft release: ${{ env.DRAFT_RELEASE }}"'
       - id: release_tag
         run: |
           if [[ ${{github.event_name}} == "push" ]]
@@ -86,6 +94,7 @@ jobs:
       env:
         GHCR_LOGIN_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GHCR_LOGIN_USER: ${{ github.actor }}
+        GORELEASE_PARAMS: ${{ env.DRAFT_RELEASE == 'true' && '--draft' || '' }}
     ## Upload to use in docs publishing
     - uses: actions/upload-artifact@v4
       with:
