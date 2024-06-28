@@ -1,4 +1,4 @@
-name: build-kanister-image
+name: Update build image
 
 permissions:
   contents: read
@@ -71,7 +71,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and push
-      uses: docker/build-push-action@94f8f8c2eec4bc3f1d78c1755580779804cb87b2 # v6.0.1
+      uses: docker/build-push-action@31159d49c0d4756269a0940a750801a1ea5d7003 # v6.1.0
       with:
         context: "{{defaultContext}}:docker/build"
         platforms: linux/amd64,linux/arm64

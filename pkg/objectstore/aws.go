@@ -23,8 +23,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
-	kaws "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/pkg/errors"
+
+	kaws "github.com/kanisterio/kanister/pkg/aws"
 )
 
 const (

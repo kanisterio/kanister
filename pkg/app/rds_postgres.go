@@ -24,7 +24,7 @@ import (
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,7 +99,7 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 	if pdb.region == "" {
 		pdb.region, ok = os.LookupEnv(aws.Region)
 		if !ok {
-			return fmt.Errorf("env var %s is not set", aws.Region)
+			return errkit.New("env var is not set", "name", aws.Region)
 		}
 	}
 
@@ -111,11 +111,11 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 
 	pdb.accessID, ok = os.LookupEnv(aws.AccessKeyID)
 	if !ok {
-		return fmt.Errorf("env var %s is not set", aws.AccessKeyID)
+		return errkit.New("env var is not set", "name", aws.AccessKeyID)
 	}
 	pdb.secretKey, ok = os.LookupEnv(aws.SecretAccessKey)
 	if !ok {
-		return fmt.Errorf("env var %s is not set", aws.SecretAccessKey)
+		return errkit.New("env var is not set", "name", aws.SecretAccessKey)
 	}
 	return nil
 }
@@ -127,7 +127,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	// Create AWS config
 	awsConfig, region, err := pdb.getAWSConfig(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "app=%s", pdb.name)
+		return errkit.Wrap(err, "Error getting aws config", "app", pdb.name)
 	}
 
 	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
@@ -145,11 +145,11 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	deploymentSpec := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create deployment %s, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errkit.Wrap(err, "Failed to create deployment", "deployment", pdb.bastionDebugWorkloadName, "app", pdb.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName); err != nil {
-		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errkit.Wrap(err, "Failed while waiting for deployment to be ready", "deployment", pdb.bastionDebugWorkloadName, "app", pdb.name)
 	}
 
 	pdb.vpcID, err = vpcIDForRDSInstance(ctx, ec2Cli)
@@ -279,7 +279,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 		return err
 	}
 	if databases == nil {
-		return errors.New("Databases are missing from configmap")
+		return errkit.New("Databases are missing from configmap")
 	}
 
 	isReadyQuery := fmt.Sprintf(postgresConnectionString+"'SELECT version();'", dbsecret.Data["password"], dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
@@ -288,7 +288,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 
 	_, stderr, err := pdb.execCommand(ctx, pingCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database: %s, app: %s", stderr, pdb.name)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr, "app", pdb.name)
 	}
 	log.Print("Ping to the application was successful.", field.M{"app": pdb.name})
 	return nil
@@ -303,7 +303,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	insertCommand := []string{"sh", "-c", insertQuery}
 	_, stderr, err := pdb.execCommand(ctx, insertCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, pdb.name)
+		return errkit.Wrap(err, "Error while inserting data into table", "stderr", stderr, "app", pdb.name)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
@@ -317,12 +317,12 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	countCommand := []string{"sh", "-c", countQuery}
 	stdout, stderr, err := pdb.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, pdb.name)
+		return 0, errkit.Wrap(err, "Error while counting data of table", "stderr", stderr, "app", pdb.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting response of count query: %s, app: %s", stderr, pdb.name)
+		return 0, errkit.Wrap(err, "Error while converting response of count query", "stderr", stderr, "app", pdb.name)
 	}
 
 	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": rowsReturned})
@@ -335,7 +335,7 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 	deleteCommand := []string{"sh", "-c", deleteQuery}
 	_, stderr, err := pdb.execCommand(ctx, deleteCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while deleting data from table: %s, app: %s", stderr, pdb.name)
+		return errkit.Wrap(err, "Error while deleting data from table", "stderr", stderr, "app", pdb.name)
 	}
 	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
@@ -349,7 +349,7 @@ func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	createCommand := []string{"sh", "-c", createQuery}
 	_, stderr, err := pdb.execCommand(ctx, createCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while initializing the database: %s, app: %s", stderr, pdb.name)
+		return errkit.Wrap(err, "Error while initializing the database", "stderr", stderr, "app", pdb.name)
 	}
 	return nil
 }
@@ -378,12 +378,12 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Create AWS config
 	awsConfig, region, err := pdb.getAWSConfig(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "app=%s", pdb.name)
+		return errkit.Wrap(err, "Error getting aws config", "app", pdb.name)
 	}
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
+		return errkit.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
 	}
 
 	// Delete rds instance
@@ -395,7 +395,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			case awsrds.ErrCodeDBInstanceNotFoundFault:
 				log.Info().Print("RDS instance already deleted: ErrCodeDBInstanceNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
 			default:
-				return errors.Wrapf(err, "Failed to delete rds instance. You may need to delete it manually. app=rds-postgresql id=%s", pdb.id)
+				return errkit.Wrap(err, "Failed to delete rds instance. You may need to delete it manually.", "app", "rds-postgresql", "id", pdb.id)
 			}
 		}
 	}
@@ -405,14 +405,14 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		log.Info().Print("Waiting for rds to be deleted", field.M{"app": pdb.name})
 		err = rdsCli.WaitUntilDBInstanceDeleted(ctx, pdb.id)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to wait for rds instance till delete succeeds. app=rds-postgresql id=%s", pdb.id)
+			return errkit.Wrap(err, "Failed to wait for rds instance till delete succeeds.", "app", "rds-postgresql", "id", pdb.id)
 		}
 	}
 
 	// Create ec2 client
 	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
+		return errkit.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
 
 	log.Info().Print("Deleting db subnet group.", field.M{"app": pdb.name})
@@ -424,7 +424,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
 				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
 			default:
-				return errors.Wrapf(err, "Failed to delete db subnet group. You may need to delete it manually. app=rds-postgresql name=%s", pdb.dbSubnetGroup)
+				return errkit.Wrap(err, "Failed to delete db subnet group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.dbSubnetGroup)
 			}
 		}
 	}
@@ -438,14 +438,14 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			case "InvalidGroup.NotFound":
 				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
 			default:
-				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=%s", pdb.securityGroupName)
+				return errkit.Wrap(err, "Failed to delete security group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.securityGroupName)
 			}
 		}
 	}
 	// Remove workload object created for executing commands
 	err = pdb.cli.AppsV1().Deployments(pdb.namespace).Delete(ctx, pdb.bastionDebugWorkloadName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting Workload name=%s app=%s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errkit.Wrap(err, "Error deleting Workload", "name", pdb.bastionDebugWorkloadName, "app", pdb.name)
 	}
 
 	return nil

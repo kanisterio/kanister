@@ -15,7 +15,7 @@
 package storage
 
 import (
-	"fmt"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
@@ -47,6 +47,6 @@ func KopiaStorageArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
 	case repositoryserver.LocTypeAzure:
 		return azureArgs(params.Location, params.RepoPathPrefix), nil
 	default:
-		return nil, fmt.Errorf("unsupported type for the location: %s", LocType)
+		return nil, errkit.New("unsupported type for the location", "locationType", LocType)
 	}
 }

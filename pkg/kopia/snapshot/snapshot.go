@@ -21,13 +21,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/policy"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
-	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
@@ -48,37 +48,37 @@ func SnapshotSource(
 
 	previous, err := findPreviousSnapshotManifest(ctx, rep, sourceInfo, nil)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "Failed to find previous kopia manifests")
+		return "", 0, errkit.Wrap(err, "Failed to find previous kopia manifests")
 	}
 
 	policyTree, err := policy.TreeForSource(ctx, rep, sourceInfo)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "Failed to get kopia policy tree")
+		return "", 0, errkit.Wrap(err, "Failed to get kopia policy tree")
 	}
 
 	manifest, err := u.Upload(ctx, rootDir, policyTree, sourceInfo, previous...)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "Failed to upload the kopia snapshot")
+		return "", 0, errkit.Wrap(err, "Failed to upload the kopia snapshot")
 	}
 
 	manifest.Description = description
 
 	if _, err := snapshot.SaveSnapshot(ctx, rep, manifest); err != nil {
-		return "", 0, errors.Wrap(err, "Failed to save kopia manifest")
+		return "", 0, errkit.Wrap(err, "Failed to save kopia manifest")
 	}
 
 	// TODO: https://github.com/kanisterio/kanister/issues/2441
 	// _, err = policy.ApplyRetentionPolicy(ctx, rep, sourceInfo, true)
 	// if err != nil {
-	// 	return "", 0, errors.Wrap(err, "Failed to apply kopia retention policy")
+	// 	return "", 0, errkit.Wrap(err, "Failed to apply kopia retention policy")
 	// }
 
 	if err = policy.SetManual(ctx, rep, sourceInfo); err != nil {
-		return "", 0, errors.Wrap(err, "Failed to set manual field in kopia scheduling policy for source")
+		return "", 0, errkit.Wrap(err, "Failed to set manual field in kopia scheduling policy for source")
 	}
 
 	if ferr := rep.Flush(ctx); ferr != nil {
-		return "", 0, errors.Wrap(ferr, "Failed to flush kopia repository")
+		return "", 0, errkit.Wrap(ferr, "Failed to flush kopia repository")
 	}
 
 	return reportStatus(ctx, snapshotStartTime, manifest)
@@ -98,7 +98,7 @@ func reportStatus(ctx context.Context, snapshotStartTime time.Time, manifest *sn
 		}
 	}
 	if len(errs) != 0 {
-		return "", 0, errors.New(strings.Join(errs, "\n"))
+		return "", 0, errkit.New(strings.Join(errs, "\n"))
 	}
 
 	return string(manifestID), snapSize, nil
@@ -108,13 +108,13 @@ func reportStatus(ctx context.Context, snapshotStartTime time.Time, manifest *sn
 func Delete(ctx context.Context, backupID, path, password string) error {
 	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
-		return errors.Wrap(err, "Failed to open kopia repository")
+		return errkit.Wrap(err, "Failed to open kopia repository")
 	}
 
 	// Load the kopia snapshot with the given backupID
 	m, err := snapshot.LoadSnapshot(ctx, rep, manifest.ID(backupID))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to load kopia snapshot with ID: %v", backupID)
+		return errkit.Wrap(err, "Failed to load kopia snapshot with ID", "backupId", backupID)
 	}
 	if err := rep.DeleteManifest(ctx, m.ID); err != nil {
 		return err
@@ -127,7 +127,7 @@ func Delete(ctx context.Context, backupID, path, password string) error {
 func findPreviousSnapshotManifest(ctx context.Context, rep repo.Repository, sourceInfo snapshot.SourceInfo, noLaterThan *fs.UTCTimestamp) ([]*snapshot.Manifest, error) {
 	man, err := snapshot.ListSnapshots(ctx, rep, sourceInfo)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to list previous kopia snapshots")
+		return nil, errkit.Wrap(err, "Failed to list previous kopia snapshots")
 	}
 
 	// find latest complete snapshot
@@ -158,7 +158,7 @@ func MarshalKopiaSnapshot(snapInfo *SnapshotInfo) (string, error) {
 	}
 	snap, err := json.Marshal(snapInfo)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal kopia snapshot information")
+		return "", errkit.Wrap(err, "failed to marshal kopia snapshot information")
 	}
 
 	return string(snap), nil
@@ -168,7 +168,7 @@ func MarshalKopiaSnapshot(snapInfo *SnapshotInfo) (string, error) {
 func UnmarshalKopiaSnapshot(snapInfoJSON string) (SnapshotInfo, error) {
 	snap := SnapshotInfo{}
 	if err := json.Unmarshal([]byte(snapInfoJSON), &snap); err != nil {
-		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
+		return snap, errkit.Wrap(err, "failed to unmarshal kopia snapshot information")
 	}
 	return snap, snap.Validate()
 }

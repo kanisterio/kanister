@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/go-openapi/strfmt"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
@@ -68,7 +68,7 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to generate storage args")
+		return nil, errkit.Wrap(err, "Failed to generate storage args")
 	}
 
 	if !time.Time(cmdArgs.PITFlag).IsZero() {
@@ -106,7 +106,7 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to generate storage args")
+		return nil, errkit.Wrap(err, "Failed to generate storage args")
 	}
 
 	return stringSliceCommand(command.Combine(bsArgs)), nil

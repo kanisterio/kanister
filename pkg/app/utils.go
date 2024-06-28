@@ -19,13 +19,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kanisterio/kanister/pkg/aws/ec2"
-	"github.com/kanisterio/kanister/pkg/aws/rds"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
+
+	"github.com/kanisterio/kanister/pkg/aws/ec2"
+	"github.com/kanisterio/kanister/pkg/aws/rds"
 )
 
 const (
@@ -118,7 +119,7 @@ func vpcIDForRDSInstance(ctx context.Context, ec2Cli *ec2.EC2) (string, error) {
 		return "", err
 	}
 	if len(defaultVpc.Vpcs) == 0 {
-		return "", fmt.Errorf("No default VPC found")
+		return "", errkit.New("No default VPC found")
 	}
 	return *defaultVpc.Vpcs[0].VpcId, nil
 }
@@ -128,7 +129,7 @@ func dbSubnetGroup(ctx context.Context, ec2Cli *ec2.EC2, rdsCli *rds.RDS, vpcID,
 	// describe subnets in the VPC
 	resp, err := ec2Cli.DescribeSubnets(ctx, vpcID)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to describe subnets")
+		return "", errkit.Wrap(err, "Failed to describe subnets")
 	}
 
 	// Extract subnet IDs from the response
@@ -140,7 +141,7 @@ func dbSubnetGroup(ctx context.Context, ec2Cli *ec2.EC2, rdsCli *rds.RDS, vpcID,
 	// create a subnetgroup with subnets in the VPC
 	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", name), subnetGroupDescription, subnetIDs)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to create subnet group")
+		return "", errkit.Wrap(err, "Failed to create subnet group")
 	}
 
 	return *subnetGroup.DBSubnetGroup.DBSubnetGroupName, nil
