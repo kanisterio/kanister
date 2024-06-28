@@ -40,12 +40,14 @@ func newTestServer(dir string) *Server {
 	}
 }
 
-func serverReady(ctx context.Context, addr string) {
+func serverReady(ctx context.Context, addr string, c *C) {
 	ctx, can := context.WithTimeout(ctx, 10*time.Second)
 	defer can()
 	for {
 		select {
 		case <-ctx.Done():
+			c.Error("Timeout waiting for server to be ready")
+			c.Fail()
 			return
 		default:
 		}
@@ -61,7 +63,7 @@ func (s *KanXSuite) TestServerCancellation(c *C) {
 	addr := path.Join(d, "kanx.sock")
 	ctx, can := context.WithCancel(context.Background())
 	go func() {
-		serverReady(ctx, addr)
+		serverReady(ctx, addr, c)
 		can()
 	}()
 	err := newTestServer(d).Serve(ctx, addr)
@@ -77,7 +79,7 @@ func (s *KanXSuite) TestShortProcess(c *C) {
 		err := newTestServer(d).Serve(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
-	serverReady(ctx, addr)
+	serverReady(ctx, addr, c)
 
 	p, err := CreateProcess(ctx, addr, "echo", []string{"hello"})
 	c.Assert(err, IsNil)
@@ -115,7 +117,7 @@ func (s *KanXSuite) TestLongProcess(c *C) {
 		err := server.Serve(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
-	serverReady(ctx, addr)
+	serverReady(ctx, addr, c)
 
 	p, err := CreateProcess(ctx, addr, "tail", []string{"-f", "/dev/null"})
 	c.Assert(err, IsNil)
@@ -168,7 +170,7 @@ func (s *KanXSuite) TestError(c *C) {
 		err := server.Serve(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
-	serverReady(ctx, addr)
+	serverReady(ctx, addr, c)
 
 	p, err := CreateProcess(ctx, addr, "tail", []string{"-f", "/dev/null"})
 	c.Assert(err, IsNil)
@@ -225,7 +227,7 @@ func (s *KanXSuite) TestParallelStdout(c *C) {
 		err := server.Serve(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
-	serverReady(ctx, addr)
+	serverReady(ctx, addr, c)
 
 	p, err := CreateProcess(ctx, addr, "yes", nil)
 	c.Assert(err, IsNil)
