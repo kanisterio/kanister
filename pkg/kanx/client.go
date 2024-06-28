@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net"
+	"net/url"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -16,6 +17,11 @@ func newGRPCConnection(addr string) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	opts = append(opts, grpc.WithContextDialer(unixDialer))
+	// Add passthrough scheme if there is no scheme defined in the address
+	u, err := url.Parse(addr)
+	if err == nil && u.Scheme == "" {
+		addr = "passthrough:///" + addr
+	}
 	return grpc.NewClient(addr, opts...)
 }
 
