@@ -63,3 +63,4 @@ webhook
 Kopia
 kopia
 hostname
+snapshotting
