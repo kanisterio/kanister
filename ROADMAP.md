@@ -38,3 +38,4 @@ Please join the Kanister community to give feedback on the roadmap
 1. Generate Kanister controller using KubeBuilder - currently based on Rook operator
   resurrect https://github.com/kanisterio/kanister/issues/193
 1. Merge the Repository controller into the Kanister controller.
+1. Support for creation of blueprints/actionsets in application namespaces https://github.com/kanisterio/kanister/discussions/2922
