@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kanisterio/kanister/pkg/output"
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/output"
 )
 
 func Test(t *testing.T) { TestingT(t) }

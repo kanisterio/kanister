@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -85,7 +85,7 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 	oc := openshift.NewOpenShiftClient()
 	_, err := oc.NewApp(ctx, mdep.namespace, dbTemplate, nil, mdep.params)
 
-	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
+	return errkit.Wrap(err, "Error installing app on openshift cluster.", "app", mdep.name)
 }
 
 func (mdep *MysqlDepConfig) IsReady(ctx context.Context) (bool, error) {
@@ -125,7 +125,7 @@ func (mdep *MysqlDepConfig) Ping(ctx context.Context) error {
 	pingCMD := []string{"bash", "-c", "mysql -u root -e 'show databases;'"}
 	_, stderr, err := mdep.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database %s, %s", stderr, err)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr)
 	}
 	log.Print("Ping to the application was successful.")
 	return nil
@@ -137,7 +137,7 @@ func (mdep *MysqlDepConfig) Insert(ctx context.Context) error {
 	insertRecordCMD := []string{"bash", "-c", "mysql -u root -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '"}
 	_, stderr, err := mdep.execCommand(ctx, insertRecordCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting the data into msyql deployment config database: %s", stderr)
+		return errkit.Wrap(err, "Error while inserting the data into msyql deployment config database", "stderr", stderr)
 	}
 
 	log.Print("Successfully inserted record in the application.", field.M{"app": mdep.name})
@@ -150,13 +150,13 @@ func (mdep *MysqlDepConfig) Count(ctx context.Context) (int, error) {
 	selectRowsCMD := []string{"bash", "-c", "mysql -u root -e 'use testdb; select count(*) from pets; '"}
 	stdout, stderr, err := mdep.execCommand(ctx, selectRowsCMD)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
+		return 0, errkit.Wrap(err, "Error while counting the data of the database", "stderr", stderr)
 	}
 
 	// get the returned count and convert it to int, to return
 	rowsReturned, err := strconv.Atoi((strings.Split(stdout, "\n")[1]))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting row count to int.")
+		return 0, errkit.Wrap(err, "Error while converting row count to int.")
 	}
 
 	log.Print("Count that we received from application is.", field.M{"app": mdep.name, "count": rowsReturned})
@@ -170,14 +170,14 @@ func (mdep *MysqlDepConfig) Reset(ctx context.Context) error {
 	deleteCMD := []string{"bash", "-c", "mysql -u root -e 'DROP DATABASE IF EXISTS testdb'"}
 	_, stderr, err := mdep.execCommand(ctx, deleteCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while dropping the mysql table: %s", stderr)
+		return errkit.Wrap(err, "Error while dropping the mysql table", "stderr", stderr)
 	}
 
 	// create the database and a pets table
 	createCMD := []string{"bash", "-c", "mysql -u root -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
 	_, stderr, err = mdep.execCommand(ctx, createCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating the mysql table: %s", stderr)
+		return errkit.Wrap(err, "Error while creating the mysql table", "stderr", stderr)
 	}
 
 	log.Print("Reset of the application was successful.", field.M{"app": mdep.name})
@@ -196,7 +196,7 @@ func (mdep *MysqlDepConfig) execCommand(ctx context.Context, command []string) (
 	}
 	stdout, stderr, err := kube.Exec(ctx, mdep.cli, mdep.namespace, podName, containerName, command, nil)
 	if err != nil {
-		return stdout, stderr, errors.Wrapf(err, "Error executing command in the pod.")
+		return stdout, stderr, errkit.Wrap(err, "Error executing command in the pod.")
 	}
 	return stdout, stderr, err
 }

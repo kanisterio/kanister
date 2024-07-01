@@ -79,10 +79,11 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 					TargetPath:             "target/path",
 					SparseRestore:          false,
 					IgnorePermissionErrors: false,
+					Parallelism:            8,
 				}
 				return SnapshotRestore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --no-ignore-permission-errors",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --parallel=8 --no-ignore-permission-errors",
 		},
 		{
 			f: func() []string {
@@ -90,10 +91,11 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 					CommandArgs: commandArgs,
 					SnapID:      "snapshot-id",
 					TargetPath:  "target/path",
+					Parallelism: 16,
 				}
 				return SnapshotRestore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --no-ignore-permission-errors",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --parallel=16 --no-ignore-permission-errors",
 		},
 		{
 			f: func() []string {

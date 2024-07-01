@@ -19,9 +19,10 @@ import (
 	"fmt"
 	"strings"
 
+	. "gopkg.in/check.v1"
+
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/postgres"
-	. "gopkg.in/check.v1"
 )
 
 type RDSFunctionsTest struct{}

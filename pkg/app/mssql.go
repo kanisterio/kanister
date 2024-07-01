@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -168,7 +168,7 @@ func (m *MssqlDB) Ping(ctx context.Context) error {
 	loginMssql := []string{"sh", "-c", count}
 	_, stderr, err := m.execCommand(ctx, loginMssql)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database: %s", stderr)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr)
 	}
 	log.Print("Ping to the application was success.", field.M{"app": m.name})
 	return nil
@@ -182,7 +182,7 @@ func (m *MssqlDB) Insert(ctx context.Context) error {
 	insertQuery := []string{"sh", "-c", insert}
 	_, stderr, err := m.execCommand(ctx, insertQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
+		return errkit.Wrap(err, "Error while inserting data into table", "stderr", stderr)
 	}
 	return nil
 }
@@ -195,11 +195,11 @@ func (m *MssqlDB) Count(ctx context.Context) (int, error) {
 	insertQuery := []string{"sh", "-c", insert}
 	stdout, stderr, err := m.execCommand(ctx, insertQuery)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
+		return 0, errkit.Wrap(err, "Error while inserting data into table", "stderr", stderr)
 	}
 	rowsReturned, err := strconv.Atoi(strings.TrimSpace(strings.Split(stdout, "\n")[1]))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting response of count query: %s", stderr)
+		return 0, errkit.Wrap(err, "Error while converting response of count query", "stderr", stderr)
 	}
 	return rowsReturned, nil
 }
@@ -210,7 +210,7 @@ func (m *MssqlDB) Reset(ctx context.Context) error {
 	deleteQuery := []string{"sh", "-c", delete}
 	_, stderr, err := m.execCommand(ctx, deleteQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
+		return errkit.Wrap(err, "Error while inserting data into table", "stderr", stderr)
 	}
 	return nil
 }
@@ -225,13 +225,13 @@ func (m *MssqlDB) Initialize(ctx context.Context) error {
 	execQuery := []string{"sh", "-c", createDB}
 	_, stderr, err := m.execCommand(ctx, execQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating the database: %s", stderr)
+		return errkit.Wrap(err, "Error while creating the database", "stderr", stderr)
 	}
 
 	execQuery = []string{"sh", "-c", createTable}
 	_, stderr, err = m.execCommand(ctx, execQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating table: %s", stderr)
+		return errkit.Wrap(err, "Error while creating table", "stderr", stderr)
 	}
 	return nil
 }
@@ -243,7 +243,7 @@ func (m *MssqlDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.Ob
 func (m MssqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, m.cli, m.namespace, m.deployment.Name)
 	if err != nil || podName == "" {
-		return "", "", errors.Wrapf(err, "Error getting pod and container name for app %s.", m.name)
+		return "", "", errkit.Wrap(err, "Error getting pod and container name for app.", "app", m.name)
 	}
 	return kube.Exec(ctx, m.cli, m.namespace, podName, containerName, command, nil)
 }

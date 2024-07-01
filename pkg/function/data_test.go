@@ -27,6 +27,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
+
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
@@ -36,7 +38,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 type DataSuite struct {

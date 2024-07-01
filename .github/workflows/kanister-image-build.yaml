@@ -1,4 +1,4 @@
-name: build-kanister-image
+name: Update build image
 
 permissions:
   contents: read

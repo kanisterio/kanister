@@ -30,9 +30,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/poll"
 	osAppsv1 "github.com/openshift/api/apps/v1"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
+
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
