@@ -49,7 +49,6 @@ const (
 	DeleteVolumeSnapshotFuncName     = "DeleteVolumeSnapshot"
 	DeleteVolumeSnapshotNamespaceArg = "namespace"
 	DeleteVolumeSnapshotManifestArg  = "snapshots"
-	SnapshotDoesNotExistError        = "does not exist"
 )
 
 type deleteVolumeSnapshotFunc struct {
@@ -84,7 +83,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 		}
 		snapshot, err := provider.SnapshotGet(ctx, pvcInfo.SnapshotID)
 		if err != nil {
-			if strings.Contains(err.Error(), SnapshotDoesNotExistError) {
+			if strings.Contains(err.Error(), blockstorage.SnapshotDoesNotExistError) {
 				log.WithContext(ctx).Print("Snapshot already deleted", field.M{"SnapshotID": pvcInfo.SnapshotID})
 			} else {
 				return nil, errors.Wrapf(err, "Failed to get Snapshot from Provider")

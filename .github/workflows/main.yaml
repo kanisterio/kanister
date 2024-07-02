@@ -6,6 +6,7 @@ on:
     branches:
     - master
   pull_request:
+
 jobs:
   ## Make sure go.mod and go.sum files are up-to-date with the code
   ## TODO: make this fail if they're not up-to-date to inform the committer to udpate them
@@ -15,7 +16,7 @@ jobs:
       gomod: ${{ steps.gomod.outputs.gomod }}
       gosum: ${{ steps.gosum.outputs.gosum }}
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - run: make go-mod-tidy
     - id: gomod
       run: |
@@ -37,13 +38,29 @@ jobs:
     runs-on: ubuntu-20.04
     needs: gomod
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - run: make golint
+
+  reno_lint:
+    runs-on: ubuntu-20.04
+    needs: gomod
+    steps:
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      with:
+        fetch-depth: 0
+    - name: reset_git_extension
+      run: git config --unset-all extensions.worktreeconfig
+    - name: reno_lint
+      run: make reno-lint
+    ## Reno lint does not catch some errors which make reno report fail
+    - name: reno_report_check
+      run: make reno-report
+
   test:
     runs-on: ubuntu-20.04
     needs: gomod
@@ -52,7 +69,7 @@ jobs:
       matrix:
         testSuite: [test, integration-test, helm-test]
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -78,7 +95,7 @@ jobs:
       matrix:
         bin: [controller, kanctl, kando]
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -88,7 +105,7 @@ jobs:
   docs:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - run: make docs
   release:
     runs-on: ubuntu-20.04
@@ -97,7 +114,7 @@ jobs:
     permissions:
       packages: write
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - run: make go-mod-tidy
     - uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
       with:
@@ -109,4 +126,28 @@ jobs:
     - run: docker image prune -af
     - run: docker builder prune -af
     - run: make release-snapshot
-    - run: ./build/push_images.sh
+    - run: COMMIT_SHA=${{ github.sha }} ./build/push_images.sh
+  image_tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_short: ${{ steps.image_tags.outputs.tag_short }}
+      tag_long: ${{ steps.image_tags.outputs.tag_long }}
+    steps:
+    - id: image_tags
+      env:
+        COMMIT_SHA: ${{ github.sha }}
+      run: |
+        echo "tag_short=short-commit-${COMMIT_SHA::12}" >> $GITHUB_OUTPUT
+        echo "tag_long=commit-${COMMIT_SHA}" >> $GITHUB_OUTPUT
+  release_example_docker_images:
+    needs: [release, image_tags]
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_example_images.yaml
+    with:
+      image_tag: v9.99.9-dev
+      ref: ${{ github.ref }}
+      extra_tags: |
+        ${{ needs.image_tags.outputs.tag_short }}
+        ${{ needs.image_tags.outputs.tag_long }}
+

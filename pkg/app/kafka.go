@@ -24,7 +24,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -111,11 +111,11 @@ func (kc *KafkaCluster) Init(context.Context) error {
 	}
 	kc.cli, err = kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to get a k8s client")
+		return errkit.Wrap(err, "failed to get a k8s client")
 	}
 	kc.dynClient, err = dynamic.NewForConfig(cfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to get a k8s dynamic client")
+		return errkit.Wrap(err, "failed to get a k8s dynamic client")
 	}
 	return nil
 }
@@ -124,17 +124,17 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	kc.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	log.Print("Adding repo.", field.M{"app": kc.name})
 	err = cli.AddRepo(ctx, kc.chart.RepoName, kc.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error adding helm repo for app %s.", kc.name)
+		return errkit.Wrap(err, "Error adding helm repo for app.", "app", kc.name)
 	}
 	log.Print("Installing kafka operator using helm.", field.M{"app": kc.name})
 	_, err = cli.Install(ctx, kc.chart.RepoName+"/"+kc.chart.Chart, kc.chart.Version, kc.chart.Release, kc.namespace, kc.chart.Values, true, false)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing operator %s through helm.", kc.name)
+		return errkit.Wrap(err, "Error installing operator through helm.", "app", kc.name)
 	}
 	createKafka := []string{
 		"create",
@@ -143,7 +143,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", createKafka)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
+		return errkit.Wrap(err, "Error installing the application", "app", kc.name, "out", out)
 	}
 	createConfig := []string{
 		"create",
@@ -156,7 +156,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	}
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createConfig)
 	if err != nil {
-		return errors.Wrapf(err, "Error creating ConfigMap %s, %s", kc.name, out)
+		return errkit.Wrap(err, "Error creating ConfigMap", "app", kc.name, "out", out)
 	}
 	createKafkaBridge := []string{
 		"create",
@@ -166,7 +166,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createKafkaBridge)
 
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
+		return errkit.Wrap(err, "Error installing the application", "app", kc.name, "out", out)
 	}
 	log.Print("Application was installed successfully.", field.M{"app": kc.name})
 	return nil
@@ -310,12 +310,12 @@ func (kc *KafkaCluster) Secrets() map[string]crv1alpha1.ObjectReference {
 func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 
 	err = kc.cli.CoreV1().ConfigMaps(kc.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting ConfigMap %s", configMapName)
+		return errkit.Wrap(err, "Error deleting ConfigMap", "configMap", configMapName)
 	}
 
 	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
@@ -357,7 +357,7 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 	}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", pingKafka)
 	if err != nil {
-		return errors.Wrapf(err, "Error Pinging the app for %s, %s.", kc.name, out)
+		return errkit.Wrap(err, "Error Pinging the app", "app", kc.name, "out", out)
 	}
 	log.Print("Ping to the application was successful.")
 	return nil
@@ -368,7 +368,7 @@ func (kc *KafkaCluster) Insert(ctx context.Context) error {
 
 	err := kc.InsertRecord(ctx, kc.namespace)
 	if err != nil {
-		return errors.Wrapf(err, "Error inserting the record for %s", kc.name)
+		return errkit.Wrap(err, "Error inserting the record for", "app", kc.name)
 	}
 
 	log.Print("Successfully inserted record in the application.", field.M{"app": kc.name})
@@ -408,7 +408,7 @@ func (kc *KafkaCluster) Count(ctx context.Context) (int, error) {
 
 	count, err := consumeTopic(ctx, kc.namespace)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error counting the records for %s, %s.", kc.name, err)
+		return 0, errkit.Wrap(err, "Error counting the records.", "app", kc.name)
 	}
 
 	log.Print("Count that we received from application is.", field.M{"app": kc.name, "count": count})
@@ -498,7 +498,7 @@ func (kc *KafkaCluster) InsertRecord(ctx context.Context, namespace string) erro
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return errors.New("Error inserting records in topic")
+		return errkit.New("Error inserting records in topic")
 	}
 	defer resp.Body.Close() //nolint:errcheck
 	bytes, err := io.ReadAll(resp.Body)
@@ -516,37 +516,37 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 
 	cfg, err := kube.LoadConfig()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to Load config")
+		return nil, errkit.Wrap(err, "Failed to Load config")
 	}
 
 	clientset, err := kubernetes.NewForConfig(cfg)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Clienset for k8s config")
+		return nil, errkit.Wrap(err, "Failed to create Clienset for k8s config")
 	}
 	roundTripper, upgrader, err := spdy.RoundTripperFor(cfg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create RoundTripper for k8s config")
+		return nil, errkit.Wrap(err, "Failed to create RoundTripper for k8s config")
 	}
 
 	svc, err := clientset.CoreV1().Services(ns).Get(ctx, svcName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get service for component")
+		return nil, errkit.Wrap(err, "Failed to get service for component")
 	}
 
 	pods, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(svc.Spec.Selector)),
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to list pods for component")
+		return nil, errkit.Wrap(err, "Failed to list pods for component")
 	}
 	if len(pods.Items) == 0 {
-		return nil, errors.Wrapf(err, "Empty pods list for component")
+		return nil, errkit.Wrap(err, "Empty pods list for component")
 	}
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", ns, pods.Items[0].Name)
 	u, err := url.Parse(cfg.Host)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to parse url struct from k8s config")
+		return nil, errkit.Wrap(err, "Failed to parse url struct from k8s config")
 	}
 	hostIP := fmt.Sprintf("%s:%s", u.Hostname(), u.Port())
 	serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
@@ -570,7 +570,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 
 	f, err := portforward.New(dialer, []string{fmt.Sprintf(":%s", pPort)}, ctx.Done(), readyChan, pwo, pwe)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create port forward")
+		return nil, errkit.Wrap(err, "Failed to create port forward")
 	}
 
 	go func() {
@@ -581,7 +581,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	case <-readyChan:
 		log.Print("PortForward is Ready")
 	case err = <-errCh:
-		return nil, errors.Wrapf(err, "Failed to get ports from forwarded ports")
+		return nil, errkit.Wrap(err, "Failed to get ports from forwarded ports")
 	}
 
 	return f, nil
@@ -615,7 +615,7 @@ func createConsumerGroup(uri string) error {
 
 	if resp.StatusCode != 200 && resp.StatusCode != 409 {
 		// we are checking if consumer is already present and if not present it should be created
-		return errors.New("Error creating consumer")
+		return errkit.New("Error creating consumer")
 	}
 	defer resp.Body.Close() //nolint:errcheck
 	bytes, err := io.ReadAll(resp.Body)
@@ -648,7 +648,7 @@ func subscribe(uri string) error {
 		return err
 	}
 	if resp.StatusCode != 204 {
-		return errors.New("Error subscribing to the topic")
+		return errkit.New("Error subscribing to the topic")
 	}
 	defer resp.Body.Close() //nolint:errcheck
 	bytes, err := io.ReadAll(resp.Body)
@@ -669,7 +669,7 @@ func consumeMessage(uri string) (int, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode != 200 {
-		return 0, errors.New("Error consuming records from topic")
+		return 0, errkit.New("Error consuming records from topic")
 	}
 	if err != nil {
 		return 0, err

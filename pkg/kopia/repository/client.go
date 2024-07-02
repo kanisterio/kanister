@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
+	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/content"
-	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -62,7 +62,7 @@ func ConnectToAPIServer(
 	// Extra fingerprint from the TLS Certificate secret
 	fingerprint, err := kopia.ExtractFingerprintFromCertificate(tlsCert)
 	if err != nil {
-		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API Server Certificate Secret")
+		return errkit.Wrap(err, "Failed to extract fingerprint from Kopia API Server Certificate Secret")
 	}
 
 	serverInfo := &repo.APIServerInfo{
@@ -95,7 +95,12 @@ func ConnectToAPIServer(
 		}
 		return true, nil
 	})
-	return errors.Wrap(err, "Failed connecting to the Kopia API Server")
+
+	if err != nil {
+		return errkit.Wrap(err, "Failed connecting to the Kopia API Server")
+	}
+
+	return nil
 }
 
 // Open connects to the kopia repository based on the config stored in the config file
@@ -104,16 +109,16 @@ func ConnectToAPIServer(
 func Open(ctx context.Context, configFile, password, purpose string) (repo.RepositoryWriter, error) {
 	repoConfig := repositoryConfigFileName(configFile)
 	if _, err := os.Stat(repoConfig); os.IsNotExist(err) {
-		return nil, errors.New("Failed find kopia configuration file")
+		return nil, errkit.New("Failed find kopia configuration file")
 	}
 
 	r, err := repo.Open(ctx, repoConfig, password, &repo.Options{})
 	if os.IsNotExist(err) {
-		return nil, errors.New("Failed to find kopia repository, use `kopia repository create` or kopia repository connect` if already created")
+		return nil, errkit.New("Failed to find kopia repository, use `kopia repository create` or kopia repository connect` if already created")
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to open kopia repository")
+		return nil, errkit.Wrap(err, "Failed to open kopia repository")
 	}
 
 	_, rw, err := r.NewWriter(ctx, repo.WriteSessionOptions{
@@ -121,7 +126,11 @@ func Open(ctx context.Context, configFile, password, purpose string) (repo.Repos
 		OnUpload: func(i int64) {},
 	})
 
-	return rw, errors.Wrap(err, "Failed to open kopia repository writer")
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to open kopia repository writer")
+	}
+
+	return rw, nil
 }
 
 func repositoryConfigFileName(configFile string) string {

@@ -15,7 +15,6 @@
 
 
 set -o errexit
-set -o nounset
 set -o xtrace
 set -o pipefail
 
@@ -25,4 +24,19 @@ then
 	echo "You can generate a token here: https://github.com/settings/tokens/new"
 	exit 1
 fi
-goreleaser release --parallelism=1 --rm-dist --debug --timeout 120m
+
+## Set default changelog file
+CHANGELOG_FILE=${CHANGELOG_FILE:-./CHANGELOG_CURRENT.md}
+
+RELEASE_NOTES=""
+if [ -n "${CHANGELOG_FILE:-}" ]
+then
+	RELEASE_NOTES="--release-notes ${CHANGELOG_FILE}"
+fi
+
+if [ -n "${GHCR_LOGIN_TOKEN}" ]
+then
+	docker login https://ghcr.io -u ${GHCR_LOGIN_USER:?"GHCR_LOGIN_USER not specified"} -p ${GHCR_LOGIN_TOKEN}
+fi
+
+goreleaser release --parallelism=1 --clean --debug --timeout 120m ${RELEASE_NOTES} ${GORELEASE_PARAMS}

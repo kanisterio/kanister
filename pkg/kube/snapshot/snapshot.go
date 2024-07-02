@@ -18,8 +18,8 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/kanisterio/errkit"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -134,7 +134,7 @@ func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Sna
 	// Check if v1 (stable) snapshot API exists
 	exists, err := kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), GroupName, Version)
 	if err != nil {
-		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
+		return nil, errkit.Wrap(err, "Failed to call discovery APIs")
 	}
 	if exists {
 		return NewSnapshotStable(kubeCli, dynCli), nil
@@ -142,7 +142,7 @@ func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Sna
 	// Check if v1beta1 snapshot API exists
 	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1beta1.GroupName, v1beta1.Version)
 	if err != nil {
-		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
+		return nil, errkit.Wrap(err, "Failed to call discovery APIs")
 	}
 	if exists {
 		return NewSnapshotBeta(kubeCli, dynCli), nil
@@ -150,12 +150,12 @@ func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Sna
 	// Check if v1alpha1 snapshot API exists
 	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1alpha1.GroupName, v1alpha1.Version)
 	if err != nil {
-		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
+		return nil, errkit.Wrap(err, "Failed to call discovery APIs")
 	}
 	if exists {
 		return NewSnapshotAlpha(kubeCli, dynCli), nil
 	}
-	return nil, errors.New("Snapshot resources not supported")
+	return nil, errkit.New("Snapshot resources not supported")
 }
 
 // We use regexp to match because errors written in vs.Status.Error.Message are strings

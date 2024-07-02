@@ -6,7 +6,9 @@ FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 FROM debian:bullseye
 COPY --from=TOOLS_IMAGE /usr/local/bin/restic /usr/local/bin/restic
 COPY --from=TOOLS_IMAGE /usr/local/bin/kopia /usr/local/bin/kopia
-ADD kando /usr/local/bin/
+# Install kando
+COPY --from=TOOLS_IMAGE /usr/local/bin/kando /usr/local/bin/kando
+
 
 RUN apt update
 RUN apt install -y npm bash curl libcap2-bin

@@ -3,8 +3,9 @@ package repository_test
 import (
 	"testing"
 
-	"github.com/kopia/kopia/repo"
 	"gopkg.in/check.v1"
+
+	"github.com/kopia/kopia/repo"
 
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 )

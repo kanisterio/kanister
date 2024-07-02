@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -64,7 +64,7 @@ func locationType(m map[string][]byte) repositoryserver.LocType {
 // list of EnvVar based on secret type
 func GenerateEnvSpecFromCredentialSecret(s *corev1.Secret, assumeRoleDurationS3 time.Duration) ([]corev1.EnvVar, error) {
 	if s == nil {
-		return nil, errors.New("Secret cannot be nil")
+		return nil, errkit.New("Secret cannot be nil")
 	}
 	secType := string(s.Type)
 	switch secType {
@@ -111,7 +111,7 @@ func getEnvSpecForAzureCredentialSecret(s *corev1.Secret) ([]corev1.EnvVar, erro
 	if storageEnv != "" {
 		env, err := azure.EnvironmentFromName(storageEnv)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to get azure environment from name: %s", storageEnv)
+			return nil, errkit.Wrap(err, "Failed to get azure environment from name", "storageEnv", storageEnv)
 		}
 		blobDomain := "blob." + env.StorageEndpointSuffix
 		// TODO : Check how we can set this env to use value from secret

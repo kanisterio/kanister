@@ -17,7 +17,7 @@ package kube
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
@@ -64,7 +64,7 @@ func (p *podRunner) Run(
 
 	err := p.pc.StartPod(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create pod")
+		return nil, errkit.Wrap(err, "Failed to create pod")
 	}
 
 	pod := p.pc.Pod()
