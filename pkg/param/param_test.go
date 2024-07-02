@@ -23,6 +23,9 @@ import (
 	"text/template"
 	"time"
 
+	osapps "github.com/openshift/api/apps/v1"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
+	osfake "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -34,10 +37,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
-
-	osapps "github.com/openshift/api/apps/v1"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	osfake "github.com/openshift/client-go/apps/clientset/versioned/fake"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crfake "github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"

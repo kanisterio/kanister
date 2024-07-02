@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/dustin/go-humanize"
-
 	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/kopia/kopia/snapshot"

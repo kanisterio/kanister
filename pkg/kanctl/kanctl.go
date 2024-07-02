@@ -17,6 +17,7 @@ package kanctl
 import (
 	"os"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -25,8 +26,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/version"
-
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (

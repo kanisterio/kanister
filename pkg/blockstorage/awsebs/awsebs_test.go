@@ -25,9 +25,8 @@ import (
 	. "gopkg.in/check.v1"
 
 	kaws "github.com/kanisterio/kanister/pkg/aws"
-	envconfig "github.com/kanisterio/kanister/pkg/config"
-
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	envconfig "github.com/kanisterio/kanister/pkg/config"
 )
 
 // Hook up gocheck into the "go test" runner.

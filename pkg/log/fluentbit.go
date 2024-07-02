@@ -75,7 +75,7 @@ func handle(msgs []byte, endpoint string) error {
 	if err != nil {
 		return errors.Wrap(err, "Fluentbit connection error")
 	}
-	defer conn.Close() //nolint: errcheck
+	defer conn.Close() //nolint:errcheck
 	_, err = conn.Write(msgs)
 	if err != nil {
 		return errors.Wrap(err, "Fluentbit write error")

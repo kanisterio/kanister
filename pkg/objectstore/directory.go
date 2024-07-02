@@ -220,7 +220,7 @@ func (d *directory) GetBytes(ctx context.Context, name string) ([]byte, map[stri
 	if err != nil {
 		return nil, nil, err
 	}
-	defer r.Close()
+	defer r.Close() //nolint:errcheck
 
 	data, err := io.ReadAll(r)
 	if err != nil {

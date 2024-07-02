@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2/google"
-	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/compute/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
@@ -468,7 +468,7 @@ func getProfileFromFile(ctx context.Context, filename string) (*crv1alpha1.Profi
 		if err != nil {
 			return nil, err
 		}
-		defer f.Close()
+		defer f.Close() //nolint:errcheck
 	}
 	d := k8sYAML.NewYAMLOrJSONDecoder(f, 4096)
 	prof := &crv1alpha1.Profile{}

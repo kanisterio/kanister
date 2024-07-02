@@ -32,8 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 
-	// importing go check to bypass the testing flags
-	_ "gopkg.in/check.v1"
+	_ "gopkg.in/check.v1" // importing go check to bypass the testing flags
 )
 
 const serverVersionV170 = "v1.7.0"

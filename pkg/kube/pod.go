@@ -310,7 +310,7 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podNam
 	if err != nil {
 		return "", err
 	}
-	defer reader.Close()
+	defer reader.Close() //nolint:errcheck
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
@@ -324,12 +324,12 @@ func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, 
 	if logErr != nil {
 		return errkit.Wrap(logErr, "Failed to fetch logs from the pod")
 	}
-	defer r.Close()
+	defer r.Close() //nolint:errcheck
 
 	// Grab last log lines and put them to an error
 	lt := NewLogTail(logTailDefaultLength)
 	// We are not interested in log extraction error
-	io.Copy(lt, r) // nolint: errcheck
+	io.Copy(lt, r) //nolint:errcheck
 
 	return errkit.Wrap(errkit.Wrap(err, lt.ToString()), errorMessage)
 }
