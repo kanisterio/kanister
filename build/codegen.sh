@@ -29,5 +29,5 @@ chmod +x "${execDir}"/generate-groups.sh
   github.com/kanisterio/kanister/pkg/client  \
   github.com/kanisterio/kanister/pkg/apis    \
   "cr:v1alpha1"                              \
-  --go-header-file "${execDir}"/hack/boilerplate.go.txt \
+  --go-header-file "$PWD"/build/boilerplate.go.txt \
   -o /go/src/
