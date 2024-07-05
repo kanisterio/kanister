@@ -1,5 +1,5 @@
 linters:
-  disable-all: true                    # This enabled 7 default linters as of golangci-lint@v1.50.0:
+  disable-all: false                    # This enabled 7 default linters as of golangci-lint@v1.50.0:
                                         #   1. errcheck
                                         #   2. gosimple
                                         #   3. govet
