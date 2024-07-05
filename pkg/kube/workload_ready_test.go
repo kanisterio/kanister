@@ -12,6 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/kanisterio/kanister/pkg/errorchecker"
 )
 
 type WorkloadReadySuite struct{}
@@ -53,7 +55,7 @@ func (s *WorkloadReadySuite) TestWaitOnStatefulSetReady(c *C) {
 		defer cancel()
 		err := WaitOnStatefulSetReady(ctx, getCli(tc.input), tc.input.namespace, tc.input.name)
 		if tc.want != "" {
-			c.Assert(err, ErrorMatches, tc.want)
+			errorchecker.AssertErrorMessage(c, err, tc.want)
 		} else {
 			c.Assert(err, IsNil)
 		}
@@ -99,7 +101,7 @@ func (s *WorkloadReadySuite) TestWaitOnDeploymentReady(c *C) {
 		defer cancel()
 		err := WaitOnDeploymentReady(ctx, getCli(tc.input), tc.input.namespace, tc.input.name)
 		if tc.want != "" {
-			c.Assert(err, ErrorMatches, tc.want)
+			errorchecker.AssertErrorMessage(c, err, tc.want)
 		} else {
 			c.Assert(err, IsNil)
 		}

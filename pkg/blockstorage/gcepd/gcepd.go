@@ -259,6 +259,9 @@ func (s *GpdStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.
 func (s *GpdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
 	snap, err := s.service.Snapshots.Get(s.project, id).Context(ctx).Do()
 	if err != nil {
+		if isNotFoundError(err) {
+			return nil, errors.Wrap(err, blockstorage.SnapshotDoesNotExistError)
+		}
 		return nil, err
 	}
 	return s.snapshotParse(ctx, snap), nil

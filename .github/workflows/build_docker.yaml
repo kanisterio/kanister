@@ -1,0 +1,76 @@
+name: Build docker image
+
+on:
+  workflow_call:
+    inputs:
+      image_file:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+      build-args:
+        required: true
+        type: string
+      labels:
+        required: true
+        type: string
+      extra_tags:
+        required: false
+        type: string
+      platforms:
+        required: false
+        default: linux/amd64,linux/arm64
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ inputs.image_name }}
+
+jobs:
+  build_image:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      with:
+        ref: ${{ inputs.ref }}
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@5927c834f5b4fdf503fca6f4c7eccda82949e1ee # v3.1.0
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    - name: Login to GHCR
+      uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Image metadata
+      id: meta
+      uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=sha
+          {{date 'YYYY.MM.DD-HHmm'}}
+          ${{ inputs.image_tag }}
+          ${{ inputs.extra_tags }}
+        labels: ${{ inputs.labels }}
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ${{ inputs.image_file }}
+        platforms: ${{ inputs.platforms }}
+        push: true
+        pull: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: ${{ inputs.build-args }}

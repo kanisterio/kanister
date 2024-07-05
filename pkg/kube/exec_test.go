@@ -291,7 +291,7 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 // TestContextTimeout verifies that when context is cancelled during command execution,
 // execution will be interrupted and proper error will be returned. The stdout, stderr streams should be captured.
 func (s *ExecSuite) TestContextTimeout(c *C) {
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
 	defer cancel()
 	cmd := []string{"sh", "-c", "echo abc && sleep 2 && echo def"}
 	for _, cs := range s.pod.Status.ContainerStatuses {

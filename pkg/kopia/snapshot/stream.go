@@ -21,13 +21,13 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/fs/localfs"
 	"github.com/kopia/kopia/fs/virtualfs"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/restore"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
-	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
@@ -58,10 +58,10 @@ type SnapshotInfo struct {
 // Validate validates SnapshotInfo field values
 func (si *SnapshotInfo) Validate() error {
 	if si == nil {
-		return errors.New("kopia snapshotInfo cannot be nil")
+		return errkit.New("kopia snapshotInfo cannot be nil")
 	}
 	if si.ID == "" {
-		return errors.New("kopia snapshot ID cannot be empty")
+		return errkit.New("kopia snapshot ID cannot be empty")
 	}
 	return nil
 }
@@ -72,7 +72,7 @@ func (si *SnapshotInfo) Validate() error {
 func Write(ctx context.Context, source io.ReadCloser, path, password string) (*SnapshotInfo, error) {
 	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to open kopia repository")
+		return nil, errkit.Wrap(err, "Failed to open kopia repository")
 	}
 
 	// If the input `path` provided does not have a parent directory OR
@@ -118,12 +118,12 @@ func Write(ctx context.Context, source io.ReadCloser, path, password string) (*S
 func WriteFile(ctx context.Context, path, sourcePath, password string) (*SnapshotInfo, error) {
 	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to open kopia repository")
+		return nil, errkit.Wrap(err, "Failed to open kopia repository")
 	}
 
 	dir, err := filepath.Abs(sourcePath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Invalid source path '%s'", sourcePath)
+		return nil, errkit.Wrap(err, "Invalid source path", "sourcePath", sourcePath)
 	}
 
 	// Populate the source info with parent path as the source
@@ -134,7 +134,7 @@ func WriteFile(ctx context.Context, path, sourcePath, password string) (*Snapsho
 	}
 	rootDir, err := getLocalFSEntry(ctx, sourceInfo.Path)
 	if err != nil {
-		return nil, errors.Wrap(err, "Unable to get local filesystem entry")
+		return nil, errkit.Wrap(err, "Unable to get local filesystem entry")
 	}
 
 	// Setup kopia uploader
@@ -157,12 +157,12 @@ func WriteFile(ctx context.Context, path, sourcePath, password string) (*Snapsho
 func getLocalFSEntry(ctx context.Context, path0 string) (fs.Entry, error) {
 	path, err := resolveSymlink(path0)
 	if err != nil {
-		return nil, errors.Wrap(err, "resolveSymlink")
+		return nil, errkit.Wrap(err, "resolveSymlink")
 	}
 
 	e, err := localfs.NewEntry(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't get local fs entry")
+		return nil, errkit.Wrap(err, "can't get local fs entry")
 	}
 
 	return e, nil
@@ -171,7 +171,7 @@ func getLocalFSEntry(ctx context.Context, path0 string) (fs.Entry, error) {
 func resolveSymlink(path string) (string, error) {
 	st, err := os.Lstat(path)
 	if err != nil {
-		return "", errors.Wrap(err, "stat")
+		return "", errkit.Wrap(err, "stat")
 	}
 
 	if (st.Mode() & os.ModeSymlink) == 0 {
@@ -186,7 +186,7 @@ func resolveSymlink(path string) (string, error) {
 func Read(ctx context.Context, target io.Writer, backupID, path, password string) error {
 	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
-		return errors.Wrap(err, "Failed to open kopia repository")
+		return errkit.Wrap(err, "Failed to open kopia repository")
 	}
 
 	// Get the kopia object ID belonging to the streaming file
@@ -198,31 +198,35 @@ func Read(ctx context.Context, target io.Writer, backupID, path, password string
 	// Open repository object and copy the data to the target
 	r, err := rep.OpenObject(ctx, oid)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open kopia object: %v", oid)
+		return errkit.Wrap(err, "Failed to open kopia object", "oid", oid)
 	}
 
 	defer r.Close() //nolint:errcheck
 
 	_, err = copy(target, r)
 
-	return errors.Wrap(err, "Failed to copy snapshot data to the target")
+	if err != nil {
+		return errkit.Wrap(err, "Failed to copy snapshot data to the target")
+	}
+
+	return nil
 }
 
 // ReadFile restores a kopia snapshot with the given ID to the given target
 func ReadFile(ctx context.Context, backupID, target, password string) error {
 	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
-		return errors.Wrap(err, "Failed to open kopia repository")
+		return errkit.Wrap(err, "Failed to open kopia repository")
 	}
 
 	rootEntry, err := snapshotfs.FilesystemEntryFromIDWithPath(ctx, rep, backupID, false)
 	if err != nil {
-		return errors.Wrap(err, "Unable to get filesystem entry")
+		return errkit.Wrap(err, "Unable to get filesystem entry")
 	}
 
 	p, err := filepath.Abs(target)
 	if err != nil {
-		return errors.Wrap(err, "Unable to resolve path")
+		return errkit.Wrap(err, "Unable to resolve path")
 	}
 	// TODO: Do we want to keep this flags configurable?
 	output := &restore.FilesystemOutput{
@@ -236,7 +240,12 @@ func ReadFile(ctx context.Context, backupID, target, password string) error {
 	_, err = restore.Entry(ctx, rep, output, rootEntry, restore.Options{
 		Parallel: 8,
 	})
-	return errors.Wrap(err, "Failed to copy snapshot data to the target")
+
+	if err != nil {
+		return errkit.Wrap(err, "Failed to copy snapshot data to the target")
+	}
+
+	return nil
 }
 
 // bufferPool is a pool of shared buffers used during kopia read

@@ -18,7 +18,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -38,7 +38,7 @@ func GetControllerNamespace() (string, error) {
 
 	ns, err := os.ReadFile(nsFile)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to read namespace form k8s mounted file")
+		return "", errkit.Wrap(err, "Failed to read namespace form k8s mounted file")
 	}
 
 	return string(ns), nil
@@ -51,17 +51,17 @@ func GetControllerServiceAccount(k8sclient kubernetes.Interface) (string, error)
 	}
 	ns, err := GetControllerNamespace()
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to get Controller namespace")
+		return "", errkit.Wrap(err, "Failed to get Controller namespace")
 	}
 
 	podName, err := GetControllerPodName()
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to get Controller pod name")
+		return "", errkit.Wrap(err, "Failed to get Controller pod name")
 	}
 
 	pod, err := k8sclient.CoreV1().Pods(ns).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to get Controller pod object from k8s")
+		return "", errkit.Wrap(err, "Failed to get Controller pod object from k8s")
 	}
 	return pod.Spec.ServiceAccountName, nil
 }
@@ -73,7 +73,7 @@ func GetControllerPodName() (string, error) {
 	}
 	podName, err := os.Hostname()
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to get pod name from Hostname")
+		return "", errkit.Wrap(err, "Failed to get pod name from Hostname")
 	}
 
 	return podName, nil

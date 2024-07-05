@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -87,18 +87,18 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error { //nol
 	mdb.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	log.Print("Adding repo.", field.M{"app": mdb.name})
 	err = cli.AddRepo(ctx, mdb.chart.RepoName, mdb.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error adding helm repo for app %s.", mdb.name)
+		return errkit.Wrap(err, "Error adding helm repo for app.", "app", mdb.name)
 	}
 
 	log.Print("Installing mysql instance using helm.", field.M{"app": mdb.name})
 	_, err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values, true, false)
 	if err != nil {
-		return errors.Wrapf(err, "Error intalling application %s through helm.", mdb.name)
+		return errkit.Wrap(err, "Error installing application through helm.", "app", mdb.name)
 	}
 
 	return nil
@@ -127,7 +127,7 @@ func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return errkit.Wrap(err, "failed to create helm client")
 	}
 	err = cli.Uninstall(ctx, mdb.chart.Release, mdb.namespace)
 	if err != nil {
@@ -150,7 +150,7 @@ func (mdb *MysqlDB) Ping(ctx context.Context) error {
 	loginMysql := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD"}
 	_, stderr, err := mdb.execCommand(ctx, loginMysql)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database %s", stderr)
+		return errkit.Wrap(err, "Error while Pinging the database", "stderr", stderr)
 	}
 
 	log.Print("Ping to the application was success.", field.M{"app": mdb.name})
@@ -163,7 +163,7 @@ func (mdb *MysqlDB) Insert(ctx context.Context) error {
 	insertRecordCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '"}
 	_, stderr, err := mdb.execCommand(ctx, insertRecordCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting the data into msyql database: %s", stderr)
+		return errkit.Wrap(err, "Error while inserting the data into msyql database", "stderr", stderr)
 	}
 
 	log.Print("Successfully inserted records in the application.", field.M{"app": mdb.name})
@@ -176,12 +176,12 @@ func (mdb *MysqlDB) Count(ctx context.Context) (int, error) {
 	selectRowsCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'use testdb; select count(*) from pets; '"}
 	stdout, stderr, err := mdb.execCommand(ctx, selectRowsCMD)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
+		return 0, errkit.Wrap(err, "Error while counting the data of the database", "stderr", stderr)
 	}
 	// get the returned count and convert it to int, to return
 	rowsReturned, err := strconv.Atoi((strings.Split(stdout, "\n")[1]))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting row count to int.")
+		return 0, errkit.Wrap(err, "Error while converting row count to int.")
 	}
 	log.Print("Count that we received from application is.", field.M{"app": mdb.name, "count": rowsReturned})
 	return rowsReturned, nil
@@ -196,7 +196,7 @@ func (mdb *MysqlDB) Reset(ctx context.Context) error {
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", mdb.name)
+		return errkit.Wrap(err, "Error waiting for application to be ready to reset it", "app", mdb.name)
 	}
 
 	log.Print("Resetting the mysql instance.", field.M{"app": "mysql"})
@@ -205,7 +205,7 @@ func (mdb *MysqlDB) Reset(ctx context.Context) error {
 	deleteFromTableCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'DROP DATABASE IF EXISTS testdb'"}
 	_, stderr, err := mdb.execCommand(ctx, deleteFromTableCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while dropping the mysql table: %s", stderr)
+		return errkit.Wrap(err, "Error while dropping the mysql table", "stderr", stderr)
 	}
 
 	log.Print("Reset of the application was successful.", field.M{"app": mdb.name})
@@ -220,7 +220,7 @@ func (mdb *MysqlDB) Initialize(ctx context.Context) error {
 		"species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
 	_, stderr, err := mdb.execCommand(ctx, createTableCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating the mysql table: %s", stderr)
+		return errkit.Wrap(err, "Error while creating the mysql table", "stderr", stderr)
 	}
 	return nil
 }
@@ -242,7 +242,7 @@ func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
 	if err != nil || podname == "" {
-		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
+		return "", "", errkit.Wrap(err, "Error  getting pod and containername.", "app", mdb.name)
 	}
 	return kube.Exec(ctx, mdb.cli, mdb.namespace, podname, containername, command, nil)
 }

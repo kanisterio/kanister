@@ -910,6 +910,48 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
 }
 
+func (s *ControllerSuite) TestPhaseOutputParallelActions(c *C) {
+	ctx := context.Background()
+	// Create a blueprint that uses func output as artifact
+	bp := newBPWithOutputArtifact()
+	bp = testutil.BlueprintWithConfigMap(bp)
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// Create another blueprint
+	bp1 := testutil.NewTestBlueprint("Deployment", testutil.WaitFuncName)
+	bp1, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp1, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// Add an actionset that runs actions from two blueprints in parallel
+	as := testutil.NewTestMultiActionActionSet(s.namespace, bp1.GetName(), testAction, bp.GetName(), testAction, "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
+	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+
+	// Check if the func returned expected output
+	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+
+	testutil.ReleaseWaitFunc()
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	// Check if the artifacts got updated correctly
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
+	arts := as.Status.Actions[0].Artifacts
+	c.Assert(arts, IsNil)
+
+	arts = as.Status.Actions[1].Artifacts
+	c.Assert(arts, NotNil)
+	c.Assert(arts, HasLen, 1)
+	keyVal := arts["myArt"].KeyValue
+	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
+}
+
 func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
 	ctx := context.Background()
 	// Create a blueprint that uses func output as kopia snapshot
