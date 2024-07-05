@@ -11,7 +11,20 @@ actions:
           snapshotName: '{{ .Phases.setupNodeKeyStore.Output.snapshotName }}'
           esClusterName: '{{ .Phases.setupNodeKeyStore.Output.esClusterName }}'
           esClusterNamespace: '{{ .Object.metadata.namespace }}'
-    phases:   
+    phases:  
+    - func: Wait
+      name: waitElasticGreen
+      args:
+        timeout: 360s
+        conditions:
+          anyOf:
+            - condition: '{{ if  or (eq "{ $.status.health }" "green") (eq "{ $.status.health }" "yellow")}}true{{ else }}false{{ end }}'            
+              objectReference:
+                apiVersion: v1
+                group: elasticsearch.k8s.elastic.co
+                resource: elasticsearches
+                name: "{{ .Object.metadata.name }}"
+                namespace: "{{ .Object.metadata.namespace}}"  
     - func: KubeTask
       name: setupNodeKeyStore
       objects:
@@ -20,10 +33,10 @@ actions:
           name: '{{ .Object.metadata.name }}-es-elastic-user'
           namespace: '{{ .Object.metadata.namespace }}' 
       args:        
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.109.0
         command:
         - bash
-        - +x
+        - -x
         - -o
         - errexit
         - -o
@@ -54,31 +67,29 @@ actions:
           AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
           AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
           {{- end }}
-          # No Support for more than one node set for the moment 
-          NODE_SET_COUNT={{ len .Object.spec.nodeSets }}
-          if [[ $NODE_SET_COUNT -gt 1 ]]
-          then 
-              echo "error, no Support for more than one node set for the moment, exiting"
-              exit 3
-          fi
-          NODE_SET_0_COUNT={{ (index .Object.spec.nodeSets 0).count }}
-          NODE_SET_0_COUNT=$((NODE_SET_0_COUNT-1))
-          NODE_SET_0_NAME={{ (index .Object.spec.nodeSets 0).name }}
-          for i in $(seq 0 $NODE_SET_0_COUNT)
-          do 
-              pod="{{ .Object.metadata.name }}-es-$NODE_SET_0_NAME-$i"
-              echo "updating elasticsearch-keystore of $pod"
-              kubectl exec -it -n {{ .Object.metadata.namespace }} $pod -c elasticsearch -- bash -c "echo ${AWS_ACCESS_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.access_key" 
-              kubectl exec -it -n {{ .Object.metadata.namespace }} $pod -c elasticsearch -- bash -c "echo ${AWS_SECRET_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.secret_key"
-          done                              
+          
+          NS_NAME={{ .Object.metadata.namespace }}
+          ES_CLUSTER_NAME={{ .Object.metadata.name }}
+          {{- range $index, $nodeSet := .Object.spec.nodeSets }}
+            NODE_SET_COUNT={{ $nodeSet.count }}
+            NODE_SET_COUNT=$((NODE_SET_COUNT-1))
+            NODE_SET_NAME={{ $nodeSet.name }}
+            for i in $(seq 0 $NODE_SET_COUNT)
+            do 
+                pod="$ES_CLUSTER_NAME-es-$NODE_SET_NAME-$i"
+                echo "updating elasticsearch-keystore of $pod"
+                kubectl exec -it -n $NS_NAME $pod -c elasticsearch -- bash -c "echo ${AWS_ACCESS_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.access_key" 
+                kubectl exec -it -n $NS_NAME $pod -c elasticsearch -- bash -c "echo ${AWS_SECRET_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.secret_key"
+            done 
+          {{- end }}
     - func: KubeTask
       name: snapshotElastic     
       args:
         namespace: "{{ .Object.metadata.namespace }}"                
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.109.0
         command:
         - bash
-        - +x
+        - -x
         - -o
         - errexit
         - -o
@@ -93,6 +104,10 @@ actions:
           if [[ -z $ENDPOINT ]] 
           then 
              ENDPOINT="s3.amazonaws.com"
+             path_style_access="false"
+          else
+              # when using non amazon s3 endpoint, we need to use path style access
+              path_style_access="true"
           fi
           REPO_PATH="{{ .Phases.setupNodeKeyStore.Output.repoPath }}"
           SNAPSHOT_NAME="{{ .Phases.setupNodeKeyStore.Output.snapshotName }}"
@@ -108,12 +123,20 @@ actions:
               "bucket": "'$BUCKET'",
               "endpoint": "'$ENDPOINT'",
               "region": "'$REGION'",
-              "base_path": "'$REPO_PATH'"
+              "base_path": "'$REPO_PATH'",
+              "path_style_access": "'$path_style_access'"          
             }
           }
           '
           echo "creating the snap $SNAPSHOT_NAME" 
-          curl -k -u "elastic:$PASSWORD" -X PUT "${ES_URL}/_snapshot/k10_repo/$SNAPSHOT_NAME?pretty"
+          code=$(curl -o /dev/null -w "%{http_code}\n" -k -u "elastic:$PASSWORD" -X PUT "${ES_URL}/_snapshot/k10_repo/$SNAPSHOT_NAME?pretty")
+          if [[ $code -eq 200 ]]
+          then 
+            echo "snapshot $SNAPSHOT_NAME was successful initiated"
+          else
+            echo "snapshot $SNAPSHOT_NAME was not successful initiated"
+            exit 1
+          fi
 
           while curl -k -u "elastic:$PASSWORD" -X GET "${ES_URL}/_snapshot/k10_repo/$SNAPSHOT_NAME/_status?pretty" | grep -P "(IN_PROGRESS|STARTED)"
           do 
@@ -132,6 +155,7 @@ actions:
              echo $reason
              exit 1
           fi
+          sleep 5
   restore:
     inputArtifactNames: 
     - s3Snap  # use it with  for instance {{ .ArtifactsIn.s3Snap.KeyValue.repoPath }} or {{ .ArtifactsIn.s3Snap.KeyValue.snapshotName }}
@@ -164,7 +188,7 @@ actions:
           name: '{{ .Object.metadata.name }}-es-elastic-user'
           namespace: '{{ .Object.metadata.namespace }}' 
       args:        
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.109.0
         command:
         - bash
         - +x
@@ -188,28 +212,26 @@ actions:
           AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
           AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
           {{- end }}
-          # No Support for more than one node set for the moment 
-          NODE_SET_COUNT={{ len .Object.spec.nodeSets }}
-          if [[ $NODE_SET_COUNT -gt 1 ]]
-          then 
-              echo "error, no Support for more than one node set for the moment, exiting"
-              exit 4
-          fi
-          NODE_SET_0_COUNT={{ (index .Object.spec.nodeSets 0).count }}
-          NODE_SET_0_COUNT=$((NODE_SET_0_COUNT-1))
-          NODE_SET_0_NAME={{ (index .Object.spec.nodeSets 0).name }}
-          for i in $(seq 0 $NODE_SET_0_COUNT)
-          do 
-              pod="{{ .Object.metadata.name }}-es-$NODE_SET_0_NAME-$i"
-              echo "updating elasticsearch-keystore of $pod"
-              kubectl exec -it -n {{ .Object.metadata.namespace }} $pod -c elasticsearch -- bash -c "echo ${AWS_ACCESS_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.access_key" 
-              kubectl exec -it -n {{ .Object.metadata.namespace }} $pod -c elasticsearch -- bash -c "echo ${AWS_SECRET_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.secret_key"
-          done                           
+
+          NS_NAME={{ .Object.metadata.namespace }}
+          ES_CLUSTER_NAME={{ .Object.metadata.name }}
+          {{- range $index, $nodeSet := .Object.spec.nodeSets }}
+            NODE_SET_COUNT={{ $nodeSet.count }}
+            NODE_SET_COUNT=$((NODE_SET_COUNT-1))
+            NODE_SET_NAME={{ $nodeSet.name }}
+            for i in $(seq 0 $NODE_SET_COUNT)
+            do 
+                pod="$ES_CLUSTER_NAME-es-$NODE_SET_NAME-$i"
+                echo "updating elasticsearch-keystore of $pod"
+                kubectl exec -it -n $NS_NAME $pod -c elasticsearch -- bash -c "echo ${AWS_ACCESS_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.access_key" 
+                kubectl exec -it -n $NS_NAME $pod -c elasticsearch -- bash -c "echo ${AWS_SECRET_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.secret_key"
+            done 
+          {{- end }}                         
     - func: KubeTask
       name: restoreElastic     
       args:
         namespace: "{{ .Object.metadata.namespace }}"                
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.109.0
         command:
         - bash
         - +x
@@ -227,17 +249,13 @@ actions:
           if [[ -z $ENDPOINT ]] 
           then 
              ENDPOINT="s3.amazonaws.com"
+             path_style_access="false"
+          else
+              # when using non amazon s3 endpoint, we need to use path style access
+              path_style_access="true"
           fi
           REPO_PATH="{{ .ArtifactsIn.s3Snap.KeyValue.repoPath }}"
           SNAPSHOT_NAME="{{ .ArtifactsIn.s3Snap.KeyValue.snapshotName }}"
-          bp_dbg "REGION=$REGION"
-          bp_dbg "BUCKET=$BUCKET"
-          bp_dbg "ENDPOINT=$ENDPOINT"
-          bp_dbg "PASSWORD=$PASSWORD"
-          bp_dbg "PROFILE_TYPE=$PROFILE_TYPE"
-          bp_dbg "REPO_PATH=$REPO_PATH"
-          bp_dbg "SNAPSHOT_NAME=$SNAPSHOT_NAME"
-          
           # reload the secure settings to access the S3 profile
           curl -k -u "elastic:$PASSWORD" -X POST "${ES_URL}/_nodes/reload_secure_settings?pretty" -H 'Content-Type: application/json' -d'
           {}
@@ -251,7 +269,8 @@ actions:
               "bucket": "'$BUCKET'",
               "endpoint": "'$ENDPOINT'",
               "region": "'$REGION'",
-              "base_path": "'$REPO_PATH'"
+              "base_path": "'$REPO_PATH'",
+              "path_style_access": "'$path_style_access'"          
             }
           }
           '
@@ -336,7 +355,7 @@ actions:
           name: '{{ .ArtifactsIn.s3Snap.KeyValue.esClusterName }}-es-elastic-user'
           namespace: '{{ .ArtifactsIn.s3Snap.KeyValue.esClusterNamespace }}' 
       args:        
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.109.0
         command:
         - bash
         - +x
@@ -370,21 +389,25 @@ actions:
             echo "error, we don't have an es cluster $ES_CLUSTER_NAME in ns $NAMESPACE"
             exit 5
           fi
-          NODE_SET_0_COUNT=$(kubectl get elasticsearch $ES_CLUSTER_NAME -n $NAMESPACE -o jsonpath='{.spec.nodeSets[0].count}')
-          NODE_SET_0_COUNT=$((NODE_SET_0_COUNT-1))
-          NODE_SET_0_NAME=$(kubectl get elasticsearch $ES_CLUSTER_NAME -n $NAMESPACE -o jsonpath='{.spec.nodeSets[0].name}')
-          for i in $(seq 0 $NODE_SET_0_COUNT)
-          do 
-              pod="$ES_CLUSTER_NAME-es-$NODE_SET_0_NAME-$i"
-              echo "updating elasticsearch-keystore of $pod"
-              kubectl exec -it -n $NAMESPACE $pod -c elasticsearch -- bash -c "echo ${AWS_ACCESS_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.access_key" 
-              kubectl exec -it -n $NAMESPACE $pod -c elasticsearch -- bash -c "echo ${AWS_SECRET_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.secret_key"
-          done                                
+          NS_NAME=$NAMESPACE          
+          for NODE_SET_NAME in $(kubectl get elasticsearch -n $NS_NAME $ES_CLUSTER_NAME -o jsonpath='{.spec.nodeSets[*].name}')
+          do
+            NODE_SET_COUNT=$(kubectl get elasticsearch -n $NS_NAME $ES_CLUSTER_NAME -o jsonpath="{.spec.nodeSets[?(@.name == '$NODE_SET_NAME')].count}")
+            NODE_SET_COUNT=$((NODE_SET_COUNT-1))
+            echo "$NODE_SET_NAME $NODE_SET_COUNT"
+            for i in $(seq 0 $NODE_SET_COUNT)
+            do 
+                pod="$ES_CLUSTER_NAME-es-$NODE_SET_NAME-$i"
+                echo "updating elasticsearch-keystore of $pod"
+                kubectl exec -it -n $NS_NAME $pod -c elasticsearch -- bash -c "echo ${AWS_ACCESS_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.access_key" 
+                kubectl exec -it -n $NS_NAME $pod -c elasticsearch -- bash -c "echo ${AWS_SECRET_KEY} | /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin -f s3.client.default.secret_key"
+            done 
+          done                             
     - func: KubeTask
       name: deleteSnapshot    
       args:
         namespace: '{{ .ArtifactsIn.s3Snap.KeyValue.esClusterNamespace }}'                
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.109.0
         command:
         - bash
         - +x
@@ -402,17 +425,13 @@ actions:
           if [[ -z $ENDPOINT ]] 
           then 
              ENDPOINT="s3.amazonaws.com"
+             path_style_access="false"
+          else
+              # when using non amazon s3 endpoint, we need to use path style access
+              path_style_access="true"
           fi
           REPO_PATH="{{ .ArtifactsIn.s3Snap.KeyValue.repoPath }}"
-          SNAPSHOT_NAME="{{ .ArtifactsIn.s3Snap.KeyValue.snapshotName }}"
-          bp_dbg "REGION=$REGION"
-          bp_dbg "BUCKET=$BUCKET"
-          bp_dbg "ENDPOINT=$ENDPOINT"
-          bp_dbg "PASSWORD=$PASSWORD"
-          bp_dbg "PROFILE_TYPE=$PROFILE_TYPE"
-          bp_dbg "REPO_PATH=$REPO_PATH"
-          bp_dbg "SNAPSHOT_NAME=$SNAPSHOT_NAME"
-          
+          SNAPSHOT_NAME="{{ .ArtifactsIn.s3Snap.KeyValue.snapshotName }}"          
           # reload the secure settings to access the S3 profile
           curl -k -u "elastic:$PASSWORD" -X POST "${ES_URL}/_nodes/reload_secure_settings?pretty" -H 'Content-Type: application/json' -d'
           {}
@@ -426,7 +445,8 @@ actions:
               "bucket": "'$BUCKET'",
               "endpoint": "'$ENDPOINT'",
               "region": "'$REGION'",
-              "base_path": "'$REPO_PATH'"
+              "base_path": "'$REPO_PATH'",
+              "path_style_access": "'$path_style_access'" 
             }
           }
           ' 
