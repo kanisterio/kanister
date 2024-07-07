@@ -7,13 +7,13 @@ actions:
     outputArtifacts:
       s3Snap:
         keyValue:
-          repoPath: '{{ .Phases.setupNodeKeyStore.Output.repoPath }}'
-          snapshotName: '{{ .Phases.setupNodeKeyStore.Output.snapshotName }}'
-          esClusterName: '{{ .Phases.setupNodeKeyStore.Output.esClusterName }}'
+          repoPath: '{{ .Phases.setupNodeKeyStoreBackup.Output.repoPath }}'
+          snapshotName: '{{ .Phases.setupNodeKeyStoreBackup.Output.snapshotName }}'
+          esClusterName: '{{ .Phases.setupNodeKeyStoreBackup.Output.esClusterName }}'
           esClusterNamespace: '{{ .Object.metadata.namespace }}'
     phases:  
     - func: Wait
-      name: waitElasticGreen
+      name: waitElasticGreenBackup
       args:
         timeout: 360s
         conditions:
@@ -26,7 +26,7 @@ actions:
                 name: "{{ .Object.metadata.name }}"
                 namespace: "{{ .Object.metadata.namespace}}"  
     - func: KubeTask
-      name: setupNodeKeyStore
+      name: setupNodeKeyStoreBackup
       objects:
         elasticSecret:
           kind: Secret
@@ -97,7 +97,7 @@ actions:
         - -c
         - |                               
           ES_URL="https://{{ .Object.metadata.name }}-es-http:9200"
-          PASSWORD="{{ index .Phases.setupNodeKeyStore.Secrets.elasticSecret.Data "elastic" | toString }}"
+          PASSWORD="{{ index .Phases.setupNodeKeyStoreBackup.Secrets.elasticSecret.Data "elastic" | toString }}"
           REGION="{{ .Profile.Location.Region }}"
           BUCKET="{{ .Profile.Location.Bucket }}"
           ENDPOINT="{{ .Profile.Location.Endpoint }}"
@@ -109,8 +109,8 @@ actions:
               # when using non amazon s3 endpoint, we need to use path style access
               path_style_access="true"
           fi
-          REPO_PATH="{{ .Phases.setupNodeKeyStore.Output.repoPath }}"
-          SNAPSHOT_NAME="{{ .Phases.setupNodeKeyStore.Output.snapshotName }}"
+          REPO_PATH="{{ .Phases.setupNodeKeyStoreBackup.Output.repoPath }}"
+          SNAPSHOT_NAME="{{ .Phases.setupNodeKeyStoreBackup.Output.snapshotName }}"
           # reload the secure settings to access the S3 profile
           curl -k -u "elastic:$PASSWORD" -X POST "${ES_URL}/_nodes/reload_secure_settings?pretty" -H 'Content-Type: application/json' -d'
           {}
@@ -161,7 +161,7 @@ actions:
     - s3Snap  # use it with  for instance {{ .ArtifactsIn.s3Snap.KeyValue.repoPath }} or {{ .ArtifactsIn.s3Snap.KeyValue.snapshotName }}
     phases:   
     - func: Wait
-      name: waitElasticGreen
+      name: waitElasticGreenRestore
       args:
         timeout: 360s
         conditions:
@@ -181,7 +181,7 @@ actions:
         name: "{{ .Object.metadata.name }}-es-{{ (index .Object.spec.nodeSets 0).name }}"
         replicas: "{{ (index .Object.spec.nodeSets 0).count }}"  
     - func: KubeTask
-      name: setupNodeKeyStore
+      name: setupNodeKeyStoreRestore
       objects:
         elasticSecret:
           kind: Secret
@@ -242,7 +242,7 @@ actions:
         - -c
         - |                                
           ES_URL="https://{{ .Object.metadata.name }}-es-http:9200"
-          PASSWORD="{{ index .Phases.setupNodeKeyStore.Secrets.elasticSecret.Data "elastic" | toString }}"
+          PASSWORD="{{ index .Phases.setupNodeKeyStoreRestore.Secrets.elasticSecret.Data "elastic" | toString }}"
           REGION="{{ .Profile.Location.Region }}"
           BUCKET="{{ .Profile.Location.Bucket }}"
           ENDPOINT="{{ .Profile.Location.Endpoint }}"
@@ -348,7 +348,7 @@ actions:
     - s3Snap  
     phases:         
     - func: KubeTask
-      name: setupNodeKeyStore
+      name: setupNodeKeyStoreDelete
       objects:
         elasticSecret:
           kind: Secret
@@ -418,7 +418,7 @@ actions:
         - -c
         - |                                
           ES_URL="https://{{ .ArtifactsIn.s3Snap.KeyValue.esClusterName }}-es-http:9200"
-          PASSWORD="{{ index .Phases.setupNodeKeyStore.Secrets.elasticSecret.Data "elastic" | toString }}"
+          PASSWORD="{{ index .Phases.setupNodeKeyStoreDelete.Secrets.elasticSecret.Data "elastic" | toString }}"
           REGION="{{ .Profile.Location.Region }}"
           BUCKET="{{ .Profile.Location.Bucket }}"
           ENDPOINT="{{ .Profile.Location.Endpoint }}"
@@ -454,4 +454,3 @@ actions:
           echo "delete the snap $SNAPSHOT_NAME"
           curl -k -u "elastic:$PASSWORD" -X DELETE "${ES_URL}/_snapshot/k10_repo/$SNAPSHOT_NAME?pretty"
           echo "Deletion of $SNAPSHOT_NAME was successful"
-  
