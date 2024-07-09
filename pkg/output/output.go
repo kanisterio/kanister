@@ -81,6 +81,6 @@ func fPrintOutput(w io.Writer, key, value string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(w, PhaseOpString, outString) //nolint:errcheck
+	fmt.Fprintln(w, PhaseOpString, outString)
 	return nil
 }
