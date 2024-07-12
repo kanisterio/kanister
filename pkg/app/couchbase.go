@@ -52,8 +52,7 @@ type CouchbaseDB struct {
 }
 
 // Last tested woking version "2.3.0"
-//
-//nolint:stylecheck
+// NewCouchbaseDB initialises an instance of Couchbase DB
 func NewCouchbaseDB(name string) App {
 	return &CouchbaseDB{
 		name: name,

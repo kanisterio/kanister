@@ -56,8 +56,7 @@ type ElasticsearchInstance struct {
 }
 
 // Last tested on 8.5.1
-//
-//nolint:stylecheck
+// NewElasticsearchInstance initialises an instance of Elasticsearch
 func NewElasticsearchInstance(name string) App {
 	return &ElasticsearchInstance{
 		name:      name,

@@ -52,8 +52,7 @@ type MongoDB struct {
 }
 
 // Last tested working version "9.0.0"
-//
-//nolint:stylecheck
+// NewMongoDB initialises an instance of Mongo DB
 func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
 		username: "root",
