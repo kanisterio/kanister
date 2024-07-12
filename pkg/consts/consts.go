@@ -48,12 +48,15 @@ const (
 )
 
 // These consts are used to query Repository server API objects
+const (
+	RepositoryServerResourceName       = "repositoryserver"
+	RepositoryServerResourceNamePlural = "repositoryservers"
+)
 
-const RepositoryServerResourceName = "repositoryserver"
-const RepositoryServerResourceNamePlural = "repositoryservers"
-
-const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
-const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.109.0"
+const (
+	LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
+	KanisterToolsImage       = "ghcr.io/kanisterio/kanister-tools:0.109.0"
+)
 
 // KanisterToolsImageEnvName is used to set up a custom kanister-tools image
 const KanisterToolsImageEnvName = "KANISTER_TOOLS"

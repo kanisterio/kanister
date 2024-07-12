@@ -25,7 +25,7 @@ import (
 
 // Register Applications to Integration Suite
 
-// PITRPostgreSQL registers pitr-postgresql app
+// PITRPostgreSQL type is used to allocate Integration suite with pitr-postgres app.
 type PITRPostgreSQL struct {
 	IntegrationSuite
 }
@@ -40,7 +40,7 @@ var _ = Suite(&PITRPostgreSQL{
 	},
 })
 
-// PostgreSQL registers postgres app
+// PostgreSQL type is used to allocate Integration suite with postgres app.
 type PostgreSQL struct {
 	IntegrationSuite
 }
@@ -55,7 +55,7 @@ var _ = Suite(&PostgreSQL{
 	},
 })
 
-// MySQL registers mysql app.
+// MySQL type is used to allocate Integration suite with mysql app.
 type MySQL struct {
 	IntegrationSuite
 }
@@ -70,7 +70,7 @@ var _ = Suite(&MySQL{
 	},
 })
 
-// CockroachDB registers cockroachdb app
+// CockroachDB type is used to allocate Integration suite with cockroachdb app.
 type CockroachDB struct {
 	IntegrationSuite
 }
@@ -85,7 +85,7 @@ var _ = Suite(&CockroachDB{
 	},
 })
 
-// TimeLogCSI registers time-log app for csi volumesnapshot.
+// TimeLogCSI type is used to allocate Integration suite with time-log app for csi volumesnapshot.
 type TimeLogCSI struct {
 	IntegrationSuite
 }
@@ -100,7 +100,7 @@ var _ = Suite(&TimeLogCSI{
 	},
 })
 
-// Maria registers mariaDB app.
+// Maria type is used to allocate Integration suite with mariadb app.
 type Maria struct {
 	IntegrationSuite
 }
@@ -115,7 +115,7 @@ var _ = Suite(&Maria{
 	},
 })
 
-// Elasticsearch app
+// Elasticsearch type is used to allocate Integration suite with elasticsearch app.
 type Elasticsearch struct {
 	IntegrationSuite
 }
@@ -130,7 +130,7 @@ var _ = Suite(&Elasticsearch{
 	},
 })
 
-// MongoDB app
+// MongoDB type is used to allocate Integration suite with mongo app.
 type MongoDB struct {
 	IntegrationSuite
 }
@@ -145,7 +145,7 @@ var _ = Suite(&MongoDB{
 	},
 })
 
-// Cassandra App
+// Cassandra type is used to allocate Integration suite with cassandra app.
 type Cassandra struct {
 	IntegrationSuite
 }
@@ -159,7 +159,7 @@ var _ = Suite(&Cassandra{IntegrationSuite{
 },
 })
 
-// Couchbase app
+// Couchbase type is used to allocate Integration suite with couchbase app.
 type Couchbase struct {
 	IntegrationSuite
 }
@@ -174,7 +174,7 @@ var _ = Suite(&Couchbase{
 	},
 })
 
-// RDSPostgreSQL registers rds-postgres app.
+// RDSPostgreSQL type is used to allocate Integration suite with rds-postgres app.
 type RDSPostgreSQL struct {
 	IntegrationSuite
 }
@@ -189,6 +189,7 @@ var _ = Suite(&RDSPostgreSQL{
 	},
 })
 
+// FoundationDB type is used to allocate Integration suite with foundationdb app.
 type FoundationDB struct {
 	IntegrationSuite
 }
@@ -203,6 +204,7 @@ var _ = Suite(&FoundationDB{
 	},
 })
 
+// RDSAuroraMySQL type is used to allocate Integration suite with rds-aurora-mysql app.
 type RDSAuroraMySQL struct {
 	IntegrationSuite
 }
@@ -217,7 +219,7 @@ var _ = Suite(&RDSAuroraMySQL{
 	},
 })
 
-// RDSPostgreSQLDump registers rds-postgres-dump app.
+// RDSPostgreSQLDump type is used to allocate Integration suite with rds-postgres-dump app.
 // It creates snapshot, export data and restore from dump.
 type RDSPostgreSQLDump struct {
 	IntegrationSuite
@@ -233,7 +235,7 @@ var _ = Suite(&RDSPostgreSQLDump{
 	},
 })
 
-// RDSPostgreSQLSnap registers rds-postgres-snap app.
+// RDSPostgreSQLSnap type is used to allocate Integration suite with rds-postgres-snap app.
 // It creates snapshot and restore from snapshot.
 type RDSPostgreSQLSnap struct {
 	IntegrationSuite
@@ -249,6 +251,7 @@ var _ = Suite(&RDSPostgreSQLSnap{
 	},
 })
 
+// MSSQL type is used to allocate Integration suite with mssql app.
 type MSSQL struct {
 	IntegrationSuite
 }
@@ -263,7 +266,7 @@ var _ = Suite(&MSSQL{
 	},
 })
 
-// MysqlDBDepConfig registers mysql Instance that is deployed through DeploymentConfig on OpenShift cluster.
+// MysqlDBDepConfig type is used to allocate Integration suite with mysqldc app that is deployed through DeploymentConfig on OpenShift cluster.
 // OpenShifts apps for version 3.11.
 type MysqlDBDepConfig struct {
 	IntegrationSuite
@@ -279,7 +282,7 @@ var _ = Suite(&MysqlDBDepConfig{
 	},
 })
 
-// MongoDBDepConfig deploys MongoDB on openshift cluster
+// MongoDBDepConfig type is used to allocate Integration suite with mongodb app on openshift cluster
 type MongoDBDepConfig struct {
 	IntegrationSuite
 }
@@ -294,7 +297,7 @@ var _ = Suite(&MongoDBDepConfig{
 	},
 })
 
-// PostgreSQLDepConfig deploys PostgreSQL on openshift cluster.
+// PostgreSQLDepConfig type is used to allocate Integration suite with postgresdepconf app on openshift cluster.
 type PostgreSQLDepConfig struct {
 	IntegrationSuite
 }
@@ -309,7 +312,7 @@ var _ = Suite(&PostgreSQLDepConfig{
 	},
 })
 
-// MysqlDBDepConfig4_4 deploys Mysql Instance through DeploymentConfig on OpenShift cluster.
+// MysqlDBDepConfig4_4 type is used to allocate Integration suite with mysqldc app through DeploymentConfig on OpenShift cluster.
 // OpenShift apps for version 4.4
 type MysqlDBDepConfig4_4 struct {
 	IntegrationSuite
@@ -325,7 +328,7 @@ var _ = Suite(&MysqlDBDepConfig4_4{
 	},
 })
 
-// MongoDBDepConfig4_4 deploys MongoDB on openshift cluster
+// MongoDBDepConfig4_4 type is used to allocate Integration suite with mongodb app on openshift cluster
 type MongoDBDepConfig4_4 struct {
 	IntegrationSuite
 }
@@ -340,7 +343,7 @@ var _ = Suite(&MongoDBDepConfig4_4{
 	},
 })
 
-// PostgreSQLDepConfig4_4 deploys PostgreSQL on openshift cluster
+// PostgreSQLDepConfig4_4 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
 type PostgreSQLDepConfig4_4 struct {
 	IntegrationSuite
 }
@@ -355,7 +358,7 @@ var _ = Suite(&PostgreSQLDepConfig4_4{
 	},
 })
 
-// MysqlDBDepConfig4_5 deploys Mysql Instance that through DeploymentConfig on OpenShift cluster.
+// MysqlDBDepConfig4_5 type is used to allocate Integration suite with mysqldc app through DeploymentConfig on OpenShift cluster.
 // OpenShift apps for version 4.5
 type MysqlDBDepConfig4_5 struct {
 	IntegrationSuite
@@ -371,7 +374,7 @@ var _ = Suite(&MysqlDBDepConfig4_5{
 	},
 })
 
-// MongoDBDepConfig4_5 deploys MongoDB on openshift cluster
+// MongoDBDepConfig4_5 type is used to allocate Integration suite with mongodb app on OpenShift cluster
 type MongoDBDepConfig4_5 struct {
 	IntegrationSuite
 }
@@ -386,7 +389,7 @@ var _ = Suite(&MongoDBDepConfig4_5{
 	},
 })
 
-// PostgreSQLDepConfig4_5 deploys PostgreSQL on openshift cluster.
+// PostgreSQLDepConfig4_5 type is used to allocate Integration suite with postgresdepconf app on OpenShift cluster
 type PostgreSQLDepConfig4_5 struct {
 	IntegrationSuite
 }
@@ -401,7 +404,7 @@ var _ = Suite(&PostgreSQLDepConfig4_5{
 	},
 })
 
-// Kafka deployed on kubernetes cluster
+// Kafka type is used to allocate Integration suite with kafka on kubernetes cluster
 type Kafka struct {
 	IntegrationSuite
 }
@@ -416,7 +419,7 @@ var _ = Suite(&Kafka{
 	},
 })
 
-// MysqlDBDepConfig4_10 deploys Mysql Instance through DeploymentConfig on OpenShift cluster.
+// MysqlDBDepConfig4_10 type is used to allocate Integration suite with mysqldc app on OpenShift cluster
 type MysqlDBDepConfig4_10 struct {
 	IntegrationSuite
 }
@@ -431,7 +434,7 @@ var _ = Suite(&MysqlDBDepConfig4_10{
 	},
 })
 
-// MongoDBDepConfig4_10 deploys MongoDB on openshift cluster
+// MongoDBDepConfig4_10 type is used to allocate Integration suite with mongodb app on OpenShift cluster
 type MongoDBDepConfig4_10 struct {
 	IntegrationSuite
 }
@@ -446,7 +449,7 @@ var _ = Suite(&MongoDBDepConfig4_10{
 	},
 })
 
-// PostgreSQLDepConfig4_10 deploys PostgreSQL on openshift cluster.
+// PostgreSQLDepConfig4_10 type is used to allocate Integration suite with postgresdepconf app on OpenShift cluster
 type PostgreSQLDepConfig4_10 struct {
 	IntegrationSuite
 }
@@ -461,7 +464,7 @@ var _ = Suite(&PostgreSQLDepConfig4_10{
 	},
 })
 
-// MysqlDBDepConfig4_11 for Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+// MysqlDBDepConfig4_11 type is used to allocate Integration suite with mysqldc app through DeploymentConfig on OpenShift cluster
 type MysqlDBDepConfig4_11 struct {
 	IntegrationSuite
 }
@@ -476,7 +479,7 @@ var _ = Suite(&MysqlDBDepConfig4_11{
 	},
 })
 
-// PostgreSQLDepConfig4_11 for PostgreSQL deployed on openshift cluster
+// PostgreSQLDepConfig4_11 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
 type PostgreSQLDepConfig4_11 struct {
 	IntegrationSuite
 }
@@ -491,7 +494,7 @@ var _ = Suite(&PostgreSQLDepConfig4_11{
 	},
 })
 
-// MysqlDBDepConfig4_12 for Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+// MysqlDBDepConfig4_12 type is used to allocate Integration suite with mysqldc app on openshift cluster
 type MysqlDBDepConfig4_12 struct {
 	IntegrationSuite
 }
@@ -506,7 +509,7 @@ var _ = Suite(&MysqlDBDepConfig4_12{
 	},
 })
 
-// PostgreSQLDepConfig4_12 for PostgreSQL deployed on openshift cluster
+// PostgreSQLDepConfig4_12 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
 type PostgreSQLDepConfig4_12 struct {
 	IntegrationSuite
 }
@@ -521,7 +524,7 @@ var _ = Suite(&PostgreSQLDepConfig4_12{
 	},
 })
 
-// MysqlDBDepConfig4_13 for Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+// MysqlDBDepConfig4_13 type is used to allocate Integration suite with mysqldc app on openshift cluster
 type MysqlDBDepConfig4_13 struct {
 	IntegrationSuite
 }
@@ -536,7 +539,7 @@ var _ = Suite(&MysqlDBDepConfig4_13{
 	},
 })
 
-// PostgreSQLDepConfig4_13 for PostgreSQL deployed on openshift cluster
+// PostgreSQLDepConfig4_13 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
 type PostgreSQLDepConfig4_13 struct {
 	IntegrationSuite
 }
@@ -551,7 +554,7 @@ var _ = Suite(&PostgreSQLDepConfig4_13{
 	},
 })
 
-// MysqlDBDepConfig4_14 for Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+// MysqlDBDepConfig4_14 type is used to allocate Integration suite with mysqldc app on openshift cluster
 type MysqlDBDepConfig4_14 struct {
 	IntegrationSuite
 }
@@ -566,7 +569,7 @@ var _ = Suite(&MysqlDBDepConfig4_14{
 	},
 })
 
-// PostgreSQLDepConfig4_14 for PostgreSQL deployed on openshift cluster
+// PostgreSQLDepConfig4_14 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
 type PostgreSQLDepConfig4_14 struct {
 	IntegrationSuite
 }
