@@ -18,7 +18,6 @@ import (
 	"os"
 
 	. "gopkg.in/check.v1"
-
 	"k8s.io/client-go/kubernetes/fake"
 )
 
