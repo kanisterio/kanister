@@ -25,7 +25,7 @@ import (
 
 // Register Applications to Integration Suite
 
-// PITRPostgreSQL type is used to allocate Integration suite with pitr-postgres app.
+// PITRPostgreSQL type is an app for postgres database for integration test.
 type PITRPostgreSQL struct {
 	IntegrationSuite
 }
@@ -40,7 +40,7 @@ var _ = Suite(&PITRPostgreSQL{
 	},
 })
 
-// PostgreSQL type is used to allocate Integration suite with postgres app.
+// PostgreSQL type is an app for postgres database for integration test.
 type PostgreSQL struct {
 	IntegrationSuite
 }
@@ -55,7 +55,7 @@ var _ = Suite(&PostgreSQL{
 	},
 })
 
-// MySQL type is used to allocate Integration suite with mysql app.
+// MySQL type is an app for mysql database for integration test.
 type MySQL struct {
 	IntegrationSuite
 }
@@ -70,7 +70,7 @@ var _ = Suite(&MySQL{
 	},
 })
 
-// CockroachDB type is used to allocate Integration suite with cockroachdb app.
+// CockroachDB type is an app for cockroach DB for integration test.
 type CockroachDB struct {
 	IntegrationSuite
 }
@@ -85,7 +85,7 @@ var _ = Suite(&CockroachDB{
 	},
 })
 
-// TimeLogCSI type is used to allocate Integration suite with time-log app for csi volumesnapshot.
+// TimeLogCSI type is an app for csi volumesnapshot for integration test.
 type TimeLogCSI struct {
 	IntegrationSuite
 }
@@ -100,7 +100,7 @@ var _ = Suite(&TimeLogCSI{
 	},
 })
 
-// Maria type is used to allocate Integration suite with mariadb app.
+// Maria type is an app for maria DB for integration test.
 type Maria struct {
 	IntegrationSuite
 }
@@ -115,7 +115,7 @@ var _ = Suite(&Maria{
 	},
 })
 
-// Elasticsearch type is used to allocate Integration suite with elasticsearch app.
+// Elasticsearch type is an app for elasticsearch for integration test..
 type Elasticsearch struct {
 	IntegrationSuite
 }
@@ -130,7 +130,7 @@ var _ = Suite(&Elasticsearch{
 	},
 })
 
-// MongoDB type is used to allocate Integration suite with mongo app.
+// MongoDB type is an app for mongo DB for integration test.
 type MongoDB struct {
 	IntegrationSuite
 }
@@ -145,7 +145,7 @@ var _ = Suite(&MongoDB{
 	},
 })
 
-// Cassandra type is used to allocate Integration suite with cassandra app.
+// Cassandra type is an app for cassandra DB for integration test.
 type Cassandra struct {
 	IntegrationSuite
 }
@@ -159,7 +159,7 @@ var _ = Suite(&Cassandra{IntegrationSuite{
 },
 })
 
-// Couchbase type is used to allocate Integration suite with couchbase app.
+// Couchbase type is an app for couchbase DB for integration test.
 type Couchbase struct {
 	IntegrationSuite
 }
@@ -174,7 +174,7 @@ var _ = Suite(&Couchbase{
 	},
 })
 
-// RDSPostgreSQL type is used to allocate Integration suite with rds-postgres app.
+// RDSPostgreSQL type is an app for postgres database for integration test.
 type RDSPostgreSQL struct {
 	IntegrationSuite
 }
@@ -189,7 +189,7 @@ var _ = Suite(&RDSPostgreSQL{
 	},
 })
 
-// FoundationDB type is used to allocate Integration suite with foundationdb app.
+// FoundationDB type is an app for foundation database for integration test.
 type FoundationDB struct {
 	IntegrationSuite
 }
@@ -204,7 +204,7 @@ var _ = Suite(&FoundationDB{
 	},
 })
 
-// RDSAuroraMySQL type is used to allocate Integration suite with rds-aurora-mysql app.
+// RDSAuroraMySQL type is an app for mysql database for integration test.
 type RDSAuroraMySQL struct {
 	IntegrationSuite
 }
@@ -219,7 +219,7 @@ var _ = Suite(&RDSAuroraMySQL{
 	},
 })
 
-// RDSPostgreSQLDump type is used to allocate Integration suite with rds-postgres-dump app.
+// RDSPostgreSQLDump type is an app for postgres dump for integration test.
 // It creates snapshot, export data and restore from dump.
 type RDSPostgreSQLDump struct {
 	IntegrationSuite
@@ -235,7 +235,7 @@ var _ = Suite(&RDSPostgreSQLDump{
 	},
 })
 
-// RDSPostgreSQLSnap type is used to allocate Integration suite with rds-postgres-snap app.
+// RDSPostgreSQLSnap type is an app for postgres snap for integration test.
 // It creates snapshot and restore from snapshot.
 type RDSPostgreSQLSnap struct {
 	IntegrationSuite
@@ -251,7 +251,7 @@ var _ = Suite(&RDSPostgreSQLSnap{
 	},
 })
 
-// MSSQL type is used to allocate Integration suite with mssql app.
+// MSSQL type is an app for mssql database for integration test.
 type MSSQL struct {
 	IntegrationSuite
 }
@@ -266,7 +266,7 @@ var _ = Suite(&MSSQL{
 	},
 })
 
-// MysqlDBDepConfig type is used to allocate Integration suite with mysqldc app that is deployed through DeploymentConfig on OpenShift cluster.
+// MysqlDBDepConfig type is an app for mysql database for integration test that is deployed through DeploymentConfig on OpenShift cluster.
 // OpenShifts apps for version 3.11.
 type MysqlDBDepConfig struct {
 	IntegrationSuite
@@ -282,7 +282,7 @@ var _ = Suite(&MysqlDBDepConfig{
 	},
 })
 
-// MongoDBDepConfig type is used to allocate Integration suite with mongodb app on openshift cluster
+// MongoDBDepConfig type is an app for mongo DB for integration test on openshift cluster
 type MongoDBDepConfig struct {
 	IntegrationSuite
 }
@@ -297,7 +297,7 @@ var _ = Suite(&MongoDBDepConfig{
 	},
 })
 
-// PostgreSQLDepConfig type is used to allocate Integration suite with postgresdepconf app on openshift cluster.
+// PostgreSQLDepConfig type is an app for postgresdepconf for integration test on openshift cluster.
 type PostgreSQLDepConfig struct {
 	IntegrationSuite
 }
@@ -312,7 +312,7 @@ var _ = Suite(&PostgreSQLDepConfig{
 	},
 })
 
-// MysqlDBDepConfig4_4 type is used to allocate Integration suite with mysqldc app through DeploymentConfig on OpenShift cluster.
+// MysqlDBDepConfig4_4 type is an app for mysql database for integration test through DeploymentConfig on OpenShift cluster.
 // OpenShift apps for version 4.4
 type MysqlDBDepConfig4_4 struct {
 	IntegrationSuite
@@ -328,7 +328,7 @@ var _ = Suite(&MysqlDBDepConfig4_4{
 	},
 })
 
-// MongoDBDepConfig4_4 type is used to allocate Integration suite with mongodb app on openshift cluster
+// MongoDBDepConfig4_4 type is an app for mongo database for integration test on openshift cluster
 type MongoDBDepConfig4_4 struct {
 	IntegrationSuite
 }
@@ -343,7 +343,7 @@ var _ = Suite(&MongoDBDepConfig4_4{
 	},
 })
 
-// PostgreSQLDepConfig4_4 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
+// PostgreSQLDepConfig4_4 type is an app for postgres database for integration test on openshift cluster
 type PostgreSQLDepConfig4_4 struct {
 	IntegrationSuite
 }
@@ -358,7 +358,7 @@ var _ = Suite(&PostgreSQLDepConfig4_4{
 	},
 })
 
-// MysqlDBDepConfig4_5 type is used to allocate Integration suite with mysqldc app through DeploymentConfig on OpenShift cluster.
+// MysqlDBDepConfig4_5 type is an app for mysql database for integration test through DeploymentConfig on OpenShift cluster.
 // OpenShift apps for version 4.5
 type MysqlDBDepConfig4_5 struct {
 	IntegrationSuite
@@ -374,7 +374,7 @@ var _ = Suite(&MysqlDBDepConfig4_5{
 	},
 })
 
-// MongoDBDepConfig4_5 type is used to allocate Integration suite with mongodb app on OpenShift cluster
+// MongoDBDepConfig4_5 type is an app for mongo database for integration test on OpenShift cluster
 type MongoDBDepConfig4_5 struct {
 	IntegrationSuite
 }
@@ -389,7 +389,7 @@ var _ = Suite(&MongoDBDepConfig4_5{
 	},
 })
 
-// PostgreSQLDepConfig4_5 type is used to allocate Integration suite with postgresdepconf app on OpenShift cluster
+// PostgreSQLDepConfig4_5 type is an app for postgres database for integration test on OpenShift cluster
 type PostgreSQLDepConfig4_5 struct {
 	IntegrationSuite
 }
@@ -404,7 +404,7 @@ var _ = Suite(&PostgreSQLDepConfig4_5{
 	},
 })
 
-// Kafka type is used to allocate Integration suite with kafka on kubernetes cluster
+// Kafka type is an app for kafka for integration test on kubernetes cluster
 type Kafka struct {
 	IntegrationSuite
 }
@@ -419,7 +419,7 @@ var _ = Suite(&Kafka{
 	},
 })
 
-// MysqlDBDepConfig4_10 type is used to allocate Integration suite with mysqldc app on OpenShift cluster
+// MysqlDBDepConfig4_10 type is an app for mysql database for integration test on OpenShift cluster
 type MysqlDBDepConfig4_10 struct {
 	IntegrationSuite
 }
@@ -434,7 +434,7 @@ var _ = Suite(&MysqlDBDepConfig4_10{
 	},
 })
 
-// MongoDBDepConfig4_10 type is used to allocate Integration suite with mongodb app on OpenShift cluster
+// MongoDBDepConfig4_10 type is an app for mongo database for integration test on OpenShift cluster
 type MongoDBDepConfig4_10 struct {
 	IntegrationSuite
 }
@@ -449,7 +449,7 @@ var _ = Suite(&MongoDBDepConfig4_10{
 	},
 })
 
-// PostgreSQLDepConfig4_10 type is used to allocate Integration suite with postgresdepconf app on OpenShift cluster
+// PostgreSQLDepConfig4_10 type is an app for postgres database for integration test on OpenShift cluster
 type PostgreSQLDepConfig4_10 struct {
 	IntegrationSuite
 }
@@ -464,7 +464,7 @@ var _ = Suite(&PostgreSQLDepConfig4_10{
 	},
 })
 
-// MysqlDBDepConfig4_11 type is used to allocate Integration suite with mysqldc app through DeploymentConfig on OpenShift cluster
+// MysqlDBDepConfig4_11 type is an app for mysql database for integration test through DeploymentConfig on OpenShift cluster
 type MysqlDBDepConfig4_11 struct {
 	IntegrationSuite
 }
@@ -479,7 +479,7 @@ var _ = Suite(&MysqlDBDepConfig4_11{
 	},
 })
 
-// PostgreSQLDepConfig4_11 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
+// PostgreSQLDepConfig4_11 type is an app for postgres database for integration test on openshift cluster
 type PostgreSQLDepConfig4_11 struct {
 	IntegrationSuite
 }
@@ -494,7 +494,7 @@ var _ = Suite(&PostgreSQLDepConfig4_11{
 	},
 })
 
-// MysqlDBDepConfig4_12 type is used to allocate Integration suite with mysqldc app on openshift cluster
+// MysqlDBDepConfig4_12 type is an app for mysql database for integration test on openshift cluster
 type MysqlDBDepConfig4_12 struct {
 	IntegrationSuite
 }
@@ -509,7 +509,7 @@ var _ = Suite(&MysqlDBDepConfig4_12{
 	},
 })
 
-// PostgreSQLDepConfig4_12 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
+// PostgreSQLDepConfig4_12 type is an app for postgres database for integration test on openshift cluster
 type PostgreSQLDepConfig4_12 struct {
 	IntegrationSuite
 }
@@ -524,7 +524,7 @@ var _ = Suite(&PostgreSQLDepConfig4_12{
 	},
 })
 
-// MysqlDBDepConfig4_13 type is used to allocate Integration suite with mysqldc app on openshift cluster
+// MysqlDBDepConfig4_13 type is an app for mysql database for integration test on openshift cluster
 type MysqlDBDepConfig4_13 struct {
 	IntegrationSuite
 }
@@ -539,7 +539,7 @@ var _ = Suite(&MysqlDBDepConfig4_13{
 	},
 })
 
-// PostgreSQLDepConfig4_13 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
+// PostgreSQLDepConfig4_13 type is an app for postgres database for integration test on openshift cluster
 type PostgreSQLDepConfig4_13 struct {
 	IntegrationSuite
 }
@@ -554,7 +554,7 @@ var _ = Suite(&PostgreSQLDepConfig4_13{
 	},
 })
 
-// MysqlDBDepConfig4_14 type is used to allocate Integration suite with mysqldc app on openshift cluster
+// MysqlDBDepConfig4_14 type is an app for mysql database for integration test on openshift cluster
 type MysqlDBDepConfig4_14 struct {
 	IntegrationSuite
 }
@@ -569,7 +569,7 @@ var _ = Suite(&MysqlDBDepConfig4_14{
 	},
 })
 
-// PostgreSQLDepConfig4_14 type is used to allocate Integration suite with postgresdepconf app on openshift cluster
+// PostgreSQLDepConfig4_14 type is an app for postgres database for integration test on openshift cluster
 type PostgreSQLDepConfig4_14 struct {
 	IntegrationSuite
 }
