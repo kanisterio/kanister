@@ -17,9 +17,9 @@ package opts
 import (
 	"strconv"
 
-	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
-
 	"github.com/kanisterio/safecli/command"
+
+	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 )
 
 const (

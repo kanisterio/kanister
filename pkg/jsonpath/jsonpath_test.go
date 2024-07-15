@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )

@@ -18,9 +18,9 @@
 package testing
 
 import (
-	. "gopkg.in/check.v1"
-
 	"github.com/kanisterio/kanister/pkg/app"
+
+	. "gopkg.in/check.v1"
 )
 
 // Register Applications to Integration Suite

@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/tomb.v2"
@@ -40,8 +41,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/tools/reference"
 
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
@@ -51,11 +50,12 @@ import (
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
-	_ "github.com/kanisterio/kanister/pkg/metrics"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/reconcile"
 	"github.com/kanisterio/kanister/pkg/validate"
+
+	_ "github.com/kanisterio/kanister/pkg/metrics"
 )
 
 // Controller represents a controller object for kanister custom resources

@@ -113,7 +113,7 @@ jobs:
         with:
           ref: ${{ env.RELEASE_TAG }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
           run_install: false
           package_json_file: docs_new/package.json
@@ -123,7 +123,7 @@ jobs:
         with:
           node-version: 20
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
       - name: Install dependencies
         run: pnpm install
         working-directory: ./docs_new

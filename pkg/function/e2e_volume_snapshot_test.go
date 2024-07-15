@@ -19,6 +19,7 @@ import (
 	"os"
 	"strings"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
@@ -29,8 +30,6 @@ import (
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
-
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"

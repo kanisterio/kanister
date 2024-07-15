@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
