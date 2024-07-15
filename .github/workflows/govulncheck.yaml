@@ -15,6 +15,7 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      ## Go version from build image is used in the govulncheck step
       - name: 'Get go version from build image'
         id: go_version
         run: |
