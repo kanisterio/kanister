@@ -15,6 +15,12 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      ## Go version from build image is used in the govulncheck step
+      - name: 'Get go version from build image'
+        id: go_version
+        run: |
+          version=$(docker run ghcr.io/kanisterio/build go version | { read _ _ v _; echo ${v#go}; })
+          echo "go_version=$version" >> "$GITHUB_OUTPUT"
       - id: govulncheck
         name: 'Govulncheck'
         uses: golang/govulncheck-action@dd0578b371c987f96d1185abb54344b44352bd58 # v1.0.3
@@ -22,4 +28,4 @@ jobs:
         with:
           repo-checkout: false
           cache: false
-          go-version-file: go.mod
+          go-version-input: ${{ steps.go_version.outputs.go_version }}
