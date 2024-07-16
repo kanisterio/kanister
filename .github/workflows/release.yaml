@@ -3,7 +3,6 @@ name: Release
 on:
   push:
     branches:
-      - ci-release-test
       - master
 
   workflow_dispatch:
@@ -19,7 +18,7 @@ on:
         type: boolean
 
 env:
-  DRAFT_RELEASE: ${{ github.event_name == 'push' && github.ref_name == 'ci-release-test' && 'true' || github.event_name == 'workflow_dispatch' && inputs.draft_release == true && 'true' || 'false' }}
+  DRAFT_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.draft_release == true && 'true' || 'false' }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
@@ -32,10 +31,12 @@ jobs:
       - run: echo "Triggered by ${{ github.event_name }}"
       - run: 'echo "Draft release: ${{ env.DRAFT_RELEASE }}"'
       - id: release_tag
+        env:
+          COMMIT_MESSAGE: ${{github.event.head_commit.message}}
         run: |
           if [[ ${{github.event_name}} == "push" ]]
           then
-            [[ "${{github.event.head_commit.message}}" =~ ^pre-release:\ Update\ version\ to\ ([0-9]*\.[0-9]*\.[0-9]*(\-[0-9a-z]+)?)\ .*$ ]] && echo "release_tag=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+            [[ "${COMMIT_MESSAGE}" =~ ^pre-release:\ Update\ version\ to\ ([0-9]*\.[0-9]*\.[0-9]*(\-[0-9a-z]+)?)\ .*$ ]] && echo "release_tag=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
           else
             echo "release_tag=${{inputs.release_tag}}" >> $GITHUB_OUTPUT
           fi
