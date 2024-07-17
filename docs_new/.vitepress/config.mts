@@ -39,6 +39,7 @@ export default defineConfig({
             link: "/tasks/logs",
           },
           { text: "Modifying Kanister Log Level", link: "/tasks/logs_level" },
+          { text: "Configuring logs for specific ActionSets", link: "/tasks/logs_labels" },
           {
             text: "Using ScaleWorkload function with output artifact",
             link: "/tasks/scaleworkload",
