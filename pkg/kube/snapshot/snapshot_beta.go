@@ -350,9 +350,8 @@ func UnstructuredVolumeSnapshot(gvr schema.GroupVersionResource, name, namespace
 			"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
 			"kind":       VolSnapKind,
 			"metadata": map[string]interface{}{
-				"name":        name,
-				"namespace":   namespace,
-				"annotations": annotations,
+				"name":      name,
+				"namespace": namespace,
 			},
 		},
 	}
@@ -375,17 +374,19 @@ func UnstructuredVolumeSnapshot(gvr schema.GroupVersionResource, name, namespace
 	if labels != nil {
 		snap.SetLabels(labels)
 	}
+	if annotations != nil {
+		snap.SetAnnotations(annotations)
+	}
 	return snap
 }
 
 func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, name, snapshotName, snapshotNs, deletionPolicy, driver, handle, snapClassName string, annotations map[string]string) *unstructured.Unstructured {
-	return &unstructured.Unstructured{
+	snapshotContent := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
 			"kind":       VolSnapContentKind,
 			"metadata": map[string]interface{}{
-				"annotations": annotations,
-				"name":        name,
+				"name": name,
 			},
 			"spec": map[string]interface{}{
 				"volumeSnapshotRef": map[string]interface{}{
@@ -402,6 +403,10 @@ func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, name, sn
 			},
 		},
 	}
+	if annotations != nil {
+		snapshotContent.SetAnnotations(annotations)
+	}
+	return &snapshotContent
 }
 
 func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driver, deletionPolicy string, params map[string]string) *unstructured.Unstructured {

@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/kanisterio/errkit"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -110,22 +111,6 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 
 	_, err := sna.Get(ctx, name, namespace)
 	return err
-}
-
-func convertMapInterfaceToString(annotations map[string]interface{}) map[string]string {
-	result := make(map[string]string, len(annotations))
-
-	for key, value := range annotations {
-		stringValue, ok := value.(string)
-		if !ok {
-			// Handle cases where value is not a string (if needed)
-			// For example, convert it to string representation if possible
-			stringValue = fmt.Sprintf("%v", value)
-		}
-		result[key] = stringValue
-	}
-
-	return result
 }
 
 // Get will return the VolumeSnapshot in the 'namespace' with given 'name'.
@@ -386,9 +371,8 @@ func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snap
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       VolSnapKind,
 			"metadata": map[string]interface{}{
-				"name":        name,
-				"namespace":   namespace,
-				"annotations": annotation,
+				"name":      name,
+				"namespace": namespace,
 			},
 		},
 	}
@@ -412,17 +396,19 @@ func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snap
 	if labels != nil {
 		snap.SetLabels(labels)
 	}
+	if annotation != nil {
+		snap.SetAnnotations(annotation)
+	}
 	return snap
 }
 
 func UnstructuredVolumeSnapshotContentAlpha(name, snapshotName, snapshotNs, deletionPolicy, driver, handle, snapClassName string, annotations map[string]string) *unstructured.Unstructured {
-	return &unstructured.Unstructured{
+	snaphotContent := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       VolSnapContentKind,
 			"metadata": map[string]interface{}{
-				"annotations": annotations,
-				"name":        name,
+				"name": name,
 			},
 			"spec": map[string]interface{}{
 				"csiVolumeSnapshotSource": map[string]interface{}{
@@ -439,6 +425,10 @@ func UnstructuredVolumeSnapshotContentAlpha(name, snapshotName, snapshotNs, dele
 			},
 		},
 	}
+	if annotations != nil {
+		snaphotContent.SetAnnotations(annotations)
+	}
+	return &snaphotContent
 }
 
 func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string, params map[string]string) *unstructured.Unstructured {

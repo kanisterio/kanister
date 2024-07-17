@@ -1137,7 +1137,10 @@ func (s *SnapshotTestSuite) TestCreateFromSourceAlpha(c *C) {
 	namespace := "namespace"
 	snapshotName := "snapname"
 	snapshotClass := "volSnapClass"
-	volSnap := snapshot.UnstructuredVolumeSnapshotAlpha(snapshotName, namespace, "pvcName", "content", snapshotClass, nil, nil)
+	annotation := map[string]string{
+		"test": "value",
+	}
+	volSnap := snapshot.UnstructuredVolumeSnapshotAlpha(snapshotName, namespace, "pvcName", "content", snapshotClass, nil, annotation)
 	volSnap.Object["status"] = map[string]interface{}{
 		"readyToUse": false,
 	}
@@ -1424,13 +1427,11 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 	snapClass := "snapClass"
 	fakeCli := fake.NewSimpleClientset(fakePVC(volName, ns))
 	for _, tc := range []struct {
-		dynCli            dynamic.Interface
-		createLabels      map[string]string
-		listLabel         map[string]string
-		createAnnotations map[string]string
-		listAnnotations   map[string]string
-		errChecker        Checker
-		numResults        int
+		dynCli       dynamic.Interface
+		createLabels map[string]string
+		listLabel    map[string]string
+		errChecker   Checker
+		numResults   int
 	}{
 		{
 			dynCli: dynfake.NewSimpleDynamicClient(scheme),
@@ -1439,12 +1440,6 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 			},
 			listLabel: map[string]string{
 				"label": "1/2/3",
-			},
-			createAnnotations: map[string]string{
-				"annotationtest": "true",
-			},
-			listAnnotations: map[string]string{
-				"annotationtest": "true",
 			},
 			errChecker: IsNil,
 			numResults: 1,
@@ -1455,10 +1450,6 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 			listLabel: map[string]string{
 				"label": "1",
 			},
-			createAnnotations: map[string]string{},
-			listAnnotations: map[string]string{
-				"annotationtest": "true",
-			},
 			errChecker: IsNil,
 			numResults: 0,
 		},
@@ -1467,13 +1458,9 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 			createLabels: map[string]string{
 				"label": "1",
 			},
-			listLabel: map[string]string{},
-			createAnnotations: map[string]string{
-				"annotationtest": "true",
-			},
-			listAnnotations: map[string]string{},
-			errChecker:      IsNil,
-			numResults:      1,
+			listLabel:  map[string]string{},
+			errChecker: IsNil,
+			numResults: 1,
 		},
 		{ // nil lists
 			dynCli:     dynfake.NewSimpleDynamicClient(scheme),
@@ -1488,18 +1475,87 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 		} {
 			var err error
 			var list *snapv1.VolumeSnapshotList
-			err = fakeSs.Create(ctx, snapName, ns, volName, &snapClass, false, tc.createLabels, tc.createAnnotations)
+			err = fakeSs.Create(ctx, snapName, ns, volName, &snapClass, false, tc.createLabels, nil)
 			if err == nil {
 				list, err = fakeSs.List(ctx, ns, tc.listLabel)
-				c.Assert(len(list.Items), Equals, tc.numResults)
-				list, err = fakeSs.List(ctx, ns, tc.listAnnotations)
 				c.Assert(len(list.Items), Equals, tc.numResults)
 			}
 			c.Check(err, tc.errChecker)
 		}
 	}
 }
-
+func (s *SnapshotLocalTestSuite) TestAnnotations(c *C) {
+	ctx := context.Background()
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
+	ns := "namespace"
+	volName := "vol1"
+	snapName := "snap1"
+	snapClass := "snapClass"
+	fakeCli := fake.NewSimpleClientset(fakePVC(volName, ns))
+	for _, tc := range []struct {
+		dynCli            dynamic.Interface
+		createAnnotations map[string]string
+		listAnnotations   map[string]string
+		errChecker        Checker
+	}{
+		{
+			dynCli: dynfake.NewSimpleDynamicClient(scheme),
+			createAnnotations: map[string]string{
+				"annotationtest": "true",
+			},
+			listAnnotations: map[string]string{
+				"annotationtest": "true",
+			},
+			errChecker: IsNil,
+		},
+		{ // nothing that matches label
+			dynCli:            dynfake.NewSimpleDynamicClient(scheme),
+			createAnnotations: map[string]string{},
+			listAnnotations:   map[string]string{},
+			errChecker:        IsNil,
+		},
+		{ // empty labels  list everytime
+			dynCli: dynfake.NewSimpleDynamicClient(scheme),
+			createAnnotations: map[string]string{
+				"annotationtest":  "true",
+				"annotationtest1": "false",
+			},
+			listAnnotations: map[string]string{
+				"annotationtest":  "true",
+				"annotationtest1": "false",
+			},
+			errChecker: IsNil,
+		},
+		{ // nil lists
+			dynCli:     dynfake.NewSimpleDynamicClient(scheme),
+			errChecker: IsNil,
+		},
+	} {
+		for _, fakeSs := range []snapshot.Snapshotter{
+			snapshot.NewSnapshotAlpha(fakeCli, tc.dynCli),
+			snapshot.NewSnapshotBeta(fakeCli, tc.dynCli),
+			snapshot.NewSnapshotStable(fakeCli, tc.dynCli),
+		} {
+			var err error
+			var vs *snapv1.VolumeSnapshot
+			err = fakeSs.Create(ctx, snapName, ns, volName, &snapClass, false, nil, tc.createAnnotations)
+			if err == nil {
+				vs, err = fakeSs.Get(ctx, snapName, ns)
+				annotation := vs.GetAnnotations()
+				c.Assert(len(annotation), Equals, len(tc.listAnnotations))
+				for k := range tc.listAnnotations {
+					if _, ok := annotation[k]; !ok {
+						c.Assert(false, Equals, true)
+					}
+				}
+			}
+			c.Check(err, tc.errChecker)
+		}
+	}
+}
 func fakePVC(name, namespace string) *corev1.PersistentVolumeClaim {
 	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
