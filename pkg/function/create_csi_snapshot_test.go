@@ -97,7 +97,7 @@ func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
 		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
-		_, err = createCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace, testSuite.pvcName, testSuite.volumeSnapshotClass, false, nil)
+		_, err = createCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace, testSuite.pvcName, testSuite.volumeSnapshotClass, false, nil, nil)
 		c.Assert(err, IsNil)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})

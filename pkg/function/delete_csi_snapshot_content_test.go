@@ -86,7 +86,7 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 			snapshotContentName,
 			snapshotName,
 			snapshotNamespace,
-			deletionPolicy)
+			deletionPolicy, nil)
 		c.Assert(err, IsNil)
 
 		gv := strings.Split(api.GroupVersion, "/")

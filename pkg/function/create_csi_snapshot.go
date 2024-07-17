@@ -74,6 +74,7 @@ func (c *createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParam
 
 	var snapshotClass string
 	var labels map[string]string
+	var annotations map[string]string
 	var name, pvc, namespace string
 	if err := Arg(args, CreateCSISnapshotPVCNameArg, &pvc); err != nil {
 		return nil, err
@@ -109,7 +110,7 @@ func (c *createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParam
 	}
 	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
-	vs, err := createCSISnapshot(ctx, snapshotter, name, namespace, pvc, snapshotClass, waitForReady, labels)
+	vs, err := createCSISnapshot(ctx, snapshotter, name, namespace, pvc, snapshotClass, waitForReady, labels, annotations)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +143,8 @@ func (*createCSISnapshotFunc) Arguments() []string {
 	}
 }
 
-func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace, pvc, snapshotClass string, wait bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
-	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, wait, labels); err != nil {
+func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace, pvc, snapshotClass string, wait bool, labels, annotations map[string]string) (*v1.VolumeSnapshot, error) {
+	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, wait, labels, annotations); err != nil {
 		return nil, err
 	}
 	vs, err := snapshotter.Get(ctx, name, namespace)
