@@ -1,5 +1,7 @@
 name: Update build image
 
+run-name: Update build image to ${{ inputs.tag }} as ${{ inputs.latest_tag }}
+
 permissions:
   contents: read
 
