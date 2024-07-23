@@ -40,6 +40,7 @@ type DeleteCSISnapshotTestSuite struct {
 	namespace           string
 	volumeSnapshotClass string
 	storageClass        string
+	annotations         map[string]string
 }
 
 var _ = Suite(&DeleteCSISnapshotTestSuite{})
@@ -51,6 +52,9 @@ func (testSuite *DeleteCSISnapshotTestSuite) SetUpSuite(c *C) {
 	testSuite.newPVCName = newPVCName
 	testSuite.snapName = snapshotName
 	testSuite.namespace = testDeleteNamespace
+	testSuite.annotations = map[string]string{
+		"testannotation": "testvalue",
+	}
 }
 
 func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
@@ -106,6 +110,88 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		c.Assert(err, IsNil)
 
 		err = fakeSnapshotter.Create(ctx, testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil, nil)
+		c.Assert(err, IsNil)
+
+		vs, err := fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
+		c.Assert(err, IsNil)
+		c.Assert(vs.Name, Equals, testSuite.snapName)
+
+		restoreArgs := restoreCSISnapshotArgs{
+			Name:         testSuite.snapName,
+			PVC:          testSuite.newPVCName,
+			Namespace:    testSuite.namespace,
+			StorageClass: testSuite.storageClass,
+			RestoreSize:  originalPVC.Spec.Resources.Requests.Storage(),
+			AccessModes:  originalPVC.Spec.AccessModes,
+			Labels:       nil,
+		}
+		newPVC := newPVCManifest(restoreArgs)
+		_, err = fakeCli.CoreV1().PersistentVolumeClaims(restoreArgs.Namespace).Create(ctx, newPVC, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
+		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
+
+		_, err = deleteCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace)
+		c.Assert(err, IsNil)
+		_, err = fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
+		c.Assert(err, NotNil)
+
+		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
+		c.Assert(err, IsNil)
+	}
+}
+func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshotWithAnnotation(c *C) {
+	for _, apiResourceList := range []*metav1.APIResourceList{
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "VolumeSnapshot",
+				APIVersion: "v1alpha1",
+			},
+			GroupVersion: "snapshot.storage.k8s.io/v1alpha1",
+		},
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "VolumeSnapshot",
+				APIVersion: "v1beta1",
+			},
+			GroupVersion: "snapshot.storage.k8s.io/v1beta1",
+		},
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "VolumeSnapshot",
+				APIVersion: "v1",
+			},
+			GroupVersion: "snapshot.storage.k8s.io/v1",
+		},
+	} {
+		ctx := context.Background()
+		fakeCli := fake.NewSimpleClientset()
+		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
+
+		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
+
+		scheme := runtime.NewScheme()
+		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
+		c.Assert(err, IsNil)
+
+		originalPVC := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: testSuite.pvcName,
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				StorageClassName: &testSuite.storageClass,
+				AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+				Resources: corev1.VolumeResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+			},
+		}
+		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, originalPVC, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
+
+		err = fakeSnapshotter.Create(ctx, testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil, testSuite.annotations)
 		c.Assert(err, IsNil)
 
 		vs, err := fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
