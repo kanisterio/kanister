@@ -40,7 +40,6 @@ type DeleteCSISnapshotTestSuite struct {
 	namespace           string
 	volumeSnapshotClass string
 	storageClass        string
-	annotations         map[string]string
 }
 
 var _ = Suite(&DeleteCSISnapshotTestSuite{})
