@@ -66,12 +66,17 @@ type SnapshotRestoreCommandArgs struct {
 	TargetPath             string
 	SparseRestore          bool
 	IgnorePermissionErrors bool
+	Parallelism            int
 }
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, cmdArgs.SnapID, cmdArgs.TargetPath)
+	if cmdArgs.Parallelism > 0 {
+		parallelismStr := strconv.Itoa(cmdArgs.Parallelism)
+		args = args.AppendLoggableKV(parallelFlag, parallelismStr)
+	}
 	if cmdArgs.IgnorePermissionErrors {
 		args = args.AppendLoggable(ignorePermissionsError)
 	} else {

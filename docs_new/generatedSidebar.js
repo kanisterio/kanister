@@ -13,6 +13,7 @@ module.exports = [
       { text: "Argo.md", link: "/tasks/argo" },
       { text: "Logs.md", link: "/tasks/logs" },
       { text: "Logs_level.md", link: "/tasks/logs_level" },
+      { text: "logs_labels.md", link: "/tasks/logs_labels" },
       { text: "Scaleworkload.md", link: "/tasks/scaleworkload" },
     ],
   },

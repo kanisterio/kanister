@@ -32,7 +32,6 @@ func newOutputCommand() *cobra.Command {
 	return cmd
 }
 
-//nolint:unparam
 func validateArguments(c *cobra.Command, args []string) error {
 	if len(args) != 2 {
 		return errors.Errorf("Command accepts 2 arguments, received %d arguments", len(args))
@@ -40,7 +39,6 @@ func validateArguments(c *cobra.Command, args []string) error {
 	return output.ValidateKey(args[0])
 }
 
-//nolint:unparam
 func runOutputCommand(c *cobra.Command, args []string) error {
 	return output.PrintOutput(args[0], args[1])
 }

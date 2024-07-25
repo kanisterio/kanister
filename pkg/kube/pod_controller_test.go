@@ -18,10 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kanisterio/errkit"
 	"os"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -20,9 +20,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/output"
 	. "gopkg.in/check.v1"
 	apirand "k8s.io/apimachinery/pkg/util/rand"
+
+	"github.com/kanisterio/kanister/pkg/output"
 )
 
 type EndlinePolicy int

@@ -6,6 +6,7 @@ on:
     branches:
     - master
   pull_request:
+
 jobs:
   ## Make sure go.mod and go.sum files are up-to-date with the code
   ## TODO: make this fail if they're not up-to-date to inform the committer to udpate them
@@ -115,7 +116,7 @@ jobs:
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - run: make go-mod-tidy
-    - uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
+    - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -126,3 +127,27 @@ jobs:
     - run: docker builder prune -af
     - run: make release-snapshot
     - run: COMMIT_SHA=${{ github.sha }} ./build/push_images.sh
+  image_tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_short: ${{ steps.image_tags.outputs.tag_short }}
+      tag_long: ${{ steps.image_tags.outputs.tag_long }}
+    steps:
+    - id: image_tags
+      env:
+        COMMIT_SHA: ${{ github.sha }}
+      run: |
+        echo "tag_short=short-commit-${COMMIT_SHA::12}" >> $GITHUB_OUTPUT
+        echo "tag_long=commit-${COMMIT_SHA}" >> $GITHUB_OUTPUT
+  release_example_docker_images:
+    needs: [release, image_tags]
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build_example_images.yaml
+    with:
+      image_tag: v9.99.9-dev
+      ref: ${{ github.ref }}
+      extra_tags: |
+        ${{ needs.image_tags.outputs.tag_short }}
+        ${{ needs.image_tags.outputs.tag_long }}
+

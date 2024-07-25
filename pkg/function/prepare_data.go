@@ -20,15 +20,15 @@ import (
 	"io"
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -132,7 +132,7 @@ func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc k
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}
-		defer r.Close()
+		defer r.Close() //nolint:errcheck
 
 		bytes, err := io.ReadAll(r)
 		if err != nil {

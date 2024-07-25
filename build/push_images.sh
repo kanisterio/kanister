@@ -20,7 +20,6 @@ set -o nounset
 IMAGE_REGISTRY="ghcr.io/kanisterio"
 
 PUBLISHED_IMAGES_NAME_PATH="build/published_images.json"
-EXAMPLE_IMAGES_NAME_PATH="build/example_images.json"
 
 TAG=${1:-"v9.99.9-dev"}
 
@@ -42,5 +41,3 @@ push_images() {
 }
 
 push_images $PUBLISHED_IMAGES_NAME_PATH
-
-push_images $EXAMPLE_IMAGES_NAME_PATH

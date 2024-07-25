@@ -17,8 +17,9 @@ package kando
 import (
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/chronicle"
 	"github.com/spf13/cobra"
+
+	"github.com/kanisterio/kanister/pkg/chronicle"
 )
 
 const (
