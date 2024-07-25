@@ -1511,13 +1511,13 @@ func (s *SnapshotLocalTestSuite) TestAnnotations(c *C) {
 			},
 			errChecker: IsNil,
 		},
-		{ // nothing that matches label
+		{ // empty annotations list
 			dynCli:            dynfake.NewSimpleDynamicClient(scheme),
 			createAnnotations: map[string]string{},
 			listAnnotations:   map[string]string{},
 			errChecker:        IsNil,
 		},
-		{ // empty labels  list everytime
+		{ // annotations list matches
 			dynCli: dynfake.NewSimpleDynamicClient(scheme),
 			createAnnotations: map[string]string{
 				"annotationtest":  "true",
