@@ -18,11 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/kanisterio/errkit"
-	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/log"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
 )
 
 const (
@@ -276,8 +276,6 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
 		return errkit.Wrap(err, "Failed to create content", "name", snap.GetName(), "namespace", namespace)
 	}
-	log.Info().Print("Snapshot with name", field.M{"app": snap.GetName(), "snapannotation": snap.GetAnnotations()})
-	log.Info().Print("Snapshotcontent with name", field.M{"app": snap.GetName()})
 	if !waitForReady {
 		return nil
 	}
@@ -316,7 +314,6 @@ func (sna *SnapshotAlpha) CreateContentFromSource(ctx context.Context, source *S
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Create(ctx, content, metav1.CreateOptions{}); err != nil {
 		return errkit.Wrap(err, "Failed to create content", "contentName", content.GetName())
 	}
-	log.Info().Print("Snapshotcontent with name", field.M{"app": content.GetName(), "annotation": content.GetAnnotations()})
 	return nil
 }
 
