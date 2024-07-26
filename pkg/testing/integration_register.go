@@ -115,7 +115,7 @@ var _ = Suite(&Maria{
 	},
 })
 
-// Elasticsearch type is an app for elasticsearch for integration test..
+// Elasticsearch type is an app for elasticsearch for integration test.
 type Elasticsearch struct {
 	IntegrationSuite
 }
