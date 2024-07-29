@@ -89,6 +89,19 @@ func GetIntOrDefault(value string, defaultValue int) (int, error) {
 	return v, nil
 }
 
+func GetBoolOrDefault(value string, defaultValue bool) (bool, error) {
+	if value != "" {
+		ret, err := strconv.ParseBool(value)
+		if err == nil {
+			return ret, nil
+		}
+
+		return defaultValue, errors.New("conversion to bool failed, using default value for the field")
+	}
+
+	return defaultValue, errors.New("field is empty, conversion to bool failed, using default value for the field")
+}
+
 // DurationToString formats the given duration into a short format which eludes trailing zero units in the string.
 func DurationToString(d time.Duration) string {
 	s := d.String()
