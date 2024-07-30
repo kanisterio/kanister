@@ -162,7 +162,11 @@ func createCSISnapshotStatic(
 		Driver:                  driver,
 		VolumeSnapshotClassName: snapshotClass,
 	}
-	if err := snapshotter.CreateFromSource(ctx, source, wait, metav1.ObjectMeta{Name: name, Namespace: namespace}, metav1.ObjectMeta{}); err != nil {
+	snapshotMeta := snapshot.SnapshotMeta{
+		Name:      name,
+		Namespace: namespace,
+	}
+	if err := snapshotter.CreateFromSource(ctx, source, wait, snapshotMeta, snapshot.SnapshotMeta{}); err != nil {
 		return nil, err
 	}
 

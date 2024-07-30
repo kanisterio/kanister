@@ -104,6 +104,7 @@ func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
 		c.Assert(err, IsNil)
 	}
 }
+
 func getPVCManifest(pvcName, storageClassName string) *corev1.PersistentVolumeClaim {
 	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{

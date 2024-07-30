@@ -94,8 +94,11 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 
 		originalPVC := getOriginalPVCManifest(testSuite.pvcName, testSuite.storageClass)
 		createPVC(c, testSuite.namespace, originalPVC, fakeCli)
-
-		err = fakeSnapshotter.Create(ctx, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, metav1.ObjectMeta{Name: testSuite.snapName, Namespace: testSuite.namespace})
+		fakeSnapshotMeta := snapshot.SnapshotMeta{
+			Name:      testSuite.snapName,
+			Namespace: testSuite.namespace,
+		}
+		err = fakeSnapshotter.Create(ctx, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, fakeSnapshotMeta)
 		c.Assert(err, IsNil)
 
 		vs, err := fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
@@ -120,6 +123,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 		c.Assert(err, IsNil)
 	}
 }
+
 func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 	for _, scenario := range []struct {
 		Arg         corev1.PersistentVolumeMode
