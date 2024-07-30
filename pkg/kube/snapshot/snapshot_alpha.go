@@ -217,20 +217,20 @@ func (sna *SnapshotAlpha) DeleteContent(ctx context.Context, name string) error 
 
 // Clone will clone the VolumeSnapshot to namespace 'cloneNamespace'.
 // Underlying VolumeSnapshotContent will be cloned with a different name.
-func (sna *SnapshotAlpha) Clone(ctx context.Context, name, namespace string, waitForReady bool, snapshotMeta, contentMeta ObjectMeta) error {
-	_, err := sna.Get(ctx, snapshotMeta.Name, snapshotMeta.Namespace)
+func (sna *SnapshotAlpha) Clone(ctx context.Context, name, namespace string, waitForReady bool, cloneSnapshotMeta, snapshotContentMeta ObjectMeta) error {
+	_, err := sna.Get(ctx, cloneSnapshotMeta.Name, cloneSnapshotMeta.Namespace)
 	if err == nil {
-		return errkit.New("Target snapshot already exists in target namespace", "name", snapshotMeta.Name, "namespace", snapshotMeta.Namespace)
+		return errkit.New("Target snapshot already exists in target namespace", "name", cloneSnapshotMeta.Name, "namespace", cloneSnapshotMeta.Namespace)
 	}
 	if !apierrors.IsNotFound(err) {
-		return errkit.Wrap(err, "Failed to query target Volumesnapshot", "name", snapshotMeta.Name, "namespace", snapshotMeta.Namespace)
+		return errkit.Wrap(err, "Failed to query target Volumesnapshot", "name", cloneSnapshotMeta.Name, "namespace", cloneSnapshotMeta.Namespace)
 	}
 
 	src, err := sna.GetSource(ctx, name, namespace)
 	if err != nil {
 		return errkit.Wrap(err, "Failed to get source")
 	}
-	return sna.CreateFromSource(ctx, src, waitForReady, snapshotMeta, contentMeta)
+	return sna.CreateFromSource(ctx, src, waitForReady, cloneSnapshotMeta, snapshotContentMeta)
 }
 
 // GetSource will return the CSI source that backs the volume snapshot.
@@ -260,15 +260,15 @@ func (sna *SnapshotAlpha) GetSource(ctx context.Context, snapshotName, namespace
 }
 
 // CreateFromSource will create a 'Volumesnapshot' and 'VolumesnaphotContent' pair for the underlying snapshot source.
-func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, waitForReady bool, snapshotMeta, contentMeta ObjectMeta) error {
+func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, waitForReady bool, snapshotMeta, snapshotContentMeta ObjectMeta) error {
 	deletionPolicy, err := sna.getDeletionPolicyFromClass(source.VolumeSnapshotClassName)
 	if err != nil {
 		return errkit.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
-	contentMeta.Name = snapshotMeta.Name + "-content-" + string(uuid.NewUUID())
+	snapshotContentMeta.Name = snapshotMeta.Name + "-content-" + string(uuid.NewUUID())
 	snapshotMeta.Labels = blockstorage.SanitizeTags(snapshotMeta.Labels)
-	snap := UnstructuredVolumeSnapshotAlpha("", source.VolumeSnapshotClassName, snapshotMeta, contentMeta)
-	if err := sna.CreateContentFromSource(ctx, source, deletionPolicy, snapshotMeta, contentMeta); err != nil {
+	snap := UnstructuredVolumeSnapshotAlpha("", source.VolumeSnapshotClassName, snapshotMeta, snapshotContentMeta)
+	if err := sna.CreateContentFromSource(ctx, source, deletionPolicy, snapshotMeta, snapshotContentMeta); err != nil {
 		return err
 	}
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(snapshotMeta.Namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
@@ -299,8 +299,8 @@ func (sna *SnapshotAlpha) UpdateVolumeSnapshotStatusAlpha(ctx context.Context, n
 }
 
 // CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
-func (sna *SnapshotAlpha) CreateContentFromSource(ctx context.Context, source *Source, deletionPolicy string, snapshotMeta, contentMeta ObjectMeta) error {
-	content := UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName, snapshotMeta, contentMeta)
+func (sna *SnapshotAlpha) CreateContentFromSource(ctx context.Context, source *Source, deletionPolicy string, snapshotMeta, snapshotContentMeta ObjectMeta) error {
+	content := UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName, snapshotMeta, snapshotContentMeta)
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Create(ctx, content, metav1.CreateOptions{}); err != nil {
 		return errkit.Wrap(err, "Failed to create content", "contentName", content.GetName())
 	}
@@ -355,9 +355,9 @@ func (sna *SnapshotAlpha) getDeletionPolicyFromClass(snapClassName string) (stri
 	return vsc.DeletionPolicy, nil
 }
 
-// UnstructuredVolumeSnapshotAlpha has contentMeta has metadata of VolumeSnapshotContent.
-// If contentMeta has name value set, UnstructuredVolumeSnapshotAlpha will create both VolumeSnapshot and VolumeSnapshotContent resource.
-func UnstructuredVolumeSnapshotAlpha(pvcName, snapClassName string, snapshotMeta, contentMeta ObjectMeta) *unstructured.Unstructured {
+// UnstructuredVolumeSnapshotAlpha returns Unstructured object for the VolumeSnapshot resource.
+// If snapshotContentMeta has name value set, UnstructuredVolumeSnapshotAlpha will return VolumeSnapshot object with VolumeSnapshotContent information.
+func UnstructuredVolumeSnapshotAlpha(pvcName, snapClassName string, snapshotMeta, snapshotContentMeta ObjectMeta) *unstructured.Unstructured {
 	snap := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
@@ -379,9 +379,9 @@ func UnstructuredVolumeSnapshotAlpha(pvcName, snapClassName string, snapshotMeta
 			"deletionPolicy":    "Delete",
 		}
 	}
-	if contentMeta.Name != "" {
+	if snapshotContentMeta.Name != "" {
 		snap.Object["spec"] = map[string]interface{}{
-			"snapshotContentName": contentMeta.Name,
+			"snapshotContentName": snapshotContentMeta.Name,
 			"snapshotClassName":   snapClassName,
 		}
 	}
@@ -394,14 +394,14 @@ func UnstructuredVolumeSnapshotAlpha(pvcName, snapClassName string, snapshotMeta
 	return snap
 }
 
-// UnstructuredVolumeSnapshotContentAlpha has snapshotMeta param which is used as volumeSnapshotRef when VolumeSnapshotContent is created.
-func UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, driver, handle, snapClassName string, snapshotMeta, contentMeta ObjectMeta) *unstructured.Unstructured {
+// UnstructuredVolumeSnapshotContentAlpha returns Unstructured object for the VolumeSnapshotContent resource.
+func UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, driver, handle, snapClassName string, snapshotMeta, snapshotContentMeta ObjectMeta) *unstructured.Unstructured {
 	snaphotContent := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       VolSnapContentKind,
 			"metadata": map[string]interface{}{
-				"name": contentMeta.Name,
+				"name": snapshotContentMeta.Name,
 			},
 			"spec": map[string]interface{}{
 				"csiVolumeSnapshotSource": map[string]interface{}{
@@ -418,8 +418,8 @@ func UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, driver, handle, snap
 			},
 		},
 	}
-	if contentMeta.Annotations != nil {
-		snaphotContent.SetAnnotations(contentMeta.Annotations)
+	if snapshotContentMeta.Annotations != nil {
+		snaphotContent.SetAnnotations(snapshotContentMeta.Annotations)
 	}
 	return &snaphotContent
 }

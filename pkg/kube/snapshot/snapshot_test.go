@@ -726,10 +726,10 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		Labels:      label,
 		Annotations: annotations,
 	}
-	contentMeta := snapshot.ObjectMeta{
+	snapshotContentMeta := snapshot.ObjectMeta{
 		Annotations: contentAnnotation,
 	}
-	err = snapshotter.Clone(ctx, snapshotName, s.sourceNamespace, wait, snapshotMeta, contentMeta)
+	err = snapshotter.Clone(ctx, snapshotName, s.sourceNamespace, wait, snapshotMeta, snapshotContentMeta)
 	c.Assert(err, IsNil)
 
 	snapList, err = snapshotter.List(ctx, s.targetNamespace, label)
@@ -1209,11 +1209,11 @@ func (s *SnapshotTestSuite) TestCreateFromSourceAlpha(c *C) {
 		Namespace:   namespace,
 		Annotations: annotation,
 	}
-	contentMeta := snapshot.ObjectMeta{
+	snapshotContentMeta := snapshot.ObjectMeta{
 		Name: "content",
 	}
 	volSnap := snapshot.UnstructuredVolumeSnapshotAlpha("pvcName", snapshotClass,
-		snapshotMeta, contentMeta)
+		snapshotMeta, snapshotContentMeta)
 	volSnap.Object["status"] = map[string]interface{}{
 		"readyToUse": false,
 	}
@@ -1246,12 +1246,12 @@ func (s *SnapshotTestSuite) TestCreateFromSourceAlpha(c *C) {
 		Name:      snapshotName,
 		Namespace: namespace,
 	}
-	contentMeta = snapshot.ObjectMeta{
+	snapshotContentMeta = snapshot.ObjectMeta{
 		Name: "content",
 	}
 	// status not set
 	volSnap = snapshot.UnstructuredVolumeSnapshotAlpha("pvcName", snapshotClass,
-		snapshotMeta, contentMeta)
+		snapshotMeta, snapshotContentMeta)
 	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap)
 	snapshotterAlpha, ok = snapshot.NewSnapshotAlpha(kubeCli, dynCli).(*snapshot.SnapshotAlpha)
 	c.Assert(ok, Equals, true)
@@ -1268,11 +1268,11 @@ func (s *SnapshotTestSuite) TestCreateFromSourceBeta(c *C) {
 		Name:      snapshotName,
 		Namespace: namespace,
 	}
-	contentMeta := snapshot.ObjectMeta{
+	snapshotContentMeta := snapshot.ObjectMeta{
 		Name: "content",
 	}
 	volSnap := snapshot.UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, "pvcName", snapshotClass,
-		snapshotMeta, contentMeta)
+		snapshotMeta, snapshotContentMeta)
 	volSnap.Object["status"] = map[string]interface{}{
 		"readyToUse": false,
 	}
@@ -1306,10 +1306,10 @@ func (s *SnapshotTestSuite) TestCreateFromSourceBeta(c *C) {
 		Name:      snapshotName,
 		Namespace: namespace,
 	}
-	contentMeta = snapshot.ObjectMeta{
+	snapshotContentMeta = snapshot.ObjectMeta{
 		Name: "content",
 	}
-	volSnap = snapshot.UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, "pvcName", snapshotClass, snapshotMeta, contentMeta)
+	volSnap = snapshot.UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, "pvcName", snapshotClass, snapshotMeta, snapshotContentMeta)
 	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap)
 	snapshotterBeta, ok = snapshot.NewSnapshotBeta(kubeCli, dynCli).(*snapshot.SnapshotBeta)
 	c.Assert(ok, Equals, true)
@@ -1337,10 +1337,10 @@ func (s *SnapshotTestSuite) TestCreateFromSource(c *C) {
 		Namespace:   namespace,
 		Annotations: annotations,
 	}
-	contentMeta := snapshot.ObjectMeta{
+	snapshotContentMeta := snapshot.ObjectMeta{
 		Name: "content",
 	}
-	volSnap := snapshot.UnstructuredVolumeSnapshot(v1alpha1.VolSnapGVR, "pvcName", snapshotClass, snapshotMeta, contentMeta)
+	volSnap := snapshot.UnstructuredVolumeSnapshot(v1alpha1.VolSnapGVR, "pvcName", snapshotClass, snapshotMeta, snapshotContentMeta)
 	volSnapClass := snapshot.UnstructuredVolumeSnapshotClass(v1alpha1.VolSnapClassGVR, snapshotClass, "driver", "DELETE", nil)
 	dynCli := dynfake.NewSimpleDynamicClient(scheme, volSnap, volSnapClass)
 	kubeCli := fake.NewSimpleClientset()
@@ -1350,14 +1350,14 @@ func (s *SnapshotTestSuite) TestCreateFromSource(c *C) {
 		Namespace:   namespace,
 		Annotations: annotations,
 	}
-	contentMeta = snapshot.ObjectMeta{
+	snapshotContentMeta = snapshot.ObjectMeta{
 		Name: "content",
 	}
 	volSnap = snapshot.UnstructuredVolumeSnapshot(
 		v1beta1.VolSnapGVR,
 		"pvcName",
 		snapshotClass,
-		snapshotMeta, contentMeta)
+		snapshotMeta, snapshotContentMeta)
 	volSnapClass = snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, snapshotClass, "driver", "DELETE", nil)
 	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap, volSnapClass)
 	kubeCli = fake.NewSimpleClientset()
@@ -1367,14 +1367,14 @@ func (s *SnapshotTestSuite) TestCreateFromSource(c *C) {
 		Namespace:   namespace,
 		Annotations: annotations,
 	}
-	contentMeta = snapshot.ObjectMeta{
+	snapshotContentMeta = snapshot.ObjectMeta{
 		Name: "content",
 	}
 	volSnap = snapshot.UnstructuredVolumeSnapshot(
 		snapshot.VolSnapGVR,
 		"pvcName",
 		snapshotClass,
-		snapshotMeta, contentMeta)
+		snapshotMeta, snapshotContentMeta)
 	volSnapClass = snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, snapshotClass, "driver", "DELETE", nil)
 	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap, volSnapClass)
 	kubeCli = fake.NewSimpleClientset()
@@ -1406,11 +1406,11 @@ func (s *SnapshotTestSuite) TestCreateFromSourceStable(c *C) {
 		Namespace:   namespace,
 		Annotations: annotations,
 	}
-	contentMeta := snapshot.ObjectMeta{
+	snapshotContentMeta := snapshot.ObjectMeta{
 		Name: "content",
 	}
 	volSnap := snapshot.UnstructuredVolumeSnapshot(snapshot.VolSnapGVR, "pvcName", snapshotClass,
-		snapshotMeta, contentMeta)
+		snapshotMeta, snapshotContentMeta)
 	volSnap.Object["status"] = map[string]interface{}{
 		"readyToUse": false,
 	}
@@ -1445,11 +1445,11 @@ func (s *SnapshotTestSuite) TestCreateFromSourceStable(c *C) {
 		Namespace:   namespace,
 		Annotations: annotations,
 	}
-	contentMeta = snapshot.ObjectMeta{
+	snapshotContentMeta = snapshot.ObjectMeta{
 		Name: "content",
 	}
 	volSnap = snapshot.UnstructuredVolumeSnapshot(snapshot.VolSnapGVR, "pvcName", snapshotClass,
-		snapshotMeta, contentMeta)
+		snapshotMeta, snapshotContentMeta)
 	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap)
 	snapshotterStable, ok = snapshot.NewSnapshotStable(kubeCli, dynCli).(*snapshot.SnapshotStable)
 	c.Assert(ok, Equals, true)
