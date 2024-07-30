@@ -59,11 +59,8 @@ type Snapshotter interface {
 	// 'pvcName' is the name of the PVC of which we will take snapshot. It must be in the same namespace 'ns'.
 	// 'waitForReady' will block the caller until the snapshot status is 'ReadyToUse'.
 	// or 'ctx.Done()' is signalled. Otherwise it will return immediately after the snapshot is cut.
-	// snapshotMeta object has 'name' as name of the VolumeSnapshot.
-	// snapshotMeta object has 'namespace' as namespace of the PVC. VolumeSnapshot will be crated in the same namespace.
-	// snapshotMeta object has 'labels' that can also be addded to the volume snapshot.
-	// snapshotMeta object has 'annotations' that can also be addded to the volume snapshot.
-	Create(ctx context.Context, pvcName string, snapshotClass *string, waitForReady bool, snapshotMeta SnapshotMeta) error
+	// 'snapshotMeta' has metadata of the volume snapshot resource that is going to get created.
+	Create(ctx context.Context, pvcName string, snapshotClass *string, waitForReady bool, snapshotMeta ObjectMeta) error
 	// Get will return the VolumeSnapshot in the namespace 'namespace' with given 'name'.
 	//
 	// 'name' is the name of the VolumeSnapshot that will be returned.
@@ -86,37 +83,29 @@ type Snapshotter interface {
 	// 'name' is the name of the VolumeSnapshot that will be cloned.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be cloned.
 	// 'waitForReady' will make the function blocks until the clone's status is ready to use.
-	// snapshotMeta object has 'name' as name of the clone.
-	// snapshotMeta object has 'namespace' as the namespace where the clone will be created.
-	// snapshotMeta object has 'labels' as the labels to set on the created VSC
-	// snapshotMeta object has 'annotations' as the annotation to set on the created VS
-	// contentMeta object has 'annotations' as the annotation to set on the created VSC
-	Clone(ctx context.Context, name, namespace string, waitForReady bool, snapshotMeta, contentMeta SnapshotMeta) error
+	// 'snapshotMeta' has metadata of the Volumesnaphot resource that is going to get created.
+	// 'contentMeta' has metadata of the VolumesnapshotContent content resource that is going to get created.
+	Clone(ctx context.Context, name, namespace string, waitForReady bool, snapshotMeta, contentMeta ObjectMeta) error
 	// GetSource will return the CSI source that backs the volume snapshot.
 	//
 	// 'snapshotName' is the name of the Volumesnapshot.
 	// 'namespace' is the namespace of the Volumesnapshot.
 	GetSource(ctx context.Context, snapshotName, namespace string) (*Source, error)
-	// CreateFromSource will create a 'Volumesnapshot' and 'VolumesnaphotContent' pair for the underlying snapshot source.
+	// CreateFromSource will create a 'Volumesnapshot' and 'VolumesnapshotContent' pair for the underlying snapshot source.
 	//
 	// 'source' contains information about CSI snapshot.
 	// 'waitForReady' blocks the caller until snapshot is ready to use or context is cancelled.
 	// 'annotations' is the annotation to set on the created VS and VSC
-	// snapshotMeta object has 'name' as the name of the snapshot that will be created.
-	// snapshotMeta object has 'namespace' as the namespace of the snapshot.
-	//  snapshotMeta object has 'labels' as the labels to set on the created VS
-	//  snapshotMeta object has 'annotations' as the annotation to set on the created VS
-	//  contentMeta object has 'annotations' as the annotation to set on the created VSC
-	CreateFromSource(ctx context.Context, source *Source, waitForReady bool, snapshotMeta, contentMeta SnapshotMeta) error
-	// CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
+	// 'snapshotMeta' has metadata of the Volumesnapshot resource that is going to get created.
+	// 'contentMeta' has metadata of the VolumesnapshotContent resource that is going to get created.
+	CreateFromSource(ctx context.Context, source *Source, waitForReady bool, snapshotMeta, contentMeta ObjectMeta) error
+	// CreateContentFromSource will create a 'VolumesnapshotContent' for the underlying snapshot source.
 	//
 	// 'source' contains information about CSI snapshot.
 	// 'deletionPolicy' is the deletion policy to set on the created VSC
-	// snapshotMeta object has 'name' as the name of the snapshot that will be reference the VSC
-	// snapshotMeta object has 'namespace' as the namespace of the snapshot.
-	// contentMeta object has 'name' as the name of the VSC that will be created.
-	// contentMeta object has 'annotations' as the annotation to set on the created VSC
-	CreateContentFromSource(ctx context.Context, source *Source, deletionPolicy string, snapshotMeta, contentMeta SnapshotMeta) error
+	// 'snapshotMeta' has metadata of the Volumesnapshot resource that is source reference for VSC created.
+	// 'contentMeta' has metadata of the VolumesnapshotContent resource that is going to get created.
+	CreateContentFromSource(ctx context.Context, source *Source, deletionPolicy string, snapshotMeta, contentMeta ObjectMeta) error
 	// WaitOnReadyToUse will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
 	// has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 	WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error

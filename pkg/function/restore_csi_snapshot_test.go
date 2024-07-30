@@ -94,7 +94,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 
 		originalPVC := getOriginalPVCManifest(testSuite.pvcName, testSuite.storageClass)
 		createPVC(c, testSuite.namespace, originalPVC, fakeCli)
-		fakeSnapshotMeta := snapshot.SnapshotMeta{
+		fakeSnapshotMeta := snapshot.ObjectMeta{
 			Name:      testSuite.snapName,
 			Namespace: testSuite.namespace,
 		}

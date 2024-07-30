@@ -82,11 +82,11 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 			Driver:                  driver,
 			VolumeSnapshotClassName: snapshotClassName,
 		}
-		fakeSnapshotMeta := snapshot.SnapshotMeta{
+		fakeSnapshotMeta := snapshot.ObjectMeta{
 			Name:      snapshotName,
 			Namespace: snapshotNamespace,
 		}
-		fakeSnapshotContentMeta := snapshot.SnapshotMeta{
+		fakeSnapshotContentMeta := snapshot.ObjectMeta{
 			Name: snapshotContentName,
 		}
 		err = fakeSnapshotter.CreateContentFromSource(ctx, source,
