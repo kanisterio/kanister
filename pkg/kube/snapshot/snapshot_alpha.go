@@ -46,8 +46,6 @@ const (
 	DeletionPolicyDelete              = "Delete"
 	DeletionPolicyRetain              = "Retain"
 	CloneVolumeSnapshotClassLabelName = "kanister-cloned-from"
-	SnapshotContentAnnotation         = "snapshotcontent"
-	SnapshotAnnotation                = "snapshot"
 )
 
 type SnapshotAlpha struct {
