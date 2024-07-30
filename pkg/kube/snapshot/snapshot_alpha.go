@@ -355,6 +355,8 @@ func (sna *SnapshotAlpha) getDeletionPolicyFromClass(snapClassName string) (stri
 	return vsc.DeletionPolicy, nil
 }
 
+// UnstructuredVolumeSnapshotAlpha has contentMeta has metadata of VolumeSnapshotContent.
+// If contentMeta has name value set, UnstructuredVolumeSnapshotAlpha will create both VolumeSnapshot and VolumeSnapshotContent resource.
 func UnstructuredVolumeSnapshotAlpha(pvcName, snapClassName string, snapshotMeta, contentMeta ObjectMeta) *unstructured.Unstructured {
 	snap := &unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -392,6 +394,7 @@ func UnstructuredVolumeSnapshotAlpha(pvcName, snapClassName string, snapshotMeta
 	return snap
 }
 
+// UnstructuredVolumeSnapshotContentAlpha has snapshotMeta param which is used as volumeSnapshotRef when VolumeSnapshotContent is created.
 func UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, driver, handle, snapClassName string, snapshotMeta, contentMeta ObjectMeta) *unstructured.Unstructured {
 	snaphotContent := unstructured.Unstructured{
 		Object: map[string]interface{}{

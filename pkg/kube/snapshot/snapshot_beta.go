@@ -341,6 +341,8 @@ func getDeletionPolicyFromClass(dynCli dynamic.Interface, snapClassGVR schema.Gr
 	return vsc.DeletionPolicy, nil
 }
 
+// UnstructuredVolumeSnapshot has contentMeta has metadata of VolumeSnapshotContent.
+// If contentMeta has name value set, UnstructuredVolumeSnapshot will create both VolumeSnapshot and VolumeSnapshotContent resource.
 func UnstructuredVolumeSnapshot(gvr schema.GroupVersionResource, pvcName, snapClassName string, snapShotMeta, contentMeta ObjectMeta) *unstructured.Unstructured {
 	snap := &unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -377,6 +379,7 @@ func UnstructuredVolumeSnapshot(gvr schema.GroupVersionResource, pvcName, snapCl
 	return snap
 }
 
+// UnstructuredVolumeSnapshotContent has snapshotMeta param which is used as volumeSnapshotRef when VolumeSnapshotContent is created.
 func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, deletionPolicy, driver, handle, snapClassName string, snapshotMeta, contentMeta ObjectMeta) *unstructured.Unstructured {
 	snapshotContent := unstructured.Unstructured{
 		Object: map[string]interface{}{
