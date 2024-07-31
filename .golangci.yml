@@ -27,6 +27,7 @@ linters:
     - gci
     - goprintffuncname
     - nolintlint
+    - stylecheck
 
 run:
   timeout: 10m                          # golangci-lint run's timeout.
@@ -46,6 +47,8 @@ issues:
         - misspell
         - nestif
         - gci
+        - stylecheck
+
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
         - unparam
@@ -78,6 +81,8 @@ linters-settings:
       - blank
       - dot
     skip-generated: true
+  stylecheck:
+    checks: [ "all", "-ST1001", "-ST1005", "-ST1016", "-ST1023", "-ST1000"]
 
 exclude-dirs:
   - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen

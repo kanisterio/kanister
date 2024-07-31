@@ -30,7 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-// Integration test app for CSI Snapshot functions
+// TimeLogCSI is integration test app for CSI Snapshot functions.
 type TimeLogCSI struct {
 	cli        kubernetes.Interface
 	namespace  string

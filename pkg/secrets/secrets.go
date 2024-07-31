@@ -19,7 +19,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
@@ -74,19 +73,19 @@ func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
 }
 
 func ValidateRepositoryServerSecret(repositoryServerSecret *corev1.Secret) error {
-	var secret repositoryserver.Secret
+	var secret reposerver.Secret
 	var err error
 
 	switch repositoryServerSecret.Type {
-	case repositoryserver.Location:
+	case reposerver.Location:
 		secret, err = getLocationSecret(repositoryServerSecret)
 		if err != nil {
 			return err
 		}
-	case repositoryserver.RepositoryPasswordSecret:
-		secret = repositoryserver.NewRepoPassword(repositoryServerSecret)
-	case repositoryserver.AdminCredentialsSecret:
-		secret = repositoryserver.NewRepositoryServerAdminCredentials(repositoryServerSecret)
+	case reposerver.RepositoryPasswordSecret:
+		secret = reposerver.NewRepoPassword(repositoryServerSecret)
+	case reposerver.AdminCredentialsSecret:
+		secret = reposerver.NewRepositoryServerAdminCredentials(repositoryServerSecret)
 	default:
 		return ValidateCredentials(repositoryServerSecret)
 	}

@@ -254,7 +254,7 @@ func resticS3CredentialSecretArgs(secret *corev1.Secret) ([]string, error) {
 
 func resticGCSArgs(profile *param.Profile, repository string) []string {
 	return []string{
-		fmt.Sprintf("export %s=%s\n", location.GoogleProjectId, profile.Credential.KeyPair.ID),
+		fmt.Sprintf("export %s=%s\n", location.GoogleProjectID, profile.Credential.KeyPair.ID),
 		fmt.Sprintf("export %s=%s\n", location.GoogleCloudCreds, consts.GoogleCloudCredsFilePath),
 		fmt.Sprintf("export %s=gs:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
 	}
@@ -367,8 +367,8 @@ func SnapshotIDFromSnapshotLog(output string) (string, error) {
 	if len(result) == 0 {
 		return "", errors.New("Snapshot not found")
 	}
-	snapId := result[0]["short_id"]
-	return snapId.(string), nil
+	snapID := result[0]["short_id"]
+	return snapID.(string), nil
 }
 
 // SnapshotIDFromBackupLog gets the SnapshotID from Backup Command log
@@ -476,7 +476,7 @@ func IsPasswordIncorrect(output string) bool {
 	return strings.Contains(output, "wrong password")
 }
 
-// DoesRepoExists checks if repo exists from Snapshot Command log
+// DoesRepoExist checks if repo exists from Snapshot Command log
 func DoesRepoExist(output string) bool {
 	return strings.Contains(output, "Is there a repository at the following location?")
 }

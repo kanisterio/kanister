@@ -109,7 +109,6 @@ type Profile struct {
 	SkipSSLVerify bool
 }
 
-// CredentialType
 type CredentialType string
 
 const (

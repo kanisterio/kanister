@@ -20,13 +20,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-var argsLengthErr = fmt.Errorf("Incorrect number of arguments")
+var errArgsLength = fmt.Errorf("Incorrect number of arguments")
 
 func newArgsLengthError(format string, args ...interface{}) error {
-	return errors.Wrapf(argsLengthErr, format, args...)
+	return errors.Wrapf(errArgsLength, format, args...)
 }
 
-// IsArgsLengthError returns true iff the underlying cause was an argsLengthErr.
+// IsArgsLengthError returns true iff the underlying cause was an errArgsLength.
 func IsArgsLengthError(err error) bool {
-	return errors.Cause(err) == argsLengthErr
+	return errors.Cause(err) == errArgsLength
 }

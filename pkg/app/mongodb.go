@@ -36,7 +36,7 @@ const (
 	mongoWaitTimeout = 5 * time.Minute
 )
 
-// IsMaster struct gets mapped to the output of the mongo command that checks if node is master or not.
+// IsMasterOutput struct gets mapped to the output of the mongo command that checks if node is master or not.
 type IsMasterOutput struct {
 	Ismaster bool `json:"ismaster"`
 }
@@ -51,6 +51,7 @@ type MongoDB struct {
 	chart     helm.ChartInfo
 }
 
+// NewMongoDB initialises an instance of Mongo DB
 // Last tested working version "9.0.0"
 func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
