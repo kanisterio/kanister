@@ -166,7 +166,8 @@ func createCSISnapshotStatic(
 		Name:      name,
 		Namespace: namespace,
 	}
-	if err := snapshotter.CreateFromSource(ctx, source, wait, snapshotMeta, snapshot.ObjectMeta{}); err != nil {
+	snapshotContentMeta := snapshot.ObjectMeta{}
+	if err := snapshotter.CreateFromSource(ctx, source, wait, snapshotMeta, snapshotContentMeta); err != nil {
 		return nil, err
 	}
 

@@ -268,7 +268,7 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 	snapshotContentMeta.Name = snapshotMeta.Name + "-content-" + string(uuid.NewUUID())
 	snapshotMeta.Labels = blockstorage.SanitizeTags(snapshotMeta.Labels)
 	snap := UnstructuredVolumeSnapshotAlpha("", source.VolumeSnapshotClassName, snapshotMeta, snapshotContentMeta)
-	if err := sna.CreateContentFromSource(ctx, source, deletionPolicy, snapshotMeta, snapshotContentMeta); err != nil {
+	if err := sna.CreateContentFromSource(ctx, source, snapshotMeta.Name, snapshotMeta.Namespace, deletionPolicy, snapshotContentMeta); err != nil {
 		return err
 	}
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(snapshotMeta.Namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
@@ -299,8 +299,8 @@ func (sna *SnapshotAlpha) UpdateVolumeSnapshotStatusAlpha(ctx context.Context, n
 }
 
 // CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
-func (sna *SnapshotAlpha) CreateContentFromSource(ctx context.Context, source *Source, deletionPolicy string, snapshotMeta, snapshotContentMeta ObjectMeta) error {
-	content := UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName, snapshotMeta, snapshotContentMeta)
+func (sna *SnapshotAlpha) CreateContentFromSource(ctx context.Context, source *Source, snapshotName, namespace, deletionPolicy string, snapshotContentMeta ObjectMeta) error {
+	content := UnstructuredVolumeSnapshotContentAlpha(snapshotName, namespace, deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName, snapshotContentMeta)
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Create(ctx, content, metav1.CreateOptions{}); err != nil {
 		return errkit.Wrap(err, "Failed to create content", "contentName", content.GetName())
 	}
@@ -395,7 +395,7 @@ func UnstructuredVolumeSnapshotAlpha(pvcName, snapClassName string, snapshotMeta
 }
 
 // UnstructuredVolumeSnapshotContentAlpha returns Unstructured object for the VolumeSnapshotContent resource.
-func UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, driver, handle, snapClassName string, snapshotMeta, snapshotContentMeta ObjectMeta) *unstructured.Unstructured {
+func UnstructuredVolumeSnapshotContentAlpha(snapshotName, snapshotNs, deletionPolicy, driver, handle, snapClassName string, snapshotContentMeta ObjectMeta) *unstructured.Unstructured {
 	snaphotContent := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
@@ -410,13 +410,16 @@ func UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, driver, handle, snap
 				},
 				"volumeSnapshotRef": map[string]interface{}{
 					"kind":      VolSnapKind,
-					"name":      snapshotMeta.Name,
-					"namespace": snapshotMeta.Namespace,
+					"name":      snapshotName,
+					"namespace": snapshotNs,
 				},
 				"snapshotClassName": snapClassName,
 				"deletionPolicy":    deletionPolicy,
 			},
 		},
+	}
+	if snapshotContentMeta.Labels != nil {
+		snaphotContent.SetLabels(snapshotContentMeta.Labels)
 	}
 	if snapshotContentMeta.Annotations != nil {
 		snaphotContent.SetAnnotations(snapshotContentMeta.Annotations)

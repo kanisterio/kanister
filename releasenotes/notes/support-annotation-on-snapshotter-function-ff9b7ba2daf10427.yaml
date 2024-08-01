@@ -1,0 +1,2 @@
+---
+features: Support custom annotations for VolumeSnapshot and VolumeSnapshotContent resource when it gets created.

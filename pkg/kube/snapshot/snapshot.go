@@ -104,7 +104,7 @@ type Snapshotter interface {
 	// 'deletionPolicy' is the deletion policy to set on the created VSC
 	// 'snapshotMeta' has metadata of the VolumeSnapshot resource that is source reference for VSC created.
 	// 'snapshotContentMeta' has metadata of the VolumeSnapshotContent resource that is going to get created.
-	CreateContentFromSource(ctx context.Context, source *Source, deletionPolicy string, snapshotMeta, snapshotContentMeta ObjectMeta) error
+	CreateContentFromSource(ctx context.Context, source *Source, snapshotName, namespace, deletionPolicy string, snapshotContentMeta ObjectMeta) error
 	// WaitOnReadyToUse will block until the VolumeSnapshot in namespace 'namespace' with name 'snapshotName'
 	// has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 	WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error

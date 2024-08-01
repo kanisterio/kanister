@@ -82,15 +82,11 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 			Driver:                  driver,
 			VolumeSnapshotClassName: snapshotClassName,
 		}
-		fakeSnapshotMeta := snapshot.ObjectMeta{
-			Name:      snapshotName,
-			Namespace: snapshotNamespace,
-		}
 		fakeSnapshotContentMeta := snapshot.ObjectMeta{
 			Name: snapshotContentName,
 		}
-		err = fakeSnapshotter.CreateContentFromSource(ctx, source,
-			deletionPolicy, fakeSnapshotMeta, fakeSnapshotContentMeta)
+		err = fakeSnapshotter.CreateContentFromSource(ctx, source, snapshotName,
+			snapshotNamespace, deletionPolicy, fakeSnapshotContentMeta)
 		c.Assert(err, IsNil)
 
 		gv := strings.Split(api.GroupVersion, "/")

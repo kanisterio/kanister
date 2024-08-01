@@ -305,10 +305,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		{
 			snapClassSpec: snapshot.UnstructuredVolumeSnapshotClassAlpha(fakeClass, fakeDriver, deletionPolicy, nil),
 			snapClassGVR:  v1alpha1.VolSnapClassGVR,
-			contentSpec: snapshot.UnstructuredVolumeSnapshotContentAlpha(deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass, snapshot.ObjectMeta{
-				Name:      fakeSnapshotName,
-				Namespace: defaultNamespace,
-			}, snapshot.ObjectMeta{
+			contentSpec: snapshot.UnstructuredVolumeSnapshotContentAlpha(fakeSnapshotName, defaultNamespace, deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass, snapshot.ObjectMeta{
 				Name:        fakeContentName,
 				Annotations: fakeContentAnnotation,
 			}),
@@ -327,10 +324,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		{
 			snapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, fakeClass, fakeDriver, deletionPolicy, nil),
 			snapClassGVR:  v1beta1.VolSnapClassGVR,
-			contentSpec: snapshot.UnstructuredVolumeSnapshotContent(v1beta1.VolSnapContentGVR, deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass, snapshot.ObjectMeta{
-				Name:      fakeSnapshotName,
-				Namespace: defaultNamespace,
-			}, snapshot.ObjectMeta{
+			contentSpec: snapshot.UnstructuredVolumeSnapshotContent(v1beta1.VolSnapContentGVR, fakeSnapshotName, defaultNamespace, deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass, snapshot.ObjectMeta{
 				Name:        fakeContentName,
 				Annotations: fakeContentAnnotation,
 			}),
@@ -350,10 +344,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		{
 			snapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, fakeClass, fakeDriver, deletionPolicy, nil),
 			snapClassGVR:  snapshot.VolSnapClassGVR,
-			contentSpec: snapshot.UnstructuredVolumeSnapshotContent(snapshot.VolSnapContentGVR, deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass, snapshot.ObjectMeta{
-				Name:      fakeSnapshotName,
-				Namespace: defaultNamespace,
-			}, snapshot.ObjectMeta{
+			contentSpec: snapshot.UnstructuredVolumeSnapshotContent(snapshot.VolSnapContentGVR, fakeSnapshotName, defaultNamespace, deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass, snapshot.ObjectMeta{
 				Name:        fakeContentName,
 				Annotations: fakeContentAnnotation,
 			}),

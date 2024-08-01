@@ -81,17 +81,17 @@ func (mr *MockSnapshotterMockRecorder) Create(ctx, pvcName, snapshotClass, waitF
 }
 
 // CreateContentFromSource mocks base method.
-func (m *MockSnapshotter) CreateContentFromSource(ctx context.Context, source *snapshot.Source, deletionPolicy string, snapshotMeta, snapshotContentMeta snapshot.ObjectMeta) error {
+func (m *MockSnapshotter) CreateContentFromSource(ctx context.Context, source *snapshot.Source, snapshotName, namespace, deletionPolicy string, snapshotContentMeta snapshot.ObjectMeta) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateContentFromSource", ctx, source, deletionPolicy, snapshotMeta, snapshotContentMeta)
+	ret := m.ctrl.Call(m, "CreateContentFromSource", ctx, source, snapshotName, namespace, deletionPolicy, snapshotContentMeta)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateContentFromSource indicates an expected call of CreateContentFromSource.
-func (mr *MockSnapshotterMockRecorder) CreateContentFromSource(ctx, source, deletionPolicy, snapshotMeta, snapshotContentMeta interface{}) *gomock.Call {
+func (mr *MockSnapshotterMockRecorder) CreateContentFromSource(ctx, source, snapshotName, namespace, deletionPolicy, snapshotContentMeta interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateContentFromSource", reflect.TypeOf((*MockSnapshotter)(nil).CreateContentFromSource), ctx, source, deletionPolicy, snapshotMeta, snapshotContentMeta)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateContentFromSource", reflect.TypeOf((*MockSnapshotter)(nil).CreateContentFromSource), ctx, source, snapshotName, namespace, deletionPolicy, snapshotContentMeta)
 }
 
 // CreateFromSource mocks base method.
