@@ -155,8 +155,8 @@ func (sna *SnapshotStable) UpdateVolumeSnapshotStatusStable(ctx context.Context,
 }
 
 // CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
-func (sna *SnapshotStable) CreateContentFromSource(ctx context.Context, source *Source, snapshotName, snapshotNs, deletionPolicy string, snapshotContentMeta ObjectMeta) error {
-	content := UnstructuredVolumeSnapshotContent(VolSnapContentGVR, snapshotName, snapshotNs, deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName, snapshotContentMeta)
+func (sna *SnapshotStable) CreateContentFromSource(ctx context.Context, source *Source, snapshotName, snapshotNS, deletionPolicy string, snapshotContentMeta ObjectMeta) error {
+	content := UnstructuredVolumeSnapshotContent(VolSnapContentGVR, snapshotName, snapshotNS, deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName, snapshotContentMeta)
 	if _, err := sna.dynCli.Resource(VolSnapContentGVR).Create(ctx, content, metav1.CreateOptions{}); err != nil {
 		return errkit.Wrap(err, "Failed to create content", "volumeSnapshotContent", content.GetName())
 	}

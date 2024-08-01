@@ -101,8 +101,9 @@ type Snapshotter interface {
 	// CreateContentFromSource will create a 'VolumeSnapshotContent' for the underlying snapshot source.
 	//
 	// 'source' contains information about CSI snapshot.
+	// 'snapshotName' is the name of the snapshot that will be reference the VSC.
+	// 'namespace' is the namespace of the snapshot.
 	// 'deletionPolicy' is the deletion policy to set on the created VSC
-	// 'snapshotMeta' has metadata of the VolumeSnapshot resource that is source reference for VSC created.
 	// 'snapshotContentMeta' has metadata of the VolumeSnapshotContent resource that is going to get created.
 	CreateContentFromSource(ctx context.Context, source *Source, snapshotName, namespace, deletionPolicy string, snapshotContentMeta ObjectMeta) error
 	// WaitOnReadyToUse will block until the VolumeSnapshot in namespace 'namespace' with name 'snapshotName'

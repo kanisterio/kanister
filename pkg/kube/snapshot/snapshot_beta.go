@@ -381,7 +381,7 @@ func UnstructuredVolumeSnapshot(gvr schema.GroupVersionResource, pvcName, snapCl
 }
 
 // UnstructuredVolumeSnapshotContent returns Unstructured object for the VolumeSnapshotContent resource.
-func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, snapshotName, snapshotNs, deletionPolicy, driver, handle, snapClassName string, snapshotContentMeta ObjectMeta) *unstructured.Unstructured {
+func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, snapshotName, snapshotNS, deletionPolicy, driver, handle, snapClassName string, snapshotContentMeta ObjectMeta) *unstructured.Unstructured {
 	snapshotContent := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
@@ -393,7 +393,7 @@ func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, snapshot
 				"volumeSnapshotRef": map[string]interface{}{
 					"kind":      VolSnapKind,
 					"name":      snapshotName,
-					"namespace": snapshotNs,
+					"namespace": snapshotNS,
 				},
 				"deletionPolicy": deletionPolicy,
 				"driver":         driver,

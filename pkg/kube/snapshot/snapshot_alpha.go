@@ -395,7 +395,7 @@ func UnstructuredVolumeSnapshotAlpha(pvcName, snapClassName string, snapshotMeta
 }
 
 // UnstructuredVolumeSnapshotContentAlpha returns Unstructured object for the VolumeSnapshotContent resource.
-func UnstructuredVolumeSnapshotContentAlpha(snapshotName, snapshotNs, deletionPolicy, driver, handle, snapClassName string, snapshotContentMeta ObjectMeta) *unstructured.Unstructured {
+func UnstructuredVolumeSnapshotContentAlpha(snapshotName, snapshotNS, deletionPolicy, driver, handle, snapClassName string, snapshotContentMeta ObjectMeta) *unstructured.Unstructured {
 	snaphotContent := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
@@ -411,7 +411,7 @@ func UnstructuredVolumeSnapshotContentAlpha(snapshotName, snapshotNs, deletionPo
 				"volumeSnapshotRef": map[string]interface{}{
 					"kind":      VolSnapKind,
 					"name":      snapshotName,
-					"namespace": snapshotNs,
+					"namespace": snapshotNS,
 				},
 				"snapshotClassName": snapClassName,
 				"deletionPolicy":    deletionPolicy,
