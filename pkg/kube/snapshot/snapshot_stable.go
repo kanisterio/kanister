@@ -99,20 +99,20 @@ func (sna *SnapshotStable) DeleteContent(ctx context.Context, name string) error
 
 // Clone will clone the VolumeSnapshot to namespace 'cloneNamespace'.
 // Underlying VolumeSnapshotContent will be cloned with a different name.
-func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace string, waitForReady bool, cloneSnapshotMeta, snapshotContentMeta ObjectMeta) error {
-	_, err := sna.Get(ctx, cloneSnapshotMeta.Name, cloneSnapshotMeta.Namespace)
+func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace string, waitForReady bool, snapshotMeta, snapshotContentMeta ObjectMeta) error {
+	_, err := sna.Get(ctx, snapshotMeta.Name, snapshotMeta.Namespace)
 	if err == nil {
-		return errkit.New("Target snapshot already exists in target namespace", "volumeSnapshot", cloneSnapshotMeta.Name, "namespace", cloneSnapshotMeta.Namespace)
+		return errkit.New("Target snapshot already exists in target namespace", "volumeSnapshot", snapshotMeta.Name, "namespace", snapshotMeta.Namespace)
 	}
 	if !apierrors.IsNotFound(err) {
-		return errkit.Wrap(err, "Failed to query target", "volumeSnapshot", cloneSnapshotMeta.Name, "namespace", cloneSnapshotMeta.Namespace)
+		return errkit.Wrap(err, "Failed to query target", "volumeSnapshot", snapshotMeta.Name, "namespace", snapshotMeta.Namespace)
 	}
 
 	src, err := sna.GetSource(ctx, name, namespace)
 	if err != nil {
 		return errkit.New("Failed to get source")
 	}
-	return sna.CreateFromSource(ctx, src, waitForReady, cloneSnapshotMeta, snapshotContentMeta)
+	return sna.CreateFromSource(ctx, src, waitForReady, snapshotMeta, snapshotContentMeta)
 }
 
 // GetSource will return the CSI source that backs the volume snapshot.

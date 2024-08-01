@@ -9,10 +9,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	snapshot "github.com/kanisterio/kanister/pkg/kube/snapshot"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
-
-	snapshot "github.com/kanisterio/kanister/pkg/kube/snapshot"
 )
 
 // MockSnapshotter is a mock of Snapshotter interface.
@@ -39,17 +38,17 @@ func (m *MockSnapshotter) EXPECT() *MockSnapshotterMockRecorder {
 }
 
 // Clone mocks base method.
-func (m *MockSnapshotter) Clone(ctx context.Context, name, namespace string, waitForReady bool, cloneSnapshotMeta, snapshotContentMeta snapshot.ObjectMeta) error {
+func (m *MockSnapshotter) Clone(ctx context.Context, name, namespace string, waitForReady bool, snapshotMeta, snapshotContentMeta snapshot.ObjectMeta) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Clone", ctx, name, namespace, waitForReady, cloneSnapshotMeta, snapshotContentMeta)
+	ret := m.ctrl.Call(m, "Clone", ctx, name, namespace, waitForReady, snapshotMeta, snapshotContentMeta)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Clone indicates an expected call of Clone.
-func (mr *MockSnapshotterMockRecorder) Clone(ctx, name, namespace, waitForReady, cloneSnapshotMeta, snapshotContentMeta interface{}) *gomock.Call {
+func (mr *MockSnapshotterMockRecorder) Clone(ctx, name, namespace, waitForReady, snapshotMeta, snapshotContentMeta interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clone", reflect.TypeOf((*MockSnapshotter)(nil).Clone), ctx, name, namespace, waitForReady, cloneSnapshotMeta, snapshotContentMeta)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clone", reflect.TypeOf((*MockSnapshotter)(nil).Clone), ctx, name, namespace, waitForReady, snapshotMeta, snapshotContentMeta)
 }
 
 // CloneVolumeSnapshotClass mocks base method.

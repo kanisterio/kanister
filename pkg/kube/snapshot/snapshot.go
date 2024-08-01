@@ -83,9 +83,9 @@ type Snapshotter interface {
 	// 'name' is the name of the VolumeSnapshot that will be cloned.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be cloned.
 	// 'waitForReady' will make the function blocks until the clone's status is ready to use.
-	// 'cloneSnapshotMeta' has metadata of the VolumeSnapshot resource that is going to get created.
+	// 'snapshotMeta' has metadata of the VolumeSnapshot resource that is going to get created.
 	// 'snapshotContentMeta' has metadata of the VolumeSnapshotContent content resource that is going to get created.
-	Clone(ctx context.Context, name, namespace string, waitForReady bool, cloneSnapshotMeta, snapshotContentMeta ObjectMeta) error
+	Clone(ctx context.Context, name, namespace string, waitForReady bool, snapshotMeta, snapshotContentMeta ObjectMeta) error
 	// GetSource will return the CSI source that backs the volume snapshot.
 	//
 	// 'snapshotName' is the name of the VolumeSnapshot.
