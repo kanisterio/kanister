@@ -40,13 +40,15 @@ const (
 	defaultMountPoint    = "/mnt/prepare_data/%s"
 	prepareDataJobPrefix = "prepare-data-job-"
 	// PrepareDataFuncName gives the function name
-	PrepareDataFuncName       = "PrepareData"
-	PrepareDataNamespaceArg   = "namespace"
-	PrepareDataImageArg       = "image"
-	PrepareDataCommandArg     = "command"
-	PrepareDataVolumes        = "volumes"
-	PrepareDataServiceAccount = "serviceaccount"
-	PrepareDataPodOverrideArg = "podOverride"
+	PrepareDataFuncName          = "PrepareData"
+	PrepareDataNamespaceArg      = "namespace"
+	PrepareDataImageArg          = "image"
+	PrepareDataCommandArg        = "command"
+	PrepareDataVolumes           = "volumes"
+	PrepareDataServiceAccount    = "serviceaccount"
+	PrepareDataPodOverrideArg    = "podOverride"
+	PrepareDataPodAnnotationsArg = "podAnnotations"
+	PrepareDataPodLabelsArg      = "podLabels"
 )
 
 func init() {

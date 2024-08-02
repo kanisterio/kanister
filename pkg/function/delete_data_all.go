@@ -40,7 +40,9 @@ const (
 	// DeleteDataAllBackupArtifactPrefixArg provides the path to restore backed up data
 	DeleteDataAllBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// DeleteDataAllEncryptionKeyArg provides the encryption key to be used for deletes
-	DeleteDataAllEncryptionKeyArg = "encryptionKey"
+	DeleteDataAllEncryptionKeyArg  = "encryptionKey"
+	DeleteDataAllPodAnnotationsArg = "podAnnotations"
+	DeleteDataAllPodLabelsArg      = "podLabels"
 	// DeleteDataAllReclaimSpace provides a way to specify if space should be reclaimed
 	DeleteDataAllReclaimSpace = "reclaimSpace"
 	// DeleteDataAllBackupInfo provides backup info required for delete

@@ -29,6 +29,8 @@ const (
 	CheckRepositoryEncryptionKeyArg = "encryptionKey"
 	// CheckRepositoryPodOverrideArg contains pod specs to override default pod specs
 	CheckRepositoryPodOverrideArg    = "podOverride"
+	CheckRepositoryPodAnnotationsArg = "podAnnotations"
+	CheckRepositoryPodLabelsArg      = "podLabels"
 	CheckRepositoryJobPrefix         = "check-repository-"
 	CheckRepositoryPasswordIncorrect = "passwordIncorrect"
 	CheckRepositoryRepoDoesNotExist  = "repoUnavailable"
