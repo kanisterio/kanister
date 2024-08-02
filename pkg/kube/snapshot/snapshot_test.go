@@ -1619,34 +1619,34 @@ func (s *SnapshotLocalTestSuite) TestAnnotations(c *C) {
 	snapClass := "snapClass"
 	fakeCli := fake.NewSimpleClientset(fakePVC(volName, ns))
 	for _, tc := range []struct {
-		dynCli            dynamic.Interface
-		createAnnotations map[string]string
-		listAnnotations   map[string]string
-		errChecker        Checker
+		dynCli              dynamic.Interface
+		snapshotAnnotations map[string]string
+		expectedAnnotations map[string]string
+		errChecker          Checker
 	}{
 		{
 			dynCli: dynfake.NewSimpleDynamicClient(scheme),
-			createAnnotations: map[string]string{
+			snapshotAnnotations: map[string]string{
 				"annotationtest": "true",
 			},
-			listAnnotations: map[string]string{
+			expectedAnnotations: map[string]string{
 				"annotationtest": "true",
 			},
 			errChecker: IsNil,
 		},
 		{ // empty annotations list
-			dynCli:            dynfake.NewSimpleDynamicClient(scheme),
-			createAnnotations: map[string]string{},
-			listAnnotations:   map[string]string{},
-			errChecker:        IsNil,
+			dynCli:              dynfake.NewSimpleDynamicClient(scheme),
+			snapshotAnnotations: map[string]string{},
+			expectedAnnotations: map[string]string{},
+			errChecker:          IsNil,
 		},
 		{ // annotations list matches
 			dynCli: dynfake.NewSimpleDynamicClient(scheme),
-			createAnnotations: map[string]string{
+			snapshotAnnotations: map[string]string{
 				"annotationtest":  "true",
 				"annotationtest1": "false",
 			},
-			listAnnotations: map[string]string{
+			expectedAnnotations: map[string]string{
 				"annotationtest":  "true",
 				"annotationtest1": "false",
 			},
@@ -1667,14 +1667,14 @@ func (s *SnapshotLocalTestSuite) TestAnnotations(c *C) {
 			snapshotMeta := snapshot.ObjectMeta{
 				Name:        snapName,
 				Namespace:   ns,
-				Annotations: tc.createAnnotations,
+				Annotations: tc.snapshotAnnotations,
 			}
 			err = fakeSs.Create(ctx, volName, &snapClass, false, snapshotMeta)
 			if err == nil {
 				vs, err = fakeSs.Get(ctx, snapName, ns)
 				annotation := vs.GetAnnotations()
-				c.Assert(len(annotation), Equals, len(tc.listAnnotations))
-				for k := range tc.listAnnotations {
+				c.Assert(len(annotation), Equals, len(tc.expectedAnnotations))
+				for k := range tc.expectedAnnotations {
 					if _, ok := annotation[k]; !ok {
 						c.Assert(false, Equals, true)
 					}
