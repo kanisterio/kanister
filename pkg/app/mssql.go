@@ -272,7 +272,7 @@ spec:
         fsGroup: 10001
       containers:
         - name: mssql
-          image: mcr.microsoft.com/mssql/server:2019-latest
+          image: mcr.microsoft.com/mssql/server:2019-CU27-ubuntu-20.04
           ports:
             - containerPort: 1433
           env:
