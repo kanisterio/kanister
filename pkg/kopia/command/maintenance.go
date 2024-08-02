@@ -16,14 +16,14 @@ package command
 
 type MaintenanceInfoCommandArgs struct {
 	*CommandArgs
-	GetJsonOutput bool
+	GetJSONOutput bool
 }
 
 // MaintenanceInfo returns the kopia command to get maintenance info
 func MaintenanceInfo(cmdArgs MaintenanceInfoCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
-	if cmdArgs.GetJsonOutput {
+	if cmdArgs.GetJSONOutput {
 		args = args.AppendLoggable(jsonFlag)
 	}
 

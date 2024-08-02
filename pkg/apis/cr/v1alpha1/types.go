@@ -332,7 +332,6 @@ type Profile struct {
 	SkipSSLVerify bool `json:"skipSSLVerify"`
 }
 
-// LocationType
 type LocationType string
 
 const (
@@ -342,7 +341,6 @@ const (
 	LocationTypeKopia       LocationType = "kopia"
 )
 
-// Location
 type Location struct {
 	// Type specifies the kind of object storage that would be used to upload the
 	// backup objects. Currently supported values are: "GCS", "S3Compliant",
@@ -359,7 +357,6 @@ type Location struct {
 	Region string `json:"region"`
 }
 
-// CredentialType
 type CredentialType string
 
 const (
@@ -368,7 +365,6 @@ const (
 	CredentialTypeKopia   CredentialType = "kopia"
 )
 
-// Credential
 type Credential struct {
 	// Type represents the information about how the credentials are provided for the respective object storage.
 	Type CredentialType `json:"type"`
@@ -380,7 +376,6 @@ type Credential struct {
 	KopiaServerSecret *KopiaServerSecret `json:"kopiaServerSecret,omitempty"`
 }
 
-// KeyPair
 type KeyPair struct {
 	// IDField specifies the corresponding key in the secret where the AWS Key ID value is stored.
 	IDField string `json:"idField"`

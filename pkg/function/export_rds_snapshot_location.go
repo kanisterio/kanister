@@ -307,7 +307,7 @@ func prepareCommand(
 	dbEngineVersion string,
 ) ([]string, string, error) {
 	// Convert profile object into json
-	profileJson, err := json.Marshal(profile)
+	profileJSON, err := json.Marshal(profile)
 	if err != nil {
 		return nil, "", err
 	}
@@ -322,10 +322,10 @@ func prepareCommand(
 					return nil, "", err
 				}
 			}
-			command, err := postgresBackupCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJson)
+			command, err := postgresBackupCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJSON)
 			return command, postgresToolsImage, err
 		case RestoreAction:
-			command, err := postgresRestoreCommand(dbEndpoint, username, password, backupPrefix, backupID, profileJson, dbEngineVersion)
+			command, err := postgresRestoreCommand(dbEndpoint, username, password, backupPrefix, backupID, profileJSON, dbEngineVersion)
 			return command, postgresToolsImage, err
 		}
 	}
