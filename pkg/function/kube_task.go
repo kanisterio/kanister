@@ -39,11 +39,13 @@ const (
 	jobPrefix = "kanister-job-"
 
 	// KubeTaskFuncName gives the function name
-	KubeTaskFuncName       = "KubeTask"
-	KubeTaskNamespaceArg   = "namespace"
-	KubeTaskImageArg       = "image"
-	KubeTaskCommandArg     = "command"
-	KubeTaskPodOverrideArg = "podOverride"
+	KubeTaskFuncName          = "KubeTask"
+	KubeTaskNamespaceArg      = "namespace"
+	KubeTaskImageArg          = "image"
+	KubeTaskCommandArg        = "command"
+	KubeTaskPodOverrideArg    = "podOverride"
+	KubeTaskPodAnnotationsArg = "podAnnotations"
+	KubeTaskPodLabelsArg      = "podLabels"
 )
 
 func init() {
@@ -60,13 +62,24 @@ func (*kubeTaskFunc) Name() string {
 	return KubeTaskFuncName
 }
 
-func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func kubeTask(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace,
+	image string,
+	command []string,
+	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
+) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      command,
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -110,6 +123,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	var namespace, image string
 	var command []string
 	var err error
+	var annotations, labels map[string]string
 	if err = Arg(args, KubeTaskImageArg, &image); err != nil {
 		return nil, err
 	}
@@ -119,6 +133,13 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, KubeTaskPodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KubeTaskPodLabelsArg, &labels, nil); err != nil {
+		return nil, err
+	}
+
 	podOverride, err := GetPodSpecOverride(tp, args, KubeTaskPodOverrideArg)
 	if err != nil {
 		return nil, err
@@ -128,7 +149,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return kubeTask(ctx, cli, namespace, image, command, podOverride)
+	return kubeTask(ctx, cli, namespace, image, command, podOverride, annotations, labels)
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {
@@ -144,6 +165,8 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskCommandArg,
 		KubeTaskNamespaceArg,
 		KubeTaskPodOverrideArg,
+		KubeTaskPodLabelsArg,
+		KubeTaskPodAnnotationsArg,
 	}
 }
 
