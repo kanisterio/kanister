@@ -48,7 +48,9 @@ const (
 	// DeleteDataBackupIdentifierArg provides a unique ID added to the backed up artifacts
 	DeleteDataBackupIdentifierArg = "backupID"
 	// DeleteDataBackupTagArg provides a unique tag added to the backed up artifacts
-	DeleteDataBackupTagArg = "backupTag"
+	DeleteDataBackupTagArg      = "backupTag"
+	DeleteDataPodAnnotationsArg = "podAnnotations"
+	DeleteDataPodLabelsArg      = "podLabels"
 	// DeleteDataEncryptionKeyArg provides the encryption key to be used for deletes
 	DeleteDataEncryptionKeyArg = "encryptionKey"
 	// DeleteDataReclaimSpace provides a way to specify if space should be reclaimed
