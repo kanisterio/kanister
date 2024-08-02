@@ -28,6 +28,8 @@ const (
 	CheckRepositoryEncryptionKeyArg = "encryptionKey"
 	// CheckRepositoryPodOverrideArg contains pod specs to override default pod specs
 	CheckRepositoryPodOverrideArg    = "podOverride"
+	CheckRepositoryPodAnnotationsArg = "podAnnotations"
+	CheckRepositoryPodLabelsArg      = "podLabels"
 	CheckRepositoryJobPrefix         = "check-repository-"
 	CheckRepositoryPasswordIncorrect = "passwordIncorrect"
 	CheckRepositoryRepoDoesNotExist  = "repoUnavailable"
@@ -47,7 +49,18 @@ func (*CheckRepositoryFunc) Name() string {
 	return CheckRepositoryFuncName
 }
 
-func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, insecureTLS bool, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func CheckRepository(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	encryptionKey,
+	targetPaths,
+	jobPrefix string,
+	insecureTLS bool,
+	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
+) (map[string]interface{}, error) {
 	namespace, err := kube.GetControllerNamespace()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get controller namespace")
@@ -58,6 +71,8 @@ func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -135,6 +150,7 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 
 	var checkRepositoryArtifactPrefix, encryptionKey string
 	var insecureTLS bool
+	var annotations, labels map[string]string
 	if err := Arg(args, CheckRepositoryArtifactPrefixArg, &checkRepositoryArtifactPrefix); err != nil {
 		return nil, err
 	}
@@ -142,6 +158,12 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 	if err := OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, CheckRepositoryPodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, CheckRepositoryPodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -160,7 +182,7 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return CheckRepository(ctx, cli, tp, encryptionKey, checkRepositoryArtifactPrefix, CheckRepositoryJobPrefix, insecureTLS, podOverride)
+	return CheckRepository(ctx, cli, tp, encryptionKey, checkRepositoryArtifactPrefix, CheckRepositoryJobPrefix, insecureTLS, podOverride, annotations, labels)
 }
 
 func (*CheckRepositoryFunc) RequiredArgs() []string {
@@ -172,6 +194,8 @@ func (*CheckRepositoryFunc) Arguments() []string {
 		CheckRepositoryArtifactPrefixArg,
 		CheckRepositoryEncryptionKeyArg,
 		InsecureTLS,
+		CheckRepositoryPodAnnotationsArg,
+		CheckRepositoryPodLabelsArg,
 	}
 }
 func (c *CheckRepositoryFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

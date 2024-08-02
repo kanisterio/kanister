@@ -51,7 +51,9 @@ const (
 	// RestoreDataAllBackupInfo provides backup info required for restore
 	RestoreDataAllBackupInfo = "backupInfo"
 	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
-	RestoreDataAllPodOverrideArg = "podOverride"
+	RestoreDataAllPodOverrideArg    = "podOverride"
+	RestoreDataAllPodAnnotationsArg = "podAnnotations"
+	RestoreDataAllPodLabelsArg      = "podLabels"
 )
 
 func init() {
@@ -115,6 +117,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 
 	var namespace, image, backupArtifactPrefix, backupInfo string
 	var err error
+	var annotations, labels map[string]string
 
 	if err = Arg(args, RestoreDataAllNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -126,6 +129,12 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		return nil, err
 	}
 	if err = Arg(args, RestoreDataAllBackupInfo, &backupInfo); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, RestoreDataPodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, RestoreDataAllPodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -160,7 +169,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 				outputChan <- out
 				return
 			}
-			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, image, insecureTLS, vols, podOverride)
+			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, image, insecureTLS, vols, podOverride, annotations, labels)
 			errChan <- errors.Wrapf(err, "Failed to restore data for pod %s", pod)
 			outputChan <- out
 		}(pod)
@@ -203,6 +212,8 @@ func (*restoreDataAllFunc) Arguments() []string {
 		RestoreDataAllPodsArg,
 		RestoreDataAllPodOverrideArg,
 		InsecureTLS,
+		RestoreDataAllPodAnnotationsArg,
+		RestoreDataAllPodLabelsArg,
 	}
 }
 

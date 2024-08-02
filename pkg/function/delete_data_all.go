@@ -39,7 +39,9 @@ const (
 	// DeleteDataAllBackupArtifactPrefixArg provides the path to restore backed up data
 	DeleteDataAllBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// DeleteDataAllEncryptionKeyArg provides the encryption key to be used for deletes
-	DeleteDataAllEncryptionKeyArg = "encryptionKey"
+	DeleteDataAllEncryptionKeyArg  = "encryptionKey"
+	DeleteDataAllPodAnnotationsArg = "podAnnotations"
+	DeleteDataAllPodLabelsArg      = "podLabels"
 	// DeleteDataAllReclaimSpace provides a way to specify if space should be reclaimed
 	DeleteDataAllReclaimSpace = "reclaimSpace"
 	// DeleteDataAllBackupInfo provides backup info required for delete
@@ -72,6 +74,7 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	var reclaimSpace bool
 	var err error
 	var insecureTLS bool
+	var annotations, labels map[string]string
 	if err = Arg(args, DeleteDataAllNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -88,6 +91,12 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		return nil, err
 	}
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, DeleteDataAllPodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, DeleteDataAllPodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
@@ -114,7 +123,22 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		deleteIdentifiers = append(deleteIdentifiers, info.BackupID)
 	}
 
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, insecureTLS, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix, podOverride)
+	return deleteData(
+		ctx,
+		cli,
+		tp,
+		reclaimSpace,
+		namespace,
+		encryptionKey,
+		insecureTLS,
+		targetPaths,
+		nil,
+		deleteIdentifiers,
+		deleteDataAllJobPrefix,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*deleteDataAllFunc) RequiredArgs() []string {
@@ -133,6 +157,8 @@ func (*deleteDataAllFunc) Arguments() []string {
 		DeleteDataAllEncryptionKeyArg,
 		DeleteDataAllReclaimSpace,
 		InsecureTLS,
+		DeleteDataAllPodAnnotationsArg,
+		DeleteDataAllPodLabelsArg,
 	}
 }
 

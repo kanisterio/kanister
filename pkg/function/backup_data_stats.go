@@ -46,6 +46,8 @@ const (
 	BackupDataStatsEncryptionKeyArg = "encryptionKey"
 	// BackupDataStatsBackupIdentifierArg provides a unique ID added to the backed up artifacts
 	BackupDataStatsBackupIdentifierArg = "backupID"
+	BackupDataStatsPodLabelsArg        = "podLabels"
+	BackupDataStatsPodAnnotationsArg   = "podAnnotations"
 	// BackupDataStatsMode provides a mode for stats
 	BackupDataStatsMode            = "statsMode"
 	BackupDataStatsOutputFileCount = "fileCount"
@@ -68,13 +70,28 @@ func (*BackupDataStatsFunc) Name() string {
 	return BackupDataStatsFuncName
 }
 
-func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID, mode, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func backupDataStats(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	namespace,
+	encryptionKey,
+	backupArtifactPrefix,
+	backupID,
+	mode,
+	jobPrefix string,
+	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
+) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -147,6 +164,7 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 
 	var namespace, backupArtifactPrefix, backupID, mode, encryptionKey string
 	var err error
+	var annotations, labels map[string]string
 	if err = Arg(args, BackupDataStatsNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -162,6 +180,13 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err = OptArg(args, BackupDataStatsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, BackupDataStatsPodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, BackupDataStatsPodLabelsArg, &labels, nil); err != nil {
+		return nil, err
+	}
+
 	podOverride, err := GetPodSpecOverride(tp, args, CheckRepositoryPodOverrideArg)
 	if err != nil {
 		return nil, err
@@ -177,7 +202,7 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return backupDataStats(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, mode, backupDataStatsJobPrefix, podOverride)
+	return backupDataStats(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, mode, backupDataStatsJobPrefix, podOverride, annotations, labels)
 }
 
 func (*BackupDataStatsFunc) RequiredArgs() []string {
@@ -195,6 +220,8 @@ func (*BackupDataStatsFunc) Arguments() []string {
 		BackupDataStatsBackupIdentifierArg,
 		BackupDataStatsMode,
 		BackupDataStatsEncryptionKeyArg,
+		BackupDataStatsPodAnnotationsArg,
+		BackupDataStatsPodLabelsArg,
 	}
 }
 

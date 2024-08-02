@@ -68,7 +68,9 @@ const (
 	// RestoreRDSSnapshotUsername stores username of the database
 	RestoreRDSSnapshotUsername = "username"
 	// RestoreRDSSnapshotPassword stores the password of the database
-	RestoreRDSSnapshotPassword = "password"
+	RestoreRDSSnapshotPassword       = "password"
+	RestoreRDSSnapshotPodAnnotations = "podAnnotations"
+	RestoreRDSSnapshotPodLabels      = "podLabels"
 
 	// PostgreSQLEngine stores the postgres appname
 	PostgreSQLEngine RDSDBEngine = "PostgreSQL"
@@ -102,6 +104,8 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 		RestoreRDSSnapshotNamespace,
 		RestoreRDSSnapshotSecGrpID,
 		RestoreRDSSnapshotDBSubnetGroup,
+		RestoreRDSSnapshotPodAnnotations,
+		RestoreRDSSnapshotPodLabels,
 	}
 }
 
@@ -112,6 +116,7 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 
 	var namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string
 	var dbEngine RDSDBEngine
+	var annotations, labels map[string]string
 
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
 		return nil, err
@@ -125,6 +130,12 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		return nil, err
 	}
 	if err := OptArg(args, RestoreRDSSnapshotDBSubnetGroup, &subnetGroup, "default"); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, RestoreRDSSnapshotPodAnnotations, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, RestoreRDSSnapshotPodLabels, &labels, nil); err != nil {
 		return nil, err
 	}
 	// Find security groups
@@ -153,7 +164,7 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		}
 	}
 
-	return restoreRDSSnapshot(ctx, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile)
+	return restoreRDSSnapshot(ctx, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile, annotations, labels)
 }
 
 func (r *restoreRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
@@ -177,6 +188,8 @@ func restoreRDSSnapshot(
 	dbEngine RDSDBEngine,
 	sgIDs []string,
 	profile *param.Profile,
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
@@ -224,7 +237,7 @@ func restoreRDSSnapshot(
 		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
 	}
 
-	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, dbEndpoint, username, password, nil, backupArtifactPrefix, backupID, profile, dbEngineVersion); err != nil {
+	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, dbEndpoint, username, password, nil, backupArtifactPrefix, backupID, profile, dbEngineVersion, annotations, labels); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore RDS from dump. InstanceID=%s", instanceID)
 	}
 

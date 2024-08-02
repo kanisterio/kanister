@@ -58,6 +58,8 @@ const (
 	ExportRDSSnapshotToLocSecGrpIDArg        = "securityGroupID"
 	ExportRDSSnapshotToLocBackupID           = "backupID"
 	ExportRDSSnapshotToLocDBSubnetGroupArg   = "dbSubnetGroup"
+	ExportRDSSnapshotToLocPodAnnotationsArg  = "podAnnotations"
+	ExportRDSSnapshotToLocPodLabelsArg       = "podLabels"
 
 	PostgrSQLEngine RDSDBEngine = "PostgreSQL"
 
@@ -94,6 +96,8 @@ func exportRDSSnapshotToLoc(
 	dbEngine RDSDBEngine,
 	sgIDs []string,
 	profile *param.Profile,
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
@@ -149,7 +153,22 @@ func exportRDSSnapshotToLoc(
 	}
 
 	// Extract dump from DB
-	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, databases, backupPrefix, backupID, profile, dbEngineVersion)
+	output, err := execDumpCommand(
+		ctx,
+		dbEngine,
+		BackupAction,
+		namespace,
+		dbEndpoint,
+		username,
+		password,
+		databases,
+		backupPrefix,
+		backupID,
+		profile,
+		dbEngineVersion,
+		annotations,
+		labels,
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
 	}
@@ -175,6 +194,7 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 
 	var namespace, instanceID, snapshotID, username, password, dbSubnetGroup, backupArtifact string
 	var dbEngine RDSDBEngine
+	var annotations, labels map[string]string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -200,6 +220,12 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 	if err := OptArg(args, ExportRDSSnapshotToLocDBSubnetGroupArg, &dbSubnetGroup, "default"); err != nil {
 		return nil, err
 	}
+	if err := OptArg(args, ExportRDSSnapshotToLocPodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, ExportRDSSnapshotToLocPodLabelsArg, &labels, nil); err != nil {
+		return nil, err
+	}
 	// Find databases
 	databases, err := GetYamlList(args, ExportRDSSnapshotToLocDatabasesArg)
 	if err != nil {
@@ -212,7 +238,22 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 		return nil, err
 	}
 
-	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, databases, dbSubnetGroup, backupArtifact, dbEngine, sgIDs, tp.Profile)
+	return exportRDSSnapshotToLoc(
+		ctx,
+		namespace,
+		instanceID,
+		snapshotID,
+		username,
+		password,
+		databases,
+		dbSubnetGroup,
+		backupArtifact,
+		dbEngine,
+		sgIDs,
+		tp.Profile,
+		annotations,
+		labels,
+	)
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
@@ -236,6 +277,8 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 		ExportRDSSnapshotToLocDatabasesArg,
 		ExportRDSSnapshotToLocSecGrpIDArg,
 		ExportRDSSnapshotToLocDBSubnetGroupArg,
+		ExportRDSSnapshotToLocPodAnnotationsArg,
+		ExportRDSSnapshotToLocPodLabelsArg,
 	}
 }
 
@@ -260,6 +303,8 @@ func execDumpCommand(
 	backupID string,
 	profile *param.Profile,
 	dbEngineVersion string,
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	// Trim "\n" from creds
 	username = strings.TrimSpace(username)
@@ -290,7 +335,7 @@ func execDumpCommand(
 		}
 	}()
 
-	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
+	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName), annotations, labels)
 }
 
 func prepareCommand(
