@@ -40,13 +40,15 @@ const (
 	defaultMountPoint    = "/mnt/prepare_data/%s"
 	prepareDataJobPrefix = "prepare-data-job-"
 	// PrepareDataFuncName gives the function name
-	PrepareDataFuncName       = "PrepareData"
-	PrepareDataNamespaceArg   = "namespace"
-	PrepareDataImageArg       = "image"
-	PrepareDataCommandArg     = "command"
-	PrepareDataVolumes        = "volumes"
-	PrepareDataServiceAccount = "serviceaccount"
-	PrepareDataPodOverrideArg = "podOverride"
+	PrepareDataFuncName          = "PrepareData"
+	PrepareDataNamespaceArg      = "namespace"
+	PrepareDataImageArg          = "image"
+	PrepareDataCommandArg        = "command"
+	PrepareDataVolumes           = "volumes"
+	PrepareDataServiceAccount    = "serviceaccount"
+	PrepareDataPodOverrideArg    = "podOverride"
+	PrepareDataPodAnnotationsArg = "podAnnotations"
+	PrepareDataPodLabelsArg      = "podLabels"
 )
 
 func init() {
@@ -85,7 +87,18 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 	return vols, nil
 }
 
-func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, podOverride crv1alpha1.JSONMap, command ...string) (map[string]interface{}, error) {
+func prepareData(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace,
+	serviceAccount,
+	image string,
+	vols map[string]string,
+	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
+	command ...string,
+) (map[string]interface{}, error) {
 	// Validate volumes
 	validatedVols := make(map[string]kube.VolumeMountOptions)
 	for pvcName, mountPoint := range vols {
@@ -108,6 +121,8 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		Volumes:            validatedVols,
 		ServiceAccountName: serviceAccount,
 		PodOverride:        podOverride,
+		Annotations:        annotations,
+		Labels:             labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -155,6 +170,7 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
+	var annotations, labels map[string]string
 	var err error
 	if err = Arg(args, PrepareDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -171,6 +187,12 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PrepareDataPodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PrepareDataPodLabelsArg, &labels, nil); err != nil {
+		return nil, err
+	}
 	podOverride, err := GetPodSpecOverride(tp, args, PrepareDataPodOverrideArg)
 	if err != nil {
 		return nil, err
@@ -185,7 +207,7 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 			return nil, err
 		}
 	}
-	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, podOverride, command...)
+	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, podOverride, annotations, labels, command...)
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {
@@ -204,6 +226,8 @@ func (*prepareDataFunc) Arguments() []string {
 		PrepareDataVolumes,
 		PrepareDataServiceAccount,
 		PrepareDataPodOverrideArg,
+		PrepareDataPodAnnotationsArg,
+		PrepareDataPodLabelsArg,
 	}
 }
 
