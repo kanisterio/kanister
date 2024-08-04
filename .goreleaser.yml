@@ -17,15 +17,17 @@ builds:
     -X github.com/kanisterio/kanister/pkg/version.BuildDate={{.Date}}
   env: &env
   - GO111MODULE=on
-  - CGO_ENABLED=1
+  - CGO_ENABLED=0
   - GOEXPERIMENT=boringcrypto
   - CC=gcc
   - CXX=g++
   - GO_EXTLINK_ENABLED=0
   goos:
   - linux
+  - darwin
   goarch: &goarch
   - amd64
+  - arm64
 - id: kando
   binary: kando
   main: ./cmd/kando
@@ -56,8 +58,10 @@ dockers:
   image_templates:
   - 'ghcr.io/kanisterio/controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
+  use: buildx
   build_flag_templates:
   - "--pull"
+  - "--platform=linux/amd64"
 - ids:
   - repo-server-controller
   image_templates:
