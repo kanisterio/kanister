@@ -1,0 +1,13 @@
+---
+features:
+  - Split parallelism helm value into dataStore.parallelism.upload and dataStore.parallelism.download to be used separately in BackupDataUsingKopiaServer and RestoreDataUsingKopiaServer
+fixes:
+  - Make pod writer exec wait for cat command to finish. Fixes race condition between cat cat command end exec termination.
+  - Make sure all storage providers return similar error if snapshot doesn't exist, which is expected by DeleteVolumeSnapshot
+other:
+  - Update ubi-minimal base image to ubi-minimal:9.4-1194
+  - Update errkit to v0.0.2
+  - Switch pkg/app to errkit
+  - Switch pkg/kopia to errkit
+  - Switch pkg/kube to errkit
+
