@@ -143,7 +143,13 @@ func (*createCSISnapshotFunc) Arguments() []string {
 }
 
 func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace, pvc, snapshotClass string, wait bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
-	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, wait, labels); err != nil {
+	snapshotMeta := snapshot.ObjectMeta{
+		Name:        name,
+		Namespace:   namespace,
+		Labels:      labels,
+		Annotations: nil,
+	}
+	if err := snapshotter.Create(ctx, pvc, &snapshotClass, wait, snapshotMeta); err != nil {
 		return nil, err
 	}
 	vs, err := snapshotter.Get(ctx, name, namespace)
