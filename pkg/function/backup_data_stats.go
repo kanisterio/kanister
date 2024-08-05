@@ -47,8 +47,6 @@ const (
 	BackupDataStatsEncryptionKeyArg = "encryptionKey"
 	// BackupDataStatsBackupIdentifierArg provides a unique ID added to the backed up artifacts
 	BackupDataStatsBackupIdentifierArg = "backupID"
-	BackupDataStatsPodLabelsArg        = "podLabels"
-	BackupDataStatsPodAnnotationsArg   = "podAnnotations"
 	// BackupDataStatsMode provides a mode for stats
 	BackupDataStatsMode            = "statsMode"
 	BackupDataStatsOutputFileCount = "fileCount"
