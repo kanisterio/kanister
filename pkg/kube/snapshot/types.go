@@ -1,6 +1,6 @@
 package snapshot
 
-// ObjectMeta has common metadata fields that can be used to pass details or a resource around.
+// ObjectMeta has common metadata fields that can be used to pass meta data of a resource around.
 type ObjectMeta struct {
 	Name        string            `json:"name,omitempty"`
 	Namespace   string            `json:"namespace,omitempty"`
