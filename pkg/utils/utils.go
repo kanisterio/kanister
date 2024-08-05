@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -113,4 +114,26 @@ func RoundUpDuration(t time.Duration) time.Duration {
 		return t.Round(time.Minute)
 	}
 	return t.Round(time.Hour)
+}
+
+// CheckRequiredArgs checks if the required args of a function `reqArgs` are
+// provided in created blueprint's functions' args (`args`).
+func CheckRequiredArgs(reqArgs []string, args map[string]interface{}) error {
+	for _, a := range reqArgs {
+		if _, ok := args[a]; !ok {
+			return errors.Errorf("Required arg missing: %s", a)
+		}
+	}
+	return nil
+}
+
+// CheckSupportedArgs checks that all the provided (using blueprint) args of a function
+// are supported by the kanister function.
+func CheckSupportedArgs(supportedArgs []string, args map[string]interface{}) error {
+	for a := range args {
+		if !slices.Contains(supportedArgs, a) {
+			return errors.Errorf("argument %s is not supported", a)
+		}
+	}
+	return nil
 }

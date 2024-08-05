@@ -29,6 +29,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -59,6 +60,14 @@ func (*waitForSnapshotCompletionFunc) RequiredArgs() []string {
 
 func (*waitForSnapshotCompletionFunc) Arguments() []string {
 	return []string{WaitForSnapshotCompletionSnapshotsArg}
+}
+
+func (w *waitForSnapshotCompletionFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(w.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(w.RequiredArgs(), args)
 }
 
 func (w *waitForSnapshotCompletionFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

@@ -27,6 +27,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -72,6 +73,14 @@ func (*locationDeleteFunc) RequiredArgs() []string {
 
 func (*locationDeleteFunc) Arguments() []string {
 	return []string{LocationDeleteArtifactArg}
+}
+
+func (l *locationDeleteFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(l.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(l.RequiredArgs(), args)
 }
 
 func (l *locationDeleteFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

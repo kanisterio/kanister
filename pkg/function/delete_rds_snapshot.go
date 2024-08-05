@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -114,10 +115,10 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 	return nil, errors.Wrap(err, "Error waiting for Aurora DB cluster snapshot to be deleted")
 }
 
-func (crs *deleteRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (d *deleteRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	// Set progress percent
-	crs.progressPercent = progress.StartedPercent
-	defer func() { crs.progressPercent = progress.CompletedPercent }()
+	d.progressPercent = progress.StartedPercent
+	defer func() { d.progressPercent = progress.CompletedPercent }()
 
 	var snapshotID string
 	var dbEngine RDSDBEngine
@@ -141,6 +142,14 @@ func (*deleteRDSSnapshotFunc) Arguments() []string {
 		DeleteRDSSnapshotSnapshotIDArg,
 		CreateRDSSnapshotDBEngine,
 	}
+}
+
+func (d *deleteRDSSnapshotFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(d.RequiredArgs(), args)
 }
 
 func (d *deleteRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

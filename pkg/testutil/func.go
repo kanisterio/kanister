@@ -25,6 +25,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -146,6 +147,14 @@ func (mf *mockKanisterFunc) RequiredArgs() []string {
 
 func (mf *mockKanisterFunc) Arguments() []string {
 	return []string{testBPArg}
+}
+
+func (mf *mockKanisterFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(mf.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(mf.RequiredArgs(), args)
 }
 
 func CancelFuncStarted() struct{} {

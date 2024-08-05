@@ -31,6 +31,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -95,6 +96,14 @@ func (*waitV2Func) Arguments() []string {
 		WaitV2TimeoutArg,
 		WaitV2ConditionsArg,
 	}
+}
+
+func (w *waitV2Func) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(w.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(w.RequiredArgs(), args)
 }
 
 func (w *waitV2Func) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

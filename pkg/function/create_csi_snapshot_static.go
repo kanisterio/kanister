@@ -27,6 +27,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -149,6 +150,14 @@ func (*createCSISnapshotStaticFunc) Arguments() []string {
 		CreateCSISnapshotStaticSnapshotHandleArg,
 		CreateCSISnapshotStaticSnapshotClassArg,
 	}
+}
+
+func (c *createCSISnapshotStaticFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(c.RequiredArgs(), args)
 }
 
 func createCSISnapshotStatic(

@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -204,6 +205,14 @@ func (*restoreDataAllFunc) Arguments() []string {
 		RestoreDataAllPodOverrideArg,
 		InsecureTLS,
 	}
+}
+
+func (r *restoreDataAllFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
 }
 
 func (r *restoreDataAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

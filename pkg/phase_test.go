@@ -21,6 +21,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 type PhaseSuite struct{}
@@ -62,6 +63,14 @@ func (tf *testFunc) RequiredArgs() []string {
 
 func (tf *testFunc) Arguments() []string {
 	return nil
+}
+
+func (tf *testFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(tf.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(tf.RequiredArgs(), args)
 }
 
 func (tf *testFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
@@ -137,7 +146,7 @@ func (s *PhaseSuite) TestCheckSupportedArgs(c *C) {
 			err:          IsNil,
 		},
 	} {
-		err := checkSupportedArgs(tc.supprtedArgs, tc.providedArgs)
+		err := utils.CheckSupportedArgs(tc.supprtedArgs, tc.providedArgs)
 		if err != nil {
 			c.Assert(err.Error(), Equals, tc.expErr)
 		}

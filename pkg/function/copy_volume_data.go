@@ -35,6 +35,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -243,6 +244,14 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataEncryptionKeyArg,
 		InsecureTLS,
 	}
+}
+
+func (c *copyVolumeDataFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(c.RequiredArgs(), args)
 }
 
 func (c *copyVolumeDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

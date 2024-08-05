@@ -32,6 +32,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -70,6 +71,14 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 		RestoreDataImageArg,
 		KopiaRepositoryServerUserHostname,
 	}
+}
+
+func (d *deleteDataUsingKopiaServerFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(d.RequiredArgs(), args)
 }
 
 func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
