@@ -1621,7 +1621,6 @@ func (s *SnapshotLocalTestSuite) TestAnnotations(c *C) {
 	for _, tc := range []struct {
 		dynCli              dynamic.Interface
 		snapshotAnnotations map[string]string
-		expectedAnnotations map[string]string
 		errChecker          Checker
 	}{
 		{
@@ -1629,24 +1628,16 @@ func (s *SnapshotLocalTestSuite) TestAnnotations(c *C) {
 			snapshotAnnotations: map[string]string{
 				"annotationtest": "true",
 			},
-			expectedAnnotations: map[string]string{
-				"annotationtest": "true",
-			},
 			errChecker: IsNil,
 		},
 		{ // empty annotations list
 			dynCli:              dynfake.NewSimpleDynamicClient(scheme),
 			snapshotAnnotations: map[string]string{},
-			expectedAnnotations: map[string]string{},
 			errChecker:          IsNil,
 		},
 		{ // annotations list matches
 			dynCli: dynfake.NewSimpleDynamicClient(scheme),
 			snapshotAnnotations: map[string]string{
-				"annotationtest":  "true",
-				"annotationtest1": "false",
-			},
-			expectedAnnotations: map[string]string{
 				"annotationtest":  "true",
 				"annotationtest1": "false",
 			},
@@ -1673,12 +1664,8 @@ func (s *SnapshotLocalTestSuite) TestAnnotations(c *C) {
 			if err == nil {
 				vs, err = fakeSs.Get(ctx, snapName, ns)
 				annotation := vs.GetAnnotations()
-				c.Assert(len(annotation), Equals, len(tc.expectedAnnotations))
-				for k := range tc.expectedAnnotations {
-					if _, ok := annotation[k]; !ok {
-						c.Assert(false, Equals, true)
-					}
-				}
+				c.Assert(len(annotation), Equals, len(tc.snapshotAnnotations))
+				c.Assert(annotation, DeepEquals, tc.snapshotAnnotations)
 			}
 			c.Check(err, tc.errChecker)
 		}
