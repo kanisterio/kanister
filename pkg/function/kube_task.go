@@ -39,13 +39,11 @@ const (
 	jobPrefix = "kanister-job-"
 
 	// KubeTaskFuncName gives the function name
-	KubeTaskFuncName          = "KubeTask"
-	KubeTaskNamespaceArg      = "namespace"
-	KubeTaskImageArg          = "image"
-	KubeTaskCommandArg        = "command"
-	KubeTaskPodOverrideArg    = "podOverride"
-	KubeTaskPodAnnotationsArg = "podAnnotations"
-	KubeTaskPodLabelsArg      = "podLabels"
+	KubeTaskFuncName       = "KubeTask"
+	KubeTaskNamespaceArg   = "namespace"
+	KubeTaskImageArg       = "image"
+	KubeTaskCommandArg     = "command"
+	KubeTaskPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -133,10 +131,10 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -165,8 +163,8 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskCommandArg,
 		KubeTaskNamespaceArg,
 		KubeTaskPodOverrideArg,
-		KubeTaskPodLabelsArg,
-		KubeTaskPodAnnotationsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

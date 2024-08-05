@@ -227,10 +227,10 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 	if err := OptArg(args, ExportRDSSnapshotToLocImageArg, &postgresToolsImage, defaultPostgresToolsImage); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, ExportRDSSnapshotToLocPodAnnotationsArg, &annotations, nil); err != nil {
+	if err := OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, ExportRDSSnapshotToLocPodLabelsArg, &labels, nil); err != nil {
+	if err := OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	// Find databases
@@ -285,8 +285,8 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 		ExportRDSSnapshotToLocDatabasesArg,
 		ExportRDSSnapshotToLocSecGrpIDArg,
 		ExportRDSSnapshotToLocDBSubnetGroupArg,
-		ExportRDSSnapshotToLocPodAnnotationsArg,
-		ExportRDSSnapshotToLocPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

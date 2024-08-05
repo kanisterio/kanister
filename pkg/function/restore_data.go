@@ -57,9 +57,7 @@ const (
 	// RestoreDataBackupTagArg provides a unique tag added to the backup artifacts
 	RestoreDataBackupTagArg = "backupTag"
 	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
-	RestoreDataPodOverrideArg    = "podOverride"
-	RestoreDataPodAnnotationsArg = "podAnnotations"
-	RestoreDataPodLabelsArg      = "podLabels"
+	RestoreDataPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -241,10 +239,10 @@ func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = Arg(args, RestoreDataBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, RestoreDataPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, RestoreDataPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -307,8 +305,8 @@ func (*restoreDataFunc) Arguments() []string {
 		RestoreDataBackupIdentifierArg,
 		RestoreDataPodOverrideArg,
 		InsecureTLS,
-		RestoreDataPodAnnotationsArg,
-		RestoreDataPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

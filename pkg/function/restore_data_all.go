@@ -52,9 +52,7 @@ const (
 	// RestoreDataAllBackupInfo provides backup info required for restore
 	RestoreDataAllBackupInfo = "backupInfo"
 	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
-	RestoreDataAllPodOverrideArg    = "podOverride"
-	RestoreDataAllPodAnnotationsArg = "podAnnotations"
-	RestoreDataAllPodLabelsArg      = "podLabels"
+	RestoreDataAllPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -132,10 +130,10 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err = Arg(args, RestoreDataAllBackupInfo, &backupInfo); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, RestoreDataPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, RestoreDataAllPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -213,8 +211,8 @@ func (*restoreDataAllFunc) Arguments() []string {
 		RestoreDataAllPodsArg,
 		RestoreDataAllPodOverrideArg,
 		InsecureTLS,
-		RestoreDataAllPodAnnotationsArg,
-		RestoreDataAllPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

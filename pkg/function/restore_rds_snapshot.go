@@ -107,8 +107,8 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 		RestoreRDSSnapshotNamespace,
 		RestoreRDSSnapshotSecGrpID,
 		RestoreRDSSnapshotDBSubnetGroup,
-		RestoreRDSSnapshotPodAnnotations,
-		RestoreRDSSnapshotPodLabels,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
@@ -146,10 +146,10 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 	if err := OptArg(args, RestoreRDSSnapshotImage, &postgresToolsImage, defaultPostgresToolsImage); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, RestoreRDSSnapshotPodAnnotations, &annotations, nil); err != nil {
+	if err := OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, RestoreRDSSnapshotPodLabels, &labels, nil); err != nil {
+	if err := OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	// Find security groups

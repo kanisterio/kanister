@@ -29,8 +29,6 @@ const (
 	CheckRepositoryEncryptionKeyArg = "encryptionKey"
 	// CheckRepositoryPodOverrideArg contains pod specs to override default pod specs
 	CheckRepositoryPodOverrideArg    = "podOverride"
-	CheckRepositoryPodAnnotationsArg = "podAnnotations"
-	CheckRepositoryPodLabelsArg      = "podLabels"
 	CheckRepositoryJobPrefix         = "check-repository-"
 	CheckRepositoryPasswordIncorrect = "passwordIncorrect"
 	CheckRepositoryRepoDoesNotExist  = "repoUnavailable"
@@ -161,10 +159,10 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err := OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, CheckRepositoryPodAnnotationsArg, &annotations, nil); err != nil {
+	if err := OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, CheckRepositoryPodLabelsArg, &labels, nil); err != nil {
+	if err := OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -195,8 +193,8 @@ func (*CheckRepositoryFunc) Arguments() []string {
 		CheckRepositoryArtifactPrefixArg,
 		CheckRepositoryEncryptionKeyArg,
 		InsecureTLS,
-		CheckRepositoryPodAnnotationsArg,
-		CheckRepositoryPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
