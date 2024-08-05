@@ -78,6 +78,14 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
+func (r *restoreDataUsingKopiaServerFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
+}
+
 func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	// Set progress percent
 	r.progressPercent = progress.StartedPercent

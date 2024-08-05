@@ -33,6 +33,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -204,6 +205,14 @@ func (*prepareDataFunc) Arguments() []string {
 		PrepareDataServiceAccount,
 		PrepareDataPodOverrideArg,
 	}
+}
+
+func (p *prepareDataFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(p.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(p.RequiredArgs(), args)
 }
 
 func (p *prepareDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

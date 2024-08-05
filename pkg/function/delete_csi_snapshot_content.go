@@ -26,6 +26,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -90,6 +91,14 @@ func (*deleteCSISnapshotContentFunc) Arguments() []string {
 	return []string{
 		DeleteCSISnapshotContentNameArg,
 	}
+}
+
+func (d *deleteCSISnapshotContentFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(d.RequiredArgs(), args)
 }
 
 func (c *deleteCSISnapshotContentFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

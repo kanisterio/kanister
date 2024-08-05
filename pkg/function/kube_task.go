@@ -32,6 +32,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -144,6 +145,14 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskNamespaceArg,
 		KubeTaskPodOverrideArg,
 	}
+}
+
+func (ktf *kubeTaskFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(ktf.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(ktf.RequiredArgs(), args)
 }
 
 func (k *kubeTaskFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

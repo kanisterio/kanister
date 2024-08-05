@@ -34,6 +34,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -130,6 +131,14 @@ func (*deleteVolumeSnapshotFunc) Arguments() []string {
 		DeleteVolumeSnapshotNamespaceArg,
 		DeleteVolumeSnapshotManifestArg,
 	}
+}
+
+func (d *deleteVolumeSnapshotFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(d.RequiredArgs(), args)
 }
 
 func (d *deleteVolumeSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

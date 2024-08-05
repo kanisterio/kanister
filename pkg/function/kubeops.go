@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -135,6 +136,14 @@ func (*kubeops) Arguments() []string {
 		KubeOpsNamespaceArg,
 		KubeOpsObjectReferenceArg,
 	}
+}
+
+func (k *kubeops) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(k.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(k.RequiredArgs(), args)
 }
 
 func (k *kubeops) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

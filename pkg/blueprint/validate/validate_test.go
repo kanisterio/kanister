@@ -24,6 +24,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -452,6 +453,14 @@ func (nd *nonDefaultVersionFunc) RequiredArgs() []string {
 
 func (nd *nonDefaultVersionFunc) Arguments() []string {
 	return []string{"ndVersionArg0", "ndVersionArg1", "ndVersionArg2", "ndVersionArg3"}
+}
+
+func (nd *nonDefaultVersionFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(nd.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(nd.RequiredArgs(), args)
 }
 
 func (nd *nonDefaultVersionFunc) Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error) {

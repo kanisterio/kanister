@@ -33,6 +33,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -150,6 +151,14 @@ func (*backupDataAllFunc) Arguments() []string {
 		BackupDataAllEncryptionKeyArg,
 		InsecureTLS,
 	}
+}
+
+func (b *backupDataAllFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(b.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(b.RequiredArgs(), args)
 }
 
 func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, container string, backupArtifactPrefix, includePath, encryptionKey string,

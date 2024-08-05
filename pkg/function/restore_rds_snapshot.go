@@ -34,6 +34,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/postgres"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -103,6 +104,14 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 		RestoreRDSSnapshotSecGrpID,
 		RestoreRDSSnapshotDBSubnetGroup,
 	}
+}
+
+func (r *restoreRDSSnapshotFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
 }
 
 func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

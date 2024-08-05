@@ -35,6 +35,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/postgres"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -168,10 +169,10 @@ func exportRDSSnapshotToLoc(
 	return output, nil
 }
 
-func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	// Set progress percent
-	crs.progressPercent = progress.StartedPercent
-	defer func() { crs.progressPercent = progress.CompletedPercent }()
+	e.progressPercent = progress.StartedPercent
+	defer func() { e.progressPercent = progress.CompletedPercent }()
 
 	var namespace, instanceID, snapshotID, username, password, dbSubnetGroup, backupArtifact string
 	var dbEngine RDSDBEngine
@@ -239,10 +240,18 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 	}
 }
 
-func (d *exportRDSSnapshotToLocationFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (e *exportRDSSnapshotToLocationFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(e.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(e.RequiredArgs(), args)
+}
+
+func (e *exportRDSSnapshotToLocationFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    d.progressPercent,
+		ProgressPercent:    e.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

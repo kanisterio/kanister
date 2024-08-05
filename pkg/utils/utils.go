@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -113,4 +114,22 @@ func RoundUpDuration(t time.Duration) time.Duration {
 		return t.Round(time.Minute)
 	}
 	return t.Round(time.Hour)
+}
+
+func CheckRequiredArgs(reqArgs []string, args map[string]interface{}) error {
+	for _, a := range reqArgs {
+		if _, ok := args[a]; !ok {
+			return errors.Errorf("Required arg missing: %s", a)
+		}
+	}
+	return nil
+}
+
+func CheckSupportedArgs(supportedArgs []string, args map[string]interface{}) error {
+	for a := range args {
+		if !slices.Contains(supportedArgs, a) {
+			return errors.Errorf("argument %s is not supported", a)
+		}
+	}
+	return nil
 }

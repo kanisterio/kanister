@@ -32,6 +32,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -196,6 +197,14 @@ func (*BackupDataStatsFunc) Arguments() []string {
 		BackupDataStatsMode,
 		BackupDataStatsEncryptionKeyArg,
 	}
+}
+
+func (b *BackupDataStatsFunc) Validate(args map[string]interface{}) error {
+	if err := utils.CheckSupportedArgs(b.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(b.RequiredArgs(), args)
 }
 
 func (b *BackupDataStatsFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
