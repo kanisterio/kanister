@@ -455,7 +455,7 @@ func (nd *nonDefaultVersionFunc) Arguments() []string {
 	return []string{"ndVersionArg0", "ndVersionArg1", "ndVersionArg2", "ndVersionArg3"}
 }
 
-func (nd *nonDefaultVersionFunc) Validate(args map[string]interface{}) error {
+func (nd *nonDefaultVersionFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(nd.Arguments(), args); err != nil {
 		return err
 	}

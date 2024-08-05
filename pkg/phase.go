@@ -200,7 +200,7 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 }
 
 // Validate gets the provided arguments from a blueprint and calls Validate method of function to valdiate a function.
-func (p *Phase) Validate(args map[string]interface{}) error {
+func (p *Phase) Validate(args map[string]any) error {
 	return p.f.Validate(args)
 }
 

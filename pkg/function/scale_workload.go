@@ -131,7 +131,7 @@ func (*scaleWorkloadFunc) Arguments() []string {
 	}
 }
 
-func (r *scaleWorkloadFunc) Validate(args map[string]interface{}) error {
+func (r *scaleWorkloadFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
 		return err
 	}

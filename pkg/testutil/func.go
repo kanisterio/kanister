@@ -149,7 +149,7 @@ func (mf *mockKanisterFunc) Arguments() []string {
 	return []string{testBPArg}
 }
 
-func (mf *mockKanisterFunc) Validate(args map[string]interface{}) error {
+func (mf *mockKanisterFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(mf.Arguments(), args); err != nil {
 		return err
 	}

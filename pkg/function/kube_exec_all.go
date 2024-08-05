@@ -103,7 +103,7 @@ func (*kubeExecAllFunc) Arguments() []string {
 	}
 }
 
-func (k *kubeExecAllFunc) Validate(args map[string]interface{}) error {
+func (k *kubeExecAllFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(k.Arguments(), args); err != nil {
 		return err
 	}

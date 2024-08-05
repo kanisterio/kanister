@@ -138,7 +138,7 @@ func (*kubeops) Arguments() []string {
 	}
 }
 
-func (k *kubeops) Validate(args map[string]interface{}) error {
+func (k *kubeops) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(k.Arguments(), args); err != nil {
 		return err
 	}

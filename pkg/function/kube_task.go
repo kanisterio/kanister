@@ -147,7 +147,7 @@ func (*kubeTaskFunc) Arguments() []string {
 	}
 }
 
-func (ktf *kubeTaskFunc) Validate(args map[string]interface{}) error {
+func (ktf *kubeTaskFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(ktf.Arguments(), args); err != nil {
 		return err
 	}

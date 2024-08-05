@@ -201,7 +201,7 @@ func (crs *createRDSSnapshotFunc) Arguments() []string {
 	}
 }
 
-func (c *createRDSSnapshotFunc) Validate(args map[string]interface{}) error {
+func (c *createRDSSnapshotFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}

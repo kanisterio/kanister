@@ -120,7 +120,7 @@ func (*waitFunc) Arguments() []string {
 	}
 }
 
-func (w *waitFunc) Validate(args map[string]interface{}) error {
+func (w *waitFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(w.Arguments(), args); err != nil {
 		return err
 	}

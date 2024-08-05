@@ -83,7 +83,7 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
-func (b *backupDataUsingKopiaServerFunc) Validate(args map[string]interface{}) error {
+func (b *backupDataUsingKopiaServerFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(b.Arguments(), args); err != nil {
 		return err
 	}

@@ -98,7 +98,7 @@ func (*waitV2Func) Arguments() []string {
 	}
 }
 
-func (w *waitV2Func) Validate(args map[string]interface{}) error {
+func (w *waitV2Func) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(w.Arguments(), args); err != nil {
 		return err
 	}

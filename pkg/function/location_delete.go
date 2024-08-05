@@ -75,7 +75,7 @@ func (*locationDeleteFunc) Arguments() []string {
 	return []string{LocationDeleteArtifactArg}
 }
 
-func (l *locationDeleteFunc) Validate(args map[string]interface{}) error {
+func (l *locationDeleteFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(l.Arguments(), args); err != nil {
 		return err
 	}

@@ -207,7 +207,7 @@ func (*prepareDataFunc) Arguments() []string {
 	}
 }
 
-func (p *prepareDataFunc) Validate(args map[string]interface{}) error {
+func (p *prepareDataFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(p.Arguments(), args); err != nil {
 		return err
 	}

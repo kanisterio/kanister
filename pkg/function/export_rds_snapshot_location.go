@@ -240,7 +240,7 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 	}
 }
 
-func (e *exportRDSSnapshotToLocationFunc) Validate(args map[string]interface{}) error {
+func (e *exportRDSSnapshotToLocationFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(e.Arguments(), args); err != nil {
 		return err
 	}

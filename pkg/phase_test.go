@@ -65,7 +65,7 @@ func (tf *testFunc) Arguments() []string {
 	return nil
 }
 
-func (tf *testFunc) Validate(args map[string]interface{}) error {
+func (tf *testFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(tf.Arguments(), args); err != nil {
 		return err
 	}

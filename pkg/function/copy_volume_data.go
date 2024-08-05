@@ -246,7 +246,7 @@ func (*copyVolumeDataFunc) Arguments() []string {
 	}
 }
 
-func (c *copyVolumeDataFunc) Validate(args map[string]interface{}) error {
+func (c *copyVolumeDataFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}

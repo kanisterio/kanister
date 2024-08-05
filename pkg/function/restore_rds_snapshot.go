@@ -106,7 +106,7 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 	}
 }
 
-func (r *restoreRDSSnapshotFunc) Validate(args map[string]interface{}) error {
+func (r *restoreRDSSnapshotFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
 		return err
 	}

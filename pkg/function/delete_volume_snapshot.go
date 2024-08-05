@@ -133,7 +133,7 @@ func (*deleteVolumeSnapshotFunc) Arguments() []string {
 	}
 }
 
-func (d *deleteVolumeSnapshotFunc) Validate(args map[string]interface{}) error {
+func (d *deleteVolumeSnapshotFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}

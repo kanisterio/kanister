@@ -62,7 +62,7 @@ func (*waitForSnapshotCompletionFunc) Arguments() []string {
 	return []string{WaitForSnapshotCompletionSnapshotsArg}
 }
 
-func (w *waitForSnapshotCompletionFunc) Validate(args map[string]interface{}) error {
+func (w *waitForSnapshotCompletionFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(w.Arguments(), args); err != nil {
 		return err
 	}

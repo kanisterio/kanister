@@ -78,7 +78,7 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
-func (r *restoreDataUsingKopiaServerFunc) Validate(args map[string]interface{}) error {
+func (r *restoreDataUsingKopiaServerFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
 		return err
 	}

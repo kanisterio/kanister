@@ -176,7 +176,7 @@ func (*CheckRepositoryFunc) Arguments() []string {
 	}
 }
 
-func (c *CheckRepositoryFunc) Validate(args map[string]interface{}) error {
+func (c *CheckRepositoryFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}

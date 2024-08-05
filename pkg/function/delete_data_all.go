@@ -137,7 +137,7 @@ func (*deleteDataAllFunc) Arguments() []string {
 	}
 }
 
-func (d *deleteDataAllFunc) Validate(args map[string]interface{}) error {
+func (d *deleteDataAllFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}

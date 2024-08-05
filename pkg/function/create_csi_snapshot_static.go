@@ -152,7 +152,7 @@ func (*createCSISnapshotStaticFunc) Arguments() []string {
 	}
 }
 
-func (c *createCSISnapshotStaticFunc) Validate(args map[string]interface{}) error {
+func (c *createCSISnapshotStaticFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}

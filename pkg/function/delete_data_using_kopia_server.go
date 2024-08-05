@@ -73,7 +73,7 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 	}
 }
 
-func (d *deleteDataUsingKopiaServerFunc) Validate(args map[string]interface{}) error {
+func (d *deleteDataUsingKopiaServerFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}

@@ -184,7 +184,7 @@ func (*createVolumeFromSnapshotFunc) Arguments() []string {
 	}
 }
 
-func (c *createVolumeFromSnapshotFunc) Validate(args map[string]interface{}) error {
+func (c *createVolumeFromSnapshotFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}

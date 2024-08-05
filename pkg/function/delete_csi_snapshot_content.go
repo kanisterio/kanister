@@ -93,7 +93,7 @@ func (*deleteCSISnapshotContentFunc) Arguments() []string {
 	}
 }
 
-func (d *deleteCSISnapshotContentFunc) Validate(args map[string]interface{}) error {
+func (d *deleteCSISnapshotContentFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}
