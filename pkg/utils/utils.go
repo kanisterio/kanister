@@ -116,6 +116,8 @@ func RoundUpDuration(t time.Duration) time.Duration {
 	return t.Round(time.Hour)
 }
 
+// CheckRequiredArgs checks if the required args of a function `reqArgs` are
+// provided in created blueprint's functions' args (`args`).
 func CheckRequiredArgs(reqArgs []string, args map[string]interface{}) error {
 	for _, a := range reqArgs {
 		if _, ok := args[a]; !ok {
@@ -125,6 +127,8 @@ func CheckRequiredArgs(reqArgs []string, args map[string]interface{}) error {
 	return nil
 }
 
+// CheckSupportedArgs checks that all the provided (using blueprint) args of a function
+// are supported by the kanister function.
 func CheckSupportedArgs(supportedArgs []string, args map[string]interface{}) error {
 	for a := range args {
 		if !slices.Contains(supportedArgs, a) {
