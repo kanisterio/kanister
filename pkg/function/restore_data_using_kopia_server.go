@@ -75,6 +75,8 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 		RestoreDataPodOverrideArg,
 		RestoreDataImageArg,
 		KopiaRepositoryServerUserHostname,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
@@ -116,10 +118,10 @@ func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Tem
 	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, RestoreDataPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, RestoreDataPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 

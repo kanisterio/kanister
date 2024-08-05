@@ -47,8 +47,6 @@ const (
 	BackupDataStatsEncryptionKeyArg = "encryptionKey"
 	// BackupDataStatsBackupIdentifierArg provides a unique ID added to the backed up artifacts
 	BackupDataStatsBackupIdentifierArg = "backupID"
-	BackupDataStatsPodLabelsArg        = "podLabels"
-	BackupDataStatsPodAnnotationsArg   = "podAnnotations"
 	// BackupDataStatsMode provides a mode for stats
 	BackupDataStatsMode            = "statsMode"
 	BackupDataStatsOutputFileCount = "fileCount"
@@ -181,10 +179,10 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err = OptArg(args, BackupDataStatsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, BackupDataStatsPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, BackupDataStatsPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -221,8 +219,8 @@ func (*BackupDataStatsFunc) Arguments() []string {
 		BackupDataStatsBackupIdentifierArg,
 		BackupDataStatsMode,
 		BackupDataStatsEncryptionKeyArg,
-		BackupDataStatsPodAnnotationsArg,
-		BackupDataStatsPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

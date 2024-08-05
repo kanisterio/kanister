@@ -48,9 +48,7 @@ const (
 	// DeleteDataBackupIdentifierArg provides a unique ID added to the backed up artifacts
 	DeleteDataBackupIdentifierArg = "backupID"
 	// DeleteDataBackupTagArg provides a unique tag added to the backed up artifacts
-	DeleteDataBackupTagArg      = "backupTag"
-	DeleteDataPodAnnotationsArg = "podAnnotations"
-	DeleteDataPodLabelsArg      = "podLabels"
+	DeleteDataBackupTagArg = "backupTag"
 	// DeleteDataEncryptionKeyArg provides the encryption key to be used for deletes
 	DeleteDataEncryptionKeyArg = "encryptionKey"
 	// DeleteDataReclaimSpace provides a way to specify if space should be reclaimed
@@ -247,10 +245,10 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, DeleteDataPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, DeleteDataPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -303,8 +301,8 @@ func (*deleteDataFunc) Arguments() []string {
 		DeleteDataEncryptionKeyArg,
 		DeleteDataReclaimSpace,
 		InsecureTLS,
-		DeleteDataPodAnnotationsArg,
-		DeleteDataPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

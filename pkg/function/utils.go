@@ -27,6 +27,12 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion = "version"
+
+	// since pod labels and annotations argument are going to be named the
+	// same for all the kanister functions that support these arguments, instead
+	// of creating these for the functions, it's better to have a const here.
+	PodLabelsArg      = "podLabels"
+	PodAnnotationsArg = "podAnnotations"
 )
 
 // ValidateCredentials verifies if the given credentials have appropriate values set

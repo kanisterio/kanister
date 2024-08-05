@@ -40,9 +40,7 @@ const (
 	// DeleteDataAllBackupArtifactPrefixArg provides the path to restore backed up data
 	DeleteDataAllBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// DeleteDataAllEncryptionKeyArg provides the encryption key to be used for deletes
-	DeleteDataAllEncryptionKeyArg  = "encryptionKey"
-	DeleteDataAllPodAnnotationsArg = "podAnnotations"
-	DeleteDataAllPodLabelsArg      = "podLabels"
+	DeleteDataAllEncryptionKeyArg = "encryptionKey"
 	// DeleteDataAllReclaimSpace provides a way to specify if space should be reclaimed
 	DeleteDataAllReclaimSpace = "reclaimSpace"
 	// DeleteDataAllBackupInfo provides backup info required for delete
@@ -94,10 +92,10 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, DeleteDataAllPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, DeleteDataAllPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
@@ -158,8 +156,8 @@ func (*deleteDataAllFunc) Arguments() []string {
 		DeleteDataAllEncryptionKeyArg,
 		DeleteDataAllReclaimSpace,
 		InsecureTLS,
-		DeleteDataAllPodAnnotationsArg,
-		DeleteDataAllPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

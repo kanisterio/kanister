@@ -40,15 +40,13 @@ const (
 	defaultMountPoint    = "/mnt/prepare_data/%s"
 	prepareDataJobPrefix = "prepare-data-job-"
 	// PrepareDataFuncName gives the function name
-	PrepareDataFuncName          = "PrepareData"
-	PrepareDataNamespaceArg      = "namespace"
-	PrepareDataImageArg          = "image"
-	PrepareDataCommandArg        = "command"
-	PrepareDataVolumes           = "volumes"
-	PrepareDataServiceAccount    = "serviceaccount"
-	PrepareDataPodOverrideArg    = "podOverride"
-	PrepareDataPodAnnotationsArg = "podAnnotations"
-	PrepareDataPodLabelsArg      = "podLabels"
+	PrepareDataFuncName       = "PrepareData"
+	PrepareDataNamespaceArg   = "namespace"
+	PrepareDataImageArg       = "image"
+	PrepareDataCommandArg     = "command"
+	PrepareDataVolumes        = "volumes"
+	PrepareDataServiceAccount = "serviceaccount"
+	PrepareDataPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -187,10 +185,10 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PrepareDataPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PrepareDataPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, PrepareDataPodOverrideArg)
@@ -226,8 +224,8 @@ func (*prepareDataFunc) Arguments() []string {
 		PrepareDataVolumes,
 		PrepareDataServiceAccount,
 		PrepareDataPodOverrideArg,
-		PrepareDataPodAnnotationsArg,
-		PrepareDataPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

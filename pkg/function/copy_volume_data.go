@@ -46,8 +46,6 @@ const (
 	CopyVolumeDataNamespaceArg                 = "namespace"
 	CopyVolumeDataVolumeArg                    = "volume"
 	CopyVolumeDataArtifactPrefixArg            = "dataArtifactPrefix"
-	CopyVolumeDataPodAnnotationsArg            = "podAnnotations"
-	CopyVolumeDataPodLabelsArg                 = "podLabels"
 	CopyVolumeDataOutputBackupID               = "backupID"
 	CopyVolumeDataOutputBackupRoot             = "backupRoot"
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
@@ -217,10 +215,10 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, CopyVolumeDataPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, CopyVolumeDataPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
@@ -256,8 +254,8 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataArtifactPrefixArg,
 		CopyVolumeDataEncryptionKeyArg,
 		InsecureTLS,
-		CopyVolumeDataPodAnnotationsArg,
-		CopyVolumeDataPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 

@@ -70,8 +70,8 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 		DeleteDataNamespaceArg,
 		RestoreDataImageArg,
 		KopiaRepositoryServerUserHostname,
-		DeleteDataPodAnnotationsArg,
-		DeleteDataPodLabelsArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
@@ -109,10 +109,10 @@ func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, DeleteDataPodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, DeleteDataPodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
