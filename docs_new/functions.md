@@ -859,6 +859,7 @@ Arguments:
   | databases            | No       | []string   | list of databases to take backup of |
   | securityGroupID      | No       | []string   | list of `securityGroupID` to be passed to temporary RDS instance |
   | dbSubnetGroup        | No       | string     | DB Subnet Group to be passed to temporary RDS instance |
+  | image                | No       | string     | kanister-tools image to be used for running export job |
 
 ::: tip NOTE
 
@@ -954,6 +955,7 @@ Arguments:
   | namespace            | No       | string     | namespace in which to execute. Required if `snapshotID` is nil |
   | dbEngine             | No       | string     | one of the RDS db engines. Supported engines: `PostgreSQL`, `aurora`, `aurora-mysql` and `aurora-postgresql`. Required if `snapshotID` is nil or Aurora is run in RDS instance |
   | dbSubnetGroup        | No       | string     | DB Subnet Group to be passed to restored RDS instance |
+  | image                | No       | string     |  kanister-tools image to be used for running restore, only relevant when restoring from data dump (if `snapshotID` is empty) |
 
 ::: tip NOTE
 

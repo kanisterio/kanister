@@ -59,13 +59,14 @@ const (
 	ExportRDSSnapshotToLocSecGrpIDArg        = "securityGroupID"
 	ExportRDSSnapshotToLocBackupID           = "backupID"
 	ExportRDSSnapshotToLocDBSubnetGroupArg   = "dbSubnetGroup"
+	ExportRDSSnapshotToLocImageArg           = "image"
 
 	PostgrSQLEngine RDSDBEngine = "PostgreSQL"
 
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.110.0"
+	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.110.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct {
@@ -95,6 +96,7 @@ func exportRDSSnapshotToLoc(
 	dbEngine RDSDBEngine,
 	sgIDs []string,
 	profile *param.Profile,
+	postgresToolsImage string,
 ) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
@@ -150,7 +152,7 @@ func exportRDSSnapshotToLoc(
 	}
 
 	// Extract dump from DB
-	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, databases, backupPrefix, backupID, profile, dbEngineVersion)
+	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, databases, backupPrefix, backupID, profile, dbEngineVersion, postgresToolsImage)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
 	}
@@ -174,7 +176,7 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 	e.progressPercent = progress.StartedPercent
 	defer func() { e.progressPercent = progress.CompletedPercent }()
 
-	var namespace, instanceID, snapshotID, username, password, dbSubnetGroup, backupArtifact string
+	var namespace, instanceID, snapshotID, username, password, dbSubnetGroup, backupArtifact, postgresToolsImage string
 	var dbEngine RDSDBEngine
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
@@ -201,6 +203,9 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 	if err := OptArg(args, ExportRDSSnapshotToLocDBSubnetGroupArg, &dbSubnetGroup, "default"); err != nil {
 		return nil, err
 	}
+	if err := OptArg(args, ExportRDSSnapshotToLocImageArg, &postgresToolsImage, defaultPostgresToolsImage); err != nil {
+		return nil, err
+	}
 	// Find databases
 	databases, err := GetYamlList(args, ExportRDSSnapshotToLocDatabasesArg)
 	if err != nil {
@@ -213,7 +218,7 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 		return nil, err
 	}
 
-	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, databases, dbSubnetGroup, backupArtifact, dbEngine, sgIDs, tp.Profile)
+	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, databases, dbSubnetGroup, backupArtifact, dbEngine, sgIDs, tp.Profile, postgresToolsImage)
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
@@ -269,13 +274,14 @@ func execDumpCommand(
 	backupID string,
 	profile *param.Profile,
 	dbEngineVersion string,
+	postgresToolsImage string,
 ) (map[string]interface{}, error) {
 	// Trim "\n" from creds
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)
 
 	// Prepare and execute command with kubetask
-	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, databases, backupPrefix, backupID, profile, dbEngineVersion)
+	command, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, databases, backupPrefix, backupID, profile, dbEngineVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +305,7 @@ func execDumpCommand(
 		}
 	}()
 
-	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
+	return kubeTask(ctx, cli, namespace, postgresToolsImage, command, injectPostgresSecrets(secretName))
 }
 
 func prepareCommand(
@@ -314,11 +320,11 @@ func prepareCommand(
 	backupID string,
 	profile *param.Profile,
 	dbEngineVersion string,
-) ([]string, string, error) {
+) ([]string, error) {
 	// Convert profile object into json
 	profileJSON, err := json.Marshal(profile)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	if dbEngine == PostgrSQLEngine {
@@ -328,17 +334,17 @@ func prepareCommand(
 			if dbList == nil {
 				dbList, err = findDBList(ctx, dbEndpoint, username, password)
 				if err != nil {
-					return nil, "", err
+					return nil, err
 				}
 			}
 			command, err := postgresBackupCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJSON)
-			return command, postgresToolsImage, err
+			return command, err
 		case RestoreAction:
 			command, err := postgresRestoreCommand(dbEndpoint, username, password, backupPrefix, backupID, profileJSON, dbEngineVersion)
-			return command, postgresToolsImage, err
+			return command, err
 		}
 	}
-	return nil, "", errors.New("Invalid RDSDBEngine or RDSAction")
+	return nil, errors.New("Invalid RDSDBEngine or RDSAction")
 }
 
 func findDBList(ctx context.Context, dbEndpoint, username, password string) ([]string, error) {
