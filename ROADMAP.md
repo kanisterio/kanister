@@ -18,6 +18,7 @@ Please join the Kanister community to give feedback on the roadmap
 
 ### Prioritized (Doing):
 1. Fork block storage functions, deprecate unused Kanister code
+   a. Deprecate `VolumeSnapshot` functions using provider-specific snapshotting code
 1. Kopia.io Repository Controller with a CR to control the lifecycle of a Kopia Repository Server
 1. Replace [github.com/pkg/errors](http://github.com/pkg/errors) package with a supported fork = https://github.com/kanisterio/kanister/issues/1838
 1. Release notes
