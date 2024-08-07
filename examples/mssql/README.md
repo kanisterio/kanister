@@ -9,7 +9,7 @@ This document will cover how to install SQL Server and how to run backup/restore
 
 - Kubernetes 1.16+ with Beta APIs enabled
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.109.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanister controller version 0.110.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Installing Microsoft SQL Server
@@ -32,7 +32,7 @@ $ kubectl create secret generic mssql --from-literal=SA_PASSWORD="MyC0m9l&xP@ssw
 ```
 
 ### Create storage
-Execute following commands to create PVC for SQL Server installation. 
+Execute following commands to create PVC for SQL Server installation.
 Default storage class will be used to provision PVC.
 ```bash
 $ cat <<EOF | kubectl create -f -
@@ -78,7 +78,7 @@ spec:
         fsGroup: 10001
       containers:
         - name: mssql
-          image: mcr.microsoft.com/mssql/server:2019-latest
+          image: mcr.microsoft.com/mssql/server:2019-CU27-ubuntu-20.04
           ports:
             - containerPort: 1433
           env:
@@ -132,13 +132,13 @@ $ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "MyC0m9l&xP@ssw0rd"
 1> CREATE DATABASE TestDB
 2> SELECT Name from sys.Databases
 3> GO
-Name                                                                                                                            
+Name
 ---------------------------------------------------------------------------
-master                                                                                                                          
-tempdb                                                                                                                          
-model                                                                                                                           
-msdb                                                                                                                            
-TestDB                                                                                                                          
+master
+tempdb
+model
+msdb
+TestDB
 
 # Create table "Inventory" inside database "TestDB"
 1> USE TestDB
@@ -153,7 +153,7 @@ TestDB
 # View data in "Inventory" table
 1> SELECT * FROM Inventory;
 2> GO
-id          name                                               quantity   
+id          name                                               quantity
 ----------- -------------------------------------------------- -----------
           1 banana                                                     150
           2 orange                                                     154
@@ -163,7 +163,7 @@ After following all given steps database named `TestDB` should have table called
 
 ## Integrating with Kanister
 
-If you have deployed SQL Server with name other than `mssql-deployment` and namespace other than `sqlserver`, 
+If you have deployed SQL Server with name other than `mssql-deployment` and namespace other than `sqlserver`,
 you need to modify the commands(backup, restore and delete) used below to use the correct release name and namespace
 
 ### Create Profile
@@ -172,7 +172,7 @@ Create Profile CR if not created already
 ```bash
 $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 	--secret-key <aws-secret-key> \
-	--bucket <s3-bucket-name> \ 
+	--bucket <s3-bucket-name> \
 	--region <region-name> \
 	--namespace kanister
 ```
@@ -200,7 +200,7 @@ Blueprint with name `mssql-blueprint` will be created in `kanister` namespace
 
 ## Protect the Application
 
-You can now take a backup of the SQL Server data using an ActionSet defining backup for this application. 
+You can now take a backup of the SQL Server data using an ActionSet defining backup for this application.
 Create an ActionSet in the same namespace as the controller.
 
 ```bash
@@ -236,13 +236,13 @@ $ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "MyC0m9l&xP@ssw0rd"
 
 1> SELECT Name from sys.Databases
 2> GO
-Name                                                                                                                            
+Name
 ---------------------------------------------------------------------------
-master                                                                                                                          
-tempdb                                                                                                                          
-model                                                                                                                           
-msdb                                                                                                                            
-TestDB  
+master
+tempdb
+model
+msdb
+TestDB
 
 # Drop database "TestDB"
 1> DROP DATABASE TestDB
@@ -251,12 +251,12 @@ TestDB
 # View list of databases available
 1> SELECT Name from sys.Databases
 2> go
-Name                                                                                                                            
+Name
 --------------------------------------------------------------------------------------------------------------------------------
-master                                                                                                                          
-tempdb                                                                                                                          
-model                                                                                                                           
-msdb 
+master
+tempdb
+model
+msdb
 
 ```
 
@@ -279,19 +279,19 @@ Once the ActionSet status is set to "complete", you can see that the data has be
 ```bash
 1> SELECT Name from sys.Databases
 2> GO
-Name                                                                                                                            
+Name
 ---------------------------------------------------------------------------
-master                                                                                                                          
-tempdb                                                                                                                          
-model                                                                                                                           
-msdb                                                                                                                            
-TestDB 
+master
+tempdb
+model
+msdb
+TestDB
 
 # View data in "Inventory" table
 1> USE TestDB
 2> SELECT * FROM Inventory;
 3> GO
-id          name                                               quantity   
+id          name                                               quantity
 ----------- -------------------------------------------------- -----------
           1 banana                                                     150
           2 orange                                                     154

@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -142,8 +143,22 @@ func (*createCSISnapshotFunc) Arguments() []string {
 	}
 }
 
+func (c *createCSISnapshotFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(c.RequiredArgs(), args)
+}
+
 func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace, pvc, snapshotClass string, wait bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
-	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, wait, labels); err != nil {
+	snapshotMeta := snapshot.ObjectMeta{
+		Name:        name,
+		Namespace:   namespace,
+		Labels:      labels,
+		Annotations: nil,
+	}
+	if err := snapshotter.Create(ctx, pvc, &snapshotClass, wait, snapshotMeta); err != nil {
 		return nil, err
 	}
 	vs, err := snapshotter.Get(ctx, name, namespace)

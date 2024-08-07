@@ -127,16 +127,16 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 		return false, errkit.Wrap(err, "Error while Creating ca.crt", "stderr", stderr)
 	}
 
-	createTlsCrtCmd := fmt.Sprintf("echo '%s'>> /cockroach/cockroach-client-certs/client.root.crt", c.tlscrt)
-	createTlsCrt := []string{"sh", "-c", createTlsCrtCmd}
-	_, stderr, err = c.execCommand(ctx, createTlsCrt)
+	createTLSCrtCmd := fmt.Sprintf("echo '%s'>> /cockroach/cockroach-client-certs/client.root.crt", c.tlscrt)
+	createTLSCrt := []string{"sh", "-c", createTLSCrtCmd}
+	_, stderr, err = c.execCommand(ctx, createTLSCrt)
 	if err != nil {
 		return false, errkit.Wrap(err, "Error while Creating tls.crt", "stderr", stderr)
 	}
 
-	createTlsKeyCmd := fmt.Sprintf("echo '%s' >> /cockroach/cockroach-client-certs/client.root.key", c.tlskey)
-	createTlsKey := []string{"sh", "-c", createTlsKeyCmd}
-	_, stderr, err = c.execCommand(ctx, createTlsKey)
+	createTLSKeyCmd := fmt.Sprintf("echo '%s' >> /cockroach/cockroach-client-certs/client.root.key", c.tlskey)
+	createTLSKey := []string{"sh", "-c", createTLSKeyCmd}
+	_, stderr, err = c.execCommand(ctx, createTLSKey)
 	if err != nil {
 		return false, errkit.Wrap(err, "Error while Creating tls.key", "stderr", stderr)
 	}

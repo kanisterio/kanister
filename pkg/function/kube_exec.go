@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -122,6 +123,14 @@ func (*kubeExecFunc) Arguments() []string {
 		KubeExecCommandArg,
 		KubeExecContainerNameArg,
 	}
+}
+
+func (kef *kubeExecFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(kef.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(kef.RequiredArgs(), args)
 }
 
 func (kef *kubeExecFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

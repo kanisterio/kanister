@@ -38,6 +38,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 type WaitConditions struct {
@@ -117,6 +118,14 @@ func (*waitFunc) Arguments() []string {
 		WaitTimeoutArg,
 		WaitConditionsArg,
 	}
+}
+
+func (w *waitFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(w.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(w.RequiredArgs(), args)
 }
 
 func (w *waitFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

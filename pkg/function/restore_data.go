@@ -31,6 +31,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -232,7 +233,7 @@ func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	// Check if PodOverride specs are passed through actionset
 	// If yes, override podOverride specs
 	if tp.PodOverride != nil {
-		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
+		podOverride, err = kube.CreateAndMergeJSONPatch(podOverride, tp.PodOverride)
 		if err != nil {
 			return nil, err
 		}
@@ -280,6 +281,14 @@ func (*restoreDataFunc) Arguments() []string {
 		RestoreDataPodOverrideArg,
 		InsecureTLS,
 	}
+}
+
+func (r *restoreDataFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
 }
 
 func (d *restoreDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

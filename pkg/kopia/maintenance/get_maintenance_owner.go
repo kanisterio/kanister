@@ -57,7 +57,7 @@ func GetMaintenanceOwnerForConnectedRepository(
 			ConfigFilePath: configFilePath,
 			LogDirectory:   logDirectory,
 		},
-		GetJsonOutput: true,
+		GetJSONOutput: true,
 	}
 	cmd := command.MaintenanceInfo(args)
 

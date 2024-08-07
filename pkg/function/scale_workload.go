@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -128,6 +129,14 @@ func (*scaleWorkloadFunc) Arguments() []string {
 		ScaleWorkloadKindArg,
 		ScaleWorkloadWaitArg,
 	}
+}
+
+func (r *scaleWorkloadFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
 }
 
 func (s *scaleWorkloadFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

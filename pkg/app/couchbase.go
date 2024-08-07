@@ -51,6 +51,7 @@ type CouchbaseDB struct {
 	chart     helm.ChartInfo
 }
 
+// NewCouchbaseDB initialises an instance of Couchbase DB
 // Last tested woking version "2.3.0"
 func NewCouchbaseDB(name string) App {
 	return &CouchbaseDB{

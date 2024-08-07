@@ -990,6 +990,7 @@ Arguments:
    `databases`, No, `[]string`, list of databases to take backup of
    `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance. ()
    `dbSubnetGroup`, No, `string`, DB Subnet Group to be passed to temporary RDS instance
+   `image`, No, `string`, kanister-tools image to be used for running export job
 
 .. note::
    - If ``databases`` argument is not set, backup of all the databases will be taken.
@@ -1080,6 +1081,7 @@ Arguments:
    `namespace`, No, `string`, namespace in which to execute. Required if ``snapshotID`` is nil
    `dbEngine`, No, `string`, one of the RDS db engines. Supported engines: ``PostgreSQL`` ``aurora`` ``aurora-mysql`` and ``aurora-postgresql``. Required if ``snapshotID`` is nil or Aurora is run in RDS instance
    `dbSubnetGroup`, No, `string`, DB Subnet Group to be passed to restored RDS instance
+   `image`, No, `string`, kanister-tools image to be used for running restore. Only relevant when restoring from data dump (if `snapshotID` is empty)
 
 .. note::
    - If ``snapshotID`` is not set, restore will be done from data dump. In that case ``backupID`` `arg` is required.

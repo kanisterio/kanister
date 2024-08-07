@@ -16,14 +16,14 @@ package command
 
 type PolicyShowGlobalCommandArgs struct {
 	*CommandArgs
-	GetJsonOutput bool
+	GetJSONOutput bool
 }
 
 // PolicyShowGlobal returns the kopia command for showing the global policy.
 func PolicyShowGlobal(cmdArgs PolicyShowGlobalCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(policySubCommand, showSubCommand, globalFlag)
-	if cmdArgs.GetJsonOutput {
+	if cmdArgs.GetJSONOutput {
 		args = args.AppendLoggable(jsonFlag)
 	}
 
