@@ -70,6 +70,8 @@ const (
 	RestoreRDSSnapshotUsername = "username"
 	// RestoreRDSSnapshotPassword stores the password of the database
 	RestoreRDSSnapshotPassword = "password"
+	// RestoreRDSSnapshotImage provides the image of the container with required tools
+	RestoreRDSSnapshotImage = "image"
 
 	// PostgreSQLEngine stores the postgres appname
 	PostgreSQLEngine RDSDBEngine = "PostgreSQL"
@@ -119,7 +121,7 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 	r.progressPercent = progress.StartedPercent
 	defer func() { r.progressPercent = progress.CompletedPercent }()
 
-	var namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string
+	var namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, postgresToolsImage string
 	var dbEngine RDSDBEngine
 
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
@@ -134,6 +136,9 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		return nil, err
 	}
 	if err := OptArg(args, RestoreRDSSnapshotDBSubnetGroup, &subnetGroup, "default"); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, RestoreRDSSnapshotImage, &postgresToolsImage, defaultPostgresToolsImage); err != nil {
 		return nil, err
 	}
 	// Find security groups
@@ -162,7 +167,7 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		}
 	}
 
-	return restoreRDSSnapshot(ctx, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile)
+	return restoreRDSSnapshot(ctx, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile, postgresToolsImage)
 }
 
 func (r *restoreRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
@@ -186,6 +191,7 @@ func restoreRDSSnapshot(
 	dbEngine RDSDBEngine,
 	sgIDs []string,
 	profile *param.Profile,
+	postgresToolsImage string,
 ) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
@@ -233,7 +239,7 @@ func restoreRDSSnapshot(
 		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
 	}
 
-	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, dbEndpoint, username, password, nil, backupArtifactPrefix, backupID, profile, dbEngineVersion); err != nil {
+	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, dbEndpoint, username, password, nil, backupArtifactPrefix, backupID, profile, dbEngineVersion, postgresToolsImage); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore RDS from dump. InstanceID=%s", instanceID)
 	}
 
