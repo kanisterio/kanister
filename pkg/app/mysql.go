@@ -44,7 +44,7 @@ type MysqlDB struct {
 
 var _ HelmApp = &MysqlDB{}
 
-// Last tested working version "6.14.11"
+// NewMysqlDB was last tested with working version "6.14.11"
 func NewMysqlDB(name string) HelmApp {
 	return &MysqlDB{
 		name: name,

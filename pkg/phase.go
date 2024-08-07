@@ -20,12 +20,12 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
-	"k8s.io/utils/strings/slices"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 var skipRenderFuncs = map[string]bool{
@@ -92,11 +92,11 @@ func (p *Phase) setPhaseArgs(phases []crv1alpha1.BlueprintPhase, tp param.Templa
 			return err
 		}
 
-		if err = checkRequiredArgs(p.f.RequiredArgs(), args); err != nil {
+		if err = utils.CheckRequiredArgs(p.f.RequiredArgs(), args); err != nil {
 			return errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
 		}
 
-		if err = checkSupportedArgs(p.f.Arguments(), args); err != nil {
+		if err = utils.CheckSupportedArgs(p.f.Arguments(), args); err != nil {
 			return errors.Wrapf(err, "Checking supported args for function %s.", p.f.Name())
 		}
 
@@ -115,15 +115,6 @@ func renderFuncArgs(
 	}
 
 	return param.RenderArgs(args, tp)
-}
-
-func checkSupportedArgs(supportedArgs []string, args map[string]interface{}) error {
-	for a := range args {
-		if !slices.Contains(supportedArgs, a) {
-			return errors.Errorf("argument %s is not supported", a)
-		}
-	}
-	return nil
 }
 
 func GetDeferPhase(bp crv1alpha1.Blueprint, action, version string, tp param.TemplateParams) (*Phase, error) {
@@ -208,22 +199,9 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 	return phases, nil
 }
 
-// Validate gets the provided arguments from a blueprint and verifies that the required arguments are present
-func (p *Phase) Validate(args map[string]interface{}) error {
-	if err := checkSupportedArgs(p.f.Arguments(), args); err != nil {
-		return err
-	}
-
-	return checkRequiredArgs(p.f.RequiredArgs(), args)
-}
-
-func checkRequiredArgs(reqArgs []string, args map[string]interface{}) error {
-	for _, a := range reqArgs {
-		if _, ok := args[a]; !ok {
-			return errors.Errorf("Required arg missing: %s", a)
-		}
-	}
-	return nil
+// Validate gets the provided arguments from a blueprint and calls Validate method of function to valdiate a function.
+func (p *Phase) Validate(args map[string]any) error {
+	return p.f.Validate(args)
 }
 
 func getFunctionVersion(version string) (*semver.Version, *semver.Version, error) {

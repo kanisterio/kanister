@@ -39,7 +39,7 @@ func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 			f: func() []string {
 				args := MaintenanceInfoCommandArgs{
 					CommandArgs:   commandArgs,
-					GetJsonOutput: false,
+					GetJSONOutput: false,
 				}
 				return MaintenanceInfo(args)
 			},
@@ -49,7 +49,7 @@ func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 			f: func() []string {
 				args := MaintenanceInfoCommandArgs{
 					CommandArgs:   commandArgs,
-					GetJsonOutput: true,
+					GetJSONOutput: true,
 				}
 				return MaintenanceInfo(args)
 			},

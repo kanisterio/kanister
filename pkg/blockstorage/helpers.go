@@ -185,8 +185,8 @@ func Int64(i *int64) int64 {
 	return 0
 }
 
-// String returns a string value for the passed string pointer. It returns the empty string if the
-// pointer is nil.
+// StringFromPtr returns a string value for the passed string pointer.
+// It returns the empty string if the pointer is nil.
 func StringFromPtr(s *string) string {
 	if s != nil {
 		return *s

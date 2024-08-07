@@ -41,6 +41,7 @@ type Func interface {
 	Arguments() []string
 	Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)
 	ExecutionProgress() (crv1alpha1.PhaseProgress, error)
+	Validate(map[string]any) error
 }
 
 // Register allows Funcs to be referenced by User Defined YAMLs

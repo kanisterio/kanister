@@ -366,7 +366,7 @@ func (kRepoStatus *RepositoryUtilsSuite) TestRepositoryStatusCommand(c *check.C)
 						ConfigFilePath: "path/kopia.config",
 						LogDirectory:   "cache/log",
 					},
-					GetJsonOutput: true,
+					GetJSONOutput: true,
 				}
 				return RepositoryStatusCommand(args)
 			},

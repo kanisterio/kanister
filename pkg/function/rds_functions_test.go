@@ -128,7 +128,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 	}
 
 	for _, tc := range testCases {
-		outCommand, _, err := prepareCommand(context.Background(), tc.dbEngine, tc.action, tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, tc.tp.Profile, tc.dbEngineVersion)
+		outCommand, err := prepareCommand(context.Background(), tc.dbEngine, tc.action, tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, tc.tp.Profile, tc.dbEngineVersion)
 
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 		c.Assert(outCommand, DeepEquals, tc.command)

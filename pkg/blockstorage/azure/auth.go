@@ -36,7 +36,7 @@ type ClientCredentialsConfig struct {
 	Resource     string
 }
 
-// Defaults to Public Cloud and Resource Manager Endpoint.
+// NewClientCredentialsConfig defaults to Public Cloud and Resource Manager Endpoint.
 func NewClientCredentialsConfig(clientID string, clientSecret string, tenantID string) ClientCredentialsConfig {
 	return ClientCredentialsConfig{
 		ClientID:     clientID,
@@ -49,7 +49,7 @@ func NewClientCredentialsConfig(clientID string, clientSecret string, tenantID s
 	}
 }
 
-// Public interface to authenticate with different Azure credentials type
+// AzureAuthenticator is a public interface to authenticate with different Azure credentials type
 type AzureAuthenticator interface {
 	Authenticate(creds map[string]string) error
 	GetAuthorizer() azcore.TokenCredential
@@ -66,7 +66,7 @@ func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error)
 	}
 }
 
-// authenticate with MSI creds
+// MsiAuthenticator authenticates with MSI credentials
 type MsiAuthenticator struct {
 	azcore.TokenCredential
 }
@@ -91,7 +91,7 @@ func (m *MsiAuthenticator) Authenticate(config map[string]string) error {
 	return nil
 }
 
-// authenticate with client secret creds
+// ClientSecretAuthenticator authenticates with client secret credentials
 type ClientSecretAuthenticator struct {
 	azcore.TokenCredential
 }

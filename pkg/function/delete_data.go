@@ -35,6 +35,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -274,6 +275,14 @@ func (*deleteDataFunc) Arguments() []string {
 		DeleteDataReclaimSpace,
 		InsecureTLS,
 	}
+}
+
+func (d *deleteDataFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(d.RequiredArgs(), args)
 }
 
 func (d *deleteDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

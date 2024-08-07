@@ -464,7 +464,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 		Containers: []corev1.Container{
 			{
 				Name:            "container",
-				Image:           "ghcr.io/kanisterio/kanister-tools:0.109.0",
+				Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
 				Command:         []string{"sh", "-c", "echo in default specs"},
 				ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 				VolumeMounts: []corev1.VolumeMount{
@@ -510,7 +510,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.109.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -550,7 +550,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.109.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -604,7 +604,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.109.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -665,7 +665,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.109.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -728,7 +728,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.109.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -768,7 +768,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.109.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -811,7 +811,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.109.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -840,7 +840,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 	// Run tests
 	for _, test := range tests {
-		override, err := CreateAndMergeJsonPatch(test.BlueprintPodSpecs, test.ActionsetPodSpecs)
+		override, err := CreateAndMergeJSONPatch(test.BlueprintPodSpecs, test.ActionsetPodSpecs)
 		c.Assert(err, IsNil)
 		podSpec, err := patchDefaultPodSpecs(defaultSpecs, override)
 		c.Assert(err, IsNil)
@@ -875,9 +875,9 @@ func (s *PodSuite) TestSetPodSecurityContext(c *C) {
 	c.Assert(err, IsNil)
 	runAsNonRootExpected := true
 	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
-	var uidAndGidExpected int64 = 1000
-	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
-	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+	var uidAndGIDExpected int64 = 1000
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGIDExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGIDExpected)
 }
 
 func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
@@ -904,9 +904,9 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 	c.Assert(err, IsNil)
 	runAsNonRootExpected := true
 	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
-	var uidAndGidExpected int64 = 1000
-	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
-	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+	var uidAndGIDExpected int64 = 1000
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGIDExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGIDExpected)
 }
 
 func (s *PodSuite) TestSetLifecycleHook(c *C) {

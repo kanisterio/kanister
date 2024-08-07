@@ -490,7 +490,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 // use Strategic Merge to patch default pod specs with the passed specs
 func patchDefaultPodSpecs(defaultPodSpecs corev1.PodSpec, override crv1alpha1.JSONMap) (corev1.PodSpec, error) {
 	// Merge default specs and override specs with StrategicMergePatch
-	mergedPatch, err := strategicMergeJsonPatch(defaultPodSpecs, override)
+	mergedPatch, err := strategicMergeJSONPatch(defaultPodSpecs, override)
 	if err != nil {
 		return corev1.PodSpec{}, err
 	}
@@ -504,10 +504,10 @@ func patchDefaultPodSpecs(defaultPodSpecs corev1.PodSpec, override crv1alpha1.JS
 	return podSpec, err
 }
 
-// CreateAndMergeJsonPatch uses Strategic Merge to merge two Pod spec configuration
-func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.JSONMap, error) {
+// CreateAndMergeJSONPatch uses Strategic Merge to merge two Pod spec configuration
+func CreateAndMergeJSONPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.JSONMap, error) {
 	// Merge json specs with StrategicMerge
-	mergedPatch, err := strategicMergeJsonPatch(original, override)
+	mergedPatch, err := strategicMergeJSONPatch(original, override)
 	if err != nil {
 		return nil, err
 	}
@@ -521,21 +521,21 @@ func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.
 	return merged, err
 }
 
-func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
+func strategicMergeJSONPatch(original, override interface{}) ([]byte, error) {
 	// Convert override specs to json
-	overrideJson, err := json.Marshal(override)
+	overrideJSON, err := json.Marshal(override)
 	if err != nil {
 		return nil, err
 	}
 
 	// Convert original specs to json
-	originalJson, err := json.Marshal(original)
+	originalJSON, err := json.Marshal(original)
 	if err != nil {
 		return nil, err
 	}
 
 	// Merge json specs with StrategicMerge
-	mergedPatch, err := sp.StrategicMergePatch(originalJson, overrideJson, corev1.PodSpec{})
+	mergedPatch, err := sp.StrategicMergePatch(originalJSON, overrideJSON, corev1.PodSpec{})
 	if err != nil {
 		return nil, err
 	}

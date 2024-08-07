@@ -35,6 +35,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -181,6 +182,14 @@ func (*createVolumeFromSnapshotFunc) Arguments() []string {
 		CreateVolumeFromSnapshotManifestArg,
 		CreateVolumeFromSnapshotPVCNamesArg,
 	}
+}
+
+func (c *createVolumeFromSnapshotFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(c.RequiredArgs(), args)
 }
 
 func (crs *createVolumeFromSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

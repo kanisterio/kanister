@@ -27,6 +27,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -151,6 +152,14 @@ func (*createCSISnapshotStaticFunc) Arguments() []string {
 	}
 }
 
+func (c *createCSISnapshotStaticFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(c.RequiredArgs(), args)
+}
+
 func createCSISnapshotStatic(
 	ctx context.Context,
 	snapshotter snapshot.Snapshotter,
@@ -162,7 +171,12 @@ func createCSISnapshotStatic(
 		Driver:                  driver,
 		VolumeSnapshotClassName: snapshotClass,
 	}
-	if err := snapshotter.CreateFromSource(ctx, source, name, namespace, wait, nil); err != nil {
+	snapshotMeta := snapshot.ObjectMeta{
+		Name:      name,
+		Namespace: namespace,
+	}
+	snapshotContentMeta := snapshot.ObjectMeta{}
+	if err := snapshotter.CreateFromSource(ctx, source, wait, snapshotMeta, snapshotContentMeta); err != nil {
 		return nil, err
 	}
 

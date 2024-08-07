@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
+	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 func init() {
@@ -91,13 +92,13 @@ func (k *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[st
 	if err != nil {
 		return nil, err
 	}
-	objRefJson, err := json.Marshal(objRef)
+	objRefJSON, err := json.Marshal(objRef)
 	if err != nil {
 		return nil, err
 	}
 	// Convert objRef to map[string]interface{}
 	var out map[string]interface{}
-	if err := json.Unmarshal(objRefJson, &out); err != nil {
+	if err := json.Unmarshal(objRefJSON, &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -135,6 +136,14 @@ func (*kubeops) Arguments() []string {
 		KubeOpsNamespaceArg,
 		KubeOpsObjectReferenceArg,
 	}
+}
+
+func (k *kubeops) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(k.Arguments(), args); err != nil {
+		return err
+	}
+
+	return utils.CheckRequiredArgs(k.RequiredArgs(), args)
 }
 
 func (k *kubeops) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

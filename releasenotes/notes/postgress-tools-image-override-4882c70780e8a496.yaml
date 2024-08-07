@@ -1,0 +1,2 @@
+---
+features: Support ``image`` argument for ``ExportRDSSnapshotToLocation`` and ``RestoreRDSSnapshot`` functions to override default postgres-kanister-tools image.

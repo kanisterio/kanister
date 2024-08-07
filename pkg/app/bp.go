@@ -34,7 +34,7 @@ const (
 	imagePrefix = "ghcr.io/kanisterio"
 )
 
-// Blueprint implements Blueprint() to return Blueprint specs for the app
+// AppBlueprint implements Blueprint() to return Blueprint specs for the app
 // Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 type AppBlueprint struct {
 	App          string
@@ -109,7 +109,7 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 	}
 }
 
-// Blueprint returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
+// NewPITRBlueprint returns blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 func NewPITRBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
 	if bpReposPath == "" {
 		bpReposPath = blueprintsRepo

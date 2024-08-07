@@ -33,7 +33,7 @@ type EC2 struct {
 	DryRun bool
 }
 
-// NewEC2Client returns ec2 client struct.
+// NewClient returns ec2 client struct.
 func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*EC2, error) {
 	s, err := session.NewSession(awsConfig)
 	if err != nil {
@@ -50,20 +50,20 @@ func (e EC2) DescribeSecurityGroup(ctx context.Context, groupName string) (*ec2.
 	return e.DescribeSecurityGroupsWithContext(ctx, sgi)
 }
 
-func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description, vpcId string) (*ec2.CreateSecurityGroupOutput, error) {
+func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description, vpcID string) (*ec2.CreateSecurityGroupOutput, error) {
 	sgi := &ec2.CreateSecurityGroupInput{
 		DryRun:      &e.DryRun,
 		Description: &description,
 		GroupName:   &groupName,
-		VpcId:       aws.String(vpcId),
+		VpcId:       aws.String(vpcID),
 	}
 	return e.CreateSecurityGroupWithContext(ctx, sgi)
 }
 
-func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupId, cidr, protocol string, port int64) (*ec2.AuthorizeSecurityGroupIngressOutput, error) {
+func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupID, cidr, protocol string, port int64) (*ec2.AuthorizeSecurityGroupIngressOutput, error) {
 	sgi := &ec2.AuthorizeSecurityGroupIngressInput{
 		DryRun:     &e.DryRun,
-		GroupId:    &groupId,
+		GroupId:    &groupID,
 		CidrIp:     &cidr,
 		IpProtocol: &protocol,
 		ToPort:     &port,
@@ -72,20 +72,20 @@ func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupId, cidr, p
 	return e.AuthorizeSecurityGroupIngressWithContext(ctx, sgi)
 }
 
-func (e EC2) DeleteSecurityGroup(ctx context.Context, groupId string) (*ec2.DeleteSecurityGroupOutput, error) {
+func (e EC2) DeleteSecurityGroup(ctx context.Context, groupID string) (*ec2.DeleteSecurityGroupOutput, error) {
 	sgi := &ec2.DeleteSecurityGroupInput{
 		DryRun:  &e.DryRun,
-		GroupId: aws.String(groupId),
+		GroupId: aws.String(groupID),
 	}
 	return e.DeleteSecurityGroupWithContext(ctx, sgi)
 }
 
-func (e EC2) DescribeSubnets(ctx context.Context, vpcId string) (*ec2.DescribeSubnetsOutput, error) {
+func (e EC2) DescribeSubnets(ctx context.Context, vpcID string) (*ec2.DescribeSubnetsOutput, error) {
 	paramsEC2 := &ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("vpc-id"),
-				Values: []*string{aws.String(vpcId)},
+				Values: []*string{aws.String(vpcID)},
 			},
 		},
 	}
