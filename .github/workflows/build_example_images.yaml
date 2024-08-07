@@ -1,4 +1,6 @@
 name: Build integration app example images
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
