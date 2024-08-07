@@ -1,7 +1,7 @@
 ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
-FROM confluentinc/cp-kafka-connect:7.6.2
+FROM confluentinc/cp-kafka-connect:7.7.0
 
 USER root
 
