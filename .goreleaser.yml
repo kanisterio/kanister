@@ -83,6 +83,16 @@ dockers:
   dockerfile: 'docker/kanister-kubectl/Dockerfile'
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
+- image_templates:
+  - 'ghcr.io/kanisterio/postgres-kanister-tools:{{ .Tag }}'
+  dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
+- image_templates:
+  - 'ghcr.io/kanisterio/mysql-sidecar:{{ .Tag }}'
+  dockerfile: 'docker/kanister-mysql/image/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 snapshot:
   name_template: '{{ .Tag }}'
 checksum:

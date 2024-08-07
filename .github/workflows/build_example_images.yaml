@@ -40,21 +40,6 @@ jobs:
         org.opencontainers.image.title=kanister cassandra
         org.opencontainers.image.description=Image for kanister cassandra example blueprints
 
-  build_mysql_sidecar:
-    permissions:
-      packages: write
-    uses: ./.github/workflows/build_docker.yaml
-    with:
-      image_file: docker/kanister-mysql/image/Dockerfile
-      image_name: kanisterio/mysql-sidecar
-      image_tag: ${{ inputs.image_tag }}
-      ref:  ${{ inputs.ref }}
-      build-args: |
-        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
-      labels: |
-        org.opencontainers.image.title=kanister mysql sidecar
-        org.opencontainers.image.description=Image for kanister maysql example blueprints
-
   build_kafka-adobe-s3-sink-connector:
     permissions:
       packages: write
@@ -84,21 +69,6 @@ jobs:
       labels: |
         org.opencontainers.image.title=kanister kafka source connector
         org.opencontainers.image.description=Image for kanister kafka example blueprints
-
-  build_postgres-kanister-tools:
-    permissions:
-      packages: write
-    uses: ./.github/workflows/build_docker.yaml
-    with:
-      image_file: docker/postgres-kanister-tools/Dockerfile
-      image_name: kanisterio/postgres-kanister-tools
-      image_tag: ${{ inputs.image_tag }}
-      ref:  ${{ inputs.ref }}
-      build-args: |
-        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
-      labels: |
-        org.opencontainers.image.title=kanister tools for postgresql
-        org.opencontainers.image.description=Image for kanister postgresql example blueprints
 
   build_postgresql:
     permissions:

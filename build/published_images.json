@@ -4,7 +4,9 @@
         "kanister-kubectl-1.18",
         "controller",
         "kanister-tools",
-        "repo-server-controller"
+        "repo-server-controller",
+        "postgres-kanister-tools",
+        "mysql-sidecar"
     ],
     "tag": "v9.99.9-dev"
 }
