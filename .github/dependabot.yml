@@ -58,6 +58,13 @@ updates:
       interval: weekly
     commit-message:
       prefix: "deps(docker):"
+  # Update pinned pip packages via requiements.txt
+  - package-ecosystem: "pip"
+    directory: "/docker/build"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker,pip):"
   - package-ecosystem: "docker"
     directory: "/docker/build"
     schedule:
@@ -148,12 +155,26 @@ updates:
       interval: weekly
     commit-message:
       prefix: "deps(docker):"
+  # Update pinned pip packages via requiements.txt
+  - package-ecosystem: "pip"
+    directory: "/docker/postgres-kanister-tools"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker,pip):"
   - package-ecosystem: "docker"
     directory: "/docker/postgres-kanister-tools"
     schedule:
       interval: weekly
     commit-message:
       prefix: "deps(docker):"
+  # Update pinned pip packages via requiements.txt
+  - package-ecosystem: "pip"
+    directory: "/docker/postgresql"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(docker,pip):"
   - package-ecosystem: "docker"
     directory: "/docker/postgresql"
     schedule:
