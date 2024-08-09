@@ -147,6 +147,35 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 			},
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot list --all --delta --show-identical --json --tags tag1:val1 --tags tag2:val2",
 		},
+		{
+			f: func() []string {
+				args := SnapshotVerifyCommandArgs{
+					CommandArgs: commandArgs,
+				}
+				return SnapshotVerify(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot verify",
+		},
+		{
+			f: func() []string {
+				vfp := 12.345
+				p := 123
+				fql := 456
+				fp := 890
+				args := SnapshotVerifyCommandArgs{
+					CommandArgs:        commandArgs,
+					VerifyFilesPercent: &vfp,
+					Parallelism:        &p,
+					FileQueueLength:    &fql,
+					FileParallelism:    &fp,
+					DirectoryID:        []string{"d1", "d2"},
+					FileID:             []string{"f1", "f2"},
+					Sources:            []string{"s1", "s2"},
+				}
+				return SnapshotVerify(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot verify --verify-files-percent=12.345 --parallel=123 --file-queue-length=456 --file-parallelism=890 --directory-id=d1 --directory-id=d2 --file-id=f1 --file-id=f2 --sources=s1 --sources=s2",
+		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, Equals, tc.expectedLog)
