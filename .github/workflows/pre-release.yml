@@ -1,4 +1,6 @@
 name: Pre release
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:

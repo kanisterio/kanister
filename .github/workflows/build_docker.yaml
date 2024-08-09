@@ -1,4 +1,6 @@
 name: Build docker image
+permissions:
+  contents: read
 
 on:
   workflow_call:
