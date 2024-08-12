@@ -1,4 +1,6 @@
 name: Build integration app example images
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
@@ -28,6 +30,7 @@ jobs:
   build_cassandra:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/cassandra/Dockerfile
@@ -43,6 +46,7 @@ jobs:
   build_mysql_sidecar:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/kanister-mysql/image/Dockerfile
@@ -58,6 +62,7 @@ jobs:
   build_kafka-adobe-s3-sink-connector:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/kafka-adobes3Connector/image/adobeSink.Dockerfile
@@ -73,6 +78,7 @@ jobs:
   build_kafka-adobe-s3-source-connector:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/kafka-adobes3Connector/image/adobeSource.Dockerfile
@@ -88,6 +94,7 @@ jobs:
   build_postgres-kanister-tools:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/postgres-kanister-tools/Dockerfile
@@ -103,6 +110,7 @@ jobs:
   build_postgresql:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/postgresql/Dockerfile
@@ -118,6 +126,7 @@ jobs:
   build_mongodb:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/mongodb/Dockerfile
@@ -134,6 +143,7 @@ jobs:
   build_es-sidecar:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/kanister-elasticsearch/image/Dockerfile
@@ -149,6 +159,7 @@ jobs:
   build_mssql-tools:
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_docker.yaml
     with:
       image_file: docker/mssql-tools/Dockerfile

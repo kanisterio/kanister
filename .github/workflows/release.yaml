@@ -1,4 +1,6 @@
 name: Release
+permissions:
+  contents: read
 
 on:
   push:
@@ -186,6 +188,7 @@ jobs:
     needs: [run_if, release_packages]
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_example_images.yaml
     with:
       image_tag: ${{ needs.run_if.outputs.release_tag }}

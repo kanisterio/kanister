@@ -143,6 +143,7 @@ jobs:
     needs: [release, image_tags]
     permissions:
       packages: write
+      contents: read
     uses: ./.github/workflows/build_example_images.yaml
     with:
       image_tag: v9.99.9-dev
