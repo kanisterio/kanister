@@ -178,6 +178,10 @@ func (*kubeTaskFunc) Arguments() []string {
 }
 
 func (ktf *kubeTaskFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(ktf.Name(), args); err != nil {
+		return nil
+	}
+
 	if err := utils.CheckSupportedArgs(ktf.Arguments(), args); err != nil {
 		return err
 	}

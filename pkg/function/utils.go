@@ -12,8 +12,10 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/errkit"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
@@ -302,4 +304,84 @@ func GetRDSAuroraDBSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID 
 		return nil, errors.Errorf("Could not get DBCluster with the instanceID %s", instanceID)
 	}
 	return desc.DBClusters[0].DBSubnetGroup, nil
+}
+
+func ValidatePodLabelsAndAnnotations(funcName string, args map[string]any) error {
+	labels, err := PodLabelsFromFunctionArgs(args)
+	if err != nil {
+		return errkit.Wrap(err, "Kanister function validation failed, while getting pod labels from function args", "funcName", funcName)
+	}
+
+	if err = ValidateLabels(labels); err != nil {
+		return errkit.Wrap(err, "Kanister function validation failed, while validating labels", "funcName", funcName)
+	}
+
+	annotations, err := PodAnnotationsFromFunctionArgs(args)
+	if err != nil {
+		return errkit.Wrap(err, "Kanister function validation failed, while getting pod annotations from function args", "funcName", funcName)
+	}
+	if err = ValidateAnnotations(annotations); err != nil {
+		return errkit.Wrap(err, "Kanister function validation failed, while validating annotations", "funcName", funcName)
+	}
+	return nil
+}
+
+func PodLabelsFromFunctionArgs(args map[string]any) (map[string]string, error) {
+	for k, v := range args {
+		if k == PodLabelsArg {
+			labels, ok := v.(map[string]interface{})
+			if !ok {
+				return nil, errkit.New("podLabels are not in correct format. Expected format is map[string]string.")
+			}
+			return mapStringInterfaceToString(labels), nil
+		}
+	}
+	return nil, nil
+}
+
+func mapStringInterfaceToString(m map[string]interface{}) map[string]string {
+	res := map[string]string{}
+	for k, v := range m {
+		switch v := v.(type) {
+		case string:
+			res[k] = v
+		}
+	}
+	return res
+}
+
+func PodAnnotationsFromFunctionArgs(args map[string]any) (map[string]string, error) {
+	for k, v := range args {
+		if k == PodAnnotationsArg {
+			annotations, ok := v.(map[string]interface{})
+			if !ok {
+				return nil, errkit.New("podLabels are not in correct format. expected format is map[string]string.")
+			}
+			return mapStringInterfaceToString(annotations), nil
+		}
+	}
+	return nil, nil
+}
+
+func ValidateLabels(labels map[string]string) error {
+	for k, v := range labels {
+		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
+			return errkit.New("label key failed validation", "key", k, "errs", errs)
+		}
+
+		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
+			return errkit.New("label value failed validation", "value", v, "errs", errs)
+		}
+	}
+	return nil
+}
+
+func ValidateAnnotations(annotations map[string]string) error {
+	for k := range annotations {
+		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
+			return errkit.New("annotation key failed validation", "key", k, "errs", errs)
+		}
+	}
+	// annotation values don't actually have a strict format
+	return nil
 }

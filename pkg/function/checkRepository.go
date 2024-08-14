@@ -210,6 +210,10 @@ func (*CheckRepositoryFunc) Arguments() []string {
 }
 
 func (c *CheckRepositoryFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(c.Name(), args); err != nil {
+		return nil
+	}
+
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}
