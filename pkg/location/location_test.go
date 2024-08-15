@@ -151,8 +151,10 @@ func (s *LocationSuite) TestAzMultipartUpload(c *C) {
 	// Create test file
 	f, err := os.Create(s.testMultipartPath)
 	c.Check(err, IsNil)
-	defer f.Close()
-
+	defer func() {
+		err = f.Close()
+		c.Assert(err, IsNil)
+	}()
 	ctx := context.Background()
 	for _, fileSize := range []int64{
 		0,                 // empty file

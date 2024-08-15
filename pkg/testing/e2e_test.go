@@ -79,7 +79,8 @@ func (s *E2ESuite) SetUpSuite(c *C) {
 
 func (s *E2ESuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
+		c.Assert(err, IsNil)
 	}
 	if s.cancel != nil {
 		s.cancel()

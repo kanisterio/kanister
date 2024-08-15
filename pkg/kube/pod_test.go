@@ -63,8 +63,11 @@ func (s *PodSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
 
-	os.Setenv("POD_NAMESPACE", ns.Name)
-	os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
+	err = os.Setenv("POD_NAMESPACE", ns.Name)
+	c.Assert(err, IsNil)
+
+	err = os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
+	c.Assert(err, IsNil)
 
 	err = s.createServiceAccount(testSAName, s.namespace)
 	c.Assert(err, IsNil)
@@ -850,10 +853,11 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 func (s *PodSuite) TestGetPodReadyWaitTimeout(c *C) {
 	// Setup ENV to change the default timeout
-	os.Setenv(PodReadyWaitTimeoutEnv, "5")
+	err := os.Setenv(PodReadyWaitTimeoutEnv, "5")
+	c.Assert(err, IsNil)
 	c.Assert(GetPodReadyWaitTimeout(), Equals, time.Minute*5)
-	os.Unsetenv(PodReadyWaitTimeoutEnv)
-
+	err = os.Unsetenv(PodReadyWaitTimeoutEnv)
+	c.Assert(err, IsNil)
 	// Check without ENV set
 	c.Assert(GetPodReadyWaitTimeout(), Equals, DefaultPodReadyWaitTimeout)
 }

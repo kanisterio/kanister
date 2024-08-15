@@ -274,7 +274,10 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 	}
 	p, err := s.cli.CoreV1().Pods(s.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	defer s.cli.CoreV1().Pods(s.namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+	defer func() {
+		err := s.cli.CoreV1().Pods(s.namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+		c.Assert(err, IsNil)
+	}()
 	ctxT, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	c.Assert(WaitForPodReady(ctxT, s.cli, s.namespace, p.Name), IsNil)

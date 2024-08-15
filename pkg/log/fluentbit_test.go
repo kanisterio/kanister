@@ -65,7 +65,11 @@ func runServer(failAfterNLogs int, endFlag chan<- bool, c *C) {
 	defer close(endFlag)
 
 	l := resolveAndListen(fakeEndPoint, c)
-	defer l.Close()
+	defer func() {
+		err := l.Close()
+		c.Assert(err, IsNil)
+	}()
+
 Loop:
 	for {
 		select {

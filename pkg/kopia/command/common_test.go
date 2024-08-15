@@ -80,9 +80,12 @@ func (s *CommonUtilsSuite) TestCommonArgs(c *check.C) {
 		}, {
 			setup: func() func() {
 				origLogLevel := os.Getenv(LogLevelVarName)
-				os.Setenv(LogLevelVarName, "debug")
+				err := os.Setenv(LogLevelVarName, "debug")
+				c.Assert(err, check.IsNil)
+
 				return func() {
-					os.Setenv(LogLevelVarName, origLogLevel)
+					err := os.Setenv(LogLevelVarName, origLogLevel)
+					c.Assert(err, check.IsNil)
 				}
 			},
 			comment: "Custom log level passed via env variable, file log level passed via args",
@@ -103,11 +106,15 @@ func (s *CommonUtilsSuite) TestCommonArgs(c *check.C) {
 			setup: func() func() {
 				origLogLevel := os.Getenv(LogLevelVarName)
 				origFileLogLevel := os.Getenv(FileLogLevelVarName)
-				os.Setenv(LogLevelVarName, "debug")
-				os.Setenv(FileLogLevelVarName, "debug")
+				err := os.Setenv(LogLevelVarName, "debug")
+				c.Assert(err, check.IsNil)
+				err = os.Setenv(FileLogLevelVarName, "debug")
+				c.Assert(err, check.IsNil)
 				return func() {
-					os.Setenv(LogLevelVarName, origLogLevel)
-					os.Setenv(FileLogLevelVarName, origFileLogLevel)
+					err := os.Setenv(LogLevelVarName, origLogLevel)
+					c.Assert(err, check.IsNil)
+					err = os.Setenv(FileLogLevelVarName, origFileLogLevel)
+					c.Assert(err, check.IsNil)
 				}
 			},
 			comment: "Custom log level and file log level both passed via env variable",

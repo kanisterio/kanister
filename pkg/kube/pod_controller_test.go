@@ -38,7 +38,8 @@ const (
 )
 
 func (s *PodControllerTestSuite) SetUpSuite(c *C) {
-	os.Setenv("POD_NAMESPACE", podControllerNS)
+	err := os.Setenv("POD_NAMESPACE", podControllerNS)
+	c.Assert(err, IsNil)
 }
 
 func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
