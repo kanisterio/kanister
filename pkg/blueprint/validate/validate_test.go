@@ -23,6 +23,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
@@ -340,6 +341,101 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)
 		}
 		c.Assert(err, tc.err)
+	}
+}
+
+func (v *ValidateBlueprint) TestValidateAnnLabelArgs(c *C) {
+	for _, tc := range []struct {
+		labels      interface{}
+		annotations interface{}
+		error       string
+	}{
+		{
+			labels: map[string]interface{}{
+				"key": "value",
+			},
+			error: "",
+		},
+		{
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "value",
+			},
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "",
+		},
+		{
+			labels: map[string]interface{}{
+				"key$": "value",
+			},
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "label key 'key$' failed validation",
+		},
+		{
+			labels: map[string]interface{}{
+				"key*": "value",
+			},
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "label key 'key*' failed validation",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "value$",
+			},
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "label value 'value$' failed validation",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "value",
+			},
+			annotations: map[string]interface{}{
+				"key$": "value",
+			},
+			error: "annotation key 'key$' failed validation",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "value",
+			},
+			annotations: map[string]interface{}{
+				"key": "value$",
+			},
+			error: "",
+		},
+	} {
+		bp := blueprint()
+		bp.Actions["backup"].Phases = []crv1alpha1.BlueprintPhase{
+			{
+				Func: "KubeTask",
+				Name: "backup",
+				Args: map[string]interface{}{
+					function.PodLabelsArg:      tc.labels,
+					function.PodAnnotationsArg: tc.annotations,
+					"image":                    "",
+					"command":                  "",
+				},
+			},
+		}
+		err := Do(bp, kanister.DefaultVersion)
+		if tc.error != "" {
+			c.Assert(strings.Contains(err.Error(), tc.error), Equals, true)
+		} else {
+			c.Assert(err, Equals, nil)
+		}
 	}
 }
 
