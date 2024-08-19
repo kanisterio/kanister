@@ -9,13 +9,13 @@ import (
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
+	"github.com/kanisterio/errkit"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/errkit"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
@@ -350,6 +350,8 @@ func mapStringInterfaceToString(m map[string]interface{}) map[string]string {
 		switch v := v.(type) {
 		case string:
 			res[k] = v
+		default:
+			log.Info().Print("Map value is not of type string, while converting map[string]interface{} to map[string]string. Skipping.", map[string]interface{}{"value": v})
 		}
 	}
 	return res
