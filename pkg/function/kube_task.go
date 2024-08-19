@@ -39,13 +39,11 @@ const (
 	jobPrefix = "kanister-job-"
 
 	// KubeTaskFuncName gives the function name
-	KubeTaskFuncName          = "KubeTask"
-	KubeTaskNamespaceArg      = "namespace"
-	KubeTaskImageArg          = "image"
-	KubeTaskCommandArg        = "command"
-	KubeTaskPodOverrideArg    = "podOverride"
-	KubeTaskPodAnnotationsArg = "podAnnotations"
-	KubeTaskPodLabelsArg      = "podLabels"
+	KubeTaskFuncName       = "KubeTask"
+	KubeTaskNamespaceArg   = "namespace"
+	KubeTaskImageArg       = "image"
+	KubeTaskCommandArg     = "command"
+	KubeTaskPodOverrideArg = "podOverride"
 )
 
 func init() {

@@ -52,9 +52,7 @@ const (
 	// RestoreDataAllBackupInfo provides backup info required for restore
 	RestoreDataAllBackupInfo = "backupInfo"
 	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
-	RestoreDataAllPodOverrideArg    = "podOverride"
-	RestoreDataAllPodAnnotationsArg = "podAnnotations"
-	RestoreDataAllPodLabelsArg      = "podLabels"
+	RestoreDataAllPodOverrideArg = "podOverride"
 )
 
 func init() {

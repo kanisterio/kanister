@@ -57,9 +57,7 @@ const (
 	// RestoreDataBackupTagArg provides a unique tag added to the backup artifacts
 	RestoreDataBackupTagArg = "backupTag"
 	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
-	RestoreDataPodOverrideArg    = "podOverride"
-	RestoreDataPodAnnotationsArg = "podAnnotations"
-	RestoreDataPodLabelsArg      = "podLabels"
+	RestoreDataPodOverrideArg = "podOverride"
 )
 
 func init() {

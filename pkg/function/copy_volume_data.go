@@ -46,8 +46,6 @@ const (
 	CopyVolumeDataNamespaceArg                 = "namespace"
 	CopyVolumeDataVolumeArg                    = "volume"
 	CopyVolumeDataArtifactPrefixArg            = "dataArtifactPrefix"
-	CopyVolumeDataPodAnnotationsArg            = "podAnnotations"
-	CopyVolumeDataPodLabelsArg                 = "podLabels"
 	CopyVolumeDataOutputBackupID               = "backupID"
 	CopyVolumeDataOutputBackupRoot             = "backupRoot"
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
