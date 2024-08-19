@@ -77,7 +77,7 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 
 func (d *deleteDataUsingKopiaServerFunc) Validate(args map[string]any) error {
 	if err := ValidatePodLabelsAndAnnotations(d.Name(), args); err != nil {
-		return nil
+		return err
 	}
 
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {

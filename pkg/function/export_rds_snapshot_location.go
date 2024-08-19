@@ -290,7 +290,7 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 
 func (e *exportRDSSnapshotToLocationFunc) Validate(args map[string]any) error {
 	if err := ValidatePodLabelsAndAnnotations(e.Name(), args); err != nil {
-		return nil
+		return err
 	}
 
 	if err := utils.CheckSupportedArgs(e.Arguments(), args); err != nil {

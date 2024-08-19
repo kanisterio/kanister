@@ -242,7 +242,7 @@ func (*prepareDataFunc) Arguments() []string {
 
 func (p *prepareDataFunc) Validate(args map[string]any) error {
 	if err := ValidatePodLabelsAndAnnotations(p.Name(), args); err != nil {
-		return nil
+		return err
 	}
 
 	if err := utils.CheckSupportedArgs(p.Arguments(), args); err != nil {

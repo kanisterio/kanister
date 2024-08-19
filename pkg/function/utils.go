@@ -306,6 +306,8 @@ func GetRDSAuroraDBSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID 
 	return desc.DBClusters[0].DBSubnetGroup, nil
 }
 
+// ValidatePodLabelsAndAnnotations validates the labels and annotations that are
+// passed to a Kanister function (`funcName`) using `podLabels` and `podAnnotations` args.
 func ValidatePodLabelsAndAnnotations(funcName string, args map[string]any) error {
 	labels, err := PodLabelsFromFunctionArgs(args)
 	if err != nil {
@@ -339,6 +341,9 @@ func PodLabelsFromFunctionArgs(args map[string]any) (map[string]string, error) {
 	return nil, nil
 }
 
+// mapStringInterfaceToString accepts a map of `string` and `interface{}` and creates
+// a map of `string` and `string` from passed map and returns that.
+// If a value in the passed map is not of type `string`, it will be skipped.
 func mapStringInterfaceToString(m map[string]interface{}) map[string]string {
 	res := map[string]string{}
 	for k, v := range m {
