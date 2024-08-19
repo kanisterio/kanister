@@ -205,7 +205,18 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 			return nil, err
 		}
 	}
-	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, podOverride, annotations, labels, command...)
+	return prepareData(
+		ctx,
+		cli,
+		namespace,
+		serviceAccount,
+		image,
+		vols,
+		podOverride,
+		annotations,
+		labels,
+		command...,
+	)
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {

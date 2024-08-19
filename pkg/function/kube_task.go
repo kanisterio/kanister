@@ -147,7 +147,16 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return kubeTask(ctx, cli, namespace, image, command, podOverride, annotations, labels)
+	return kubeTask(
+		ctx,
+		cli,
+		namespace,
+		image,
+		command,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {

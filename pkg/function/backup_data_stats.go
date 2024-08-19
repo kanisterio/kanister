@@ -201,7 +201,20 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return backupDataStats(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, mode, backupDataStatsJobPrefix, podOverride, annotations, labels)
+	return backupDataStats(
+		ctx,
+		cli,
+		tp,
+		namespace,
+		encryptionKey,
+		backupArtifactPrefix,
+		backupID,
+		mode,
+		backupDataStatsJobPrefix,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*BackupDataStatsFunc) RequiredArgs() []string {

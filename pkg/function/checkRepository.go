@@ -181,7 +181,18 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return CheckRepository(ctx, cli, tp, encryptionKey, checkRepositoryArtifactPrefix, CheckRepositoryJobPrefix, insecureTLS, podOverride, annotations, labels)
+	return CheckRepository(
+		ctx,
+		cli,
+		tp,
+		encryptionKey,
+		checkRepositoryArtifactPrefix,
+		CheckRepositoryJobPrefix,
+		insecureTLS,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*CheckRepositoryFunc) RequiredArgs() []string {

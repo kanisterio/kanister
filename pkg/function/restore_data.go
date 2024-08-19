@@ -281,7 +281,24 @@ func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return restoreData(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, restoreDataJobPrefix, image, insecureTLS, vols, podOverride, annotations, labels)
+	return restoreData(
+		ctx,
+		cli,
+		tp,
+		namespace,
+		encryptionKey,
+		backupArtifactPrefix,
+		restorePath,
+		backupTag,
+		backupID,
+		restoreDataJobPrefix,
+		image,
+		insecureTLS,
+		vols,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*restoreDataFunc) RequiredArgs() []string {

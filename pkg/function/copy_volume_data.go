@@ -236,7 +236,19 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey, insecureTLS, podOverride, annotations, labels)
+	return copyVolumeData(
+		ctx,
+		cli,
+		tp,
+		namespace,
+		vol,
+		targetPath,
+		encryptionKey,
+		insecureTLS,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*copyVolumeDataFunc) RequiredArgs() []string {

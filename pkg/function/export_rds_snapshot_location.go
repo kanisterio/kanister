@@ -60,8 +60,6 @@ const (
 	ExportRDSSnapshotToLocBackupID           = "backupID"
 	ExportRDSSnapshotToLocDBSubnetGroupArg   = "dbSubnetGroup"
 	ExportRDSSnapshotToLocImageArg           = "image"
-	ExportRDSSnapshotToLocPodAnnotationsArg  = "podAnnotations"
-	ExportRDSSnapshotToLocPodLabelsArg       = "podLabels"
 
 	PostgrSQLEngine RDSDBEngine = "PostgreSQL"
 
