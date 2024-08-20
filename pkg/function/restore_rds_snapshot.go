@@ -105,6 +105,8 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 		RestoreRDSSnapshotNamespace,
 		RestoreRDSSnapshotSecGrpID,
 		RestoreRDSSnapshotDBSubnetGroup,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
@@ -123,6 +125,7 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 
 	var namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, postgresToolsImage string
 	var dbEngine RDSDBEngine
+	var annotations, labels map[string]string
 
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
 		return nil, err
@@ -139,6 +142,12 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		return nil, err
 	}
 	if err := OptArg(args, RestoreRDSSnapshotImage, &postgresToolsImage, defaultPostgresToolsImage); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	// Find security groups
@@ -167,7 +176,23 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		}
 	}
 
-	return restoreRDSSnapshot(ctx, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile, postgresToolsImage)
+	return restoreRDSSnapshot(
+		ctx,
+		namespace,
+		instanceID,
+		subnetGroup,
+		snapshotID,
+		backupArtifactPrefix,
+		backupID,
+		username,
+		password,
+		dbEngine,
+		sgIDs,
+		tp.Profile,
+		postgresToolsImage,
+		annotations,
+		labels,
+	)
 }
 
 func (r *restoreRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
@@ -192,6 +217,8 @@ func restoreRDSSnapshot(
 	sgIDs []string,
 	profile *param.Profile,
 	postgresToolsImage string,
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
@@ -239,7 +266,23 @@ func restoreRDSSnapshot(
 		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
 	}
 
-	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, dbEndpoint, username, password, nil, backupArtifactPrefix, backupID, profile, dbEngineVersion, postgresToolsImage); err != nil {
+	if _, err = execDumpCommand(
+		ctx,
+		dbEngine,
+		RestoreAction,
+		namespace,
+		dbEndpoint,
+		username,
+		password,
+		nil,
+		backupArtifactPrefix,
+		backupID,
+		profile,
+		dbEngineVersion,
+		postgresToolsImage,
+		annotations,
+		labels,
+	); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore RDS from dump. InstanceID=%s", instanceID)
 	}
 
