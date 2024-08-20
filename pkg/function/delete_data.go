@@ -257,6 +257,18 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(annotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(labels)
+	}
+
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}

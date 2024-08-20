@@ -120,6 +120,18 @@ func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 		return nil, err
 	}
 
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(annotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(labels)
+	}
+
 	userPassphrase, cert, err := userCredentialsAndServerTLS(&tp)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch User Credentials/Certificate Data from Template Params")

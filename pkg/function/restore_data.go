@@ -246,6 +246,18 @@ func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return nil, err
 	}
 
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(annotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(labels)
+	}
+
 	// Validate and get optional arguments
 	restorePath, encryptionKey, pod, vols, backupTag, backupID, insecureTLS, podOverride, err := validateAndGetOptArgs(args, tp)
 	if err != nil {
