@@ -416,6 +416,15 @@ func (v *ValidateBlueprint) TestValidateAnnLabelArgs(c *C) {
 			},
 			error: "",
 		},
+		{
+			labels: map[string]interface{}{
+				"key": "",
+			},
+			annotations: map[string]interface{}{
+				"key": "",
+			},
+			error: "",
+		},
 	} {
 		bp := blueprint()
 		bp.Actions["backup"].Phases = []crv1alpha1.BlueprintPhase{

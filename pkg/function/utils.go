@@ -363,7 +363,7 @@ func PodAnnotationsFromFunctionArgs(args map[string]any) (map[string]string, err
 		if k == PodAnnotationsArg && v != nil {
 			annotations, ok := v.(map[string]interface{})
 			if !ok {
-				return nil, errkit.New("podLabels are not in correct format. expected format is map[string]string.")
+				return nil, errkit.New("podAnnotations are not in correct format. expected format is map[string]string.")
 			}
 			return mapStringInterfaceToString(annotations), nil
 		}
