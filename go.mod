@@ -51,7 +51,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.22.0
-	gonum.org/v1/gonum v0.15.0
+	gonum.org/v1/gonum v0.15.1
 	google.golang.org/api v0.192.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
