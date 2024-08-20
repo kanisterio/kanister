@@ -328,6 +328,10 @@ func (*restoreDataFunc) Arguments() []string {
 }
 
 func (r *restoreDataFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(r.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
 		return err
 	}

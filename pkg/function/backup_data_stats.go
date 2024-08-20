@@ -238,6 +238,10 @@ func (*BackupDataStatsFunc) Arguments() []string {
 }
 
 func (b *BackupDataStatsFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(b.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(b.Arguments(), args); err != nil {
 		return err
 	}

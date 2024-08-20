@@ -272,6 +272,10 @@ func (*copyVolumeDataFunc) Arguments() []string {
 }
 
 func (c *copyVolumeDataFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(c.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}
