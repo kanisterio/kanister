@@ -113,6 +113,12 @@ type ActionSpec struct {
 	// PreferredVersion will be used to select the preferred version of Kanister functions
 	// to be executed for this action
 	PreferredVersion string `json:"preferredVersion"`
+	// PodLabels will be used to configure the labels of the pods that are created
+	// by kanister functions
+	PodLabels map[string]string `json:"podLabels"`
+	// PodAnnotations will be used to configure the annotations of the pods that created
+	// by kanister functions
+	PodAnnotations map[string]string `json:"podAnnotations"`
 }
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
