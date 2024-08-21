@@ -3,7 +3,7 @@ FROM golang:1.22-bullseye AS builder
 
 ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
-ARG restic_vsn=v0.16.4
+ARG restic_vsn=v0.16.5
 ARG gosu_vsn=1.17
 ENV CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GO_EXTLINK_ENABLED=0
 RUN apt-get install git
