@@ -75,10 +75,16 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 		RestoreDataPodOverrideArg,
 		RestoreDataImageArg,
 		KopiaRepositoryServerUserHostname,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (r *restoreDataUsingKopiaServerFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(r.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
 		return err
 	}
@@ -98,6 +104,8 @@ func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Tem
 		restorePath  string
 		snapID       string
 		userHostname string
+		annotations  map[string]string
+		labels       map[string]string
 	)
 	if err = Arg(args, RestoreDataBackupIdentifierArg, &snapID); err != nil {
 		return nil, err
@@ -112,6 +120,12 @@ func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Tem
 		return nil, err
 	}
 	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -166,6 +180,8 @@ func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Tem
 		sparseRestore,
 		vols,
 		podOverride,
+		annotations,
+		labels,
 	)
 }
 
@@ -193,6 +209,8 @@ func restoreDataFromServer(
 	sparseRestore bool,
 	vols map[string]string,
 	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
 ) (map[string]any, error) {
 	validatedVols := make(map[string]kube.VolumeMountOptions)
 	// Validate volumes
@@ -215,6 +233,8 @@ func restoreDataFromServer(
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 		Volumes:      validatedVols,
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.

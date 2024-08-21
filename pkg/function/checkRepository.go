@@ -48,7 +48,18 @@ func (*CheckRepositoryFunc) Name() string {
 	return CheckRepositoryFuncName
 }
 
-func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, insecureTLS bool, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func CheckRepository(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	encryptionKey,
+	targetPaths,
+	jobPrefix string,
+	insecureTLS bool,
+	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
+) (map[string]interface{}, error) {
 	namespace, err := kube.GetControllerNamespace()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get controller namespace")
@@ -59,6 +70,8 @@ func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -136,6 +149,7 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 
 	var checkRepositoryArtifactPrefix, encryptionKey string
 	var insecureTLS bool
+	var annotations, labels map[string]string
 	if err := Arg(args, CheckRepositoryArtifactPrefixArg, &checkRepositoryArtifactPrefix); err != nil {
 		return nil, err
 	}
@@ -143,6 +157,12 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 	if err := OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -161,7 +181,18 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return CheckRepository(ctx, cli, tp, encryptionKey, checkRepositoryArtifactPrefix, CheckRepositoryJobPrefix, insecureTLS, podOverride)
+	return CheckRepository(
+		ctx,
+		cli,
+		tp,
+		encryptionKey,
+		checkRepositoryArtifactPrefix,
+		CheckRepositoryJobPrefix,
+		insecureTLS,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*CheckRepositoryFunc) RequiredArgs() []string {
@@ -173,10 +204,16 @@ func (*CheckRepositoryFunc) Arguments() []string {
 		CheckRepositoryArtifactPrefixArg,
 		CheckRepositoryEncryptionKeyArg,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (c *CheckRepositoryFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(c.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}

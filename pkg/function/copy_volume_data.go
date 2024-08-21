@@ -81,6 +81,8 @@ func copyVolumeData(
 	encryptionKey string,
 	insecureTLS bool,
 	podOverride map[string]interface{},
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	// Validate PVC exists
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
@@ -100,6 +102,8 @@ func copyVolumeData(
 			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}},
 		PodOverride: podOverride,
+		Annotations: annotations,
+		Labels:      labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -194,6 +198,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 
 	var namespace, vol, targetPath, encryptionKey string
 	var err error
+	var annotations, labels map[string]string
 	var insecureTLS bool
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -208,6 +213,12 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		return nil, err
 	}
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
@@ -225,7 +236,19 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey, insecureTLS, podOverride)
+	return copyVolumeData(
+		ctx,
+		cli,
+		tp,
+		namespace,
+		vol,
+		targetPath,
+		encryptionKey,
+		insecureTLS,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*copyVolumeDataFunc) RequiredArgs() []string {
@@ -243,10 +266,16 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataArtifactPrefixArg,
 		CopyVolumeDataEncryptionKeyArg,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (c *copyVolumeDataFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(c.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}
