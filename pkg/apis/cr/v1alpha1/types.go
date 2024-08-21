@@ -114,10 +114,10 @@ type ActionSpec struct {
 	// to be executed for this action
 	PreferredVersion string `json:"preferredVersion"`
 	// PodLabels will be used to configure the labels of the pods that are created
-	// by kanister functions
+	// by kanister functions run by this actionset
 	PodLabels map[string]string `json:"podLabels"`
 	// PodAnnotations will be used to configure the annotations of the pods that created
-	// by kanister functions
+	// by kanister functions run by this actionset
 	PodAnnotations map[string]string `json:"podAnnotations"`
 }
 

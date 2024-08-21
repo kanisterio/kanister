@@ -143,6 +143,8 @@ type ActionSpec struct {
     Options map[string]string             `json:"options"`
     Profile *ObjectReference              `json:"profile"`
     PodOverride map[string]interface{}    `json:"podOverride,omitempty"`
+    PodLabels map[string]string           `json:"podLabels"`
+    PodAnnotations map[string]string      `json:"podAnnotations"`
 }
 ```
 
@@ -165,6 +167,10 @@ type ActionSpec struct {
 - `PodOverride` is used to specify pod specs that will override
     default specs of the Pod created while executing functions like
     KubeTask, PrepareData, etc.
+- ``PodLabels`` is used to configure the labels of the pods that are created
+	by kanister functions run by this actionset.
+- ``PodAnnotations`` is used to configure the annotations of the pods that created
+	by kanister functions run by this actionset.
 
 As a reference, below is an example of a ActionSpec.
 
