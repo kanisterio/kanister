@@ -519,7 +519,7 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 			exclude:   []Resource{ss1, ss2, pvc2},
 		},
 		{
-			// Match a specific resource name only (no GVR), matches mulitple resources
+			// Match a specific resource name only (no GVR), matches multiple resources
 			m: ResourceMatcher{
 				ResourceRequirement{LocalObjectReference: corev1.LocalObjectReference{Name: "specificname"}},
 			},
