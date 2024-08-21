@@ -3,15 +3,18 @@ package function
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"path"
 	"strings"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
+	"github.com/kanisterio/errkit"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -27,6 +30,12 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion = "version"
+
+	// since pod labels and annotations argument are going to be named the
+	// same for all the kanister functions that support these arguments, instead
+	// of creating these for the functions, it's better to have a const here.
+	PodLabelsArg      = "podLabels"
+	PodAnnotationsArg = "podAnnotations"
 )
 
 // ValidateCredentials verifies if the given credentials have appropriate values set
@@ -296,4 +305,91 @@ func GetRDSAuroraDBSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID 
 		return nil, errors.Errorf("Could not get DBCluster with the instanceID %s", instanceID)
 	}
 	return desc.DBClusters[0].DBSubnetGroup, nil
+}
+
+// ValidatePodLabelsAndAnnotations validates the labels and annotations that are
+// passed to a Kanister function (`funcName`) using `podLabels` and `podAnnotations` args.
+func ValidatePodLabelsAndAnnotations(funcName string, args map[string]any) error {
+	labels, err := PodLabelsFromFunctionArgs(args)
+	if err != nil {
+		return errkit.Wrap(err, "Kanister function validation failed, while getting pod labels from function args", "funcName", funcName)
+	}
+
+	if err = ValidateLabels(labels); err != nil {
+		return errkit.Wrap(err, "Kanister function validation failed, while validating labels", "funcName", funcName)
+	}
+
+	annotations, err := PodAnnotationsFromFunctionArgs(args)
+	if err != nil {
+		return errkit.Wrap(err, "Kanister function validation failed, while getting pod annotations from function args", "funcName", funcName)
+	}
+	if err = ValidateAnnotations(annotations); err != nil {
+		return errkit.Wrap(err, "Kanister function validation failed, while validating annotations", "funcName", funcName)
+	}
+	return nil
+}
+
+func PodLabelsFromFunctionArgs(args map[string]any) (map[string]string, error) {
+	for k, v := range args {
+		if k == PodLabelsArg && v != nil {
+			labels, ok := v.(map[string]interface{})
+			if !ok {
+				return nil, errkit.New("podLabels are not in correct format. Expected format is map[string]interface{}.")
+			}
+			return mapStringInterfaceToString(labels), nil
+		}
+	}
+	return nil, nil
+}
+
+// mapStringInterfaceToString accepts a map of `string` and `interface{}` and creates
+// a map of `string` and `string` from passed map and returns that.
+// If a value in the passed map is not of type `string`, it will be skipped.
+func mapStringInterfaceToString(m map[string]interface{}) map[string]string {
+	res := map[string]string{}
+	for k, v := range m {
+		switch v := v.(type) {
+		case string:
+			res[k] = v
+		default:
+			log.Info().Print("Map value is not of type string, while converting map[string]interface{} to map[string]string. Skipping.", map[string]interface{}{"value": v})
+		}
+	}
+	return res
+}
+
+func PodAnnotationsFromFunctionArgs(args map[string]any) (map[string]string, error) {
+	for k, v := range args {
+		if k == PodAnnotationsArg && v != nil {
+			annotations, ok := v.(map[string]interface{})
+			if !ok {
+				return nil, errkit.New("podAnnotations are not in correct format. expected format is map[string]string.")
+			}
+			return mapStringInterfaceToString(annotations), nil
+		}
+	}
+	return nil, nil
+}
+
+func ValidateLabels(labels map[string]string) error {
+	for k, v := range labels {
+		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
+			return errors.New(fmt.Sprintf("label key '%s' failed validation. %s", k, errs))
+		}
+
+		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
+			return errors.New(fmt.Sprintf("label value '%s' failed validation. %s", v, errs))
+		}
+	}
+	return nil
+}
+
+func ValidateAnnotations(annotations map[string]string) error {
+	for k := range annotations {
+		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
+			return errors.New(fmt.Sprintf("annotation key '%s' failed validation. %s", k, errs))
+		}
+	}
+	// annotation values don't actually have a strict format
+	return nil
 }

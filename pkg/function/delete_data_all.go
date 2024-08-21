@@ -73,6 +73,7 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	var reclaimSpace bool
 	var err error
 	var insecureTLS bool
+	var annotations, labels map[string]string
 	if err = Arg(args, DeleteDataAllNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -89,6 +90,12 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		return nil, err
 	}
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
@@ -115,7 +122,22 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		deleteIdentifiers = append(deleteIdentifiers, info.BackupID)
 	}
 
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, insecureTLS, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix, podOverride)
+	return deleteData(
+		ctx,
+		cli,
+		tp,
+		reclaimSpace,
+		namespace,
+		encryptionKey,
+		insecureTLS,
+		targetPaths,
+		nil,
+		deleteIdentifiers,
+		deleteDataAllJobPrefix,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*deleteDataAllFunc) RequiredArgs() []string {
@@ -134,10 +156,16 @@ func (*deleteDataAllFunc) Arguments() []string {
 		DeleteDataAllEncryptionKeyArg,
 		DeleteDataAllReclaimSpace,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (d *deleteDataAllFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(d.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}

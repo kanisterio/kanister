@@ -87,6 +87,8 @@ func deleteData(
 	deleteIdentifiers []string,
 	jobPrefix string,
 	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
 		return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
@@ -98,6 +100,8 @@ func deleteData(
 		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -219,6 +223,7 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	var reclaimSpace bool
 	var err error
 	var insecureTLS bool
+	var annotations, labels map[string]string
 	if err = Arg(args, DeleteDataNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -240,6 +245,13 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
+		return nil, err
+	}
+
 	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataPodOverrideArg)
 	if err != nil {
 		return nil, err
@@ -255,7 +267,22 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, insecureTLS, strings.Fields(deleteArtifactPrefix), strings.Fields(deleteTag), strings.Fields(deleteIdentifier), deleteDataJobPrefix, podOverride)
+	return deleteData(
+		ctx,
+		cli,
+		tp,
+		reclaimSpace,
+		namespace,
+		encryptionKey,
+		insecureTLS,
+		strings.Fields(deleteArtifactPrefix),
+		strings.Fields(deleteTag),
+		strings.Fields(deleteIdentifier),
+		deleteDataJobPrefix,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {
@@ -274,10 +301,16 @@ func (*deleteDataFunc) Arguments() []string {
 		DeleteDataEncryptionKeyArg,
 		DeleteDataReclaimSpace,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (d *deleteDataFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(d.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}
