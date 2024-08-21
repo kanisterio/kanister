@@ -19,6 +19,7 @@ package testing
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -292,4 +293,298 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		return false, nil
 	})
 	c.Assert(err, IsNil)
+}
+
+func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
+	bp, err := s.crCli.Blueprints(s.namespace).Create(context.Background(), blueprintWithPodFunctions(), metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// 1. scenario where the labels/annotations are provided via actionset as well as blueprint
+	asPodLabels := map[string]string{
+		"asLabKeyOne": "asLabValOne",
+	}
+	asPodAnn := map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+	}
+	as := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, asPodAnn, asPodLabels)
+	asCreated, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitForFunctionPodReady()
+	c.Assert(err, IsNil)
+
+	ctx := context.Background()
+	pods, err := s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
+		LabelSelector: "createdBy=kanister",
+	})
+	c.Assert(err, IsNil)
+
+	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
+		"asLabKeyOne": "asLabValOne",
+		"bpLabKeyOne": "bpLabValueOne",
+		"labKey":      "labValue",
+	})
+	c.Assert(err, IsNil)
+	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"bpAnnKeyOne": "bpAnnValueOne",
+		"annKey":      "annValue",
+	})
+	c.Assert(err, IsNil)
+
+	err = s.waitForActionSetComplete(asCreated.Name)
+	c.Assert(err, IsNil)
+
+	// 2. scenario where labels/annotations are provided via actionset as well blueprint
+	// and same key is present at both places.
+	asOne := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"annKey":      "asAnnValue", // this annotation is present in blueprint as well but with diff value (annValue)
+	}, map[string]string{
+		"asLabKeyOne": "asLabValOne",
+		"labKey":      "asLabValue", // this label is present in blueprint as well but with diff value (labValue)
+	})
+	asCreatedOne, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asOne, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitForFunctionPodReady()
+	c.Assert(err, IsNil)
+
+	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
+		LabelSelector: "createdBy=kanister",
+	})
+	c.Assert(err, IsNil)
+	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
+		"asLabKeyOne": "asLabValOne",
+		"bpLabKeyOne": "bpLabValueOne",
+		"labKey":      "labValue",
+	})
+	c.Assert(err, IsNil)
+	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"bpAnnKeyOne": "bpAnnValueOne",
+		"annKey":      "annValue",
+	})
+	c.Assert(err, IsNil)
+
+	err = s.waitForActionSetComplete(asCreatedOne.Name)
+	c.Assert(err, IsNil)
+
+	// 3. scenario where labels/annotations are present at both places (actionset, blueprint) and no common key is present
+	asTwo := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"asAnnKeyTwo": "asAnnValTwo",
+	}, map[string]string{
+		"asLabKeyOne": "asLabValOne",
+		"asLabKeyTwo": "asLabValTwo",
+	})
+	asCreatedTwo, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asTwo, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitForFunctionPodReady()
+	c.Assert(err, IsNil)
+
+	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
+		LabelSelector: "createdBy=kanister",
+	})
+	c.Assert(err, IsNil)
+	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
+		"asLabKeyOne": "asLabValOne",
+		"asLabKeyTwo": "asLabValTwo",
+		"bpLabKeyOne": "bpLabValueOne",
+		"labKey":      "labValue",
+	})
+	c.Assert(err, IsNil)
+	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"asAnnKeyTwo": "asAnnValTwo",
+		"bpAnnKeyOne": "bpAnnValueOne",
+		"annKey":      "annValue",
+	})
+	c.Assert(err, IsNil)
+
+	err = s.waitForActionSetComplete(asCreatedTwo.Name)
+	c.Assert(err, IsNil)
+
+	// 4. scenario where labels/annotations are only provided via blueprint
+	asThree := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{}, map[string]string{})
+	asCreatedThree, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asThree, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitForFunctionPodReady()
+	c.Assert(err, IsNil)
+
+	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
+		LabelSelector: "createdBy=kanister",
+	})
+	c.Assert(err, IsNil)
+	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
+		"bpLabKeyOne": "bpLabValueOne",
+		"labKey":      "labValue",
+	})
+	c.Assert(err, IsNil)
+	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
+		"bpAnnKeyOne": "bpAnnValueOne",
+		"annKey":      "annValue",
+	})
+	c.Assert(err, IsNil)
+
+	err = s.waitForActionSetComplete(asCreatedThree.Name)
+	c.Assert(err, IsNil)
+
+	// 5. scenario where labels/annotations are only provided via actionset
+	bpObj := blueprintWithPodFunctions()
+	bpObj.Actions["backup"].Phases[0].Args["podLabels"] = map[string]string{}
+	bpObj.Actions["backup"].Phases[0].Args["podAnnotations"] = map[string]string{}
+	bp, err = s.crCli.Blueprints(s.namespace).Create(context.Background(), bpObj, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	asFour := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"asAnnKeyTwo": "asAnnValTwo",
+	}, map[string]string{
+		"asLabKeyOne": "asLabValOne",
+	})
+	asCreatedFour, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asFour, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitForFunctionPodReady()
+	c.Assert(err, IsNil)
+
+	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
+		LabelSelector: "createdBy=kanister",
+	})
+	c.Assert(err, IsNil)
+	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
+		"asLabKeyOne": "asLabValOne",
+	})
+	c.Assert(err, IsNil)
+	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"asAnnKeyTwo": "asAnnValTwo",
+	})
+	c.Assert(err, IsNil)
+
+	err = s.waitForActionSetComplete(asCreatedFour.Name)
+	c.Assert(err, IsNil)
+}
+
+func (s *E2ESuite) waitForActionSetComplete(asName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		as, err := s.crCli.ActionSets(s.namespace).Get(ctx, asName, metav1.GetOptions{})
+		switch {
+		case err != nil, as.Status == nil:
+			return false, err
+		case as.Status.State == crv1alpha1.StateFailed:
+			return true, errors.Errorf("Actionset failed: %#v", as.Status)
+		case as.Status.State == crv1alpha1.StateComplete:
+			return true, nil
+		}
+		return false, nil
+	})
+}
+
+func (s *E2ESuite) waitForFunctionPodReady() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		pods, err := s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
+			LabelSelector: "createdBy=kanister",
+		})
+		if err != nil {
+			return false, nil
+		}
+
+		if len(pods.Items) == 0 {
+			// the Kanister function pod has not come up yet
+			return false, nil
+		}
+
+		if len(pods.Items) > 1 {
+			return false, errors.New("more than one kanister-job pod found")
+		}
+
+		return true, nil
+	})
+}
+
+func verifyAnnotationsInFunctionPod(funcPodAnnotations, expectedAnnotations map[string]string) error {
+	for k, v := range expectedAnnotations {
+		val, ok := funcPodAnnotations[k]
+		if !ok || v != val {
+			return errors.New(fmt.Sprintf("Either key %s, is not found in pod annotations or, its values (%s and %s) don't match", k, v, val))
+		}
+	}
+	return nil
+}
+
+func verifyLabelsInFunctionPod(funcPodLabels, expectedLabels map[string]string) error {
+	for k, v := range expectedLabels {
+		val, ok := funcPodLabels[k]
+		if !ok || v != val {
+			return errors.New(fmt.Sprintf("Either key %s, is not found in pod labels or, its values (%s and %s) don't match", k, v, val))
+		}
+	}
+	return nil
+}
+
+func backupActionsetWihtPodLabelsAndAnnotations(testNS, bpName string, annotations, labels map[string]string) *crv1alpha1.ActionSet {
+	return &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "actionset-",
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				{
+					Name: "backup",
+					Object: crv1alpha1.ObjectReference{
+						Kind:      "Namespace",
+						Name:      testNS,
+						Namespace: testNS,
+					},
+					Blueprint:      bpName,
+					PodLabels:      labels,
+					PodAnnotations: annotations,
+				},
+			},
+		},
+	}
+}
+
+// blueprintWithPodFunctions returns a blueprint resource that has kanister functions
+// that create a pod.
+func blueprintWithPodFunctions() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "blueprint-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Func: function.KubeTaskFuncName,
+						Name: "backupphase-one",
+						Args: map[string]interface{}{
+							"image":     "ghcr.io/kanisterio/kanister-tools:0.110.0",
+							"namespace": "default",
+							"command":   []string{"sleep", "10"},
+							"podLabels": map[string]interface{}{
+								"bpLabKeyOne": "bpLabValueOne",
+								"labKey":      "labValue",
+							},
+							"podAnnotations": map[string]interface{}{
+								"bpAnnKeyOne": "bpAnnValueOne",
+								"annKey":      "annValue",
+							},
+						},
+					},
+				},
+			},
+			"restore": {},
+		},
+	}
 }
