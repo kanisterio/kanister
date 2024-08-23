@@ -32,6 +32,10 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 		ConfigFilePath: "path/kopia.config",
 		LogDirectory:   "cache/log",
 	}
+	cacheArgs := CacheArgs{
+		ContentCacheLimitMB:  500,
+		MetadataCacheLimitMB: 500,
+	}
 
 	for _, tc := range []struct {
 		f           func() []string
@@ -78,8 +82,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 				args := ServerStartCommandArgs{
 					CommandArgs:      commandArgs,
 					CacheDirectory:   "cache/dir",
-					ContentCacheMB:   500,
-					MetadataCacheMB:  500,
+					CacheArgs:        cacheArgs,
 					ServerAddress:    "a-server-address",
 					TLSCertFile:      "/path/to/cert/tls.crt",
 					TLSKeyFile:       "/path/to/key/tls.key",
@@ -90,7 +93,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --cache-directory=cache/dir --content-cache-size-limit-mb=0 --metadata-cache-size-limit-mb=0 > /dev/null 2>&1 &",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --cache-directory=cache/dir --content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 > /dev/null 2>&1 &",
 		},
 		{
 			f: func() []string {

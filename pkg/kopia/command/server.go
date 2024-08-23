@@ -22,8 +22,6 @@ type ServerStartCommandArgs struct {
 	*CommandArgs
 	CacheArgs
 	CacheDirectory       string
-	ContentCacheMB       int
-	MetadataCacheMB      int
 	ServerAddress        string
 	TLSCertFile          string
 	TLSKeyFile           string
