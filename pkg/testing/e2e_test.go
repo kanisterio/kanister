@@ -467,8 +467,6 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 
 	err = s.waitForActionSetComplete(asCreatedFour.Name)
 	c.Assert(err, IsNil)
-
-	c.Assert(1, Equals, 2)
 }
 
 func (s *E2ESuite) waitForActionSetComplete(asName string) error {
