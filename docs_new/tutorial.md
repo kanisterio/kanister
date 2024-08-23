@@ -377,7 +377,7 @@ EOF
 
 ## Configuring Labels and Annotations of Kanister function pods
 
-Like discussed above we create an ActionSet each time we want to execute a
+We create an ActionSet each time we want to execute a
 Kanister action. This action is going to be defined in Kanister blueprints
 using Kanister functions.
 

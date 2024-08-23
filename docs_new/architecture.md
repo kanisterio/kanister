@@ -168,9 +168,9 @@ type ActionSpec struct {
     default specs of the Pod created while executing functions like
     KubeTask, PrepareData, etc.
 - ``PodLabels`` is used to configure the labels of the pods that are created
-	by kanister functions run by this actionset.
+	by Kanister functions run by this ActionSet.
 - ``PodAnnotations`` is used to configure the annotations of the pods that created
-	by kanister functions run by this actionset.
+	by Kanister functions run by this ActionSet.
 
 As a reference, below is an example of a ActionSpec.
 

@@ -117,8 +117,8 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringSliceP(objectsFlagName, "O", []string{}, "objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)")
 	cmd.Flags().BoolP(waitForRepositoryServerReadyFlagName, "w", false, "wait for repository server to be ready before creating actionset")
 	cmd.Flags().String(labelsFlagName, "", "Labels that should be added to the created actionset, space chars would be trimmed automatically. Multiple labels can be separate by comma(,) (eg: --labels key=value,foo=bar)")
-	cmd.Flags().StringToString(podAnnotationsFlagName, nil, "This flag can be used to configure annotations of the pods that are created by Kanister functions that are run by this actionset. Example: --podannotations=key1=value1,key2=value2")
-	cmd.Flags().StringToString(podLabelsFlagName, nil, "This flag can be used to configure labels of the pods that are created by Kanister functions that are run by this actionset. Example: --podlabels=key1=value1,key2=value2")
+	cmd.Flags().StringToString(podAnnotationsFlagName, nil, "This flag can be used to configure annotations of the pods that are created by Kanister functions that are run by this ActionSet. (eg. --podannotations=key1=value1,key2=value2)")
+	cmd.Flags().StringToString(podLabelsFlagName, nil, "This flag can be used to configure labels of the pods that are created by Kanister functions that are run by this ActionSet. (eg: --podlabels=key1=value1,key2=value2)")
 	return cmd
 }
 
