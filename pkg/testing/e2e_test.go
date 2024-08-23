@@ -292,6 +292,4 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		return false, nil
 	})
 	c.Assert(err, IsNil)
-
-	c.Assert(1, Equals, 2)
 }
