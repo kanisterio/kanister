@@ -387,8 +387,8 @@ Create a new ActionSet that has the name-to-Secret reference in its action's
           namespace: kanister
   EOF
 
-Configuring Labels and Annotations of Kanister function pods
-============================================================
+Configuring Labels and Annotations of Kanister function pods using ActionSet
+============================================================================
 
 We create an ActionSet each time we want to execute a
 Kanister action. This action is going to be defined in Kanister blueprints

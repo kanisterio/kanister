@@ -223,7 +223,7 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	var reclaimSpace bool
 	var err error
 	var insecureTLS bool
-	var annotations, labels map[string]string
+	var bpAnnotations, bpLabels map[string]string
 	if err = Arg(args, DeleteDataNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -245,10 +245,10 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
 		return nil, err
 	}
 
@@ -257,16 +257,17 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 
+	var labels, annotations map[string]string
 	if tp.PodAnnotations != nil {
 		// merge the actionset annotations with blueprint annotations
 		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
-		annotations = actionSetAnn.MergeBPAnnotations(annotations)
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
 	}
 
 	if tp.PodLabels != nil {
 		// merge the actionset labels with blueprint labels
 		var actionSetLabels ActionSetLabels = tp.PodLabels
-		labels = actionSetLabels.MergeBPLabels(labels)
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
 	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {

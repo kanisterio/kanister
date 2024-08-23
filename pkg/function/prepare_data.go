@@ -168,7 +168,7 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
-	var annotations, labels map[string]string
+	var bpAnnotations, bpLabels map[string]string
 	var err error
 	if err = Arg(args, PrepareDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -185,10 +185,10 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, PrepareDataPodOverrideArg)
@@ -196,16 +196,17 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return nil, err
 	}
 
+	var labels, annotations map[string]string
 	if tp.PodAnnotations != nil {
 		// merge the actionset annotations with blueprint annotations
 		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
-		annotations = actionSetAnn.MergeBPAnnotations(annotations)
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
 	}
 
 	if tp.PodLabels != nil {
 		// merge the actionset labels with blueprint labels
 		var actionSetLabels ActionSetLabels = tp.PodLabels
-		labels = actionSetLabels.MergeBPLabels(labels)
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
 	}
 
 	cli, err := kube.NewClient()
