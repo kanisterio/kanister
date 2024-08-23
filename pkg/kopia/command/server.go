@@ -20,6 +20,10 @@ import (
 
 type ServerStartCommandArgs struct {
 	*CommandArgs
+	CacheArgs
+	CacheDirectory       string
+	ContentCacheMB       int
+	MetadataCacheMB      int
 	ServerAddress        string
 	TLSCertFile          string
 	TLSKeyFile           string
@@ -59,6 +63,8 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 	if cmdArgs.ReadOnly {
 		args = args.AppendLoggable(readOnlyFlag)
 	}
+
+	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
 
 	if cmdArgs.EnablePprof {
 		args = args.AppendLoggable(enablePprof)
