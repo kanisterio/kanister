@@ -70,10 +70,16 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 		DeleteDataNamespaceArg,
 		RestoreDataImageArg,
 		KopiaRepositoryServerUserHostname,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (d *deleteDataUsingKopiaServerFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(d.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}
@@ -92,6 +98,8 @@ func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 		namespace    string
 		snapID       string
 		userHostname string
+		annotations  map[string]string
+		labels       map[string]string
 	)
 	if err = Arg(args, DeleteDataBackupIdentifierArg, &snapID); err != nil {
 		return nil, err
@@ -103,6 +111,12 @@ func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 		return nil, err
 	}
 	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
 		return nil, err
 	}
 
@@ -138,6 +152,8 @@ func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 		snapID,
 		tp.RepositoryServer.Username,
 		userAccessPassphrase,
+		annotations,
+		labels,
 	)
 }
 
@@ -161,12 +177,16 @@ func deleteDataFromServer(
 	snapID,
 	username,
 	userPassphrase string,
+	annotations,
+	labels map[string]string,
 ) (map[string]any, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
