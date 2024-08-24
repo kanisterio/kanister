@@ -44,7 +44,6 @@ issues:
         - unparam                       # Tests might have unused function parameters.
         - lll
         - dupl
-        - misspell
         - nestif
         - gci
         - stylecheck

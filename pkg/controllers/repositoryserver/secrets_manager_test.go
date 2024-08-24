@@ -24,7 +24,7 @@ import (
 )
 
 func (s *RepoServerControllerSuite) TestFetchSecretsForRepositoryServer(c *C) {
-	// Test getSecretsFromCR is successfull
+	// Test getSecretsFromCR is successful
 	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
 
@@ -45,7 +45,7 @@ func (s *RepoServerControllerSuite) TestFetchSecretsForRepositoryServer(c *C) {
 	c.Assert(repoServerHandler.RepositoryServerSecrets.serverTLS, DeepEquals, s.repoServerSecrets.serverTLS)
 	c.Assert(repoServerHandler.RepositoryServerSecrets.serverUserAccess, DeepEquals, s.repoServerSecrets.serverUserAccess)
 
-	// Test getSecretsFromCR is unsuccesful when one of the secrets does not exist in the namespace
+	// Test getSecretsFromCR is unsuccessful when one of the secrets does not exist in the namespace
 	repositoryServer.Spec.Storage.SecretRef.Name = "SecretDoesNotExist"
 	repoServerHandler.RepositoryServerSecrets = repositoryServerSecrets{}
 	err = repoServerHandler.getSecretsFromCR(context.Background())
