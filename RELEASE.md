@@ -25,6 +25,17 @@ This will result in creating a PR with a version bump, like https://github.com/k
 
 This PR would update the older Kanister version reference in various files.
 
+Pre-release PR should contain updates to CHANGELOG.md and CHANGELOG_CURRENT.md, which will be auto-generated
+on workflow run.
+
+**IMPORTANT** Reviewer of the pre-release PR should check if there are changelog items (release notes) for merged PRs and may add them in the pre-release PR if necessary.
+
+After adding release notes, CHANGELOG.md and CHANGELOG_CURRENT.md should be re-generated using:
+```
+make reno-report VERSION=<pre-release-verstion>
+```
+And then committed to the pre-release branch.
+
 ### Release workflow
 
 `release` workflow tags the repo using `release_tag` variable either from the merged pre-release PR or from workflow dispatch.

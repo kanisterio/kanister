@@ -113,6 +113,9 @@ case "${1}" in
         ;;
 esac
 
+# add e2e suite in test apps
+TEST_APPS="${TEST_APPS}|^E2ESuite$"
+
 check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
