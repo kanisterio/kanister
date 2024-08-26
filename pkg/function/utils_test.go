@@ -103,6 +103,198 @@ func (s *UtilsTestSuite) TestResolveArtifactPrefix(c *C) {
 	}
 }
 
+func (s *UtilsTestSuite) TestMergeBPAnnotations(c *C) {
+	for _, tc := range []struct {
+		actionSetAnnotations map[string]string
+		bpAnnotations        map[string]string
+		expectedAnnotations  map[string]string
+	}{
+		{
+			actionSetAnnotations: map[string]string{},
+			bpAnnotations:        map[string]string{},
+			expectedAnnotations:  map[string]string{},
+		},
+		{
+			actionSetAnnotations: map[string]string{
+				"one":   "valueone",
+				"two":   "valuetwo",
+				"three": "valuethree",
+			},
+			bpAnnotations: map[string]string{
+				"four": "valuefour",
+				"five": "valuefive",
+			},
+			expectedAnnotations: map[string]string{
+				"one":   "valueone",
+				"two":   "valuetwo",
+				"three": "valuethree",
+				"four":  "valuefour",
+				"five":  "valuefive",
+			},
+		},
+		{
+			actionSetAnnotations: map[string]string{
+				"one": "valueone",
+			},
+			bpAnnotations: map[string]string{
+				"four": "valuefour",
+			},
+			expectedAnnotations: map[string]string{
+				"one":  "valueone",
+				"four": "valuefour",
+			},
+		},
+		{
+			actionSetAnnotations: map[string]string{
+				"one": "valueone",
+			},
+			bpAnnotations: map[string]string{
+				"four": "valuefour",
+				"one":  "valuefive",
+			},
+			expectedAnnotations: map[string]string{
+				"one":  "valuefive",
+				"four": "valuefour",
+			},
+		},
+		{
+			actionSetAnnotations: map[string]string{
+				"one": "valueone",
+				"two": "valuetwo",
+			},
+			bpAnnotations: map[string]string{
+				"four": "valuefour",
+				"one":  "valuefive",
+			},
+			expectedAnnotations: map[string]string{
+				"two":  "valuetwo",
+				"four": "valuefour",
+				"one":  "valuefive",
+			},
+		},
+		{
+			actionSetAnnotations: map[string]string{
+				"one": "valueone",
+				"two": "valuetwo",
+			},
+			bpAnnotations: map[string]string{},
+			expectedAnnotations: map[string]string{
+				"one": "valueone",
+				"two": "valuetwo",
+			},
+		},
+		{
+			actionSetAnnotations: map[string]string{},
+			bpAnnotations: map[string]string{
+				"one": "valueone",
+				"two": "valuetwo",
+			},
+			expectedAnnotations: map[string]string{
+				"one": "valueone",
+				"two": "valuetwo",
+			},
+		},
+	} {
+		var asAnnotations ActionSetAnnotations = tc.actionSetAnnotations
+		anotations := asAnnotations.MergeBPAnnotations(tc.bpAnnotations)
+		c.Assert(anotations, DeepEquals, tc.expectedAnnotations)
+	}
+}
+
+func (s *UtilsTestSuite) TestMergeBPLabels(c *C) {
+	for _, tc := range []struct {
+		actionSetLabels map[string]string
+		bpLabels        map[string]string
+		expectedLabels  map[string]string
+	}{
+		{
+			actionSetLabels: map[string]string{},
+			bpLabels:        map[string]string{},
+			expectedLabels:  map[string]string{},
+		},
+		{
+			actionSetLabels: map[string]string{
+				"keyone": "valueone",
+			},
+			bpLabels: map[string]string{
+				"keyfive": "valuefive",
+			},
+			expectedLabels: map[string]string{
+				"keyone":  "valueone",
+				"keyfive": "valuefive",
+			},
+		},
+		{
+			actionSetLabels: map[string]string{
+				"keyone":   "valueone",
+				"keytwo":   "valuetwo",
+				"keythree": "valuethree",
+			},
+			bpLabels: map[string]string{
+				"keyfive":  "valuefive",
+				"keysix":   "valuesix",
+				"keyseven": "valueseven",
+			},
+			expectedLabels: map[string]string{
+				"keyone":   "valueone",
+				"keytwo":   "valuetwo",
+				"keythree": "valuethree",
+				"keyfive":  "valuefive",
+				"keysix":   "valuesix",
+				"keyseven": "valueseven",
+			},
+		},
+		{
+			actionSetLabels: map[string]string{
+				"keyone":   "valueone",
+				"keytwo":   "valuetwo",
+				"keythree": "valuethree",
+			},
+			bpLabels: map[string]string{
+				"keyfive":  "valuefive",
+				"keytwo":   "valuesix",
+				"keythree": "valueseven",
+			},
+			expectedLabels: map[string]string{
+				"keyone":   "valueone",
+				"keytwo":   "valuesix",
+				"keythree": "valueseven",
+				"keyfive":  "valuefive",
+			},
+		},
+		{
+			actionSetLabels: map[string]string{
+				"keyone":   "valueone",
+				"keytwo":   "valuetwo",
+				"keythree": "valuethree",
+			},
+			bpLabels: map[string]string{},
+			expectedLabels: map[string]string{
+				"keyone":   "valueone",
+				"keytwo":   "valuetwo",
+				"keythree": "valuethree",
+			},
+		},
+		{
+			actionSetLabels: map[string]string{},
+			bpLabels: map[string]string{
+				"keyone":   "valueone",
+				"keytwo":   "valuetwo",
+				"keythree": "valuethree",
+			},
+			expectedLabels: map[string]string{
+				"keyone":   "valueone",
+				"keytwo":   "valuetwo",
+				"keythree": "valuethree",
+			},
+		},
+	} {
+		var actionSetLabels ActionSetLabels = tc.actionSetLabels
+		labels := actionSetLabels.MergeBPLabels(tc.bpLabels)
+		c.Assert(labels, DeepEquals, tc.expectedLabels)
+	}
+}
+
 func newValidProfile() *param.Profile {
 	return &param.Profile{
 		Location: crv1alpha1.Location{

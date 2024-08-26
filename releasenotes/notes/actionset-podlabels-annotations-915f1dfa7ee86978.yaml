@@ -1,0 +1,1 @@
+features: Added two new fields, ``podLabels`` and ``podAnnotations``, to the ActionSet. These fields can be used to configure the labels and annotations of the Kanister function pod run by an ActionSet.

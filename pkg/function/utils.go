@@ -393,3 +393,37 @@ func ValidateAnnotations(annotations map[string]string) error {
 	// annotation values don't actually have a strict format
 	return nil
 }
+
+type ActionSetAnnotations map[string]string
+
+// MergeBPAnnotations merges the annotations provided in the blueprint with the annotations
+// configured via actionset. If the same key is present at both places, the one in blueprint
+// will be used.
+func (a ActionSetAnnotations) MergeBPAnnotations(bpAnnotations map[string]string) map[string]string {
+	annotations := map[string]string{}
+	for k, v := range a {
+		annotations[k] = v
+	}
+	for k, v := range bpAnnotations {
+		annotations[k] = v
+	}
+
+	return annotations
+}
+
+type ActionSetLabels map[string]string
+
+// MergeBPLabels merges the labels provided in the blueprint with the labels
+// configured via actionset. If the same key is present at both places, the one in blueprint
+// will be used.
+func (a ActionSetLabels) MergeBPLabels(bpLabels map[string]string) map[string]string {
+	labels := map[string]string{}
+	for k, v := range a {
+		labels[k] = v
+	}
+	for k, v := range bpLabels {
+		labels[k] = v
+	}
+
+	return labels
+}

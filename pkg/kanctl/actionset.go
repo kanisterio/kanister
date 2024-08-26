@@ -34,6 +34,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -60,6 +61,8 @@ const (
 	objectsFlagName                      = "objects"
 	waitForRepositoryServerReadyFlagName = "wait-for-repository-server"
 	labelsFlagName                       = "labels"
+	podAnnotationsFlagName               = "podannotations"
+	podLabelsFlagName                    = "podlabels"
 )
 
 var (
@@ -81,6 +84,8 @@ type PerformParams struct {
 	Secrets          map[string]crv1alpha1.ObjectReference
 	ConfigMaps       map[string]crv1alpha1.ObjectReference
 	Labels           map[string]string
+	PodLabels        map[string]string
+	PodAnnotations   map[string]string
 }
 
 func newActionSetCmd() *cobra.Command {
@@ -112,6 +117,8 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringSliceP(objectsFlagName, "O", []string{}, "objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)")
 	cmd.Flags().BoolP(waitForRepositoryServerReadyFlagName, "w", false, "wait for repository server to be ready before creating actionset")
 	cmd.Flags().String(labelsFlagName, "", "Labels that should be added to the created actionset, space chars would be trimmed automatically. Multiple labels can be separate by comma(,) (eg: --labels key=value,foo=bar)")
+	cmd.Flags().StringToString(podAnnotationsFlagName, nil, "This flag can be used to configure annotations of the pods that are created by Kanister functions that are run by this ActionSet. (eg. --podannotations=key1=value1,key2=value2)")
+	cmd.Flags().StringToString(podLabelsFlagName, nil, "This flag can be used to configure labels of the pods that are created by Kanister functions that are run by this ActionSet. (eg: --podlabels=key1=value1,key2=value2)")
 	return cmd
 }
 
@@ -184,6 +191,8 @@ func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 			Profile:          params.Profile,
 			RepositoryServer: params.RepositoryServer,
 			Options:          params.Options,
+			PodAnnotations:   params.PodAnnotations,
+			PodLabels:        params.PodLabels,
 		})
 	}
 
@@ -224,6 +233,8 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 			Profile:          parent.Spec.Actions[aidx].Profile,
 			RepositoryServer: parent.Spec.Actions[aidx].RepositoryServer,
 			Options:          mergeOptions(params.Options, parent.Spec.Actions[aidx].Options),
+			PodAnnotations:   params.PodAnnotations,
+			PodLabels:        params.PodLabels,
 		}
 		// Apply overrides
 		if params.ActionName != "" {
@@ -340,6 +351,19 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 		return nil, err
 	}
 
+	podAnnotations, _ := cmd.Flags().GetStringToString(podAnnotationsFlagName)
+	podLabels, _ := cmd.Flags().GetStringToString(podLabelsFlagName)
+
+	err = function.ValidateAnnotations(podAnnotations)
+	if err != nil {
+		return nil, err
+	}
+
+	err = function.ValidateLabels(podLabels)
+	if err != nil {
+		return nil, err
+	}
+
 	return &PerformParams{
 		Namespace:        ns,
 		ActionName:       actionName,
@@ -354,6 +378,8 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 		Profile:          profile,
 		RepositoryServer: repositoryServer,
 		Labels:           ls,
+		PodAnnotations:   podAnnotations,
+		PodLabels:        podLabels,
 	}, nil
 }
 
