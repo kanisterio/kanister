@@ -20,6 +20,7 @@ package testing
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -170,7 +171,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 		return false, nil
 	})
 	c.Assert(err, IsNil)
-	c.Logf("Completed E2E TestKubeExec")
+	log.Print("Completed E2E TestKubeExec")
 }
 
 func (s *E2ESuite) TestKubeTask(c *C) {
@@ -294,7 +295,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		return false, nil
 	})
 	c.Assert(err, IsNil)
-	c.Log("Completed E2E TestKubeTask")
+	log.Print("Completed E2E TestKubeTask")
 }
 
 func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
@@ -469,7 +470,46 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 
 	err = s.waitForActionSetComplete(asCreatedFour.Name)
 	c.Assert(err, IsNil)
-	c.Log("Completed E2E TestPodLabelsAndAnnotations")
+
+	// test restore actionset
+	bpObj = blueprintWithPodFunctions()
+	bp, err = s.crCli.Blueprints(s.namespace).Create(context.Background(), bpObj, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	asRestore := restoreActionsetWithPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"asAnnKeyTwo": "asAnnValTwo",
+	}, map[string]string{
+		"asLabKeyOne": "asLabValOne",
+	})
+	asRestoreCreated, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asRestore, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitForFunctionPodReady()
+	c.Assert(err, IsNil)
+
+	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
+		LabelSelector: "createdBy=kanister",
+	})
+	c.Assert(err, IsNil)
+	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
+		"bpLabKeyOne": "bpLabValueOne",
+		"labKey":      "labValue",
+		"asLabKeyOne": "asLabValOne",
+	})
+	c.Assert(err, IsNil)
+	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
+		"asAnnKeyOne": "asAnnValOne",
+		"asAnnKeyTwo": "asAnnValTwo",
+		"bpAnnKeyOne": "bpAnnValueOne",
+		"annKey":      "annValue",
+	})
+	c.Assert(err, IsNil)
+
+	err = s.waitForActionSetComplete(asRestoreCreated.Name)
+	c.Assert(err, IsNil)
+
+	log.Print("Completed E2E TestPodLabelsAndAnnotations")
 }
 
 func (s *E2ESuite) waitForActionSetComplete(asName string) error {
@@ -536,6 +576,10 @@ func verifyLabelsInFunctionPod(funcPodLabels, expectedLabels map[string]string) 
 }
 
 func backupActionsetWihtPodLabelsAndAnnotations(testNS, bpName string, annotations, labels map[string]string) *crv1alpha1.ActionSet {
+	return actionSetWithAction("backup", testNS, bpName, annotations, labels)
+}
+
+func actionSetWithAction(action, testNS, bpName string, annotations, labels map[string]string) *crv1alpha1.ActionSet {
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "actionset-",
@@ -543,7 +587,7 @@ func backupActionsetWihtPodLabelsAndAnnotations(testNS, bpName string, annotatio
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
 				{
-					Name: "backup",
+					Name: action,
 					Object: crv1alpha1.ObjectReference{
 						Kind:      "Namespace",
 						Name:      testNS,
@@ -556,6 +600,10 @@ func backupActionsetWihtPodLabelsAndAnnotations(testNS, bpName string, annotatio
 			},
 		},
 	}
+}
+
+func restoreActionsetWithPodLabelsAndAnnotations(testNS, bpName string, annotations, labels map[string]string) *crv1alpha1.ActionSet {
+	return actionSetWithAction("restore", testNS, bpName, annotations, labels)
 }
 
 // blueprintWithPodFunctions returns a blueprint resource that has kanister functions
@@ -587,7 +635,27 @@ func blueprintWithPodFunctions() *crv1alpha1.Blueprint {
 					},
 				},
 			},
-			"restore": {},
+			"restore": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Func: function.KubeTaskFuncName,
+						Name: "restorephase-one",
+						Args: map[string]interface{}{
+							"image":     "ghcr.io/kanisterio/kanister-tools:0.110.0",
+							"namespace": "default",
+							"command":   []string{"sleep", "10"},
+							"podLabels": map[string]interface{}{
+								"bpLabKeyOne": "bpLabValueOne",
+								"labKey":      "labValue",
+							},
+							"podAnnotations": map[string]interface{}{
+								"bpAnnKeyOne": "bpAnnValueOne",
+								"annKey":      "annValue",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
