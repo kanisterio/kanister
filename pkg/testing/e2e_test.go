@@ -170,6 +170,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 		return false, nil
 	})
 	c.Assert(err, IsNil)
+	c.Logf("Completed E2E TestKubeExec")
 }
 
 func (s *E2ESuite) TestKubeTask(c *C) {
@@ -293,6 +294,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		return false, nil
 	})
 	c.Assert(err, IsNil)
+	c.Log("Completed E2E TestKubeTask")
 }
 
 func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
@@ -467,6 +469,7 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 
 	err = s.waitForActionSetComplete(asCreatedFour.Name)
 	c.Assert(err, IsNil)
+	c.Log("Completed E2E TestPodLabelsAndAnnotations")
 }
 
 func (s *E2ESuite) waitForActionSetComplete(asName string) error {
