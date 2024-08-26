@@ -530,6 +530,9 @@ func (s *E2ESuite) waitForActionSetComplete(asName string) error {
 	})
 }
 
+// waitForFunctionPodReady waits for the pod created by a Kanister function. The pods
+// that get created by Kanister function have the label `createdBy=kanister`, that's
+// why we are checking that label in the pods to make sure one pod is created.
 func (s *E2ESuite) waitForFunctionPodReady() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
