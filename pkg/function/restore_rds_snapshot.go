@@ -129,7 +129,7 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 
 	var namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, postgresToolsImage string
 	var dbEngine RDSDBEngine
-	var annotations, labels map[string]string
+	var bpAnnotations, bpLabels map[string]string
 
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
 		return nil, err
@@ -148,12 +148,26 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 	if err := OptArg(args, RestoreRDSSnapshotImage, &postgresToolsImage, defaultPostgresToolsImage); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+	if err := OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, PodLabelsArg, &labels, nil); err != nil {
+	if err := OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
 		return nil, err
 	}
+
+	var labels, annotations map[string]string
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
+	}
+
 	// Find security groups
 	sgIDs, err := GetYamlList(args, RestoreRDSSnapshotSecGrpID)
 	if err != nil {
