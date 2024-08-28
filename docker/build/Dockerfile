@@ -31,7 +31,7 @@ RUN GOBIN=/usr/local/bin go install github.com/ahmetb/gen-crd-api-reference-docs
 
 RUN apt-get update && apt-get install -y pip
 
-COPY docker/build/requirements.txt requirements.txt
+COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 RUN apt-get install -y vim
