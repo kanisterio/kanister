@@ -1157,7 +1157,6 @@ func (s *PodSuite) TestAddLabels(c *check.C) {
 		},
 	} {
 		tc.podOptions.AddLabels(tc.labels)
-		// AddLabelsToPodOptions(tc.podOptions, tc.labels)
 		c.Assert(tc.podOptions, check.DeepEquals, tc.expectedPodOptions)
 	}
 }
@@ -1239,7 +1238,6 @@ func (s *PodSuite) TestAddAnnotations(c *check.C) {
 		},
 	} {
 		tc.podOptions.AddAnnotations(tc.annotations)
-		// AddAnnotationsToPodOptions(tc.podOptions, tc.annotations)
 		c.Assert(tc.podOptions, check.DeepEquals, tc.expectedPodOptions)
 	}
 }
