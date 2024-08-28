@@ -148,7 +148,7 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, context.Canceled), Equals, true)
 		},
-		"Successfull execution": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
+		"Successful execution": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
 			var err error
 			prp.execWithOptionsStdout = "{\"where\":\"standard output\"}\n{\"what\":\"output json\"}"
 			prp.execWithOptionsStderr = "{\"where\":\"standard error\"}\n{\"what\":\"error json\"}"

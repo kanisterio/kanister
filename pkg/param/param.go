@@ -60,6 +60,8 @@ type TemplateParams struct {
 	Phases           map[string]*Phase
 	DeferPhase       *Phase
 	PodOverride      crv1alpha1.JSONMap
+	PodAnnotations   map[string]string
+	PodLabels        map[string]string
 }
 
 // DeploymentConfigParams are params for deploymentconfig, will be used if working on open shift cluster
@@ -200,6 +202,8 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		Time:             now.Format(timeFormat),
 		Options:          as.Options,
 		PodOverride:      as.PodOverride,
+		PodAnnotations:   as.PodAnnotations,
+		PodLabels:        as.PodLabels,
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace

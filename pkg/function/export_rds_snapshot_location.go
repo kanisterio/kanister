@@ -196,7 +196,7 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 
 	var namespace, instanceID, snapshotID, username, password, dbSubnetGroup, backupArtifact, postgresToolsImage string
 	var dbEngine RDSDBEngine
-	var annotations, labels map[string]string
+	var bpAnnotations, bpLabels map[string]string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -225,12 +225,26 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 	if err := OptArg(args, ExportRDSSnapshotToLocImageArg, &postgresToolsImage, defaultPostgresToolsImage); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+	if err := OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, PodLabelsArg, &labels, nil); err != nil {
+	if err := OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
 		return nil, err
 	}
+
+	var labels, annotations map[string]string
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
+	}
+
 	// Find databases
 	databases, err := GetYamlList(args, ExportRDSSnapshotToLocDatabasesArg)
 	if err != nil {

@@ -24,6 +24,7 @@ export GO111MODULE=on
 go mod download
 execDir="/go/pkg/mod/k8s.io/code-generator@$(go list -f '{{.Version}}' -m k8s.io/code-generator)"
 chmod +x "${execDir}"/generate-groups.sh
+chmod +x "${execDir}"/generate-internal-groups.sh
 "${execDir}"/generate-groups.sh                         \
   all                                        \
   github.com/kanisterio/kanister/pkg/client  \

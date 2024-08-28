@@ -62,7 +62,7 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 		},
 	},
 	{
-		Name: "repository connect server, with additonal args",
+		Name: "repository connect server, with additional args",
 		Command: func() (*safecli.Builder, error) {
 			arguments := ConnectServerArgs{
 				Common:      common,
