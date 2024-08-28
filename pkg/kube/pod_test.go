@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/check.v1"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1080,7 +1079,7 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 	c.Assert(name, Equals, DefaultContainerName)
 }
 
-func (s *PodSuite) TestAddLabels(c *check.C) {
+func (s *PodSuite) TestAddLabels(c *C) {
 	for _, tc := range []struct {
 		podOptions         *PodOptions
 		labels             map[string]string
@@ -1157,11 +1156,11 @@ func (s *PodSuite) TestAddLabels(c *check.C) {
 		},
 	} {
 		tc.podOptions.AddLabels(tc.labels)
-		c.Assert(tc.podOptions, check.DeepEquals, tc.expectedPodOptions)
+		c.Assert(tc.podOptions, DeepEquals, tc.expectedPodOptions)
 	}
 }
 
-func (s *PodSuite) TestAddAnnotations(c *check.C) {
+func (s *PodSuite) TestAddAnnotations(c *C) {
 	for _, tc := range []struct {
 		podOptions         *PodOptions
 		annotations        map[string]string
@@ -1238,6 +1237,6 @@ func (s *PodSuite) TestAddAnnotations(c *check.C) {
 		},
 	} {
 		tc.podOptions.AddAnnotations(tc.annotations)
-		c.Assert(tc.podOptions, check.DeepEquals, tc.expectedPodOptions)
+		c.Assert(tc.podOptions, DeepEquals, tc.expectedPodOptions)
 	}
 }
