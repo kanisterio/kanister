@@ -43,7 +43,6 @@ issues:
         - errcheck                      # Errors may be ignored in tests.
         - unparam                       # Tests might have unused function parameters.
         - lll
-        - dupl
         - nestif
         - gci
         - stylecheck
