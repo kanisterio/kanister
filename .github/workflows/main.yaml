@@ -88,6 +88,12 @@ jobs:
         make install-minio
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
+    - name: Upload results to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: coverage.txt
+
   build:
     runs-on: ubuntu-20.04
     needs: gomod
