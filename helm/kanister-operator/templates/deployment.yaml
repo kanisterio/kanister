@@ -14,6 +14,10 @@ spec:
       labels:
 {{ include "kanister-operator.helmLabels" . | indent 8}}
     spec:
+{{- if .Values.controller.podSecurityContext }}
+      securityContext: 
+{{ toYaml .Values.controller.podSecurityContext | indent 8 }}
+{{- end }}
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
 {{- if or .Values.bpValidatingWebhook.enabled .Values.validatingWebhook.repositoryserver.enabled }}
       volumes:
@@ -29,6 +33,8 @@ spec:
       - name: {{ template "kanister-operator.fullname" . }}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext: 
+{{ include "controller.containerSecurityContext" . }}
 {{- if .Values.bpValidatingWebhook.enabled }}
         volumeMounts:
           - name: webhook-certs
@@ -53,6 +59,8 @@ spec:
       - name: {{ template "repository-server-controller.name" . }}
         image: {{ .Values.repositoryServerControllerImage.registry }}/{{ .Values.repositoryServerControllerImage.name }}:{{ .Values.repositoryServerControllerImage.tag }}
         imagePullPolicy: {{ .Values.repositoryServerControllerImage.pullPolicy }}
+        securityContext: 
+{{ include "controller.containerSecurityContext" . }}
 {{- if .Values.validatingWebhook.repositoryserver.enabled }}
         volumeMounts:
           - name: webhook-certs
