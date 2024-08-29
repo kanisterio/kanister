@@ -16,9 +16,14 @@
 package main
 
 import (
+	"context"
+
 	"github.com/kanisterio/kanister/pkg/kanctl"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/tracing"
 )
+
+const thisServiceName = "kanctl"
 
 func init() {
 	// We silence all non-fatal log messages.
@@ -26,6 +31,16 @@ func init() {
 }
 
 func main() {
+	ctx := context.Background()
+	// tracer, closer := tracing.Init(thisServiceName)
+	// defer closer.Close()
+	// opentracing.SetGlobalTracer(tracer)
+
+	tp, err := tracing.Init(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer tp.Shutdown(ctx)
 	log.SetupClusterNameInLogVars()
 
 	kanctl.Execute()

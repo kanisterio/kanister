@@ -476,6 +476,8 @@ github.com/openshift/api v0.0.0-20231222123017-053aee22b4b4 h1:XHl52N6/q+aE5qvmN
 github.com/openshift/api v0.0.0-20231222123017-053aee22b4b4/go.mod h1:CxgbWAlvu2iQB0UmKTtRu1YfepRg1/vJ64n2DlIEVz4=
 github.com/openshift/client-go v0.0.0-20231221125933-2aa81c72f992 h1:JQ/w7ublPBrPRwknrde4apbTR23PDxKYUmkkfo1Nvws=
 github.com/openshift/client-go v0.0.0-20231221125933-2aa81c72f992/go.mod h1:5W+xoimHjRdZ0dI/yeQR0ANRNLK9mPmXMzUWPAIPADo=
+github.com/opentracing/opentracing-go v1.2.0 h1:uEJPy/1a5RIPAJ0Ov+OIO8OxWu77jEv+1B0VhjKrZUs=
+github.com/opentracing/opentracing-go v1.2.0/go.mod h1:GxEUsuufX4nBwe+T+Wl9TAgYrxe9dPLANfrWvHYVTgc=
 github.com/orisano/pixelmatch v0.0.0-20220722002657-fb0b55479cde/go.mod h1:nZgzbfBr3hhjoZnS66nKrHmduYNpc34ny7RK4z5/HM0=
 github.com/peterbourgon/diskv v2.0.1+incompatible h1:UBdAOUP5p4RWqPBg048CAvpKN+vxiaj6gdUUzhl4XmI=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=

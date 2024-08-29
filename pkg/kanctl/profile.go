@@ -20,8 +20,10 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -60,6 +62,8 @@ const (
 
 	secretFormat = "%s-secret-%s"
 )
+
+var tracer = otel.Tracer("profile")
 
 type locationParams struct {
 	locationType  crv1alpha1.LocationType
@@ -145,6 +149,13 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 		return newArgsLengthError("expected 0 args. Got %#v", args)
 	}
 	ctx := context.Background()
+
+	// span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, tracer, "CreateNewProfile")
+	// defer span.Finish()
+
+	ctx, span := tracer.Start(ctx, "CreateNewProfile")
+	defer span.End()
+
 	skipValidation, _ := cmd.Flags().GetBool(skipValidationFlag)
 	dryRun, _ := cmd.Flags().GetBool(dryRunFlag)
 	cli, crCli, _, err := initializeClients()
@@ -345,6 +356,11 @@ func constructSecret(ctx context.Context, lP *locationParams, cmd *cobra.Command
 }
 
 func createSecret(ctx context.Context, s *corev1.Secret, cli kubernetes.Interface) (*corev1.Secret, error) {
+	// span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, tracer, "CreateSecret")
+	// defer span.Finish()
+	ctx, span := tracer.Start(ctx, "CreateSecret")
+	defer span.End()
+
 	secret, err := cli.CoreV1().Secrets(s.GetNamespace()).Create(ctx, s, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
@@ -354,6 +370,10 @@ func createSecret(ctx context.Context, s *corev1.Secret, cli kubernetes.Interfac
 }
 
 func deleteSecret(ctx context.Context, secret *corev1.Secret, cli kubernetes.Interface) error {
+	ctx, span := tracer.Start(ctx, "DeleteSecret")
+	defer span.End()
+	// span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, tracer, "DeleteSecret")
+	// defer span.Finish()
 	err := cli.CoreV1().Secrets(secret.GetNamespace()).Delete(ctx, secret.GetName(), metav1.DeleteOptions{})
 	if err == nil {
 		fmt.Printf("secret '%s' deleted\n", secret.GetName())
@@ -388,6 +408,11 @@ func printProfile(profile *crv1alpha1.Profile) error {
 }
 
 func createProfile(ctx context.Context, profile *crv1alpha1.Profile, crCli versioned.Interface) error {
+	ctx, span := tracer.Start(ctx, "CreateProfileResource")
+	defer span.End()
+
+	// span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, tracer, "CreateProfileResource")
+	// defer span.Finish()
 	profile, err := crCli.CrV1alpha1().Profiles(profile.GetNamespace()).Create(ctx, profile, metav1.CreateOptions{})
 	if err == nil {
 		fmt.Printf("profile '%s' created\n", profile.GetName())
@@ -410,6 +435,8 @@ func performProfileValidation(p *validateParams) error {
 }
 
 func validateProfile(ctx context.Context, profile *crv1alpha1.Profile, cli kubernetes.Interface, schemaValidationOnly bool, printFailStageOnly bool) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "ValidateProfile")
+	defer span.Finish()
 	var err error
 	if err = validate.ProfileSchema(profile); err != nil {
 		utils.PrintStage(schemaValidation, utils.Fail)
