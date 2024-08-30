@@ -16,6 +16,8 @@ package function
 
 import (
 	"context"
+	"fmt"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
@@ -119,5 +121,22 @@ func getPVCManifest(pvcName, storageClassName string) *corev1.PersistentVolumeCl
 				},
 			},
 		},
+	}
+}
+
+func (testSuite *CreateCSISnapshotTestSuite) TestDefaultSnapshotName(c *C) {
+	for _, tc := range []struct {
+		pvcName              string
+		len                  int
+		expectedSnapshotName string
+	}{
+		{
+			pvcName:              pvcName,
+			len:                  2,
+			expectedSnapshotName: fmt.Sprintf("%s-snapshot-%s", pvcName, rand.String(2)),
+		},
+	} {
+		gotSnapshotName := defaultSnapshotName(tc.pvcName, tc.len)
+		c.Assert(gotSnapshotName[:len(tc.pvcName)], Equals, tc.expectedSnapshotName[:len(tc.pvcName)])
 	}
 }
