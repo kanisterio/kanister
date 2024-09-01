@@ -88,7 +88,7 @@ jobs:
         make install-minio
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
-    - name: Upload results to Codecov
+    - name: Upload coverage results to Codecov
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
