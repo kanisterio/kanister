@@ -5,7 +5,7 @@ on:
   push:
     branches:
     - master
-  pull_request: [master]
+  pull_request:
 
 jobs:
   ## Make sure go.mod and go.sum files are up-to-date with the code
