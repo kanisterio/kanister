@@ -89,7 +89,7 @@ jobs:
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
     - name: Upload coverage results to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: coverage.txt
