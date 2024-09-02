@@ -99,6 +99,9 @@ jobs:
       with:
         recreate: true
         path: code-coverage-results.md
+    - name: Code Coverage Summary
+      uses: irongut/CodeCoverageSummary@v1.3.0
+
 
   build:
     runs-on: ubuntu-20.04
