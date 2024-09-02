@@ -2,3 +2,6 @@ comment:
   require_changes: false
   require_head: false     # default true
   require_base: false     # default true
+  layout: " diff, flags, files"
+  behavior: default
+  hide_project_coverage: false
