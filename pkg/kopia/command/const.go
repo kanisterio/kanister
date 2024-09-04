@@ -126,4 +126,10 @@ const (
 
 	// DefaultHtpasswdFilePath is the path to the generated htpasswd file
 	DefaultHtpasswdFilePath = "/tmp/kopia-htpasswd"
+
+	// DefaultContentCacheLimitMB is the default content cache limit in MB.
+	DefaultContentCacheLimitMB = 500
+
+	// DefaultMetadataCacheLimitMB is the default metadata cache limit in MB.
+	DefaultMetadataCacheLimitMB = 500
 )
