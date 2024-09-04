@@ -393,7 +393,8 @@ func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 	c.Check(err, IsNil)
 	data, err := io.ReadAll(r)
 	c.Check(err, IsNil)
-	r.Close()
+	err = r.Close()
+	c.Assert(err, IsNil)
 	c.Check(data, DeepEquals, data1B)
 
 	err = rootDirectory.Put(ctx, obj2, bytes.NewReader(data2B), int64(len(data2B)), tags)
@@ -402,7 +403,8 @@ func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 	c.Check(err, IsNil)
 	data, err = io.ReadAll(r)
 	c.Check(err, IsNil)
-	r.Close()
+	err = r.Close()
+	c.Assert(err, IsNil)
 	c.Check(data, DeepEquals, data2B)
 	c.Check(ntags, DeepEquals, tags)
 
