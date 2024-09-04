@@ -63,8 +63,11 @@ func (s *PodSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
 
-	os.Setenv("POD_NAMESPACE", ns.Name)
-	os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
+	err = os.Setenv("POD_NAMESPACE", ns.Name)
+	c.Assert(err, IsNil)
+
+	err = os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
+	c.Assert(err, IsNil)
 
 	err = s.createServiceAccount(testSAName, s.namespace)
 	c.Assert(err, IsNil)
@@ -850,10 +853,11 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 func (s *PodSuite) TestGetPodReadyWaitTimeout(c *C) {
 	// Setup ENV to change the default timeout
-	os.Setenv(PodReadyWaitTimeoutEnv, "5")
+	err := os.Setenv(PodReadyWaitTimeoutEnv, "5")
+	c.Assert(err, IsNil)
 	c.Assert(GetPodReadyWaitTimeout(), Equals, time.Minute*5)
-	os.Unsetenv(PodReadyWaitTimeoutEnv)
-
+	err = os.Unsetenv(PodReadyWaitTimeoutEnv)
+	c.Assert(err, IsNil)
 	// Check without ENV set
 	c.Assert(GetPodReadyWaitTimeout(), Equals, DefaultPodReadyWaitTimeout)
 }
@@ -1077,4 +1081,166 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 
 	name = ContainerNameFromPodOptsOrDefault(nil)
 	c.Assert(name, Equals, DefaultContainerName)
+}
+
+func (s *PodSuite) TestAddLabels(c *C) {
+	for _, tc := range []struct {
+		podOptions         *PodOptions
+		labels             map[string]string
+		expectedPodOptions *PodOptions
+	}{
+		{
+			podOptions: &PodOptions{},
+			labels: map[string]string{
+				"keyOne": "valOne",
+			},
+			expectedPodOptions: &PodOptions{
+				Labels: map[string]string{
+					"keyOne": "valOne",
+				},
+			},
+		},
+		{
+			podOptions: nil,
+			labels: map[string]string{
+				"keyOne": "valOne",
+			},
+			expectedPodOptions: nil,
+		},
+		{
+			podOptions: &PodOptions{
+				Labels: map[string]string{
+					"key": "val",
+				},
+			},
+			labels: map[string]string{
+				"keyOne": "valOne",
+			},
+			expectedPodOptions: &PodOptions{
+				Labels: map[string]string{
+					"key":    "val",
+					"keyOne": "valOne",
+				},
+			},
+		},
+		{
+			podOptions: &PodOptions{
+				Labels: map[string]string{
+					"key":     "val",
+					"keyZero": "valZero",
+				},
+			},
+			labels: map[string]string{
+				"keyOne": "valOne",
+				"keyTwo": "valTwo",
+			},
+			expectedPodOptions: &PodOptions{
+				Labels: map[string]string{
+					"key":     "val",
+					"keyZero": "valZero",
+					"keyOne":  "valOne",
+					"keyTwo":  "valTwo",
+				},
+			},
+		},
+		{
+			podOptions: &PodOptions{
+				Labels: map[string]string{
+					"key":     "val",
+					"keyZero": "valZero",
+				},
+			},
+			labels: nil,
+			expectedPodOptions: &PodOptions{
+				Labels: map[string]string{
+					"key":     "val",
+					"keyZero": "valZero",
+				},
+			},
+		},
+	} {
+		tc.podOptions.AddLabels(tc.labels)
+		c.Assert(tc.podOptions, DeepEquals, tc.expectedPodOptions)
+	}
+}
+
+func (s *PodSuite) TestAddAnnotations(c *C) {
+	for _, tc := range []struct {
+		podOptions         *PodOptions
+		annotations        map[string]string
+		expectedPodOptions *PodOptions
+	}{
+		{
+			podOptions: &PodOptions{},
+			annotations: map[string]string{
+				"keyOne": "valOne",
+			},
+			expectedPodOptions: &PodOptions{
+				Annotations: map[string]string{
+					"keyOne": "valOne",
+				},
+			},
+		},
+		{
+			podOptions: nil,
+			annotations: map[string]string{
+				"keyOne": "valOne",
+			},
+			expectedPodOptions: nil,
+		},
+		{
+			podOptions: &PodOptions{
+				Annotations: map[string]string{
+					"key": "val",
+				},
+			},
+			annotations: map[string]string{
+				"keyOne": "valOne",
+			},
+			expectedPodOptions: &PodOptions{
+				Annotations: map[string]string{
+					"key":    "val",
+					"keyOne": "valOne",
+				},
+			},
+		},
+		{
+			podOptions: &PodOptions{
+				Annotations: map[string]string{
+					"key":     "val",
+					"keyZero": "valZero",
+				},
+			},
+			annotations: map[string]string{
+				"keyOne": "valOne",
+				"keyTwo": "valTwo",
+			},
+			expectedPodOptions: &PodOptions{
+				Annotations: map[string]string{
+					"key":     "val",
+					"keyZero": "valZero",
+					"keyOne":  "valOne",
+					"keyTwo":  "valTwo",
+				},
+			},
+		},
+		{
+			podOptions: &PodOptions{
+				Annotations: map[string]string{
+					"key":     "val",
+					"keyZero": "valZero",
+				},
+			},
+			annotations: nil,
+			expectedPodOptions: &PodOptions{
+				Annotations: map[string]string{
+					"key":     "val",
+					"keyZero": "valZero",
+				},
+			},
+		},
+	} {
+		tc.podOptions.AddAnnotations(tc.annotations)
+		c.Assert(tc.podOptions, DeepEquals, tc.expectedPodOptions)
+	}
 }

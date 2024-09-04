@@ -84,6 +84,34 @@ type PodOptions struct {
 	Lifecycle                *corev1.Lifecycle
 }
 
+func (po *PodOptions) AddLabels(labels map[string]string) {
+	if po == nil {
+		return
+	}
+
+	if po.Labels == nil {
+		po.Labels = make(map[string]string)
+	}
+
+	for k, v := range labels {
+		po.Labels[k] = v
+	}
+}
+
+func (po *PodOptions) AddAnnotations(annotations map[string]string) {
+	if po == nil {
+		return
+	}
+
+	if po.Annotations == nil {
+		po.Annotations = make(map[string]string)
+	}
+
+	for k, v := range annotations {
+		po.Annotations[k] = v
+	}
+}
+
 func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*corev1.Pod, error) {
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()

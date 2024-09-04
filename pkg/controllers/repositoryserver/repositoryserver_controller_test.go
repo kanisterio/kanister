@@ -119,7 +119,8 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	ws := webhook.NewServer(webhook.Options{Port: 9443})
 	// Since we are not creating the controller in a pod
 	// the repository server controller needs few env variables set explicitly
-	os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
+	err = os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
+	c.Assert(err, IsNil)
 
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:         scheme,
@@ -148,10 +149,13 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	go func(ctx context.Context) {
 		// Env setup required to start the controller service
 		// We need to set this up since we are not creating controller in a pod
-		os.Setenv("HOSTNAME", controllerPodName)
-		os.Setenv("POD_SERVICE_ACCOUNT", defaultServiceAccount)
+		err := os.Setenv("HOSTNAME", controllerPodName)
+		c.Assert(err, IsNil)
+		err = os.Setenv("POD_SERVICE_ACCOUNT", defaultServiceAccount)
+		c.Assert(err, IsNil)
 		// Set KANISTER_TOOLS env to override and use dev image
-		os.Setenv(consts.KanisterToolsImageEnvName, consts.LatestKanisterToolsImage)
+		err = os.Setenv(consts.KanisterToolsImageEnvName, consts.LatestKanisterToolsImage)
+		c.Assert(err, IsNil)
 		err = mgr.Start(ctx)
 		c.Assert(err, IsNil)
 	}(ctx)

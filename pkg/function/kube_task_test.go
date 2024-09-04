@@ -53,8 +53,10 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
-	os.Setenv("POD_NAMESPACE", cns.Name)
-	os.Setenv("POD_SERVICE_ACCOUNT", "default")
+	err = os.Setenv("POD_NAMESPACE", cns.Name)
+	c.Assert(err, IsNil)
+	err = os.Setenv("POD_SERVICE_ACCOUNT", "default")
+	c.Assert(err, IsNil)
 }
 
 func (s *KubeTaskSuite) TearDownSuite(c *C) {

@@ -46,9 +46,12 @@ func (s *EnvVarSuite) TestOSEnvVarKubePodOptions(c *C) {
 	c.Assert(options.EnvironmentVariables, DeepEquals, []corev1.EnvVar(nil))
 
 	// OS environment variable set
-	os.Setenv(expected[0].Name, expected[0].Value)
-	defer os.Unsetenv(expected[0].Name)
-
+	err := os.Setenv(expected[0].Name, expected[0].Value)
+	c.Assert(err, IsNil)
+	defer func() {
+		err := os.Unsetenv(expected[0].Name)
+		c.Assert(err, IsNil)
+	}()
 	registeredAppliers.Apply(&options)
 	c.Assert(options.EnvironmentVariables, DeepEquals, expected)
 }
@@ -71,9 +74,13 @@ func (s *EnvVarSuite) TestOSEnvVarCoreV1Container(c *C) {
 	c.Assert(options.Env, DeepEquals, []corev1.EnvVar(nil))
 
 	// OS environment variable set
-	os.Setenv(expected[0].Name, expected[0].Value)
-	defer os.Unsetenv(expected[0].Name)
+	err := os.Setenv(expected[0].Name, expected[0].Value)
+	c.Assert(err, IsNil)
 
+	defer func() {
+		err := os.Unsetenv(expected[0].Name)
+		c.Assert(err, IsNil)
+	}()
 	registeredAppliers.Apply(&options)
 	c.Assert(options.Env, DeepEquals, expected)
 }

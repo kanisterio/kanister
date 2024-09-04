@@ -17,6 +17,7 @@ package output_test
 import (
 	"context"
 	"io"
+	"log"
 	"math/rand"
 	"time"
 
@@ -105,39 +106,60 @@ func generateTestCases(numOfLines, avgPrefixLength, avgKeyLength, avgValueLength
 
 func getTestReaderCloser(done chan struct{}, cases []testCase) io.ReadCloser {
 	pr, pw := io.Pipe()
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	go func() {
-		defer pw.Close()
-
-		for _, tc := range cases {
-			select {
-			case <-done:
-				return
-			default:
-				if tc.prefixLength != 0 {
-					endline := NoEndline
-					if tc.prefixWithEndline {
-						endline = NewlineEndline
-					}
-					prefixLine := generateRandomRunes(r, tc.prefixLength, endline)
-					_, err := pw.Write([]byte(string(prefixLine)))
-					if err != nil {
-						return
-					}
-				}
-
-				if tc.key != "" {
-					err := output.PrintOutputTo(pw, tc.key, string(tc.value))
-					if err != nil {
-						return
-					}
-				}
-			}
-		}
+		defer closePipe(pw)
+		writeTestCases(done, pw, cases)
 	}()
 
 	return pr
+}
+
+func closePipe(pw io.WriteCloser) {
+	if err := pw.Close(); err != nil {
+		log.Printf("Error %v closing connection", err)
+	}
+}
+
+func writeTestCases(done chan struct{}, pw io.Writer, cases []testCase) {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	for _, tc := range cases {
+		if shouldExit(done) {
+			return
+		}
+
+		if tc.prefixLength != 0 {
+			writePrefix(pw, r, tc)
+		}
+
+		if tc.key != "" {
+			if err := output.PrintOutputTo(pw, tc.key, string(tc.value)); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func shouldExit(done chan struct{}) bool {
+	select {
+	case <-done:
+		return true
+	default:
+		return false
+	}
+}
+
+func writePrefix(pw io.Writer, r *rand.Rand, tc testCase) {
+	endline := NoEndline
+	if tc.prefixWithEndline {
+		endline = NewlineEndline
+	}
+	prefixLine := generateRandomRunes(r, tc.prefixLength, endline)
+	_, err := pw.Write([]byte(string(prefixLine)))
+	if err != nil {
+		return
+	}
 }
 
 // TestLongStreamsWithoutPhaseOutput Will produce 10 long lines

@@ -198,7 +198,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 
 	var namespace, vol, targetPath, encryptionKey string
 	var err error
-	var annotations, labels map[string]string
+	var bpAnnotations, bpLabels map[string]string
 	var insecureTLS bool
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -215,15 +215,28 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PodAnnotationsArg, &annotations, nil); err != nil {
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PodLabelsArg, &labels, nil); err != nil {
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
 	if err != nil {
 		return nil, err
+	}
+
+	var labels, annotations map[string]string
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
 	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {

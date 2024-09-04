@@ -37,7 +37,8 @@ const (
 )
 
 func (s *PodCommandExecutorTestSuite) SetUpSuite(c *C) {
-	os.Setenv("POD_NAMESPACE", podCommandExecutorNS)
+	err := os.Setenv("POD_NAMESPACE", podCommandExecutorNS)
+	c.Assert(err, IsNil)
 }
 
 // testBarrier supports race-free synchronization between a controller and a background goroutine.
@@ -81,10 +82,14 @@ func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(ctx context.Context
 	fprp.inExecWithOptionsOpts = &opts
 	fprp.execWithOptionsSyncStart.SyncWithController()
 	if opts.Stdout != nil && len(fprp.execWithOptionsStdout) > 0 {
-		opts.Stdout.Write([]byte(fprp.execWithOptionsStdout))
+		if _, err := opts.Stdout.Write([]byte(fprp.execWithOptionsStdout)); err != nil {
+			return err
+		}
 	}
 	if opts.Stderr != nil && len(fprp.execWithOptionsStderr) > 0 {
-		opts.Stderr.Write([]byte(fprp.execWithOptionsStderr))
+		if _, err := opts.Stderr.Write([]byte(fprp.execWithOptionsStderr)); err != nil {
+			return err
+		}
 	}
 	fprp.execWithOptionsSyncEnd.SyncWithController()
 
@@ -148,7 +153,7 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			c.Assert(err, Not(IsNil))
 			c.Assert(errors.Is(err, context.Canceled), Equals, true)
 		},
-		"Successfull execution": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
+		"Successful execution": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
 			var err error
 			prp.execWithOptionsStdout = "{\"where\":\"standard output\"}\n{\"what\":\"output json\"}"
 			prp.execWithOptionsStderr = "{\"where\":\"standard error\"}\n{\"what\":\"error json\"}"

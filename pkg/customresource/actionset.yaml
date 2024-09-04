@@ -109,6 +109,18 @@ spec:
                         description: Options will be used to specify additional values
                           to be used in the Blueprint.
                         type: object
+                      podLabels:
+                        additionalProperties:
+                          type: string
+                        description: Custom labels for the pods that are going to get created
+                          by the action targeted by this ActionSet.
+                        type: object
+                      podAnnotations:
+                        additionalProperties:
+                          type: string
+                        description: Custom annotations for the pods that are going to get created
+                          by the action targeted by this ActionSet. 
+                        type: object
                       podOverride:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
