@@ -106,8 +106,10 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	location.Bucket = testBucketName
 	s.profile = testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
 
-	os.Setenv("POD_NAMESPACE", s.namespace)
-	os.Setenv("POD_SERVICE_ACCOUNT", "default")
+	err = os.Setenv("POD_NAMESPACE", s.namespace)
+	c.Assert(err, IsNil)
+	err = os.Setenv("POD_SERVICE_ACCOUNT", "default")
+	c.Assert(err, IsNil)
 }
 
 func (s *DataSuite) TearDownSuite(c *C) {

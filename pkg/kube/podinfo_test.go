@@ -30,11 +30,13 @@ const testPodName = "test-pod-name"
 const testPodSA = "test-pod-sa"
 
 func (s *PodInfoSuite) TestGetControllerNamespaceFromEnv(c *C) {
-	os.Setenv(PodNSEnvVar, testPodNamespace)
+	err := os.Setenv(PodNSEnvVar, testPodNamespace)
+	c.Assert(err, IsNil)
 	ns, err := GetControllerNamespace()
 	c.Assert(err, IsNil)
 	c.Assert(ns, Equals, testPodNamespace)
-	os.Unsetenv(PodNSEnvVar)
+	err = os.Unsetenv(PodNSEnvVar)
+	c.Assert(err, IsNil)
 }
 
 func (s *PodInfoSuite) TestGetControllerNamespaceFromFile(c *C) {
@@ -50,11 +52,14 @@ func (s *PodInfoSuite) TestGetControllerNamespaceFromFile(c *C) {
 }
 
 func (s *PodInfoSuite) TestGetControllerPodNameFromEnv(c *C) {
-	os.Setenv(podNameEnvVar, testPodName)
+	err := os.Setenv(podNameEnvVar, testPodName)
+	c.Assert(err, IsNil)
+
 	podName, err := GetControllerPodName()
 	c.Assert(err, IsNil)
 	c.Assert(podName, Equals, testPodName)
-	os.Unsetenv(podNameEnvVar)
+	err = os.Unsetenv(podNameEnvVar)
+	c.Assert(err, IsNil)
 }
 
 func (s *PodInfoSuite) TestGetControllerPodNameFromSystem(c *C) {
@@ -66,9 +71,12 @@ func (s *PodInfoSuite) TestGetControllerPodNameFromSystem(c *C) {
 }
 
 func (s *PodInfoSuite) TestGetControllerServiceAccountFromEnv(c *C) {
-	os.Setenv(PodSAEnvVar, testPodSA)
+	err := os.Setenv(PodSAEnvVar, testPodSA)
+	c.Assert(err, IsNil)
+
 	saName, err := GetControllerServiceAccount(fake.NewSimpleClientset())
 	c.Assert(err, IsNil)
 	c.Assert(saName, Equals, testPodSA)
-	os.Unsetenv(testPodSA)
+	err = os.Unsetenv(testPodSA)
+	c.Assert(err, IsNil)
 }
