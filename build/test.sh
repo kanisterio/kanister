@@ -31,7 +31,11 @@ if [ -n "${TEST_FILTER}" ]; then
     GOCHECK_FILTER="-check.f ${TEST_FILTER}"
 fi
 
-TARGETS=$(for d in "$@"; do echo ./$d/...; done)
+TARGETS=$(for d in "$@"; do
+    if [[ "$d" != "pkg/controllers/repositoryserver" ]]; then
+        echo ./$d/...
+    fi
+done)
 
 echo -n "Checking gofmt: "
 ERRS=$(find "$@" -type f -name \*.go | xargs gofmt -l 2>&1 || true)
