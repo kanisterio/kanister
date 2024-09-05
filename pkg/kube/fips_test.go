@@ -98,16 +98,16 @@ func (s *FIPSSuite) TestFIPSBoringEnabled(c *C) {
 			c.Assert(err, IsNil)
 			c.Assert(stderr, Equals, "")
 			scanner := bufio.NewScanner(strings.NewReader(stdout))
-			fips_mode_set := false
+			fipsModeSet := false
 			for scanner.Scan() {
 				if strings.Contains(scanner.Text(), "FIPS") {
 					c.Log(scanner.Text())
 				}
 				if strings.Contains(scanner.Text(), "FIPS_mode_set") {
-					fips_mode_set = true
+					fipsModeSet = true
 				}
 			}
-			c.Assert(fips_mode_set, Equals, true)
+			c.Assert(fipsModeSet, Equals, true)
 		}
 	}
 }

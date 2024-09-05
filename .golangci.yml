@@ -45,7 +45,6 @@ issues:
         - dupl
         - nestif
         - gci
-        - stylecheck
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
