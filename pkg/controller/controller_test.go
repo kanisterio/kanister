@@ -761,12 +761,13 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 }
 
 func (s *ControllerSuite) TestDeferPhase(c *C) {
-	os.Setenv(kube.PodNSEnvVar, "test")
+	err := os.Setenv(kube.PodNSEnvVar, "test")
+	c.Assert(err, IsNil)
 
 	ctx := context.Background()
 	bp := newBPWithDeferPhase()
 
-	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// create backup actionset and wait for it to be completed
@@ -811,11 +812,12 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 // 3. Phases have correct state in actionset status
 // 4. We don't render output artifacts if any of the phases failed
 func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
-	os.Setenv(kube.PodNSEnvVar, "test")
+	err := os.Setenv(kube.PodNSEnvVar, "test")
+	c.Assert(err, IsNil)
 	ctx := context.Background()
 
 	bp := newBPWithDeferPhaseAndErrInCorePhase()
-	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
@@ -846,11 +848,12 @@ func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
 }
 
 func (s *ControllerSuite) TestDeferPhaseDeferErr(c *C) {
-	os.Setenv(kube.PodNSEnvVar, "test")
+	err := os.Setenv(kube.PodNSEnvVar, "test")
+	c.Assert(err, IsNil)
 	ctx := context.Background()
 
 	bp := newBPWithDeferPhaseAndErrInDeferPhase()
-	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
@@ -1058,11 +1061,12 @@ func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
 }
 
 func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
-	os.Setenv(kube.PodNSEnvVar, "test")
+	err := os.Setenv(kube.PodNSEnvVar, "test")
+	c.Assert(err, IsNil)
 	ctx := context.Background()
 
 	bp := newBPForProgressRunningPhase()
-	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// create actionset and wait for it to reach Running state

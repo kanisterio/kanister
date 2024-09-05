@@ -40,7 +40,8 @@ const (
 )
 
 func (s *PodRunnerTestSuite) SetUpSuite(c *C) {
-	os.Setenv("POD_NAMESPACE", podRunnerNS)
+	err := os.Setenv("POD_NAMESPACE", podRunnerNS)
+	c.Assert(err, IsNil)
 }
 
 func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
