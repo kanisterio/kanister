@@ -31,6 +31,7 @@ if [ -n "${TEST_FILTER}" ]; then
     GOCHECK_FILTER="-check.f ${TEST_FILTER}"
 fi
 
+# Added to check ci on master branch
 TARGETS=$(for d in "$@"; do echo ./$d/...; done)
 
 echo -n "Checking gofmt: "
