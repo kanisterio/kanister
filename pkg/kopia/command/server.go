@@ -39,8 +39,6 @@ type ServerStartCommandArgs struct {
 func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 	args := commonArgs(&CommandArgs{ConfigFilePath: cmdArgs.ConfigFilePath, LogDirectory: cmdArgs.LogDirectory})
 
-	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
-
 	if cmdArgs.AutoGenerateCert {
 		args = args.AppendLoggable(serverSubCommand, startSubCommand, tlsGenerateCertFlag)
 	} else {
@@ -59,6 +57,8 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 
 	args = args.AppendLoggableKV(serverControlUsernameFlag, cmdArgs.ServerUsername)
 	args = args.AppendRedactedKV(serverControlPasswordFlag, cmdArgs.ServerPassword)
+
+	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
 
 	if cmdArgs.ReadOnly {
 		args = args.AppendLoggable(readOnlyFlag)
