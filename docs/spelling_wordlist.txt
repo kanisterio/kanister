@@ -63,3 +63,5 @@ webhook
 Kopia
 kopia
 hostname
+emptyDir
+sizeLimit

@@ -1,0 +1,2 @@
+---
+features: Introduce new KubeTaskParallel function to run pods with two containers connected by shared volume
