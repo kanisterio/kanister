@@ -131,7 +131,9 @@ jobs:
         run: pnpm install
         working-directory: ./docs_new
       - name: Build with VitePress
-        run: pnpm docs:build
+        run: |
+          echo "{\"version\":\"${RELEASE_TAG}\"}" > ./.vitepress/version.json
+          pnpm docs:build
         working-directory: ./docs_new
       - name: download helm index
         uses: actions/download-artifact@v4
