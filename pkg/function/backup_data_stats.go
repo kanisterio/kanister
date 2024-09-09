@@ -191,7 +191,8 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 
-	var labels, annotations map[string]string
+	annotations := bpAnnotations
+	labels := bpLabels
 	if tp.PodAnnotations != nil {
 		// merge the actionset annotations with blueprint annotations
 		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations

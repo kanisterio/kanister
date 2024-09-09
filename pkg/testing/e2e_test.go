@@ -411,7 +411,7 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 	c.Assert(err, IsNil)
 
 	// 4. scenario where labels/annotations are only provided via blueprint
-	asThree := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{}, map[string]string{})
+	asThree := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, nil, nil)
 	asCreatedThree, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asThree, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
