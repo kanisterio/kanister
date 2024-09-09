@@ -114,7 +114,12 @@ case "${1}" in
 esac
 
 # add e2e suite in test apps
-TEST_APPS="${TEST_APPS}|^E2ESuite$"
+if [ "${TEST_APPS}" = "" ] ; then
+    TEST_APPS="^E2ESuite$"
+else
+    TEST_APPS="${TEST_APPS}|^E2ESuite$"
+fi
+
 
 check_dependencies
 echo "Running integration tests:"
