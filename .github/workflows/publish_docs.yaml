@@ -47,7 +47,7 @@ jobs:
         working-directory: ./docs_new
       - name: Download the helm index
         run: |
-          curl https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}/helm_index.yaml -o docs_new/.vitepress/dist/index.yaml
+          curl https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}/helm_index.yaml -f -L -o docs_new/.vitepress/dist/index.yaml
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
