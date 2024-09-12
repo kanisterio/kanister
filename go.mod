@@ -2,7 +2,7 @@ module github.com/kanisterio/kanister
 
 go 1.22
 
-toolchain go1.22.4
+toolchain go1.22.7
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
