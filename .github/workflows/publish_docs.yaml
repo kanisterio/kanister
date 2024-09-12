@@ -1,0 +1,77 @@
+name: Publish docs
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: 'Existing git tag in the format x.x.x'
+        required: true
+        type: string
+  workflow_dispatch:
+     inputs:
+      release_tag:
+        description: 'Existing git tag in the format x.x.x'
+        required: true
+        type: string
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+          package_json_file: docs_new/package.json
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: ./docs_new
+      - name: Build with VitePress
+        run: |
+          echo "{\"version\":\"${RELEASE_TAG}\"}" > ./.vitepress/version.json
+          pnpm docs:build
+        working-directory: ./docs_new
+      - name: Download the helm index
+        run: |
+          curl https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}/helm_index.yaml -o docs_new/.vitepress/dist/index.yaml
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs_new/.vitepress/dist
+          name: docs
+
+  publish_docs:
+    needs: build_docs
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 # or specific "vX.X.X" version tag for this action
+        with:
+          artifact_name: docs
