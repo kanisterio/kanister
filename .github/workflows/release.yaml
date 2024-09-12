@@ -91,7 +91,7 @@ jobs:
         export HELM_RELEASE_REPO_INDEX=https://charts.kanister.io/
         make package-helm VERSION=${RELEASE_TAG}
     - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@main
+      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
     - name: gorelease
       run: make gorelease
       env:
