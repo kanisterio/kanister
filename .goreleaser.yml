@@ -6,6 +6,8 @@ release:
   prerelease: auto
   extra_files:
   - glob: 'helm_package/kanister-operator-*.tgz'
+  - glob: 'helm_package/index.yaml'
+    name_template: helm_index.yaml
 builds:
 - id: kanctl
   binary: kanctl
