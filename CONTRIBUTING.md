@@ -146,7 +146,7 @@ have any questions about contributing!
 **Filling details in PR template**
 
 While raising a pull request it's necessary to fill the details asked in the PR template. Some of the
-fields might not be applicable for for the PR but filling up proper details for `Cahnge Overview`
+fields might not be applicable for for the PR but filling up proper details for `Change Overview`
 and `Test Plan` is a must. These fields help to set the necessary context related to the change made
 in PR which helps significantly in reviewing the PR.
 
