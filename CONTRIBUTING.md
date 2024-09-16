@@ -143,6 +143,13 @@ contributions are high quality and easy for our community to review and accept. 
 Please don't hesitate to reach out to us on [Slack](https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk). if you
 have any questions about contributing!
 
+**Filling details in PR template**
+
+While raising a pull request it's necessary to fill the details asked in the PR template. Some of the
+fields might not be applicable for for the PR but filling up proper details for `Cahnge Overview`
+and `Test Plan` is a must. These fields help to set the necessary context related to the change made
+in PR which helps significantly in reviewing the PR.
+
 ### Commit conventions
 
 #### Types:
