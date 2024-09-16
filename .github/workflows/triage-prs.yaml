@@ -20,7 +20,7 @@ jobs:
     steps:
     -
       name: Comment
-      uses: actions-ecosystem/action-create-comment@v1.0.2
+      uses: actions-ecosystem/action-create-comment@e23bc59fbff7aac7f9044bd66c2dc0fe1286f80b # v1.0.2
       # Avoid adding a comment when the PR is on the same repo.
       if: github.event.action == 'opened' && github.event.pull_request.head.repo.fork
       with:
@@ -31,7 +31,7 @@ jobs:
           If you haven't already, please take a moment to review our project [contributing guideline](https://github.com/kanisterio/kanister/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/kanisterio/kanister/blob/master/CODE_OF_CONDUCT.md) document.
     -
       name: Update status in project
-      uses: alex-page/github-project-automation-plus@v0.9.0
+      uses: alex-page/github-project-automation-plus@303f24a24c67ce7adf565a07e96720faf126fe36 # v0.9.0
       # This only works for PRs opened in the same repo and not by dependabot.
       # Other PRs don't get the necessary credentials.
       if: github.repository == 'kanisterio/kanister' && !github.event.pull_request.head.repo.fork
