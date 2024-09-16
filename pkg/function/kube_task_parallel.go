@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/kanisterio/errkit"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -158,8 +157,6 @@ func (ktpf *kubeTaskParallelFunc) run(
 		Spec: podSpec,
 	}
 
-	log.Info().Print("POD: ", field.M{"pod": pod})
-
 	pod, err = cli.CoreV1().Pods(ktpf.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create pod")
@@ -185,13 +182,13 @@ func (ktpf *kubeTaskParallelFunc) run(
 // This function is similar to kubeTaskPodFunc
 func getPodOutput(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	if err := pc.WaitForPodReady(ctx); err != nil {
-		return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
+		return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
 	}
 	ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 	// Fetch logs from the pod
 	r, err := pc.StreamPodLogs(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
+		return nil, errkit.Wrap(err, "Failed to fetch logs from the pod")
 	}
 	out, err := output.LogAndParse(ctx, r)
 	if err != nil {
@@ -199,7 +196,7 @@ func getPodOutput(ctx context.Context, pc kube.PodController) (map[string]interf
 	}
 	// Wait for pod completion
 	if err := pc.WaitForPodCompletion(ctx); err != nil {
-		return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pc.PodName())
+		return nil, errkit.Wrap(err, "Failed while waiting for Pod to complete", "pod", pc.PodName())
 	}
 	return out, err
 }
@@ -236,7 +233,7 @@ func (ktpf *kubeTaskParallelFunc) Exec(ctx context.Context, tp param.TemplatePar
 	if storageSizeString != "" {
 		size, err := resource.ParseQuantity(storageSizeString)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to parse sharedStorageSize arg")
+			return nil, errkit.Wrap(err, "Failed to parse sharedStorageSize arg")
 		}
 		ktpf.storageSizeLimit = &size
 	}
@@ -271,7 +268,7 @@ func (ktpf *kubeTaskParallelFunc) Exec(ctx context.Context, tp param.TemplatePar
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	return ktpf.run(
 		ctx,
