@@ -22,7 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	kaws "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -30,13 +30,13 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type AWSEBSSuite struct{}
 
-var _ = Suite(&AWSEBSSuite{})
+var _ = check.Suite(&AWSEBSSuite{})
 
-func (s AWSEBSSuite) TestVolumeParse(c *C) {
+func (s AWSEBSSuite) TestVolumeParse(c *check.C) {
 	expected := blockstorage.Volume{
 		Az:           "the-availability-zone",
 		CreationTime: blockstorage.TimeStamp(time.Date(2008, 8, 21, 5, 50, 0, 0, time.UTC)),
@@ -71,20 +71,20 @@ func (s AWSEBSSuite) TestVolumeParse(c *C) {
 		VolumeType: aws.String("the-volume-type"),
 	})
 
-	c.Assert(volume, Not(IsNil))
-	c.Check(volume.Az, Equals, expected.Az)
-	c.Check(volume.CreationTime, Equals, expected.CreationTime)
-	c.Check(volume.Encrypted, Equals, expected.Encrypted)
-	c.Check(volume.ID, Equals, expected.ID)
-	c.Check(volume.Iops, Equals, expected.Iops)
-	c.Check(volume.SizeInBytes, Equals, expected.SizeInBytes)
-	c.Check(volume.Tags, DeepEquals, expected.Tags)
-	c.Check(volume.Type, Equals, blockstorage.TypeEBS)
-	c.Check(volume.VolumeType, Equals, expected.VolumeType)
-	c.Check(volume.Attributes, DeepEquals, expected.Attributes)
+	c.Assert(volume, check.Not(check.IsNil))
+	c.Check(volume.Az, check.Equals, expected.Az)
+	c.Check(volume.CreationTime, check.Equals, expected.CreationTime)
+	c.Check(volume.Encrypted, check.Equals, expected.Encrypted)
+	c.Check(volume.ID, check.Equals, expected.ID)
+	c.Check(volume.Iops, check.Equals, expected.Iops)
+	c.Check(volume.SizeInBytes, check.Equals, expected.SizeInBytes)
+	c.Check(volume.Tags, check.DeepEquals, expected.Tags)
+	c.Check(volume.Type, check.Equals, blockstorage.TypeEBS)
+	c.Check(volume.VolumeType, check.Equals, expected.VolumeType)
+	c.Check(volume.Attributes, check.DeepEquals, expected.Attributes)
 }
 
-func (s AWSEBSSuite) TestGetRegions(c *C) {
+func (s AWSEBSSuite) TestGetRegions(c *check.C) {
 	ctx := context.Background()
 	config := map[string]string{}
 
@@ -94,18 +94,18 @@ func (s AWSEBSSuite) TestGetRegions(c *C) {
 	// create provider with region
 	config[kaws.ConfigRegion] = "us-west-2"
 	bsp, err := NewProvider(ctx, config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ebsp := bsp.(*EbsStorage)
 
 	// get zones with other region
 	zones, err := ebsp.FromRegion(ctx, "us-east-1")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	for _, zone := range zones {
-		c.Assert(strings.Contains(zone, "us-east-1"), Equals, true)
-		c.Assert(strings.Contains(zone, "us-west-2"), Equals, false)
+		c.Assert(strings.Contains(zone, "us-east-1"), check.Equals, true)
+		c.Assert(strings.Contains(zone, "us-west-2"), check.Equals, false)
 	}
 
 	regions, err := ebsp.GetRegions(ctx)
-	c.Assert(err, IsNil)
-	c.Assert(regions, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(regions, check.IsNil)
 }

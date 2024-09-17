@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/postgres"
@@ -27,9 +27,9 @@ import (
 
 type RDSFunctionsTest struct{}
 
-var _ = Suite(&RDSFunctionsTest{})
+var _ = check.Suite(&RDSFunctionsTest{})
 
-func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
+func (s *RDSFunctionsTest) TestPrepareCommand(c *check.C) {
 	testCases := []struct {
 		name            string
 		dbEngine        RDSDBEngine
@@ -41,7 +41,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 		backupPrefix    string
 		backupID        string
 		dbEngineVersion string
-		errChecker      Checker
+		errChecker      check.Checker
 		tp              param.TemplateParams
 		command         []string
 	}{
@@ -55,7 +55,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			backupPrefix:    "/backup/postgres-backup",
 			backupID:        "backup-id",
 			dbEngineVersion: "12.7",
-			errChecker:      IsNil,
+			errChecker:      check.IsNil,
 			dbList:          []string{"template1"},
 			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
 				fmt.Sprintf(`
@@ -74,7 +74,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			backupPrefix:    "/backup/postgres-backup",
 			backupID:        "backup-id",
 			dbEngineVersion: "13.3",
-			errChecker:      IsNil,
+			errChecker:      check.IsNil,
 			dbList:          []string{"template1"},
 			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
 				fmt.Sprintf(`
@@ -93,7 +93,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			backupPrefix:    "/backup/postgres-backup",
 			backupID:        "backup-id",
 			dbEngineVersion: "12.7",
-			errChecker:      IsNil,
+			errChecker:      check.IsNil,
 			dbList:          []string{"template1"},
 			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
 				fmt.Sprintf(`
@@ -121,7 +121,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			backupPrefix:    "/backup/postgres-backup",
 			backupID:        "backup-id",
 			dbEngineVersion: "12.7",
-			errChecker:      NotNil,
+			errChecker:      check.NotNil,
 			dbList:          []string{"template1"},
 			command:         nil,
 		},
@@ -130,7 +130,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 	for _, tc := range testCases {
 		outCommand, err := prepareCommand(context.Background(), tc.dbEngine, tc.action, tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, tc.tp.Profile, tc.dbEngineVersion)
 
-		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
-		c.Assert(outCommand, DeepEquals, tc.command)
+		c.Check(err, tc.errChecker, check.Commentf("Case %s failed", tc.name))
+		c.Assert(outCommand, check.DeepEquals, tc.command)
 	}
 }

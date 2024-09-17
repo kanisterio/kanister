@@ -15,65 +15,65 @@
 package azure
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 type AuthSuite struct{}
 
-var _ = Suite(&AuthSuite{})
+var _ = check.Suite(&AuthSuite{})
 
-func (s *AuthSuite) SetUpSuite(c *C) {
+func (s *AuthSuite) SetUpSuite(c *check.C) {
 }
 
-func (s *AuthSuite) TestIsClientCredsvailable(c *C) {
+func (s *AuthSuite) TestIsClientCredsvailable(c *check.C) {
 	// success
 	config := map[string]string{
 		blockstorage.AzureTenantID:     "some-tenant-id",
 		blockstorage.AzureClientID:     "some-client-id",
 		blockstorage.AzureClientSecret: "someclient-secret",
 	}
-	c.Assert(isClientCredsAvailable(config), Equals, true)
+	c.Assert(isClientCredsAvailable(config), check.Equals, true)
 
 	// remove tenantID
 	delete(config, blockstorage.AzureTenantID)
-	c.Assert(isClientCredsAvailable(config), Equals, false)
+	c.Assert(isClientCredsAvailable(config), check.Equals, false)
 
 	// remove client secret, only client ID left
 	delete(config, blockstorage.AzureClientSecret)
-	c.Assert(isClientCredsAvailable(config), Equals, false)
+	c.Assert(isClientCredsAvailable(config), check.Equals, false)
 }
 
-func (s *AuthSuite) TestIsMSICredsAvailable(c *C) {
+func (s *AuthSuite) TestIsMSICredsAvailable(c *check.C) {
 	// success
 	config := map[string]string{
 		blockstorage.AzureTenantID:     "some-tenant-id",
 		blockstorage.AzureClientID:     "some-client-id",
 		blockstorage.AzureClientSecret: "someclient-secret",
 	}
-	c.Assert(isMSICredsAvailable(config), Equals, false)
+	c.Assert(isMSICredsAvailable(config), check.Equals, false)
 
 	// remove tenantID
 	delete(config, blockstorage.AzureTenantID)
-	c.Assert(isMSICredsAvailable(config), Equals, false)
+	c.Assert(isMSICredsAvailable(config), check.Equals, false)
 
 	// remove client secret, only client ID left
 	delete(config, blockstorage.AzureClientSecret)
-	c.Assert(isMSICredsAvailable(config), Equals, true)
+	c.Assert(isMSICredsAvailable(config), check.Equals, true)
 
 	// empty client ID - default msi id is implied
 	config = map[string]string{
 		blockstorage.AzureClientID: "",
 	}
-	c.Assert(isMSICredsAvailable(config), Equals, true)
+	c.Assert(isMSICredsAvailable(config), check.Equals, true)
 
 	// empty creds
 	config = map[string]string{}
-	c.Assert(isMSICredsAvailable(config), Equals, false)
+	c.Assert(isMSICredsAvailable(config), check.Equals, false)
 }
 
-func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
+func (s *AuthSuite) TestNewAzureAuthenticator(c *check.C) {
 	// successful with client secret creds
 	config := map[string]string{
 		blockstorage.AzureTenantID:     "some-tenant-id",
@@ -81,40 +81,40 @@ func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 		blockstorage.AzureClientSecret: "some-client-secret",
 	}
 	authenticator, err := NewAzureAuthenticator(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, ok := authenticator.(*ClientSecretAuthenticator)
-	c.Assert(ok, Equals, true)
+	c.Assert(ok, check.Equals, true)
 
 	// successful with msi creds
 	config = map[string]string{
 		blockstorage.AzureClientID: "some-client-id",
 	}
 	authenticator, err = NewAzureAuthenticator(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, ok = authenticator.(*MsiAuthenticator)
-	c.Assert(ok, Equals, true)
+	c.Assert(ok, check.Equals, true)
 
 	// successful with default msi creds
 	config = map[string]string{
 		blockstorage.AzureClientID: "",
 	}
 	authenticator, err = NewAzureAuthenticator(config)
-	c.Assert(err, IsNil)
-	c.Assert(authenticator, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(authenticator, check.NotNil)
 
 	// unsuccessful with no creds
 	config = map[string]string{}
 	authenticator, err = NewAzureAuthenticator(config)
-	c.Assert(err, NotNil)
-	c.Assert(authenticator, IsNil)
+	c.Assert(err, check.NotNil)
+	c.Assert(authenticator, check.IsNil)
 
 	// unsuccessful with an undefined combo of credss
 	config = map[string]string{
 		blockstorage.AzureClientSecret: "some-client-secret",
 	}
 	authenticator, err = NewAzureAuthenticator(config)
-	c.Assert(err, NotNil)
-	c.Assert(authenticator, IsNil)
+	c.Assert(err, check.NotNil)
+	c.Assert(authenticator, check.IsNil)
 
 	// unsuccessful with an undefined combo of creds
 	config = map[string]string{
@@ -122,6 +122,6 @@ func (s *AuthSuite) TestNewAzureAuthenticator(c *C) {
 		blockstorage.AzureClientSecret: "some-client-secret",
 	}
 	authenticator, err = NewAzureAuthenticator(config)
-	c.Assert(err, NotNil)
-	c.Assert(authenticator, IsNil)
+	c.Assert(err, check.NotNil)
+	c.Assert(authenticator, check.IsNil)
 }

@@ -5,7 +5,7 @@ import (
 
 	osapps "github.com/openshift/api/apps/v1"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -13,19 +13,19 @@ import (
 
 type WorkloadSuite struct{}
 
-var _ = Suite(&WorkloadSuite{})
+var _ = check.Suite(&WorkloadSuite{})
 
-func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
+func (s *WorkloadSuite) TestScaleDeploymentConfig(c *check.C) {
 	// Get K8s client
 	cfg, err := LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	cli, err := kubernetes.NewForConfig(cfg)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if we're in OpenShift
 	ctx := context.Background()
 	ok, err := IsOSAppsGroupAvailable(ctx, cli.Discovery())
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	if !ok {
 		c.Skip("Skipping test since this only runs on OpenShift")
 	}
@@ -37,23 +37,23 @@ func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
 		},
 	}
 	ns, err = cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	defer func() {
 		err = cli.CoreV1().Namespaces().Delete(context.TODO(), ns.GetName(), metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}()
 
 	// Create simple DeploymentConfig
 	dc := newDeploymentConfig()
 	osCli, err := osversioned.NewForConfig(cfg)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	dc, err = osCli.AppsV1().DeploymentConfigs(ns.GetName()).Create(ctx, dc, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 0, true)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 1, true)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
 func newDeploymentConfig() *osapps.DeploymentConfig {

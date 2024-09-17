@@ -15,46 +15,46 @@
 package blockstorage
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type HelperSuite struct{}
 
-var _ = Suite(&HelperSuite{})
+var _ = check.Suite(&HelperSuite{})
 
-func (s *HelperSuite) SetUpSuite(c *C) {
+func (s *HelperSuite) SetUpSuite(c *check.C) {
 }
 
-func (h *HelperSuite) TestStringSlice(c *C) {
+func (h *HelperSuite) TestStringSlice(c *check.C) {
 	source := []string{"test1", "test2"}
 	target := StringSlice(&source)
-	c.Assert(target[0], Equals, source[0])
-	c.Assert(target[1], Equals, source[1])
+	c.Assert(target[0], check.Equals, source[0])
+	c.Assert(target[1], check.Equals, source[1])
 }
 
-func (s *HelperSuite) TestSliceStringPtr(c *C) {
+func (s *HelperSuite) TestSliceStringPtr(c *check.C) {
 	source := []string{"test1", "test2"}
 	res := SliceStringPtr(source)
 	for i, elePtr := range res {
 		var target = *elePtr
-		c.Assert(target, Equals, source[i])
+		c.Assert(target, check.Equals, source[i])
 	}
 }
 
-func (s *HelperSuite) TestIntFromPtr(c *C) {
+func (s *HelperSuite) TestIntFromPtr(c *check.C) {
 	source := 1
 	target := Int(&source)
-	c.Assert(target, Equals, source)
+	c.Assert(target, check.Equals, source)
 }
 
-func (s *HelperSuite) TestIntToPtr(c *C) {
+func (s *HelperSuite) TestIntToPtr(c *check.C) {
 	source := 1
 	target := IntPtr(source)
-	c.Assert(*target, Equals, source)
+	c.Assert(*target, check.Equals, source)
 }
 
-func (s *HelperSuite) TestStringToPtr(c *C) {
+func (s *HelperSuite) TestStringToPtr(c *check.C) {
 	source := "test"
 	target := StringPtr(source)
-	c.Assert(*target, Equals, source)
+	c.Assert(*target, check.Equals, source)
 }

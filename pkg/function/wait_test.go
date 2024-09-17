@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -30,7 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
-var _ = Suite(&WaitSuite{})
+var _ = check.Suite(&WaitSuite{})
 
 type WaitSuite struct {
 	cli         kubernetes.Interface
@@ -39,9 +39,9 @@ type WaitSuite struct {
 	statefulset string
 }
 
-func (s *WaitSuite) SetUpSuite(c *C) {
+func (s *WaitSuite) SetUpSuite(c *check.C) {
 	cli, err := kube.NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cli = cli
 
 	ns := &corev1.Namespace{
@@ -50,17 +50,17 @@ func (s *WaitSuite) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	d, err := s.cli.AppsV1().Deployments(cns.Name).Create(context.TODO(), testutil.NewTestDeployment(int32(1)), metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	sts, err := s.cli.AppsV1().StatefulSets(cns.Name).Create(context.TODO(), testutil.NewTestStatefulSet(int32(1)), metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 	s.deploy = d.Name
 	s.statefulset = sts.Name
 }
 
-func (s *WaitSuite) TearDownSuite(c *C) {
+func (s *WaitSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -208,34 +208,34 @@ func newWaitBlueprint(phases ...crv1alpha1.BlueprintPhase) *crv1alpha1.Blueprint
 	}
 }
 
-func (s *WaitSuite) TestWait(c *C) {
+func (s *WaitSuite) TestWait(c *check.C) {
 	tp := param.TemplateParams{
 		Time: time.Now().String(),
 	}
 	action := "test"
 	for _, tc := range []struct {
 		bp      *crv1alpha1.Blueprint
-		checker Checker
+		checker check.Checker
 	}{
 		{
 			bp:      newWaitBlueprint(waitDeployPhase(s.namespace, s.deploy)),
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			bp:      newWaitBlueprint(waitStatefulSetPhase(s.namespace, s.statefulset)),
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			bp:      newWaitBlueprint(waitNsPhase(s.namespace)),
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			bp:      newWaitBlueprint(waitNsTimeoutPhase(s.namespace)),
-			checker: NotNil,
+			checker: check.NotNil,
 		},
 	} {
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		for _, p := range phases {
 			_, err := p.Exec(context.TODO(), *tc.bp, action, tp)
 			c.Assert(err, tc.checker)
