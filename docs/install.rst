@@ -43,6 +43,9 @@ You should see the operator pod in the ``Running`` state:
   best-effort basis. If you are using an older version of Kubernetes, please
   consider upgrading to a newer version.
 
+.. note::
+  For RBAC configuration, please refer to the :ref:`RBAC Configuration <rbac>` section.
+
 Configuring Kanister
 ====================
 
