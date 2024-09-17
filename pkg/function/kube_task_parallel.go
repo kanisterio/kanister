@@ -49,6 +49,8 @@ const (
 	KubeTaskParallelVolumeSizeLimitArg   = "sharedVolumeSizeLimit"
 	KubeTaskParallelSharedDirArg         = "sharedVolumeDir"
 	KubeTaskParallelPodOverrideArg       = "podOverride"
+	KubeTaskParallelInitImageArg         = "initImage"
+	KubeTaskParallelInitCommandArg       = "initCommand"
 )
 
 const (
@@ -71,6 +73,8 @@ type kubeTaskParallelFunc struct {
 	backgroundCommand []string
 	outputImage       string
 	outputCommand     []string
+	initImage         string
+	initCommand       []string
 	storageDir        string
 	storageMedium     corev1.StorageMedium
 	storageSizeLimit  *resource.Quantity
@@ -87,6 +91,26 @@ func (ktpf *kubeTaskParallelFunc) run(
 	ctx context.Context,
 	cli kubernetes.Interface,
 ) (map[string]interface{}, error) {
+	volumeMounts := []corev1.VolumeMount{
+		{
+			Name:      ktpSharedVolumeName,
+			MountPath: ktpf.storageDir,
+		},
+	}
+
+	var initContainers []corev1.Container
+	// If init image is specified
+	if ktpf.initImage != "" {
+		initContainers = []corev1.Container{
+			{
+				Name:         "init",
+				Image:        ktpf.initImage,
+				Command:      ktpf.initCommand,
+				VolumeMounts: volumeMounts,
+			},
+		}
+	}
+
 	podSpec := corev1.PodSpec{
 		RestartPolicy: corev1.RestartPolicyNever,
 		Volumes: []corev1.Volume{
@@ -100,28 +124,19 @@ func (ktpf *kubeTaskParallelFunc) run(
 				},
 			},
 		},
+		InitContainers: initContainers,
 		Containers: []corev1.Container{
 			{
-				Name:    ktpOutputContainer,
-				Image:   ktpf.outputImage,
-				Command: ktpf.outputCommand,
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      ktpSharedVolumeName,
-						MountPath: ktpf.storageDir,
-					},
-				},
+				Name:         ktpOutputContainer,
+				Image:        ktpf.outputImage,
+				Command:      ktpf.outputCommand,
+				VolumeMounts: volumeMounts,
 			},
 			{
-				Name:    ktpBackgroundContainer,
-				Image:   ktpf.backgroundImage,
-				Command: ktpf.backgroundCommand,
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      ktpSharedVolumeName,
-						MountPath: ktpf.storageDir,
-					},
-				},
+				Name:         ktpBackgroundContainer,
+				Image:        ktpf.backgroundImage,
+				Command:      ktpf.backgroundCommand,
+				VolumeMounts: volumeMounts,
 			},
 		},
 	}
@@ -215,10 +230,16 @@ func (ktpf *kubeTaskParallelFunc) Exec(ctx context.Context, tp param.TemplatePar
 	if err = Arg(args, KubeTaskParallelOutputImageArg, &ktpf.outputImage); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, KubeTaskParallelInitImageArg, &ktpf.initImage, ""); err != nil {
+		return nil, err
+	}
 	if err = Arg(args, KubeTaskParallelBackgroundCommandArg, &ktpf.backgroundCommand); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, KubeTaskParallelOutputCommandArg, &ktpf.outputCommand); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KubeTaskParallelInitCommandArg, &ktpf.initCommand, nil); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, KubeTaskParallelNamespaceArg, &ktpf.namespace, ""); err != nil {
@@ -288,6 +309,8 @@ func (*kubeTaskParallelFunc) RequiredArgs() []string {
 func (*kubeTaskParallelFunc) Arguments() []string {
 	return []string{
 		KubeTaskParallelNamespaceArg,
+		KubeTaskParallelInitImageArg,
+		KubeTaskParallelInitCommandArg,
 		KubeTaskParallelBackgroundImageArg,
 		KubeTaskParallelBackgroundCommandArg,
 		KubeTaskParallelOutputImageArg,

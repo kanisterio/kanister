@@ -65,3 +65,4 @@ kopia
 hostname
 emptyDir
 sizeLimit
+init

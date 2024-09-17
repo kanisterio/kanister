@@ -160,6 +160,7 @@ It's similar to KubeTask, but allows using multiple images to move backup data.
 should export it to destination.
 The main difference between them is that phase outputs can only generated from the
 "output" container outputs.
+The function also supports an optional init container to set up the volume contents.
 
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
@@ -171,11 +172,15 @@ The main difference between them is that phase outputs can only generated from t
    `backgroundCommand`, Yes, `[]string`,  command list to execute in "background" container
    `outputImage`, Yes, `string`, image to be used in "output" container
    `outputCommand`, Yes, `[]string`,  command list to execute in "output" container
+   `initImage`, No, `string`, image to be used in init container of the pod
+   `initCommand`, No, `[]string`, command list to execute in init container of the pod
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
    `podAnnotations`, No, `map[string]string`, custom annotations for the temporary pod that gets created
    `podLabels`, No, `map[string]string`, custom labels for the temporary pod that gets created
-   `sharedVolumeMedium`, No, `string`, medium setting for shared volume. See https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-   `sharedVolumeSizeLimit`, No, `string`, sizeLimit setting for shared volume
+   `sharedVolumeMedium`, No, `string`, medium setting for shared volume. See the Kubernetes `documentation
+<https://kubernetes.io/docs/concepts/storage/volumes/#emptydir>`_.
+   `sharedVolumeSizeLimit`, No, `string`, sizeLimit setting for shared volume. See the Kubernetes `documentation
+<https://kubernetes.io/docs/concepts/storage/volumes/#emptydir>`_.
    `sharedVolumeDir`, No, `string`, directory to mount shared volume. Defaults to `/tmp`
 
 Example:
@@ -198,12 +203,17 @@ Example:
       sharedVolumeMedium: Memory
       sharedVolumeSizeLimit: 1Gi
       sharedVolumeDir: /tmp/
+      initImage: ubuntu
+      initCommand:
+        - bash
+        - -c
+        - |
+          mkfifo /tmp/pipe-file
       backgroundImage: ubuntu
       backgroundCommand:
         - bash
         - -c
         - |
-          mkfifo /tmp/pipe-file
           for i in {1..10}
           do
             echo $i
@@ -214,7 +224,6 @@ Example:
         - bash
         - -c
         - |
-          while [ ! -e /tmp/pipe-file  ]; do sleep 1; done
           cat /tmp/pipe-file
 
 ScaleWorkload

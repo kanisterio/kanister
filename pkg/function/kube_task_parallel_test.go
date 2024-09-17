@@ -130,3 +130,76 @@ func (s *KubeTaskParallelSuite) TestKubeTaskParallel(c *C) {
 		}
 	}
 }
+
+func kubeTaskParallelPhaseWithInit(namespace string) crv1alpha1.BlueprintPhase {
+	return crv1alpha1.BlueprintPhase{
+		Name: "testKubeTaskParallel",
+		Func: KubeTaskParallelFuncName,
+		Args: map[string]interface{}{
+			KubeTaskParallelNamespaceArg: namespace,
+			KubeTaskParallelInitImageArg: consts.LatestKanisterToolsImage,
+			KubeTaskParallelInitCommandArg: []string{
+				"sh",
+				"-c",
+				"mkfifo /tmp/file",
+			},
+			KubeTaskParallelBackgroundImageArg: consts.LatestKanisterToolsImage,
+			KubeTaskParallelBackgroundCommandArg: []string{
+				"sh",
+				"-c",
+				"if [ ! -e /tmp/file  ]; then exit 1; fi; echo foo >> /tmp/file",
+			},
+			KubeTaskParallelOutputImageArg: consts.LatestKanisterToolsImage,
+			KubeTaskParallelOutputCommandArg: []string{
+				"sh",
+				"-c",
+				"if [ ! -e /tmp/file  ]; then exit 1; fi; kando output value $(cat /tmp/file)",
+			},
+		},
+	}
+}
+
+func (s *KubeTaskParallelSuite) TestKubeTaskParallelWithInit(c *C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	tp := param.TemplateParams{
+		StatefulSet: &param.StatefulSetParams{
+			Namespace: s.namespace,
+		},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []map[string]interface{}{
+				{
+					"name":            "background",
+					"imagePullPolicy": "Always",
+				},
+				{
+					"name":            "output",
+					"imagePullPolicy": "Always",
+				},
+			},
+		},
+	}
+	action := "test"
+	for _, tc := range []struct {
+		bp   *crv1alpha1.Blueprint
+		outs []map[string]interface{}
+	}{
+		{
+			bp: newTaskBlueprint(kubeTaskParallelPhaseWithInit(s.namespace)),
+			outs: []map[string]interface{}{
+				{
+					"value": "foo",
+				},
+			},
+		},
+	} {
+		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
+		c.Assert(err, IsNil)
+		c.Assert(phases, HasLen, len(tc.outs))
+		for i, p := range phases {
+			out, err := p.Exec(ctx, *tc.bp, action, tp)
+			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+			c.Assert(out, DeepEquals, tc.outs[i])
+		}
+	}
+}
