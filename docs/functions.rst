@@ -154,7 +154,7 @@ KubeTaskParallel
 ----------------
 
 KubeTaskParallel spins up a new pod with two containers connected
-via shared emptyDir volume.
+via shared `emptyDir`_ volume.
 It's similar to KubeTask, but allows using multiple images to move backup data.
 "background" container is one responsible for generating data, while "output" container
 should export it to destination.
@@ -177,11 +177,11 @@ The function also supports an optional init container to set up the volume conte
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
    `podAnnotations`, No, `map[string]string`, custom annotations for the temporary pod that gets created
    `podLabels`, No, `map[string]string`, custom labels for the temporary pod that gets created
-   `sharedVolumeMedium`, No, `string`, medium setting for shared volume. See the Kubernetes `documentation
-<https://kubernetes.io/docs/concepts/storage/volumes/#emptydir>`_.
-   `sharedVolumeSizeLimit`, No, `string`, sizeLimit setting for shared volume. See the Kubernetes `documentation
-<https://kubernetes.io/docs/concepts/storage/volumes/#emptydir>`_.
+   `sharedVolumeMedium`, No, `string`, medium setting for shared volume. See `emptyDir`_.
+   `sharedVolumeSizeLimit`, No, `string`, sizeLimit setting for shared volume. See `emptyDir`_.
    `sharedVolumeDir`, No, `string`, directory to mount shared volume. Defaults to `/tmp`
+
+.. _emptyDir: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
 
 Example:
 
