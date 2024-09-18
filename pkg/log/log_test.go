@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"sync"
 	"testing"
@@ -224,6 +225,52 @@ func (s *LogSuite) TestCloneGlobalLogger(c *C) {
 	log.Println("Test message")
 	c.Assert(len(hook.capturedMessages), Equals, 1)
 	c.Assert(hook.capturedMessages[0].Message, Equals, "Test message")
+}
+
+func (s *LogSuite) TestSetFluentbitOutput(c *C) {
+	for _, tc := range []struct {
+		desc string
+		url  *url.URL
+		err  error
+	}{
+		{
+			desc: "valid_url",
+			url: &url.URL{
+				Scheme: "tcp",
+				Host:   "something",
+			},
+		},
+		{
+			desc: "path_is_set",
+			url: &url.URL{
+				Scheme: "tcp",
+				Host:   "something",
+				Path:   "something",
+			},
+			err: ErrPathSet,
+		},
+		{
+			desc: "non_tcp_endpoint",
+			url: &url.URL{
+				Scheme: "http",
+				Host:   "something",
+				Path:   "something",
+			},
+			err: ErrNonTCPEndpoint,
+		},
+		{
+			desc: "empty_endpoint",
+			url:  &url.URL{},
+			err:  ErrEndpointNotSet,
+		},
+		{
+			desc: "nil_endpoint",
+			err:  ErrEndpointNotSet,
+		},
+	} {
+		err := SetFluentbitOutput(tc.url)
+		c.Assert(err, Equals, tc.err)
+	}
 }
 
 type logHook struct {
