@@ -232,7 +232,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 						Func: function.KubeTaskFuncName,
 						Name: "test-kube-task",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.110.0",
+							"image":     "ghcr.io/kanisterio/kanister-tools:0.111.0",
 							"namespace": "{{ .Deployment.Namespace }}",
 							"command":   []string{"echo", "default specs"},
 							"podOverride": map[string]interface{}{
@@ -624,7 +624,7 @@ func blueprintWithPodFunctions() *crv1alpha1.Blueprint {
 						Func: function.KubeTaskFuncName,
 						Name: "backupphase-one",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.110.0",
+							"image":     "ghcr.io/kanisterio/kanister-tools:0.111.0",
 							"namespace": "default",
 							"command":   []string{"sleep", "10"},
 							"podLabels": map[string]interface{}{
@@ -645,7 +645,7 @@ func blueprintWithPodFunctions() *crv1alpha1.Blueprint {
 						Func: function.KubeTaskFuncName,
 						Name: "restorephase-one",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.110.0",
+							"image":     "ghcr.io/kanisterio/kanister-tools:0.111.0",
 							"namespace": "default",
 							"command":   []string{"sleep", "10"},
 							"podLabels": map[string]interface{}{
