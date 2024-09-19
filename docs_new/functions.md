@@ -424,21 +424,32 @@ this phase, we will use the `backupInfo` Artifact provided by backup
 function.
 
 ``` yaml
-- func: ScaleWorkload name: ShutdownApplication args: namespace: \"{{
-    .Deployment.Namespace }}\" name: \"{{ .Deployment.Name }}\" kind:
-    Deployment replicas: 0
-- func: RestoreData name: RestoreFromObjectStore args: namespace: \"{{
-    .Deployment.Namespace }}\" pod: \"{{ index .Deployment.Pods 0 }}\"
-    image: ghcr.io/kanisterio/kanister-tools: backupArtifactPrefix:
-    s3-bucket/path/artifactPrefix backupTag: \"{{
-    .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}\"
+- func: ScaleWorkload
+  name: ShutdownApplication
+  args:
+    namespace: \"{{.Deployment.Namespace }}\"
+    name: \"{{ .Deployment.Name }}\"
+    kind: Deployment
+    replicas: 0
+- func: RestoreData
+  name: RestoreFromObjectStore
+  args:
+    namespace: \"{{.Deployment.Namespace }}\"
+    pod: \"{{ index .Deployment.Pods 0 }}\"
+    image: ghcr.io/kanisterio/kanister-tools:0.110.0
+    backupArtifactPrefix: s3-bucket/path/artifactPrefix
+    backupTag: \"{{.ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}\"
     podAnnotations:
       annKey: annValue
     podLabels:
       labelKey: labelValue
-- func: ScaleWorkload name: StartupApplication args: namespace: \"{{
-    .Deployment.Namespace }}\" name: \"{{ .Deployment.Name }}\" kind:
-    Deployment replicas: 1
+- func: ScaleWorkload
+  name: StartupApplication
+  args:
+    namespace: \"{{.Deployment.Namespace }}\"
+    name: \"{{ .Deployment.Name }}\"
+    kind: Deployment
+    replicas: 1
 ```
 
 ### RestoreDataAll
@@ -491,30 +502,38 @@ on all pods concurrently. For this phase, we will use the `params`
 Artifact provided by BackupDataAll function.
 
 ``` yaml
-
-- func: ScaleWorkload name: ShutdownApplication args: namespace: \"{{
-    .Deployment.Namespace }}\" name: \"{{ .Deployment.Name }}\" kind:
-    Deployment replicas: 0
-- func: RestoreDataAll name: RestoreFromObjectStore args: namespace:
-    \"{{ .Deployment.Namespace }}\" image:
-    ghcr.io/kanisterio/kanister-tools: backupArtifactPrefix:
-    s3-bucket/path/artifactPrefix backupInfo: \"{{
-    .ArtifactsIn.params.KeyValue.backupInfo }}\"
+- func: ScaleWorkload
+  name: ShutdownApplication
+  args:
+    namespace: "{{ .Deployment.Namespace }}"
+    name: "{{ .Deployment.Name }}"
+    kind: Deployment
+    replicas: 0
+- func: RestoreDataAll
+  name: RestoreFromObjectStore
+  args:
+    namespace: "{{ .Deployment.Namespace }}"
+    image: ghcr.io/kanisterio/kanister-tools:0.110.0
+    backupArtifactPrefix: s3-bucket/path/artifactPrefix
+    backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
     podAnnotations:
       annKey: annValue
     podLabels:
       labelKey: labelValue
-- func: ScaleWorkload name: StartupApplication args: namespace: \"{{
-    .Deployment.Namespace }}\" name: \"{{ .Deployment.Name }}\" kind:
-    Deployment replicas: 2
+- func: ScaleWorkload
+  name: StartupApplication
+  args:
+    namespace: "{{ .Deployment.Namespace }}"
+    name: "{{ .Deployment.Name }}"
+    kind: Deployment
+    replicas: 2
 ```
 
 ### CopyVolumeData
 
 This function copies data from the specified volume (referenced by a
 Kubernetes PersistentVolumeClaim) into an object store. This data can be
-restored into a volume using the `restoredata`{.interpreted-text
-role="ref"} function
+restored into a volume using the [RestoreData](#restoredata) function
 
 ::: tip NOTE
 
@@ -725,9 +744,8 @@ Arguments:
 ### CreateVolumeFromSnapshot
 
 This function is used to restore one or more PVCs of an application from
-the snapshots taken using the `createvolumesnapshot`{.interpreted-text
-role="ref"} function. It deletes old PVCs, if present and creates new
-PVCs from the snapshots taken earlier.
+the snapshots taken using the [CreateVolumeSnapshot](#createvolumesnapshot) function.
+It deletes old PVCs, if present and creates new PVCs from the snapshots taken earlier.
 
 Arguments:
 
@@ -1546,21 +1564,31 @@ provided by backup function.
 
 ``` yaml
 
-- func: ScaleWorkload name: shutdownPod args: namespace: \"{{
-    .Deployment.Namespace }}\" name: \"{{ .Deployment.Name }}\" kind:
-    Deployment replicas: 0
-- func: RestoreDataUsingKopiaServer name: restoreFromS3 args:
-    namespace: \"{{ .Deployment.Namespace }}\" pod: \"{{ index
-    .Deployment.Pods 0 }}\" backupIdentifier: \"{{
-    .ArtifactsIn.backupIdentifier.KeyValue.id }}\" restorePath:
-    /mnt/data
+- func: ScaleWorkload
+  name: shutdownPod
+  args:
+    namespace: \"{{.Deployment.Namespace }}\"
+    name: \"{{ .Deployment.Name }}\"
+    kind: Deployment
+    replicas: 0
+- func: RestoreDataUsingKopiaServer
+  name: restoreFromS3
+  args:
+    namespace: \"{{ .Deployment.Namespace }}\"
+    pod: \"{{ index.Deployment.Pods 0 }}\"
+    backupIdentifier: \"{{.ArtifactsIn.backupIdentifier.KeyValue.id }}\"
+    restorePath: /mnt/data
     podAnnotations:
       annKey: annValue
     podLabels:
       labelKey: labelValue
-- func: ScaleWorkload name: bringupPod args: namespace: \"{{
-    .Deployment.Namespace }}\" name: \"{{ .Deployment.Name }}\" kind:
-    Deployment replicas: 1
+- func: ScaleWorkload
+  name: bringupPod
+  args:
+    namespace: \"{{.Deployment.Namespace }}\"
+    name: \"{{ .Deployment.Name }}\"
+    kind: Deployment
+    replicas: 1
 ```
 
 ### DeleteDataUsingKopiaServer

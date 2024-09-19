@@ -89,7 +89,7 @@ kubectl create secret tls my-tls-secret \--cert /path/to/tls.crt \--key
 ```
 
 Install Kanister, providing the PEM-encoded CA bundle and the
-[tls]{.title-ref} secret name like below:
+`tls` secret name like below:
 
 ``` bash
 helm upgrade \--install kanister kanister/kanister-operator \--namespace
