@@ -24,7 +24,6 @@ import (
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -44,7 +43,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeGCS),
+					repositoryserver.TypeKey: []byte(repositoryserver.LocTypeGCS),
 				},
 			},
 			errChecker:            IsNil,
@@ -55,7 +54,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeAzure),
+					repositoryserver.TypeKey: []byte(repositoryserver.LocTypeAzure),
 				},
 			},
 			errChecker:            IsNil,
@@ -66,7 +65,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeS3),
+					repositoryserver.TypeKey: []byte(repositoryserver.LocTypeS3),
 				},
 			},
 			errChecker:            IsNil,
@@ -77,7 +76,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeFilestore),
+					repositoryserver.TypeKey: []byte(repositoryserver.LocTypeFilestore),
 				},
 			},
 			errChecker:            IsNil,
@@ -94,7 +93,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 			},
 			errChecker:            NotNil,
 			locationSecretChecker: IsNil,
-			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, "ns", "sec"),
+			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, repositoryserver.TypeKey, "ns", "sec"),
 		},
 		{ // Unsupported location type
 			secret: &corev1.Secret{
@@ -104,7 +103,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte("invalid"),
+					repositoryserver.TypeKey: []byte("invalid"),
 				},
 			},
 			errChecker:            NotNil,

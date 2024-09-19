@@ -47,7 +47,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
@@ -119,7 +118,8 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	ws := webhook.NewServer(webhook.Options{Port: 9443})
 	// Since we are not creating the controller in a pod
 	// the repository server controller needs few env variables set explicitly
-	os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
+	err = os.Setenv("POD_NAMESPACE", s.repoServerControllerNamespace)
+	c.Assert(err, IsNil)
 
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:         scheme,
@@ -148,10 +148,13 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	go func(ctx context.Context) {
 		// Env setup required to start the controller service
 		// We need to set this up since we are not creating controller in a pod
-		os.Setenv("HOSTNAME", controllerPodName)
-		os.Setenv("POD_SERVICE_ACCOUNT", defaultServiceAccount)
+		err := os.Setenv("HOSTNAME", controllerPodName)
+		c.Assert(err, IsNil)
+		err = os.Setenv("POD_SERVICE_ACCOUNT", defaultServiceAccount)
+		c.Assert(err, IsNil)
 		// Set KANISTER_TOOLS env to override and use dev image
-		os.Setenv(consts.KanisterToolsImageEnvName, consts.LatestKanisterToolsImage)
+		err = os.Setenv(consts.KanisterToolsImageEnvName, consts.LatestKanisterToolsImage)
+		c.Assert(err, IsNil)
 		err = mgr.Start(ctx)
 		c.Assert(err, IsNil)
 	}(ctx)
@@ -186,7 +189,7 @@ func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
 }
 
 func (s *RepoServerControllerSuite) CreateRepositoryServerAdminSecret(data map[string][]byte) (se *corev1.Secret, err error) {
-	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-admin-", reposerver.AdminCredentialsSecret, data)
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-admin-", repositoryserver.AdminCredentialsSecret, data)
 }
 
 func (s *RepoServerControllerSuite) CreateRepositoryServerUserAccessSecret(data map[string][]byte) (se *corev1.Secret, err error) {
@@ -194,7 +197,7 @@ func (s *RepoServerControllerSuite) CreateRepositoryServerUserAccessSecret(data 
 }
 
 func (s *RepoServerControllerSuite) CreateRepositoryPasswordSecret(data map[string][]byte) (se *corev1.Secret, err error) {
-	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-password-", reposerver.RepositoryPasswordSecret, data)
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-password-", repositoryserver.RepositoryPasswordSecret, data)
 }
 
 func (s *RepoServerControllerSuite) CreateKopiaTLSSecret(data map[string][]byte) (se *corev1.Secret, err error) {
@@ -202,7 +205,7 @@ func (s *RepoServerControllerSuite) CreateKopiaTLSSecret(data map[string][]byte)
 }
 
 func (s *RepoServerControllerSuite) CreateStorageLocationSecret(data map[string][]byte) (se *corev1.Secret, err error) {
-	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-storage-", reposerver.Location, data)
+	return testutil.CreateSecret(s.kubeCli, s.repoServerControllerNamespace, "test-repository-server-storage-", repositoryserver.Location, data)
 }
 
 func (s *RepoServerControllerSuite) CreateAWSStorageCredentialsSecret(data map[string][]byte) (se *corev1.Secret, err error) {

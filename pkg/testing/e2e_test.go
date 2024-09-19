@@ -79,7 +79,8 @@ func (s *E2ESuite) SetUpSuite(c *C) {
 
 func (s *E2ESuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
+		c.Assert(err, IsNil)
 	}
 	if s.cancel != nil {
 		s.cancel()
@@ -410,7 +411,7 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 	c.Assert(err, IsNil)
 
 	// 4. scenario where labels/annotations are only provided via blueprint
-	asThree := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{}, map[string]string{})
+	asThree := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, nil, nil)
 	asCreatedThree, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asThree, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 

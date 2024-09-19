@@ -93,8 +93,12 @@ func integrationSetup(t *test.T) {
 		t.Fatalf("Integration test setup failure: Error creating clusterRoleBinding; err=%v", err)
 	}
 	// Set Controller namespace and service account
-	os.Setenv(kube.PodNSEnvVar, ns)
-	os.Setenv(kube.PodSAEnvVar, controllerSA)
+	if err := os.Setenv(kube.PodNSEnvVar, ns); err != nil {
+		t.Fatalf("Error %v setting env variable", err)
+	}
+	if err := os.Setenv(kube.PodSAEnvVar, controllerSA); err != nil {
+		t.Fatalf("Error %v setting env variable", err)
+	}
 
 	if err = resource.CreateCustomResources(ctx, cfg); err != nil {
 		t.Fatalf("Integration test setup failure: Error createing custom resources; err=%v", err)
@@ -121,13 +125,19 @@ func integrationCleanup(t *test.T) {
 		kontroller.cancel()
 	}
 	if kontroller.namespace != "" {
-		kontroller.kubeCli.CoreV1().Namespaces().Delete(ctx, kontroller.namespace, metav1.DeleteOptions{})
+		if err := kontroller.kubeCli.CoreV1().Namespaces().Delete(ctx, kontroller.namespace, metav1.DeleteOptions{}); err != nil {
+			t.Fatalf("Error %v deleting namespaces %s", err, kontroller.namespace)
+		}
 	}
 	if kontroller.clusterRoleBinding != nil && kontroller.clusterRoleBinding.Name != "" {
-		kontroller.kubeCli.RbacV1().ClusterRoleBindings().Delete(ctx, kontroller.clusterRoleBinding.Name, metav1.DeleteOptions{})
+		if err := kontroller.kubeCli.RbacV1().ClusterRoleBindings().Delete(ctx, kontroller.clusterRoleBinding.Name, metav1.DeleteOptions{}); err != nil {
+			t.Fatalf("Error %v deleting clusterrolebinding %s", err, kontroller.clusterRoleBinding)
+		}
 	}
 	if kontroller.clusterRole != nil && kontroller.clusterRole.Name != "" {
-		kontroller.kubeCli.RbacV1().ClusterRoles().Delete(ctx, kontroller.clusterRole.Name, metav1.DeleteOptions{})
+		if err := kontroller.kubeCli.RbacV1().ClusterRoles().Delete(ctx, kontroller.clusterRole.Name, metav1.DeleteOptions{}); err != nil {
+			t.Fatalf("Error %v deleting clusterrole %s", err, kontroller.clusterRole)
+		}
 	}
 }
 

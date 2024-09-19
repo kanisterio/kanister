@@ -40,13 +40,11 @@ issues:
   exclude-rules:
     - path: '_test.go'
       linters:
-        - errcheck                      # Errors may be ignored in tests.
         - unparam                       # Tests might have unused function parameters.
         - lll
         - dupl
         - nestif
         - gci
-        - stylecheck
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:

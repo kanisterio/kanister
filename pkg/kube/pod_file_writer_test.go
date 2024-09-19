@@ -37,7 +37,8 @@ const (
 )
 
 func (s *PodFileWriterTestSuite) SetUpSuite(c *C) {
-	os.Setenv("POD_NAMESPACE", podFileWriterNS)
+	err := os.Setenv("POD_NAMESPACE", podFileWriterNS)
+	c.Assert(err, IsNil)
 }
 
 type fakePodFileWriterProcessor struct {
