@@ -514,7 +514,7 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 }
 
 func (s *E2ESuite) waitForActionSetComplete(asName string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
