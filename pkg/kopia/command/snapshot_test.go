@@ -171,10 +171,11 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 					DirectoryID:        []string{"d1", "d2"},
 					FileID:             []string{"f1", "f2"},
 					Sources:            []string{"s1", "s2"},
+					SnapshotIDs:        []string{"id1", "id2"},
 				}
 				return SnapshotVerify(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot verify --verify-files-percent=12.345 --parallel=123 --file-queue-length=456 --file-parallelism=890 --directory-id=d1 --directory-id=d2 --file-id=f1 --file-id=f2 --sources=s1 --sources=s2",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot verify --verify-files-percent=12.345 --parallel=123 --file-queue-length=456 --file-parallelism=890 --directory-id=d1 --directory-id=d2 --file-id=f1 --file-id=f2 --sources=s1 --sources=s2 id1 id2",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

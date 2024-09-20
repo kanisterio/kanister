@@ -176,6 +176,7 @@ type SnapshotVerifyCommandArgs struct {
 	DirectoryID        []string
 	FileID             []string
 	Sources            []string
+	SnapshotIDs        []string
 	VerifyFilesPercent *float64
 	Parallelism        *int
 	FileQueueLength    *int
@@ -215,6 +216,10 @@ func SnapshotVerify(cmdArgs SnapshotVerifyCommandArgs) []string {
 
 	for _, source := range cmdArgs.Sources {
 		args = args.AppendLoggableKV(sourcesFlag, source)
+	}
+
+	for _, snapID := range cmdArgs.SnapshotIDs {
+		args = args.AppendLoggable(snapID)
 	}
 
 	return stringSliceCommand(args)
