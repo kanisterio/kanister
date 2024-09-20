@@ -1,2 +1,0 @@
----
-features: Add support to pass labels and annotations to the methods that create/clone VolumeSnapshot and VolumeSnapshotContent resources.
