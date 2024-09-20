@@ -31,6 +31,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/controller"
 	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -232,7 +233,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 						Func: function.KubeTaskFuncName,
 						Name: "test-kube-task",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.110.0",
+							"image":     consts.LatestKanisterToolsImage,
 							"namespace": "{{ .Deployment.Namespace }}",
 							"command":   []string{"echo", "default specs"},
 							"podOverride": map[string]interface{}{
@@ -514,7 +515,7 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 }
 
 func (s *E2ESuite) waitForActionSetComplete(asName string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -624,7 +625,7 @@ func blueprintWithPodFunctions() *crv1alpha1.Blueprint {
 						Func: function.KubeTaskFuncName,
 						Name: "backupphase-one",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.110.0",
+							"image":     consts.LatestKanisterToolsImage,
 							"namespace": "default",
 							"command":   []string{"sleep", "10"},
 							"podLabels": map[string]interface{}{
@@ -645,7 +646,7 @@ func blueprintWithPodFunctions() *crv1alpha1.Blueprint {
 						Func: function.KubeTaskFuncName,
 						Name: "restorephase-one",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.110.0",
+							"image":     consts.LatestKanisterToolsImage,
 							"namespace": "default",
 							"command":   []string{"sleep", "10"},
 							"podLabels": map[string]interface{}{

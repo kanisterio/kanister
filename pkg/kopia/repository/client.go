@@ -16,6 +16,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,6 +42,33 @@ const (
 	maxConnectionRetries = 100
 )
 
+// AccessMode defines the types of access levels for a Kopia repository.
+type AccessMode int
+
+const (
+	// ReadOnlyAccess indicates that the repository access level is read-only (no modifications expected).
+	ReadOnlyAccess AccessMode = iota
+	// WriteAccess indicates that the repository access level allows modifications.
+	WriteAccess
+)
+
+// IsReadOnly returns true if repository access mode is Read-only.
+func (m AccessMode) IsReadOnly() bool {
+	return m == ReadOnlyAccess
+}
+
+// String returns a string representation of the RepositoryAccessMode type.
+func (m AccessMode) String() string {
+	switch m {
+	case ReadOnlyAccess:
+		return "ReadOnlyAccess"
+	case WriteAccess:
+		return "WriteAccess"
+	default:
+		return fmt.Sprintf("RepositoryAccessMode(%d)", m)
+	}
+}
+
 var apiConnectBackoff = backoff.Backoff{
 	Factor: 2,
 	Jitter: false,
@@ -58,6 +86,7 @@ func ConnectToAPIServer(
 	username string,
 	contentCacheMB,
 	metadataCacheMB int,
+	accessMode AccessMode,
 ) error {
 	// Extra fingerprint from the TLS Certificate secret
 	fingerprint, err := kopia.ExtractFingerprintFromCertificate(tlsCert)
@@ -83,6 +112,7 @@ func ConnectToAPIServer(
 		ClientOptions: repo.ClientOptions{
 			Hostname: hostname,
 			Username: username,
+			ReadOnly: accessMode.IsReadOnly(),
 		},
 	}
 

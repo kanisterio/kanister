@@ -211,6 +211,7 @@ func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer(c *C) err
 		rss.testUsername,
 		contentCacheMB,
 		metadataCacheMB,
+		repository.WriteAccess,
 	)
 }
 
