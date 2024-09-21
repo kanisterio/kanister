@@ -15,16 +15,16 @@
 package gcepd
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 )
 
 type ZoneSuite struct{}
 
-var _ = Suite(&ZoneSuite{})
+var _ = check.Suite(&ZoneSuite{})
 
-func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
+func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *check.C) {
 	defaultZones := []string{"us-west2-a", "us-west2-b", "us-west2-c"}
 	for _, tc := range []struct {
 		zones []string
@@ -48,6 +48,6 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 		},
 	} {
 		z := zone.SanitizeAvailableZones(tc.in, tc.zones)
-		c.Assert(z, DeepEquals, tc.out)
+		c.Assert(z, check.DeepEquals, tc.out)
 	}
 }

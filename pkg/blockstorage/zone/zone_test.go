@@ -21,7 +21,7 @@ import (
 	"sort"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -31,13 +31,13 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type ZoneSuite struct{}
 
-var _ = Suite(&ZoneSuite{})
+var _ = check.Suite(&ZoneSuite{})
 
-func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
+func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *check.C) {
 	ctx := context.Background()
 	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
@@ -119,16 +119,16 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	expectedZone["us-west2-c"] = struct{}{}
 	cli := fake.NewSimpleClientset(node1, node2, node3)
 	z, r, err := NodeZonesAndRegion(ctx, cli)
-	c.Assert(err, IsNil)
-	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
-	c.Assert(r, Equals, "us-west2")
+	c.Assert(err, check.IsNil)
+	c.Assert(reflect.DeepEqual(z, expectedZone), check.Equals, true)
+	c.Assert(r, check.Equals, "us-west2")
 
 	cli = fake.NewSimpleClientset(node4, node5)
 	_, _, err = NodeZonesAndRegion(ctx, cli)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.NotNil)
 }
 
-func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
+func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *check.C) {
 	ctx := context.Background()
 	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
@@ -210,16 +210,16 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	expectedZone["us-west-2c"] = struct{}{}
 	cli := fake.NewSimpleClientset(node1, node2, node3)
 	z, r, err := NodeZonesAndRegion(ctx, cli)
-	c.Assert(err, IsNil)
-	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
-	c.Assert(r, Equals, "us-west-2")
+	c.Assert(err, check.IsNil)
+	c.Assert(reflect.DeepEqual(z, expectedZone), check.Equals, true)
+	c.Assert(r, check.Equals, "us-west-2")
 
 	cli = fake.NewSimpleClientset(node4, node5)
 	_, _, err = NodeZonesAndRegion(ctx, cli)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.NotNil)
 }
 
-func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
+func (s ZoneSuite) TestNodeZoneAndRegionAD(c *check.C) {
 	ctx := context.Background()
 	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
@@ -317,24 +317,24 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	expectedZone["westus2-3"] = struct{}{}
 	cli := fake.NewSimpleClientset(node1, node2, node3)
 	z, r, err := NodeZonesAndRegion(ctx, cli)
-	c.Assert(err, IsNil)
-	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
-	c.Assert(r, Equals, "westus2")
+	c.Assert(err, check.IsNil)
+	c.Assert(reflect.DeepEqual(z, expectedZone), check.Equals, true)
+	c.Assert(r, check.Equals, "westus2")
 
 	// non-zonal cluster test
 	cli = fake.NewSimpleClientset(node4)
 	z, r, err = NodeZonesAndRegion(ctx, cli)
-	c.Assert(err, IsNil)
-	c.Assert(len(z) == 0, Equals, true)
-	c.Assert(r, Equals, "westus")
+	c.Assert(err, check.IsNil)
+	c.Assert(len(z) == 0, check.Equals, true)
+	c.Assert(r, check.Equals, "westus")
 
 	// error case
 	cli = fake.NewSimpleClientset(node5, node6)
 	_, _, err = NodeZonesAndRegion(ctx, cli)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.NotNil)
 }
 
-func (s ZoneSuite) TestSanitizeZones(c *C) {
+func (s ZoneSuite) TestSanitizeZones(c *check.C) {
 	for _, tc := range []struct {
 		availableZones map[string]struct{}
 		validZoneNames []string
@@ -422,11 +422,11 @@ func (s ZoneSuite) TestSanitizeZones(c *C) {
 		},
 	} {
 		out := SanitizeAvailableZones(tc.availableZones, tc.validZoneNames)
-		c.Assert(out, DeepEquals, tc.out)
+		c.Assert(out, check.DeepEquals, tc.out)
 	}
 }
 
-func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
+func (s ZoneSuite) TestFromSourceRegionZone(c *check.C) {
 	ctx := context.Background()
 	var t = &ebsTest{}
 	node1 := &corev1.Node{
@@ -639,11 +639,11 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		out, err := FromSourceRegionZone(ctx, t, tc.inCli, tc.inRegion, tc.inZones...)
 		sort.Strings(out)
 		sort.Strings(tc.outZones)
-		c.Assert(out, DeepEquals, tc.outZones)
+		c.Assert(out, check.DeepEquals, tc.outZones)
 		if err != nil {
-			c.Assert(err, ErrorMatches, tc.outErr.Error())
+			c.Assert(err, check.ErrorMatches, tc.outErr.Error())
 		} else {
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		}
 	}
 }
@@ -672,7 +672,7 @@ func (et *ebsTest) FromRegion(ctx context.Context, region string) ([]string, err
 	}
 }
 
-func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
+func (s ZoneSuite) TestGetReadySchedulableNodes(c *check.C) {
 	node1 := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
@@ -720,22 +720,22 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	}
 	cli := fake.NewSimpleClientset(node1, node2, node3)
 	nl, err := GetReadySchedulableNodes(cli)
-	c.Assert(err, IsNil)
-	c.Assert(len(nl), Equals, 1)
+	c.Assert(err, check.IsNil)
+	c.Assert(len(nl), check.Equals, 1)
 
 	node1.Spec = corev1.NodeSpec{
 		Unschedulable: true,
 	}
 	cli = fake.NewSimpleClientset(node1, node2, node3)
 	nl, err = GetReadySchedulableNodes(cli)
-	c.Assert(err, NotNil)
-	c.Assert(nl, IsNil)
+	c.Assert(err, check.NotNil)
+	c.Assert(nl, check.IsNil)
 }
 
-func (s ZoneSuite) TestConsistentZones(c *C) {
+func (s ZoneSuite) TestConsistentZones(c *check.C) {
 	// no available zones
 	z := consistentZone("source", map[string]struct{}{})
-	c.Assert(z, Equals, "")
+	c.Assert(z, check.Equals, "")
 
 	az1 := map[string]struct{}{
 		"a": {},
@@ -752,12 +752,12 @@ func (s ZoneSuite) TestConsistentZones(c *C) {
 	z1 := consistentZone("x", az1)
 	z2 := consistentZone("x", az2)
 
-	c.Assert(z1, Equals, z2)
+	c.Assert(z1, check.Equals, z2)
 
 	// different lists result in different zones
 	az2["d"] = struct{}{}
 	z1 = consistentZone("x", az1)
 	z2 = consistentZone("x", az2)
 
-	c.Assert(z1, Not(Equals), z2)
+	c.Assert(z1, check.Not(check.Equals), z2)
 }

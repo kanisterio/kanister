@@ -20,7 +20,7 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -32,19 +32,19 @@ import (
 
 type PodRunnerTestSuite struct{}
 
-var _ = Suite(&PodRunnerTestSuite{})
+var _ = check.Suite(&PodRunnerTestSuite{})
 
 const (
 	podRunnerNS = "pod-runner-test"
 	podName     = "test-pod"
 )
 
-func (s *PodRunnerTestSuite) SetUpSuite(c *C) {
+func (s *PodRunnerTestSuite) SetUpSuite(c *check.C) {
 	err := os.Setenv("POD_NAMESPACE", podRunnerNS)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
+func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cli := fake.NewSimpleClientset()
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
@@ -71,7 +71,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
 	returned := make(chan struct{})
 	go func() {
 		_, err := pr.Run(ctx, makePodRunnerTestFunc(deleted))
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		close(returned)
 	}()
 	cancel()
@@ -79,7 +79,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
 	<-returned
 }
 
-func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
+func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cli := fake.NewSimpleClientset()
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
@@ -107,7 +107,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 	returned := make(chan struct{})
 	go func() {
 		_, err := pr.Run(ctx, makePodRunnerTestFunc(deleted))
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		close(returned)
 	}()
 	deleted <- struct{}{}
@@ -117,7 +117,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *C) {
 
 // TestPodRunnerWithDebugLabelForSuccessCase adds a debug entry into the context and verifies the
 // pod got created with corresponding label using the entry or not.
-func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *C) {
+func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *check.C) {
 	jobIDSuffix := consts.LabelSuffixJobID
 	for _, tc := range []struct {
 		name            string
@@ -174,7 +174,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *C) {
 			errorCh <- err
 		}()
 		deleted <- struct{}{}
-		c.Assert(<-errorCh, IsNil)
+		c.Assert(<-errorCh, check.IsNil)
 		cancel()
 	}
 }

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -47,16 +47,16 @@ type E2ESuite struct {
 	cancel    context.CancelFunc
 }
 
-var _ = Suite(&E2ESuite{})
+var _ = check.Suite(&E2ESuite{})
 
-func (s *E2ESuite) SetUpSuite(c *C) {
+func (s *E2ESuite) SetUpSuite(c *check.C) {
 	// Instantiate Client SDKs
 	cfg, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cli, err = kubernetes.NewForConfig(cfg)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.crCli, err = crclient.NewForConfig(cfg)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create a new test namespace
 	ns := &corev1.Namespace{
@@ -65,47 +65,47 @@ func (s *E2ESuite) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.GetName()
 
 	// Start the controller
 	ctx := context.Background()
 	ctx, s.cancel = context.WithCancel(ctx)
 	err = resource.CreateCustomResources(ctx, cfg)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ctlr := controller.New(cfg, nil)
 	err = ctlr.StartWatch(ctx, s.namespace)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *E2ESuite) TearDownSuite(c *C) {
+func (s *E2ESuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 	if s.cancel != nil {
 		s.cancel()
 	}
 }
 
-func (s *E2ESuite) TestKubeExec(c *C) {
+func (s *E2ESuite) TestKubeExec(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), 60*time.Second)
 	defer can()
 
 	// Create a test Deployment
 	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, testutil.NewTestDeployment(1), metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, d.GetName())
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create test Profile and secret
 	sec := testutil.NewTestProfileSecret()
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
 	p, err = s.crCli.Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create a simple Blueprint
 	bp := &crv1alpha1.Blueprint{
@@ -131,7 +131,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 		},
 	}
 	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create an ActionSet
 	as := &crv1alpha1.ActionSet{
@@ -157,7 +157,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 		},
 	}
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Wait for the ActionSet to complete.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -172,19 +172,19 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 		}
 		return false, nil
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	log.Print("Completed E2E TestKubeExec")
 }
 
-func (s *E2ESuite) TestKubeTask(c *C) {
+func (s *E2ESuite) TestKubeTask(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), 30*time.Second)
 	defer can()
 
 	// Create a test Deployment
 	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, testutil.NewTestDeployment(1), metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, d.GetName())
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create test Profile and secret
 	sec := &corev1.Secret{
@@ -197,7 +197,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		},
 	}
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	p := &crv1alpha1.Profile{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-profile-",
@@ -218,7 +218,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		},
 	}
 	p, err = s.crCli.Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create a simple Blueprint
 	bp := &crv1alpha1.Blueprint{
@@ -252,7 +252,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		},
 	}
 	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create an ActionSet
 	as := &crv1alpha1.ActionSet{
@@ -281,7 +281,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		},
 	}
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Wait for the ActionSet to complete.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -296,13 +296,13 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		}
 		return false, nil
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	log.Print("Completed E2E TestKubeTask")
 }
 
-func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
+func (s *E2ESuite) TestPodLabelsAndAnnotations(c *check.C) {
 	bp, err := s.crCli.Blueprints(s.namespace).Create(context.Background(), blueprintWithPodFunctions(), metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// 1. scenario where the labels/annotations are provided via actionset as well as blueprint
 	asPodLabels := map[string]string{
@@ -313,32 +313,32 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 	}
 	as := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, asPodAnn, asPodLabels)
 	asCreated, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForFunctionPodReady()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	ctx := context.Background()
 	pods, err := s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "createdBy=kanister",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
 		"asLabKeyOne": "asLabValOne",
 		"bpLabKeyOne": "bpLabValueOne",
 		"labKey":      "labValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
 		"asAnnKeyOne": "asAnnValOne",
 		"bpAnnKeyOne": "bpAnnValueOne",
 		"annKey":      "annValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForActionSetComplete(asCreated.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// 2. scenario where labels/annotations are provided via actionset as well blueprint
 	// and same key is present at both places.
@@ -350,30 +350,30 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 		"labKey":      "asLabValue", // this label is present in blueprint as well but with diff value (labValue)
 	})
 	asCreatedOne, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asOne, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForFunctionPodReady()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "createdBy=kanister",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
 		"asLabKeyOne": "asLabValOne",
 		"bpLabKeyOne": "bpLabValueOne",
 		"labKey":      "labValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
 		"asAnnKeyOne": "asAnnValOne",
 		"bpAnnKeyOne": "bpAnnValueOne",
 		"annKey":      "annValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForActionSetComplete(asCreatedOne.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// 3. scenario where labels/annotations are present at both places (actionset, blueprint) and no common key is present
 	asTwo := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{
@@ -384,65 +384,65 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 		"asLabKeyTwo": "asLabValTwo",
 	})
 	asCreatedTwo, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asTwo, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForFunctionPodReady()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "createdBy=kanister",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
 		"asLabKeyOne": "asLabValOne",
 		"asLabKeyTwo": "asLabValTwo",
 		"bpLabKeyOne": "bpLabValueOne",
 		"labKey":      "labValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
 		"asAnnKeyOne": "asAnnValOne",
 		"asAnnKeyTwo": "asAnnValTwo",
 		"bpAnnKeyOne": "bpAnnValueOne",
 		"annKey":      "annValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForActionSetComplete(asCreatedTwo.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// 4. scenario where labels/annotations are only provided via blueprint
 	asThree := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, nil, nil)
 	asCreatedThree, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asThree, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForFunctionPodReady()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "createdBy=kanister",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
 		"bpLabKeyOne": "bpLabValueOne",
 		"labKey":      "labValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
 		"bpAnnKeyOne": "bpAnnValueOne",
 		"annKey":      "annValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForActionSetComplete(asCreatedThree.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// 5. scenario where labels/annotations are only provided via actionset
 	bpObj := blueprintWithPodFunctions()
 	bpObj.Actions["backup"].Phases[0].Args["podLabels"] = map[string]string{}
 	bpObj.Actions["backup"].Phases[0].Args["podAnnotations"] = map[string]string{}
 	bp, err = s.crCli.Blueprints(s.namespace).Create(context.Background(), bpObj, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	asFour := backupActionsetWihtPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{
 		"asAnnKeyOne": "asAnnValOne",
@@ -451,32 +451,32 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 		"asLabKeyOne": "asLabValOne",
 	})
 	asCreatedFour, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asFour, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForFunctionPodReady()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "createdBy=kanister",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
 		"asLabKeyOne": "asLabValOne",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
 		"asAnnKeyOne": "asAnnValOne",
 		"asAnnKeyTwo": "asAnnValTwo",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForActionSetComplete(asCreatedFour.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// test restore actionset
 	bpObj = blueprintWithPodFunctions()
 	bp, err = s.crCli.Blueprints(s.namespace).Create(context.Background(), bpObj, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	asRestore := restoreActionsetWithPodLabelsAndAnnotations(s.namespace, bp.Name, map[string]string{
 		"asAnnKeyOne": "asAnnValOne",
@@ -485,31 +485,31 @@ func (s *E2ESuite) TestPodLabelsAndAnnotations(c *C) {
 		"asLabKeyOne": "asLabValOne",
 	})
 	asRestoreCreated, err := s.crCli.ActionSets(s.namespace).Create(context.Background(), asRestore, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForFunctionPodReady()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	pods, err = s.cli.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
 		LabelSelector: "createdBy=kanister",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyLabelsInFunctionPod(pods.Items[0].Labels, map[string]string{
 		"bpLabKeyOne": "bpLabValueOne",
 		"labKey":      "labValue",
 		"asLabKeyOne": "asLabValOne",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = verifyAnnotationsInFunctionPod(pods.Items[0].Annotations, map[string]string{
 		"asAnnKeyOne": "asAnnValOne",
 		"asAnnKeyTwo": "asAnnValTwo",
 		"bpAnnKeyOne": "bpAnnValueOne",
 		"annKey":      "annValue",
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitForActionSetComplete(asRestoreCreated.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	log.Print("Completed E2E TestPodLabelsAndAnnotations")
 }
