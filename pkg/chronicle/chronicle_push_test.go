@@ -19,7 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -29,9 +29,9 @@ import (
 
 type ChroniclePushSuite struct{}
 
-var _ = Suite(&ChroniclePushSuite{})
+var _ = check.Suite(&ChroniclePushSuite{})
 
-func (s *ChroniclePushSuite) TestPush(c *C) {
+func (s *ChroniclePushSuite) TestPush(c *check.C) {
 	osType := objectstore.ProviderTypeS3
 	loc := crv1alpha1.Location{
 		Type:   crv1alpha1.LocationTypeS3Compliant,
@@ -41,11 +41,11 @@ func (s *ChroniclePushSuite) TestPush(c *C) {
 	prof := *testutil.ObjectStoreProfileOrSkip(c, osType, loc)
 	pp := filepath.Join(c.MkDir(), "profile.json")
 	err := writeProfile(pp, prof)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	a := filepath.Join(c.MkDir(), "artifact")
 	err = os.WriteFile(a, []byte(rand.String(10)), os.ModePerm)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	p := PushParams{
 		ProfilePath:  pp,
 		ArtifactFile: a,
@@ -53,5 +53,5 @@ func (s *ChroniclePushSuite) TestPush(c *C) {
 	}
 	ctx := context.Background()
 	err = push(ctx, p, 0)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }

@@ -6,18 +6,18 @@ import (
 	"strings"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/output"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type FormatTest struct{}
 
-var _ = Suite(&FormatTest{})
+var _ = check.Suite(&FormatTest{})
 
-func (s *FormatTest) TestLogToForPhaseOutputs(c *C) {
+func (s *FormatTest) TestLogToForPhaseOutputs(c *check.C) {
 	const (
 		pod       = "test-pod-logto"
 		container = "test-container-logto"
@@ -52,21 +52,21 @@ func (s *FormatTest) TestLogToForPhaseOutputs(c *C) {
 			// create the phase output for each pair of the given k/v
 			kv := &bytes.Buffer{}
 			err := output.PrintOutputTo(kv, key, tc.values[i])
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 
 			kvRaw := fmt.Sprintf("%s\n", kv.String())
 			if _, err := input.WriteString(kvRaw); err != nil {
-				c.Assert(err, IsNil)
+				c.Assert(err, check.IsNil)
 			}
 
 			expected += fmt.Sprintf("%s {\"key\":\"%s\",\"value\":\"%s\"}\n", output.PhaseOpString, key, tc.values[i])
 		}
 		LogTo(actual, pod, container, input.String())
-		c.Check(expected, DeepEquals, actual.String())
+		c.Check(expected, check.DeepEquals, actual.String())
 	}
 }
 
-func (s *FormatTest) TestLogToForNormalLogs(c *C) {
+func (s *FormatTest) TestLogToForNormalLogs(c *check.C) {
 	const (
 		pod       = "test-pod-logto"
 		container = "test-container-logto"
@@ -98,7 +98,7 @@ func (s *FormatTest) TestLogToForNormalLogs(c *C) {
 		actual := &bytes.Buffer{}
 		LogTo(actual, pod, container, tc.input)
 
-		c.Assert(strings.Contains(actual.String(), tc.expected), Equals, true)
-		c.Assert(strings.Count(actual.String(), tc.expected), Equals, tc.count)
+		c.Assert(strings.Contains(actual.String(), tc.expected), check.Equals, true)
+		c.Assert(strings.Count(actual.String(), tc.expected), check.Equals, tc.count)
 	}
 }

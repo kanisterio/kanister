@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,13 +32,13 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type TestVolSuite struct{}
 
-var _ = Suite(&TestVolSuite{})
+var _ = check.Suite(&TestVolSuite{})
 
-func (s *TestVolSuite) TestCreatePVC(c *C) {
+func (s *TestVolSuite) TestCreatePVC(c *check.C) {
 	// Create PVC
 	ctx := context.Background()
 	pvcSize := int64(1024)
@@ -47,34 +47,34 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	annotations := map[string]string{"a1": "foo"}
 	cli := fake.NewSimpleClientset()
 	pvcName, err := CreatePVC(ctx, cli, ns, NoPVCNameSpecified, pvcSize, targetVolID, annotations, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, nil)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, pvcName, metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
-	c.Assert(len(pvc.Spec.AccessModes) >= 1, Equals, true)
+	c.Assert(len(pvc.Spec.AccessModes) >= 1, check.Equals, true)
 	accessMode := pvc.Spec.AccessModes[0]
-	c.Assert(accessMode, Equals, corev1.ReadWriteOnce)
+	c.Assert(accessMode, check.Equals, corev1.ReadWriteOnce)
 	capacity, ok := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-	c.Assert(ok, Equals, true)
-	c.Assert(capacity.Value() >= int64(pvcSize), Equals, true)
+	c.Assert(ok, check.Equals, true)
+	c.Assert(capacity.Value() >= int64(pvcSize), check.Equals, true)
 	eq := reflect.DeepEqual(annotations, pvc.ObjectMeta.Annotations)
-	c.Assert(eq, Equals, true)
-	c.Assert(len(pvc.Spec.Selector.MatchLabels) >= 1, Equals, true)
+	c.Assert(eq, check.Equals, true)
+	c.Assert(len(pvc.Spec.Selector.MatchLabels) >= 1, check.Equals, true)
 	label := pvc.Spec.Selector.MatchLabels[pvMatchLabelName]
-	c.Assert(label, Equals, filepath.Base(targetVolID))
+	c.Assert(label, check.Equals, filepath.Base(targetVolID))
 
 	volumeMode := corev1.PersistentVolumeBlock
 	_, err = CreatePVC(ctx, cli, ns, "pvc2", pvcSize, targetVolID, annotations, nil, &volumeMode)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	pvc2, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc2", metav1.GetOptions{})
-	c.Assert(err, IsNil)
-	c.Assert(len(pvc2.Spec.AccessModes) >= 1, Equals, true)
-	c.Assert(*pvc2.Spec.VolumeMode, Equals, corev1.PersistentVolumeBlock)
-	c.Assert(pvc2.GetAnnotations(), NotNil)
-	c.Assert(pvc2.GetAnnotations()["a1"], Equals, "foo")
+	c.Assert(err, check.IsNil)
+	c.Assert(len(pvc2.Spec.AccessModes) >= 1, check.Equals, true)
+	c.Assert(*pvc2.Spec.VolumeMode, check.Equals, corev1.PersistentVolumeBlock)
+	c.Assert(pvc2.GetAnnotations(), check.NotNil)
+	c.Assert(pvc2.GetAnnotations()["a1"], check.Equals, "foo")
 }
 
-func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
+func (s *TestVolSuite) TestGetPVCRestoreSize(c *check.C) {
 	ctx := context.Background()
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
@@ -89,7 +89,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 	for _, tc := range []struct {
 		args       *CreatePVCFromSnapshotArgs
 		sizeValue  int64
-		errChecker Checker
+		errChecker check.Checker
 	}{
 		{ // only snapshot restore size
 			args: &CreatePVCFromSnapshotArgs{
@@ -100,7 +100,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				Namespace:    "vsNamespace",
 			},
 			sizeValue:  10737418240,
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // only args restore size
 			args: &CreatePVCFromSnapshotArgs{
@@ -112,7 +112,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				RestoreSize:  "10Gi",
 			},
 			sizeValue:  10737418240,
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // neither
 			args: &CreatePVCFromSnapshotArgs{
@@ -122,7 +122,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				SnapshotName: "vsName",
 				Namespace:    "vsNamespace",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{ // both, snapshot size is bigger
 			args: &CreatePVCFromSnapshotArgs{
@@ -134,7 +134,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				RestoreSize:  "9Gi",
 			},
 			sizeValue:  10737418240,
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // both, args size is bigger
 			args: &CreatePVCFromSnapshotArgs{
@@ -146,7 +146,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				RestoreSize:  "10Gi",
 			},
 			sizeValue:  10737418240,
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // Failed to find snapshot
 			args: &CreatePVCFromSnapshotArgs{
@@ -155,7 +155,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				SnapshotName: "vsName",
 				Namespace:    "vsNamespace",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{ // Failed to create snapshotter
 			args: &CreatePVCFromSnapshotArgs{
@@ -164,7 +164,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				SnapshotName: "vsName",
 				Namespace:    "vsNamespace",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{ // bad args restore size
 			args: &CreatePVCFromSnapshotArgs{
@@ -172,13 +172,13 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				Namespace:    "vsNamespace",
 				RestoreSize:  "10wut",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 	} {
 		q, err := getPVCRestoreSize(ctx, tc.args)
 		c.Assert(err, tc.errChecker)
-		if tc.errChecker == IsNil {
-			c.Assert(q.Value(), Equals, tc.sizeValue)
+		if tc.errChecker == check.IsNil {
+			c.Assert(q.Value(), check.Equals, tc.sizeValue)
 		}
 	}
 }
@@ -202,7 +202,7 @@ func (s *TestVolSuite) fakeUnstructuredSnasphotWSize(vsName, namespace, size str
 	return &unstructured.Unstructured{Object: Object}
 }
 
-func (s *TestVolSuite) TestZoneToRegion(c *C) {
+func (s *TestVolSuite) TestZoneToRegion(c *check.C) {
 	for idx, tc := range []struct {
 		zone           string
 		expectedRegion []string
@@ -237,6 +237,6 @@ func (s *TestVolSuite) TestZoneToRegion(c *C) {
 		},
 	} {
 		reg := zonesToRegions(tc.zone)
-		c.Assert(reg, DeepEquals, tc.expectedRegion, Commentf("Case #%d", idx))
+		c.Assert(reg, check.DeepEquals, tc.expectedRegion, check.Commentf("Case #%d", idx))
 	}
 }

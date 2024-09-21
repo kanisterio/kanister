@@ -19,7 +19,7 @@ import (
 	"context"
 	"path/filepath"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/objectstore"
@@ -31,11 +31,11 @@ type ProfileSuite struct {
 	location *crv1alpha1.Location
 }
 
-var _ = Suite(&ProfileSuite{})
+var _ = check.Suite(&ProfileSuite{})
 
 const testContent = "test-content"
 
-func (ps *ProfileSuite) SetUpSuite(c *C) {
+func (ps *ProfileSuite) SetUpSuite(c *check.C) {
 	// Set Context as Background
 	ps.ctx = context.Background()
 
@@ -46,35 +46,35 @@ func (ps *ProfileSuite) SetUpSuite(c *C) {
 	}
 }
 
-func (ps *ProfileSuite) TestLocationOperationsForProfileDataMover(c *C) {
+func (ps *ProfileSuite) TestLocationOperationsForProfileDataMover(c *check.C) {
 	p := testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, *ps.location)
 	dir := c.MkDir()
 	path := filepath.Join(dir, "test-object1.txt")
 
 	source := bytes.NewBufferString(testContent)
 	err := locationPush(ps.ctx, p, path, source)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	target := bytes.NewBuffer(nil)
 	err = locationPull(ps.ctx, p, path, target)
-	c.Assert(err, IsNil)
-	c.Assert(target.String(), Equals, testContent)
+	c.Assert(err, check.IsNil)
+	c.Assert(target.String(), check.Equals, testContent)
 
 	// test deleting single artifact
 	err = locationDelete(ps.ctx, p, path)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// test deleting dir with multiple artifacts
 	source = bytes.NewBufferString(testContent)
 	err = locationPush(ps.ctx, p, path, source)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	path = filepath.Join(dir, "test-object2.txt")
 
 	source = bytes.NewBufferString(testContent)
 	err = locationPush(ps.ctx, p, path, source)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = locationDelete(ps.ctx, p, dir)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }

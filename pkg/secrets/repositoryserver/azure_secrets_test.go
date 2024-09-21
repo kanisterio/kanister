@@ -16,7 +16,7 @@ package repositoryserver
 
 import (
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -25,12 +25,12 @@ import (
 
 type AzureSecretCredsSuite struct{}
 
-var _ = Suite(&AzureSecretCredsSuite{})
+var _ = check.Suite(&AzureSecretCredsSuite{})
 
-func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
+func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *check.C) {
 	for i, tc := range []struct {
 		secret        Secret
-		errChecker    Checker
+		errChecker    check.Checker
 		expectedError error
 	}{
 		{ // Valid Azure Secret
@@ -45,7 +45,7 @@ func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
 					RegionKey: []byte("region"),
 				},
 			}),
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // Missing required field - Bucket Key
 			secret: NewAzureLocation(&corev1.Secret{
@@ -58,7 +58,7 @@ func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
 					RegionKey: []byte("region"),
 				},
 			}),
-			errChecker:    NotNil,
+			errChecker:    check.NotNil,
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
 		},
 		{ // Empty Secret
@@ -69,12 +69,12 @@ func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
 					Namespace: "ns",
 				},
 			}),
-			errChecker:    NotNil,
+			errChecker:    check.NotNil,
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
 		},
 		{ // Nil Secret
 			secret:        NewAzureLocation(nil),
-			errChecker:    NotNil,
+			errChecker:    check.NotNil,
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
@@ -82,7 +82,7 @@ func (s *AzureSecretCredsSuite) TestValidateRepoServerAzureCredentials(c *C) {
 		c.Check(err, tc.errChecker)
 
 		if err != nil {
-			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+			c.Check(err.Error(), check.Equals, tc.expectedError.Error(), check.Commentf("test number: %d", i))
 		}
 	}
 }

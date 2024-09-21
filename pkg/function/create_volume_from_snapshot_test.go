@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,9 +37,9 @@ import (
 
 type CreateVolumeFromSnapshotTestSuite struct{}
 
-var _ = Suite(&CreateVolumeFromSnapshotTestSuite{})
+var _ = check.Suite(&CreateVolumeFromSnapshotTestSuite{})
 
-func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
+func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *check.C) {
 	ctx := context.Background()
 	ns := "ns"
 	mockGetter := mockblockstorage.NewGetter()
@@ -86,58 +86,58 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
 	PVCData1 = append(PVCData1, volInfo1)
 	PVCData1 = append(PVCData1, volInfo2)
 	info, err := json.Marshal(PVCData1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	snapinfo := string(info)
 	for _, tc := range []struct {
 		snapshotinfo string
-		check        Checker
+		check        check.Checker
 		newPVCs      []string
 	}{
 		{
 			snapshotinfo: snapinfo,
-			check:        IsNil,
+			check:        check.IsNil,
 			newPVCs:      nil,
 		},
 		{
 			snapshotinfo: snapinfo,
-			check:        IsNil,
+			check:        check.IsNil,
 			newPVCs:      []string{"newpvc-1", "newpvc-2"},
 		},
 	} {
 		providerList, err := createVolumeFromSnapshot(ctx, cli, ns, tc.snapshotinfo, tc.newPVCs, profile, mockGetter)
-		c.Assert(providerList, Not(Equals), tc.check)
+		c.Assert(providerList, check.Not(check.Equals), tc.check)
 		c.Assert(err, tc.check)
 		if err != nil {
 			continue
 		}
-		c.Assert(len(providerList) == 2, Equals, true)
+		c.Assert(len(providerList) == 2, check.Equals, true)
 		provider, ok := providerList["pvc-1"]
-		c.Assert(ok, Equals, true)
-		c.Assert(len(provider.(*mockblockstorage.Provider).SnapIDList) == 1, Equals, true)
-		c.Assert(mockblockstorage.CheckID("snap-1", provider.(*mockblockstorage.Provider).SnapIDList), Equals, true)
-		c.Assert(len(provider.(*mockblockstorage.Provider).VolIDList) == 1, Equals, true)
+		c.Assert(ok, check.Equals, true)
+		c.Assert(len(provider.(*mockblockstorage.Provider).SnapIDList) == 1, check.Equals, true)
+		c.Assert(mockblockstorage.CheckID("snap-1", provider.(*mockblockstorage.Provider).SnapIDList), check.Equals, true)
+		c.Assert(len(provider.(*mockblockstorage.Provider).VolIDList) == 1, check.Equals, true)
 
 		provider, ok = providerList["pvc-2"]
-		c.Assert(ok, Equals, true)
-		c.Assert(len(provider.(*mockblockstorage.Provider).SnapIDList) == 1, Equals, true)
-		c.Assert(mockblockstorage.CheckID("snap-2", provider.(*mockblockstorage.Provider).SnapIDList), Equals, true)
-		c.Assert(len(provider.(*mockblockstorage.Provider).VolIDList) == 1, Equals, true)
+		c.Assert(ok, check.Equals, true)
+		c.Assert(len(provider.(*mockblockstorage.Provider).SnapIDList) == 1, check.Equals, true)
+		c.Assert(mockblockstorage.CheckID("snap-2", provider.(*mockblockstorage.Provider).SnapIDList), check.Equals, true)
+		c.Assert(len(provider.(*mockblockstorage.Provider).VolIDList) == 1, check.Equals, true)
 
 		if tc.newPVCs != nil {
 			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "newpvc-1", metav1.GetOptions{})
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "newpvc-2", metav1.GetOptions{})
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		} else {
 			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc-1", metav1.GetOptions{})
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc-2", metav1.GetOptions{})
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		}
 	}
 }
 
-func (s *CreateVolumeFromSnapshotTestSuite) TestAddPVProvisionedByAnnotation(c *C) {
+func (s *CreateVolumeFromSnapshotTestSuite) TestAddPVProvisionedByAnnotation(c *check.C) {
 	for _, tc := range []struct {
 		st                  blockstorage.Provider
 		annotations         map[string]string
@@ -181,6 +181,6 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestAddPVProvisionedByAnnotation(c *
 		},
 	} {
 		op := addPVProvisionedByAnnotation(tc.annotations, tc.st)
-		c.Assert(op, DeepEquals, tc.expectedAnnotations)
+		c.Assert(op, check.DeepEquals, tc.expectedAnnotations)
 	}
 }
