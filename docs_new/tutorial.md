@@ -32,7 +32,10 @@ kind: Deployment
 metadata:
   name: time-logger
 spec:
-  replicas: 1
+  replicas: 1  
+  selector:
+    matchLabels:
+      app: time-logger
   template:
     metadata:
       labels:
