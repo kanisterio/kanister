@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
@@ -53,9 +53,9 @@ const (
 	TestRepositoryEncryptionKey = "TEST_REPOSITORY_ENCRYPTION_KEY"
 )
 
-var _ = Suite(&RepositoryServerSuite{})
+var _ = check.Suite(&RepositoryServerSuite{})
 
-func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
+func (rss *RepositoryServerSuite) SetUpSuite(c *check.C) {
 	// Check if kopia binary exists in PATH
 	if !CommandExists("kopia") {
 		c.Skip("Skipping repository server datamover unit test. Couldn't find kopia binary in the path.")
@@ -88,7 +88,7 @@ func (rss *RepositoryServerSuite) SetUpSuite(c *C) {
 	rss.tlsDir = filepath.Join(temp, "tls-"+rand.String(5))
 }
 
-func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
+func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *check.C) {
 	// Setting Up Kopia Repository
 	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 	repoCommandArgs := kopiacmd.RepositoryCommandArgs{
@@ -110,15 +110,15 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	// First try to connect with Kopia Repository
 	c.Log("Connecting with Kopia Repository...")
 	repoConnectCmd, err := kopiacmd.RepositoryConnectCommand(repoCommandArgs)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, err = ExecCommand(c, repoConnectCmd...)
 	if err != nil && strings.Contains(err.Error(), "error connecting to repository") {
 		// If connection fails, create Kopia Repository
 		c.Log("Creating Kopia Repository...")
 		repoCreateCmd, err := kopiacmd.RepositoryCreateCommand(repoCommandArgs)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		_, err = ExecCommand(c, repoCreateCmd...)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 
 	// Setting Up Kopia Repository Server
@@ -140,7 +140,7 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	}
 	serverStartCmd := kopiacmd.ServerStart(serverStartCommandArgs)
 	_, err = ExecCommand(c, serverStartCmd...)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Adding Users to Kopia Repository Server
 	serverAddUserCommandArgs := kopiacmd.ServerAddUserCommandArgs{
@@ -154,11 +154,11 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	}
 	serverAddUserCmd := kopiacmd.ServerAddUser(serverAddUserCommandArgs)
 	_, err = ExecCommand(c, serverAddUserCmd...)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Getting Fingerprint of Kopia Repository Server
 	rss.fingerprint = fingerprintFromTLSCert(c, tlsCertFile)
-	c.Assert(rss.fingerprint, Not(Equals), "")
+	c.Assert(rss.fingerprint, check.Not(check.Equals), "")
 
 	// Refreshing Kopia Repository Server
 	serverRefreshCommandArgs := kopiacmd.ServerRefreshCommandArgs{
@@ -174,7 +174,7 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	}
 	serverRefreshCmd := kopiacmd.ServerRefresh(serverRefreshCommandArgs)
 	_, err = ExecCommand(c, serverRefreshCmd...)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check Server Status
 	serverStatusCommandArgs := kopiacmd.ServerStatusCommandArgs{
@@ -193,14 +193,14 @@ func (rss *RepositoryServerSuite) setupKopiaRepositoryServer(c *C) {
 	if !strings.Contains(out, "IDLE") && out != "" {
 		c.Fail()
 	}
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer(c *C) error {
+func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer(c *check.C) error {
 	// Connect With Kopia Repository Server
 	tlsCertFile := rss.tlsDir + ".cert"
 	tlsCertStr := readTLSCert(c, tlsCertFile)
-	c.Assert(tlsCertStr, Not(Equals), "")
+	c.Assert(tlsCertStr, check.Not(check.Equals), "")
 	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 	return repository.ConnectToAPIServer(
 		rss.ctx,
@@ -211,10 +211,11 @@ func (rss *RepositoryServerSuite) connectWithTestKopiaRepositoryServer(c *C) err
 		rss.testUsername,
 		contentCacheMB,
 		metadataCacheMB,
+		repository.WriteAccess,
 	)
 }
 
-func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServerDataMover(c *C) {
+func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServerDataMover(c *check.C) {
 	// Setup Kopia Repository Server
 	rss.setupKopiaRepositoryServer(c)
 
@@ -224,30 +225,30 @@ func (rss *RepositoryServerSuite) TestLocationOperationsForRepositoryServerDataM
 
 	cmd := exec.Command("touch", filePath)
 	_, err := cmd.Output()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	targetDir := c.MkDir()
 
 	// Connect with Kopia Repository Server
 	err = rss.connectWithTestKopiaRepositoryServer(c)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Test Kopia Repository Server Location Push
 	snapInfo, err := kopiaLocationPush(rss.ctx, rss.repoPathPrefix, "kandoOutput", sourceDir, rss.testUserPassword)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Test Kopia Repository Server Location Pull
 	err = kopiaLocationPull(rss.ctx, snapInfo.ID, rss.repoPathPrefix, targetDir, rss.testUserPassword)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// TODO : Verify Data is Pulled from the Location (Issue #2230)
 
 	// Test Kopia Repository Location Delete
 	err = kopiaLocationDelete(rss.ctx, snapInfo.ID, rss.repoPathPrefix, rss.testUserPassword)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Verify Data is Deleted from the Location
 	// Expect an Error while Pulling Data
 	err = kopiaLocationPull(rss.ctx, snapInfo.ID, rss.repoPathPrefix, targetDir, rss.testUserPassword)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.NotNil)
 }

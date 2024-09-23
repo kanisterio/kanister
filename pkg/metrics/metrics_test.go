@@ -19,16 +19,16 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type MetricsSuite struct{}
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
-var _ = Suite(&MetricsSuite{})
+var _ = check.Suite(&MetricsSuite{})
 
-func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
+func (m *MetricsSuite) TestGetLabelCombinations(c *check.C) {
 	boundedLabels := make([]BoundedLabel, 3)
 	boundedLabels[0] = BoundedLabel{LabelName: "operation_type", LabelValues: []string{"backup", "restore"}}
 	boundedLabels[1] = BoundedLabel{LabelName: "resolution", LabelValues: []string{"success", "failure"}}
@@ -76,15 +76,15 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 		},
 	}
 	receivedCombinations, err := getLabelCombinations(boundedLabels)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	isEqual := reflect.DeepEqual(receivedCombinations, expectedPrometheusLabels)
-	c.Assert(isEqual, Equals, true)
+	c.Assert(isEqual, check.Equals, true)
 
 	boundedLabels = make([]BoundedLabel, 0)
 	receivedCombinations, err = getLabelCombinations(boundedLabels)
-	c.Assert(receivedCombinations, IsNil)
-	c.Assert(err, NotNil)
-	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
+	c.Assert(receivedCombinations, check.IsNil)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "invalid BoundedLabel list")
 
 	boundedLabels = make([]BoundedLabel, 1)
 	boundedLabels[0] = BoundedLabel{LabelName: "resolution", LabelValues: []string{"success", "failure"}}
@@ -98,25 +98,25 @@ func (m *MetricsSuite) TestGetLabelCombinations(c *C) {
 	}
 	receivedCombinations, err = getLabelCombinations(boundedLabels)
 	isEqual = reflect.DeepEqual(receivedCombinations, expectedPrometheusLabels)
-	c.Assert(err, IsNil)
-	c.Assert(isEqual, Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(isEqual, check.Equals, true)
 
 	boundedLabels = make([]BoundedLabel, 1)
 	boundedLabels[0] = BoundedLabel{LabelName: "resolution", LabelValues: nil}
 
 	receivedCombinations, err = getLabelCombinations(boundedLabels)
-	c.Assert(err, NotNil)
-	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
-	c.Assert(receivedCombinations, IsNil)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "invalid BoundedLabel list")
+	c.Assert(receivedCombinations, check.IsNil)
 
 	boundedLabels = make([]BoundedLabel, 1)
 	boundedLabels[0] = BoundedLabel{LabelName: "resolution", LabelValues: []string{}}
-	c.Assert(err, NotNil)
-	c.Assert(err.Error(), Equals, "invalid BoundedLabel list")
-	c.Assert(receivedCombinations, IsNil)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "invalid BoundedLabel list")
+	c.Assert(receivedCombinations, check.IsNil)
 }
 
-func (m *MetricsSuite) TestInitCounterVec(c *C) {
+func (m *MetricsSuite) TestInitCounterVec(c *check.C) {
 	boundedLabels := make([]BoundedLabel, 2)
 	boundedLabels[0] = BoundedLabel{LabelName: "operation_type", LabelValues: []string{"backup", "restore"}}
 	boundedLabels[1] = BoundedLabel{LabelName: "resolution", LabelValues: []string{"success", "failure"}}
@@ -126,15 +126,15 @@ func (m *MetricsSuite) TestInitCounterVec(c *C) {
 	}
 	registry := prometheus.NewRegistry()
 	metrics, err := registry.Gather()
-	c.Assert(metrics, IsNil)
-	c.Assert(err, IsNil)
+	c.Assert(metrics, check.IsNil)
+	c.Assert(err, check.IsNil)
 
 	actionSetCounterVec := InitCounterVec(registry, actionSetCounterOpts, boundedLabels)
 
 	metrics, err = registry.Gather()
-	c.Assert(metrics, NotNil)
-	c.Assert(err, IsNil)
-	c.Assert(len(metrics), Equals, 1)
+	c.Assert(metrics, check.NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(len(metrics), check.Equals, 1)
 
 	expectedOperationTypes := map[string]int{"backup": 0, "restore": 0}
 	expectedResolutionTypes := map[string]int{"success": 0, "failure": 0}
@@ -147,13 +147,13 @@ func (m *MetricsSuite) TestInitCounterVec(c *C) {
 			}
 		}
 	}
-	c.Assert(expectedOperationTypes["backup"], Equals, 2)
-	c.Assert(expectedOperationTypes["restore"], Equals, 2)
-	c.Assert(expectedResolutionTypes["success"], Equals, 2)
-	c.Assert(expectedResolutionTypes["failure"], Equals, 2)
+	c.Assert(expectedOperationTypes["backup"], check.Equals, 2)
+	c.Assert(expectedOperationTypes["restore"], check.Equals, 2)
+	c.Assert(expectedResolutionTypes["success"], check.Equals, 2)
+	c.Assert(expectedResolutionTypes["failure"], check.Equals, 2)
 
-	c.Assert(testutil.ToFloat64(actionSetCounterVec.WithLabelValues("backup", "success")), Equals, float64(0))
-	c.Assert(testutil.ToFloat64(actionSetCounterVec.WithLabelValues("backup", "failure")), Equals, float64(0))
-	c.Assert(testutil.ToFloat64(actionSetCounterVec.WithLabelValues("restore", "success")), Equals, float64(0))
-	c.Assert(testutil.ToFloat64(actionSetCounterVec.WithLabelValues("restore", "failure")), Equals, float64(0))
+	c.Assert(testutil.ToFloat64(actionSetCounterVec.WithLabelValues("backup", "success")), check.Equals, float64(0))
+	c.Assert(testutil.ToFloat64(actionSetCounterVec.WithLabelValues("backup", "failure")), check.Equals, float64(0))
+	c.Assert(testutil.ToFloat64(actionSetCounterVec.WithLabelValues("restore", "success")), check.Equals, float64(0))
+	c.Assert(testutil.ToFloat64(actionSetCounterVec.WithLabelValues("restore", "failure")), check.Equals, float64(0))
 }

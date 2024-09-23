@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -36,7 +36,7 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type LocationSuite struct {
 	osType            objectstore.ProviderType
@@ -55,11 +55,11 @@ const (
 	testRegionS3   = "us-west-2"
 )
 
-var _ = Suite(&LocationSuite{osType: objectstore.ProviderTypeS3, region: testRegionS3})
-var _ = Suite(&LocationSuite{osType: objectstore.ProviderTypeGCS, region: ""})
-var _ = Suite(&LocationSuite{osType: objectstore.ProviderTypeAzure, region: ""})
+var _ = check.Suite(&LocationSuite{osType: objectstore.ProviderTypeS3, region: testRegionS3})
+var _ = check.Suite(&LocationSuite{osType: objectstore.ProviderTypeGCS, region: ""})
+var _ = check.Suite(&LocationSuite{osType: objectstore.ProviderTypeAzure, region: ""})
 
-func (s *LocationSuite) SetUpSuite(c *C) {
+func (s *LocationSuite) SetUpSuite(c *check.C) {
 	var location crv1alpha1.Location
 	switch s.osType {
 	case objectstore.ProviderTypeS3:
@@ -94,22 +94,22 @@ func (s *LocationSuite) SetUpSuite(c *C) {
 		Region: s.region,
 	}
 	secret, err := getOSSecret(ctx, s.osType, s.profile.Credential)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	s.provider, err = objectstore.NewProvider(ctx, pc, secret)
-	c.Check(err, IsNil)
-	c.Assert(s.provider, NotNil)
+	c.Check(err, check.IsNil)
+	c.Assert(s.provider, check.NotNil)
 
 	s.root, err = objectstore.GetOrCreateBucket(ctx, s.provider, testBucketName)
-	c.Check(err, IsNil)
-	c.Assert(s.root, NotNil)
+	c.Check(err, check.IsNil)
+	c.Assert(s.root, check.NotNil)
 	s.suiteDirPrefix = time.Now().UTC().Format(time.RFC3339Nano)
 	s.testpath = s.suiteDirPrefix + "/testlocation.txt"
 	s.testMultipartPath = s.suiteDirPrefix + "/testchunk.txt"
 }
 
-func (s *LocationSuite) TearDownTest(c *C) {
+func (s *LocationSuite) TearDownTest(c *check.C) {
 	if s.testpath != "" {
-		c.Assert(s.root, NotNil)
+		c.Assert(s.root, check.NotNil)
 		ctx := context.Background()
 		err := s.root.Delete(ctx, s.testpath)
 		if err != nil {
@@ -117,7 +117,7 @@ func (s *LocationSuite) TearDownTest(c *C) {
 		}
 	}
 	if s.testMultipartPath != "" {
-		c.Assert(s.root, NotNil)
+		c.Assert(s.root, check.NotNil)
 		ctx := context.Background()
 		err := s.root.Delete(ctx, s.testMultipartPath)
 		if err != nil {
@@ -126,18 +126,18 @@ func (s *LocationSuite) TearDownTest(c *C) {
 	}
 }
 
-func (s *LocationSuite) TestWriteAndReadData(c *C) {
+func (s *LocationSuite) TestWriteAndReadData(c *check.C) {
 	ctx := context.Background()
 	teststring := "test-content-check"
 	err := writeData(ctx, s.osType, s.profile, bytes.NewBufferString(teststring), s.testpath)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	buf := bytes.NewBuffer(nil)
 	err = readData(ctx, s.osType, s.profile, buf, s.testpath)
-	c.Check(err, IsNil)
-	c.Check(buf.String(), Equals, teststring)
+	c.Check(err, check.IsNil)
+	c.Check(buf.String(), check.Equals, teststring)
 }
 
-func (s *LocationSuite) TestAzMultipartUpload(c *C) {
+func (s *LocationSuite) TestAzMultipartUpload(c *check.C) {
 	if s.osType != objectstore.ProviderTypeAzure {
 		c.Skip(fmt.Sprintf("Not applicable for location type %s", s.osType))
 	}
@@ -146,14 +146,14 @@ func (s *LocationSuite) TestAzMultipartUpload(c *C) {
 	_, err := os.Stat(s.suiteDirPrefix)
 	if os.IsNotExist(err) {
 		err := os.MkdirAll(s.suiteDirPrefix, 0755)
-		c.Check(err, IsNil)
+		c.Check(err, check.IsNil)
 	}
 	// Create test file
 	f, err := os.Create(s.testMultipartPath)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	defer func() {
 		err = f.Close()
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}()
 	ctx := context.Background()
 	for _, fileSize := range []int64{
@@ -165,21 +165,21 @@ func (s *LocationSuite) TestAzMultipartUpload(c *C) {
 		300 * 1024 * 1024, // 300M ie > buffSize
 	} {
 		_, err := f.Seek(0, io.SeekStart)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		// Create dump file
 		err = os.Truncate(s.testMultipartPath, fileSize)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		err = writeData(ctx, s.osType, s.profile, f, s.testMultipartPath)
-		c.Check(err, IsNil)
+		c.Check(err, check.IsNil)
 		buf := bytes.NewBuffer(nil)
 		err = readData(ctx, s.osType, s.profile, buf, s.testMultipartPath)
-		c.Check(err, IsNil)
-		c.Check(int64(buf.Len()), Equals, fileSize)
+		c.Check(err, check.IsNil)
+		c.Check(int64(buf.Len()), check.Equals, fileSize)
 	}
 }
 
-func (s *LocationSuite) TestReaderSize(c *C) {
+func (s *LocationSuite) TestReaderSize(c *check.C) {
 	for _, tc := range []struct {
 		input        string
 		buffSize     int64
@@ -207,16 +207,16 @@ func (s *LocationSuite) TestReaderSize(c *C) {
 		},
 	} {
 		_, size, err := readerSize(bytes.NewBufferString(tc.input), tc.buffSize)
-		c.Assert(err, IsNil)
-		c.Assert(size, Equals, tc.expectedSize)
+		c.Assert(err, check.IsNil)
+		c.Assert(size, check.Equals, tc.expectedSize)
 	}
 }
 
-func (s *LocationSuite) TestGetAzureSecret(c *C) {
+func (s *LocationSuite) TestGetAzureSecret(c *check.C) {
 	for _, tc := range []struct {
 		cred        param.Credential
 		retAzSecret *objectstore.SecretAzure
-		errChecker  Checker
+		errChecker  check.Checker
 	}{
 		{
 			cred: param.Credential{
@@ -238,7 +238,7 @@ func (s *LocationSuite) TestGetAzureSecret(c *C) {
 				StorageAccount: "id",
 				StorageKey:     "secret",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			cred: param.Credential{
@@ -261,7 +261,7 @@ func (s *LocationSuite) TestGetAzureSecret(c *C) {
 				StorageKey:      "sakey",
 				EnvironmentName: "env",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // missing required field
 			cred: param.Credential{
@@ -283,7 +283,7 @@ func (s *LocationSuite) TestGetAzureSecret(c *C) {
 				StorageKey:      "sakey",
 				EnvironmentName: "env",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{ // additional incorrect field
 			cred: param.Credential{
@@ -307,15 +307,15 @@ func (s *LocationSuite) TestGetAzureSecret(c *C) {
 				StorageKey:      "sakey",
 				EnvironmentName: "env",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 	} {
 		secret, err := getAzureSecret(tc.cred)
 		c.Assert(err, tc.errChecker)
-		if tc.errChecker == IsNil {
-			c.Assert(secret.Azure.StorageKey, Equals, tc.retAzSecret.StorageKey)
-			c.Assert(secret.Azure.StorageAccount, Equals, tc.retAzSecret.StorageAccount)
-			c.Assert(secret.Azure.EnvironmentName, Equals, tc.retAzSecret.EnvironmentName)
+		if tc.errChecker == check.IsNil {
+			c.Assert(secret.Azure.StorageKey, check.Equals, tc.retAzSecret.StorageKey)
+			c.Assert(secret.Azure.StorageAccount, check.Equals, tc.retAzSecret.StorageAccount)
+			c.Assert(secret.Azure.EnvironmentName, check.Equals, tc.retAzSecret.EnvironmentName)
 		}
 	}
 }

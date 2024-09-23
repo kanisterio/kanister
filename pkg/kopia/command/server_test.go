@@ -17,16 +17,16 @@ package command
 import (
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 )
 
 type KopiaServerTestSuite struct{}
 
-var _ = Suite(&KopiaServerTestSuite{})
+var _ = check.Suite(&KopiaServerTestSuite{})
 
-func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
+func (kServer *KopiaServerTestSuite) TestServerCommands(c *check.C) {
 	commandArgs := &CommandArgs{
 		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
@@ -224,6 +224,6 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, Equals, tc.expectedLog)
+		c.Check(cmd, check.Equals, tc.expectedLog)
 	}
 }
