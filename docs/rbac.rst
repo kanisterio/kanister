@@ -18,7 +18,7 @@ to Kanister's Service Account:
 .. code-block:: bash
 
   kubectl create rolebinding kanister-edit-binding --clusterrole=edit \
-  --serviceaccount=<release-namespace>:kanister-kanister-operator \
+  --serviceaccount=<release-namespace>:<release-name>-kanister-operator \
   --namespace=<application-namespace>
 
 Creating a Role with Granular Permissions
@@ -49,5 +49,5 @@ specific permissions and bind it to Kanister's Service Account:
 .. code-block:: bash
 
   kubectl create rolebinding kanister-role-binding --role=kanister-role \
-  --serviceaccount=<release-namespace>:kanister-kanister-operator \
+  --serviceaccount=<release-namespace>:<release-name>-kanister-operator \
   --namespace=<application-namespace>
