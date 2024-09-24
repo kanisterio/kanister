@@ -102,5 +102,3 @@ updates:
       - "/docker/mssql-tools"
       - "/docker/postgresql"
       - "/docker/redis-tools"
-
-
