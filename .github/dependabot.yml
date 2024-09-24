@@ -61,6 +61,12 @@ updates:
       - "/docker/build"
       - "/docker/postgres-kanister-tools"
       - "/docker/postgresql"
+    groups:
+      common-pip:
+        patterns:
+        - "pip"
+        - "setuptools"
+        - "awscli"
 
   - package-ecosystem: "docker"
     schedule:
