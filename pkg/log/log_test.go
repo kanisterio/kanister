@@ -227,7 +227,7 @@ func (s *LogSuite) TestCloneGlobalLogger(c *check.C) {
 	c.Assert(hook.capturedMessages[0].Message, check.Equals, "Test message")
 }
 
-func (s *LogSuite) TestSetFluentbitOutput(c *C) {
+func (s *LogSuite) TestSetFluentbitOutput(c *check.C) {
 	for _, tc := range []struct {
 		desc string
 		url  *url.URL
@@ -269,7 +269,7 @@ func (s *LogSuite) TestSetFluentbitOutput(c *C) {
 		},
 	} {
 		err := SetFluentbitOutput(tc.url)
-		c.Assert(err, Equals, tc.err)
+		c.Assert(err, check.Equals, tc.err)
 	}
 }
 
