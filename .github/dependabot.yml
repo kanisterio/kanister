@@ -67,6 +67,7 @@ updates:
         patterns:
         - "pip"
         - "setuptools"
+        - "wheel"
         - "awscli"
 
   - package-ecosystem: "docker"
