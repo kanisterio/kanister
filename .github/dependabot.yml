@@ -54,7 +54,8 @@ updates:
 
   # Update pinned pip packages via requiements.txt
   - package-ecosystem: "pip"
-    schedule: weekly
+    schedule:
+      interval: weekly
     commit-message:
       prefix: "deps(docker,pip):"
     directories:
