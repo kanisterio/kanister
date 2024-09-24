@@ -44,10 +44,11 @@ You should see the operator pod in the ``Running`` state:
   consider upgrading to a newer version.
 
 .. note::
-  Kanister might not be able to take backups or restore data out of the box, as it
-  requires permissions to access the resources in the cluster. You will need to configure
-  the necessary permissions for Kanister to work correctly.
-  For RBAC configuration, please refer to the :ref:`RBAC Configuration <rbac>` section.
+  To improve the cluster's security, the default installation of Kanister is restricted
+  to access only the resources within its own namespace. As a result, Kanister may not be
+  able to snapshot or restore applications by default in other namespaces.
+  If Blueprint needs access to resources in other namespaces, please follow the steps
+  provided here :ref:`rbac` to configure the access correctly.
 
 Configuring Kanister
 ====================

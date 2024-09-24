@@ -11,9 +11,14 @@ Kanister's Service Account.
 Creating a RoleBinding with edit ClusterRole
 ============================================
 
-To allow Kanister to perform backup/restore operations in a specific
-namespace, create a `RoleBinding` that assigns the `edit` `ClusterRole`
-to Kanister's Service Account:
+The `edit` role is a built-in Kubernetes system role that provides permissions
+to modify most objects within a namespace, excluding roles, role bindings, and
+resource quotas. It allows access to create, update, delete, and view resources
+such as Deployments, Pods, Services, ConfigMaps, PersistentVolumeClaims, and more.
+
+To allow Kanister to perform backup/restore operations in the application
+namespace, create a `RoleBinding` in the application namespace that assigns
+the `edit` `ClusterRole` to Kanister's Service Account:
 
 .. code-block:: bash
 
@@ -24,8 +29,11 @@ to Kanister's Service Account:
 Creating a Role with Granular Permissions
 =========================================
 
-If you prefer to fine-tune the access, you can create a `Role` with
-specific permissions and bind it to Kanister's Service Account:
+If Blueprint doesn't require access to all the resources that are included
+in the `edit` ClusterRole, you can create a `Role` in application namespace
+with just the specific resources and verbs that Blueprint needs, and a `RoleBinding`
+in application namespace to bind the `Role` to Kanister's Service Account.
+This approach enhances security by granting only the necessary permissions.
 
 1. Create a `Role` with the required permissions:
 
