@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -33,16 +33,16 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-var _ = Suite(&KubeTaskSuite{})
+var _ = check.Suite(&KubeTaskSuite{})
 
 type KubeTaskSuite struct {
 	cli       kubernetes.Interface
 	namespace string
 }
 
-func (s *KubeTaskSuite) SetUpSuite(c *C) {
+func (s *KubeTaskSuite) SetUpSuite(c *check.C) {
 	cli, err := kube.NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cli = cli
 
 	ns := &corev1.Namespace{
@@ -51,15 +51,15 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 	err = os.Setenv("POD_NAMESPACE", cns.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = os.Setenv("POD_SERVICE_ACCOUNT", "default")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *KubeTaskSuite) TearDownSuite(c *C) {
+func (s *KubeTaskSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -93,7 +93,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.110.0",
+				"kando output version 0.111.0",
 			},
 		},
 	}
@@ -141,7 +141,7 @@ func newTaskBlueprint(phases ...crv1alpha1.BlueprintPhase) *crv1alpha1.Blueprint
 	}
 }
 
-func (s *KubeTaskSuite) TestKubeTask(c *C) {
+func (s *KubeTaskSuite) TestKubeTask(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
@@ -166,7 +166,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				{
-					"version": "0.110.0",
+					"version": "0.111.0",
 				},
 				{},
 				{},
@@ -174,17 +174,17 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 		},
 	} {
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
-		c.Assert(err, IsNil)
-		c.Assert(phases, HasLen, len(tc.outs))
+		c.Assert(err, check.IsNil)
+		c.Assert(phases, check.HasLen, len(tc.outs))
 		for i, p := range phases {
 			out, err := p.Exec(ctx, *tc.bp, action, tp)
-			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			c.Assert(out, DeepEquals, tc.outs[i])
+			c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
+			c.Assert(out, check.DeepEquals, tc.outs[i])
 		}
 	}
 }
 
-func (s *KubeTaskSuite) TestKubeTaskWithBigOutput(c *C) {
+func (s *KubeTaskSuite) TestKubeTaskWithBigOutput(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
@@ -216,12 +216,12 @@ func (s *KubeTaskSuite) TestKubeTaskWithBigOutput(c *C) {
 		},
 	} {
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
-		c.Assert(err, IsNil)
-		c.Assert(phases, HasLen, len(tc.outs))
+		c.Assert(err, check.IsNil)
+		c.Assert(phases, check.HasLen, len(tc.outs))
 		for i, p := range phases {
 			out, err := p.Exec(ctx, *tc.bp, action, tp)
-			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			c.Assert(out, DeepEquals, tc.outs[i])
+			c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
+			c.Assert(out, check.DeepEquals, tc.outs[i])
 		}
 	}
 }

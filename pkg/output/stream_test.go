@@ -21,7 +21,7 @@ import (
 	"math/rand"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	apirand "k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/kanisterio/kanister/pkg/output"
@@ -39,7 +39,7 @@ const (
 
 type OutputTestSuite struct{}
 
-var _ = Suite(&OutputTestSuite{})
+var _ = check.Suite(&OutputTestSuite{})
 
 type testCase struct {
 	prefixLength      int
@@ -165,102 +165,102 @@ func writePrefix(pw io.Writer, r *rand.Rand, tc testCase) {
 // TestLongStreamsWithoutPhaseOutput Will produce 10 long lines
 // each line will contain from 50Kb to 60Kb of random text
 // there will be no phase output in lines
-func (s *OutputTestSuite) TestLongStreamsWithoutPhaseOutput(c *C) {
+func (s *OutputTestSuite) TestLongStreamsWithoutPhaseOutput(c *check.C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
 
 	cases := generateTestCases(10, 50000, 0, 0, EndlineRequired)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
-	c.Check(e, IsNil)
-	c.Check(len(m), Equals, 0)
+	c.Check(e, check.IsNil)
+	c.Check(len(m), check.Equals, 0)
 }
 
 // TestShortStreamsWithPhaseOutput Will produce one short line
 // which will contain ONLY phase output and nothing else
-func (s *OutputTestSuite) TestShortStreamsWithPhaseOutput(c *C) {
+func (s *OutputTestSuite) TestShortStreamsWithPhaseOutput(c *check.C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
 
 	cases := generateTestCases(1, 0, 10, 50, EndlineRequired)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
-	c.Check(e, IsNil)
-	c.Check(len(m), Equals, 1)
-	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+	c.Check(e, check.IsNil)
+	c.Check(len(m), check.Equals, 1)
+	c.Check(m[cases[0].key], check.Equals, string(cases[0].value))
 }
 
 // TestLongStreamsWithPhaseOutput Will produce 10 long lines
 // each line will contain from 10Kb to 12Kb of random text and
 // phase output preceded with newline
-func (s *OutputTestSuite) TestLongStreamsWithPhaseOutput(c *C) {
+func (s *OutputTestSuite) TestLongStreamsWithPhaseOutput(c *check.C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
 
 	cases := generateTestCases(10, 10000, 10, 50, EndlineRequired)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
-	c.Check(e, IsNil)
-	c.Check(len(m), Equals, 10)
-	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+	c.Check(e, check.IsNil)
+	c.Check(len(m), check.Equals, 10)
+	c.Check(m[cases[0].key], check.Equals, string(cases[0].value))
 }
 
 // TestHugeStreamsWithHugePhaseOutput Will produce five huge lines
 // each line will contain ±100Kb of random text WITH newline before Phase Output mark
 // Phase output value will be very short
-func (s *OutputTestSuite) TestHugeStreamsWithPhaseOutput(c *C) {
+func (s *OutputTestSuite) TestHugeStreamsWithPhaseOutput(c *check.C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
 
 	cases := generateTestCases(5, 100000, 10, 50, EndlineRequired)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
-	c.Check(e, IsNil)
-	c.Check(len(m), Equals, 5)
-	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+	c.Check(e, check.IsNil)
+	c.Check(len(m), check.Equals, 5)
+	c.Check(m[cases[0].key], check.Equals, string(cases[0].value))
 }
 
 // TestHugeStreamsWithHugePhaseOutput Will produce five huge lines
 // each line will contain ±500Kb of random text WITH newline before Phase Output mark
 // Phase output value will be ±10Kb of random text
-func (s *OutputTestSuite) TestHugeStreamsWithLongPhaseOutput(c *C) {
+func (s *OutputTestSuite) TestHugeStreamsWithLongPhaseOutput(c *check.C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
 
 	cases := generateTestCases(5, 500000, 10, 10000, EndlineRequired)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
-	c.Check(e, IsNil)
-	c.Check(len(m), Equals, 5)
-	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+	c.Check(e, check.IsNil)
+	c.Check(len(m), check.Equals, 5)
+	c.Check(m[cases[0].key], check.Equals, string(cases[0].value))
 }
 
 // TestHugeStreamsWithHugePhaseOutput Will produce one huge line
 // which will contain ±500Kb of random text WITH newline before Phase Output mark
 // Phase output value will also be ±500Kb
-func (s *OutputTestSuite) TestHugeStreamsWithHugePhaseOutput(c *C) {
+func (s *OutputTestSuite) TestHugeStreamsWithHugePhaseOutput(c *check.C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
 
 	cases := generateTestCases(1, 500000, 10, 500000, EndlineRequired)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
-	c.Check(e, IsNil)
-	c.Check(len(m), Equals, 1)
-	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+	c.Check(e, check.IsNil)
+	c.Check(len(m), check.Equals, 1)
+	c.Check(m[cases[0].key], check.Equals, string(cases[0].value))
 }
 
 // TestHugeStreamsWithHugePhaseOutputWithoutNewlineDelimiter Will produce one huge line
 // which will contain ±500Kb of random text WITHOUT newline before Phase Output mark
 // Phase output value will also be ±500Kb
-func (s *OutputTestSuite) TestHugeStreamsWithHugePhaseOutputWithoutNewlineDelimiter(c *C) {
+func (s *OutputTestSuite) TestHugeStreamsWithHugePhaseOutputWithoutNewlineDelimiter(c *check.C) {
 	done := make(chan struct{})
 	defer func() { close(done) }()
 
 	cases := generateTestCases(1, 500000, 10, 500000, EndlineProhibited)
 	r := getTestReaderCloser(done, cases)
 	m, e := output.LogAndParse(context.TODO(), r)
-	c.Check(e, IsNil)
-	c.Check(len(m), Equals, 1)
-	c.Check(m[cases[0].key], Equals, string(cases[0].value))
+	c.Check(e, check.IsNil)
+	c.Check(len(m), check.Equals, 1)
+	c.Check(m[cases[0].key], check.Equals, string(cases[0].value))
 }

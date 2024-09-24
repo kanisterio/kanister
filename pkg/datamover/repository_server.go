@@ -40,7 +40,7 @@ func (rs *repositoryServer) Pull(ctx context.Context, sourcePath, destinationPat
 	if err != nil {
 		return err
 	}
-	password, err := rs.connectToKopiaRepositoryServer(ctx)
+	password, err := rs.connectToKopiaRepositoryServer(ctx, repository.ReadOnlyAccess)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (rs *repositoryServer) Pull(ctx context.Context, sourcePath, destinationPat
 }
 
 func (rs *repositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
-	password, err := rs.connectToKopiaRepositoryServer(ctx)
+	password, err := rs.connectToKopiaRepositoryServer(ctx, repository.WriteAccess)
 	if err != nil {
 		return err
 	}
@@ -61,14 +61,14 @@ func (rs *repositoryServer) Delete(ctx context.Context, destinationPath string) 
 	if err != nil {
 		return err
 	}
-	password, err := rs.connectToKopiaRepositoryServer(ctx)
+	password, err := rs.connectToKopiaRepositoryServer(ctx, repository.WriteAccess)
 	if err != nil {
 		return err
 	}
 	return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, password)
 }
 
-func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context) (string, error) {
+func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context, accessMode repository.AccessMode) (string, error) {
 	hostname, userPassphrase, err := rs.hostnameAndUserPassphrase()
 	if err != nil {
 		return "", errors.Wrap(err, "Error Retrieving Hostname and User Passphrase from Repository Server")
@@ -83,6 +83,7 @@ func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context) 
 		rs.repositoryServer.Username,
 		rs.repositoryServer.ContentCacheMB,
 		rs.repositoryServer.MetadataCacheMB,
+		accessMode,
 	)
 }
 

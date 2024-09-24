@@ -17,7 +17,7 @@ package function
 import (
 	"context"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,9 +32,9 @@ import (
 
 type CreateVolumeSnapshotTestSuite struct{}
 
-var _ = Suite(&CreateVolumeSnapshotTestSuite{})
+var _ = check.Suite(&CreateVolumeSnapshotTestSuite{})
 
-func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
+func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *check.C) {
 	ctx := context.Background()
 	ns := "ns"
 	mockGetter := mockblockstorage.NewGetter()
@@ -130,9 +130,9 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 		},
 	)
 	_, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc-test-1", metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, err = cli.CoreV1().PersistentVolumes().Get(ctx, "pv-test-1", metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	for _, tc := range []struct {
 		pvc          string
@@ -142,7 +142,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 		wantPVC      string
 		wantSize     int64
 		wantRegion   string
-		check        Checker
+		check        check.Checker
 	}{
 		{
 			pvc:          "pvc-test-1",
@@ -152,28 +152,28 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			wantPVC:      "pvc-test-1",
 			wantSize:     int64(1073741824),
 			wantRegion:   "us-west-2",
-			check:        IsNil,
+			check:        check.IsNil,
 		},
 		{
 			pvc:   "pvc-test-2",
-			check: NotNil,
+			check: check.NotNil,
 		},
 		{
 			pvc:   "pvc-test-3",
-			check: NotNil,
+			check: check.NotNil,
 		},
 	} {
 		volInfo, err := getPVCInfo(ctx, cli, ns, tc.pvc, tp, mockGetter)
 		c.Assert(err, tc.check)
-		c.Assert(volInfo, Not(Equals), tc.check)
+		c.Assert(volInfo, check.Not(check.Equals), tc.check)
 		if err != nil {
 			continue
 		}
-		c.Assert(volInfo.volumeID, Equals, tc.wantVolumeID)
-		c.Assert(volInfo.sType, Equals, tc.wantType)
-		c.Assert(volInfo.volZone, Equals, tc.wantVolZone)
-		c.Assert(volInfo.pvc, Equals, tc.wantPVC)
-		c.Assert(volInfo.size, Equals, tc.wantSize)
-		c.Assert(volInfo.region, Equals, tc.wantRegion)
+		c.Assert(volInfo.volumeID, check.Equals, tc.wantVolumeID)
+		c.Assert(volInfo.sType, check.Equals, tc.wantType)
+		c.Assert(volInfo.volZone, check.Equals, tc.wantVolZone)
+		c.Assert(volInfo.pvc, check.Equals, tc.wantPVC)
+		c.Assert(volInfo.size, check.Equals, tc.wantSize)
+		c.Assert(volInfo.region, check.Equals, tc.wantRegion)
 	}
 }

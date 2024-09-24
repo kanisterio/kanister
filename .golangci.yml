@@ -44,7 +44,6 @@ issues:
         - lll
         - dupl
         - nestif
-        - gci
 
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
@@ -76,7 +75,6 @@ linters-settings:
       - default
       - prefix(github.com/kanisterio/kanister)
       - blank
-      - dot
     skip-generated: true
   stylecheck:
     checks: [ "all", "-ST1001", "-ST1005", "-ST1016", "-ST1023", "-ST1000"]

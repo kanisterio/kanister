@@ -20,18 +20,18 @@ import (
 	"testing"
 	"text/template"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/ksprig"
 )
 
 type FipsOnlySprigSuite struct{}
 
-var _ = Suite(&FipsOnlySprigSuite{})
+var _ = check.Suite(&FipsOnlySprigSuite{})
 
-func TestFipsOnlySprigSuite(t *testing.T) { TestingT(t) }
+func TestFipsOnlySprigSuite(t *testing.T) { check.TestingT(t) }
 
-func (f *FipsOnlySprigSuite) TestUnsupportedTxtFuncMapUsage(c *C) {
+func (f *FipsOnlySprigSuite) TestUnsupportedTxtFuncMapUsage(c *check.C) {
 	funcMap := ksprig.TxtFuncMap()
 
 	testCases := []struct {
@@ -69,17 +69,17 @@ func (f *FipsOnlySprigSuite) TestUnsupportedTxtFuncMapUsage(c *C) {
 		c.Logf("Testing %s", tc.function)
 
 		temp, err := template.New("test").Funcs(funcMap).Parse(tc.templateText)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		err = temp.Execute(nil, "")
 
 		var sprigErr ksprig.UnsupportedSprigUsageErr
-		c.Assert(errors.As(err, &sprigErr), Equals, true)
-		c.Assert(sprigErr.Usage, Equals, tc.usageErr)
+		c.Assert(errors.As(err, &sprigErr), check.Equals, true)
+		c.Assert(sprigErr.Usage, check.Equals, tc.usageErr)
 	}
 }
 
-func (f *FipsOnlySprigSuite) TestSupportedTxtFuncMapUsage(c *C) {
+func (f *FipsOnlySprigSuite) TestSupportedTxtFuncMapUsage(c *check.C) {
 	funcMap := ksprig.TxtFuncMap()
 
 	testCases := []struct {
@@ -113,9 +113,9 @@ func (f *FipsOnlySprigSuite) TestSupportedTxtFuncMapUsage(c *C) {
 		c.Logf("Testing %s", tc.description)
 
 		temp, err := template.New("test").Funcs(funcMap).Parse(tc.templateText)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		err = temp.Execute(&strings.Builder{}, "")
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }

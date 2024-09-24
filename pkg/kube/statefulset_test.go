@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -33,12 +33,12 @@ type StatefulSetSuite struct {
 	namespace string
 }
 
-var _ = Suite(&StatefulSetSuite{})
+var _ = check.Suite(&StatefulSetSuite{})
 
-func (s *StatefulSetSuite) SetUpSuite(c *C) {
+func (s *StatefulSetSuite) SetUpSuite(c *check.C) {
 	c.Skip("Too slow")
 	cli, err := NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cli = cli
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -46,14 +46,14 @@ func (s *StatefulSetSuite) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 }
 
-func (s *StatefulSetSuite) TearDownSuite(c *C) {
+func (s *StatefulSetSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }
 
@@ -80,18 +80,18 @@ spec:
           args: ["-f", "/dev/null"]
 `
 
-func (s *StatefulSetSuite) TestCreateStatefulSet(c *C) {
+func (s *StatefulSetSuite) TestCreateStatefulSet(c *check.C) {
 	ctx := context.Background()
 	// Stateful set names have strict requirements.
 	name := strings.ToLower(c.TestName())
 	name = strings.Replace(name, ".", "", 1)
 	spec := fmt.Sprintf(ssSpec, name)
 	_, err := CreateStatefulSet(ctx, s.cli, s.namespace, spec)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	defer func() {
 		err = s.cli.AppsV1().StatefulSets(s.namespace).Delete(ctx, name, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}()
 	_, err = s.cli.CoreV1().Pods(s.namespace).Get(ctx, name+"-0", metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }

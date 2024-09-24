@@ -16,7 +16,7 @@ package repositoryserver
 
 import (
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -25,12 +25,12 @@ import (
 
 type AWSSecretCredsSuite struct{}
 
-var _ = Suite(&AWSSecretCredsSuite{})
+var _ = check.Suite(&AWSSecretCredsSuite{})
 
-func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
+func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *check.C) {
 	for i, tc := range []struct {
 		secret        Secret
-		errChecker    Checker
+		errChecker    check.Checker
 		expectedError error
 	}{
 		{ // Valid AWS Secret
@@ -45,7 +45,7 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 					RegionKey: []byte("region"),
 				},
 			}),
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // Missing required field - Region Key
 			secret: NewAWSLocation(&corev1.Secret{
@@ -58,7 +58,7 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 					BucketKey: []byte("bucket"),
 				},
 			}),
-			errChecker:    NotNil,
+			errChecker:    check.NotNil,
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, "ns", "sec"),
 		},
 		{ // Missing required field - Bucket Key
@@ -72,7 +72,7 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 					RegionKey: []byte("region"),
 				},
 			}),
-			errChecker:    NotNil,
+			errChecker:    check.NotNil,
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
 		},
 		{ // Empty Secret
@@ -83,19 +83,19 @@ func (s *AWSSecretCredsSuite) TestValidateRepoServerAWSCredentials(c *C) {
 					Namespace: "ns",
 				},
 			}),
-			errChecker:    NotNil,
+			errChecker:    check.NotNil,
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
 		},
 		{ // Nil Secret
 			secret:        NewAWSLocation(nil),
-			errChecker:    NotNil,
+			errChecker:    check.NotNil,
 			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
 		if err != nil {
-			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+			c.Check(err.Error(), check.Equals, tc.expectedError.Error(), check.Commentf("test number: %d", i))
 		}
 	}
 }

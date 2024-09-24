@@ -15,7 +15,7 @@
 package secrets
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/objectstore"
@@ -23,13 +23,13 @@ import (
 
 type AzureSecretSuite struct{}
 
-var _ = Suite(&AzureSecretSuite{})
+var _ = check.Suite(&AzureSecretSuite{})
 
-func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
+func (s *AzureSecretSuite) TestExtractAzureCredentials(c *check.C) {
 	for i, tc := range []struct {
 		secret     *corev1.Secret
 		expected   *objectstore.SecretAzure
-		errChecker Checker
+		errChecker check.Checker
 	}{
 		{
 			secret: &corev1.Secret{
@@ -45,7 +45,7 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
 				StorageKey:      "secret_key",
 				EnvironmentName: "env",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // bad type
 			secret: &corev1.Secret{
@@ -57,7 +57,7 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
 				},
 			},
 			expected:   nil,
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{ // missing field
 			secret: &corev1.Secret{
@@ -68,7 +68,7 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
 				},
 			},
 			expected:   nil,
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{ // additional field
 			secret: &corev1.Secret{
@@ -81,11 +81,11 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *C) {
 				},
 			},
 			expected:   nil,
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 	} {
 		azsecret, err := ExtractAzureCredentials(tc.secret)
-		c.Check(azsecret, DeepEquals, tc.expected, Commentf("test number: %d", i))
+		c.Check(azsecret, check.DeepEquals, tc.expected, check.Commentf("test number: %d", i))
 		c.Check(err, tc.errChecker)
 	}
 }

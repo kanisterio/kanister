@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -34,15 +34,15 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type ChronicleSuite struct {
 	profile param.Profile
 }
 
-var _ = Suite(&ChronicleSuite{})
+var _ = check.Suite(&ChronicleSuite{})
 
-func (s *ChronicleSuite) SetUpSuite(c *C) {
+func (s *ChronicleSuite) SetUpSuite(c *check.C) {
 	osType := objectstore.ProviderTypeS3
 	loc := crv1alpha1.Location{
 		Type:   crv1alpha1.LocationTypeS3Compliant,
@@ -52,15 +52,15 @@ func (s *ChronicleSuite) SetUpSuite(c *C) {
 	s.profile = *testutil.ObjectStoreProfileOrSkip(c, osType, loc)
 }
 
-func (s *ChronicleSuite) TestPushPull(c *C) {
+func (s *ChronicleSuite) TestPushPull(c *check.C) {
 	pp := filepath.Join(c.MkDir(), "profile.json")
 	err := writeProfile(pp, s.profile)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	a := filepath.Join(c.MkDir(), "artifact")
 	ap := rand.String(10)
 	err = os.WriteFile(a, []byte(ap), os.ModePerm)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	p := PushParams{
 		ProfilePath:  pp,
 		ArtifactFile: a,
@@ -71,34 +71,34 @@ func (s *ChronicleSuite) TestPushPull(c *C) {
 		// Write i to bucket
 		p.Command = []string{"echo", strconv.Itoa(i)}
 		err = push(ctx, p, i)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		// Pull and check that we still get i
 		buf := bytes.NewBuffer(nil)
 		c.Log("File: ", p.ArtifactFile)
 		err = Pull(ctx, buf, s.profile, ap)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		str, err := io.ReadAll(buf)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		// Remove additional '\n'
 		t := strings.TrimSuffix(string(str), "\n")
-		c.Assert(t, Equals, strconv.Itoa(i))
+		c.Assert(t, check.Equals, strconv.Itoa(i))
 	}
 }
 
-func (s *ChronicleSuite) TestEnv(c *C) {
+func (s *ChronicleSuite) TestEnv(c *check.C) {
 	ctx := context.Background()
 	cmd := []string{"echo", "X:", "$X"}
 	suffix := c.TestName() + rand.String(5)
 	env := []string{"X=foo"}
 
 	err := pushWithEnv(ctx, cmd, suffix, 0, s.profile, env)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	buf := bytes.NewBuffer(nil)
 	err = Pull(ctx, buf, s.profile, suffix)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	str, err := io.ReadAll(buf)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	t := strings.TrimSuffix(string(str), "\n")
-	c.Assert(t, Equals, "X: foo")
+	c.Assert(t, check.Equals, "X: foo")
 }

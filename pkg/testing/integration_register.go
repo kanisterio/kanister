@@ -18,9 +18,9 @@
 package testing
 
 import (
-	"github.com/kanisterio/kanister/pkg/app"
+	"gopkg.in/check.v1"
 
-	. "gopkg.in/check.v1"
+	"github.com/kanisterio/kanister/pkg/app"
 )
 
 // Register Applications to Integration Suite
@@ -30,7 +30,7 @@ type PITRPostgreSQL struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PITRPostgreSQL{
+var _ = check.Suite(&PITRPostgreSQL{
 	IntegrationSuite{
 		name:      "pitr-postgres",
 		namespace: "pitr-postgres-test",
@@ -45,7 +45,7 @@ type PostgreSQL struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQL{
+var _ = check.Suite(&PostgreSQL{
 	IntegrationSuite{
 		name:      "postgres",
 		namespace: "postgres-test",
@@ -60,7 +60,7 @@ type MySQL struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MySQL{
+var _ = check.Suite(&MySQL{
 	IntegrationSuite{
 		name:      "mysql",
 		namespace: "mysql-test",
@@ -75,7 +75,7 @@ type CockroachDB struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&CockroachDB{
+var _ = check.Suite(&CockroachDB{
 	IntegrationSuite{
 		name:      "cockroachdb",
 		namespace: "cockroachdb-test",
@@ -90,7 +90,7 @@ type TimeLogCSI struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&TimeLogCSI{
+var _ = check.Suite(&TimeLogCSI{
 	IntegrationSuite{
 		name:      "time-logger",
 		namespace: "time-log",
@@ -105,7 +105,7 @@ type Maria struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&Maria{
+var _ = check.Suite(&Maria{
 	IntegrationSuite{
 		name:      "mariadb",
 		namespace: "mariadb-test",
@@ -120,7 +120,7 @@ type Elasticsearch struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&Elasticsearch{
+var _ = check.Suite(&Elasticsearch{
 	IntegrationSuite{
 		name:      "elasticsearch",
 		namespace: "es-test",
@@ -135,7 +135,7 @@ type MongoDB struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MongoDB{
+var _ = check.Suite(&MongoDB{
 	IntegrationSuite{
 		name:      "mongo",
 		namespace: "mongo-test",
@@ -150,7 +150,7 @@ type Cassandra struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&Cassandra{IntegrationSuite{
+var _ = check.Suite(&Cassandra{IntegrationSuite{
 	name:      "cassandra",
 	namespace: "cassandra-test",
 	app:       app.NewCassandraInstance("cassandra"),
@@ -164,7 +164,7 @@ type Couchbase struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&Couchbase{
+var _ = check.Suite(&Couchbase{
 	IntegrationSuite{
 		name:      "couchbase",
 		namespace: "couchbase-test",
@@ -179,7 +179,7 @@ type RDSPostgreSQL struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&RDSPostgreSQL{
+var _ = check.Suite(&RDSPostgreSQL{
 	IntegrationSuite{
 		name:      "rds-postgres",
 		namespace: "rds-postgres-test",
@@ -194,7 +194,7 @@ type FoundationDB struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&FoundationDB{
+var _ = check.Suite(&FoundationDB{
 	IntegrationSuite{
 		name:      "foundationdb",
 		namespace: "fdb-test",
@@ -209,7 +209,7 @@ type RDSAuroraMySQL struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&RDSAuroraMySQL{
+var _ = check.Suite(&RDSAuroraMySQL{
 	IntegrationSuite{
 		name:      "rds-aurora-mysql",
 		namespace: "rds-aurora-mysql-test",
@@ -225,7 +225,7 @@ type RDSPostgreSQLDump struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&RDSPostgreSQLDump{
+var _ = check.Suite(&RDSPostgreSQLDump{
 	IntegrationSuite{
 		name:      "rds-postgres-dump",
 		namespace: "rds-postgres-dump-test",
@@ -241,7 +241,7 @@ type RDSPostgreSQLSnap struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&RDSPostgreSQLSnap{
+var _ = check.Suite(&RDSPostgreSQLSnap{
 	IntegrationSuite{
 		name:      "rds-postgres-snap",
 		namespace: "rds-postgres-snap-test",
@@ -256,7 +256,7 @@ type MSSQL struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MSSQL{
+var _ = check.Suite(&MSSQL{
 	IntegrationSuite{
 		name:      "mssql",
 		namespace: "mssql-test",
@@ -272,7 +272,7 @@ type MysqlDBDepConfig struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig{
+var _ = check.Suite(&MysqlDBDepConfig{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc-test",
@@ -287,7 +287,7 @@ type MongoDBDepConfig struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MongoDBDepConfig{
+var _ = check.Suite(&MongoDBDepConfig{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb-test",
@@ -302,7 +302,7 @@ type PostgreSQLDepConfig struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig{
+var _ = check.Suite(&PostgreSQLDepConfig{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf-test",
@@ -318,7 +318,7 @@ type MysqlDBDepConfig4_4 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_4{
+var _ = check.Suite(&MysqlDBDepConfig4_4{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-4-test",
@@ -333,7 +333,7 @@ type MongoDBDepConfig4_4 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MongoDBDepConfig4_4{
+var _ = check.Suite(&MongoDBDepConfig4_4{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb4-4-test",
@@ -348,7 +348,7 @@ type PostgreSQLDepConfig4_4 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_4{
+var _ = check.Suite(&PostgreSQLDepConfig4_4{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-4-test",
@@ -364,7 +364,7 @@ type MysqlDBDepConfig4_5 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_5{
+var _ = check.Suite(&MysqlDBDepConfig4_5{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-5-test",
@@ -379,7 +379,7 @@ type MongoDBDepConfig4_5 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MongoDBDepConfig4_5{
+var _ = check.Suite(&MongoDBDepConfig4_5{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb4-5-test",
@@ -394,7 +394,7 @@ type PostgreSQLDepConfig4_5 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_5{
+var _ = check.Suite(&PostgreSQLDepConfig4_5{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-5-test",
@@ -409,7 +409,7 @@ type Kafka struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&Kafka{
+var _ = check.Suite(&Kafka{
 	IntegrationSuite{
 		name:      "kafka",
 		namespace: "kafka-test",
@@ -424,7 +424,7 @@ type MysqlDBDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_10{
+var _ = check.Suite(&MysqlDBDepConfig4_10{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-10-test",
@@ -439,7 +439,7 @@ type MongoDBDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MongoDBDepConfig4_10{
+var _ = check.Suite(&MongoDBDepConfig4_10{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb4-10-test",
@@ -454,7 +454,7 @@ type PostgreSQLDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_10{
+var _ = check.Suite(&PostgreSQLDepConfig4_10{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-10-test",
@@ -469,7 +469,7 @@ type MysqlDBDepConfig4_11 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_11{
+var _ = check.Suite(&MysqlDBDepConfig4_11{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-11-test",
@@ -484,7 +484,7 @@ type PostgreSQLDepConfig4_11 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_11{
+var _ = check.Suite(&PostgreSQLDepConfig4_11{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-11-test",
@@ -499,7 +499,7 @@ type MysqlDBDepConfig4_12 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_12{
+var _ = check.Suite(&MysqlDBDepConfig4_12{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-12-test",
@@ -514,7 +514,7 @@ type PostgreSQLDepConfig4_12 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_12{
+var _ = check.Suite(&PostgreSQLDepConfig4_12{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-12-test",
@@ -529,7 +529,7 @@ type MysqlDBDepConfig4_13 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_13{
+var _ = check.Suite(&MysqlDBDepConfig4_13{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-13-test",
@@ -544,7 +544,7 @@ type PostgreSQLDepConfig4_13 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_13{
+var _ = check.Suite(&PostgreSQLDepConfig4_13{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-13-test",
@@ -559,7 +559,7 @@ type MysqlDBDepConfig4_14 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_14{
+var _ = check.Suite(&MysqlDBDepConfig4_14{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-14-test",
@@ -574,7 +574,7 @@ type PostgreSQLDepConfig4_14 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_14{
+var _ = check.Suite(&PostgreSQLDepConfig4_14{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-14-test",

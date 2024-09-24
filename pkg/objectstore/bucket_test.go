@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type BucketSuite struct{}
 
-var _ = Suite(&BucketSuite{})
+var _ = check.Suite(&BucketSuite{})
 
-func (s *BucketSuite) SetUpSuite(c *C) {
+func (s *BucketSuite) SetUpSuite(c *check.C) {
 	getEnvOrSkip(c, "AWS_ACCESS_KEY_ID")
 	getEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")
 }
 
 const ahmRe = `[\w\W]*AuthorizationHeaderMalformed[\w\W]*`
 
-func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *C) {
+func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *check.C) {
 	ctx := context.Background()
 	const pt = ProviderTypeS3
 	const bn = `kanister-fake-bucket`
@@ -35,23 +35,23 @@ func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *C) {
 		},
 		secret,
 	)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Get Bucket will use the region's correct endpoint.
 	_, err = p.GetBucket(ctx, bn)
-	c.Assert(err, ErrorMatches, ahmRe)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.ErrorMatches, ahmRe)
+	c.Assert(err, check.NotNil)
 
 	_, err = p.CreateBucket(ctx, bn)
-	c.Assert(err, ErrorMatches, ahmRe)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.ErrorMatches, ahmRe)
+	c.Assert(err, check.NotNil)
 
 	err = p.DeleteBucket(ctx, bn)
-	c.Assert(err, ErrorMatches, ahmRe)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.ErrorMatches, ahmRe)
+	c.Assert(err, check.NotNil)
 }
 
-func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *C) {
+func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *check.C) {
 	ctx := context.Background()
 	const pt = ProviderTypeS3
 	const bn = `kanister-test-bucket-us-west-1`
@@ -79,67 +79,67 @@ func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *C) {
 
 	// p1's region matches the bucket's region.
 	p1, err := NewProvider(ctx, pc1, secret)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// p2's region does not match the bucket's region, but does not specify an
 	// endpoint.
 	p2, err := NewProvider(ctx, pc2, secret)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// p3's region does not match the bucket's region and specifies an endpoint.
 	p3, err := NewProvider(ctx, pc3, secret)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Delete and recreate the bucket to ensure it's region is r1.
 	_ = p1.DeleteBucket(ctx, bn)
 	_, err = p1.CreateBucket(ctx, bn)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	defer func() {
 		err = p1.DeleteBucket(ctx, bn)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}()
 
 	// Check the bucket's region is r1
 	err = checkProviderWithBucket(c, ctx, p1, bn, r1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// We can read a bucket even though it our provider's does not match, as
 	// long as we don't specify an endpoint.
 	err = checkProviderWithBucket(c, ctx, p2, bn, r1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Specifying an the wrong endpoint causes bucket ops to fail.
 	err = checkProviderWithBucket(c, ctx, p3, bn, r1)
-	c.Assert(err, NotNil)
-	c.Assert(err, ErrorMatches, ahmRe)
+	c.Assert(err, check.NotNil)
+	c.Assert(err, check.ErrorMatches, ahmRe)
 }
 
-func checkProviderWithBucket(c *C, ctx context.Context, p Provider, bucketName, region string) error {
+func checkProviderWithBucket(c *check.C, ctx context.Context, p Provider, bucketName, region string) error {
 	bs, err := p.ListBuckets(ctx)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, ok := bs[bucketName]
-	c.Assert(ok, Equals, true)
+	c.Assert(ok, check.Equals, true)
 	// We should fail here if the endpoint is set and does not match bucket region.
 	b, err := p.GetBucket(ctx, bucketName)
 	if err != nil {
 		return err
 	}
-	c.Assert(err, IsNil)
-	c.Assert(b, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(b, check.NotNil)
 
 	s3p, ok := p.(*s3Provider)
-	c.Assert(ok, Equals, true)
-	c.Assert(s3p, NotNil)
+	c.Assert(ok, check.Equals, true)
+	c.Assert(s3p, check.NotNil)
 	r, err := s3p.GetRegionForBucket(ctx, bucketName)
-	c.Assert(err, IsNil)
-	c.Assert(r, Equals, region)
+	c.Assert(err, check.IsNil)
+	c.Assert(r, check.Equals, region)
 
 	_, err = b.ListObjects(ctx)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	return nil
 }
 
-func (s *BucketSuite) TestGetRegionForBucket(c *C) {
+func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
 	ctx := context.Background()
 	const pt = ProviderTypeS3
 	secret := getSecret(ctx, c, pt)
@@ -154,14 +154,14 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 		//Endpoint: "http://127.0.0.1:9000",
 	}
 	p, err := NewProvider(ctx, pc, secret)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, err = p.getOrCreateBucket(ctx, existingBucket)
 	c.Log(fmt.Sprintf("%+v", err))
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	bucket, err := p.GetBucket(ctx, nonExistentBucket)
 	c.Log(bucket, err)
-	c.Assert(err, NotNil)
-	c.Assert(IsBucketNotFoundError(err), Equals, true)
+	c.Assert(err, check.NotNil)
+	c.Assert(IsBucketNotFoundError(err), check.Equals, true)
 
 	for _, tc := range []struct {
 		bucketName   string
@@ -252,17 +252,17 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 			},
 			secret,
 		)
-		c.Assert(err, IsNil)
-		cmt := Commentf("Case: %#v", tc)
+		c.Assert(err, check.IsNil)
+		cmt := check.Commentf("Case: %#v", tc)
 
 		sp, ok := p.(*s3Provider)
-		c.Assert(ok, Equals, true)
+		c.Assert(ok, check.Equals, true)
 		rfb, err := sp.GetRegionForBucket(ctx, tc.bucketName)
 		if tc.valid {
-			c.Assert(err, IsNil, cmt)
-			c.Assert(rfb, Equals, tc.bucketRegion, cmt)
+			c.Assert(err, check.IsNil, cmt)
+			c.Assert(rfb, check.Equals, tc.bucketRegion, cmt)
 		} else {
-			c.Assert(err, NotNil, cmt)
+			c.Assert(err, check.NotNil, cmt)
 		}
 	}
 }
