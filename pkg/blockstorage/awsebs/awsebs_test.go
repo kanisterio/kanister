@@ -107,5 +107,5 @@ func (s AWSEBSSuite) TestGetRegions(c *check.C) {
 
 	regions, err := ebsp.GetRegions(ctx)
 	c.Assert(err, check.IsNil)
-	c.Assert(regions, check.IsNil)
+	c.Assert(regions, check.NotNil)
 }
