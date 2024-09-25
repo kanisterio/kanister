@@ -64,3 +64,7 @@ This approach enhances security by granting only the necessary permissions.
   kubectl create rolebinding kanister-role-binding --role=kanister-role \
   --serviceaccount=<release-namespace>:<release-name>-kanister-operator \
   --namespace=<application-namespace>
+
+After setting up the required `Role`/`RoleBinding`, Kanister will be able
+to successfully perform snapshot and restore operations in the application's
+namespace.
