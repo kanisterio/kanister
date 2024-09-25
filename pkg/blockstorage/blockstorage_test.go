@@ -142,7 +142,7 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *check.C) {
 		c.Assert(err, check.IsNil)
 		s.snapshots = nil
 		_, err = s.provider.SnapshotGet(context.Background(), snapshot.ID)
-		c.Assert(err, check.IsNil)
+		c.Assert(err, check.NotNil)
 		c.Assert(strings.Contains(err.Error(), blockstorage.SnapshotDoesNotExistError), check.Equals, true)
 	}
 }
