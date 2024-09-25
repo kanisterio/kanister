@@ -14,6 +14,7 @@ use more of Kanister's features to manage the application's data.
     `helm init`
 - docker
 - A running Kanister controller. See [install](install)
+- Proper RBAC configured for the Kanister controller. See [RBAC Configuration](rbac)
 - Access to an S3 bucket and credentials.
 
 ## Example Application
