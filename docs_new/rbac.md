@@ -1,13 +1,12 @@
 # RBAC Configuration {#rbac}
 
-Earlier, the Kanister operator was bound to the `edit` `ClusterRole` 
-using a `ClusterRoleBinding` provided by the Helm Chart. 
-
-The `edit` `ClusterRole` is a built-in Kubernetes system role that offers 
-permissions to modify most objects within a namespace, excluding roles, 
-role bindings, and resource quotas. This role allowed access to create, 
-update, delete, and view resources such as Deployments, Pods, Services, 
-ConfigMaps, PersistentVolumeClaims, and more.
+The `edit` `ClusterRole` is a built-in Kubernetes system role that offers
+permissions to modify most objects within a namespace, excluding roles,
+role bindings, and resource quotas. This role allows access to create, update,
+delete, and view resources such as Deployments, Pods, Services, ConfigMaps,
+PersistentVolumeClaims, and more. The Kanister Helm chart used to assign the
+`edit` `ClusterRole` to the Kanister service account, which granted all the
+permissions mentioned in the `edit` `ClusterRole` to the Kanister application.
 
 To enhance security, the `edit` `ClusterRoleBinding` has been removed from 
 the Kanister Helm Chart. Users are required to create their own 
