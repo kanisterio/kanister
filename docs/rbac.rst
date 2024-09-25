@@ -3,18 +3,23 @@
 RBAC Configuration
 ******************
 
+Earlier, the Kanister operator was bound to the `edit` `ClusterRole`
+using a `ClusterRoleBinding` provided by the Helm Chart.
+
+The `edit` `ClusterRole` is a built-in Kubernetes system role that offers
+permissions to modify most objects within a namespace, excluding roles,
+role bindings, and resource quotas. This role allowed access to create,
+update, delete, and view resources such as Deployments, Pods, Services,
+ConfigMaps, PersistentVolumeClaims, and more.
+
 To enhance security, the `edit` `ClusterRoleBinding` has been removed from
-the Kanister Helm Chart. Users now need to create their own `Role`/`RoleBinding`
-in the application's namespace to grant the necessary permissions to
-Kanister's Service Account.
+the Kanister Helm Chart. Users are required to create their own
+`Role`/`RoleBinding` in the application's namespace to grant the necessary
+permissions to Kanister's Service Account, providing more control over
+the specific permissions granted.
 
 Creating a RoleBinding with edit ClusterRole
 ============================================
-
-The `edit` role is a built-in Kubernetes system role that provides permissions
-to modify most objects within a namespace, excluding roles, role bindings, and
-resource quotas. It allows access to create, update, delete, and view resources
-such as Deployments, Pods, Services, ConfigMaps, PersistentVolumeClaims, and more.
 
 To allow Kanister to perform backup/restore operations in the application
 namespace, create a `RoleBinding` in the application namespace that assigns
@@ -35,7 +40,7 @@ with just the specific resources and verbs that Blueprint needs, and a `RoleBind
 in application namespace to bind the `Role` to Kanister's Service Account.
 This approach enhances security by granting only the necessary permissions.
 
-1. Create a `Role` with the required permissions:
+1. Create a `Role` with the permissions required by the Blueprint:
 
 .. code-block:: yaml
 
