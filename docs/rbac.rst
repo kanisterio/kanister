@@ -4,7 +4,7 @@ RBAC Configuration
 ******************
 
 To enhance security, the `edit` `ClusterRoleBinding` has been removed from
-the Kanister Helm Chart. Users now need to create their own `Role` / `RoleBinding`
+the Kanister Helm Chart. Users now need to create their own `Role`/`RoleBinding`
 in the application's namespace to grant the necessary permissions to
 Kanister's Service Account.
 
