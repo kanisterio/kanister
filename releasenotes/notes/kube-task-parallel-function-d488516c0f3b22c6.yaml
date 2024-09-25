@@ -1,2 +1,2 @@
 ---
-features: Introduce new KubeTaskParallel function to run pods with two containers connected by shared volume
+features: Introduced new Kanister function ``KubeTaskParallel`` to run pods with two containers connected by shared volume

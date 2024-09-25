@@ -135,8 +135,8 @@ KubeTaskParallel spins up a new pod with two containers connected via shared [em
 It's similar to KubeTask, but allows using multiple images to move backup data.
 "background" container is one responsible for generating data, while "output" container
 should export it to destination.
-The main difference between them is that phase outputs can only generated from the
-"output" container outputs.
+The main difference between these containers is that phase outputs can only be generated from the
+"output" container.
 The function also supports an optional init container to set up the volume contents.
 
 
