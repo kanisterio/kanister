@@ -1,0 +1,8 @@
+---
+upgrade:
+  - Users upgrading from previous versions should note that the `edit` `ClusterRoleBinding` is no longer included by default. They must now create their own `Role` / `RoleBinding` with appropriate permissions for Kanister's Service Account in the application's namespace.
+security:
+  - Improved security by removing the default `edit` `ClusterRoleBinding` assignment, reducing the risk of over-permissioning.
+  - Encouraged the adoption of least privilege principles by allowing users to create roles with only the necessary permissions.
+fixes:
+  - Fixed inconsistencies in RBAC configuration that allowed Kanister to have broader permissions than required.
