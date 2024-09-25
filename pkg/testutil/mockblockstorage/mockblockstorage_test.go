@@ -17,19 +17,19 @@ package mockblockstorage
 import (
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type MockSuite struct{}
 
-var _ = Suite(&MockSuite{})
+var _ = check.Suite(&MockSuite{})
 
-func (s *MockSuite) TestMockStorage(c *C) {
+func (s *MockSuite) TestMockStorage(c *check.C) {
 	mock, err := Get(blockstorage.TypeEBS)
-	c.Assert(err, IsNil)
-	c.Assert(mock.Type(), Equals, blockstorage.TypeEBS)
+	c.Assert(err, check.IsNil)
+	c.Assert(mock.Type(), check.Equals, blockstorage.TypeEBS)
 }

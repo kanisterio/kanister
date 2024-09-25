@@ -18,7 +18,7 @@ import (
 	"encoding/base64"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -27,14 +27,14 @@ import (
 
 type GCPSecretSuite struct{}
 
-var _ = Suite(&GCPSecretSuite{})
+var _ = check.Suite(&GCPSecretSuite{})
 
-func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
+func (s *GCPSecretSuite) TestValidateGCPCredentials(c *check.C) {
 	serviceAccountJSON := make([]byte, base64.StdEncoding.EncodedLen(len([]byte("service_account_json"))))
 	base64.StdEncoding.Encode(serviceAccountJSON, []byte("service_account_json"))
 	for i, tc := range []struct {
 		secret      *corev1.Secret
-		errChecker  Checker
+		errChecker  check.Checker
 		expectedErr error
 	}{
 		{
@@ -49,7 +49,7 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 					GCPServiceAccountJSONKey: serviceAccountJSON,
 				},
 			},
-			errChecker:  IsNil,
+			errChecker:  check.IsNil,
 			expectedErr: nil,
 		},
 		{ // Incompatible secret type
@@ -64,7 +64,7 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 					GCPServiceAccountJSONKey: serviceAccountJSON,
 				},
 			},
-			errChecker:  NotNil,
+			errChecker:  check.NotNil,
 			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, "ns", "sec"),
 		},
 		{ // missing field - GCPServiceKey
@@ -79,7 +79,7 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 				},
 			},
 			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceAccountJSONKey, "ns", "sec"),
-			errChecker:  NotNil,
+			errChecker:  check.NotNil,
 		},
 		{ // missing field - GCPProjectID
 			secret: &corev1.Secret{
@@ -93,7 +93,7 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 				},
 			},
 			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, "ns", "sec"),
-			errChecker:  NotNil,
+			errChecker:  check.NotNil,
 		},
 		{ // secret is Empty
 			secret: &corev1.Secret{
@@ -104,17 +104,17 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *C) {
 				},
 			},
 			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
-			errChecker:  NotNil,
+			errChecker:  check.NotNil,
 		},
 		{ // secret is nil
 			secret:      nil,
 			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
-			errChecker:  NotNil,
+			errChecker:  check.NotNil,
 		},
 	} {
 		err := ValidateGCPCredentials(tc.secret)
 		if err != nil {
-			c.Check(err.Error(), Equals, tc.expectedErr.Error(), Commentf("test number: %d", i))
+			c.Check(err.Error(), check.Equals, tc.expectedErr.Error(), check.Commentf("test number: %d", i))
 		}
 	}
 }

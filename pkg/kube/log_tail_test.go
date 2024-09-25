@@ -18,14 +18,14 @@
 package kube
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type LogTailTestSuite struct{}
 
-var _ = Suite(&LogTailTestSuite{})
+var _ = check.Suite(&LogTailTestSuite{})
 
-func (s *LogTailTestSuite) TestLogsTail(c *C) {
+func (s *LogTailTestSuite) TestLogsTail(c *check.C) {
 	for caseIdx, tc := range []struct {
 		limit    int
 		input    []string
@@ -36,37 +36,37 @@ func (s *LogTailTestSuite) TestLogsTail(c *C) {
 		{5, []string{"line 1", "line 2"}, "line 1\r\nline 2"},
 		{1, []string{"line 1", "line 2"}, "line 2"},
 	} {
-		fc := Commentf("Failed for case #%v. Log: %s", caseIdx, tc.expected)
+		fc := check.Commentf("Failed for case #%v. Log: %s", caseIdx, tc.expected)
 		lt := NewLogTail(tc.limit)
 
 		for _, in := range tc.input {
 			w, e := lt.Write([]byte(in))
-			c.Check(e, IsNil)
-			c.Check(w, Equals, len([]byte(in)))
+			c.Check(e, check.IsNil)
+			c.Check(w, check.Equals, len([]byte(in)))
 		}
 
 		r := lt.ToString()
-		c.Check(r, Equals, tc.expected, fc)
+		c.Check(r, check.Equals, tc.expected, fc)
 	}
 
 	lt := NewLogTail(3)
-	c.Check(lt.ToString(), Equals, "") // If there were no writes at all, output should be empty line
+	c.Check(lt.ToString(), check.Equals, "") // If there were no writes at all, output should be empty line
 
 	_, err := lt.Write([]byte("line1"))
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, err = lt.Write([]byte("line2"))
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
-	c.Check(lt.ToString(), Equals, "line1\r\nline2")
-	c.Check(lt.ToString(), Equals, "line1\r\nline2") // Second invocation should get the same result
+	c.Check(lt.ToString(), check.Equals, "line1\r\nline2")
+	c.Check(lt.ToString(), check.Equals, "line1\r\nline2") // Second invocation should get the same result
 
 	// Check that buffer is still working after ToString is called
 	_, err = lt.Write([]byte("line3"))
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
-	c.Check(lt.ToString(), Equals, "line1\r\nline2\r\nline3")
+	c.Check(lt.ToString(), check.Equals, "line1\r\nline2\r\nline3")
 
 	_, err = lt.Write([]byte("line4"))
-	c.Assert(err, IsNil)
-	c.Check(lt.ToString(), Equals, "line2\r\nline3\r\nline4")
+	c.Assert(err, check.IsNil)
+	c.Check(lt.ToString(), check.Equals, "line2\r\nline3\r\nline4")
 }

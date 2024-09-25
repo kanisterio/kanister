@@ -17,7 +17,7 @@ package function
 import (
 	"context"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,9 +42,9 @@ type DeleteCSISnapshotTestSuite struct {
 	storageClass        string
 }
 
-var _ = Suite(&DeleteCSISnapshotTestSuite{})
+var _ = check.Suite(&DeleteCSISnapshotTestSuite{})
 
-func (testSuite *DeleteCSISnapshotTestSuite) SetUpSuite(c *C) {
+func (testSuite *DeleteCSISnapshotTestSuite) SetUpSuite(c *check.C) {
 	testSuite.volumeSnapshotClass = snapshotClass
 	testSuite.storageClass = storageClass
 	testSuite.pvcName = originalPVCName
@@ -53,7 +53,7 @@ func (testSuite *DeleteCSISnapshotTestSuite) SetUpSuite(c *C) {
 	testSuite.namespace = testDeleteNamespace
 }
 
-func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
+func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *check.C) {
 	for _, apiResourceList := range []*metav1.APIResourceList{
 		{
 			TypeMeta: metav1.TypeMeta{
@@ -82,11 +82,11 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
 
 		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		scheme := runtime.NewScheme()
 		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		originalPVC := &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
@@ -103,17 +103,17 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 			},
 		}
 		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, originalPVC, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		fakeSnapshotMeta := snapshot.ObjectMeta{
 			Name:      testSuite.snapName,
 			Namespace: testSuite.namespace,
 		}
 		err = fakeSnapshotter.Create(ctx, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, fakeSnapshotMeta)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		vs, err := fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
-		c.Assert(err, IsNil)
-		c.Assert(vs.Name, Equals, testSuite.snapName)
+		c.Assert(err, check.IsNil)
+		c.Assert(vs.Name, check.Equals, testSuite.snapName)
 
 		restoreArgs := restoreCSISnapshotArgs{
 			Name:         testSuite.snapName,
@@ -126,15 +126,15 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		}
 		newPVC := newPVCManifest(restoreArgs)
 		_, err = fakeCli.CoreV1().PersistentVolumeClaims(restoreArgs.Namespace).Create(ctx, newPVC, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
-		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
+		c.Assert(err, check.IsNil)
+		c.Assert(newPVC.Name, check.Equals, testSuite.newPVCName)
 
 		_, err = deleteCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		_, err = fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
-		c.Assert(err, NotNil)
+		c.Assert(err, check.NotNil)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }

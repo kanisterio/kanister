@@ -17,7 +17,7 @@ package function
 import (
 	"context"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,9 +46,9 @@ type RestoreCSISnapshotTestSuite struct {
 	storageClass        string
 }
 
-var _ = Suite(&RestoreCSISnapshotTestSuite{})
+var _ = check.Suite(&RestoreCSISnapshotTestSuite{})
 
-func (testSuite *RestoreCSISnapshotTestSuite) SetUpSuite(c *C) {
+func (testSuite *RestoreCSISnapshotTestSuite) SetUpSuite(c *check.C) {
 	testSuite.volumeSnapshotClass = snapshotClass
 	testSuite.storageClass = storageClass
 	testSuite.pvcName = originalPVCName
@@ -57,7 +57,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) SetUpSuite(c *C) {
 	testSuite.namespace = testRestoreNamespace
 }
 
-func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
+func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *check.C) {
 	for _, apiResourceList := range []*metav1.APIResourceList{
 		{
 			TypeMeta: metav1.TypeMeta{
@@ -86,11 +86,11 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
 
 		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		scheme := runtime.NewScheme()
 		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		originalPVC := getOriginalPVCManifest(testSuite.pvcName, testSuite.storageClass)
 		createPVC(c, testSuite.namespace, originalPVC, fakeCli)
@@ -99,11 +99,11 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 			Namespace: testSuite.namespace,
 		}
 		err = fakeSnapshotter.Create(ctx, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, fakeSnapshotMeta)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		vs, err := fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
-		c.Assert(err, IsNil)
-		c.Assert(vs.Name, Equals, testSuite.snapName)
+		c.Assert(err, check.IsNil)
+		c.Assert(vs.Name, check.Equals, testSuite.snapName)
 
 		restoreArgs := restoreCSISnapshotArgs{
 			Name:         testSuite.snapName,
@@ -116,26 +116,26 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 			Labels:       nil,
 		}
 		pvc, err := restoreCSISnapshot(ctx, fakeCli, restoreArgs)
-		c.Assert(err, IsNil)
-		c.Assert(pvc.Name, Equals, testSuite.newPVCName)
+		c.Assert(err, check.IsNil)
+		c.Assert(pvc.Name, check.Equals, testSuite.newPVCName)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }
 
-func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
+func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *check.C) {
 	for _, scenario := range []struct {
 		Arg         corev1.PersistentVolumeMode
-		ExpectedErr Checker
+		ExpectedErr check.Checker
 	}{
 		{
 			Arg:         "test",
-			ExpectedErr: NotNil,
+			ExpectedErr: check.NotNil,
 		},
 		{
 			Arg:         corev1.PersistentVolumeFilesystem,
-			ExpectedErr: IsNil,
+			ExpectedErr: check.IsNil,
 		},
 	} {
 		err := validateVolumeModeArg(scenario.Arg)
@@ -143,18 +143,18 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 	}
 }
 
-func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
+func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *check.C) {
 	for _, scenario := range []struct {
 		Arg         []corev1.PersistentVolumeAccessMode
-		ExpectedErr Checker
+		ExpectedErr check.Checker
 	}{
 		{
 			Arg:         []corev1.PersistentVolumeAccessMode{"test"},
-			ExpectedErr: NotNil,
+			ExpectedErr: check.NotNil,
 		},
 		{
 			Arg:         []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			ExpectedErr: IsNil,
+			ExpectedErr: check.IsNil,
 		},
 	} {
 		err := validateVolumeAccessModesArg(scenario.Arg)
@@ -162,9 +162,9 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
 	}
 }
 
-func createPVC(c *C, namespace string, pvc *corev1.PersistentVolumeClaim, fakeCli *fake.Clientset) {
+func createPVC(c *check.C, namespace string, pvc *corev1.PersistentVolumeClaim, fakeCli *fake.Clientset) {
 	_, err := fakeCli.CoreV1().PersistentVolumeClaims(namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
 func getOriginalPVCManifest(pvcName, storageClassName string) *corev1.PersistentVolumeClaim {

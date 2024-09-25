@@ -21,36 +21,36 @@ import (
 	"strings"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type ClientSuite struct{}
 
-var _ = Suite(&ClientSuite{})
+var _ = check.Suite(&ClientSuite{})
 
-func (s *ClientSuite) SetUpSuite(c *C) {}
+func (s *ClientSuite) SetUpSuite(c *check.C) {}
 
-func (s *ClientSuite) TestClient(c *C) {
+func (s *ClientSuite) TestClient(c *check.C) {
 	var zone string
 	filename := s.GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
 	b, err := os.ReadFile(filename)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	gCli, err := NewClient(context.Background(), string(b))
-	c.Assert(err, IsNil)
-	c.Assert(gCli.Service, NotNil)
-	c.Assert(*gCli, FitsTypeOf, Client{})
+	c.Assert(err, check.IsNil)
+	c.Assert(gCli.Service, check.NotNil)
+	c.Assert(*gCli, check.FitsTypeOf, Client{})
 	// Get zone
 	zone = s.GetEnvOrSkip(c, blockstorage.GoogleCloudZone)
 	_, err = gCli.Service.Disks.List(gCli.ProjectID, zone).Do()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *ClientSuite) GetEnvOrSkip(c *C, varName string) string {
+func (s *ClientSuite) GetEnvOrSkip(c *check.C, varName string) string {
 	v := os.Getenv(varName)
 	// Ensure the variable is set
 	if v == "" {
@@ -59,7 +59,7 @@ func (s *ClientSuite) GetEnvOrSkip(c *C, varName string) string {
 	return v
 }
 
-func (s ClientSuite) TestGetRegions(c *C) {
+func (s ClientSuite) TestGetRegions(c *check.C) {
 	ctx := context.Background()
 	config := map[string]string{}
 	creds := s.GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
@@ -67,19 +67,19 @@ func (s ClientSuite) TestGetRegions(c *C) {
 	// create provider with region
 	config[blockstorage.GoogleCloudCreds] = creds
 	bsp, err := NewProvider(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	gpds := bsp.(*GpdStorage)
 
 	// get zones with other region
 	zones, err := gpds.FromRegion(ctx, "us-east1")
 	fmt.Println(zones)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	for _, zone := range zones {
-		c.Assert(strings.Contains(zone, "us-east1"), Equals, true)
-		c.Assert(strings.Contains(zone, "us-west1"), Equals, false)
+		c.Assert(strings.Contains(zone, "us-east1"), check.Equals, true)
+		c.Assert(strings.Contains(zone, "us-west1"), check.Equals, false)
 	}
 
 	regions, err := gpds.GetRegions(ctx)
-	c.Assert(err, IsNil)
-	c.Assert(regions, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(regions, check.NotNil)
 }

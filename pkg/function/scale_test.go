@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
@@ -42,24 +42,24 @@ type ScaleSuite struct {
 	namespace string
 }
 
-var _ = Suite(&ScaleSuite{})
+var _ = check.Suite(&ScaleSuite{})
 
-func (s *ScaleSuite) SetUpTest(c *C) {
+func (s *ScaleSuite) SetUpTest(c *check.C) {
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	cli, err := kubernetes.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	crCli, err := versioned.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	osCli, err := osversioned.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	s.cli = cli
 	s.crCli = crCli
 	s.osCli = osCli
 	ctx := context.Background()
 	err = resource.CreateCustomResources(context.Background(), config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -67,19 +67,19 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *ScaleSuite) TearDownTest(c *C) {
+func (s *ScaleSuite) TearDownTest(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -131,7 +131,7 @@ func newScaleBlueprint(kind string, scaleUpCount string) *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *ScaleSuite) TestScaleDeployment(c *C) {
+func (s *ScaleSuite) TestScaleDeployment(c *check.C) {
 	ctx := context.Background()
 	var originalReplicaCount int32 = 1
 	d := testutil.NewTestDeployment(originalReplicaCount)
@@ -144,10 +144,10 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	}
 
 	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, d, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	kind := "Deployment"
 	as := crv1alpha1.ActionSpec{
@@ -164,36 +164,36 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	var scaleUpToReplicas int32 = 2
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, s.osCli, as)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		bp := newScaleBlueprint(kind, fmt.Sprintf("%d", scaleUpToReplicas))
 		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		for _, p := range phases {
 			out, err := p.Exec(context.Background(), *bp, action, *tp)
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 			// at the start workload has `originalReplicaCount` replicas, the first phase that is going to get executed is
 			// `scaleUp` which would change that count to 2, but the function would return the count that workload originally had
 			// i.e., `originalReplicaCount`
 			if action == "scaleUp" {
-				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, originalReplicaCount)
+				c.Assert(out[outputArtifactOriginalReplicaCount], check.Equals, originalReplicaCount)
 			}
 			// `scaleDown` is going to change the replica count to 0 from 2. Because the workload already had 2 replicas
 			//  (previous phase), so ouptut artifact from the function this time would be what the workload already had i.e., 2
 			if action == "scaleDown" {
-				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, scaleUpToReplicas)
+				c.Assert(out[outputArtifactOriginalReplicaCount], check.Equals, scaleUpToReplicas)
 			}
 		}
 		ok, _, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
-		c.Assert(err, IsNil)
-		c.Assert(ok, Equals, true)
+		c.Assert(err, check.IsNil)
+		c.Assert(ok, check.Equals, true)
 	}
 
 	pods, err := s.cli.CoreV1().Pods(s.namespace).List(ctx, metav1.ListOptions{})
-	c.Assert(err, IsNil)
-	c.Assert(pods.Items, HasLen, 0)
+	c.Assert(err, check.IsNil)
+	c.Assert(pods.Items, check.HasLen, 0)
 }
 
-func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
+func (s *ScaleSuite) TestScaleStatefulSet(c *check.C) {
 	ctx := context.Background()
 	var originalReplicaCount int32 = 1
 	ss := testutil.NewTestStatefulSet(originalReplicaCount)
@@ -205,10 +205,10 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		},
 	}
 	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, ss, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	kind := "StatefulSet"
 	as := crv1alpha1.ActionSpec{
@@ -226,35 +226,35 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	var scaleUpToReplicas int32 = 2
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		bp := newScaleBlueprint(kind, fmt.Sprintf("%d", scaleUpToReplicas))
 		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		for _, p := range phases {
 			out, err := p.Exec(context.Background(), *bp, action, *tp)
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 			// at the start workload has `originalReplicaCount` replicas, the first phase that is going to get executed is
 			// `scaleUp` which would change that count to 2, but the function would return the count that workload originally had
 			// i.e., `originalReplicaCount`
 			if action == "scaleUp" {
-				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, originalReplicaCount)
+				c.Assert(out[outputArtifactOriginalReplicaCount], check.Equals, originalReplicaCount)
 			}
 			// `scaleDown` is going to change the replica count to 0 from 2. Because the workload already had 2 replicas
 			//  (previous phase), so ouptut artifact from the function this time would be what the workload already had i.e., 2
 			if action == "scaleDown" {
-				c.Assert(out[outputArtifactOriginalReplicaCount], Equals, scaleUpToReplicas)
+				c.Assert(out[outputArtifactOriginalReplicaCount], check.Equals, scaleUpToReplicas)
 			}
 		}
 		ok, _, err := kube.StatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
-		c.Assert(err, IsNil)
-		c.Assert(ok, Equals, true)
+		c.Assert(err, check.IsNil)
+		c.Assert(ok, check.Equals, true)
 	}
 
 	_, err = s.cli.CoreV1().Pods(s.namespace).List(ctx, metav1.ListOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *ScaleSuite) TestGetArgs(c *C) {
+func (s *ScaleSuite) TestGetArgs(c *check.C) {
 	for _, tc := range []struct {
 		tp               param.TemplateParams
 		args             map[string]interface{}
@@ -263,12 +263,12 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 		wantName         string
 		wantReplicas     int32
 		wantWaitForReady bool
-		check            Checker
+		check            check.Checker
 	}{
 		{
 			tp:    param.TemplateParams{},
 			args:  map[string]interface{}{ScaleWorkloadReplicas: 2},
-			check: NotNil,
+			check: check.NotNil,
 		},
 		{
 			tp: param.TemplateParams{},
@@ -284,7 +284,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			wantNamespace:    "foo",
 			wantReplicas:     int32(2),
 			wantWaitForReady: false,
-			check:            IsNil,
+			check:            check.IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -301,7 +301,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			wantNamespace:    "foo",
 			wantReplicas:     int32(2),
 			wantWaitForReady: true,
-			check:            IsNil,
+			check:            check.IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -318,7 +318,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			wantNamespace:    "foo",
 			wantReplicas:     int32(2),
 			wantWaitForReady: true,
-			check:            IsNil,
+			check:            check.IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -338,7 +338,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			wantNamespace:    "notfoo",
 			wantReplicas:     int32(2),
 			wantWaitForReady: true,
-			check:            IsNil,
+			check:            check.IsNil,
 		},
 	} {
 		s := scaleWorkloadFunc{}
@@ -347,10 +347,10 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 		if err != nil {
 			continue
 		}
-		c.Assert(s.namespace, Equals, tc.wantNamespace)
-		c.Assert(s.name, Equals, tc.wantName)
-		c.Assert(s.kind, Equals, tc.wantKind)
-		c.Assert(s.replicas, Equals, tc.wantReplicas)
-		c.Assert(s.waitForReady, Equals, tc.wantWaitForReady)
+		c.Assert(s.namespace, check.Equals, tc.wantNamespace)
+		c.Assert(s.name, check.Equals, tc.wantName)
+		c.Assert(s.kind, check.Equals, tc.wantKind)
+		c.Assert(s.replicas, check.Equals, tc.wantReplicas)
+		c.Assert(s.waitForReady, check.Equals, tc.wantWaitForReady)
 	}
 }
