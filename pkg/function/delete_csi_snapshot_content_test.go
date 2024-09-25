@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,11 +31,11 @@ import (
 
 type DeleteCSISnapshotContentTestSuite struct{}
 
-var _ = Suite(&DeleteCSISnapshotContentTestSuite{})
+var _ = check.Suite(&DeleteCSISnapshotContentTestSuite{})
 
-func (testSuite *DeleteCSISnapshotContentTestSuite) SetUpSuite(c *C) {}
+func (testSuite *DeleteCSISnapshotContentTestSuite) SetUpSuite(c *check.C) {}
 
-func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent(c *C) {
+func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent(c *check.C) {
 	const (
 		snapshotContentName = "test-delete-snapshot-content"
 		snapshotName        = "test-delete-snapshot-name"
@@ -75,7 +75,7 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 		scheme := runtime.NewScheme()
 		dynCli := dynfake.NewSimpleDynamicClient(scheme)
 		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynCli)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		source := &snapshot.Source{
 			Handle:                  snapshotNamespace,
@@ -87,7 +87,7 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 		}
 		err = fakeSnapshotter.CreateContentFromSource(ctx, source, snapshotName,
 			snapshotNamespace, deletionPolicy, fakeSnapshotContentMeta)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		gv := strings.Split(api.GroupVersion, "/")
 		gvr := schema.GroupVersionResource{
@@ -97,12 +97,12 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 		}
 
 		_, err = dynCli.Resource(gvr).Get(ctx, snapshotContentName, metav1.GetOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		err = deleteCSISnapshotContent(ctx, fakeSnapshotter, snapshotContentName)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		_, err = dynCli.Resource(gvr).Get(ctx, snapshotContentName, metav1.GetOptions{})
-		c.Assert(err, NotNil)
+		c.Assert(err, check.NotNil)
 	}
 }

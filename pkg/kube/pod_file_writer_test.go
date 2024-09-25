@@ -22,13 +22,13 @@ import (
 	"os"
 
 	"github.com/kanisterio/errkit"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 type PodFileWriterTestSuite struct{}
 
-var _ = Suite(&PodFileWriterTestSuite{})
+var _ = check.Suite(&PodFileWriterTestSuite{})
 
 const (
 	podFileWriterNS            = "pod-runner-test"
@@ -36,8 +36,9 @@ const (
 	podFileWriterContainerName = "test-container"
 )
 
-func (s *PodFileWriterTestSuite) SetUpSuite(c *C) {
-	os.Setenv("POD_NAMESPACE", podFileWriterNS)
+func (s *PodFileWriterTestSuite) SetUpSuite(c *check.C) {
+	err := os.Setenv("POD_NAMESPACE", podFileWriterNS)
+	c.Assert(err, check.IsNil)
 }
 
 type fakePodFileWriterProcessor struct {
@@ -75,7 +76,7 @@ func (w *fakePodWriter) Remove(ctx context.Context, namespace, podName, containe
 
 var _ PodWriter = (*fakePodWriter)(nil)
 
-func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *C) {
+func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *check.C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
@@ -88,31 +89,31 @@ func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *C) {
 
 			buf := bytes.NewBuffer([]byte("some file content"))
 			remover, err := pfw.Write(ctx, "/path/to/file", buf)
-			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, simulatedError), Equals, true)
-			c.Assert(remover, IsNil)
+			c.Assert(err, check.Not(check.IsNil))
+			c.Assert(errors.Is(err, simulatedError), check.Equals, true)
+			c.Assert(remover, check.IsNil)
 
-			c.Assert(pfwp.podWriter.inWriteNamespace, Equals, podFileWriterNS)
-			c.Assert(pfwp.podWriter.inWritePodName, Equals, podFileWriterPodName)
-			c.Assert(pfwp.podWriter.inWriteContainerName, Equals, podFileWriterContainerName)
+			c.Assert(pfwp.podWriter.inWriteNamespace, check.Equals, podFileWriterNS)
+			c.Assert(pfwp.podWriter.inWritePodName, check.Equals, podFileWriterPodName)
+			c.Assert(pfwp.podWriter.inWriteContainerName, check.Equals, podFileWriterContainerName)
 		},
 		"Write to pod succeeded": func(pfwp *fakePodFileWriterProcessor, pfw PodFileWriter) {
 			pfwp.podWriter = &fakePodWriter{}
 
 			buf := bytes.NewBuffer([]byte("some file content"))
 			remover, err := pfw.Write(ctx, "/path/to/file", buf)
-			c.Assert(err, IsNil)
-			c.Assert(remover, Not(IsNil))
+			c.Assert(err, check.IsNil)
+			c.Assert(remover, check.Not(check.IsNil))
 
-			c.Assert(pfwp.podWriter.inWriteNamespace, Equals, podFileWriterNS)
-			c.Assert(pfwp.podWriter.inWritePodName, Equals, podFileWriterPodName)
-			c.Assert(pfwp.podWriter.inWriteContainerName, Equals, podFileWriterContainerName)
+			c.Assert(pfwp.podWriter.inWriteNamespace, check.Equals, podFileWriterNS)
+			c.Assert(pfwp.podWriter.inWritePodName, check.Equals, podFileWriterPodName)
+			c.Assert(pfwp.podWriter.inWriteContainerName, check.Equals, podFileWriterContainerName)
 
 			err = remover.Remove(ctx)
-			c.Assert(err, IsNil)
-			c.Assert(pfwp.podWriter.inRemoveNamespace, Equals, podFileWriterNS)
-			c.Assert(pfwp.podWriter.inRemovePodName, Equals, podFileWriterPodName)
-			c.Assert(pfwp.podWriter.inRemoveContainerName, Equals, podFileWriterContainerName)
+			c.Assert(err, check.IsNil)
+			c.Assert(pfwp.podWriter.inRemoveNamespace, check.Equals, podFileWriterNS)
+			c.Assert(pfwp.podWriter.inRemovePodName, check.Equals, podFileWriterPodName)
+			c.Assert(pfwp.podWriter.inRemoveContainerName, check.Equals, podFileWriterContainerName)
 		},
 		"Write to pod succeeded but remove failed": func(pfwp *fakePodFileWriterProcessor, pfw PodFileWriter) {
 			pfwp.podWriter = &fakePodWriter{}
@@ -120,19 +121,19 @@ func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *C) {
 
 			buf := bytes.NewBuffer([]byte("some file content"))
 			remover, err := pfw.Write(ctx, "/path/to/file", buf)
-			c.Assert(err, IsNil)
-			c.Assert(remover, Not(IsNil))
+			c.Assert(err, check.IsNil)
+			c.Assert(remover, check.Not(check.IsNil))
 
-			c.Assert(pfwp.podWriter.inWriteNamespace, Equals, podFileWriterNS)
-			c.Assert(pfwp.podWriter.inWritePodName, Equals, podFileWriterPodName)
-			c.Assert(pfwp.podWriter.inWriteContainerName, Equals, podFileWriterContainerName)
+			c.Assert(pfwp.podWriter.inWriteNamespace, check.Equals, podFileWriterNS)
+			c.Assert(pfwp.podWriter.inWritePodName, check.Equals, podFileWriterPodName)
+			c.Assert(pfwp.podWriter.inWriteContainerName, check.Equals, podFileWriterContainerName)
 
 			err = remover.Remove(ctx)
-			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, simulatedError), Equals, true)
-			c.Assert(pfwp.podWriter.inRemoveNamespace, Equals, podFileWriterNS)
-			c.Assert(pfwp.podWriter.inRemovePodName, Equals, podFileWriterPodName)
-			c.Assert(pfwp.podWriter.inRemoveContainerName, Equals, podFileWriterContainerName)
+			c.Assert(err, check.Not(check.IsNil))
+			c.Assert(errors.Is(err, simulatedError), check.Equals, true)
+			c.Assert(pfwp.podWriter.inRemoveNamespace, check.Equals, podFileWriterNS)
+			c.Assert(pfwp.podWriter.inRemovePodName, check.Equals, podFileWriterPodName)
+			c.Assert(pfwp.podWriter.inRemoveContainerName, check.Equals, podFileWriterContainerName)
 		},
 	}
 

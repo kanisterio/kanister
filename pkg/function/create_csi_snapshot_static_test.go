@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,11 +32,11 @@ import (
 
 type CreateCSISnapshotStaticTestSuite struct{}
 
-var _ = Suite(&CreateCSISnapshotStaticTestSuite{})
+var _ = check.Suite(&CreateCSISnapshotStaticTestSuite{})
 
-func (testSuite *CreateCSISnapshotStaticTestSuite) SetUpSuite(c *C) {}
+func (testSuite *CreateCSISnapshotStaticTestSuite) SetUpSuite(c *check.C) {}
 
-func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c *C) {
+func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c *check.C) {
 	const (
 		snapshotName   = "test-snapshot"
 		namespace      = "test-namespace"
@@ -76,7 +76,7 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 		scheme := runtime.NewScheme()
 		dynCli := dynfake.NewSimpleDynamicClient(scheme)
 		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynCli)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		namespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
@@ -84,7 +84,7 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 			},
 		}
 		_, err = fakeCli.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		gv := strings.Split(api.GroupVersion, "/")
 		gvr := schema.GroupVersionResource{
@@ -100,7 +100,7 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 			deletionPolicy,
 			nil)
 		_, err = dynCli.Resource(gvr).Create(ctx, snapshotClass, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		_, err = createCSISnapshotStatic(
 			ctx,
@@ -110,9 +110,9 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 			driver,
 			snapshotHandle,
 			snapshotClass.GetName(), false)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(ctx, namespace.GetName(), metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }

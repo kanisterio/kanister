@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -87,7 +87,7 @@ spec:
 	testServiceName = "test-service"
 )
 
-var _ = Suite(&KubeOpsSuite{})
+var _ = check.Suite(&KubeOpsSuite{})
 
 type KubeOpsSuite struct {
 	kubeCli   kubernetes.Interface
@@ -96,13 +96,13 @@ type KubeOpsSuite struct {
 	namespace string
 }
 
-func (s *KubeOpsSuite) SetUpSuite(c *C) {
+func (s *KubeOpsSuite) SetUpSuite(c *check.C) {
 	cli, err := kube.NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.kubeCli = cli
 
 	dynCli, err := kube.NewDynamicClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.dynCli = dynCli
 
 	ns := &corev1.Namespace{
@@ -111,20 +111,20 @@ func (s *KubeOpsSuite) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.kubeCli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 	// Create CRD
 	crdCli, err := kube.NewCRDClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.crdCli = crdCli
 	_, err = s.crdCli.ApiextensionsV1().CustomResourceDefinitions().Create(context.TODO(), getSampleCRD(), metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
 		return
 	}
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *KubeOpsSuite) TearDownSuite(c *C) {
+func (s *KubeOpsSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		_ = s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -182,7 +182,7 @@ func newCreateResourceBlueprint(phases ...crv1alpha1.BlueprintPhase) crv1alpha1.
 	}
 }
 
-func (s *KubeOpsSuite) TestKubeOps(c *C) {
+func (s *KubeOpsSuite) TestKubeOps(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{}
@@ -215,12 +215,12 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 	} {
 		bp := newCreateResourceBlueprint(createInSpecsNsPhase(tc.spec, tc.name, s.namespace))
 		phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		for _, p := range phases {
 			out, err := p.Exec(ctx, bp, action, tp)
-			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+			c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
 			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.name, metav1.GetOptions{})
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 			expOut := map[string]interface{}{
 				"apiVersion": tc.expResource.gvr.Version,
 				"group":      tc.expResource.gvr.Group,
@@ -229,14 +229,14 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 				"name":       tc.name,
 				"namespace":  tc.expResource.namespace,
 			}
-			c.Assert(out, DeepEquals, expOut)
+			c.Assert(out, check.DeepEquals, expOut)
 			err = s.dynCli.Resource(tc.expResource.gvr).Namespace(s.namespace).Delete(ctx, tc.name, metav1.DeleteOptions{})
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		}
 	}
 }
 
-func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
+func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{}
@@ -248,17 +248,17 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 	bp := newCreateResourceBlueprint(createPhase(s.namespace, spec),
 		deletePhase(gvr, serviceName, s.namespace))
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	for _, p := range phases {
 		out, err := p.Exec(ctx, bp, action, tp)
-		c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+		c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
 
 		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(ctx, serviceName, metav1.GetOptions{})
 		if p.Name() == "deleteDeploy" {
-			c.Assert(err, NotNil)
-			c.Assert(apierrors.IsNotFound(err), Equals, true)
+			c.Assert(err, check.NotNil)
+			c.Assert(apierrors.IsNotFound(err), check.Equals, true)
 		} else {
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		}
 
 		expOut := map[string]interface{}{
@@ -269,11 +269,11 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 			"name":       serviceName,
 			"namespace":  s.namespace,
 		}
-		c.Assert(out, DeepEquals, expOut)
+		c.Assert(out, check.DeepEquals, expOut)
 	}
 }
 
-func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
+func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
@@ -287,17 +287,17 @@ func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
 		waitDeployPhase(s.namespace, deployName),
 		deletePhase(gvr, deployName, s.namespace))
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	for _, p := range phases {
 		out, err := p.Exec(ctx, bp, action, tp)
-		c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+		c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
 
 		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(context.TODO(), deployName, metav1.GetOptions{})
 		if p.Name() == "deleteDeploy" {
-			c.Assert(err, NotNil)
-			c.Assert(apierrors.IsNotFound(err), Equals, true)
+			c.Assert(err, check.NotNil)
+			c.Assert(apierrors.IsNotFound(err), check.Equals, true)
 		} else {
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		}
 
 		if p.Name() == "waitDeployReady" {
@@ -311,7 +311,7 @@ func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
 			"name":       deployName,
 			"namespace":  s.namespace,
 		}
-		c.Assert(out, DeepEquals, expOut)
+		c.Assert(out, check.DeepEquals, expOut)
 	}
 }
 

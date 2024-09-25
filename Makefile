@@ -148,7 +148,7 @@ push-name:
 version:
 	@echo $(VERSION)
 
-.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean docs start-kind tiller stop-kind release-snapshot go-mod-download
+.PHONY: deploy format-vet go-test test codegen build-dirs run clean container-clean bin-clean docs start-kind tiller stop-kind release-snapshot go-mod-download
 
 deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
@@ -158,8 +158,13 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 		bundle.yaml.in > .deploy-$(DOTFILE_IMAGE)
 	@kubectl apply -f .deploy-$(DOTFILE_IMAGE)
 
-test: build-dirs
+format-vet: build-dirs
+	@$(MAKE) run CMD="./build/format-vet.sh $(SRC_DIRS)"
+
+go-test: build-dirs
 	@$(MAKE) run CMD="TEST_FILTER=$(TEST_FILTER) ./build/test.sh $(SRC_DIRS)"
+
+test: format-vet go-test
 
 helm-test: build-dirs
 	@$(MAKE) run CMD="./build/helm-test.sh $(SRC_DIRS)"

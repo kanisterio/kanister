@@ -15,19 +15,19 @@
 package function
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
-var _ = Suite(&ArgsTestSuite{})
+var _ = check.Suite(&ArgsTestSuite{})
 
 type ArgsTestSuite struct {
 }
 
-func (s *ArgsTestSuite) TestGetYamlList(c *C) {
+func (s *ArgsTestSuite) TestGetYamlList(c *check.C) {
 	testCases := []struct {
 		name       string
 		args       map[string]interface{}
-		errChecker Checker
+		errChecker check.Checker
 		valList    []string
 	}{
 		{
@@ -35,7 +35,7 @@ func (s *ArgsTestSuite) TestGetYamlList(c *C) {
 			args: map[string]interface{}{
 				"key": "- val1\n- val2\n- val3\n",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 			valList:    []string{"val1", "val2", "val3"},
 		},
 		{
@@ -43,7 +43,7 @@ func (s *ArgsTestSuite) TestGetYamlList(c *C) {
 			args: map[string]interface{}{
 				"key": []string{"test1", "test2", "test3"},
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 			valList:    []string{"test1", "test2", "test3"},
 		},
 		{
@@ -51,7 +51,7 @@ func (s *ArgsTestSuite) TestGetYamlList(c *C) {
 			args: map[string]interface{}{
 				"key": []interface{}{"test1", "test2", "test3"},
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 			valList:    []string{"test1", "test2", "test3"},
 		},
 		{
@@ -59,7 +59,7 @@ func (s *ArgsTestSuite) TestGetYamlList(c *C) {
 			args: map[string]interface{}{
 				"key": "not a slice",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 			valList:    nil,
 		},
 		{
@@ -67,14 +67,14 @@ func (s *ArgsTestSuite) TestGetYamlList(c *C) {
 			args: map[string]interface{}{
 				"invalid": nil,
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 			valList:    nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		valList, err := GetYamlList(tc.args, "key")
-		c.Check(err, tc.errChecker, Commentf("Test: %s Failed!", tc.name))
-		c.Check(valList, DeepEquals, tc.valList, Commentf("Test: %s Failed!", tc.name))
+		c.Check(err, tc.errChecker, check.Commentf("Test: %s Failed!", tc.name))
+		c.Check(valList, check.DeepEquals, tc.valList, check.Commentf("Test: %s Failed!", tc.name))
 	}
 }

@@ -17,14 +17,14 @@ package command
 import (
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type KopiaPolicyTestSuite struct{}
 
-var _ = Suite(&KopiaPolicyTestSuite{})
+var _ = check.Suite(&KopiaPolicyTestSuite{})
 
-func (kPolicy *KopiaPolicyTestSuite) TestPolicySetCommands(c *C) {
+func (kPolicy *KopiaPolicyTestSuite) TestPolicySetCommands(c *check.C) {
 	for _, tc := range []struct {
 		f           func() []string
 		expectedLog string
@@ -45,11 +45,11 @@ func (kPolicy *KopiaPolicyTestSuite) TestPolicySetCommands(c *C) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, Equals, tc.expectedLog)
+		c.Check(cmd, check.Equals, tc.expectedLog)
 	}
 }
 
-func (kPolicy *KopiaPolicyTestSuite) TestPolicyShowCommands(c *C) {
+func (kPolicy *KopiaPolicyTestSuite) TestPolicyShowCommands(c *check.C) {
 	for _, tc := range []struct {
 		f           func() []string
 		expectedLog string
@@ -70,6 +70,6 @@ func (kPolicy *KopiaPolicyTestSuite) TestPolicyShowCommands(c *C) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, Equals, tc.expectedLog)
+		c.Check(cmd, check.Equals, tc.expectedLog)
 	}
 }

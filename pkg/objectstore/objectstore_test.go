@@ -29,12 +29,12 @@ import (
 	"github.com/graymeta/stow"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type ObjectStoreProviderSuite struct {
 	osType         ProviderType
@@ -52,11 +52,11 @@ const (
 	testRegionS3   = "us-west-2"
 )
 
-var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeS3, region: testRegionS3})
-var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeGCS, region: ""})
-var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeAzure, region: ""})
+var _ = check.Suite(&ObjectStoreProviderSuite{osType: ProviderTypeS3, region: testRegionS3})
+var _ = check.Suite(&ObjectStoreProviderSuite{osType: ProviderTypeGCS, region: ""})
+var _ = check.Suite(&ObjectStoreProviderSuite{osType: ProviderTypeAzure, region: ""})
 
-func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
+func (s *ObjectStoreProviderSuite) SetUpSuite(c *check.C) {
 	switch s.osType {
 	case ProviderTypeS3:
 		getEnvOrSkip(c, "AWS_ACCESS_KEY_ID")
@@ -78,25 +78,25 @@ func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 
 	ctx := context.Background()
 	s.root, err = GetOrCreateBucket(ctx, s.provider, testBucketName)
-	c.Check(err, IsNil)
-	c.Assert(s.root, NotNil)
+	c.Check(err, check.IsNil)
+	c.Assert(s.root, check.NotNil)
 	// While two concurrent instances could potentially collide, the probability
 	// is extremely low. This approach makes the directory prefix informative.
 	s.suiteDirPrefix = time.Now().UTC().Format(time.RFC3339Nano)
 }
 
-func (s *ObjectStoreProviderSuite) SetUpTest(c *C) {
+func (s *ObjectStoreProviderSuite) SetUpTest(c *check.C) {
 	s.initProvider(c, s.region)
 	s.testDir = s.suiteDirPrefix + "-" + c.TestName()
 }
 
-func (s *ObjectStoreProviderSuite) TearDownTest(c *C) {
+func (s *ObjectStoreProviderSuite) TearDownTest(c *check.C) {
 	if s.testDir != "" {
 		cleanupBucketDirectory(c, s.root, s.testDir)
 	}
 }
 
-func (s *ObjectStoreProviderSuite) initProvider(c *C, region string) {
+func (s *ObjectStoreProviderSuite) initProvider(c *check.C, region string) {
 	ctx := context.Background()
 	var err error
 	pc := ProviderConfig{
@@ -106,12 +106,12 @@ func (s *ObjectStoreProviderSuite) initProvider(c *C, region string) {
 	}
 	secret := getSecret(ctx, c, s.osType)
 	s.provider, err = NewProvider(ctx, pc, secret)
-	c.Check(err, IsNil)
-	c.Assert(s.provider, NotNil)
+	c.Check(err, check.IsNil)
+	c.Assert(s.provider, check.NotNil)
 }
 
 // Verifies bucket operations, create/delete/list
-func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
+func (s *ObjectStoreProviderSuite) TestBuckets(c *check.C) {
 	c.Skip("intermittently fails due to rate limits on bucket creation")
 	ctx := context.Background()
 	bucketName := s.createBucketName(c)
@@ -119,51 +119,51 @@ func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 	origBuckets, _ := s.provider.ListBuckets(ctx)
 
 	_, err := s.provider.CreateBucket(ctx, bucketName)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Duplicate bucket
 	_, err = s.provider.CreateBucket(ctx, bucketName)
-	c.Assert(err, Not(IsNil))
+	c.Assert(err, check.Not(check.IsNil))
 
 	// Should be one more than buckets. Can be racy with other activity
 	// and so checking for inequality
 	buckets, _ := s.provider.ListBuckets(ctx)
-	c.Check(len(buckets), Not(Equals), len(origBuckets))
+	c.Check(len(buckets), check.Not(check.Equals), len(origBuckets))
 
 	bucket, err := s.provider.GetBucket(ctx, bucketName)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	c.Logf("Created bucket: %s", bucket)
-	c.Check(len(buckets), Not(Equals), len(origBuckets))
+	c.Check(len(buckets), check.Not(check.Equals), len(origBuckets))
 
 	// Check if deletion succeeds
 	err = s.provider.DeleteBucket(ctx, bucketName)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 }
 
-func (s *ObjectStoreProviderSuite) TestCreateExistingBucket(c *C) {
+func (s *ObjectStoreProviderSuite) TestCreateExistingBucket(c *check.C) {
 	ctx := context.Background()
 	// The bucket should already exist, the suite setup creates it
 	d, err := s.provider.GetBucket(ctx, testBucketName)
-	c.Check(err, IsNil)
-	c.Check(d, NotNil)
+	c.Check(err, check.IsNil)
+	c.Check(d, check.NotNil)
 	d, err = s.provider.CreateBucket(ctx, testBucketName)
-	c.Check(err, NotNil)
-	c.Check(d, IsNil)
+	c.Check(err, check.NotNil)
+	c.Check(d, check.IsNil)
 }
 
-func (s *ObjectStoreProviderSuite) TestGetNonExistingBucket(c *C) {
+func (s *ObjectStoreProviderSuite) TestGetNonExistingBucket(c *check.C) {
 	if s.osType != ProviderTypeS3 {
 		c.Skip("Test only applicable to AWS S3")
 	}
 	ctx := context.Background()
 	bucketName := s.createBucketName(c)
 	bucket, err := s.provider.GetBucket(ctx, bucketName)
-	c.Check(err, NotNil)
-	c.Assert(IsBucketNotFoundError(err), Equals, true)
-	c.Check(bucket, IsNil)
+	c.Check(err, check.NotNil)
+	c.Assert(IsBucketNotFoundError(err), check.Equals, true)
+	c.Check(bucket, check.IsNil)
 }
 
-func (s *ObjectStoreProviderSuite) TestCreateExistingBucketS3Regions(c *C) {
+func (s *ObjectStoreProviderSuite) TestCreateExistingBucketS3Regions(c *check.C) {
 	if s.osType != ProviderTypeS3 {
 		c.Skip("Test only applicable to AWS S3")
 	}
@@ -171,22 +171,22 @@ func (s *ObjectStoreProviderSuite) TestCreateExistingBucketS3Regions(c *C) {
 	for _, region := range []string{"us-east-2", testRegionS3, "us-east-1", "us-west-1"} {
 		s.initProvider(c, region)
 		d, err := s.provider.CreateBucket(ctx, testBucketName)
-		c.Check(err, NotNil)
-		c.Check(d, IsNil)
+		c.Check(err, check.NotNil)
+		c.Check(d, check.IsNil)
 	}
 }
 
 // TestDirectories verifies directory operations: create, list, delete
-func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
+func (s *ObjectStoreProviderSuite) TestDirectories(c *check.C) {
 	ctx := context.Background()
 	rootDirectory, err := s.root.CreateDirectory(ctx, s.testDir)
-	c.Assert(err, IsNil)
-	c.Assert(rootDirectory, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(rootDirectory, check.NotNil)
 
 	directories, err := rootDirectory.ListDirectories(ctx)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	// Expecting nothing
-	c.Check(directories, HasLen, 0)
+	c.Check(directories, check.HasLen, 0)
 
 	const (
 		dir1 = "directory1"
@@ -194,98 +194,98 @@ func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
 	)
 
 	_, err = rootDirectory.CreateDirectory(ctx, dir1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Expecting only /dir1
 	directories, err = rootDirectory.ListDirectories(ctx)
-	c.Check(err, IsNil)
-	c.Check(directories, HasLen, 1)
+	c.Check(err, check.IsNil)
+	c.Check(directories, check.HasLen, 1)
 
 	_, ok := directories[dir1]
-	c.Check(ok, Equals, true)
+	c.Check(ok, check.Equals, true)
 
 	// Expecting only /dir1
 	directory, err := rootDirectory.GetDirectory(ctx, dir1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Expecting /dir1/dir2
 	directory2, err := directory.CreateDirectory(ctx, dir2)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	directories, err = directory2.ListDirectories(ctx)
-	c.Check(err, IsNil)
-	c.Check(directories, HasLen, 0)
+	c.Check(err, check.IsNil)
+	c.Check(directories, check.HasLen, 0)
 
 	directories, err = directory.ListDirectories(ctx)
-	c.Check(err, IsNil)
-	c.Check(directories, HasLen, 1)
+	c.Check(err, check.IsNil)
+	c.Check(directories, check.HasLen, 1)
 
 	directories, err = rootDirectory.ListDirectories(ctx)
-	c.Check(err, IsNil)
-	c.Check(directories, HasLen, 1)
+	c.Check(err, check.IsNil)
+	c.Check(directories, check.HasLen, 1)
 
 	// Get dir1/dir2 from root
 	_, err = rootDirectory.GetDirectory(ctx, path.Join(dir1, dir2))
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Get dir1/dir2 from any directory
 	d2Name := path.Join(s.testDir, dir1, dir2)
 	directory2, err = directory.GetDirectory(ctx, path.Join("/", d2Name))
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Test delete directory
 	// Create objects and directories under dir1/dir2 and under dir1
 	_, err = directory2.CreateDirectory(ctx, "d1d2d0")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, err = directory2.CreateDirectory(ctx, "d1d2d1")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = directory2.PutBytes(ctx, "d1d2o0", nil, nil)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	_, err = directory.CreateDirectory(ctx, "d1d0")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	_, err = directory.CreateDirectory(ctx, "d1d1")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = directory.PutBytes(ctx, "d1o0", nil, nil)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// objects and directories in directory1 should be there
 	ds, err := directory.ListDirectories(ctx)
-	c.Assert(err, IsNil)
-	c.Assert(ds, HasLen, 3)
+	c.Assert(err, check.IsNil)
+	c.Assert(ds, check.HasLen, 3)
 
 	err = directory2.DeleteDirectory(ctx)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	cont := getStowContainer(c, directory2)
 	checkNoItemsWithPrefix(c, cont, d2Name)
 	directory2, err = directory.GetDirectory(ctx, dir2)
 	// directory2 should no longer exist
-	c.Assert(err, NotNil)
-	c.Assert(directory2, IsNil)
+	c.Assert(err, check.NotNil)
+	c.Assert(directory2, check.IsNil)
 
 	// other objects in directory1 should be there
 	ds, err = directory.ListDirectories(ctx)
-	c.Assert(err, IsNil)
-	c.Assert(ds, HasLen, 2)
+	c.Assert(err, check.IsNil)
+	c.Assert(ds, check.HasLen, 2)
 
 	obs, err := directory.ListObjects(ctx)
-	c.Assert(err, IsNil)
-	c.Assert(obs, HasLen, 1)
-	c.Assert(obs[0], Equals, "d1o0")
+	c.Assert(err, check.IsNil)
+	c.Assert(obs, check.HasLen, 1)
+	c.Assert(obs[0], check.Equals, "d1o0")
 
 	directory, err = rootDirectory.GetDirectory(ctx, dir1)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	// Delete everything by deleting the parent directory
 	err = directory.DeleteDirectory(ctx)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	checkNoItemsWithPrefix(c, cont, dir1)
 }
 
-func (s *ObjectStoreProviderSuite) TestDeleteAllWithPrefix(c *C) {
+func (s *ObjectStoreProviderSuite) TestDeleteAllWithPrefix(c *check.C) {
 	ctx := context.Background()
 	rootDirectory, err := s.root.CreateDirectory(ctx, s.testDir)
-	c.Assert(err, IsNil)
-	c.Assert(rootDirectory, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(rootDirectory, check.NotNil)
 	const (
 		dir1 = "directory1"
 		dir2 = "directory2"
@@ -293,33 +293,33 @@ func (s *ObjectStoreProviderSuite) TestDeleteAllWithPrefix(c *C) {
 	)
 
 	directory, err := rootDirectory.CreateDirectory(ctx, dir1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Expecting /dir1/dir2
 	_, err = directory.CreateDirectory(ctx, dir2)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Expecting root dir to have /dir1/dir2 and /dir3
 	_, err = rootDirectory.CreateDirectory(ctx, dir3)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Delete everything with prefix "dir1"
 	err = rootDirectory.DeleteAllWithPrefix(ctx, dir1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Expecting root dir to have /dir3
 	directories, err := rootDirectory.ListDirectories(ctx)
-	c.Check(err, IsNil)
-	c.Check(directories, HasLen, 1)
+	c.Check(err, check.IsNil)
+	c.Check(directories, check.HasLen, 1)
 	_, ok := directories[dir3]
-	c.Check(ok, Equals, true)
+	c.Check(ok, check.Equals, true)
 }
 
 // TestObjects verifies object operations: GetBytes and PutBytes
-func (s *ObjectStoreProviderSuite) TestObjects(c *C) {
+func (s *ObjectStoreProviderSuite) TestObjects(c *check.C) {
 	ctx := context.Background()
 	rootDirectory, err := s.root.CreateDirectory(ctx, s.testDir)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	const (
 		obj1  = "object1"
@@ -335,35 +335,35 @@ func (s *ObjectStoreProviderSuite) TestObjects(c *C) {
 	}
 
 	err = rootDirectory.PutBytes(ctx, obj1, []byte(data1), nil)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 
 	objs, err := rootDirectory.ListObjects(ctx)
-	c.Check(err, IsNil)
-	c.Assert(objs, HasLen, 1)
-	c.Check(objs[0], Equals, obj1)
+	c.Check(err, check.IsNil)
+	c.Assert(objs, check.HasLen, 1)
+	c.Check(objs[0], check.Equals, obj1)
 
 	data, _, err := rootDirectory.GetBytes(ctx, obj1)
-	c.Check(err, IsNil)
-	c.Check(data, DeepEquals, []byte(data1))
+	c.Check(err, check.IsNil)
+	c.Check(data, check.DeepEquals, []byte(data1))
 
 	_ = rootDirectory.PutBytes(ctx, obj2, []byte(data2), tags)
 	data, ntags, err := rootDirectory.GetBytes(ctx, obj2)
-	c.Check(err, IsNil)
-	c.Check(data, DeepEquals, []byte(data2))
-	c.Check(ntags, DeepEquals, tags)
+	c.Check(err, check.IsNil)
+	c.Check(data, check.DeepEquals, []byte(data2))
+	c.Check(ntags, check.DeepEquals, tags)
 
 	err = rootDirectory.Delete(ctx, obj1)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 
 	err = rootDirectory.Delete(ctx, obj2)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 }
 
 // TestObjectsStreaming verifies object operations: Get and Put
-func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
+func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *check.C) {
 	ctx := context.Background()
 	rootDirectory, err := s.root.CreateDirectory(ctx, s.testDir)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	const (
 		obj1  = "object1"
@@ -382,38 +382,40 @@ func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 	data2B := []byte(data2)
 
 	err = rootDirectory.Put(ctx, obj1, bytes.NewReader(data1B), int64(len(data1B)), nil)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 
 	objs, err := rootDirectory.ListObjects(ctx)
-	c.Check(err, IsNil)
-	c.Assert(objs, HasLen, 1)
-	c.Check(objs[0], Equals, obj1)
+	c.Check(err, check.IsNil)
+	c.Assert(objs, check.HasLen, 1)
+	c.Check(objs[0], check.Equals, obj1)
 
 	r, _, err := rootDirectory.Get(ctx, obj1)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	data, err := io.ReadAll(r)
-	c.Check(err, IsNil)
-	r.Close()
-	c.Check(data, DeepEquals, data1B)
+	c.Check(err, check.IsNil)
+	err = r.Close()
+	c.Assert(err, check.IsNil)
+	c.Check(data, check.DeepEquals, data1B)
 
 	err = rootDirectory.Put(ctx, obj2, bytes.NewReader(data2B), int64(len(data2B)), tags)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	r, ntags, err := rootDirectory.Get(ctx, obj2)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 	data, err = io.ReadAll(r)
-	c.Check(err, IsNil)
-	r.Close()
-	c.Check(data, DeepEquals, data2B)
-	c.Check(ntags, DeepEquals, tags)
+	c.Check(err, check.IsNil)
+	err = r.Close()
+	c.Assert(err, check.IsNil)
+	c.Check(data, check.DeepEquals, data2B)
+	c.Check(ntags, check.DeepEquals, tags)
 
 	err = rootDirectory.Delete(ctx, obj1)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 
 	err = rootDirectory.Delete(ctx, obj2)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 }
 
-func (s *ObjectStoreProviderSuite) createBucketName(c *C) string {
+func (s *ObjectStoreProviderSuite) createBucketName(c *check.C) string {
 	// Generate a bucket name
 	bucketName := fmt.Sprintf("kio-io-tests-%v-%d", strings.ToLower(c.TestName()), s.rand.Uint32())
 	if len(bucketName) > 63 {
@@ -426,64 +428,64 @@ func (s *ObjectStoreProviderSuite) createBucketName(c *C) string {
 	return bucketName
 }
 
-func checkNoItemsWithPrefix(c *C, cont stow.Container, prefix string) {
+func checkNoItemsWithPrefix(c *check.C, cont stow.Container, prefix string) {
 	items, _, err := cont.Items(prefix, stow.CursorStart, 2)
-	c.Assert(err, IsNil)
-	c.Assert(items, HasLen, 0)
+	c.Assert(err, check.IsNil)
+	c.Assert(items, check.HasLen, 0)
 }
 
-func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
+func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *check.C) {
 	role := os.Getenv(aws.ConfigRole)
 	if s.osType != ProviderTypeS3 || role != "" {
 		c.Skip("Test only applicable to S3")
 	}
 	ctx := context.Background()
 	origBucket, err := s.provider.GetBucket(ctx, testBucketName)
-	c.Assert(err, IsNil)
-	c.Assert(origBucket, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(origBucket, check.NotNil)
 
 	// Creating an object in existing bucket to check it later when we call GetOrCreateBucket,
 	// to see if existing bucket was returned
 	orgBucketObjectName := s.suiteDirPrefix + "GetRegions"
 	err = origBucket.PutBytes(ctx, orgBucketObjectName, []byte("content-getRegions"), nil)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	defer func() {
 		err = origBucket.Delete(ctx, orgBucketObjectName)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}()
 
 	b, err := GetOrCreateBucket(ctx, s.provider, testBucketName)
-	c.Assert(err, IsNil)
-	c.Assert(b, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(b, check.NotNil)
 
 	// Checking if same bucket was returned by checking if object
 	// that was created previously exists in newly retrieved bucket
 	_, _, err = b.Get(ctx, orgBucketObjectName)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	l, err := b.ListObjects(ctx)
-	c.Assert(err, IsNil)
-	c.Assert(l, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(l, check.NotNil)
 	objectName := s.suiteDirPrefix + "foo"
 	err = b.PutBytes(ctx, objectName, []byte("content"), nil)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = b.Delete(ctx, objectName)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *ObjectStoreProviderSuite) TestBucketWrongRegion(c *C) {
+func (s *ObjectStoreProviderSuite) TestBucketWrongRegion(c *check.C) {
 	ctx := context.Background()
 	for _, region := range []string{"us-east-1", "us-east-2", "us-west-1"} {
 		s.initProvider(c, region)
 		b, err := s.provider.GetBucket(ctx, testBucketName)
-		c.Check(err, IsNil)
-		c.Check(b, NotNil)
+		c.Check(err, check.IsNil)
+		c.Check(b, check.NotNil)
 		_, err = b.ListObjects(ctx)
-		c.Check(err, IsNil)
+		c.Check(err, check.IsNil)
 	}
 }
 
-func getSecret(ctx context.Context, c *C, osType ProviderType) *Secret {
+func getSecret(ctx context.Context, c *check.C, osType ProviderType) *Secret {
 	secret := &Secret{}
 	switch osType {
 	case ProviderTypeS3:
@@ -494,36 +496,36 @@ func getSecret(ctx context.Context, c *C, osType ProviderType) *Secret {
 			aws.ConfigRole:      os.Getenv("AWS_ROLE"),
 		}
 		creds, err := aws.GetCredentials(ctx, config)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		val, err := creds.Get()
-		c.Check(err, IsNil)
+		c.Check(err, check.IsNil)
 		secret.Aws = &SecretAws{
 			AccessKeyID:     val.AccessKeyID,
 			SecretAccessKey: val.SecretAccessKey,
 			SessionToken:    val.SessionToken,
 		}
-		c.Check(secret.Aws.AccessKeyID, Not(Equals), "")
-		c.Check(secret.Aws.SecretAccessKey, Not(Equals), "")
+		c.Check(secret.Aws.AccessKeyID, check.Not(check.Equals), "")
+		c.Check(secret.Aws.SecretAccessKey, check.Not(check.Equals), "")
 	case ProviderTypeGCS:
 		creds, err := google.FindDefaultCredentials(context.Background(), compute.ComputeScope)
-		c.Check(err, IsNil)
+		c.Check(err, check.IsNil)
 
 		secret.Type = SecretTypeGcpServiceAccountKey
 		secret.Gcp = &SecretGcp{
 			ServiceKey: string(creds.JSON),
 			ProjectID:  creds.ProjectID,
 		}
-		c.Check(secret.Gcp.ServiceKey, Not(Equals), "")
-		c.Check(secret.Gcp.ProjectID, Not(Equals), "")
+		c.Check(secret.Gcp.ServiceKey, check.Not(check.Equals), "")
+		c.Check(secret.Gcp.ProjectID, check.Not(check.Equals), "")
 	case ProviderTypeAzure:
 		secret.Type = SecretTypeAzStorageAccount
 		secret.Azure = &SecretAzure{
 			StorageAccount: os.Getenv("AZURE_STORAGE_ACCOUNT_NAME"),
 			StorageKey:     os.Getenv("AZURE_STORAGE_ACCOUNT_KEY"),
 		}
-		c.Check(secret.Azure.StorageAccount, Not(Equals), "")
-		c.Check(secret.Azure.StorageKey, Not(Equals), "")
+		c.Check(secret.Azure.StorageAccount, check.Not(check.Equals), "")
+		c.Check(secret.Azure.StorageKey, check.Not(check.Equals), "")
 	default:
 		c.Logf("Unsupported provider '%s'", osType)
 		c.Fail()
@@ -532,32 +534,32 @@ func getSecret(ctx context.Context, c *C, osType ProviderType) *Secret {
 }
 
 // Can be added to a common place in Kanister
-func getEnvOrSkip(c *C, varName string) {
+func getEnvOrSkip(c *check.C, varName string) {
 	v := os.Getenv(varName)
 	if v == "" {
 		c.Skip("Required environment variable '" + varName + "' not set")
 	}
 }
 
-func cleanupBucketDirectory(c *C, bucket Bucket, directory string) {
-	c.Assert(bucket, NotNil)
+func cleanupBucketDirectory(c *check.C, bucket Bucket, directory string) {
+	c.Assert(bucket, check.NotNil)
 	ctx := context.Background()
 	d, err := bucket.GetDirectory(ctx, directory)
 	if err != nil {
 		c.Log("Cannot cleanup test directory: ", directory)
 		return
 	}
-	c.Assert(d, NotNil)
+	c.Assert(d, check.NotNil)
 	err = d.DeleteDirectory(ctx)
-	c.Check(err, IsNil)
+	c.Check(err, check.IsNil)
 }
 
 // getStowContainer checks that the given directory matches the implementation
 // type
-func getStowContainer(c *C, d Directory) stow.Container {
-	c.Assert(d, FitsTypeOf, &directory{})
+func getStowContainer(c *check.C, d Directory) stow.Container {
+	c.Assert(d, check.FitsTypeOf, &directory{})
 	sd, ok := d.(*directory)
-	c.Assert(ok, Equals, true)
-	c.Assert(sd, NotNil)
+	c.Assert(ok, check.Equals, true)
+	c.Assert(sd, check.NotNil)
 	return sd.bucket.container
 }
