@@ -40,6 +40,15 @@ is provided on a best-effort basis. If you are using an older version of
 Kubernetes, please consider upgrading to a newer version.
 :::
 
+::: tip NOTE
+
+To improve the cluster's security, the default installation of Kanister is restricted
+to access only the resources within its own namespace. As a result, Kanister may not be
+able to snapshot or restore applications by default in other namespaces.
+If Blueprint needs access to resources in other namespaces, please follow the steps
+provided [here](rbac) to configure the access correctly.
+:::
+
 ## Configuring Kanister
 
 Use the `helm show values` command to list the configurable options:
