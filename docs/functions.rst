@@ -158,8 +158,8 @@ via shared `emptyDir`_ volume.
 It's similar to KubeTask, but allows using multiple images to move backup data.
 "background" container is one responsible for generating data, while "output" container
 should export it to destination.
-The main difference between these containers is that phase outputs can only be generated from the
-"output" container.
+The main difference between these containers is that phase outputs can only be generated
+from the "output" container.
 The function also supports an optional init container to set up the volume contents.
 
 .. csv-table::

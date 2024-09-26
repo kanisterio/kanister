@@ -19,6 +19,7 @@ import (
 	"os"
 	"time"
 
+	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -28,8 +29,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
-
-	. "gopkg.in/check.v1"
 )
 
 var _ = Suite(&KubeTaskParallelSuite{})
