@@ -15,6 +15,7 @@
 package command
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -167,5 +168,59 @@ func SnapListByTags(cmdArgs SnapListByTagsCommandArgs) []string {
 		jsonFlag,
 	)
 	args = addTags(cmdArgs.Tags, args)
+	return stringSliceCommand(args)
+}
+
+type SnapshotVerifyCommandArgs struct {
+	*CommandArgs
+	DirectoryID        []string
+	FileID             []string
+	Sources            []string
+	SnapshotIDs        []string
+	VerifyFilesPercent *float64
+	Parallelism        *int
+	FileQueueLength    *int
+	FileParallelism    *int
+	MaxErrors          *int
+}
+
+// SnapshotVerify returns kopia command verifying snapshots with given snapshot IDs.
+func SnapshotVerify(cmdArgs SnapshotVerifyCommandArgs) []string {
+	args := commonArgs(cmdArgs.CommandArgs)
+	args = args.AppendLoggable(snapshotSubCommand, verifySubCommand)
+
+	if cmdArgs.VerifyFilesPercent != nil {
+		args = args.AppendLoggableKV(verifyFilesPercentFlag, fmt.Sprintf("%v", *cmdArgs.VerifyFilesPercent))
+	}
+
+	if cmdArgs.Parallelism != nil {
+		parallelismStr := strconv.Itoa(*cmdArgs.Parallelism)
+		args = args.AppendLoggableKV(parallelFlag, parallelismStr)
+	}
+
+	if cmdArgs.FileQueueLength != nil {
+		args = args.AppendLoggableKV(fileQueueLengthFlag, strconv.Itoa(*cmdArgs.FileQueueLength))
+	}
+
+	if cmdArgs.FileParallelism != nil {
+		args = args.AppendLoggableKV(fileParallelismFlag, strconv.Itoa(*cmdArgs.FileParallelism))
+	}
+
+	for _, dirID := range cmdArgs.DirectoryID {
+		args = args.AppendLoggableKV(directoryIDFlag, dirID)
+	}
+
+	for _, fileID := range cmdArgs.FileID {
+		args = args.AppendLoggableKV(fileIDFlag, fileID)
+	}
+
+	for _, source := range cmdArgs.Sources {
+		args = args.AppendLoggableKV(sourcesFlag, source)
+	}
+
+	for _, snapID := range cmdArgs.SnapshotIDs {
+		args = args.AppendLoggable(snapID)
+	}
+
 	return stringSliceCommand(args)
 }
