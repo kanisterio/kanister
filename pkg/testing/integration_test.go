@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,19 +36,20 @@ import (
 	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controller"
 	"github.com/kanisterio/kanister/pkg/field"
-	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kanctl"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+
+	_ "github.com/kanisterio/kanister/pkg/function"
 )
 
 // Hook up gocheck into the "go test" runner for integration builds
 func Test(t *test.T) {
 	integrationSetup(t)
-	TestingT(t)
+	check.TestingT(t)
 	integrationCleanup(t)
 }
 
@@ -177,17 +178,17 @@ func newSecretProfile() *secretProfile {
 	}
 }
 
-func (s *IntegrationSuite) SetUpSuite(c *C) {
+func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	ctx := context.Background()
 	_, s.cancel = context.WithCancel(ctx)
 
 	// Instantiate Client SDKs
 	cfg, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cli, err = kubernetes.NewForConfig(cfg)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.crCli, err = crclient.NewForConfig(cfg)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
 // TestRun executes e2e workflow on the app
@@ -198,7 +199,7 @@ func (s *IntegrationSuite) SetUpSuite(c *C) {
 // 5. Delete DB data
 // 6. Restore data from backup
 // 7. Uninstall DB app
-func (s *IntegrationSuite) TestRun(c *C) {
+func (s *IntegrationSuite) TestRun(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -215,7 +216,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Create namespace
 	err = createNamespace(s.cli, s.namespace)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create profile
 	if s.profile == nil {
@@ -227,18 +228,18 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Install db
 	err = s.app.Install(ctx, s.namespace)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if ready
 	ok, err := s.app.IsReady(ctx)
-	c.Assert(err, IsNil)
-	c.Assert(ok, Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(ok, check.Equals, true)
 
 	// Create blueprint
 	bp := s.bp.Blueprint()
-	c.Assert(bp, NotNil)
+	c.Assert(bp, check.NotNil)
 	_, err = s.crCli.Blueprints(kontroller.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	var configMaps, secrets map[string]crv1alpha1.ObjectReference
 	testEntries := 3
@@ -246,22 +247,22 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		// wait for application to be actually ready
 		err = pingAppAndWait(ctx, a)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		err = a.Reset(ctx)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		err = a.Initialize(ctx)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		// Add few entries
 		for i := 0; i < testEntries; i++ {
-			c.Assert(a.Insert(ctx), IsNil)
+			c.Assert(a.Insert(ctx), check.IsNil)
 		}
 
 		count, err := a.Count(ctx)
-		c.Assert(err, IsNil)
-		c.Assert(count, Equals, testEntries)
+		c.Assert(err, check.IsNil)
+		c.Assert(count, check.Equals, testEntries)
 	}
 
 	// Get Secret and ConfigMap object references
@@ -277,7 +278,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	as := newActionSet(bp.GetName(), profileName, kontroller.namespace, s.app.Object(), configMaps, secrets)
 	// Take backup
 	backup := s.createActionset(ctx, c, as, "backup", nil)
-	c.Assert(len(backup), Not(Equals), 0)
+	c.Assert(len(backup), check.Not(check.Equals), 0)
 
 	// Save timestamp for PITR
 	var restoreOptions map[string]string
@@ -290,35 +291,35 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		// Add few more entries with timestamp > pitr
 		time.Sleep(time.Second)
 		if a, ok := s.app.(app.DatabaseApp); ok {
-			c.Assert(a.Insert(ctx), IsNil)
-			c.Assert(a.Insert(ctx), IsNil)
+			c.Assert(a.Insert(ctx), check.IsNil)
+			c.Assert(a.Insert(ctx), check.IsNil)
 
 			count, err := a.Count(ctx)
-			c.Assert(err, IsNil)
-			c.Assert(count, Equals, testEntries+2)
+			c.Assert(err, check.IsNil)
+			c.Assert(count, check.Equals, testEntries+2)
 		}
 	}
 
 	// Reset DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		err = a.Reset(ctx)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 
 	// Restore backup
 	pas, err := s.crCli.ActionSets(kontroller.namespace).Get(ctx, backup, metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.createActionset(ctx, c, pas, "restore", restoreOptions)
 
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		// wait for application to be actually ready
 		err = pingAppAndWait(ctx, a)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		count, err := a.Count(ctx)
-		c.Assert(err, IsNil)
-		c.Assert(count, Equals, testEntries)
+		c.Assert(err, check.IsNil)
+		c.Assert(count, check.Equals, testEntries)
 	}
 
 	// Delete snapshots
@@ -348,9 +349,9 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 	}
 }
 
-func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
+func (s *IntegrationSuite) createProfile(c *check.C, ctx context.Context) string {
 	secret, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.profile.secret, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// set secret ref in profile
 	s.profile.profile.Credential.KeyPair.Secret = crv1alpha1.ObjectReference{
@@ -358,12 +359,12 @@ func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 		Namespace: secret.GetNamespace(),
 	}
 	profile, err := s.crCli.Profiles(kontroller.namespace).Create(ctx, s.profile.profile, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	return profile.GetName()
 }
 
-func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[string]crv1alpha1.ObjectReference) {
+func validateBlueprint(c *check.C, bp crv1alpha1.Blueprint, configMaps, secrets map[string]crv1alpha1.ObjectReference) {
 	for _, action := range bp.Actions {
 		// Validate BP action ConfigMapNames with the app.ConfigMaps references
 		for _, bpc := range action.ConfigMapNames {
@@ -373,7 +374,7 @@ func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[st
 					validConfig = true
 				}
 			}
-			c.Assert(validConfig, Equals, true)
+			c.Assert(validConfig, check.Equals, true)
 		}
 		// Validate BP action SecretNames with the app.Secrets reference
 		for _, bps := range action.SecretNames {
@@ -383,22 +384,22 @@ func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[st
 					validSecret = true
 				}
 			}
-			c.Assert(validSecret, Equals, true)
+			c.Assert(validSecret, check.Equals, true)
 		}
 	}
 }
 
 // createActionset creates and wait for actionset to complete
-func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
+func (s *IntegrationSuite) createActionset(ctx context.Context, c *check.C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
 	var err error
 	switch action {
 	case "backup":
 		as.Spec.Actions[0].Options = options
 		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	case "restore", "delete":
 		as, err = restoreActionSetSpecs(as, action)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		as.Spec.Actions[0].Options = options
 		if action == "delete" {
 			// object of delete is always namespace of actionset
@@ -412,7 +413,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 			}
 		}
 		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	default:
 		c.Errorf("Invalid action %s while creating ActionSet", action)
 	}
@@ -430,7 +431,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 		}
 		return false, nil
 	})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	return as.GetName()
 }
 
@@ -457,20 +458,20 @@ func createNamespace(cli kubernetes.Interface, name string) error {
 	return nil
 }
 
-func (s *IntegrationSuite) TearDownSuite(c *C) {
+func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Uninstall app
 	if !s.skip {
 		err := s.app.Uninstall(ctx)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 
 	// Uninstall implementation of the apps doesn't delete namespace
 	// Delete the namespace separately
 	err := s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
 func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {

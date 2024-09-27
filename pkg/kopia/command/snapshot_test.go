@@ -18,14 +18,14 @@ import (
 	"strings"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type KopiaSnapshotTestSuite struct{}
 
-var _ = Suite(&KopiaSnapshotTestSuite{})
+var _ = check.Suite(&KopiaSnapshotTestSuite{})
 
-func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
+func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 	commandArgs := &CommandArgs{
 		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
@@ -179,6 +179,6 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, Equals, tc.expectedLog)
+		c.Check(cmd, check.Equals, tc.expectedLog)
 	}
 }

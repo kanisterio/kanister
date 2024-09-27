@@ -23,6 +23,7 @@ export default defineConfig({
     sidebar: [
       { text: "Overview", link: "/overview" },
       { text: "Installation", link: "/install" },
+      { text: "RBAC Configuration", link: "/rbac" },
       { text: "Tutorial", link: "/tutorial" },
       { text: "Architecture", link: "/architecture" },
       { text: "Tooling", link: "/tooling" },

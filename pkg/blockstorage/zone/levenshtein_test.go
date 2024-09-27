@@ -15,14 +15,14 @@
 package zone
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type LevenshteinSuite struct{}
 
-var _ = Suite(&LevenshteinSuite{})
+var _ = check.Suite(&LevenshteinSuite{})
 
-func (s LevenshteinSuite) TestLevenshteinMatch(c *C) {
+func (s LevenshteinSuite) TestLevenshteinMatch(c *check.C) {
 	for _, tc := range []struct {
 		input   string
 		options []string
@@ -64,6 +64,6 @@ func (s LevenshteinSuite) TestLevenshteinMatch(c *C) {
 		},
 	} {
 		out := levenshteinMatch(tc.input, tc.options)
-		c.Assert(out, Equals, tc.out)
+		c.Assert(out, check.Equals, tc.out)
 	}
 }

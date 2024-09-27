@@ -15,7 +15,7 @@
 package function
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -23,13 +23,13 @@ import (
 
 type RestoreDataTestSuite struct{}
 
-var _ = Suite(&RestoreDataTestSuite{})
+var _ = check.Suite(&RestoreDataTestSuite{})
 
-func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
+func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *check.C) {
 	testCases := []struct {
 		name       string
 		args       map[string]interface{}
-		errChecker Checker
+		errChecker check.Checker
 		tp         param.TemplateParams
 	}{
 		{
@@ -38,7 +38,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 				RestoreDataPodArg:       "some-pod",
 				RestoreDataBackupTagArg: "backup123",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			name: "Args with Vols",
@@ -46,7 +46,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 				RestoreDataVolsArg:      map[string]string{"pvc": "mount"},
 				RestoreDataBackupTagArg: "backup123",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			name: "Args with Pod and Vols",
@@ -55,12 +55,12 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 				RestoreDataVolsArg:      map[string]string{"pvc": "mount"},
 				RestoreDataBackupTagArg: "backup123",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{
 			name:       "Empty Args",
 			args:       map[string]interface{}{},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{
 			name: "Args with backupTag",
@@ -68,7 +68,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 				RestoreDataPodArg:       "some-pod",
 				RestoreDataBackupTagArg: "backup123",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			name: "Args with ID",
@@ -76,7 +76,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 				RestoreDataPodArg:              "some-pod",
 				RestoreDataBackupIdentifierArg: "backup123",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			name: "Args with backupTag and ID",
@@ -85,7 +85,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 				RestoreDataBackupTagArg:        "backup123",
 				RestoreDataBackupIdentifierArg: "backup123",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{
 			name: "Args with podOverride",
@@ -101,7 +101,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 					},
 				},
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 			tp: param.TemplateParams{
 				PodOverride: crv1alpha1.JSONMap{
 					"dnsPolicy": "ClusterFirst",
@@ -111,6 +111,6 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 	}
 	for _, tc := range testCases {
 		_, _, _, _, _, _, _, _, err := validateAndGetOptArgs(tc.args, tc.tp)
-		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
+		c.Check(err, tc.errChecker, check.Commentf("Case %s failed", tc.name))
 	}
 }

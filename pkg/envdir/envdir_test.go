@@ -19,22 +19,22 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type EnvDirSuite struct{}
 
-var _ = Suite(&EnvDirSuite{})
+var _ = check.Suite(&EnvDirSuite{})
 
-func (s *EnvDirSuite) TestEnvDir(c *C) {
+func (s *EnvDirSuite) TestEnvDir(c *check.C) {
 	d := c.MkDir()
 	p := filepath.Join(d, "FOO")
 	err := os.WriteFile(p, []byte("BAR"), os.ModePerm)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	e, err := EnvDir(d)
-	c.Assert(err, IsNil)
-	c.Assert(e, DeepEquals, []string{"FOO=BAR"})
+	c.Assert(err, check.IsNil)
+	c.Assert(e, check.DeepEquals, []string{"FOO=BAR"})
 }

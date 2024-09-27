@@ -6,13 +6,13 @@ import (
 	"errors"
 	"io"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/client-go/rest"
 )
 
 type LogReaderSuite struct{}
 
-var _ = Suite(&LogReaderSuite{})
+var _ = check.Suite(&LogReaderSuite{})
 
 var _ io.ReadCloser = (*buffer)(nil)
 
@@ -38,7 +38,7 @@ func (frw *fakeResponseWrapper) Stream(context.Context) (io.ReadCloser, error) {
 	return buffer{frw.buf}, frw.err
 }
 
-func (s *LogReaderSuite) TestLogReader(c *C) {
+func (s *LogReaderSuite) TestLogReader(c *check.C) {
 	err := errors.New("TEST")
 	for _, tc := range []struct {
 		rw  *fakeResponseWrapper
@@ -80,7 +80,7 @@ func (s *LogReaderSuite) TestLogReader(c *C) {
 	} {
 		lr := newLogReader(tc.rw)
 		out, err := io.ReadAll(lr)
-		c.Assert(err, Equals, tc.err)
-		c.Assert(string(out), Equals, tc.out)
+		c.Assert(err, check.Equals, tc.err)
+		c.Assert(string(out), check.Equals, tc.out)
 	}
 }

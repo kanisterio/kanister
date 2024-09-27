@@ -17,14 +17,14 @@ package command
 import (
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type KopiaRestoreTestSuite struct{}
 
-var _ = Suite(&KopiaRestoreTestSuite{})
+var _ = check.Suite(&KopiaRestoreTestSuite{})
 
-func (kRestore *KopiaRestoreTestSuite) TestRestoreCommands(c *C) {
+func (kRestore *KopiaRestoreTestSuite) TestRestoreCommands(c *check.C) {
 	for _, tc := range []struct {
 		f           func() []string
 		expectedLog string
@@ -79,6 +79,6 @@ func (kRestore *KopiaRestoreTestSuite) TestRestoreCommands(c *C) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, Equals, tc.expectedLog)
+		c.Check(cmd, check.Equals, tc.expectedLog)
 	}
 }

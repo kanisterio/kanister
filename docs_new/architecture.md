@@ -159,8 +159,7 @@ type ActionSpec struct {
 - `ConfigMaps` and `Secrets`, similar to `Artifacts`, are a mappings
     of names specified in the Blueprint referencing the Kubernetes
     object to be used.
-- `Profile` is a reference to a `Profile<profiles>`{.interpreted-text
-    role="ref"} Kubernetes CustomResource that will be made available to
+- `Profile` is a reference to a [Profile](#profiles) Kubernetes CustomResource that will be made available to
     the Blueprint.
 - `Options` is used to specify additional values to be used in the
     Blueprint
@@ -369,8 +368,8 @@ in which it is deployed. When it sees an ActionSet with a nil status
 field, it immediately initializes the ActionSet\'s status to the Pending
 State. The status is also prepopulated with the pending phases.
 
-Execution begins by resolving all the `templates`{.interpreted-text
-role="ref"}. If any required object references or artifacts are missing
+Execution begins by resolving all the [Templates](templates.md).
+If any required object references or artifacts are missing
 from the ActionSet, the ActionSet status is marked as failed. Otherwise,
 the template params are used to render the output Artifacts, and then
 the args in the Blueprint.

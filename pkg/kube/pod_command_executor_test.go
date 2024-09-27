@@ -22,13 +22,13 @@ import (
 	"sync"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 type PodCommandExecutorTestSuite struct{}
 
-var _ = Suite(&PodCommandExecutorTestSuite{})
+var _ = check.Suite(&PodCommandExecutorTestSuite{})
 
 const (
 	podCommandExecutorNS            = "pod-runner-test"
@@ -36,9 +36,9 @@ const (
 	podCommandExecutorContainerName = "test-container"
 )
 
-func (s *PodCommandExecutorTestSuite) SetUpSuite(c *C) {
+func (s *PodCommandExecutorTestSuite) SetUpSuite(c *check.C) {
 	err := os.Setenv("POD_NAMESPACE", podCommandExecutorNS)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
 // testBarrier supports race-free synchronization between a controller and a background goroutine.
@@ -96,7 +96,7 @@ func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(ctx context.Context
 	return fprp.execWithOptionsErr
 }
 
-func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
+func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *check.C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
@@ -128,8 +128,8 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			// allow the background goroutine to terminate (no-op if not Setup)
 			prp.execWithOptionsSyncEnd.Sync()
 
-			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, context.DeadlineExceeded), Equals, true)
+			c.Assert(err, check.Not(check.IsNil))
+			c.Assert(errors.Is(err, context.DeadlineExceeded), check.Equals, true)
 		},
 		"Cancelled": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
 			var err error
@@ -150,8 +150,8 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			wg.Wait()
 			prp.execWithOptionsSyncEnd.Sync() // Release ExecWithOptions
 
-			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, context.Canceled), Equals, true)
+			c.Assert(err, check.Not(check.IsNil))
+			c.Assert(errors.Is(err, context.Canceled), check.Equals, true)
 		},
 		"Successful execution": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
 			var err error
@@ -171,18 +171,18 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			wg.Wait()
 			prp.execWithOptionsSyncEnd.Sync() // Release ExecWithOptions
 
-			c.Assert(err, IsNil)
-			c.Assert(prp.inExecWithOptionsOpts.Command, DeepEquals, command)
-			c.Assert(prp.inExecWithOptionsOpts.Namespace, Equals, podCommandExecutorNS)
-			c.Assert(prp.inExecWithOptionsOpts.PodName, Equals, podCommandExecutorPodName)
-			c.Assert(prp.inExecWithOptionsOpts.ContainerName, Equals, podCommandExecutorContainerName)
-			c.Assert(prp.inExecWithOptionsOpts.Stdin, Equals, &bStdin)
-			c.Assert(prp.inExecWithOptionsOpts.Stdout, Not(IsNil))
-			c.Assert(prp.inExecWithOptionsOpts.Stderr, Not(IsNil))
-			c.Assert(bStdout.Len() > 0, Equals, true)
-			c.Assert(bStderr.Len() > 0, Equals, true)
-			c.Assert(bStdout.String(), Equals, expStdout)
-			c.Assert(bStderr.String(), Equals, expStderr)
+			c.Assert(err, check.IsNil)
+			c.Assert(prp.inExecWithOptionsOpts.Command, check.DeepEquals, command)
+			c.Assert(prp.inExecWithOptionsOpts.Namespace, check.Equals, podCommandExecutorNS)
+			c.Assert(prp.inExecWithOptionsOpts.PodName, check.Equals, podCommandExecutorPodName)
+			c.Assert(prp.inExecWithOptionsOpts.ContainerName, check.Equals, podCommandExecutorContainerName)
+			c.Assert(prp.inExecWithOptionsOpts.Stdin, check.Equals, &bStdin)
+			c.Assert(prp.inExecWithOptionsOpts.Stdout, check.Not(check.IsNil))
+			c.Assert(prp.inExecWithOptionsOpts.Stderr, check.Not(check.IsNil))
+			c.Assert(bStdout.Len() > 0, check.Equals, true)
+			c.Assert(bStderr.Len() > 0, check.Equals, true)
+			c.Assert(bStdout.String(), check.Equals, expStdout)
+			c.Assert(bStderr.String(), check.Equals, expStderr)
 		},
 	}
 

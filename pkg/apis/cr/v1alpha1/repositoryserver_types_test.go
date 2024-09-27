@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
@@ -58,28 +58,28 @@ spec:
       username: test-kanister-user
 `
 
-func TestRepositoryServer(t *testing.T) { TestingT(t) }
+func TestRepositoryServer(t *testing.T) { check.TestingT(t) }
 
-func (s *TypesSuite) TestRepositoryServerDecode(c *C) {
+func (s *TypesSuite) TestRepositoryServerDecode(c *check.C) {
 	rs, err := getRepositoryServerFromSpec([]byte(repoServerSpec))
-	c.Assert(err, IsNil)
-	c.Assert(rs, NotNil)
-	c.Assert(rs.Spec.Storage.SecretRef.Name, Equals, "test-s3-location")
-	c.Assert(rs.Spec.Storage.SecretRef.Namespace, Equals, "kanister")
-	c.Assert(rs.Spec.Storage.CredentialSecretRef.Name, Equals, "test-s3-creds")
-	c.Assert(rs.Spec.Storage.CredentialSecretRef.Namespace, Equals, "kanister")
-	c.Assert(rs.Spec.Repository.RootPath, Equals, "/test-repo-controller/")
-	c.Assert(rs.Spec.Repository.PasswordSecretRef.Name, Equals, "test-repo-pass")
-	c.Assert(rs.Spec.Repository.PasswordSecretRef.Namespace, Equals, "kanister")
-	c.Assert(rs.Spec.Repository.Username, Equals, "test-repository-user")
-	c.Assert(rs.Spec.Repository.Hostname, Equals, "localhost")
-	c.Assert(rs.Spec.Server.AdminSecretRef.Name, Equals, "test-repository-admin-user")
-	c.Assert(rs.Spec.Server.AdminSecretRef.Namespace, Equals, "kanister")
-	c.Assert(rs.Spec.Server.TLSSecretRef.Name, Equals, "test-repository-server-tls-cert")
-	c.Assert(rs.Spec.Server.TLSSecretRef.Namespace, Equals, "kanister")
-	c.Assert(rs.Spec.Server.UserAccess.UserAccessSecretRef.Name, Equals, "test-repository-server-user-access")
-	c.Assert(rs.Spec.Server.UserAccess.UserAccessSecretRef.Namespace, Equals, "kanister")
-	c.Assert(rs.Spec.Server.UserAccess.Username, Equals, "test-kanister-user")
+	c.Assert(err, check.IsNil)
+	c.Assert(rs, check.NotNil)
+	c.Assert(rs.Spec.Storage.SecretRef.Name, check.Equals, "test-s3-location")
+	c.Assert(rs.Spec.Storage.SecretRef.Namespace, check.Equals, "kanister")
+	c.Assert(rs.Spec.Storage.CredentialSecretRef.Name, check.Equals, "test-s3-creds")
+	c.Assert(rs.Spec.Storage.CredentialSecretRef.Namespace, check.Equals, "kanister")
+	c.Assert(rs.Spec.Repository.RootPath, check.Equals, "/test-repo-controller/")
+	c.Assert(rs.Spec.Repository.PasswordSecretRef.Name, check.Equals, "test-repo-pass")
+	c.Assert(rs.Spec.Repository.PasswordSecretRef.Namespace, check.Equals, "kanister")
+	c.Assert(rs.Spec.Repository.Username, check.Equals, "test-repository-user")
+	c.Assert(rs.Spec.Repository.Hostname, check.Equals, "localhost")
+	c.Assert(rs.Spec.Server.AdminSecretRef.Name, check.Equals, "test-repository-admin-user")
+	c.Assert(rs.Spec.Server.AdminSecretRef.Namespace, check.Equals, "kanister")
+	c.Assert(rs.Spec.Server.TLSSecretRef.Name, check.Equals, "test-repository-server-tls-cert")
+	c.Assert(rs.Spec.Server.TLSSecretRef.Namespace, check.Equals, "kanister")
+	c.Assert(rs.Spec.Server.UserAccess.UserAccessSecretRef.Name, check.Equals, "test-repository-server-user-access")
+	c.Assert(rs.Spec.Server.UserAccess.UserAccessSecretRef.Namespace, check.Equals, "kanister")
+	c.Assert(rs.Spec.Server.UserAccess.Username, check.Equals, "test-kanister-user")
 }
 
 func getRepositoryServerFromSpec(spec []byte) (*RepositoryServer, error) {

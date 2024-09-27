@@ -3,16 +3,16 @@ package tags
 import (
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type TagsSuite struct{}
 
-var _ = Suite(&TagsSuite{})
+var _ = check.Suite(&TagsSuite{})
 
-func (s *TagsSuite) TestSanitizeValueForGCP(c *C) {
+func (s *TagsSuite) TestSanitizeValueForGCP(c *check.C) {
 	for _, tc := range []struct {
 		input  string
 		output string
@@ -51,6 +51,6 @@ func (s *TagsSuite) TestSanitizeValueForGCP(c *C) {
 		},
 	} {
 		out := SanitizeValueForGCP(tc.input)
-		c.Assert(out, Equals, tc.output)
+		c.Assert(out, check.Equals, tc.output)
 	}
 }

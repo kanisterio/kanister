@@ -59,9 +59,8 @@ The TemplateParams struct has one field for each well known object type,
 which is effectively a union in go.
 
 Other than the types mentioned above, Kanister can also act on any
-Kubernetes object such as a CRD and the `object`{.interpreted-text
-role="ref"} field in TemplateParams is populated with the unstructured
-content of those.
+Kubernetes object such as a CRD and the [object](#object) field in
+TemplateParams is populated with the unstructured content of those.
 
 Each param struct described below is a set of useful fields related to
 the Object.
