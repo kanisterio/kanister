@@ -30,6 +30,7 @@ import (
 
 func TestNewS3(t *testing.T) { check.TestingT(t) }
 
+//nolint:unparam
 func newLocation(prefix, endpoint, region, bucket string, skipSSLVerify bool) internal.Location {
 	return internal.Location{
 		"prefix":        []byte(prefix),
