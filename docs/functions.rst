@@ -763,6 +763,9 @@ associated with an application. It takes individual snapshot
 of each PVC which can be then restored later. It generates an
 output that contains the Snapshot info required for restoring PVCs.
 
+.. warning::
+   The *CreateVolumeSnapshot* will be deprecated soon. We recommend using :ref:`createcsisnapshot` instead. CSI snapshotting should have better support for underlying storage providers.
+
 .. note::
    Currently we only support PVC snapshots on AWS EBS. Support for more storage
    providers is coming soon!
@@ -816,6 +819,10 @@ WaitForSnapshotCompletion
 This function is used to wait for completion of snapshot operations
 initiated using the :ref:`createvolumesnapshot` function.
 
+.. warning::
+   The *WaitForSnapshotCompletion* will be deprecated soon together with :ref:`createvolumesnapshot`.
+   We recommend using :ref:`createcsisnapshot` instead, which will wait for completion by default.
+
 Arguments:
 
 .. csv-table::
@@ -831,6 +838,10 @@ CreateVolumeFromSnapshot
 This function is used to restore one or more PVCs of an application from the
 snapshots taken using the :ref:`createvolumesnapshot` function. It deletes old
 PVCs, if present and creates new PVCs from the snapshots taken earlier.
+
+.. warning::
+   The *CreateVolumeFromSnapshot* will be deprecated soon together with :ref:`createvolumesnapshot`. We recommend using CSI snapshotting functions (:ref:`createcsisnapshot` and :ref:`restorecsisnapshot`) instead.
+   CSI snapshotting should have better support for underlying storage providers.
 
 Arguments:
 
@@ -877,6 +888,10 @@ DeleteVolumeSnapshot
 
 This function is used to delete snapshots of PVCs taken using the
 :ref:`createvolumesnapshot` function.
+
+.. warning::
+   The *DeleteVolumeSnapshot* will be deprecated soon together with :ref:`createvolumesnapshot`. We recommend using CSI snapshotting functions (:ref:`createcsisnapshot` and :ref:`deletecsisnapshot`) instead.
+   CSI snapshotting should have better support for underlying storage providers.
 
 Arguments:
 
@@ -1392,6 +1407,7 @@ Example:
               resource: namespaces
               name: "{{ .Namespace.Name }}"
 
+.. _createcsisnapshot:
 
 CreateCSISnapshot
 -----------------
@@ -1448,6 +1464,7 @@ Example:
           namespace: "{{ .PVC.Namespace }}"
           snapshotClass: do-block-storage
 
+.. _createcsisnapshotstatic:
 
 CreateCSISnapshotStatic
 -----------------------
@@ -1503,6 +1520,7 @@ Example:
           driver: hostpath.csi.k8s.io
           handle: 7bdd0de3-aaeb-11e8-9aae-0242ac110002
 
+.. _restorecsisnapshot:
 
 RestoreCSISnapshot
 ------------------
@@ -1549,6 +1567,7 @@ Example:
           accessModes: ["ReadWriteOnce"]
           volumeMode: "Filesystem"
 
+.. _deletecsisnapshot:
 
 DeleteCSISnapshot
 -----------------
@@ -1584,6 +1603,7 @@ Example:
           name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
           namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
 
+.. _deletecsisnapshotcontent:
 
 DeleteCSISnapshotContent
 ------------------------
