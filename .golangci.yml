@@ -41,7 +41,6 @@ issues:
     - path: '_test.go'
       linters:
         - unparam                       # Tests might have unused function parameters.
-        - lll
         - dupl
         - nestif
 
