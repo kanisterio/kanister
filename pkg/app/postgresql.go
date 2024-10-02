@@ -41,7 +41,7 @@ type PostgresDB struct {
 }
 
 // NewPostgresDB initialises an instance of Postgres DB
-// Last tested chart version "10.12.3". Also, we are using postgres version 13.4
+// Last tested chart version "15.5.38". Also, we are using postgres version 16
 func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
@@ -62,6 +62,9 @@ func NewPostgresDB(name string, subPath string) App {
 				"primary.containerSecurityContext.capabilities.add[1]":    "FOWNER",
 				"primary.containerSecurityContext.capabilities.add[2]":    "DAC_OVERRIDE",
 				"primary.containerSecurityContext.readOnlyRootFilesystem": "false",
+				// Update manually whenever a new version is release.
+				// TODO: Automate the update process for the image tag.
+				"image.tag": "16-bullseye",
 			},
 		},
 	}
