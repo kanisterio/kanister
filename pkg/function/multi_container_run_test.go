@@ -31,21 +31,21 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-var _ = Suite(&KubeTaskParallelSuite{})
+var _ = Suite(&MultiContainerRunSuite{})
 
-type KubeTaskParallelSuite struct {
+type MultiContainerRunSuite struct {
 	cli       kubernetes.Interface
 	namespace string
 }
 
-func (s *KubeTaskParallelSuite) SetUpSuite(c *C) {
+func (s *MultiContainerRunSuite) SetUpSuite(c *C) {
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.cli = cli
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "kanister-kubetaskparalleltest-",
+			GenerateName: "kanister-multicontainerruntest-",
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
@@ -57,26 +57,26 @@ func (s *KubeTaskParallelSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 }
 
-func (s *KubeTaskParallelSuite) TearDownSuite(c *C) {
+func (s *MultiContainerRunSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
-func kubeTaskParallelPhase(namespace string) crv1alpha1.BlueprintPhase {
+func multiContainerRunPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
-		Name: "testKubeTaskParallel",
-		Func: KubeTaskParallelFuncName,
+		Name: "testMultiContainerRun",
+		Func: MultiContainerRunFuncName,
 		Args: map[string]interface{}{
-			KubeTaskParallelNamespaceArg:       namespace,
-			KubeTaskParallelBackgroundImageArg: consts.LatestKanisterToolsImage,
-			KubeTaskParallelBackgroundCommandArg: []string{
+			MultiContainerRunNamespaceArg:       namespace,
+			MultiContainerRunBackgroundImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunBackgroundCommandArg: []string{
 				"sh",
 				"-c",
 				"echo foo > /tmp/file",
 			},
-			KubeTaskParallelOutputImageArg: consts.LatestKanisterToolsImage,
-			KubeTaskParallelOutputCommandArg: []string{
+			MultiContainerRunOutputImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunOutputCommandArg: []string{
 				"sh",
 				"-c",
 				"while [ ! -e /tmp/file  ]; do sleep 1; done; kando output value $(cat /tmp/file)",
@@ -85,7 +85,7 @@ func kubeTaskParallelPhase(namespace string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-func (s *KubeTaskParallelSuite) TestKubeTaskParallel(c *C) {
+func (s *MultiContainerRunSuite) TestMultiContainerRun(c *C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
@@ -111,7 +111,7 @@ func (s *KubeTaskParallelSuite) TestKubeTaskParallel(c *C) {
 		outs []map[string]interface{}
 	}{
 		{
-			bp: newTaskBlueprint(kubeTaskParallelPhase(s.namespace)),
+			bp: newTaskBlueprint(multiContainerRunPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				{
 					"value": "foo",
@@ -130,26 +130,26 @@ func (s *KubeTaskParallelSuite) TestKubeTaskParallel(c *C) {
 	}
 }
 
-func kubeTaskParallelPhaseWithInit(namespace string) crv1alpha1.BlueprintPhase {
+func multiContainerRunPhaseWithInit(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
-		Name: "testKubeTaskParallel",
-		Func: KubeTaskParallelFuncName,
+		Name: "testMultiContainerRun",
+		Func: MultiContainerRunFuncName,
 		Args: map[string]interface{}{
-			KubeTaskParallelNamespaceArg: namespace,
-			KubeTaskParallelInitImageArg: consts.LatestKanisterToolsImage,
-			KubeTaskParallelInitCommandArg: []string{
+			MultiContainerRunNamespaceArg: namespace,
+			MultiContainerRunInitImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunInitCommandArg: []string{
 				"sh",
 				"-c",
 				"mkfifo /tmp/file",
 			},
-			KubeTaskParallelBackgroundImageArg: consts.LatestKanisterToolsImage,
-			KubeTaskParallelBackgroundCommandArg: []string{
+			MultiContainerRunBackgroundImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunBackgroundCommandArg: []string{
 				"sh",
 				"-c",
 				"if [ ! -e /tmp/file  ]; then exit 1; fi; echo foo >> /tmp/file",
 			},
-			KubeTaskParallelOutputImageArg: consts.LatestKanisterToolsImage,
-			KubeTaskParallelOutputCommandArg: []string{
+			MultiContainerRunOutputImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunOutputCommandArg: []string{
 				"sh",
 				"-c",
 				"if [ ! -e /tmp/file  ]; then exit 1; fi; kando output value $(cat /tmp/file)",
@@ -158,7 +158,7 @@ func kubeTaskParallelPhaseWithInit(namespace string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-func (s *KubeTaskParallelSuite) TestKubeTaskParallelWithInit(c *C) {
+func (s *MultiContainerRunSuite) TestMultiContainerRunWithInit(c *C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
@@ -184,7 +184,7 @@ func (s *KubeTaskParallelSuite) TestKubeTaskParallelWithInit(c *C) {
 		outs []map[string]interface{}
 	}{
 		{
-			bp: newTaskBlueprint(kubeTaskParallelPhaseWithInit(s.namespace)),
+			bp: newTaskBlueprint(multiContainerRunPhaseWithInit(s.namespace)),
 			outs: []map[string]interface{}{
 				{
 					"value": "foo",

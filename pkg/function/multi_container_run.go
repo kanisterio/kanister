@@ -38,19 +38,19 @@ import (
 )
 
 const (
-	// KubeTaskParallelFuncName gives the function name
-	KubeTaskParallelFuncName             = "KubeTaskParallel"
-	KubeTaskParallelNamespaceArg         = "namespace"
-	KubeTaskParallelBackgroundImageArg   = "backgroundImage"
-	KubeTaskParallelBackgroundCommandArg = "backgroundCommand"
-	KubeTaskParallelOutputImageArg       = "outputImage"
-	KubeTaskParallelOutputCommandArg     = "outputCommand"
-	KubeTaskParallelVolumeMediumArg      = "sharedVolumeMedium"
-	KubeTaskParallelVolumeSizeLimitArg   = "sharedVolumeSizeLimit"
-	KubeTaskParallelSharedDirArg         = "sharedVolumeDir"
-	KubeTaskParallelPodOverrideArg       = "podOverride"
-	KubeTaskParallelInitImageArg         = "initImage"
-	KubeTaskParallelInitCommandArg       = "initCommand"
+	// MultiContainerRunFuncName gives the function name
+	MultiContainerRunFuncName             = "MultiContainerRun"
+	MultiContainerRunNamespaceArg         = "namespace"
+	MultiContainerRunBackgroundImageArg   = "backgroundImage"
+	MultiContainerRunBackgroundCommandArg = "backgroundCommand"
+	MultiContainerRunOutputImageArg       = "outputImage"
+	MultiContainerRunOutputCommandArg     = "outputCommand"
+	MultiContainerRunVolumeMediumArg      = "sharedVolumeMedium"
+	MultiContainerRunVolumeSizeLimitArg   = "sharedVolumeSizeLimit"
+	MultiContainerRunSharedDirArg         = "sharedVolumeDir"
+	MultiContainerRunPodOverrideArg       = "podOverride"
+	MultiContainerRunInitImageArg         = "initImage"
+	MultiContainerRunInitCommandArg       = "initCommand"
 )
 
 const (
@@ -61,12 +61,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&kubeTaskParallelFunc{})
+	_ = kanister.Register(&multiContainerRunFunc{})
 }
 
-var _ kanister.Func = (*kubeTaskParallelFunc)(nil)
+var _ kanister.Func = (*multiContainerRunFunc)(nil)
 
-type kubeTaskParallelFunc struct {
+type multiContainerRunFunc struct {
 	progressPercent   string
 	namespace         string
 	backgroundImage   string
@@ -83,11 +83,11 @@ type kubeTaskParallelFunc struct {
 	annotations       map[string]string
 }
 
-func (*kubeTaskParallelFunc) Name() string {
-	return KubeTaskParallelFuncName
+func (*multiContainerRunFunc) Name() string {
+	return MultiContainerRunFuncName
 }
 
-func (ktpf *kubeTaskParallelFunc) run(
+func (ktpf *multiContainerRunFunc) run(
 	ctx context.Context,
 	cli kubernetes.Interface,
 ) (map[string]interface{}, error) {
@@ -216,7 +216,7 @@ func getPodOutput(ctx context.Context, pc kube.PodController) (map[string]interf
 	return out, err
 }
 
-func (ktpf *kubeTaskParallelFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (ktpf *multiContainerRunFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	// Set progress percent
 	ktpf.progressPercent = progress.StartedPercent
 	defer func() { ktpf.progressPercent = progress.CompletedPercent }()
@@ -224,31 +224,31 @@ func (ktpf *kubeTaskParallelFunc) Exec(ctx context.Context, tp param.TemplatePar
 	var storageSizeString string
 	var bpAnnotations, bpLabels map[string]string
 	var err error
-	if err = Arg(args, KubeTaskParallelBackgroundImageArg, &ktpf.backgroundImage); err != nil {
+	if err = Arg(args, MultiContainerRunBackgroundImageArg, &ktpf.backgroundImage); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, KubeTaskParallelOutputImageArg, &ktpf.outputImage); err != nil {
+	if err = Arg(args, MultiContainerRunOutputImageArg, &ktpf.outputImage); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskParallelInitImageArg, &ktpf.initImage, ""); err != nil {
+	if err = OptArg(args, MultiContainerRunInitImageArg, &ktpf.initImage, ""); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, KubeTaskParallelBackgroundCommandArg, &ktpf.backgroundCommand); err != nil {
+	if err = Arg(args, MultiContainerRunBackgroundCommandArg, &ktpf.backgroundCommand); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, KubeTaskParallelOutputCommandArg, &ktpf.outputCommand); err != nil {
+	if err = Arg(args, MultiContainerRunOutputCommandArg, &ktpf.outputCommand); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskParallelInitCommandArg, &ktpf.initCommand, nil); err != nil {
+	if err = OptArg(args, MultiContainerRunInitCommandArg, &ktpf.initCommand, nil); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskParallelNamespaceArg, &ktpf.namespace, ""); err != nil {
+	if err = OptArg(args, MultiContainerRunNamespaceArg, &ktpf.namespace, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskParallelVolumeMediumArg, &ktpf.storageMedium, ""); err != nil {
+	if err = OptArg(args, MultiContainerRunVolumeMediumArg, &ktpf.storageMedium, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskParallelVolumeSizeLimitArg, &storageSizeString, ""); err != nil {
+	if err = OptArg(args, MultiContainerRunVolumeSizeLimitArg, &storageSizeString, ""); err != nil {
 		return nil, err
 	}
 	if storageSizeString != "" {
@@ -258,7 +258,7 @@ func (ktpf *kubeTaskParallelFunc) Exec(ctx context.Context, tp param.TemplatePar
 		}
 		ktpf.storageSizeLimit = &size
 	}
-	if err = OptArg(args, KubeTaskParallelSharedDirArg, &ktpf.storageDir, ktpDefaultSharedDir); err != nil {
+	if err = OptArg(args, MultiContainerRunSharedDirArg, &ktpf.storageDir, ktpDefaultSharedDir); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
@@ -268,7 +268,7 @@ func (ktpf *kubeTaskParallelFunc) Exec(ctx context.Context, tp param.TemplatePar
 		return nil, err
 	}
 
-	ktpf.podOverride, err = GetPodSpecOverride(tp, args, KubeTaskParallelPodOverrideArg)
+	ktpf.podOverride, err = GetPodSpecOverride(tp, args, MultiContainerRunPodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -297,34 +297,34 @@ func (ktpf *kubeTaskParallelFunc) Exec(ctx context.Context, tp param.TemplatePar
 	)
 }
 
-func (*kubeTaskParallelFunc) RequiredArgs() []string {
+func (*multiContainerRunFunc) RequiredArgs() []string {
 	return []string{
-		KubeTaskParallelBackgroundImageArg,
-		KubeTaskParallelBackgroundCommandArg,
-		KubeTaskParallelOutputImageArg,
-		KubeTaskParallelOutputCommandArg,
+		MultiContainerRunBackgroundImageArg,
+		MultiContainerRunBackgroundCommandArg,
+		MultiContainerRunOutputImageArg,
+		MultiContainerRunOutputCommandArg,
 	}
 }
 
-func (*kubeTaskParallelFunc) Arguments() []string {
+func (*multiContainerRunFunc) Arguments() []string {
 	return []string{
-		KubeTaskParallelNamespaceArg,
-		KubeTaskParallelInitImageArg,
-		KubeTaskParallelInitCommandArg,
-		KubeTaskParallelBackgroundImageArg,
-		KubeTaskParallelBackgroundCommandArg,
-		KubeTaskParallelOutputImageArg,
-		KubeTaskParallelOutputCommandArg,
-		KubeTaskParallelVolumeMediumArg,
-		KubeTaskParallelVolumeSizeLimitArg,
-		KubeTaskParallelSharedDirArg,
-		KubeTaskParallelPodOverrideArg,
+		MultiContainerRunNamespaceArg,
+		MultiContainerRunInitImageArg,
+		MultiContainerRunInitCommandArg,
+		MultiContainerRunBackgroundImageArg,
+		MultiContainerRunBackgroundCommandArg,
+		MultiContainerRunOutputImageArg,
+		MultiContainerRunOutputCommandArg,
+		MultiContainerRunVolumeMediumArg,
+		MultiContainerRunVolumeSizeLimitArg,
+		MultiContainerRunSharedDirArg,
+		MultiContainerRunPodOverrideArg,
 		PodLabelsArg,
 		PodAnnotationsArg,
 	}
 }
 
-func (ktpf *kubeTaskParallelFunc) Validate(args map[string]any) error {
+func (ktpf *multiContainerRunFunc) Validate(args map[string]any) error {
 	if err := ValidatePodLabelsAndAnnotations(ktpf.Name(), args); err != nil {
 		return err
 	}
@@ -336,7 +336,7 @@ func (ktpf *kubeTaskParallelFunc) Validate(args map[string]any) error {
 	return utils.CheckRequiredArgs(ktpf.RequiredArgs(), args)
 }
 
-func (k *kubeTaskParallelFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (k *multiContainerRunFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
 		ProgressPercent:    k.progressPercent,

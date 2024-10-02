@@ -129,9 +129,9 @@ Example:
         echo "Example"
 ```
 
-### KubeTaskParallel
+### MultiContainerRun
 
-KubeTaskParallel spins up a new pod with two containers connected via shared [emptyDir](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume.
+MultiContainerRun spins up a new pod with two containers connected via shared [emptyDir](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume.
 It's similar to KubeTask, but allows using multiple images to move backup data.
 "background" container is one responsible for generating data, while "output" container
 should export it to destination.
@@ -160,7 +160,7 @@ The function also supports an optional init container to set up the volume conte
 Example:
 
 ``` yaml
-- func: KubeTaskParallel
+- func: MultiContainerRun
   name: examplePhase
   args:
     namespace: "{{ .Deployment.Namespace }}"
