@@ -17,7 +17,7 @@ package discovery
 import (
 	"context"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"github.com/kanisterio/kanister/pkg/filter"
@@ -26,26 +26,26 @@ import (
 
 type CRDSuite struct{}
 
-var _ = Suite(&CRDSuite{})
+var _ = check.Suite(&CRDSuite{})
 
-func (s *CRDSuite) TestCRDMatcher(c *C) {
+func (s *CRDSuite) TestCRDMatcher(c *check.C) {
 	ctx := context.Background()
 	cfg, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	cli, err := crdclient.NewForConfig(cfg)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	g, err := CRDMatcher(ctx, cli)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	gvrs, err := NamespacedGVRs(ctx, cli.Discovery())
-	c.Assert(err, IsNil)
-	c.Assert(gvrs, Not(HasLen), 0)
+	c.Assert(err, check.IsNil)
+	c.Assert(gvrs, check.Not(check.HasLen), 0)
 
 	// We assume there's at least one CRD in the cluster.
 	igvrs := filter.GroupVersionResourceList(gvrs).Include(g)
 	egvrs := filter.GroupVersionResourceList(gvrs).Exclude(g)
-	c.Assert(igvrs, Not(HasLen), 0)
-	c.Assert(egvrs, Not(HasLen), 0)
-	c.Assert(len(igvrs)+len(egvrs), Equals, len(gvrs))
+	c.Assert(igvrs, check.Not(check.HasLen), 0)
+	c.Assert(egvrs, check.Not(check.HasLen), 0)
+	c.Assert(len(igvrs)+len(egvrs), check.Equals, len(gvrs))
 }

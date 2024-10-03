@@ -2,7 +2,7 @@ version: 2
 updates:
   - package-ecosystem: gomod
     directory: "/"
-    open-pull-requests-limit: 4
+    open-pull-requests-limit: 10
     schedule:
       interval: weekly
     commit-message:
@@ -38,9 +38,9 @@ updates:
         - "sigs.k8s.io/*"
   - package-ecosystem: github-actions
     directory: "/"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
     schedule:
-      interval: daily
+      interval: monthly
     commit-message:
       prefix: "deps(github):"
     groups:
@@ -54,13 +54,21 @@ updates:
 
   # Update pinned pip packages via requiements.txt
   - package-ecosystem: "pip"
-    schedule: weekly
+    schedule:
+      interval: weekly
     commit-message:
       prefix: "deps(docker,pip):"
     directories:
       - "/docker/build"
       - "/docker/postgres-kanister-tools"
       - "/docker/postgresql"
+    groups:
+      common-pip:
+        patterns:
+        - "pip"
+        - "setuptools"
+        - "wheel"
+        - "awscli"
 
   - package-ecosystem: "docker"
     schedule:
@@ -96,5 +104,3 @@ updates:
       - "/docker/mssql-tools"
       - "/docker/postgresql"
       - "/docker/redis-tools"
-
-

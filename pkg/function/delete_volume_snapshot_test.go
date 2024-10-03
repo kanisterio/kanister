@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -29,9 +29,9 @@ import (
 
 type DeleteVolumeSnapshotTestSuite struct{}
 
-var _ = Suite(&DeleteVolumeSnapshotTestSuite{})
+var _ = check.Suite(&DeleteVolumeSnapshotTestSuite{})
 
-func (s *DeleteVolumeSnapshotTestSuite) TestDeleteVolumeSnapshot(c *C) {
+func (s *DeleteVolumeSnapshotTestSuite) TestDeleteVolumeSnapshot(c *check.C) {
 	ctx := context.Background()
 	ns := "ns"
 	mockGetter := mockblockstorage.NewGetter()
@@ -59,36 +59,36 @@ func (s *DeleteVolumeSnapshotTestSuite) TestDeleteVolumeSnapshot(c *C) {
 	PVCData1 = append(PVCData1, volInfo1)
 	PVCData1 = append(PVCData1, volInfo2)
 	info, err := json.Marshal(PVCData1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	snapinfo := string(info)
 	for _, tc := range []struct {
 		snapshotinfo string
-		check        Checker
+		check        check.Checker
 	}{
 		{
 			snapshotinfo: snapinfo,
-			check:        IsNil,
+			check:        check.IsNil,
 		},
 	} {
 		providerList, err := deleteVolumeSnapshot(ctx, cli, ns, tc.snapshotinfo, profile, mockGetter)
-		c.Assert(providerList, Not(Equals), tc.check)
+		c.Assert(providerList, check.Not(check.Equals), tc.check)
 		c.Assert(err, tc.check)
 		if err != nil {
 			continue
 		}
-		c.Assert(len(providerList) == 2, Equals, true)
+		c.Assert(len(providerList) == 2, check.Equals, true)
 		provider, ok := providerList["pvc-1"]
-		c.Assert(ok, Equals, true)
-		c.Assert(len(provider.(*mockblockstorage.Provider).SnapIDList) == 1, Equals, true)
-		c.Assert(mockblockstorage.CheckID("snap-1", provider.(*mockblockstorage.Provider).SnapIDList), Equals, true)
-		c.Assert(len(provider.(*mockblockstorage.Provider).DeletedSnapIDList) == 1, Equals, true)
-		c.Assert(mockblockstorage.CheckID("snap-1", provider.(*mockblockstorage.Provider).DeletedSnapIDList), Equals, true)
+		c.Assert(ok, check.Equals, true)
+		c.Assert(len(provider.(*mockblockstorage.Provider).SnapIDList) == 1, check.Equals, true)
+		c.Assert(mockblockstorage.CheckID("snap-1", provider.(*mockblockstorage.Provider).SnapIDList), check.Equals, true)
+		c.Assert(len(provider.(*mockblockstorage.Provider).DeletedSnapIDList) == 1, check.Equals, true)
+		c.Assert(mockblockstorage.CheckID("snap-1", provider.(*mockblockstorage.Provider).DeletedSnapIDList), check.Equals, true)
 
 		provider, ok = providerList["pvc-2"]
-		c.Assert(ok, Equals, true)
-		c.Assert(len(provider.(*mockblockstorage.Provider).SnapIDList) == 1, Equals, true)
-		c.Assert(mockblockstorage.CheckID("snap-2", provider.(*mockblockstorage.Provider).SnapIDList), Equals, true)
-		c.Assert(len(provider.(*mockblockstorage.Provider).DeletedSnapIDList) == 1, Equals, true)
-		c.Assert(mockblockstorage.CheckID("snap-2", provider.(*mockblockstorage.Provider).DeletedSnapIDList), Equals, true)
+		c.Assert(ok, check.Equals, true)
+		c.Assert(len(provider.(*mockblockstorage.Provider).SnapIDList) == 1, check.Equals, true)
+		c.Assert(mockblockstorage.CheckID("snap-2", provider.(*mockblockstorage.Provider).SnapIDList), check.Equals, true)
+		c.Assert(len(provider.(*mockblockstorage.Provider).DeletedSnapIDList) == 1, check.Equals, true)
+		c.Assert(mockblockstorage.CheckID("snap-2", provider.(*mockblockstorage.Provider).DeletedSnapIDList), check.Equals, true)
 	}
 }

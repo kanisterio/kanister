@@ -18,17 +18,17 @@ import (
 	"strings"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
-func TestKopiaCommandWrappers(t *testing.T) { TestingT(t) }
+func TestKopiaCommandWrappers(t *testing.T) { check.TestingT(t) }
 
 type KopiaBlobTestSuite struct{}
 
-var _ = Suite(&KopiaBlobTestSuite{})
+var _ = check.Suite(&KopiaBlobTestSuite{})
 
-func (kBlob *KopiaBlobTestSuite) TestBlobCommands(c *C) {
+func (kBlob *KopiaBlobTestSuite) TestBlobCommands(c *check.C) {
 	commandArgs := &CommandArgs{
 		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
@@ -59,6 +59,6 @@ func (kBlob *KopiaBlobTestSuite) TestBlobCommands(c *C) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Assert(cmd, Equals, tc.expectedLog)
+		c.Assert(cmd, check.Equals, tc.expectedLog)
 	}
 }

@@ -21,6 +21,7 @@ and easy to install, operate and scale.
 
    overview
    install
+   rbac
    tutorial
    architecture
    tasks

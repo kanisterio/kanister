@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
 type FieldSuite struct{}
 
-var _ = Suite(&FieldSuite{})
+var _ = check.Suite(&FieldSuite{})
 
 func ExampleNew() {
 	f := field.New("foo", "bar")

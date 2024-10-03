@@ -18,14 +18,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type ErrorSuite struct{}
 
-var _ = Suite(&ErrorSuite{})
+var _ = check.Suite(&ErrorSuite{})
 
-func (s *ErrorSuite) TestIsError(c *C) {
+func (s *ErrorSuite) TestIsError(c *check.C) {
 	for _, tc := range []struct {
 		err error
 		is  bool
@@ -63,6 +63,6 @@ func (s *ErrorSuite) TestIsError(c *C) {
 			is:  false,
 		},
 	} {
-		c.Check(IsError(tc.err), Equals, tc.is)
+		c.Check(IsError(tc.err), check.Equals, tc.is)
 	}
 }

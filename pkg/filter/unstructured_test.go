@@ -15,16 +15,16 @@
 package filter
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type UnstructuredSuite struct {
 }
 
-var _ = Suite(&UnstructuredSuite{})
+var _ = check.Suite(&UnstructuredSuite{})
 
-func (s *UnstructuredSuite) TestIncludeExclude(c *C) {
+func (s *UnstructuredSuite) TestIncludeExclude(c *check.C) {
 	for _, tc := range []struct {
 		s       Specs
 		gvr     ResourceTypeMatcher
@@ -76,7 +76,7 @@ func (s *UnstructuredSuite) TestIncludeExclude(c *C) {
 			},
 		},
 	} {
-		c.Check(tc.s.Include(tc.gvr), DeepEquals, tc.include)
-		c.Check(tc.s.Exclude(tc.gvr), DeepEquals, tc.exclude)
+		c.Check(tc.s.Include(tc.gvr), check.DeepEquals, tc.include)
+		c.Check(tc.s.Exclude(tc.gvr), check.DeepEquals, tc.exclude)
 	}
 }

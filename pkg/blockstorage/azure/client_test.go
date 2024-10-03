@@ -21,23 +21,23 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type ClientSuite struct{}
 
-var _ = Suite(&ClientSuite{})
+var _ = check.Suite(&ClientSuite{})
 
-func (s *ClientSuite) SetUpSuite(c *C) {
+func (s *ClientSuite) SetUpSuite(c *check.C) {
 }
 
-func (s *ClientSuite) TestClient(c *C) {
+func (s *ClientSuite) TestClient(c *check.C) {
 	c.Skip("Until Azure will be fully integrated into build.sh")
 	config := make(map[string]string)
 	config[blockstorage.AzureSubscriptionID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureSubscriptionID)
@@ -47,18 +47,18 @@ func (s *ClientSuite) TestClient(c *C) {
 	config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
 	config[blockstorage.AzureCloudEnvironmentID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCloudEnvironmentID)
 	azCli, err := NewClient(context.Background(), config)
-	c.Assert(err, IsNil)
-	c.Assert(azCli.Cred, NotNil)
-	c.Assert(azCli.SubscriptionID, NotNil)
-	c.Assert(azCli.DisksClient, NotNil)
-	c.Assert(azCli.SnapshotsClient, NotNil)
-	c.Assert(azCli.DisksClient.NewListPager(nil), NotNil)
-	c.Assert(azCli.SKUsClient, NotNil)
-	c.Assert(azCli.SubscriptionsClient, NotNil)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(azCli.Cred, check.NotNil)
+	c.Assert(azCli.SubscriptionID, check.NotNil)
+	c.Assert(azCli.DisksClient, check.NotNil)
+	c.Assert(azCli.SnapshotsClient, check.NotNil)
+	c.Assert(azCli.DisksClient.NewListPager(nil), check.NotNil)
+	c.Assert(azCli.SKUsClient, check.NotNil)
+	c.Assert(azCli.SubscriptionsClient, check.NotNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s ClientSuite) TestGetRegions(c *C) {
+func (s ClientSuite) TestGetRegions(c *check.C) {
 	ctx := context.Background()
 	config := map[string]string{}
 	config[blockstorage.AzureSubscriptionID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureSubscriptionID)
@@ -69,29 +69,29 @@ func (s ClientSuite) TestGetRegions(c *C) {
 	// config[blockstorage.AzureCloudEnviornmentID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCloudEnviornmentID)
 
 	bsp, err := NewProvider(ctx, config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ads := bsp.(*AdStorage)
 
 	// get zones with other region
 	zones, err := ads.FromRegion(ctx, "eastus")
 	fmt.Println(zones)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	for _, zone := range zones {
-		c.Assert(strings.Contains(zone, "eastus"), Equals, true)
-		c.Assert(strings.Contains(zone, "westus"), Equals, false)
+		c.Assert(strings.Contains(zone, "eastus"), check.Equals, true)
+		c.Assert(strings.Contains(zone, "westus"), check.Equals, false)
 	}
 
 	regions, err := ads.GetRegions(ctx)
-	c.Assert(err, IsNil)
-	c.Assert(regions, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(regions, check.NotNil)
 }
 
-func (s *ClientSuite) TestGetCredConfig(c *C) {
+func (s *ClientSuite) TestGetCredConfig(c *check.C) {
 	for _, tc := range []struct {
 		name       string
 		env        Environment
 		config     map[string]string
-		errChecker Checker
+		errChecker check.Checker
 		expCCC     ClientCredentialsConfig
 	}{
 		{
@@ -111,7 +111,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 				Resource:     "aadrid",
 				AADEndpoint:  "aade",
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			name: "Test with client credential in configuration",
@@ -128,7 +128,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 				Resource:     cloud.AzurePublic.Services[cloud.ResourceManager].Endpoint,
 				AADEndpoint:  cloud.AzurePublic.ActiveDirectoryAuthorityHost,
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			name: "Test without AD in configuration",
@@ -147,7 +147,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 				Resource:     cloud.AzureGovernment.Services[cloud.ResourceManager].Endpoint,
 				AADEndpoint:  cloud.AzureGovernment.ActiveDirectoryAuthorityHost,
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			name: "Test with tenantid and clientid in configuration",
@@ -156,7 +156,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 				blockstorage.AzureTenantID: "atid",
 				blockstorage.AzureClientID: "acid",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{
 			name: "Test with tenantid in configuration",
@@ -164,23 +164,23 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
 			},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{
 			name:       "Test with nil configuration",
 			env:        USGovernmentCloud,
 			config:     map[string]string{},
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 	} {
 		ccc, err := getCredConfig(tc.env, tc.config)
 		c.Assert(err, tc.errChecker)
 		if err == nil {
-			c.Assert(ccc.ClientID, Equals, tc.expCCC.ClientID)
-			c.Assert(ccc.ClientSecret, Equals, tc.expCCC.ClientSecret)
-			c.Assert(ccc.TenantID, Equals, tc.expCCC.TenantID)
-			c.Assert(ccc.Resource, Equals, tc.expCCC.Resource)
-			c.Assert(ccc.AADEndpoint, Equals, tc.expCCC.AADEndpoint)
+			c.Assert(ccc.ClientID, check.Equals, tc.expCCC.ClientID)
+			c.Assert(ccc.ClientSecret, check.Equals, tc.expCCC.ClientSecret)
+			c.Assert(ccc.TenantID, check.Equals, tc.expCCC.TenantID)
+			c.Assert(ccc.Resource, check.Equals, tc.expCCC.Resource)
+			c.Assert(ccc.AADEndpoint, check.Equals, tc.expCCC.AADEndpoint)
 		}
 	}
 }

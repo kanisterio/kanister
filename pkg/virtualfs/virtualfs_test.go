@@ -17,36 +17,36 @@ package virtualfs
 import (
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type VirtualFSSuite struct{}
 
-var _ = Suite(&VirtualFSSuite{})
+var _ = check.Suite(&VirtualFSSuite{})
 
-func (s *VirtualFSSuite) TestNewDirectory(c *C) {
+func (s *VirtualFSSuite) TestNewDirectory(c *check.C) {
 	for _, tc := range []struct {
 		caseName string
 		rootName string
-		checker  Checker
+		checker  check.Checker
 	}{
 		{
 			caseName: "Root Directory success",
 			rootName: "root",
-			checker:  IsNil,
+			checker:  check.IsNil,
 		},
 		{
 			caseName: "Root directory with `/`",
 			rootName: "/root",
-			checker:  NotNil,
+			checker:  check.NotNil,
 		},
 	} {
 		r, err := NewDirectory(tc.rootName)
-		c.Check(err, tc.checker, Commentf("Case %s failed", tc.caseName))
+		c.Check(err, tc.checker, check.Commentf("Case %s failed", tc.caseName))
 		if err == nil {
-			c.Check(r.Name(), Equals, tc.rootName, Commentf("Case %s failed", tc.caseName))
+			c.Check(r.Name(), check.Equals, tc.rootName, check.Commentf("Case %s failed", tc.caseName))
 		}
 	}
 }

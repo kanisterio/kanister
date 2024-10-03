@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,49 +48,49 @@ const (
 	controllerSA = "controller-sa"
 )
 
-var _ = Suite(&PodSuite{})
+var _ = check.Suite(&PodSuite{})
 
-func (s *PodSuite) SetUpSuite(c *C) {
+func (s *PodSuite) SetUpSuite(c *check.C) {
 	var err error
 	s.cli, err = NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "podtest-",
 		},
 	}
 	ns, err = s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = ns.Name
 
 	err = os.Setenv("POD_NAMESPACE", ns.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.createServiceAccount(testSAName, s.namespace)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.createServiceAccount(controllerSA, s.namespace)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *PodSuite) TearDownSuite(c *C) {
+func (s *PodSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }
 
-func (s *PodSuite) TestPod(c *C) {
+func (s *PodSuite) TestPod(c *check.C) {
 	// get controllers's namespace
 	cns, err := GetControllerNamespace()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// get controller's SA
 	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	testSec := s.createTestSecret(c)
 	defer func() {
@@ -203,7 +203,7 @@ func (s *PodSuite) TestPod(c *C) {
 		// we have not specified the SA, if the pod is being created in the
 		// same ns as controller's, controller's SA should have been set.
 		if po.ServiceAccountName == "" && po.Namespace == cns {
-			c.Assert(pod.Spec.ServiceAccountName, Equals, sa)
+			c.Assert(pod.Spec.ServiceAccountName, check.Equals, sa)
 		} else {
 			var expectedSA string
 			if po.ServiceAccountName == "" {
@@ -211,58 +211,58 @@ func (s *PodSuite) TestPod(c *C) {
 			} else {
 				expectedSA = po.ServiceAccountName
 			}
-			c.Assert(pod.Spec.ServiceAccountName, Equals, expectedSA)
+			c.Assert(pod.Spec.ServiceAccountName, check.Equals, expectedSA)
 		}
 
 		if po.Annotations != nil {
-			c.Check(pod.ObjectMeta.Annotations, NotNil)
-			c.Check(pod.ObjectMeta.Annotations, DeepEquals, po.Annotations)
+			c.Check(pod.ObjectMeta.Annotations, check.NotNil)
+			c.Check(pod.ObjectMeta.Annotations, check.DeepEquals, po.Annotations)
 		}
 
 		if po.Name != "" {
-			c.Assert(pod.ObjectMeta.Name, Equals, po.Name)
+			c.Assert(pod.ObjectMeta.Name, check.Equals, po.Name)
 		}
 
-		c.Check(len(pod.ObjectMeta.Labels), Equals, len(po.Labels)+1)
-		c.Check(pod.ObjectMeta.Labels[consts.LabelKeyCreatedBy], Equals, consts.LabelValueKanister)
+		c.Check(len(pod.ObjectMeta.Labels), check.Equals, len(po.Labels)+1)
+		c.Check(pod.ObjectMeta.Labels[consts.LabelKeyCreatedBy], check.Equals, consts.LabelValueKanister)
 		for key, value := range po.Labels {
-			c.Check(pod.ObjectMeta.Labels[key], Equals, value)
+			c.Check(pod.ObjectMeta.Labels[key], check.Equals, value)
 		}
 
 		if po.Resources.Limits != nil {
-			c.Assert(pod.Spec.Containers[0].Resources.Limits, NotNil)
-			c.Assert(pod.Spec.Containers[0].Resources.Limits, DeepEquals, po.Resources.Limits)
+			c.Assert(pod.Spec.Containers[0].Resources.Limits, check.NotNil)
+			c.Assert(pod.Spec.Containers[0].Resources.Limits, check.DeepEquals, po.Resources.Limits)
 		}
 		if po.Resources.Requests != nil {
-			c.Assert(pod.Spec.Containers[0].Resources.Requests, NotNil)
-			c.Assert(pod.Spec.Containers[0].Resources.Requests, DeepEquals, po.Resources.Requests)
+			c.Assert(pod.Spec.Containers[0].Resources.Requests, check.NotNil)
+			c.Assert(pod.Spec.Containers[0].Resources.Requests, check.DeepEquals, po.Resources.Requests)
 		}
 
 		switch {
 		case po.ContainerName != "":
-			c.Assert(pod.Spec.Containers[0].Name, Equals, po.ContainerName)
+			c.Assert(pod.Spec.Containers[0].Name, check.Equals, po.ContainerName)
 		default:
-			c.Assert(pod.Spec.Containers[0].Name, Equals, DefaultContainerName)
+			c.Assert(pod.Spec.Containers[0].Name, check.Equals, DefaultContainerName)
 		}
 
 		switch {
 		case po.RestartPolicy == "":
-			c.Assert(pod.Spec.RestartPolicy, Equals, corev1.RestartPolicyNever)
+			c.Assert(pod.Spec.RestartPolicy, check.Equals, corev1.RestartPolicyNever)
 		default:
-			c.Assert(pod.Spec.RestartPolicy, Equals, po.RestartPolicy)
+			c.Assert(pod.Spec.RestartPolicy, check.Equals, po.RestartPolicy)
 		}
 
 		if po.EnvironmentVariables != nil && len(po.EnvironmentVariables) > 0 {
-			c.Assert(pod.Spec.Containers[0].Env, DeepEquals, po.EnvironmentVariables)
+			c.Assert(pod.Spec.Containers[0].Env, check.DeepEquals, po.EnvironmentVariables)
 		}
 
-		c.Assert(err, IsNil)
-		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), IsNil)
-		c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+		c.Assert(err, check.IsNil)
+		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), check.IsNil)
+		c.Assert(DeletePod(context.Background(), s.cli, pod), check.IsNil)
 	}
 }
 
-func (s *PodSuite) createTestSecret(c *C) *corev1.Secret {
+func (s *PodSuite) createTestSecret(c *check.C) *corev1.Secret {
 	testSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-secret-",
@@ -272,7 +272,7 @@ func (s *PodSuite) createTestSecret(c *C) *corev1.Secret {
 		},
 	}
 	testSecret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), testSecret, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	return testSecret
 }
 
@@ -289,7 +289,7 @@ func (s *PodSuite) createServiceAccount(name, ns string) error {
 	return nil
 }
 
-func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
+func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *check.C) {
 	cli := fake.NewSimpleClientset()
 	pvcName := "prometheus-ibm-monitoring-prometheus-db-prometheus-ibm-monitoring-prometheus-0"
 	pvc := &corev1.PersistentVolumeClaim{
@@ -306,7 +306,7 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 		},
 	}
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	vols := map[string]VolumeMountOptions{pvc.Name: {MountPath: "/mnt/data1", ReadOnly: PVCContainsReadOnlyAccessMode(pvc)}}
 	ctx := context.Background()
 	var p *corev1.Pod
@@ -330,15 +330,15 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
 	})
-	c.Assert(err, IsNil)
-	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
-	c.Assert(pod.Spec.Volumes, HasLen, 1)
-	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
-	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
-	c.Assert(len(pod.Spec.Containers[0].VolumeDevices), Equals, 0)
+	c.Assert(err, check.IsNil)
+	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), check.IsNil)
+	c.Assert(pod.Spec.Volumes, check.HasLen, 1)
+	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, check.Equals, pvcName)
+	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, check.Equals, "/mnt/data1")
+	c.Assert(len(pod.Spec.Containers[0].VolumeDevices), check.Equals, 0)
 }
 
-func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *C) {
+func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *check.C) {
 	cli := fake.NewSimpleClientset()
 	pvcName := "pvc-with-read-only-mount"
 	pvc := &corev1.PersistentVolumeClaim{
@@ -355,7 +355,7 @@ func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *C) {
 		},
 	}
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	vols := map[string]VolumeMountOptions{pvc.Name: {MountPath: "/mnt/data1", ReadOnly: PVCContainsReadOnlyAccessMode(pvc)}}
 	ctx := context.Background()
 	var p *corev1.Pod
@@ -379,15 +379,15 @@ func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *C) {
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
 	})
-	c.Assert(err, IsNil)
-	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
-	c.Assert(pod.Spec.Volumes, HasLen, 1)
-	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
-	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
-	c.Assert(len(pod.Spec.Containers[0].VolumeDevices), Equals, 0)
+	c.Assert(err, check.IsNil)
+	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), check.IsNil)
+	c.Assert(pod.Spec.Volumes, check.HasLen, 1)
+	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, check.Equals, pvcName)
+	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, check.Equals, "/mnt/data1")
+	c.Assert(len(pod.Spec.Containers[0].VolumeDevices), check.Equals, 0)
 }
 
-func (s *PodSuite) TestPodWithBlockModeVolumes(c *C) {
+func (s *PodSuite) TestPodWithBlockModeVolumes(c *check.C) {
 	cli := fake.NewSimpleClientset()
 	pvcName := "block-mode-volume"
 	blockMode := corev1.PersistentVolumeBlock
@@ -406,7 +406,7 @@ func (s *PodSuite) TestPodWithBlockModeVolumes(c *C) {
 		},
 	}
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	vols := map[string]string{pvc.Name: "/mnt/data1"}
 	ctx := context.Background()
 	var p *corev1.Pod
@@ -430,15 +430,15 @@ func (s *PodSuite) TestPodWithBlockModeVolumes(c *C) {
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		BlockVolumes: vols,
 	})
-	c.Assert(err, IsNil)
-	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
-	c.Assert(pod.Spec.Volumes, HasLen, 1)
-	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
-	c.Assert(len(pod.Spec.Containers[0].VolumeMounts), Equals, 0)
-	c.Assert(pod.Spec.Containers[0].VolumeDevices[0].DevicePath, Equals, "/mnt/data1")
+	c.Assert(err, check.IsNil)
+	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), check.IsNil)
+	c.Assert(pod.Spec.Volumes, check.HasLen, 1)
+	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, check.Equals, pvcName)
+	c.Assert(len(pod.Spec.Containers[0].VolumeMounts), check.Equals, 0)
+	c.Assert(pod.Spec.Containers[0].VolumeDevices[0].DevicePath, check.Equals, "/mnt/data1")
 }
 
-func (s *PodSuite) TestGetPodLogs(c *C) {
+func (s *PodSuite) TestGetPodLogs(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	pod, err := CreatePod(context.Background(), s.cli, &PodOptions{
@@ -454,20 +454,20 @@ func (s *PodSuite) TestGetPodLogs(c *C) {
 			}},
 		},
 	})
-	c.Assert(err, IsNil)
-	c.Assert(WaitForPodCompletion(ctx, s.cli, s.namespace, pod.Name), IsNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(WaitForPodCompletion(ctx, s.cli, s.namespace, pod.Name), check.IsNil)
 	logs, err := GetPodLogs(ctx, s.cli, s.namespace, pod.Name, pod.Spec.Containers[0].Name)
-	c.Assert(err, IsNil)
-	c.Assert(strings.Contains(logs, "hello"), Equals, true)
-	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(strings.Contains(logs, "hello"), check.Equals, true)
+	c.Assert(DeletePod(context.Background(), s.cli, pod), check.IsNil)
 }
 
-func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
+func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 	defaultSpecs := corev1.PodSpec{
 		Containers: []corev1.Container{
 			{
 				Name:            "container",
-				Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
+				Image:           "ghcr.io/kanisterio/kanister-tools:0.111.0",
 				Command:         []string{"sh", "-c", "echo in default specs"},
 				ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 				VolumeMounts: []corev1.VolumeMount{
@@ -513,7 +513,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.111.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -553,7 +553,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.111.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -607,7 +607,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.111.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -668,7 +668,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.111.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -731,7 +731,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.111.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -771,7 +771,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.111.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -814,7 +814,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.110.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.111.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -844,25 +844,25 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 	// Run tests
 	for _, test := range tests {
 		override, err := CreateAndMergeJSONPatch(test.BlueprintPodSpecs, test.ActionsetPodSpecs)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		podSpec, err := patchDefaultPodSpecs(defaultSpecs, override)
-		c.Assert(err, IsNil)
-		c.Assert(podSpec, DeepEquals, test.Expected)
+		c.Assert(err, check.IsNil)
+		c.Assert(podSpec, check.DeepEquals, test.Expected)
 	}
 }
 
-func (s *PodSuite) TestGetPodReadyWaitTimeout(c *C) {
+func (s *PodSuite) TestGetPodReadyWaitTimeout(c *check.C) {
 	// Setup ENV to change the default timeout
 	err := os.Setenv(PodReadyWaitTimeoutEnv, "5")
-	c.Assert(err, IsNil)
-	c.Assert(GetPodReadyWaitTimeout(), Equals, time.Minute*5)
+	c.Assert(err, check.IsNil)
+	c.Assert(GetPodReadyWaitTimeout(), check.Equals, time.Minute*5)
 	err = os.Unsetenv(PodReadyWaitTimeoutEnv)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	// Check without ENV set
-	c.Assert(GetPodReadyWaitTimeout(), Equals, DefaultPodReadyWaitTimeout)
+	c.Assert(GetPodReadyWaitTimeout(), check.Equals, DefaultPodReadyWaitTimeout)
 }
 
-func (s *PodSuite) TestSetPodSecurityContext(c *C) {
+func (s *PodSuite) TestSetPodSecurityContext(c *check.C) {
 	po := &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
@@ -876,15 +876,15 @@ func (s *PodSuite) TestSetPodSecurityContext(c *C) {
 	}
 
 	pod, err := CreatePod(context.Background(), s.cli, po)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	runAsNonRootExpected := true
-	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
+	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, check.DeepEquals, &runAsNonRootExpected)
 	var uidAndGIDExpected int64 = 1000
-	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGIDExpected)
-	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGIDExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, check.DeepEquals, uidAndGIDExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, check.DeepEquals, uidAndGIDExpected)
 }
 
-func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
+func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *check.C) {
 	po := &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
@@ -905,15 +905,15 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 	}
 
 	pod, err := CreatePod(context.Background(), s.cli, po)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	runAsNonRootExpected := true
-	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
+	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, check.DeepEquals, &runAsNonRootExpected)
 	var uidAndGIDExpected int64 = 1000
-	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGIDExpected)
-	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGIDExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, check.DeepEquals, uidAndGIDExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, check.DeepEquals, uidAndGIDExpected)
 }
 
-func (s *PodSuite) TestSetLifecycleHook(c *C) {
+func (s *PodSuite) TestSetLifecycleHook(c *check.C) {
 	lch := &corev1.Lifecycle{
 		PostStart: &corev1.LifecycleHandler{
 			Exec: &corev1.ExecAction{
@@ -931,11 +931,11 @@ func (s *PodSuite) TestSetLifecycleHook(c *C) {
 	}
 
 	pod, err := CreatePod(context.Background(), s.cli, po)
-	c.Assert(err, IsNil)
-	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
+	c.Assert(err, check.IsNil)
+	c.Assert(pod.Spec.Containers[0].Lifecycle, check.DeepEquals, lch)
 }
 
-func (s *PodSuite) TestGetRedactedOptions(c *C) {
+func (s *PodSuite) TestGetRedactedOptions(c *check.C) {
 	opts := &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
@@ -960,15 +960,15 @@ func (s *PodSuite) TestGetRedactedOptions(c *C) {
 
 	po1 := getRedactedOptions(opts)
 
-	c.Assert(po1.Namespace, Equals, opts.Namespace)
-	c.Assert(po1.GenerateName, Equals, opts.GenerateName)
-	c.Assert(po1.Image, Equals, opts.Image)
-	c.Assert(po1.Command, DeepEquals, []string{redactedValue, redactedValue, redactedValue})
-	c.Assert(po1.EnvironmentVariables, DeepEquals, []corev1.EnvVar{
+	c.Assert(po1.Namespace, check.Equals, opts.Namespace)
+	c.Assert(po1.GenerateName, check.Equals, opts.GenerateName)
+	c.Assert(po1.Image, check.Equals, opts.Image)
+	c.Assert(po1.Command, check.DeepEquals, []string{redactedValue, redactedValue, redactedValue})
+	c.Assert(po1.EnvironmentVariables, check.DeepEquals, []corev1.EnvVar{
 		{Name: "abc", Value: redactedValue},
 		{Name: "ooo", Value: redactedValue},
 	})
-	c.Assert(po1.PodOverride, DeepEquals, crv1alpha1.JSONMap{
+	c.Assert(po1.PodOverride, check.DeepEquals, crv1alpha1.JSONMap{
 		"containers": []corev1.Container{{
 			Name:    "sidecar",
 			Image:   consts.LatestKanisterToolsImage,
@@ -990,17 +990,17 @@ func (s *PodSuite) TestGetRedactedOptions(c *C) {
 		},
 	})
 
-	c.Assert(po2.Namespace, Equals, s.namespace)
-	c.Assert(po2.Image, Equals, consts.LatestKanisterToolsImage)
-	c.Assert(po2.Command, IsNil)
-	c.Assert(po2.EnvironmentVariables, IsNil)
-	c.Assert(po2.PodOverride, DeepEquals, crv1alpha1.JSONMap{
+	c.Assert(po2.Namespace, check.Equals, s.namespace)
+	c.Assert(po2.Image, check.Equals, consts.LatestKanisterToolsImage)
+	c.Assert(po2.Command, check.IsNil)
+	c.Assert(po2.EnvironmentVariables, check.IsNil)
+	c.Assert(po2.PodOverride, check.DeepEquals, crv1alpha1.JSONMap{
 		"volumes":    []corev1.Volume{{Name: "Fake volume"}},
 		"containers": 123,
 	})
 }
 
-func (s *PodSuite) TestGetRedactedPod(c *C) {
+func (s *PodSuite) TestGetRedactedPod(c *check.C) {
 	pod := &corev1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Some kind",
@@ -1032,9 +1032,9 @@ func (s *PodSuite) TestGetRedactedPod(c *C) {
 
 	p1 := getRedactedPod(pod)
 
-	c.Assert(p1.TypeMeta, DeepEquals, pod.TypeMeta)
-	c.Assert(len(p1.Spec.Containers), Equals, len(pod.Spec.Containers))
-	c.Assert(p1.Spec.Containers, DeepEquals, []corev1.Container{
+	c.Assert(p1.TypeMeta, check.DeepEquals, pod.TypeMeta)
+	c.Assert(len(p1.Spec.Containers), check.Equals, len(pod.Spec.Containers))
+	c.Assert(p1.Spec.Containers, check.DeepEquals, []corev1.Container{
 		{
 			Name:  "c1",
 			Image: "img1",
@@ -1056,7 +1056,7 @@ func (s *PodSuite) TestGetRedactedPod(c *C) {
 	})
 }
 
-func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
+func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *check.C) {
 	for _, tc := range []struct {
 		podOptsContainerName  string
 		expectedContainerName string
@@ -1073,17 +1073,17 @@ func (s *PodControllerTestSuite) TestContainerNameFromPodOptsOrDefault(c *C) {
 		name := ContainerNameFromPodOptsOrDefault(&PodOptions{
 			ContainerName: tc.podOptsContainerName,
 		})
-		c.Assert(name, Equals, tc.expectedContainerName)
+		c.Assert(name, check.Equals, tc.expectedContainerName)
 	}
 
 	name := ContainerNameFromPodOptsOrDefault(&PodOptions{})
-	c.Assert(name, Equals, DefaultContainerName)
+	c.Assert(name, check.Equals, DefaultContainerName)
 
 	name = ContainerNameFromPodOptsOrDefault(nil)
-	c.Assert(name, Equals, DefaultContainerName)
+	c.Assert(name, check.Equals, DefaultContainerName)
 }
 
-func (s *PodSuite) TestAddLabels(c *C) {
+func (s *PodSuite) TestAddLabels(c *check.C) {
 	for _, tc := range []struct {
 		podOptions         *PodOptions
 		labels             map[string]string
@@ -1160,11 +1160,11 @@ func (s *PodSuite) TestAddLabels(c *C) {
 		},
 	} {
 		tc.podOptions.AddLabels(tc.labels)
-		c.Assert(tc.podOptions, DeepEquals, tc.expectedPodOptions)
+		c.Assert(tc.podOptions, check.DeepEquals, tc.expectedPodOptions)
 	}
 }
 
-func (s *PodSuite) TestAddAnnotations(c *C) {
+func (s *PodSuite) TestAddAnnotations(c *check.C) {
 	for _, tc := range []struct {
 		podOptions         *PodOptions
 		annotations        map[string]string
@@ -1241,6 +1241,6 @@ func (s *PodSuite) TestAddAnnotations(c *C) {
 		},
 	} {
 		tc.podOptions.AddAnnotations(tc.annotations)
-		c.Assert(tc.podOptions, DeepEquals, tc.expectedPodOptions)
+		c.Assert(tc.podOptions, check.DeepEquals, tc.expectedPodOptions)
 	}
 }
