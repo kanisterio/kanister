@@ -172,7 +172,7 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 	}
 
 	// Patch default Pod Specs if needed
-	patchedSpecs, err := patchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
+	patchedSpecs, err := PatchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create pod. Failed to override pod specs.", "namespace", opts.Namespace, "nameFmt", opts.GenerateName)
 	}
@@ -515,8 +515,8 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 	return errkit.Wrap(err, errorMessage)
 }
 
-// use Strategic Merge to patch default pod specs with the passed specs
-func patchDefaultPodSpecs(defaultPodSpecs corev1.PodSpec, override crv1alpha1.JSONMap) (corev1.PodSpec, error) {
+// PatchDefaultPodSpecs paches default pod specs with the passed override using Strategic Merge.
+func PatchDefaultPodSpecs(defaultPodSpecs corev1.PodSpec, override crv1alpha1.JSONMap) (corev1.PodSpec, error) {
 	// Merge default specs and override specs with StrategicMergePatch
 	mergedPatch, err := strategicMergeJSONPatch(defaultPodSpecs, override)
 	if err != nil {

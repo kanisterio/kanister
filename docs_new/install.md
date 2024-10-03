@@ -7,15 +7,16 @@ tool to target the Kubernetes cluster you want to install Kanister on.
 Start by adding the Kanister repository to your local setup:
 
 ``` bash
-helm repo add kanister <https://charts.kanister.io/>
+helm repo add kanister https://charts.kanister.io/
 ```
 
 Use the `helm install` command to install Kanister in the `kanister`
 namespace:
 
 ``` bash
-helm -n kanister upgrade \--install kanister \--create-namespace
-kanister/kanister-operator
+helm -n kanister upgrade \
+--install kanister \
+--create-namespace kanister/kanister-operator
 ```
 
 Confirm that the Kanister workloads are ready:
@@ -72,8 +73,10 @@ you will have to install Kanister with the
 `--set controller.updateCRDs=false` option:
 
 ``` bash
-helm -n kanister upgade \--install kanister \--create-namespace
-kanister/kanister-operator \--set controller.updateCRDs=false
+helm -n kanister upgrade \
+--install kanister \
+--create-namespace kanister/kanister-operator \
+--set controller.updateCRDs=false
 ```
 
 This option lets Helm manage the CRD resources.
@@ -101,10 +104,10 @@ Install Kanister, providing the PEM-encoded CA bundle and the
 `tls` secret name like below:
 
 ``` bash
-helm upgrade \--install kanister kanister/kanister-operator \--namespace
-kanister \--create-namespace \--set bpValidatingWebhook.tls.mode=custom
-\--set bpValidatingWebhook.tls.caBundle=\$(cat /path/to/ca.pem \| base64
--w 0) \--set bpValidatingWebhook.tls.secretName=tls-secret
+helm upgrade --install kanister kanister/kanister-operator --namespace kanister --create-namespace \
+--set bpValidatingWebhook.tls.mode=custom \
+--set bpValidatingWebhook.tls.caBundle=$(cat /path/to/ca.pem | base64 -w 0) \
+--set bpValidatingWebhook.tls.secretName=tls-secret
 ```
 
 ## Building and Deploying from Source
