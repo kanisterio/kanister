@@ -17,7 +17,7 @@ package restic
 import (
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -28,27 +28,27 @@ import (
 
 type ResticDataSuite struct{}
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
-var _ = Suite(&ResticDataSuite{})
+var _ = check.Suite(&ResticDataSuite{})
 
-func (s *ResticDataSuite) TestGetSnapshotIDFromTag(c *C) {
+func (s *ResticDataSuite) TestGetSnapshotIDFromTag(c *check.C) {
 	for _, tc := range []struct {
 		log      string
 		expected string
-		checker  Checker
+		checker  check.Checker
 	}{
-		{log: `[{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb9"}]`, expected: "7c0bfeb9", checker: IsNil},
-		{log: `[{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb9"},{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb9"}]`, expected: "7c0bfeb9", checker: IsNil},
-		{log: `null`, expected: "", checker: NotNil},
+		{log: `[{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb9"}]`, expected: "7c0bfeb9", checker: check.IsNil},
+		{log: `[{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb9"},{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb9"}]`, expected: "7c0bfeb9", checker: check.IsNil},
+		{log: `null`, expected: "", checker: check.NotNil},
 	} {
 		id, err := SnapshotIDFromSnapshotLog(tc.log)
 		c.Assert(err, tc.checker)
-		c.Assert(id, Equals, tc.expected)
+		c.Assert(id, check.Equals, tc.expected)
 	}
 }
 
-func (s *ResticDataSuite) TestGetSnapshotID(c *C) {
+func (s *ResticDataSuite) TestGetSnapshotID(c *check.C) {
 	for _, tc := range []struct {
 		log      string
 		expected string
@@ -59,11 +59,11 @@ func (s *ResticDataSuite) TestGetSnapshotID(c *C) {
 		{"snapshot abc123\n saved", ""},
 	} {
 		id := SnapshotIDFromBackupLog(tc.log)
-		c.Check(id, Equals, tc.expected, Commentf("Failed for log: %s", tc.log))
+		c.Check(id, check.Equals, tc.expected, check.Commentf("Failed for log: %s", tc.log))
 	}
 }
 
-func (s *ResticDataSuite) TestResticArgs(c *C) {
+func (s *ResticDataSuite) TestResticArgs(c *check.C) {
 	for _, tc := range []struct {
 		profile  *param.Profile
 		repo     string
@@ -227,15 +227,15 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 		},
 	} {
 		args, err := resticArgs(tc.profile, tc.repo, tc.password)
-		c.Assert(err, IsNil)
-		c.Assert(args, DeepEquals, tc.expected)
+		c.Assert(err, check.IsNil)
+		c.Assert(args, check.DeepEquals, tc.expected)
 	}
 }
 
-func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
+func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *check.C) {
 	for _, tc := range []struct {
 		profile *param.Profile
-		output  Checker
+		output  check.Checker
 	}{
 		{
 			profile: &param.Profile{
@@ -255,7 +255,7 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 					},
 				},
 			},
-			output: IsNil,
+			output: check.IsNil,
 		},
 		{
 			profile: &param.Profile{
@@ -275,7 +275,7 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 					},
 				},
 			},
-			output: NotNil,
+			output: check.NotNil,
 		},
 	} {
 		_, err := resticArgs(tc.profile, "repo", "my-secret")
@@ -283,7 +283,7 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 	}
 }
 
-func (s *ResticDataSuite) TestGetSnapshotStatsFromStatsLog(c *C) {
+func (s *ResticDataSuite) TestGetSnapshotStatsFromStatsLog(c *check.C) {
 	for _, tc := range []struct {
 		log          string
 		expectedfc   string
@@ -296,12 +296,12 @@ func (s *ResticDataSuite) TestGetSnapshotStatsFromStatsLog(c *C) {
 		{log: "    Total Size:   10.322 KiB", expectedfc: "", expectedsize: "10.322 KiB"},
 	} {
 		_, fc, s := SnapshotStatsFromStatsLog(tc.log)
-		c.Assert(fc, Equals, tc.expectedfc)
-		c.Assert(s, Equals, tc.expectedsize)
+		c.Assert(fc, check.Equals, tc.expectedfc)
+		c.Assert(s, check.Equals, tc.expectedsize)
 	}
 }
 
-func (s *ResticDataSuite) TestGetSnapshotStatsModeFromStatsLog(c *C) {
+func (s *ResticDataSuite) TestGetSnapshotStatsModeFromStatsLog(c *check.C) {
 	for _, tc := range []struct {
 		log      string
 		expected string
@@ -314,11 +314,11 @@ func (s *ResticDataSuite) TestGetSnapshotStatsModeFromStatsLog(c *C) {
 		{log: "sudhufehfuijbfjbruifhoiwhf", expected: ""},
 	} {
 		mode := SnapshotStatsModeFromStatsLog(tc.log)
-		c.Assert(mode, Equals, tc.expected)
+		c.Assert(mode, check.Equals, tc.expected)
 	}
 }
 
-func (s *ResticDataSuite) TestIsPasswordIncorrect(c *C) {
+func (s *ResticDataSuite) TestIsPasswordIncorrect(c *check.C) {
 	for _, tc := range []struct {
 		log      string
 		expected bool
@@ -330,11 +330,11 @@ Is there a repository at the following location?
 s3:s3.amazonaws.com/abhdbhf/foodbar`, expected: false},
 	} {
 		output := IsPasswordIncorrect(tc.log)
-		c.Assert(output, Equals, tc.expected)
+		c.Assert(output, check.Equals, tc.expected)
 	}
 }
 
-func (s *ResticDataSuite) TestDoesRepoExist(c *C) {
+func (s *ResticDataSuite) TestDoesRepoExist(c *check.C) {
 	for _, tc := range []struct {
 		log      string
 		expected bool
@@ -346,11 +346,11 @@ Is there a repository at the following location?
 s3:s3.amazonaws.com/abhdbhf/foodbar`, expected: true},
 	} {
 		output := DoesRepoExist(tc.log)
-		c.Assert(output, Equals, tc.expected)
+		c.Assert(output, check.Equals, tc.expected)
 	}
 }
 
-func (s *ResticDataSuite) TestGetSnapshotStatsFromBackupLog(c *C) {
+func (s *ResticDataSuite) TestGetSnapshotStatsFromBackupLog(c *check.C) {
 	for _, tc := range []struct {
 		log          string
 		expectedfc   string
@@ -410,13 +410,13 @@ func (s *ResticDataSuite) TestGetSnapshotStatsFromBackupLog(c *C) {
 	} {
 		c.Log(tc.log)
 		fc, s, phy := SnapshotStatsFromBackupLog(tc.log)
-		c.Check(fc, Equals, tc.expectedfc)
-		c.Check(s, Equals, tc.expectedsize)
-		c.Check(phy, Equals, tc.expectedphy)
+		c.Check(fc, check.Equals, tc.expectedfc)
+		c.Check(s, check.Equals, tc.expectedsize)
+		c.Check(phy, check.Equals, tc.expectedphy)
 	}
 }
 
-func (s *ResticDataSuite) TestGetSpaceFreedFromPruneLog(c *C) {
+func (s *ResticDataSuite) TestGetSpaceFreedFromPruneLog(c *check.C) {
 	for _, tc := range []struct {
 		log                string
 		expectedSpaceFreed string
@@ -452,11 +452,11 @@ func (s *ResticDataSuite) TestGetSpaceFreedFromPruneLog(c *C) {
 		{log: "Some unrelated log in the same line, will delete 100 packs and rewrite 100 packs, this frees 11.235 B", expectedSpaceFreed: ""},
 	} {
 		spaceFreed := SpaceFreedFromPruneLog(tc.log)
-		c.Check(spaceFreed, Equals, tc.expectedSpaceFreed)
+		c.Check(spaceFreed, check.Equals, tc.expectedSpaceFreed)
 	}
 }
 
-func (s *ResticDataSuite) TestResticSizeStringParser(c *C) {
+func (s *ResticDataSuite) TestResticSizeStringParser(c *check.C) {
 	for _, tc := range []struct {
 		input         string
 		expectedSizeB int64
@@ -487,6 +487,6 @@ func (s *ResticDataSuite) TestResticSizeStringParser(c *C) {
 		{input: "GiB 1.1235", expectedSizeB: 0},
 	} {
 		parsedSize := ParseResticSizeStringBytes(tc.input)
-		c.Check(parsedSize, Equals, tc.expectedSizeB)
+		c.Check(parsedSize, check.Equals, tc.expectedSizeB)
 	}
 }

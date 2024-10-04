@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -30,9 +30,9 @@ import (
 
 type WaitForSnapshotCompletionTestSuite struct{}
 
-var _ = Suite(&WaitForSnapshotCompletionTestSuite{})
+var _ = check.Suite(&WaitForSnapshotCompletionTestSuite{})
 
-func (s *WaitForSnapshotCompletionTestSuite) TestWaitwithRole(c *C) {
+func (s *WaitForSnapshotCompletionTestSuite) TestWaitwithRole(c *check.C) {
 	ctx := context.Background()
 	mockGetter := mockblockstorage.NewGetter()
 	pvcData1 := []VolumeSnapshotInfo{
@@ -40,16 +40,16 @@ func (s *WaitForSnapshotCompletionTestSuite) TestWaitwithRole(c *C) {
 		{SnapshotID: "snap-2", Type: blockstorage.TypeEBS, Region: "us-west-2", PVCName: "pvc-2", Az: "us-west-2a", VolumeType: "ssd"},
 	}
 	info, err := json.Marshal(pvcData1)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	snapinfo := string(info)
 	for _, tc := range []struct {
 		snapshotinfo string
-		check        Checker
+		check        check.Checker
 		profile      *param.Profile
 	}{
 		{
 			snapshotinfo: snapinfo,
-			check:        IsNil,
+			check:        check.IsNil,
 			profile: &param.Profile{
 				Location: crv1alpha1.Location{
 					Type:   crv1alpha1.LocationTypeS3Compliant,
@@ -66,7 +66,7 @@ func (s *WaitForSnapshotCompletionTestSuite) TestWaitwithRole(c *C) {
 		},
 		{
 			snapshotinfo: snapinfo,
-			check:        IsNil,
+			check:        check.IsNil,
 			profile: &param.Profile{
 				Location: crv1alpha1.Location{
 					Type:   crv1alpha1.LocationTypeS3Compliant,

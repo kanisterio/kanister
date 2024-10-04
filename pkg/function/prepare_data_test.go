@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -30,7 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
-var _ = Suite(&PrepareDataSuite{})
+var _ = check.Suite(&PrepareDataSuite{})
 
 const (
 	deployment  = "Deployment"
@@ -42,9 +42,9 @@ type PrepareDataSuite struct {
 	namespace string
 }
 
-func (s *PrepareDataSuite) SetUpSuite(c *C) {
+func (s *PrepareDataSuite) SetUpSuite(c *check.C) {
 	cli, err := kube.NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cli = cli
 
 	ns := &corev1.Namespace{
@@ -53,11 +53,11 @@ func (s *PrepareDataSuite) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 }
 
-func (s *PrepareDataSuite) TearDownSuite(c *C) {
+func (s *PrepareDataSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -114,10 +114,10 @@ func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *PrepareDataSuite) TestPrepareData(c *C) {
+func (s *PrepareDataSuite) TestPrepareData(c *check.C) {
 	pvc := testutil.NewTestPVC()
 	createdPVC, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	ctx := context.Background()
 	for _, kind := range []string{deployment, statefulset} {
@@ -145,10 +145,10 @@ func (s *PrepareDataSuite) TestPrepareData(c *C) {
 		action := "test"
 		bp := newPrepareDataBlueprint(kind, createdPVC.Name)
 		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		for _, p := range phases {
 			_, err = p.Exec(ctx, *bp, action, tp)
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		}
 	}
 }

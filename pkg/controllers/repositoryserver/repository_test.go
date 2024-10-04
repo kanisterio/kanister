@@ -15,7 +15,7 @@
 package repositoryserver
 
 import (
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -23,7 +23,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
-func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
+func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *check.C) {
 	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
 
@@ -38,8 +38,8 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 
 	// Test if Default cache size settings are set
 	cacheSizeSettings := repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(*cacheSizeSettings.Content, Equals, defaultcontentCacheMB)
-	c.Assert(*cacheSizeSettings.Metadata, Equals, defaultmetadataCacheMB)
+	c.Assert(*cacheSizeSettings.Content, check.Equals, defaultcontentCacheMB)
+	c.Assert(*cacheSizeSettings.Metadata, check.Equals, defaultmetadataCacheMB)
 
 	customCacheMetadataSize := 1000
 	customCacheContentSize := 1100
@@ -49,8 +49,8 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Content:  &customCacheContentSize,
 	}
 	cacheSizeSettings = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(*cacheSizeSettings.Content, Equals, 1100)
-	c.Assert(*cacheSizeSettings.Metadata, Equals, 1000)
+	c.Assert(*cacheSizeSettings.Content, check.Equals, 1100)
+	c.Assert(*cacheSizeSettings.Metadata, check.Equals, 1000)
 
 	// Check if default Content Cache size is set
 	repositoryServer.Spec.Repository.CacheSizeSettings = crv1alpha1.CacheSizeSettings{
@@ -58,8 +58,8 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Content:  nil,
 	}
 	cacheSizeSettings = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(*cacheSizeSettings.Content, Equals, defaultcontentCacheMB)
-	c.Assert(*cacheSizeSettings.Metadata, Equals, 1000)
+	c.Assert(*cacheSizeSettings.Content, check.Equals, defaultcontentCacheMB)
+	c.Assert(*cacheSizeSettings.Metadata, check.Equals, 1000)
 
 	// Check if default Metadata Cache size is set
 	repositoryServer.Spec.Repository.CacheSizeSettings = crv1alpha1.CacheSizeSettings{
@@ -67,11 +67,11 @@ func (s *RepoServerControllerSuite) TestCacheSizeConfiguration(c *C) {
 		Content:  &customCacheContentSize,
 	}
 	cacheSizeSettings = repoServerHandler.getRepositoryCacheSettings()
-	c.Assert(*cacheSizeSettings.Content, Equals, 1100)
-	c.Assert(*cacheSizeSettings.Metadata, Equals, defaultmetadataCacheMB)
+	c.Assert(*cacheSizeSettings.Content, check.Equals, 1100)
+	c.Assert(*cacheSizeSettings.Metadata, check.Equals, defaultmetadataCacheMB)
 }
 
-func (s *RepoServerControllerSuite) TestConfigFileAndLogDirectoryConfiguration(c *C) {
+func (s *RepoServerControllerSuite) TestConfigFileAndLogDirectoryConfiguration(c *check.C) {
 	repositoryServer := testutil.GetTestKopiaRepositoryServerCR(s.repoServerControllerNamespace)
 	setRepositoryServerSecretsInCR(&s.repoServerSecrets, &repositoryServer)
 
@@ -84,9 +84,9 @@ func (s *RepoServerControllerSuite) TestConfigFileAndLogDirectoryConfiguration(c
 
 	// Check if default values for log directory,config file path and cache directory are set
 	configuration := repoServerHandler.getRepositoryConfiguration()
-	c.Assert(configuration.ConfigFilePath, Equals, command.DefaultConfigFilePath)
-	c.Assert(configuration.LogDirectory, Equals, command.DefaultLogDirectory)
-	c.Assert(configuration.CacheDirectory, Equals, command.DefaultCacheDirectory)
+	c.Assert(configuration.ConfigFilePath, check.Equals, command.DefaultConfigFilePath)
+	c.Assert(configuration.LogDirectory, check.Equals, command.DefaultLogDirectory)
+	c.Assert(configuration.CacheDirectory, check.Equals, command.DefaultCacheDirectory)
 
 	// Check if custom values for log directory,config file path and cache directory are set
 	repositoryServer.Spec.Repository.Configuration.ConfigFilePath = "/tmp/test-config"
@@ -94,7 +94,7 @@ func (s *RepoServerControllerSuite) TestConfigFileAndLogDirectoryConfiguration(c
 	repositoryServer.Spec.Repository.Configuration.CacheDirectory = "/tmp/test-cache-directory"
 
 	configuration = repoServerHandler.getRepositoryConfiguration()
-	c.Assert(configuration.ConfigFilePath, Equals, "/tmp/test-config")
-	c.Assert(configuration.LogDirectory, Equals, "/tmp/test-log-directory")
-	c.Assert(configuration.CacheDirectory, Equals, "/tmp/test-cache-directory")
+	c.Assert(configuration.ConfigFilePath, check.Equals, "/tmp/test-config")
+	c.Assert(configuration.LogDirectory, check.Equals, "/tmp/test-log-directory")
+	c.Assert(configuration.CacheDirectory, check.Equals, "/tmp/test-cache-directory")
 }

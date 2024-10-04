@@ -17,39 +17,39 @@ package param
 import (
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
 type RenderSuite struct{}
 
-var _ = Suite(&RenderSuite{})
+var _ = check.Suite(&RenderSuite{})
 
-func (s *RenderSuite) TestRender(c *C) {
+func (s *RenderSuite) TestRender(c *check.C) {
 	for _, tc := range []struct {
 		arg     interface{}
 		tp      TemplateParams
 		out     interface{}
-		checker Checker
+		checker check.Checker
 	}{
 		{
 			arg:     "",
 			tp:      TemplateParams{},
 			out:     "",
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			arg:     "hello",
 			tp:      TemplateParams{},
 			out:     "hello",
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			arg:     "-",
 			tp:      TemplateParams{},
 			out:     "-",
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			arg: "{{ .Options.hello }}",
@@ -59,7 +59,7 @@ func (s *RenderSuite) TestRender(c *C) {
 				},
 			},
 			out:     "",
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			arg: "{{ .Options.hello }}",
@@ -69,7 +69,7 @@ func (s *RenderSuite) TestRender(c *C) {
 				},
 			},
 			out:     "someValue",
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			// `-` cannot be used in a template path.
@@ -80,7 +80,7 @@ func (s *RenderSuite) TestRender(c *C) {
 				},
 			},
 			out:     "",
-			checker: NotNil,
+			checker: check.NotNil,
 		},
 		{
 			// `-` can exist in artifact keys, it just cannot be used in path.
@@ -92,31 +92,31 @@ func (s *RenderSuite) TestRender(c *C) {
 				},
 			},
 			out:     "someValue",
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			arg:     "{{ upper `hello` }}",
 			tp:      TemplateParams{},
 			out:     "HELLO",
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			arg:     []string{"{{ upper `hello` }}"},
 			tp:      TemplateParams{},
 			out:     []interface{}{"HELLO"},
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			arg:     map[string]string{"name": "{{ upper `hello` }}"},
 			tp:      TemplateParams{},
 			out:     map[interface{}]interface{}{"name": "HELLO"},
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			arg:     map[string][]string{"{{ upper `hello` }}": {"{{ upper `hello` }}"}},
 			tp:      TemplateParams{},
 			out:     map[interface{}]interface{}{"HELLO": []interface{}{"HELLO"}},
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 		{
 			// Render should fail if referenced key doesn't exist
@@ -124,19 +124,19 @@ func (s *RenderSuite) TestRender(c *C) {
 			tp: TemplateParams{
 				Options: map[string]string{},
 			},
-			checker: NotNil,
+			checker: check.NotNil,
 		},
 	} {
 		inArgs := map[string]interface{}{"arg": tc.arg}
 		out, err := RenderArgs(inArgs, tc.tp)
 		c.Assert(err, tc.checker)
 		if err == nil {
-			c.Assert(out["arg"], DeepEquals, tc.out)
+			c.Assert(out["arg"], check.DeepEquals, tc.out)
 		}
 	}
 }
 
-func (s *RenderSuite) TestRenderObjects(c *C) {
+func (s *RenderSuite) TestRenderObjects(c *check.C) {
 	tp := TemplateParams{
 		Time: time.Now().String(),
 		Object: map[string]interface{}{
@@ -150,11 +150,11 @@ func (s *RenderSuite) TestRenderObjects(c *C) {
 		},
 	}
 	out, err := RenderObjectRefs(in, tp)
-	c.Assert(err, IsNil)
-	c.Assert(out["authSecret"].Name, Equals, "secret-name")
+	c.Assert(err, check.IsNil)
+	c.Assert(out["authSecret"].Name, check.Equals, "secret-name")
 }
 
-func (s *RenderSuite) TestRenderArtifacts(c *C) {
+func (s *RenderSuite) TestRenderArtifacts(c *check.C) {
 	tp := TemplateParams{
 		Phases: map[string]*Phase{
 			"myPhase": {
@@ -169,7 +169,7 @@ func (s *RenderSuite) TestRenderArtifacts(c *C) {
 		art     map[string]crv1alpha1.Artifact
 		tp      TemplateParams
 		out     map[string]crv1alpha1.Artifact
-		checker Checker
+		checker check.Checker
 	}{
 		{
 			art: map[string]crv1alpha1.Artifact{
@@ -183,7 +183,7 @@ func (s *RenderSuite) TestRenderArtifacts(c *C) {
 					KopiaSnapshot: "a-snapshot-id",
 				},
 			},
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 
 		{
@@ -202,11 +202,11 @@ func (s *RenderSuite) TestRenderArtifacts(c *C) {
 					},
 				},
 			},
-			checker: IsNil,
+			checker: check.IsNil,
 		},
 	} {
 		ra, err := RenderArtifacts(tc.art, tc.tp)
 		c.Assert(err, tc.checker)
-		c.Assert(ra, DeepEquals, tc.out)
+		c.Assert(ra, check.DeepEquals, tc.out)
 	}
 }

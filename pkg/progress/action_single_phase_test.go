@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -20,7 +20,7 @@ const (
 )
 
 func Test(t *testing.T) {
-	TestingT(t)
+	check.TestingT(t)
 }
 
 type TestSuiteSinglePhase struct {
@@ -29,9 +29,9 @@ type TestSuiteSinglePhase struct {
 	clientset *fake.Clientset
 }
 
-var _ = Suite(&TestSuiteSinglePhase{})
+var _ = check.Suite(&TestSuiteSinglePhase{})
 
-func (s *TestSuiteSinglePhase) SetUpTest(c *C) {
+func (s *TestSuiteSinglePhase) SetUpTest(c *check.C) {
 	mockBlueprint := &crv1alpha1.Blueprint{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -88,21 +88,21 @@ func (s *TestSuiteSinglePhase) SetUpTest(c *C) {
 
 	s.clientset = fake.NewSimpleClientset()
 	err := s.createFixtures(mockBlueprint, mockActionSet)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *TestSuiteSinglePhase) TearDownTest(c *C) {
+func (s *TestSuiteSinglePhase) TearDownTest(c *check.C) {
 	blueprintErr := s.clientset.CrV1alpha1().Blueprints(s.blueprint.GetNamespace()).Delete(
 		context.Background(),
 		s.blueprint.GetName(),
 		metav1.DeleteOptions{})
-	c.Assert(blueprintErr, IsNil)
+	c.Assert(blueprintErr, check.IsNil)
 
 	actionSetErr := s.clientset.CrV1alpha1().ActionSets(s.actionSet.GetNamespace()).Delete(
 		context.Background(),
 		s.actionSet.GetName(),
 		metav1.DeleteOptions{})
-	c.Assert(actionSetErr, IsNil)
+	c.Assert(actionSetErr, check.IsNil)
 }
 
 func (s *TestSuiteSinglePhase) createFixtures(blueprint *crv1alpha1.Blueprint, actionSet *crv1alpha1.ActionSet) error {
@@ -127,7 +127,7 @@ func (s *TestSuiteSinglePhase) createFixtures(blueprint *crv1alpha1.Blueprint, a
 	return nil
 }
 
-func (s *TestSuiteSinglePhase) TestUpdateActionPhaseProgress(c *C) {
+func (s *TestSuiteSinglePhase) TestUpdateActionPhaseProgress(c *check.C) {
 	var testCases = []struct {
 		indexAction                  int
 		indexPhase                   int
@@ -212,7 +212,7 @@ func (s *TestSuiteSinglePhase) TestUpdateActionPhaseProgress(c *C) {
 }
 
 func assertActionProgress(
-	c *C,
+	c *check.C,
 	clientset versioned.Interface,
 	actionSet *crv1alpha1.ActionSet,
 	indexAction int,
@@ -230,24 +230,24 @@ func assertActionProgress(
 	now := metav1.Now()
 	actionSet.Status.Actions[indexAction].Phases[indexPhase].State = phaseState
 	updated, err := clientset.CrV1alpha1().ActionSets(actionSet.GetNamespace()).Update(context.Background(), actionSet, metav1.UpdateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	phaseName := fmt.Sprintf("echo-hello-%d-%d", indexAction, indexPhase)
 	phaseProgress.LastTransitionTime = &now
 	err1 := updateActionSetStatus(context.Background(), clientset, actionSet, phaseName, phaseProgress)
-	c.Assert(err1, IsNil, Commentf("test case #: %d", testCaseID))
+	c.Assert(err1, check.IsNil, check.Commentf("test case #: %d", testCaseID))
 	actual, err := clientset.CrV1alpha1().ActionSets(actionSet.GetNamespace()).Get(context.Background(), updated.GetName(), metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	// Check phase progress percent
-	c.Assert(actual.Status.Actions[indexAction].Phases[indexPhase].Progress.ProgressPercent, Equals, expectedPhasePercent, Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Actions[indexAction].Phases[indexPhase].Progress.ProgressPercent, check.Equals, expectedPhasePercent, check.Commentf("test case #: %d", testCaseID))
 	// Check action progress percent
-	c.Assert(actual.Status.Progress.PercentCompleted, Equals, expectedActionPercent, Commentf("test case #: %d", testCaseID))
-	c.Assert(actual.Status.Progress.SizeDownloadedB, Equals, expectedSizeDownloadedB, Commentf("test case #: %d", testCaseID))
-	c.Assert(actual.Status.Progress.SizeUploadedB, Equals, expectedSizeUploadedB, Commentf("test case #: %d", testCaseID))
-	c.Assert(actual.Status.Progress.EstimatedDownloadSizeB, Equals, expectedEstimatedDownloadSizeB, Commentf("test case #: %d", testCaseID))
-	c.Assert(actual.Status.Progress.EstimatedUploadSizeB, Equals, expectedEstimatedUploadSizeB, Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.PercentCompleted, check.Equals, expectedActionPercent, check.Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.SizeDownloadedB, check.Equals, expectedSizeDownloadedB, check.Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.SizeUploadedB, check.Equals, expectedSizeUploadedB, check.Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.EstimatedDownloadSizeB, check.Equals, expectedEstimatedDownloadSizeB, check.Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.EstimatedUploadSizeB, check.Equals, expectedEstimatedUploadSizeB, check.Commentf("test case #: %d", testCaseID))
 	if phaseState != crv1alpha1.StateFailed &&
 		phaseState != crv1alpha1.StatePending {
-		c.Assert(actual.Status.Actions[indexAction].Phases[indexPhase].Progress.LastTransitionTime, NotNil)
-		c.Assert(*actual.Status.Actions[indexAction].Phases[indexPhase].Progress.LastTransitionTime, Equals, now, Commentf("test case #: %d", testCaseID))
+		c.Assert(actual.Status.Actions[indexAction].Phases[indexPhase].Progress.LastTransitionTime, check.NotNil)
+		c.Assert(*actual.Status.Actions[indexAction].Phases[indexPhase].Progress.LastTransitionTime, check.Equals, now, check.Commentf("test case #: %d", testCaseID))
 	}
 }

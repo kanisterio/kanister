@@ -19,7 +19,7 @@ import (
 	"context"
 	"text/template"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kanisterio/kanister/pkg/ksprig"
@@ -27,13 +27,13 @@ import (
 
 type UnstructuredSuite struct{}
 
-var _ = Suite(&UnstructuredSuite{})
+var _ = check.Suite(&UnstructuredSuite{})
 
 type Param struct {
 	Unstructured map[string]interface{}
 }
 
-func (s *UnstructuredSuite) TestFetch(c *C) {
+func (s *UnstructuredSuite) TestFetch(c *check.C) {
 	ctx := context.Background()
 	gvr := schema.GroupVersionResource{
 		Group:    "",
@@ -41,7 +41,7 @@ func (s *UnstructuredSuite) TestFetch(c *C) {
 		Resource: "services",
 	}
 	u, err := FetchUnstructuredObject(ctx, gvr, "default", "kubernetes")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	buf := bytes.NewBuffer(nil)
 	tp := Param{Unstructured: u.UnstructuredContent()}
@@ -53,9 +53,9 @@ func (s *UnstructuredSuite) TestFetch(c *C) {
 		{"{{ .Unstructured.spec.clusterIP }}"},
 	} {
 		t, err := template.New("config").Option("missingkey=error").Funcs(ksprig.TxtFuncMap()).Parse(tc.arg)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		err = t.Execute(buf, tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 
 		c.Logf("Template: %s, Value: %s", tc.arg, buf.String())
 	}

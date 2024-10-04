@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -35,20 +35,20 @@ type FIPSSuite struct {
 	pod       *corev1.Pod
 }
 
-var _ = Suite(&FIPSSuite{})
+var _ = check.Suite(&FIPSSuite{})
 
-func (s *FIPSSuite) SetUpSuite(c *C) {
+func (s *FIPSSuite) SetUpSuite(c *check.C) {
 	ctx := context.Background()
 	var err error
 	s.cli, err = NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "fipstest-",
 		},
 	}
 	ns, err = s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = ns.Name
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
@@ -63,30 +63,30 @@ func (s *FIPSSuite) SetUpSuite(c *C) {
 		},
 	}
 	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Create(ctx, pod, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
-	c.Assert(WaitForPodReady(ctxTimeout, s.cli, s.namespace, s.pod.Name), IsNil)
+	c.Assert(WaitForPodReady(ctxTimeout, s.cli, s.namespace, s.pod.Name), check.IsNil)
 	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Get(ctx, s.pod.Name, metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	// install go in kanister-tools pod
 	cmd := []string{"microdnf", "install", "-y", "go"}
 	for _, cs := range s.pod.Status.ContainerStatuses {
 		stdout, stderr, err := Exec(ctx, s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		c.Log(stderr)
 		c.Log(stdout)
 	}
 }
 
-func (s *FIPSSuite) TearDownSuite(c *C) {
+func (s *FIPSSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }
 
-func (s *FIPSSuite) TestFIPSBoringEnabled(c *C) {
+func (s *FIPSSuite) TestFIPSBoringEnabled(c *check.C) {
 	for _, tool := range []string{
 		"/usr/local/bin/kopia",
 		"/usr/local/bin/kando",
@@ -95,8 +95,8 @@ func (s *FIPSSuite) TestFIPSBoringEnabled(c *C) {
 		cmd := []string{"go", "tool", "nm", tool}
 		for _, cs := range s.pod.Status.ContainerStatuses {
 			stdout, stderr, err := Exec(context.Background(), s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
-			c.Assert(err, IsNil)
-			c.Assert(stderr, Equals, "")
+			c.Assert(err, check.IsNil)
+			c.Assert(stderr, check.Equals, "")
 			scanner := bufio.NewScanner(strings.NewReader(stdout))
 			fipsModeSet := false
 			for scanner.Scan() {
@@ -107,7 +107,7 @@ func (s *FIPSSuite) TestFIPSBoringEnabled(c *C) {
 					fipsModeSet = true
 				}
 			}
-			c.Assert(fipsModeSet, Equals, true)
+			c.Assert(fipsModeSet, check.Equals, true)
 		}
 	}
 }

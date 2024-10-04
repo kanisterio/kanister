@@ -17,7 +17,7 @@ package kanister
 import (
 	"context"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -27,7 +27,7 @@ import (
 type PhaseSuite struct{}
 
 var (
-	_      = Suite(&PhaseSuite{})
+	_      = check.Suite(&PhaseSuite{})
 	_ Func = (*testFunc)(nil)
 )
 
@@ -77,7 +77,7 @@ func (tf *testFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	return crv1alpha1.PhaseProgress{ProgressPercent: tf.progressPercent}, nil
 }
 
-func (s *PhaseSuite) TestExec(c *C) {
+func (s *PhaseSuite) TestExec(c *check.C) {
 	for _, tc := range []struct {
 		artifact string
 		argument string
@@ -105,19 +105,19 @@ func (s *PhaseSuite) TestExec(c *C) {
 			"testKey": tc.argument,
 		}
 		args, err := param.RenderArgs(rawArgs, tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		p := Phase{args: args, f: tf}
 		_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "", tp)
-		c.Assert(err, IsNil)
-		c.Assert(output, Equals, tc.expected)
+		c.Assert(err, check.IsNil)
+		c.Assert(output, check.Equals, tc.expected)
 	}
 }
 
-func (s *PhaseSuite) TestCheckSupportedArgs(c *C) {
+func (s *PhaseSuite) TestCheckSupportedArgs(c *check.C) {
 	for _, tc := range []struct {
 		supprtedArgs []string
 		providedArgs map[string]interface{}
-		err          Checker
+		err          check.Checker
 		expErr       string
 	}{
 		{
@@ -127,7 +127,7 @@ func (s *PhaseSuite) TestCheckSupportedArgs(c *C) {
 				"b": "val",
 				"c": "val",
 			},
-			err: IsNil,
+			err: check.IsNil,
 		},
 		{
 			supprtedArgs: []string{"a", "b", "c"},
@@ -137,24 +137,24 @@ func (s *PhaseSuite) TestCheckSupportedArgs(c *C) {
 				"c": "val",
 				"d": "val",
 			},
-			err:    NotNil,
+			err:    check.NotNil,
 			expErr: "argument d is not supported",
 		},
 		{
 			supprtedArgs: []string{"a", "b", "c"},
 			providedArgs: map[string]interface{}{},
-			err:          IsNil,
+			err:          check.IsNil,
 		},
 	} {
 		err := utils.CheckSupportedArgs(tc.supprtedArgs, tc.providedArgs)
 		if err != nil {
-			c.Assert(err.Error(), Equals, tc.expErr)
+			c.Assert(err.Error(), check.Equals, tc.expErr)
 		}
 		c.Assert(err, tc.err)
 	}
 }
 
-func (s *PhaseSuite) TestRegFuncVersion(c *C) {
+func (s *PhaseSuite) TestRegFuncVersion(c *check.C) {
 	for _, tc := range []struct {
 		regWithVersion  string
 		expectedVersion string
@@ -208,14 +208,14 @@ func (s *PhaseSuite) TestRegFuncVersion(c *C) {
 	} {
 		if tc.regWithVersion == "" {
 			err := Register(tc.f)
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		} else {
 			err := RegisterVersion(tc.f, tc.regWithVersion)
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 		}
 
 		semVer, err := regFuncVersion(tc.f.Name(), tc.queryVersion)
-		c.Assert(err, IsNil)
-		c.Assert(semVer.Original(), Equals, tc.expectedVersion)
+		c.Assert(err, check.IsNil)
+		c.Assert(semVer.Original(), check.Equals, tc.expectedVersion)
 	}
 }

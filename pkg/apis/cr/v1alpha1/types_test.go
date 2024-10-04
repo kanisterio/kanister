@@ -19,16 +19,16 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type TypesSuite struct{}
 
-var _ = Suite(&TypesSuite{})
+var _ = check.Suite(&TypesSuite{})
 
 const bpSpec = `
 actions:
@@ -50,7 +50,7 @@ actions:
             foo: bar
 `
 
-func (s *TypesSuite) TestBlueprintDecode(c *C) {
+func (s *TypesSuite) TestBlueprintDecode(c *check.C) {
 	expected := map[string]reflect.Kind{
 		"testint":         reflect.Int64,
 		"teststring":      reflect.String,
@@ -59,12 +59,12 @@ func (s *TypesSuite) TestBlueprintDecode(c *C) {
 	}
 
 	bp, err := getBlueprintFromSpec([]byte(bpSpec))
-	c.Assert(err, IsNil)
-	c.Assert(bp.Actions["echo"].Phases[0].Args, HasLen, len(expected))
+	c.Assert(err, check.IsNil)
+	c.Assert(bp.Actions["echo"].Phases[0].Args, check.HasLen, len(expected))
 	for n, evk := range expected {
 		v := bp.Actions["echo"].Phases[0].Args[n]
-		c.Check(v, Not(Equals), nil)
-		c.Check(reflect.TypeOf(v).Kind(), Equals, evk)
+		c.Check(v, check.Not(check.Equals), nil)
+		c.Check(reflect.TypeOf(v).Kind(), check.Equals, evk)
 	}
 }
 

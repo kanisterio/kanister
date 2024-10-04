@@ -11,10 +11,10 @@ use more of Kanister's features to manage the application's data.
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
     installed and setup
 - [helm](https://helm.sh) installed and initialized using the command
-    [helm init]{.title-ref}
+    `helm init`
 - docker
-- A running Kanister controller. See `install`{.interpreted-text
-    role="ref"}
+- A running Kanister controller. See [install](install)
+- Proper RBAC configured for the Kanister controller. See [RBAC Configuration](rbac)
 - Access to an S3 bucket and credentials.
 
 ## Example Application
@@ -33,7 +33,10 @@ kind: Deployment
 metadata:
   name: time-logger
 spec:
-  replicas: 1
+  replicas: 1  
+  selector:
+    matchLabels:
+      app: time-logger
   template:
     metadata:
       labels:
@@ -185,8 +188,7 @@ choose where to store the log based on values in a ConfigMap. ConfigMaps
 are referenced in an ActionSet, which are fetched by the controller and
 made available to Blueprints through parameter templating.
 
-For more on templating in Kanister, see `templates`{.interpreted-text
-role="ref"}.
+For more on templating in Kanister, see [templates](templates).
 
 In this section of the tutorial, we\'re going to use a ConfigMap to
 choose where to backup our time log. We\'ll name our ConfigMap and
@@ -313,8 +315,7 @@ the ConfigMap, we can also push the log to S3. In this Secret, we store
 the credentials as binary data. We can use the templating engine
 `toString` and `quote` functions, courtesy of sprig.
 
-For more on this templating, see `templates`{.interpreted-text
-role="ref"}
+For more on this templating, see [templates](templates)
 
 ``` yaml
 cat <<EOF | kubectl apply -f -

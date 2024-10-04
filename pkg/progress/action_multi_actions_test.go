@@ -3,7 +3,7 @@ package progress
 import (
 	"context"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -16,9 +16,9 @@ type TestSuiteMultiActions struct {
 	clientset *fake.Clientset
 }
 
-var _ = Suite(&TestSuiteMultiActions{})
+var _ = check.Suite(&TestSuiteMultiActions{})
 
-func (s *TestSuiteMultiActions) SetUpTest(c *C) {
+func (s *TestSuiteMultiActions) SetUpTest(c *check.C) {
 	mockBlueprint := &crv1alpha1.Blueprint{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -118,21 +118,21 @@ func (s *TestSuiteMultiActions) SetUpTest(c *C) {
 
 	s.clientset = fake.NewSimpleClientset()
 	err := s.createFixtures(mockBlueprint, mockActionSet)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *TestSuiteMultiActions) TearDownTest(c *C) {
+func (s *TestSuiteMultiActions) TearDownTest(c *check.C) {
 	blueprintErr := s.clientset.CrV1alpha1().Blueprints(s.blueprint.GetNamespace()).Delete(
 		context.Background(),
 		s.blueprint.GetName(),
 		metav1.DeleteOptions{})
-	c.Assert(blueprintErr, IsNil)
+	c.Assert(blueprintErr, check.IsNil)
 
 	actionSetErr := s.clientset.CrV1alpha1().ActionSets(s.actionSet.GetNamespace()).Delete(
 		context.Background(),
 		s.actionSet.GetName(),
 		metav1.DeleteOptions{})
-	c.Assert(actionSetErr, IsNil)
+	c.Assert(actionSetErr, check.IsNil)
 }
 
 func (s *TestSuiteMultiActions) createFixtures(blueprint *crv1alpha1.Blueprint, actionSet *crv1alpha1.ActionSet) error {
@@ -157,7 +157,7 @@ func (s *TestSuiteMultiActions) createFixtures(blueprint *crv1alpha1.Blueprint, 
 	return nil
 }
 
-func (s *TestSuiteMultiActions) TestUpdateActionsProgress(c *C) {
+func (s *TestSuiteMultiActions) TestUpdateActionsProgress(c *check.C) {
 	// This test simulates ActionSet consisting of two actions with two phases in each
 	var testCases = []struct {
 		indexAction                   int
@@ -358,7 +358,7 @@ func (s *TestSuiteMultiActions) TestUpdateActionsProgress(c *C) {
 	for id, tc := range testCases {
 		// Get latest rev of actionset resource
 		as, err := s.clientset.CrV1alpha1().ActionSets(s.actionSet.GetNamespace()).Get(context.Background(), s.actionSet.GetName(), metav1.GetOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		assertActionProgress(
 			c,
 			s.clientset,
@@ -377,7 +377,7 @@ func (s *TestSuiteMultiActions) TestUpdateActionsProgress(c *C) {
 	}
 }
 
-func (s *TestSuiteMultiActions) TestUpdateActionsProgressWithFailures(c *C) {
+func (s *TestSuiteMultiActions) TestUpdateActionsProgressWithFailures(c *check.C) {
 	var testCases = []struct {
 		indexAction                    int
 		indexPhase                     int
@@ -455,7 +455,7 @@ func (s *TestSuiteMultiActions) TestUpdateActionsProgressWithFailures(c *C) {
 	for id, tc := range testCases {
 		// Get latest rev of actionset resource
 		as, err := s.clientset.CrV1alpha1().ActionSets(s.actionSet.GetNamespace()).Get(context.Background(), s.actionSet.GetName(), metav1.GetOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		assertActionProgress(
 			c,
 			s.clientset,

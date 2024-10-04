@@ -17,17 +17,17 @@ package jsonpath
 import (
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type JsonpathSuite struct{}
 
-var _ = Suite(&JsonpathSuite{})
+var _ = check.Suite(&JsonpathSuite{})
 
 const deploy = `apiVersion: apps/v1
 kind: Deployment
@@ -95,41 +95,41 @@ status:
   updatedReplicas: 3
 `
 
-func runtimeObjFromYAML(c *C, specs string) runtime.Object {
+func runtimeObjFromYAML(c *check.C, specs string) runtime.Object {
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode([]byte(specs), nil, nil)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	return obj
 }
 
-func (js *JsonpathSuite) TestDeploymentReady(c *C) {
+func (js *JsonpathSuite) TestDeploymentReady(c *check.C) {
 	obj := runtimeObjFromYAML(c, deploy)
 	replica, err := ResolveJsonpathToString(obj, "{.spec.replicas}")
-	c.Assert(err, IsNil)
-	c.Assert(replica, Equals, "3")
+	c.Assert(err, check.IsNil)
+	c.Assert(replica, check.Equals, "3")
 
 	readyReplicas, err := ResolveJsonpathToString(obj, "{.status.replicas}")
-	c.Assert(err, IsNil)
-	c.Assert(readyReplicas, Equals, "3")
+	c.Assert(err, check.IsNil)
+	c.Assert(readyReplicas, check.Equals, "3")
 
 	availReplicas, err := ResolveJsonpathToString(obj, "{.status.availableReplicas}")
-	c.Assert(err, IsNil)
-	c.Assert(availReplicas, Equals, "3")
+	c.Assert(err, check.IsNil)
+	c.Assert(availReplicas, check.Equals, "3")
 
 	// Any condition with type Available
 	condType, err := ResolveJsonpathToString(obj, `{.status.conditions[?(@.type == "Available")].type}`)
-	c.Assert(err, IsNil)
-	c.Assert(condType, Equals, "Available")
+	c.Assert(err, check.IsNil)
+	c.Assert(condType, check.Equals, "Available")
 
 	condStatus, err := ResolveJsonpathToString(obj, `{.status.conditions[?(@.type == "Available")].status}`)
-	c.Assert(err, IsNil)
-	c.Assert(condStatus, Equals, "True")
+	c.Assert(err, check.IsNil)
+	c.Assert(condStatus, check.Equals, "True")
 
 	_, err = ResolveJsonpathToString(obj, "{.status.something}")
-	c.Assert(err, NotNil)
+	c.Assert(err, check.NotNil)
 }
 
-func (js *JsonpathSuite) TestFindJsonpathArgs(c *C) {
+func (js *JsonpathSuite) TestFindJsonpathArgs(c *check.C) {
 	for _, tc := range []struct {
 		arg            string
 		expJsonpathArg map[string]string
@@ -168,6 +168,6 @@ func (js *JsonpathSuite) TestFindJsonpathArgs(c *C) {
 		},
 	} {
 		m := FindJsonpathArgs(tc.arg)
-		c.Assert(m, DeepEquals, tc.expJsonpathArg)
+		c.Assert(m, check.DeepEquals, tc.expJsonpathArg)
 	}
 }

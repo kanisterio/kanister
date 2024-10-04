@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	promgomodel "github.com/prometheus/client_model/go"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +48,7 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type ControllerSuite struct {
 	crCli      crclientv1alpha1.CrV1alpha1Interface
@@ -62,19 +62,19 @@ type ControllerSuite struct {
 	ctrl       *Controller
 }
 
-var _ = Suite(&ControllerSuite{})
+var _ = check.Suite(&ControllerSuite{})
 
 const (
 	testAction = "myAction"
 )
 
-func (s *ControllerSuite) SetUpSuite(c *C) {
+func (s *ControllerSuite) SetUpSuite(c *check.C) {
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	cli, err := kubernetes.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	crCli, err := crclientv1alpha1.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Make sure the CRD's exist.
 	_ = resource.CreateCustomResources(context.Background(), config)
@@ -91,69 +91,69 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	}
 	ctx := context.Background()
 	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
 	_, err = s.crCli.Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	ss := testutil.NewTestStatefulSet(1)
 	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, ss, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.ss = ss
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, s.namespace, s.ss.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	d := testutil.NewTestDeployment(1)
 	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(ctx, d, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.deployment = d
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, s.deployment.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	cm := testutil.NewTestConfigMap()
 	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(ctx, cm, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.confimap = cm
 }
 
-func (s *ControllerSuite) TearDownSuite(c *C) {
+func (s *ControllerSuite) TearDownSuite(c *check.C) {
 	err := os.Unsetenv(kube.PodNSEnvVar)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
-func (s *ControllerSuite) SetUpTest(c *C) {
+func (s *ControllerSuite) SetUpTest(c *check.C) {
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	testPrometheusRegistry := prometheus.NewRegistry()
 	s.ctrl = New(config, testPrometheusRegistry)
 	err = s.ctrl.StartWatch(ctx, s.namespace)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cancel = cancel
 }
 
-func (s *ControllerSuite) TearDownTest(c *C) {
+func (s *ControllerSuite) TearDownTest(c *check.C) {
 	s.cancel()
 }
 
-func (s *ControllerSuite) TestWatch(c *C) {
+func (s *ControllerSuite) TestWatch(c *check.C) {
 	// We give it a few seconds complete it's scan. This isn't required for the
 	// test, but is a more realistic startup scenario.
 	time.Sleep(5 * time.Second)
 }
 
-func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
+func (s *ControllerSuite) waitOnActionSetState(c *check.C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
@@ -179,7 +179,7 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 	return errors.Wrapf(err, "State '%s' never reached", state)
 }
 
-func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
+func (s *ControllerSuite) waitOnDeferPhaseState(c *check.C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -458,7 +458,7 @@ func getCounterVecValue(metric prometheus.CounterVec, metricLabels []string) flo
 	return m.Counter.GetValue()
 }
 
-func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {
+func (s *ControllerSuite) TestEmptyActionSetStatus(c *check.C) {
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "testactionset-",
@@ -468,17 +468,17 @@ func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {
 		},
 	}
 	as, err := s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	defer func() {
 		err := s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}()
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *ControllerSuite) TestSynchronousFailure(c *C) {
+func (s *ControllerSuite) TestSynchronousFailure(c *check.C) {
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "testactionset-",
@@ -496,26 +496,26 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 		},
 	}
 	as, err := s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	defer func() {
 		err := s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}()
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *ControllerSuite) TestNilPrometheusRegistry(c *C) {
+func (s *ControllerSuite) TestNilPrometheusRegistry(c *check.C) {
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
-	c.Assert(config, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(config, check.NotNil)
 	ctrl := New(config, nil)
-	c.Assert(ctrl, NotNil)
-	c.Assert(ctrl.metrics, IsNil)
+	c.Assert(ctrl, check.NotNil)
+	c.Assert(ctrl.metrics, check.IsNil)
 }
 
-func (s *ControllerSuite) TestExecActionSet(c *C) {
+func (s *ControllerSuite) TestExecActionSet(c *check.C) {
 	for _, pok := range []string{"StatefulSet", "Deployment"} {
 		for _, tc := range []struct {
 			funcNames        []string
@@ -615,7 +615,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			bp = testutil.BlueprintWithConfigMap(bp)
 			ctx := context.Background()
 			bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 
 			oldValue := getCounterVecValue(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution})
 
@@ -633,7 +633,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version, testAction)
 			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 			as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
+			c.Assert(err, check.IsNil, check.Commentf("Failed case: %s", tc.name))
 
 			final := crv1alpha1.StateComplete
 			cancel := false
@@ -642,40 +642,40 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				switch fn {
 				case testutil.FailFuncName:
 					final = crv1alpha1.StateFailed
-					c.Assert(testutil.FailFuncError().Error(), DeepEquals, "Kanister function failed", Commentf("Failed case: %s", tc.name))
+					c.Assert(testutil.FailFuncError().Error(), check.DeepEquals, "Kanister function failed", check.Commentf("Failed case: %s", tc.name))
 					break Loop
 				case testutil.WaitFuncName:
 					testutil.ReleaseWaitFunc()
 				case testutil.ArgFuncName:
-					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
+					c.Assert(testutil.ArgFuncArgs(), check.DeepEquals, map[string]interface{}{"key": "myValue"}, check.Commentf("Failed case: %s", tc.name))
 				case testutil.OutputFuncName:
-					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
+					c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"}, check.Commentf("Failed case: %s", tc.name))
 				case testutil.CancelFuncName:
 					testutil.CancelFuncStarted()
 					err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
-					c.Assert(err, IsNil)
-					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
+					c.Assert(err, check.IsNil)
+					c.Assert(testutil.CancelFuncOut().Error(), check.DeepEquals, "context canceled")
 					cancel = true
 				case testutil.VersionMismatchFuncName:
 					final = crv1alpha1.StateFailed
-					c.Assert(err, IsNil)
+					c.Assert(err, check.IsNil)
 				}
 			}
 
 			if !cancel {
 				err = s.waitOnActionSetState(c, as, final)
-				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
+				c.Assert(err, check.IsNil, check.Commentf("Failed case: %s", tc.name))
 				expectedValue := oldValue + 1
 				err = waitForMetrics(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution}, expectedValue, time.Second)
-				c.Assert(err, IsNil, Commentf("Failed case: %s, failed waiting for metric update to %v", tc.name, expectedValue))
+				c.Assert(err, check.IsNil, check.Commentf("Failed case: %s, failed waiting for metric update to %v", tc.name, expectedValue))
 			}
 			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 			err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 			if !cancel {
-				c.Assert(err, IsNil)
+				c.Assert(err, check.IsNil)
 			} else {
-				c.Assert(err, NotNil)
+				c.Assert(err, check.NotNil)
 			}
 		}
 	}
@@ -697,7 +697,7 @@ func waitForMetrics(metrics prometheus.CounterVec, labels []string, expected flo
 	return err
 }
 
-func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
+func (s *ControllerSuite) TestRuntimeObjEventLogs(c *check.C) {
 	c.Skip("This may not work in MiniKube")
 	ctx := context.Background()
 	// Create ActionSet
@@ -714,7 +714,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 		},
 	}
 	as, err := s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	msg := "Unit testing event logs"
 	reason := "Test Logs"
 
@@ -724,85 +724,85 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	// Create Blueprint
 	bp := testutil.NewTestBlueprint("StatefulSet", testutil.WaitFuncName)
 	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Test the logAndErrorEvent function
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ctlr := New(config, nil)
 	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), as, nilAs, bp)
 
 	// Test ActionSet error event logging
 	events, err := s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, as)
-	c.Assert(err, IsNil)
-	c.Assert(events, NotNil)
-	c.Assert(len(events.Items) > 0, Equals, true)
-	c.Assert(events.Items[0].Message, Equals, msg)
+	c.Assert(err, check.IsNil)
+	c.Assert(events, check.NotNil)
+	c.Assert(len(events.Items) > 0, check.Equals, true)
+	c.Assert(events.Items[0].Message, check.Equals, msg)
 
 	// Testing nil ActionSet error event logging
 	events, err = s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, nilAs)
-	c.Assert(err, NotNil)
-	c.Assert(len(events.Items), Equals, 0)
+	c.Assert(err, check.NotNil)
+	c.Assert(len(events.Items), check.Equals, 0)
 
 	// Testing Blueprint error event logging
 	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, bp)
-	c.Assert(err, IsNil)
-	c.Assert(events, NotNil)
-	c.Assert(len(events.Items) > 0, Equals, true)
-	c.Assert(events.Items[0].Message, Equals, msg)
+	c.Assert(err, check.IsNil)
+	c.Assert(events, check.NotNil)
+	c.Assert(len(events.Items) > 0, check.Equals, true)
+	c.Assert(events.Items[0].Message, check.Equals, msg)
 
 	// Testing empty Blueprint
 	testbp := &crv1alpha1.Blueprint{}
 	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), testbp)
 	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, testbp)
-	c.Assert(err, NotNil)
-	c.Assert(len(events.Items), Equals, 0)
+	c.Assert(err, check.NotNil)
+	c.Assert(len(events.Items), check.Equals, 0)
 }
 
-func (s *ControllerSuite) TestDeferPhase(c *C) {
+func (s *ControllerSuite) TestDeferPhase(c *check.C) {
 	err := os.Setenv(kube.PodNSEnvVar, "test")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	ctx := context.Background()
 	bp := newBPWithDeferPhase()
 
 	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// create backup actionset and wait for it to be completed
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// make sure deferPhase is also run successfully
 	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// create restore actionset and wait for it to be completed
 	// if it's completed, simply means artifacts are rendered correctly
 	ras := testutil.NewTestRestoreActionSet(s.namespace, bp.GetName(), s.deployment.GetName(), as.Status.Actions[0].Artifacts)
 	ras, err = s.crCli.ActionSets(s.namespace).Create(ctx, ras, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
-	c.Assert(as.Status.Actions[0].Artifacts["mainPhaseOutputOne"].KeyValue, DeepEquals, map[string]string{"op": "mainValue"})
-	c.Assert(as.Status.Actions[0].Artifacts["mainPhaseOutputTwo"].KeyValue, DeepEquals, map[string]string{"op": "mainValueTwo"})
-	c.Assert(as.Status.Actions[0].Artifacts["deferPhaseOutput"].KeyValue, DeepEquals, map[string]string{"op": "deferValue"})
+	c.Assert(as.Status.Actions[0].Artifacts["mainPhaseOutputOne"].KeyValue, check.DeepEquals, map[string]string{"op": "mainValue"})
+	c.Assert(as.Status.Actions[0].Artifacts["mainPhaseOutputTwo"].KeyValue, check.DeepEquals, map[string]string{"op": "mainValueTwo"})
+	c.Assert(as.Status.Actions[0].Artifacts["deferPhaseOutput"].KeyValue, check.DeepEquals, map[string]string{"op": "deferValue"})
 }
 
 // TestDeferPhaseCoreErr tests a blueprint with multiple main phases and deferPhase
@@ -811,189 +811,189 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 // 2. DeferPhase is run successfully and status is complete
 // 3. Phases have correct state in actionset status
 // 4. We don't render output artifacts if any of the phases failed
-func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
+func (s *ControllerSuite) TestDeferPhaseCoreErr(c *check.C) {
 	err := os.Setenv(kube.PodNSEnvVar, "test")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ctx := context.Background()
 
 	bp := newBPWithDeferPhaseAndErrInCorePhase()
 	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// wait for deferPhase to be completed, because actionset status would be set to failed as soon as a main phase fails
 	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// get the actionset again to have updated status
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// make sure the phases that errored have state to be se as failed in actionset status
 	// since we just have backup action, we are using 0th index here
-	c.Assert(as.Status.Actions[0].Phases[0].State, Equals, crv1alpha1.StateComplete)
-	c.Assert(as.Status.Actions[0].Phases[1].State, Equals, crv1alpha1.StateFailed)
-	c.Assert(as.Status.Actions[0].DeferPhase.State, Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].Phases[0].State, check.Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].Phases[1].State, check.Equals, crv1alpha1.StateFailed)
+	c.Assert(as.Status.Actions[0].DeferPhase.State, check.Equals, crv1alpha1.StateComplete)
 
 	// we don't render template if any of the core phases or defer phases failed
 }
 
-func (s *ControllerSuite) TestDeferPhaseDeferErr(c *C) {
+func (s *ControllerSuite) TestDeferPhaseDeferErr(c *check.C) {
 	err := os.Setenv(kube.PodNSEnvVar, "test")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ctx := context.Background()
 
 	bp := newBPWithDeferPhaseAndErrInDeferPhase()
 	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// wait for deferPhase to fail
 	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateFailed)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// get the actionset again to have updated status
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// make sure the phases that errored have state set as failed in actionset status
 	// since we just have backup action, we are using 0th index here
-	c.Assert(as.Status.Actions[0].Phases[0].State, Equals, crv1alpha1.StateComplete)
-	c.Assert(as.Status.Actions[0].Phases[1].State, Equals, crv1alpha1.StateComplete)
-	c.Assert(as.Status.Actions[0].DeferPhase.State, Equals, crv1alpha1.StateFailed)
+	c.Assert(as.Status.Actions[0].Phases[0].State, check.Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].Phases[1].State, check.Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].DeferPhase.State, check.Equals, crv1alpha1.StateFailed)
 }
 
-func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
+func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *check.C) {
 	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
 	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if the func returned expected output
-	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if the artifacts got updated correctly
 	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
-	c.Assert(arts, NotNil)
-	c.Assert(arts, HasLen, 1)
+	c.Assert(arts, check.NotNil)
+	c.Assert(arts, check.HasLen, 1)
 	keyVal := arts["myArt"].KeyValue
-	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
+	c.Assert(keyVal, check.DeepEquals, map[string]string{"key": "myValue"})
 }
 
-func (s *ControllerSuite) TestPhaseOutputParallelActions(c *C) {
+func (s *ControllerSuite) TestPhaseOutputParallelActions(c *check.C) {
 	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
 	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Create another blueprint
 	bp1 := testutil.NewTestBlueprint("Deployment", testutil.WaitFuncName)
 	bp1, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp1, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Add an actionset that runs actions from two blueprints in parallel
 	as := testutil.NewTestMultiActionActionSet(s.namespace, bp1.GetName(), testAction, bp.GetName(), testAction, "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if the func returned expected output
-	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
 	testutil.ReleaseWaitFunc()
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if the artifacts got updated correctly
 	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
-	c.Assert(arts, IsNil)
+	c.Assert(arts, check.IsNil)
 
 	arts = as.Status.Actions[1].Artifacts
-	c.Assert(arts, NotNil)
-	c.Assert(arts, HasLen, 1)
+	c.Assert(arts, check.NotNil)
+	c.Assert(arts, check.HasLen, 1)
 	keyVal := arts["myArt"].KeyValue
-	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
+	c.Assert(keyVal, check.DeepEquals, map[string]string{"key": "myValue"})
 }
 
-func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
+func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *check.C) {
 	ctx := context.Background()
 	// Create a blueprint that uses func output as kopia snapshot
 	bp := newBPWithKopiaSnapshotOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
 	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if the func returned expected output
-	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if the artifacts got updated correctly
 	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
-	c.Assert(arts, NotNil)
-	c.Assert(arts, HasLen, 1)
+	c.Assert(arts, check.NotNil)
+	c.Assert(arts, check.HasLen, 1)
 	kopiaSnapshot := arts["myArt"].KopiaSnapshot
-	c.Assert(kopiaSnapshot, Equals, "myValue")
+	c.Assert(kopiaSnapshot, check.Equals, "myValue")
 }
 
-func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
+func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *check.C) {
 	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
 	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := &crv1alpha1.ActionSet{
@@ -1018,73 +1018,73 @@ func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
 	}
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if the func returned expected output
-	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Check if the artifacts got updated correctly
 	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
-	c.Assert(arts, NotNil)
-	c.Assert(arts, HasLen, 1)
+	c.Assert(arts, check.NotNil)
+	c.Assert(arts, check.HasLen, 1)
 	keyVal := arts["myArt"].KeyValue
-	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
+	c.Assert(keyVal, check.DeepEquals, map[string]string{"key": "myValue"})
 }
 
-func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
+func (s *ControllerSuite) TestRenderArtifactsFailure(c *check.C) {
 	ctx := context.Background()
 	bp := newBPWithFakeOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
 	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
-	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
+func (s *ControllerSuite) TestProgressRunningPhase(c *check.C) {
 	err := os.Setenv(kube.PodNSEnvVar, "test")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	ctx := context.Background()
 
 	bp := newBPForProgressRunningPhase()
 	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// create actionset and wait for it to reach Running state
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	runningPhases := sets.Set[string]{}
 	runningPhases.Insert("backupPhaseOne").Insert("backupPhaseTwo").Insert("deferPhase")
 
 	err = s.waitOnActionSetCompleteWithRunningPhases(as, &runningPhases)
-	c.Assert(err, IsNil)
-	c.Assert(runningPhases, HasLen, 0)
+	c.Assert(err, check.IsNil)
+	c.Assert(runningPhases, check.HasLen, 0)
 }
 
-func (s *ControllerSuite) TestGetActionTypeBucket(c *C) {
+func (s *ControllerSuite) TestGetActionTypeBucket(c *check.C) {
 	for _, tc := range []struct {
 		actionType string
 	}{
@@ -1133,33 +1133,33 @@ func (s *ControllerSuite) TestGetActionTypeBucket(c *C) {
 	} {
 		switch tc.actionType {
 		case ActionTypeBackup:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackup)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeBackup)
 		case ActionTypeRestore:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeRestore)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeRestore)
 		case ActionTypeDelete:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeDelete)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeDelete)
 		case ActionTypeBackupToServer:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackupToServer)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeBackupToServer)
 		case ActionTypeRestoreFromServer:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeRestoreFromServer)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeRestoreFromServer)
 		case ActionTypeBeforeBackup:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBeforeBackup)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeBeforeBackup)
 		case ActionTypeOnSuccess:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeOnSuccess)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeOnSuccess)
 		case ActionTypeOnFailure:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeOnFailure)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeOnFailure)
 		case ActionTypePreRestore:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypePreRestore)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypePreRestore)
 		case ActionTypePostRestore:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypePostRestore)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypePostRestore)
 		case ActionTypePostRestoreFailed:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypePostRestoreFailed)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypePostRestoreFailed)
 		case ActionTypeBackupPrehook:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackupPrehook)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeBackupPrehook)
 		case ActionTypeBackupPosthook:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackupPosthook)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeBackupPosthook)
 		default:
-			c.Assert(getActionTypeBucket(tc.actionType), Equals, ActionTypeBackupOther)
+			c.Assert(getActionTypeBucket(tc.actionType), check.Equals, ActionTypeBackupOther)
 		}
 	}
 }

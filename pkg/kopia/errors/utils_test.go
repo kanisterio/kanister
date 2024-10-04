@@ -19,31 +19,31 @@ import (
 
 	"github.com/kanisterio/errkit"
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
-func TestKopiaErrors(t *testing.T) { TestingT(t) }
+func TestKopiaErrors(t *testing.T) { check.TestingT(t) }
 
 type KopiaErrorsTestSuite struct{}
 
-var _ = Suite(&KopiaErrorsTestSuite{})
+var _ = check.Suite(&KopiaErrorsTestSuite{})
 
 // TestErrCheck verifies that error types are properly detected after wrapping them
-func (s *KopiaErrorsTestSuite) TestErrCheck(c *C) {
+func (s *KopiaErrorsTestSuite) TestErrCheck(c *check.C) {
 	origErr := errors.New("Some error")
 
 	errWithMessage := errors.WithMessage(origErr, ErrInvalidPasswordStr)
 	errWrapped := errkit.Wrap(origErr, ErrInvalidPasswordStr)
 
-	c.Assert(IsInvalidPasswordError(errWithMessage), Equals, true)
-	c.Assert(IsInvalidPasswordError(errWrapped), Equals, true)
-	c.Assert(IsRepoNotFoundError(errWrapped), Equals, false)
+	c.Assert(IsInvalidPasswordError(errWithMessage), check.Equals, true)
+	c.Assert(IsInvalidPasswordError(errWrapped), check.Equals, true)
+	c.Assert(IsRepoNotFoundError(errWrapped), check.Equals, false)
 
 	permittedErrors := []ErrorType{ErrorInvalidPassword, ErrorRepoNotFound}
-	c.Assert(CheckKopiaErrors(errWithMessage, permittedErrors), Equals, true)
-	c.Assert(CheckKopiaErrors(errWrapped, permittedErrors), Equals, true)
+	c.Assert(CheckKopiaErrors(errWithMessage, permittedErrors), check.Equals, true)
+	c.Assert(CheckKopiaErrors(errWrapped, permittedErrors), check.Equals, true)
 
 	wrongErrors := []ErrorType{ErrorRepoNotFound}
-	c.Assert(CheckKopiaErrors(errWrapped, wrongErrors), Equals, false)
+	c.Assert(CheckKopiaErrors(errWrapped, wrongErrors), check.Equals, false)
 }
