@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -143,7 +143,7 @@ func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps
 		}
 	}
 	if len(errs) != 0 {
-		return nil, errors.New(strings.Join(errs, "\n"))
+		return nil, errkit.New(strings.Join(errs, "\n"))
 	}
 	out, err := parseLogAndCreateOutput(output)
 	if err != nil {
