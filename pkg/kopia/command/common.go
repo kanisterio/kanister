@@ -43,7 +43,7 @@ func GetEnvOrDefault(name, def string) string {
 
 // LogLevel will return either value from env or "error" as default value
 func LogLevel() string {
-	return GetEnvOrDefault(LogLevelVarName, LogLevelError)
+	return GetEnvOrDefault(LogLevelVarName, "debug")
 }
 
 // FileLogLevel will return value from env
@@ -61,7 +61,8 @@ type CommandArgs struct {
 
 func bashCommand(args logsafe.Cmd) []string {
 	log.Info().Print("Kopia Command", field.M{"Command": args.String()})
-	return []string{"bash", "-o", "errexit", "-c", args.PlainText()}
+	log.Info().Print("Kopia Running", field.M{"Running": []string{"bash", "-o", "errexit", "-c", "(", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&", args.PlainText(), ")"}})
+	return []string{"bash", "-o", "errexit", "-c", "(", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&", args.PlainText(), ")"}
 }
 
 func stringSliceCommand(args logsafe.Cmd) []string {
