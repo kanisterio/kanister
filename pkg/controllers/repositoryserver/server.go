@@ -131,6 +131,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 				LogDirectory:   command.DefaultLogDirectory,
 			},
 		})
+	cmd = append([]string{"tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&"}, cmd...)
 	stdout, stderr, err := kube.Exec(ctx, h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
@@ -168,6 +169,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 					NewUsername:  serverUsername,
 					UserPassword: string(password),
 				})
+			cmd = append([]string{"tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&"}, cmd...)
 			stdout, stderr, err := kube.Exec(ctx, h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
 			format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 			format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
@@ -186,6 +188,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 				NewUsername:  serverUsername,
 				UserPassword: string(password),
 			})
+		cmd = append([]string{"tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&"}, cmd...)
 		stdout, stderr, err := kube.Exec(ctx, h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
 		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 		format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
@@ -219,6 +222,7 @@ func (h *RepoServerHandler) refreshServer(ctx context.Context) error {
 			ServerPassword: password,
 			Fingerprint:    fingerprint,
 		})
+	cmd = append([]string{"tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&"}, cmd...)
 	stdout, stderr, err := kube.Exec(ctx, h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
@@ -258,5 +262,6 @@ func (h *RepoServerHandler) getServerStatusCommand(ctx context.Context, serverAd
 			ServerPassword: password,
 			Fingerprint:    fingerprint,
 		})
+	cmd = append([]string{"tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&"}, cmd...)
 	return cmd, nil
 }
