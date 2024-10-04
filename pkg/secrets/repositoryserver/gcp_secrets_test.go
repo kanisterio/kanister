@@ -15,7 +15,7 @@
 package repositoryserver
 
 import (
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +59,7 @@ func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *check.C) {
 				},
 			}),
 			errChecker:    check.NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
 		},
 		{ // Empty Secret
 			secret: NewGCPLocation(&corev1.Secret{
@@ -70,12 +70,12 @@ func (s *GCPSecretCredsSuite) TestValidateRepoServerGCPCredentials(c *check.C) {
 				},
 			}),
 			errChecker:    check.NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
 		},
 		{ // Nil Secret
 			secret:        NewGCPLocation(nil),
 			errChecker:    check.NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()

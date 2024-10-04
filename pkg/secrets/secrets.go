@@ -15,7 +15,9 @@
 package secrets
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -27,7 +29,7 @@ import (
 // - AWS typed secret with required AWS secret fields.
 func ValidateCredentials(secret *corev1.Secret) error {
 	if secret == nil {
-		return errors.New("Nil secret")
+		return errkit.New("Nil secret")
 	}
 	switch string(secret.Type) {
 	case AWSSecretType:
@@ -41,7 +43,7 @@ func ValidateCredentials(secret *corev1.Secret) error {
 		// dont need credentials for file store
 		return nil
 	default:
-		return errors.Errorf("Unsupported type '%s' for secret '%s:%s'", string(secret.Type), secret.Namespace, secret.Name)
+		return errkit.New(fmt.Sprintf("Unsupported type '%s' for secret '%s:%s'", string(secret.Type), secret.Namespace, secret.Name))
 	}
 }
 
@@ -49,11 +51,11 @@ func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
 	var locationType []byte
 	var ok bool
 	if secret == nil {
-		return nil, errors.New("Secret for kopia repository location is Nil")
+		return nil, errkit.New("Secret for kopia repository location is Nil")
 	}
 
 	if locationType, ok = (secret.Data[reposerver.TypeKey]); !ok {
-		return nil, errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, secret.Namespace, secret.Name)
+		return nil, errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, secret.Namespace, secret.Name)
 	}
 
 	switch reposerver.LocType(string(locationType)) {
@@ -68,7 +70,7 @@ func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
 	case reposerver.LocTypeFilestore:
 		return reposerver.NewFileStoreLocation(secret), nil
 	default:
-		return nil, errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, locationType, secret.Namespace, secret.Name)
+		return nil, errkit.Wrap(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, locationType, secret.Namespace, secret.Name)
 	}
 }
 
