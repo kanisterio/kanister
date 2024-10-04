@@ -65,6 +65,9 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 			Background:       true,
 		},
 	)
+
+	cmd = append([]string{"(", "tail", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&"}, append(cmd, ")")...)
+
 	stdout, stderr, err := kube.Exec(ctx, h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
