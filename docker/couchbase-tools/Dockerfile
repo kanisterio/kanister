@@ -1,4 +1,4 @@
-FROM couchbase:enterprise-7.6.2
+FROM couchbase:enterprise-7.6.3
 
 MAINTAINER "Tom Manville <tom@kasten.io>"
 
