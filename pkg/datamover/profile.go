@@ -41,7 +41,7 @@ func (p *profile) Pull(ctx context.Context, sourcePath, destinationPath string) 
 		if err != nil {
 			return err
 		}
-		if err := p.connectToKopiaRepositoryServer(ctx); err != nil {
+		if err := p.connectToKopiaRepositoryServer(ctx, repository.ReadOnlyAccess); err != nil {
 			return err
 		}
 		return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
@@ -55,7 +55,7 @@ func (p *profile) Pull(ctx context.Context, sourcePath, destinationPath string) 
 
 func (p *profile) Push(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
-		if err := p.connectToKopiaRepositoryServer(ctx); err != nil {
+		if err := p.connectToKopiaRepositoryServer(ctx, repository.WriteAccess); err != nil {
 			return err
 		}
 		_, err := kopiaLocationPush(ctx, destinationPath, p.outputName, sourcePath, p.profile.Credential.KopiaServerSecret.Password)
@@ -74,7 +74,7 @@ func (p *profile) Delete(ctx context.Context, destinationPath string) error {
 		if err != nil {
 			return err
 		}
-		if err := p.connectToKopiaRepositoryServer(ctx); err != nil {
+		if err := p.connectToKopiaRepositoryServer(ctx, repository.WriteAccess); err != nil {
 			return err
 		}
 		return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, p.profile.Credential.KopiaServerSecret.Password)
@@ -82,7 +82,7 @@ func (p *profile) Delete(ctx context.Context, destinationPath string) error {
 	return locationDelete(ctx, p.profile, destinationPath)
 }
 
-func (p *profile) connectToKopiaRepositoryServer(ctx context.Context) error {
+func (p *profile) connectToKopiaRepositoryServer(ctx context.Context, accessMode repository.AccessMode) error {
 	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(p.profile.Credential.KopiaServerSecret.ConnectOptions)
 	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(p.profile.Credential.KopiaServerSecret.ConnectOptions)
 	return repository.ConnectToAPIServer(
@@ -94,6 +94,7 @@ func (p *profile) connectToKopiaRepositoryServer(ctx context.Context) error {
 		p.profile.Credential.KopiaServerSecret.Username,
 		contentCacheSize,
 		metadataCacheSize,
+		accessMode,
 	)
 }
 

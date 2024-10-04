@@ -66,7 +66,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.110.0"
+	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.111.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct {
@@ -232,7 +232,8 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 		return nil, err
 	}
 
-	var labels, annotations map[string]string
+	annotations := bpAnnotations
+	labels := bpLabels
 	if tp.PodAnnotations != nil {
 		// merge the actionset annotations with blueprint annotations
 		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations

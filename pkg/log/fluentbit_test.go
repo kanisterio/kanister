@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 const (
@@ -18,9 +18,9 @@ const (
 
 type FluentbitSuite struct{}
 
-var _ = Suite(&FluentbitSuite{})
+var _ = check.Suite(&FluentbitSuite{})
 
-func (s *FluentbitSuite) TestSendLogsServerRunning(c *C) {
+func (s *FluentbitSuite) TestSendLogsServerRunning(c *check.C) {
 	end := make(chan bool)
 	// Fake Fluentbit
 	go runServer(0, end, c)
@@ -34,7 +34,7 @@ func (s *FluentbitSuite) TestSendLogsServerRunning(c *C) {
 	}
 }
 
-func (s *FluentbitSuite) TestSendLogsServerFailedInTheMiddle(c *C) {
+func (s *FluentbitSuite) TestSendLogsServerFailedInTheMiddle(c *check.C) {
 	c.Logf("Error messages are expected in this test")
 
 	end := make(chan bool)
@@ -47,7 +47,7 @@ func (s *FluentbitSuite) TestSendLogsServerFailedInTheMiddle(c *C) {
 	}
 }
 
-func (s *FluentbitSuite) TestSendLogsServerUnavailableFromStart(c *C) {
+func (s *FluentbitSuite) TestSendLogsServerUnavailableFromStart(c *check.C) {
 	c.Logf("Error messages are expected in this test")
 
 	h := NewFluentbitHook(fakeEndPoint)
@@ -59,20 +59,24 @@ func (s *FluentbitSuite) TestSendLogsServerUnavailableFromStart(c *C) {
 	}
 }
 
-func runServer(failAfterNLogs int, endFlag chan<- bool, c *C) {
+func runServer(failAfterNLogs int, endFlag chan<- bool, c *check.C) {
 	result := make([]string, 0)
 	t := time.NewTimer(10 * time.Second)
 	defer close(endFlag)
 
 	l := resolveAndListen(fakeEndPoint, c)
-	defer l.Close()
+	defer func() {
+		err := l.Close()
+		c.Assert(err, check.IsNil)
+	}()
+
 Loop:
 	for {
 		select {
 		case <-t.C:
 			// Success condition is that the server
 			// processed at least 1 message in 5 sec
-			c.Assert(result, Not(HasLen), 0)
+			c.Assert(result, check.Not(check.HasLen), 0)
 			break Loop
 		default:
 			// or it processed all of them under 5 sec.
@@ -86,11 +90,11 @@ Loop:
 			continue
 		}
 		bytes, rerr := io.ReadAll(conn)
-		c.Assert(rerr, IsNil)
+		c.Assert(rerr, check.IsNil)
 
 		strs := strings.Split(strings.Trim(string(bytes), "\n"), "\n")
 		result = append(result, strs...)
-		c.Assert(conn.Close(), IsNil)
+		c.Assert(conn.Close(), check.IsNil)
 		if failAfterNLogs != 0 && len(result) > failAfterNLogs {
 			c.Logf("Server is failed as expected after %d logs", failAfterNLogs)
 			break
@@ -99,11 +103,11 @@ Loop:
 	c.Logf("Server: Received %d of total %d logs", len(result), numMsgs)
 }
 
-func resolveAndListen(endpoint string, c *C) *net.TCPListener {
+func resolveAndListen(endpoint string, c *check.C) *net.TCPListener {
 	addr, err := net.ResolveTCPAddr("tcp", endpoint)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	l, err := net.ListenTCP("tcp", addr)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	return l
 }
 

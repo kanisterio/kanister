@@ -18,70 +18,69 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type SecretUtilsSuite struct{}
 
-var _ = Suite(&SecretUtilsSuite{})
+var _ = check.Suite(&SecretUtilsSuite{})
 
-func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
+func (s *SecretUtilsSuite) TestGetLocationSecret(c *check.C) {
 	for i, tc := range []struct {
 		secret                *corev1.Secret
-		errChecker            Checker
-		locationSecretChecker Checker
+		errChecker            check.Checker
+		locationSecretChecker check.Checker
 		expectedError         error
 	}{
 		{ // Valid secret type
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeGCS),
+					repositoryserver.TypeKey: []byte(repositoryserver.LocTypeGCS),
 				},
 			},
-			errChecker:            IsNil,
-			locationSecretChecker: NotNil,
+			errChecker:            check.IsNil,
+			locationSecretChecker: check.NotNil,
 			expectedError:         nil,
 		},
 		{ // Valid secret type
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeAzure),
+					repositoryserver.TypeKey: []byte(repositoryserver.LocTypeAzure),
 				},
 			},
-			errChecker:            IsNil,
-			locationSecretChecker: NotNil,
+			errChecker:            check.IsNil,
+			locationSecretChecker: check.NotNil,
 			expectedError:         nil,
 		},
 		{ // Valid secret type
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeS3),
+					repositoryserver.TypeKey: []byte(repositoryserver.LocTypeS3),
 				},
 			},
-			errChecker:            IsNil,
-			locationSecretChecker: NotNil,
+			errChecker:            check.IsNil,
+			locationSecretChecker: check.NotNil,
 			expectedError:         nil,
 		},
 		{ // Valid secret type
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(repositoryserver.Location),
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte(reposerver.LocTypeFilestore),
+					repositoryserver.TypeKey: []byte(repositoryserver.LocTypeFilestore),
 				},
 			},
-			errChecker:            IsNil,
-			locationSecretChecker: NotNil,
+			errChecker:            check.IsNil,
+			locationSecretChecker: check.NotNil,
 			expectedError:         nil,
 		},
 		{ // Missing location type
@@ -92,9 +91,9 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					Namespace: "ns",
 				},
 			},
-			errChecker:            NotNil,
-			locationSecretChecker: IsNil,
-			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, "ns", "sec"),
+			errChecker:            check.NotNil,
+			locationSecretChecker: check.IsNil,
+			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, repositoryserver.TypeKey, "ns", "sec"),
 		},
 		{ // Unsupported location type
 			secret: &corev1.Secret{
@@ -104,11 +103,11 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 					Namespace: "ns",
 				},
 				Data: map[string][]byte{
-					reposerver.TypeKey: []byte("invalid"),
+					repositoryserver.TypeKey: []byte("invalid"),
 				},
 			},
-			errChecker:            NotNil,
-			locationSecretChecker: IsNil,
+			errChecker:            check.NotNil,
+			locationSecretChecker: check.IsNil,
 			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, "invalid", "ns", "sec"),
 		},
 	} {
@@ -116,7 +115,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *C) {
 		c.Check(err, tc.errChecker)
 		c.Check(rsecret, tc.locationSecretChecker)
 		if err != nil {
-			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+			c.Check(err.Error(), check.Equals, tc.expectedError.Error(), check.Commentf("test number: %d", i))
 		}
 	}
 }

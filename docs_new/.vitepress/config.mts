@@ -1,4 +1,5 @@
 import { defineConfig } from "vitepress";
+import version from "./version.json"
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -17,10 +18,12 @@ export default defineConfig({
     footer: {
       copyright: "© Copyright 2017-2024, Kanister",
     },
+    nav: [{text: version.version, link: ""}],
 
     sidebar: [
       { text: "Overview", link: "/overview" },
       { text: "Installation", link: "/install" },
+      { text: "RBAC Configuration", link: "/rbac" },
       { text: "Tutorial", link: "/tutorial" },
       { text: "Architecture", link: "/architecture" },
       { text: "Tooling", link: "/tooling" },

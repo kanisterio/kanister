@@ -18,37 +18,37 @@ import (
 	"context"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type DiscoverSuite struct{}
 
-var _ = Suite(&DiscoverSuite{})
+var _ = check.Suite(&DiscoverSuite{})
 
-func (s *DiscoverSuite) TestDiscover(c *C) {
+func (s *DiscoverSuite) TestDiscover(c *check.C) {
 	ctx := context.Background()
 	cli, err := kube.NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	gvrs, err := AllGVRs(ctx, cli.Discovery())
-	c.Assert(err, IsNil)
-	c.Assert(gvrs, Not(HasLen), 0)
+	c.Assert(err, check.IsNil)
+	c.Assert(gvrs, check.Not(check.HasLen), 0)
 	for _, gvr := range gvrs {
-		c.Assert(gvr.Empty(), Equals, false)
-		c.Assert(gvr.Version, Not(Equals), "")
-		c.Assert(gvr.Resource, Not(Equals), "")
+		c.Assert(gvr.Empty(), check.Equals, false)
+		c.Assert(gvr.Version, check.Not(check.Equals), "")
+		c.Assert(gvr.Resource, check.Not(check.Equals), "")
 	}
 
 	gvrs, err = NamespacedGVRs(ctx, cli.Discovery())
-	c.Assert(err, IsNil)
-	c.Assert(gvrs, Not(HasLen), 0)
+	c.Assert(err, check.IsNil)
+	c.Assert(gvrs, check.Not(check.HasLen), 0)
 	for _, gvr := range gvrs {
-		c.Assert(gvr.Empty(), Equals, false)
-		c.Assert(gvr.Version, Not(Equals), "")
-		c.Assert(gvr.Resource, Not(Equals), "")
+		c.Assert(gvr.Empty(), check.Equals, false)
+		c.Assert(gvr.Version, check.Not(check.Equals), "")
+		c.Assert(gvr.Resource, check.Not(check.Equals), "")
 	}
 }

@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
@@ -43,21 +43,21 @@ type KubeExecTest struct {
 	namespace string
 }
 
-var _ = Suite(&KubeExecTest{})
+var _ = check.Suite(&KubeExecTest{})
 
-func (s *KubeExecTest) SetUpSuite(c *C) {
+func (s *KubeExecTest) SetUpSuite(c *check.C) {
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	cli, err := kubernetes.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	crCli, err := versioned.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	osCli, err := osversioned.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	s.cli = cli
 	s.crCli = crCli
@@ -70,19 +70,19 @@ func (s *KubeExecTest) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
 	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *KubeExecTest) TearDownSuite(c *C) {
+func (s *KubeExecTest) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -136,15 +136,15 @@ spec:
           args: ["-f", "/dev/null"]
 `
 
-func (s *KubeExecTest) TestKubeExec(c *C) {
+func (s *KubeExecTest) TestKubeExec(c *check.C) {
 	ctx := context.Background()
 	name := strings.ToLower(c.TestName())
 	name = strings.Replace(name, ".", "", 1)
 	spec := fmt.Sprintf(ssSpec, name)
 	ss, err := kube.CreateStatefulSet(ctx, s.cli, s.namespace, spec)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	kind := "Statefulset"
 	// Run the delete action.
@@ -160,38 +160,38 @@ func (s *KubeExecTest) TestKubeExec(c *C) {
 		},
 	}
 	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	action := "echo"
 	bp := newKubeExecBlueprint()
 	phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	for _, p := range phases {
 		_, err = p.Exec(context.Background(), *bp, action, *tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }
 
-func (s *KubeExecTest) TestParseLogAndCreateOutput(c *C) {
+func (s *KubeExecTest) TestParseLogAndCreateOutput(c *check.C) {
 	for _, tc := range []struct {
 		log        string
 		expected   map[string]interface{}
-		errChecker Checker
-		outChecker Checker
+		errChecker check.Checker
+		outChecker check.Checker
 	}{
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.110.0\"}", map[string]interface{}{"version": "0.110.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.110.0\"}", map[string]interface{}{"version": "0.110.0"}, check.IsNil, check.NotNil},
 		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.110.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
-			map[string]interface{}{"version": "0.110.0", "path": "/backup/path"}, IsNil, NotNil},
-		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.110.0\"}", map[string]interface{}{"version": "0.110.0"}, IsNil, NotNil},
-		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.110.0\"}", map[string]interface{}{"version": "0.110.0"}, IsNil, NotNil},
-		{"###Phase-output###: Invalid message", nil, NotNil, IsNil},
-		{"Random message", nil, IsNil, IsNil},
+			map[string]interface{}{"version": "0.110.0", "path": "/backup/path"}, check.IsNil, check.NotNil},
+		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.110.0\"}", map[string]interface{}{"version": "0.110.0"}, check.IsNil, check.NotNil},
+		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.110.0\"}", map[string]interface{}{"version": "0.110.0"}, check.IsNil, check.NotNil},
+		{"###Phase-output###: Invalid message", nil, check.NotNil, check.IsNil},
+		{"Random message", nil, check.IsNil, check.IsNil},
 	} {
 		out, err := parseLogAndCreateOutput(tc.log)
 		c.Check(err, tc.errChecker)
 		c.Check(out, tc.outChecker)
 		if out != nil {
-			c.Check(out, DeepEquals, tc.expected)
+			c.Check(out, check.DeepEquals, tc.expected)
 		}
 	}
 }

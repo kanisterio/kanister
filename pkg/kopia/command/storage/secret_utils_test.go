@@ -79,7 +79,7 @@ func (s *StorageUtilsSuite) TestLocationUtils(c *check.C) {
 }
 
 func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) {
-	awsAccessKeyId := "access-key-id"
+	awsAccessKeyID := "access-key-id"
 	awsSecretAccessKey := "secret-access-key"
 
 	azureStorageAccountID := "azure-storage-account-id"
@@ -99,7 +99,7 @@ func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) 
 				},
 				Type: corev1.SecretType(secrets.AWSSecretType),
 				Data: map[string][]byte{
-					secrets.AWSAccessKeyID:     []byte(awsAccessKeyId),
+					secrets.AWSAccessKeyID:     []byte(awsAccessKeyID),
 					secrets.AWSSecretAccessKey: []byte(awsSecretAccessKey),
 				},
 			},

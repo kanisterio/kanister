@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
@@ -27,13 +27,13 @@ import (
 
 type AWSSecretSuite struct{}
 
-var _ = Suite(&AWSSecretSuite{})
+var _ = check.Suite(&AWSSecretSuite{})
 
-func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
+func (s *AWSSecretSuite) TestExtractAWSCredentials(c *check.C) {
 	tcs := []struct {
 		secret     *corev1.Secret
 		expected   *credentials.Value
-		errChecker Checker
+		errChecker check.Checker
 	}{
 		{
 			secret: &corev1.Secret{
@@ -48,14 +48,14 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 				SecretAccessKey: "secret_key",
 				ProviderName:    credentials.StaticProviderName,
 			},
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{
 			secret: &corev1.Secret{
 				Type: "Opaque",
 			},
 			expected:   nil,
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{
 			secret: &corev1.Secret{
@@ -65,7 +65,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 				},
 			},
 			expected:   nil,
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{
 			secret: &corev1.Secret{
@@ -75,7 +75,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 				},
 			},
 			expected:   nil,
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 		{
 			secret: &corev1.Secret{
@@ -87,20 +87,20 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 				},
 			},
 			expected:   nil,
-			errChecker: NotNil,
+			errChecker: check.NotNil,
 		},
 	}
 	for testNum, tc := range tcs {
 		creds, err := ExtractAWSCredentials(context.Background(), tc.secret, aws.AssumeRoleDurationDefault)
-		c.Check(creds, DeepEquals, tc.expected, Commentf("test number: %d", testNum))
+		c.Check(creds, check.DeepEquals, tc.expected, check.Commentf("test number: %d", testNum))
 		c.Check(err, tc.errChecker)
 	}
 }
 
-func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *C) {
+func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *check.C) {
 	for _, tc := range []struct {
 		secret *corev1.Secret
-		output Checker
+		output check.Checker
 	}{
 		{
 			secret: &corev1.Secret{
@@ -111,7 +111,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *C) {
 					ConfigRole:         []byte(config.GetEnvOrSkip(c, "role")),
 				},
 			},
-			output: IsNil,
+			output: check.IsNil,
 		},
 		{
 			secret: &corev1.Secret{
@@ -122,7 +122,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *C) {
 					ConfigRole:         []byte("arn:aws:iam::000000000000:role/test-fake-role"),
 				},
 			},
-			output: NotNil,
+			output: check.NotNil,
 		},
 	} {
 		_, err := ExtractAWSCredentials(context.Background(), tc.secret, aws.AssumeRoleDurationDefault)
