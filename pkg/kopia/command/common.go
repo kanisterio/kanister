@@ -61,8 +61,8 @@ type CommandArgs struct {
 
 func bashCommand(args logsafe.Cmd) []string {
 	log.Info().Print("Kopia Command", field.M{"Command": args.String()})
-	log.Info().Print("Kopia Running", field.M{"Running": []string{"bash", "-o", "errexit", "-c", "(", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&", args.PlainText(), ")"}})
-	return []string{"bash", "-o", "errexit", "-c", "(", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&", args.PlainText(), ")"}
+	log.Info().Print("Kopia Running", field.M{"Running": []string{"bash", "-o", "errexit", "-c", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&", args.PlainText()}})
+	return []string{"bash", "-o", "errexit", "-c", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&", args.PlainText()}
 }
 
 func stringSliceCommand(args logsafe.Cmd) []string {
