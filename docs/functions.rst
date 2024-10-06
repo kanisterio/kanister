@@ -150,6 +150,82 @@ Example:
         - |
           echo "Example"
 
+MultiContainerRun
+-----------------
+
+MultiContainerRun spins up a new pod with two containers connected
+via shared `emptyDir`_ volume.
+It's similar to KubeTask, but allows using multiple images to move backup data.
+"background" container is one responsible for generating data, while "output" container
+should export it to destination.
+The main difference between these containers is that phase outputs can only be generated
+from the "output" container.
+The function also supports an optional init container to set up the volume contents.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, No, `string`, namespace in which to execute (the pod will be created in controller's namespace if not specified)
+   `backgroundImage`, Yes, `string`, image to be used in "background" container
+   `backgroundCommand`, Yes, `[]string`,  command list to execute in "background" container
+   `outputImage`, Yes, `string`, image to be used in "output" container
+   `outputCommand`, Yes, `[]string`,  command list to execute in "output" container
+   `initImage`, No, `string`, image to be used in init container of the pod
+   `initCommand`, No, `[]string`, command list to execute in init container of the pod
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
+   `podAnnotations`, No, `map[string]string`, custom annotations for the temporary pod that gets created
+   `podLabels`, No, `map[string]string`, custom labels for the temporary pod that gets created
+   `sharedVolumeMedium`, No, `string`, medium setting for shared volume. See `emptyDir`_.
+   `sharedVolumeSizeLimit`, No, `string`, sizeLimit setting for shared volume. See `emptyDir`_.
+   `sharedVolumeDir`, No, `string`, directory to mount shared volume. Defaults to `/tmp`
+
+.. _emptyDir: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: MultiContainerRun
+    name: examplePhase
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      podOverride:
+        containers:
+        - name: export
+          imagePullPolicy: IfNotPresent
+      podAnnotations:
+        annKey: annValue
+      podLabels:
+        labelKey: labelValue
+      sharedVolumeMedium: Memory
+      sharedVolumeSizeLimit: 1Gi
+      sharedVolumeDir: /tmp/
+      initImage: ubuntu
+      initCommand:
+        - bash
+        - -c
+        - |
+          mkfifo /tmp/pipe-file
+      backgroundImage: ubuntu
+      backgroundCommand:
+        - bash
+        - -c
+        - |
+          for i in {1..10}
+          do
+            echo $i
+            sleep 0.1
+          done > /tmp/pipe-file
+      outputImage: ubuntu
+      outputCommand:
+        - bash
+        - -c
+        - |
+          cat /tmp/pipe-file
+
 ScaleWorkload
 -------------
 
