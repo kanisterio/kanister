@@ -16,10 +16,11 @@ package azure
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
 const metadataURL = "http://169.254.169.254/metadata/"
@@ -109,7 +110,7 @@ func (i *InstanceMetadata) queryMetadataBytes(path, format string) ([]byte, erro
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("Failed to get instance metadata with statusCode: %d, Path: %s", resp.StatusCode, path)
+		return nil, errkit.New(fmt.Sprintf("Failed to get instance metadata with statusCode: %d, Path: %s", resp.StatusCode, path))
 	}
 	defer resp.Body.Close() //nolint:errcheck
 	return io.ReadAll(resp.Body)

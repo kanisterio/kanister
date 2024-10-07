@@ -4,7 +4,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
@@ -62,7 +62,7 @@ func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error)
 	case isClientCredsAvailable(config):
 		return &ClientSecretAuthenticator{}, nil
 	default:
-		return nil, errors.New("Fail to get an authenticator for provided creds combination")
+		return nil, errkit.New("Fail to get an authenticator for provided creds combination")
 	}
 }
 
@@ -78,13 +78,13 @@ func (m *MsiAuthenticator) Authenticate(config map[string]string) error {
 	// check if MSI endpoint is available
 	clientID, ok := config[blockstorage.AzureClientID]
 	if !ok || clientID == "" {
-		return errors.New("Failed to fetch azure clientID")
+		return errkit.New("Failed to fetch azure clientID")
 	}
 	azClientID := azidentity.ClientID(clientID)
 	opts := azidentity.ManagedIdentityCredentialOptions{ID: azClientID}
 	cred, err := azidentity.NewManagedIdentityCredential(&opts)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create an Azure Managed Identity credential")
+		return errkit.Wrap(err, "Failed to create an Azure Managed Identity credential")
 	}
 	m.TokenCredential = cred
 	// config passed authentication
@@ -102,11 +102,11 @@ func (c *ClientSecretAuthenticator) GetAuthorizer() azcore.TokenCredential {
 func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error {
 	credConfig, err := getCredConfigForAuth(creds)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get Client Secret config")
+		return errkit.Wrap(err, "Failed to get Client Secret config")
 	}
 	cred, err := azidentity.NewClientSecretCredential(credConfig.TenantID, credConfig.ClientID, credConfig.ClientSecret, nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create an Azure Client Secret credential")
+		return errkit.Wrap(err, "Failed to create an Azure Client Secret credential")
 	}
 	c.TokenCredential = cred
 	// creds passed authentication
@@ -116,17 +116,17 @@ func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error 
 func getCredConfigForAuth(config map[string]string) (ClientCredentialsConfig, error) {
 	tenantID, ok := config[blockstorage.AzureTenantID]
 	if !ok {
-		return ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
+		return ClientCredentialsConfig{}, errkit.New("Cannot get tenantID from config")
 	}
 
 	clientID, ok := config[blockstorage.AzureClientID]
 	if !ok {
-		return ClientCredentialsConfig{}, errors.New("Cannot get clientID from config")
+		return ClientCredentialsConfig{}, errkit.New("Cannot get clientID from config")
 	}
 
 	clientSecret, ok := config[blockstorage.AzureClientSecret]
 	if !ok {
-		return ClientCredentialsConfig{}, errors.New("Cannot get clientSecret from config")
+		return ClientCredentialsConfig{}, errkit.New("Cannot get clientSecret from config")
 	}
 
 	credConfig := NewClientCredentialsConfig(clientID, clientSecret, tenantID)

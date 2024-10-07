@@ -23,7 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -59,7 +59,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		log.Debug().Print("AZURE_RESOURCE_GROUP is not setup")
 		resourceGroup, err = metadata.Text("instance/compute/resourceGroupName")
 		if err != nil {
-			return nil, errors.Wrap(err, "Cannot get resourceGroup from instance metadata")
+			return nil, errkit.Wrap(err, "Cannot get resourceGroup from instance metadata")
 		}
 	}
 
@@ -67,7 +67,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		log.Debug().Print("AZURE_SUBSCRIPTION_ID is not setup")
 		subscriptionID, err = metadata.Text("instance/compute/subscriptionId")
 		if err != nil {
-			return nil, errors.Wrap(err, "Cannot get subscriptionID from instance metadata")
+			return nil, errkit.Wrap(err, "Cannot get subscriptionID from instance metadata")
 		}
 	}
 
