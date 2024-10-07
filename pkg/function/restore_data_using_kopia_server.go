@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -145,12 +145,12 @@ func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Tem
 
 	userPassphrase, cert, err := userCredentialsAndServerTLS(&tp)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch User Credentials/Certificate Data from Template Params")
+		return nil, errkit.Wrap(err, "Failed to fetch User Credentials/Certificate Data from Template Params")
 	}
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
+		return nil, errkit.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
 	// Validate and get optional arguments
@@ -168,12 +168,12 @@ func (r *restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Tem
 
 	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
+		return nil, errkit.Wrap(err, "Failed to get hostname/user passphrase from Options")
 	}
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 
 	_, sparseRestore := tp.Options[SparseRestoreOption]
@@ -231,7 +231,7 @@ func restoreDataFromServer(
 	for pvcName, mountPoint := range vols {
 		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
 		}
 
 		validatedVols[pvcName] = kube.VolumeMountOptions{
@@ -283,7 +283,7 @@ func restoreDataFromServerPodFunc(
 
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pod.Name)
 		}
 
 		contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
@@ -307,7 +307,7 @@ func restoreDataFromServerPodFunc(
 
 		commandExecutor, err := pc.GetCommandExecutor()
 		if err != nil {
-			return nil, errors.Wrap(err, "Unable to get pod command executor")
+			return nil, errkit.Wrap(err, "Unable to get pod command executor")
 		}
 
 		var stdout, stderr bytes.Buffer
@@ -315,7 +315,7 @@ func restoreDataFromServerPodFunc(
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to connect to Kopia Repository server")
+			return nil, errkit.Wrap(err, "Failed to connect to Kopia Repository server")
 		}
 
 		cmd = kopiacmd.SnapshotRestore(
@@ -338,7 +338,7 @@ func restoreDataFromServerPodFunc(
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 
-		return nil, errors.Wrap(err, "Failed to restore backup from Kopia API server")
+		return nil, errkit.Wrap(err, "Failed to restore backup from Kopia API server")
 	}
 }
 
@@ -350,11 +350,11 @@ func validateAndGetOptArgsForRestore(tp param.TemplateParams, args map[string]an
 		return pod, vols, podOverride, err
 	}
 	if (pod != "") && (len(vols) > 0) {
-		return pod, vols, podOverride, errors.New(fmt.Sprintf("Exactly one of the %s or %s arguments are required, but both are provided", RestoreDataPodArg, RestoreDataVolsArg))
+		return pod, vols, podOverride, errkit.New(fmt.Sprintf("Exactly one of the %s or %s arguments are required, but both are provided", RestoreDataPodArg, RestoreDataVolsArg))
 	}
 	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
 	if err != nil {
-		return pod, vols, podOverride, errors.Wrap(err, "Failed to get Pod Override Specs")
+		return pod, vols, podOverride, errkit.Wrap(err, "Failed to get Pod Override Specs")
 	}
 	return pod, vols, podOverride, nil
 }

@@ -20,7 +20,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -72,7 +72,7 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 	case tp.StatefulSet != nil:
 		podsToPvcs = tp.StatefulSet.PersistentVolumeClaims
 	default:
-		return nil, errors.New("Failed to get volumes")
+		return nil, errkit.New("Failed to get volumes")
 	}
 	for _, podToPvcs := range podsToPvcs {
 		for pvc := range podToPvcs {
@@ -80,7 +80,7 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 		}
 	}
 	if len(vols) == 0 {
-		return nil, errors.New("No volumes found")
+		return nil, errkit.New("No volumes found")
 	}
 	return vols, nil
 }
@@ -102,7 +102,7 @@ func prepareData(
 	for pvcName, mountPoint := range vols {
 		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
 		}
 
 		validatedVols[pvcName] = kube.VolumeMountOptions{
@@ -137,26 +137,26 @@ func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc k
 
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pod.Name)
 		}
 
 		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
 		r, err := pc.StreamPodLogs(ctx)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
+			return nil, errkit.Wrap(err, "Failed to fetch logs from the pod")
 		}
 		defer r.Close() //nolint:errcheck
 
 		bytes, err := io.ReadAll(r)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to read logs from the pod")
+			return nil, errkit.Wrap(err, "Failed to read logs from the pod")
 		}
 		logs := string(bytes)
 
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, logs)
 		out, err := parseLogAndCreateOutput(logs)
-		return out, errors.Wrap(err, "Failed to parse phase output")
+		return out, errkit.Wrap(err, "Failed to parse phase output")
 	}
 }
 
@@ -212,7 +212,7 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	if len(vols) == 0 {
 		if vols, err = getVolumes(tp); err != nil {

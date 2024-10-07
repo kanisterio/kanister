@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 
@@ -109,18 +109,18 @@ func execKubeOperation(ctx context.Context, dynCli dynamic.Interface, op kube.Op
 	switch op {
 	case kube.CreateOperation:
 		if len(spec) == 0 {
-			return nil, errors.New(fmt.Sprintf("spec cannot be empty for %s operation", kube.CreateOperation))
+			return nil, errkit.New(fmt.Sprintf("spec cannot be empty for %s operation", kube.CreateOperation))
 		}
 		return kubeopsOp.Create(strings.NewReader(spec), namespace)
 	case kube.DeleteOperation:
 		if objRef.Name == "" ||
 			objRef.APIVersion == "" ||
 			objRef.Resource == "" {
-			return nil, errors.New(fmt.Sprintf("missing one or more required fields name/namespace/group/apiVersion/resource in objectReference for %s operation", kube.DeleteOperation))
+			return nil, errkit.New(fmt.Sprintf("missing one or more required fields name/namespace/group/apiVersion/resource in objectReference for %s operation", kube.DeleteOperation))
 		}
 		return kubeopsOp.Delete(ctx, objRef, namespace)
 	}
-	return nil, errors.New(fmt.Sprintf("invalid operation '%s'", op))
+	return nil, errkit.New(fmt.Sprintf("invalid operation '%s'", op))
 }
 
 func (*kubeops) RequiredArgs() []string {
