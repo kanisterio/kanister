@@ -15,7 +15,7 @@
 package repositoryserver
 
 import (
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -35,19 +35,19 @@ var _ Secret = &s3Compliant{}
 
 func (s s3Compliant) Validate() error {
 	if s.storageLocation == nil {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
 	if len(s.storageLocation.Data) == 0 {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, s.storageLocation.Namespace, s.storageLocation.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, s.storageLocation.Namespace, s.storageLocation.Name)
 	}
 	if _, ok := s.storageLocation.Data[BucketKey]; !ok {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, s.storageLocation.Namespace, s.storageLocation.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, s.storageLocation.Namespace, s.storageLocation.Name)
 	}
 	if _, ok := s.storageLocation.Data[EndpointKey]; !ok {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, EndpointKey, s.storageLocation.Namespace, s.storageLocation.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, EndpointKey, s.storageLocation.Namespace, s.storageLocation.Name)
 	}
 	if _, ok := s.storageLocation.Data[RegionKey]; !ok {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, s.storageLocation.Namespace, s.storageLocation.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, s.storageLocation.Namespace, s.storageLocation.Name)
 	}
 	return nil
 }

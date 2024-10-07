@@ -15,7 +15,7 @@
 package secrets
 
 import (
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/objectstore"
@@ -46,7 +46,7 @@ const (
 // - azure_storage_environment
 func ValidateAzureCredentials(secret *corev1.Secret) error {
 	if string(secret.Type) != AzureSecretType {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AzureSecretType, secret.Namespace, secret.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AzureSecretType, secret.Namespace, secret.Name)
 	}
 	count := 0
 	if _, ok := secret.Data[AzureStorageAccountID]; ok {
@@ -59,7 +59,7 @@ func ValidateAzureCredentials(secret *corev1.Secret) error {
 		count++
 	}
 	if len(secret.Data) > count {
-		return errors.New("Secret has an unknown field")
+		return errkit.New("Secret has an unknown field")
 	}
 	return nil
 }
@@ -88,7 +88,7 @@ func ExtractAzureCredentials(secret *corev1.Secret) (*objectstore.SecretAzure, e
 		azSecret.EnvironmentName = string(envName)
 	}
 	if azSecret.StorageAccount == "" || azSecret.StorageKey == "" {
-		return nil, errors.New("Azure secret is missing storage account ID or storage key")
+		return nil, errkit.New("Azure secret is missing storage account ID or storage key")
 	}
 	return azSecret, nil
 }
