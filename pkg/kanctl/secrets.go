@@ -18,7 +18,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
@@ -34,7 +34,7 @@ func performRepoServerSecretsValidation(ctx context.Context, p *validateParams) 
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return errors.Wrap(err, "could not get the kubernetes client")
+		return errkit.Wrap(err, "could not get the kubernetes client")
 	}
 
 	secret, err = getSecretFromCmd(ctx, cli, p)
@@ -68,7 +68,7 @@ func getSecretFromFile(ctx context.Context, filename string) (*corev1.Secret, er
 	secret := &corev1.Secret{}
 	err = d.Decode(secret)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to decode the secret passed")
+		return nil, errkit.Wrap(err, "failed to decode the secret passed")
 	}
 	return secret, nil
 }

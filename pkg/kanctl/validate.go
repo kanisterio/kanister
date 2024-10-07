@@ -15,7 +15,9 @@
 package kanctl
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
+	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -67,7 +69,7 @@ func performValidation(cmd *cobra.Command, args []string) error {
 	case "repository-server-secrets":
 		return performRepoServerSecretsValidation(cmd.Context(), p)
 	default:
-		return errors.Errorf("resource %s is not supported for validate subcommand", p.resourceKind)
+		return errkit.New(fmt.Sprintf("resource %s is not supported for validate subcommand", p.resourceKind))
 	}
 }
 
@@ -79,7 +81,7 @@ func extractValidateParams(cmd *cobra.Command, args []string) (*validateParams, 
 	name, _ := cmd.Flags().GetString(nameFlag)
 	filename, _ := cmd.Flags().GetString(filenameFlag)
 	if name == "" && filename == "" {
-		return nil, errors.New("neither name nor filename specified")
+		return nil, errkit.New("neither name nor filename specified")
 	}
 	rns, _ := cmd.Flags().GetString(resourceNamespaceFlag)
 	schemaValidationOnly, _ := cmd.Flags().GetBool(schemaValidationOnlyFlag)

@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2024 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,16 +15,14 @@
 package kanctl
 
 import (
-	"github.com/kanisterio/errkit"
+	"gopkg.in/check.v1"
 )
 
-var errArgsLength = errkit.NewSentinelErr("Incorrect number of arguments")
+type KanctlErrTestSuite struct{}
 
-func newArgsLengthError(format string, args ...interface{}) error {
-	return errkit.Wrap(errArgsLength, format, args...)
-}
+var _ = check.Suite(&KanctlErrTestSuite{})
 
-// IsArgsLengthError returns true if the underlying cause was an errArgsLength.
-func IsArgsLengthError(err error) bool {
-	return errkit.Is(err, errArgsLength)
+func (k *KanctlTestSuite) TestLengthError(c *check.C) {
+	err := newArgsLengthError("Some formatted error with %d arg", 10)
+	c.Assert(IsArgsLengthError(err), check.Equals, true)
 }
