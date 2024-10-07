@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -102,7 +102,7 @@ func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.Templ
 		case tp.StatefulSet != nil:
 			ps = tp.StatefulSet.Pods
 		default:
-			return restorePath, encryptionKey, ps, insecureTLS, podOverride, errors.New("Unsupported workload type")
+			return restorePath, encryptionKey, ps, insecureTLS, podOverride, errkit.New("Unsupported workload type")
 		}
 	}
 
@@ -162,12 +162,12 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	}
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	input := make(map[string]BackupInfo)
 	err = json.Unmarshal([]byte(backupInfo), &input)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not decode JSON data")
+		return nil, errkit.Wrap(err, "Could not decode JSON data")
 	}
 	var chanLen = len(pods)
 	errChan := make(chan error, chanLen)
@@ -178,7 +178,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 			vols, err := FetchPodVolumes(pod, tp)
 			var out map[string]interface{}
 			if err != nil {
-				errChan <- errors.Wrapf(err, "Failed to get volumes of pod %s", pod)
+				errChan <- errkit.Wrap(err, "Failed to get volumes of pod", "pod", pod)
 				outputChan <- out
 				return
 			}
@@ -200,7 +200,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 				annotations,
 				labels,
 			)
-			errChan <- errors.Wrapf(err, "Failed to restore data for pod %s", pod)
+			errChan <- errkit.Wrap(err, "Failed to restore data for pod", "pod", pod)
 			outputChan <- out
 		}(pod)
 	}
@@ -217,7 +217,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		}
 	}
 	if len(errs) != 0 {
-		return nil, errors.New(strings.Join(errs, "\n"))
+		return nil, errkit.New(strings.Join(errs, "\n"))
 	}
 	return output, nil
 }

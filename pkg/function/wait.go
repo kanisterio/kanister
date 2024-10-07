@@ -22,7 +22,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -100,7 +100,7 @@ func (w *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[s
 	}
 	timeoutDur, err := time.ParseDuration(timeout)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse timeout")
+		return nil, errkit.Wrap(err, "Failed to parse timeout")
 	}
 	err = waitForCondition(ctx, dynCli, conditions, timeoutDur, tp, evaluateWaitCondition)
 	return nil, err
@@ -175,9 +175,9 @@ func waitForCondition(
 		}
 		return result, nil
 	})
-	err = errors.Wrap(err, "Failed to wait for the condition to be met")
+	err = errkit.Wrap(err, "Failed to wait for the condition to be met")
 	if evalErr != nil {
-		return errors.Wrap(err, evalErr.Error())
+		return errkit.Wrap(err, evalErr.Error())
 	}
 	return err
 }
@@ -200,11 +200,11 @@ func evaluateWaitCondition(ctx context.Context, dynCli dynamic.Interface, cond C
 	log.Debug().Print(fmt.Sprintf("Resolved jsonpath: %s", rcondition))
 	t, err := template.New("config").Option("missingkey=zero").Funcs(ksprig.TxtFuncMap()).Parse(rcondition)
 	if err != nil {
-		return false, errors.WithStack(err)
+		return false, errkit.WithStack(err)
 	}
 	buf := bytes.NewBuffer(nil)
 	if err = t.Execute(buf, nil); err != nil {
-		return false, errors.WithStack(err)
+		return false, errkit.WithStack(err)
 	}
 	log.Debug().Print(fmt.Sprintf("Condition evaluation result: %s", strings.TrimSpace(buf.String())))
 	return strings.TrimSpace(buf.String()) == "true", nil

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -91,7 +91,7 @@ func deleteData(
 	labels map[string]string,
 ) (map[string]interface{}, error) {
 	if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
-		return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
+		return nil, errkit.New(fmt.Sprintf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg))
 	}
 
 	options := &kube.PodOptions{
@@ -127,7 +127,7 @@ func deleteDataPodFunc(
 
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pod.Name)
 		}
 
 		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
@@ -155,11 +155,11 @@ func deleteDataPodFunc(
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
+				return nil, errkit.Wrap(err, "Failed to forget data, could not get snapshotID from tag", "Tag", deleteTag)
 			}
 			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout.String())
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
+				return nil, errkit.Wrap(err, "Failed to forget data, could not get snapshotID from tag", "Tag", deleteTag)
 			}
 			deleteIdentifiers = append(deleteIdentifiers, deleteIdentifier)
 		}
@@ -175,12 +175,12 @@ func deleteDataPodFunc(
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to forget data")
+				return nil, errkit.Wrap(err, "Failed to forget data")
 			}
 			if reclaimSpace {
 				spaceFreedStr, err := pruneData(tp, pod, podCommandExecutor, encryptionKey, targetPaths[i], insecureTLS)
 				if err != nil {
-					return nil, errors.Wrapf(err, "Error executing prune command")
+					return nil, errkit.Wrap(err, "Error executing prune command")
 				}
 				spaceFreedTotal += restic.ParseResticSizeStringBytes(spaceFreedStr)
 			}
@@ -211,7 +211,7 @@ func pruneData(
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 
 	spaceFreed := restic.SpaceFreedFromPruneLog(stdout.String())
-	return spaceFreed, errors.Wrapf(err, "Failed to prune data after forget")
+	return spaceFreed, errkit.Wrap(err, "Failed to prune data after forget")
 }
 
 func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -279,7 +279,7 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	return deleteData(
 		ctx,
