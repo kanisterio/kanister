@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -78,7 +78,7 @@ func (w *waitV2Func) Exec(ctx context.Context, tp param.TemplateParams, args map
 	}
 	timeoutDur, err := time.ParseDuration(timeout)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse timeout")
+		return nil, errkit.Wrap(err, "Failed to parse timeout")
 	}
 	err = waitForCondition(ctx, dynCli, conditions, timeoutDur, tp, evaluateWaitV2Condition)
 	return nil, err

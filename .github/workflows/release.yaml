@@ -111,6 +111,31 @@ jobs:
     with:
       release_tag: ${{ needs.run_if.outputs.release_tag }}
 
+  publish_charts:
+    runs-on: [run_if, release_packages]
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      RELEASE_TAG: ${{ needs.run_if.outputs.release_tag }}
+    steps:
+      - name: clone helm pages
+        run: |
+          git clone https://infraq:${GH_TOKEN}@github.com/kanisterio/kanister-charts
+      - name: Download the helm index
+        working-directory: ./kanister-charts
+        run: |
+          curl https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}/helm_index.yaml -f -L -o index.yaml
+      - name: Commit changes
+        working-directory: ./kanister-charts
+        run: |
+          git config --global user.name 'Kasten Production'
+          git config --global user.email 'infra@kasten.io'
+          git add -A
+          git commit -s -m "Update chart index to ${RELEASE_TAG}"
+      - name: Push changes
+        working-directory: ./kanister-charts
+        run: |
+          git push
+
   ## TODO: using https://github.com/slackapi/slack-github-action/blob/main/README.md#technique-3-slack-incoming-webhook
   ## we need to set up incoming webhook
   ## Alternatively we can also configure a bot token https://github.com/slackapi/slack-github-action/blob/main/README.md#technique-2-slack-app

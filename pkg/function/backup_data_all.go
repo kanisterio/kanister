@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -106,14 +106,14 @@ func (b *backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {
-		return nil, errors.Wrapf(err, "Failed to validate Profile")
+		return nil, errkit.Wrap(err, "Failed to validate Profile")
 	}
 
 	backupArtifactPrefix = ResolveArtifactPrefix(backupArtifactPrefix, tp.Profile)
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	var ps []string
 	if pods == "" {
@@ -123,7 +123,7 @@ func (b *backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		case tp.StatefulSet != nil:
 			ps = tp.StatefulSet.Pods
 		default:
-			return nil, errors.New("Failed to get pods")
+			return nil, errkit.New("Failed to get pods")
 		}
 	} else {
 		ps = strings.Fields(pods)
@@ -171,7 +171,7 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 		go func(pod string, container string) {
 			ctx = field.Context(ctx, consts.PodNameKey, pod)
 			backupOutputs, err := backupData(ctx, cli, namespace, pod, container, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), includePath, encryptionKey, insecureTLS, tp)
-			errChan <- errors.Wrapf(err, "Failed to backup data for pod %s", pod)
+			errChan <- errkit.Wrap(err, "Failed to backup data for pod", "pod", pod)
 			outChan <- BackupInfo{PodName: pod, BackupID: backupOutputs.backupID, BackupTag: backupOutputs.backupTag}
 		}(pod, container)
 	}
@@ -186,11 +186,11 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 		}
 	}
 	if len(errs) != 0 {
-		return nil, errors.New(strings.Join(errs, "\n"))
+		return nil, errkit.New(strings.Join(errs, "\n"))
 	}
 	manifestData, err := json.Marshal(Output)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to encode JSON data")
+		return nil, errkit.Wrap(err, "Failed to encode JSON data")
 	}
 	return map[string]interface{}{
 		BackupDataAllOutput:   string(manifestData),

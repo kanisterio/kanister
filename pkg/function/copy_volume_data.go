@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -87,7 +87,7 @@ func copyVolumeData(
 	// Validate PVC exists
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+		return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
 	}
 
 	// Create a pod with PVCs attached
@@ -125,12 +125,12 @@ func copyVolumeDataPodFunc(
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
 		}
 
 		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed to write credentials to Pod", "pod", pc.PodName())
 		}
 
 		// Parent context could already be dead, so removing file within new context
@@ -166,12 +166,12 @@ func copyVolumeDataPodFunc(
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to create and upload backup")
+			return nil, errkit.Wrap(err, "Failed to create and upload backup")
 		}
 		// Get the snapshot ID from log
 		backupID := restic.SnapshotIDFromBackupLog(stdout.String())
 		if backupID == "" {
-			return nil, errors.Errorf("Failed to parse the backup ID from logs, backup logs %s", stdout.String())
+			return nil, errkit.New(fmt.Sprintf("Failed to parse the backup ID from logs, backup logs %s", stdout.String()))
 		}
 		fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout.String())
 		if backupSize == "" {
@@ -241,14 +241,14 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {
-		return nil, errors.Wrapf(err, "Failed to validate Profile")
+		return nil, errkit.Wrap(err, "Failed to validate Profile")
 	}
 
 	targetPath = ResolveArtifactPrefix(targetPath, tp.Profile)
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	return copyVolumeData(
 		ctx,

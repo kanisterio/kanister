@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -66,10 +66,10 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 	PVCData := []VolumeSnapshotInfo{}
 	err := json.Unmarshal([]byte(snapshotinfo), &PVCData)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not decode JSON data")
+		return nil, errkit.Wrap(err, "Could not decode JSON data")
 	}
 	if len(pvcNames) > 0 && len(pvcNames) != len(PVCData) {
-		return nil, errors.New("Invalid number of PVC names provided")
+		return nil, errkit.New("Invalid number of PVC names provided")
 	}
 	// providerList required for unit testing
 	providerList := make(map[string]blockstorage.Provider)
@@ -79,7 +79,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 			pvcName = pvcNames[i]
 		}
 		if err = ValidateLocationForBlockstorage(profile, pvcInfo.Type); err != nil {
-			return nil, errors.Wrap(err, "Profile validation failed")
+			return nil, errkit.Wrap(err, "Profile validation failed")
 		}
 		config := getConfig(profile, pvcInfo.Type)
 		if pvcInfo.Type == blockstorage.TypeEBS {
@@ -88,7 +88,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 
 		provider, err := getter.Get(pvcInfo.Type, config)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Could not get storage provider %v", pvcInfo.Type)
+			return nil, errkit.Wrap(err, "Could not get storage provider", "provider", pvcInfo.Type)
 		}
 		_, err = cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err == nil {
@@ -98,7 +98,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		}
 		snapshot, err := provider.SnapshotGet(ctx, pvcInfo.SnapshotID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to get Snapshot from Provider")
+			return nil, errkit.Wrap(err, "Failed to get Snapshot from Provider")
 		}
 
 		tags := map[string]string{
@@ -109,19 +109,19 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		snapshot.Volume.Tags = pvcInfo.Tags
 		vol, err := provider.VolumeCreateFromSnapshot(ctx, *snapshot, tags)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to create volume from snapshot, snapID: %s", snapshot.ID)
+			return nil, errkit.Wrap(err, "Failed to create volume from snapshot", "snapID", snapshot.ID)
 		}
 
 		annotations := map[string]string{}
 		pvc, err := kubevolume.CreatePVC(ctx, cli, namespace, pvcName, vol.SizeInBytes, vol.ID, annotations, nil, nil)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to create PVC for volume %v", *vol)
+			return nil, errkit.Wrap(err, "Unable to create PVC for volume", "volume", *vol)
 		}
 
 		pvAnnotations := addPVProvisionedByAnnotation(nil, provider)
 		pv, err := kubevolume.CreatePV(ctx, cli, vol, vol.Type, pvAnnotations, nil, nil)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to create PV for volume %v", *vol)
+			return nil, errkit.Wrap(err, "Unable to create PV for volume", "volume", *vol)
 		}
 		log.WithContext(ctx).Print("Restore/Create volume from snapshot completed", field.M{"PVC": pvc, "Volume": pv})
 		providerList[pvcInfo.PVCName] = provider
@@ -152,7 +152,7 @@ func (c *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.Templa
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	var namespace, snapshotinfo string
 	var pvcNames []string

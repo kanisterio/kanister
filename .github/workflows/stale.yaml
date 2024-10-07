@@ -22,9 +22,7 @@ jobs:
         close-pr-label: rotten
         stale-issue-label: stale
         stale-pr-label: stale
-        exempt-issue-labels:
-          - frozen
-          - accepted
+        exempt-issue-labels: frozen,accepted
         exempt-pr-labels: frozen
         close-issue-message: This issue is closed due to inactivity. Feel free to reopen it, if it's still relevant. CC @kanisterio/maintainers
         close-pr-message: This PR is closed due to inactivity. Feel free to reopen it, if it's still relevant. CC @kanisterio/maintainers
