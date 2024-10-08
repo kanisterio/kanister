@@ -29,6 +29,10 @@ const (
 	FileLogLevelVarName = "DATA_STORE_FILE_LOG_LEVEL"
 )
 
+var (
+	commandLoggerPrologue = []string{"bash", "-o", "errexit", "-c", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&"}
+)
+
 func NonEmptyOrDefault[T comparable](t T, def T) T {
 	var empty T
 	if t != empty {
@@ -60,9 +64,9 @@ type CommandArgs struct {
 }
 
 func bashCommand(args logsafe.Cmd) []string {
-	log.Info().Print("Kopia Command", field.M{"Command": args.String()})
-	log.Info().Print("Kopia Running", field.M{"Running": []string{"bash", "-o", "errexit", "-c", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&", args.PlainText()}})
-	return []string{"bash", "-o", "errexit", "-c", "tail", "-v", "-F", "/tmp/kopia-log/cli-logs/latest.log", "&", args.PlainText()}
+	bashcArgs := append(append([]string{}, commandLoggerPrologue...), args.PlainText())
+	log.Info().Print("Kopia Command", field.M{"Command": bashcArgs})
+	return bashcArgs
 }
 
 func stringSliceCommand(args logsafe.Cmd) []string {
