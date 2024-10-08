@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -102,9 +102,9 @@ func (c *createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParam
 	}
 	snapshotter, err := snapshot.NewSnapshotter(kubeCli, dynCli)
 	if err != nil {
-		if errors.Is(context.DeadlineExceeded, err) {
+		if errkit.Is(context.DeadlineExceeded, err) {
 			timeoutMsg := "SnapshotContent not provisioned within given timeout. Please check if CSI driver is installed correctly and supports VolumeSnapshot feature"
-			return nil, errors.Wrap(err, timeoutMsg)
+			return nil, errkit.Wrap(err, timeoutMsg)
 		}
 		return nil, err
 	}

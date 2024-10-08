@@ -42,21 +42,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   labels:
 {{ include "kanister-operator.helmLabels" . | indent 4 }}
-  name: {{ template "kanister-operator.fullname" . }}-edit-role
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: edit
-subjects:
-- kind: ServiceAccount
-  name: {{ template "kanister-operator.serviceAccountName" . }}
-  namespace: {{ .Release.Namespace }}
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  labels:
-{{ include "kanister-operator.helmLabels" . | indent 4 }}
   name: {{ template "kanister-operator.fullname" . }}-cr-role
 roleRef:
   apiGroup: rbac.authorization.k8s.io

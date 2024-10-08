@@ -35,6 +35,8 @@ type ActionSpecApplyConfiguration struct {
 	PodOverride      *crv1alpha1.JSONMap                          `json:"podOverride,omitempty"`
 	Options          map[string]string                            `json:"options,omitempty"`
 	PreferredVersion *string                                      `json:"preferredVersion,omitempty"`
+	PodLabels        map[string]string                            `json:"podLabels,omitempty"`
+	PodAnnotations   map[string]string                            `json:"podAnnotations,omitempty"`
 }
 
 // ActionSpecApplyConfiguration constructs an declarative configuration of the ActionSpec type for use with
@@ -152,5 +154,33 @@ func (b *ActionSpecApplyConfiguration) WithOptions(entries map[string]string) *A
 // If called multiple times, the PreferredVersion field is set to the value of the last call.
 func (b *ActionSpecApplyConfiguration) WithPreferredVersion(value string) *ActionSpecApplyConfiguration {
 	b.PreferredVersion = &value
+	return b
+}
+
+// WithPodLabels puts the entries into the PodLabels field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the PodLabels field,
+// overwriting an existing map entries in PodLabels field with the same key.
+func (b *ActionSpecApplyConfiguration) WithPodLabels(entries map[string]string) *ActionSpecApplyConfiguration {
+	if b.PodLabels == nil && len(entries) > 0 {
+		b.PodLabels = make(map[string]string, len(entries))
+	}
+	for k, v := range entries {
+		b.PodLabels[k] = v
+	}
+	return b
+}
+
+// WithPodAnnotations puts the entries into the PodAnnotations field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the PodAnnotations field,
+// overwriting an existing map entries in PodAnnotations field with the same key.
+func (b *ActionSpecApplyConfiguration) WithPodAnnotations(entries map[string]string) *ActionSpecApplyConfiguration {
+	if b.PodAnnotations == nil && len(entries) > 0 {
+		b.PodAnnotations = make(map[string]string, len(entries))
+	}
+	for k, v := range entries {
+		b.PodAnnotations[k] = v
+	}
 	return b
 }

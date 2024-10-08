@@ -19,7 +19,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -60,13 +60,24 @@ func (*kubeTaskFunc) Name() string {
 	return KubeTaskFuncName
 }
 
-func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func kubeTask(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace,
+	image string,
+	command []string,
+	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
+) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      command,
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -82,13 +93,13 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
 		}
 		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
 		r, err := pc.StreamPodLogs(ctx)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
+			return nil, errkit.Wrap(err, "Failed to fetch logs from the pod")
 		}
 		out, err := output.LogAndParse(ctx, r)
 		if err != nil {
@@ -96,7 +107,7 @@ func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[str
 		}
 		// Wait for pod completion
 		if err := pc.WaitForPodCompletion(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to complete", "pod", pc.PodName())
 		}
 		return out, err
 	}
@@ -110,6 +121,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	var namespace, image string
 	var command []string
 	var err error
+	var bpAnnotations, bpLabels map[string]string
 	if err = Arg(args, KubeTaskImageArg, &image); err != nil {
 		return nil, err
 	}
@@ -119,16 +131,46 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+
 	podOverride, err := GetPodSpecOverride(tp, args, KubeTaskPodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
 
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
+	}
+
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
-	return kubeTask(ctx, cli, namespace, image, command, podOverride)
+	return kubeTask(
+		ctx,
+		cli,
+		namespace,
+		image,
+		command,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {
@@ -144,10 +186,16 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskCommandArg,
 		KubeTaskNamespaceArg,
 		KubeTaskPodOverrideArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (ktf *kubeTaskFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(ktf.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(ktf.Arguments(), args); err != nil {
 		return err
 	}

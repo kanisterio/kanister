@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -87,9 +87,11 @@ func deleteData(
 	deleteIdentifiers []string,
 	jobPrefix string,
 	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
-		return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
+		return nil, errkit.New(fmt.Sprintf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg))
 	}
 
 	options := &kube.PodOptions{
@@ -98,6 +100,8 @@ func deleteData(
 		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -123,7 +127,7 @@ func deleteDataPodFunc(
 
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pod.Name)
 		}
 
 		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
@@ -151,11 +155,11 @@ func deleteDataPodFunc(
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
+				return nil, errkit.Wrap(err, "Failed to forget data, could not get snapshotID from tag", "Tag", deleteTag)
 			}
 			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout.String())
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
+				return nil, errkit.Wrap(err, "Failed to forget data, could not get snapshotID from tag", "Tag", deleteTag)
 			}
 			deleteIdentifiers = append(deleteIdentifiers, deleteIdentifier)
 		}
@@ -171,12 +175,12 @@ func deleteDataPodFunc(
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to forget data")
+				return nil, errkit.Wrap(err, "Failed to forget data")
 			}
 			if reclaimSpace {
 				spaceFreedStr, err := pruneData(tp, pod, podCommandExecutor, encryptionKey, targetPaths[i], insecureTLS)
 				if err != nil {
-					return nil, errors.Wrapf(err, "Error executing prune command")
+					return nil, errkit.Wrap(err, "Error executing prune command")
 				}
 				spaceFreedTotal += restic.ParseResticSizeStringBytes(spaceFreedStr)
 			}
@@ -207,7 +211,7 @@ func pruneData(
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 
 	spaceFreed := restic.SpaceFreedFromPruneLog(stdout.String())
-	return spaceFreed, errors.Wrapf(err, "Failed to prune data after forget")
+	return spaceFreed, errkit.Wrap(err, "Failed to prune data after forget")
 }
 
 func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -219,6 +223,7 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	var reclaimSpace bool
 	var err error
 	var insecureTLS bool
+	var bpAnnotations, bpLabels map[string]string
 	if err = Arg(args, DeleteDataNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -240,9 +245,30 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+
 	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataPodOverrideArg)
 	if err != nil {
 		return nil, err
+	}
+
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
 	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {
@@ -253,9 +279,24 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, insecureTLS, strings.Fields(deleteArtifactPrefix), strings.Fields(deleteTag), strings.Fields(deleteIdentifier), deleteDataJobPrefix, podOverride)
+	return deleteData(
+		ctx,
+		cli,
+		tp,
+		reclaimSpace,
+		namespace,
+		encryptionKey,
+		insecureTLS,
+		strings.Fields(deleteArtifactPrefix),
+		strings.Fields(deleteTag),
+		strings.Fields(deleteIdentifier),
+		deleteDataJobPrefix,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {
@@ -274,10 +315,16 @@ func (*deleteDataFunc) Arguments() []string {
 		DeleteDataEncryptionKeyArg,
 		DeleteDataReclaimSpace,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (d *deleteDataFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(d.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}

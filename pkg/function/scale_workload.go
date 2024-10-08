@@ -16,12 +16,13 @@ package function
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -78,11 +79,11 @@ func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 
 	cfg, err := kube.LoadConfig()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to load Kubernetes config")
+		return nil, errkit.Wrap(err, "Failed to load Kubernetes config")
 	}
 	cli, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	switch strings.ToLower(s.kind) {
 	case param.StatefulSetKind:
@@ -104,7 +105,7 @@ func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	case param.DeploymentConfigKind:
 		osCli, err := osversioned.NewForConfig(cfg)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to create OpenShift client")
+			return nil, errkit.Wrap(err, "Failed to create OpenShift client")
 		}
 		count, err := kube.DeploymentConfigReplicas(ctx, osCli, s.namespace, s.name)
 		if err != nil {
@@ -114,7 +115,7 @@ func (s *scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 			outputArtifactOriginalReplicaCount: count,
 		}, kube.ScaleDeploymentConfig(ctx, cli, osCli, s.namespace, s.name, s.replicas, s.waitForReady)
 	}
-	return nil, errors.New("Workload type not supported " + s.kind)
+	return nil, errkit.New("Workload type not supported " + s.kind)
 }
 
 func (*scaleWorkloadFunc) RequiredArgs() []string {
@@ -168,11 +169,11 @@ func (s *scaleWorkloadFunc) setArgs(tp param.TemplateParams, args map[string]int
 	case string:
 		var v int
 		if v, err = strconv.Atoi(val); err != nil {
-			return errors.Wrapf(err, "Cannot convert %s to int ", val)
+			return errkit.Wrap(err, fmt.Sprintf("Cannot convert %s to int", val))
 		}
 		replicas = int32(v)
 	default:
-		return errors.Errorf("Invalid arg type %T for Arg %s ", rep, ScaleWorkloadReplicas)
+		return errkit.New(fmt.Sprintf("Invalid arg type %T for Arg %s ", rep, ScaleWorkloadReplicas))
 	}
 	// Populate default values for optional arguments from template parameters
 	switch {
@@ -190,7 +191,7 @@ func (s *scaleWorkloadFunc) setArgs(tp param.TemplateParams, args map[string]int
 		namespace = tp.DeploymentConfig.Namespace
 	default:
 		if !ArgExists(args, ScaleWorkloadNamespaceArg) || !ArgExists(args, ScaleWorkloadNameArg) || !ArgExists(args, ScaleWorkloadKindArg) {
-			return errors.New("Workload information not available via defaults or namespace/name/kind parameters")
+			return errkit.New("Workload information not available via defaults or namespace/name/kind parameters")
 		}
 	}
 

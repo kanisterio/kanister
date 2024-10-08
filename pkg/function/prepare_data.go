@@ -20,7 +20,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -72,7 +72,7 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 	case tp.StatefulSet != nil:
 		podsToPvcs = tp.StatefulSet.PersistentVolumeClaims
 	default:
-		return nil, errors.New("Failed to get volumes")
+		return nil, errkit.New("Failed to get volumes")
 	}
 	for _, podToPvcs := range podsToPvcs {
 		for pvc := range podToPvcs {
@@ -80,18 +80,29 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 		}
 	}
 	if len(vols) == 0 {
-		return nil, errors.New("No volumes found")
+		return nil, errkit.New("No volumes found")
 	}
 	return vols, nil
 }
 
-func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, podOverride crv1alpha1.JSONMap, command ...string) (map[string]interface{}, error) {
+func prepareData(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace,
+	serviceAccount,
+	image string,
+	vols map[string]string,
+	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
+	command ...string,
+) (map[string]interface{}, error) {
 	// Validate volumes
 	validatedVols := make(map[string]kube.VolumeMountOptions)
 	for pvcName, mountPoint := range vols {
 		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
 		}
 
 		validatedVols[pvcName] = kube.VolumeMountOptions{
@@ -108,6 +119,8 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		Volumes:            validatedVols,
 		ServiceAccountName: serviceAccount,
 		PodOverride:        podOverride,
+		Annotations:        annotations,
+		Labels:             labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -124,26 +137,26 @@ func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc k
 
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pod.Name)
 		}
 
 		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
 		r, err := pc.StreamPodLogs(ctx)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
+			return nil, errkit.Wrap(err, "Failed to fetch logs from the pod")
 		}
 		defer r.Close() //nolint:errcheck
 
 		bytes, err := io.ReadAll(r)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to read logs from the pod")
+			return nil, errkit.Wrap(err, "Failed to read logs from the pod")
 		}
 		logs := string(bytes)
 
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, logs)
 		out, err := parseLogAndCreateOutput(logs)
-		return out, errors.Wrap(err, "Failed to parse phase output")
+		return out, errkit.Wrap(err, "Failed to parse phase output")
 	}
 }
 
@@ -155,6 +168,7 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
+	var bpAnnotations, bpLabels map[string]string
 	var err error
 	if err = Arg(args, PrepareDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -171,21 +185,52 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
 	podOverride, err := GetPodSpecOverride(tp, args, PrepareDataPodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
 
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
+	}
+
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	if len(vols) == 0 {
 		if vols, err = getVolumes(tp); err != nil {
 			return nil, err
 		}
 	}
-	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, podOverride, command...)
+	return prepareData(
+		ctx,
+		cli,
+		namespace,
+		serviceAccount,
+		image,
+		vols,
+		podOverride,
+		annotations,
+		labels,
+		command...,
+	)
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {
@@ -204,10 +249,16 @@ func (*prepareDataFunc) Arguments() []string {
 		PrepareDataVolumes,
 		PrepareDataServiceAccount,
 		PrepareDataPodOverrideArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (p *prepareDataFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(p.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(p.Arguments(), args); err != nil {
 		return err
 	}

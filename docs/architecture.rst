@@ -160,6 +160,8 @@ as follows:
       Options map[string]string             `json:"options"`
       Profile *ObjectReference              `json:"profile"`
       PodOverride map[string]interface{}    `json:"podOverride,omitempty"`
+      PodLabels map[string]string           `json:"podLabels"`
+      PodAnnotations map[string]string      `json:"podAnnotations"`
   }
 
 - ``Name`` is required and specifies the action in the Blueprint.
@@ -177,6 +179,10 @@ as follows:
 - ``Options`` is used to specify additional values to be used in the Blueprint
 - ``PodOverride`` is used to specify pod specs that will override default specs
   of the Pod created while executing functions like KubeTask, PrepareData, etc.
+- ``PodLabels`` is used to configure the labels of the pods that are created
+  by Kanister functions run by this ActionSet.
+- ``PodAnnotations`` is used to configure the annotations of the pods that created
+  by Kanister functions run by this ActionSet.
 
 As a reference, below is an example of a ActionSpec.
 

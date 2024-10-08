@@ -15,8 +15,8 @@
 package repositoryserver
 
 import (
-	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"github.com/kanisterio/errkit"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -25,12 +25,12 @@ import (
 
 type RepositoryPasswordSecretSuite struct{}
 
-var _ = Suite(&RepositoryPasswordSecretSuite{})
+var _ = check.Suite(&RepositoryPasswordSecretSuite{})
 
-func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
+func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *check.C) {
 	for i, tc := range []struct {
 		secret        Secret
-		errChecker    Checker
+		errChecker    check.Checker
 		expectedError error
 	}{
 		{ // Valid Repository Password Secret
@@ -44,7 +44,7 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 					RepoPasswordKey: []byte("repopassword"),
 				},
 			}),
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // Missing required field - Repo Password Key
 			secret: NewRepoPassword(&corev1.Secret{
@@ -57,8 +57,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 					BucketKey: []byte("bucketkey"),
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RepoPasswordKey, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RepoPasswordKey, "ns", "sec"),
 		},
 		{ // Secret should contain only 1 key value pair
 			secret: NewRepoPassword(&corev1.Secret{
@@ -72,8 +72,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 					RepoPasswordKey: []byte("repopassword"),
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, "ns", "sec"),
 		},
 		{ // Empty Secret
 			secret: NewRepoPassword(&corev1.Secret{
@@ -83,19 +83,19 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryPassword(c *C) {
 					Namespace: "ns",
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
 		},
 		{ // Nil Secret
 			secret:        NewRepoPassword(nil),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
 		if err != nil {
-			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+			c.Check(err.Error(), check.Equals, tc.expectedError.Error(), check.Commentf("test number: %d", i))
 		}
 	}
 }

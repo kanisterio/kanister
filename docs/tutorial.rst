@@ -25,6 +25,8 @@ Prerequisites
 
 * A running Kanister controller. See :ref:`install`
 
+* Proper RBAC configured for the Kanister controller. See :ref:`rbac`
+
 * Access to an S3 bucket and credentials.
 
 Example Application
@@ -386,6 +388,45 @@ Create a new ActionSet that has the name-to-Secret reference in its action's
           name: aws-creds
           namespace: kanister
   EOF
+
+Configuring Labels and Annotations of Kanister function pods using ActionSet
+============================================================================
+
+We create an ActionSet each time we want to execute a
+Kanister action. This action is going to be defined in Kanister blueprints
+using Kanister functions.
+
+If the specified Kanister function creates a pod, labels and annotations of
+that pod can be configured via ``podLabels`` and ``podAnnotations`` fields
+of the ActionSet resource.
+
+Once these fields are configured in the ActionSet resource, all the pods that
+are created by Kanister functions that is run by this ActionSet would have these
+labels and annotations.
+
+.. code-block:: yaml
+
+  $ cat <<EOF | kubectl create -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: ActionSet
+  metadata:
+    generateName: s3backup-
+    namespace: kanister
+  spec:
+    actions:
+    - name: backup
+      blueprint: time-log-bp
+      podLabels:
+        labelKeyZero: labelValueZero
+        labelKeyOne: labelValueone
+      podAnnotations:
+        annotationKey: annotationValue
+      object:
+        kind: Deployment
+        name: time-logger
+        namespace: default
+  EOF
+
 
 Artifacts
 =========

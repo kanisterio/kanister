@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -27,13 +27,13 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type BlueprintSuite struct{}
 
-var _ = Suite(&BlueprintSuite{})
+var _ = check.Suite(&BlueprintSuite{})
 
-func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
+func (bs *BlueprintSuite) TestUpdateImageTags(c *check.C) {
 	for _, bp := range []*crv1alpha1.Blueprint{
 		// BP with no phase with image arg
 		{
@@ -138,7 +138,7 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 	}
 }
 
-func validateImageTags(c *C, bp *crv1alpha1.Blueprint) {
+func validateImageTags(c *check.C, bp *crv1alpha1.Blueprint) {
 	podOverride := crv1alpha1.JSONMap{
 		"containers": []map[string]interface{}{
 			{
@@ -156,9 +156,9 @@ func validateImageTags(c *C, bp *crv1alpha1.Blueprint) {
 			// Verify if image with prefix "ghcr.io/kanisterio" is tagged "v9.99.9-dev"
 			c.Log(fmt.Sprintf("phase:%s, image:%s", phase.Name, image.(string)))
 			if strings.HasPrefix(image.(string), imagePrefix) {
-				c.Assert(strings.Split(image.(string), ":")[1], Equals, "v9.99.9-dev")
+				c.Assert(strings.Split(image.(string), ":")[1], check.Equals, "v9.99.9-dev")
 			}
-			c.Assert(phase.Args["podOverride"], DeepEquals, podOverride)
+			c.Assert(phase.Args["podOverride"], check.DeepEquals, podOverride)
 		}
 	}
 }

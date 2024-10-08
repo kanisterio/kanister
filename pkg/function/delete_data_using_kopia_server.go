@@ -19,7 +19,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -70,10 +70,16 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 		DeleteDataNamespaceArg,
 		RestoreDataImageArg,
 		KopiaRepositoryServerUserHostname,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (d *deleteDataUsingKopiaServerFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(d.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}
@@ -87,11 +93,13 @@ func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 	defer func() { d.progressPercent = progress.CompletedPercent }()
 
 	var (
-		err          error
-		image        string
-		namespace    string
-		snapID       string
-		userHostname string
+		err           error
+		image         string
+		namespace     string
+		snapID        string
+		userHostname  string
+		bpAnnotations map[string]string
+		bpLabels      map[string]string
 	)
 	if err = Arg(args, DeleteDataBackupIdentifierArg, &snapID); err != nil {
 		return nil, err
@@ -105,25 +113,45 @@ func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 	if err = OptArg(args, KopiaRepositoryServerUserHostname, &userHostname, ""); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
+	}
 
 	userPassphrase, cert, err := userCredentialsAndServerTLS(&tp)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch User Credentials/Certificate Data from Template Params")
+		return nil, errkit.Wrap(err, "Failed to fetch User Credentials/Certificate Data from Template Params")
 	}
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
+		return nil, errkit.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
 	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
+		return nil, errkit.Wrap(err, "Failed to get hostname/user passphrase from Options")
 	}
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 
 	return deleteDataFromServer(
@@ -138,6 +166,8 @@ func (d *deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 		snapID,
 		tp.RepositoryServer.Username,
 		userAccessPassphrase,
+		annotations,
+		labels,
 	)
 }
 
@@ -161,12 +191,16 @@ func deleteDataFromServer(
 	snapID,
 	username,
 	userPassphrase string,
+	annotations,
+	labels map[string]string,
 ) (map[string]any, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -197,7 +231,7 @@ func deleteDataFromServerPodFunc(
 
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pod.Name)
 		}
 
 		contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
@@ -220,7 +254,7 @@ func deleteDataFromServerPodFunc(
 
 		commandExecutor, err := pc.GetCommandExecutor()
 		if err != nil {
-			return nil, errors.Wrap(err, "Unable to get pod command executor")
+			return nil, errkit.Wrap(err, "Unable to get pod command executor")
 		}
 
 		var stdout, stderr bytes.Buffer
@@ -228,7 +262,7 @@ func deleteDataFromServerPodFunc(
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to connect to Kopia Repository server")
+			return nil, errkit.Wrap(err, "Failed to connect to Kopia Repository server")
 		}
 
 		cmd = kopiacmd.SnapshotDelete(
@@ -245,6 +279,6 @@ func deleteDataFromServerPodFunc(
 		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
-		return nil, errors.Wrap(err, "Failed to delete backup from Kopia API server")
+		return nil, errkit.Wrap(err, "Failed to delete backup from Kopia API server")
 	}
 }

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -102,7 +102,7 @@ func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.Templ
 		case tp.StatefulSet != nil:
 			ps = tp.StatefulSet.Pods
 		default:
-			return restorePath, encryptionKey, ps, insecureTLS, podOverride, errors.New("Unsupported workload type")
+			return restorePath, encryptionKey, ps, insecureTLS, podOverride, errkit.New("Unsupported workload type")
 		}
 	}
 
@@ -116,6 +116,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 
 	var namespace, image, backupArtifactPrefix, backupInfo string
 	var err error
+	var bpAnnotations, bpLabels map[string]string
 
 	if err = Arg(args, RestoreDataAllNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -129,6 +130,26 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err = Arg(args, RestoreDataAllBackupInfo, &backupInfo); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
+	}
 
 	// Validate and get optional arguments
 	restorePath, encryptionKey, pods, insecureTLS, podOverride, err := validateAndGetRestoreAllOptArgs(args, tp)
@@ -141,12 +162,12 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	}
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	input := make(map[string]BackupInfo)
 	err = json.Unmarshal([]byte(backupInfo), &input)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not decode JSON data")
+		return nil, errkit.Wrap(err, "Could not decode JSON data")
 	}
 	var chanLen = len(pods)
 	errChan := make(chan error, chanLen)
@@ -157,12 +178,29 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 			vols, err := FetchPodVolumes(pod, tp)
 			var out map[string]interface{}
 			if err != nil {
-				errChan <- errors.Wrapf(err, "Failed to get volumes of pod %s", pod)
+				errChan <- errkit.Wrap(err, "Failed to get volumes of pod", "pod", pod)
 				outputChan <- out
 				return
 			}
-			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, image, insecureTLS, vols, podOverride)
-			errChan <- errors.Wrapf(err, "Failed to restore data for pod %s", pod)
+			out, err = restoreData(
+				ctx,
+				cli,
+				tp,
+				namespace,
+				encryptionKey,
+				fmt.Sprintf("%s/%s", backupArtifactPrefix, pod),
+				restorePath,
+				"",
+				input[pod].BackupID,
+				restoreDataAllJobPrefix,
+				image,
+				insecureTLS,
+				vols,
+				podOverride,
+				annotations,
+				labels,
+			)
+			errChan <- errkit.Wrap(err, "Failed to restore data for pod", "pod", pod)
 			outputChan <- out
 		}(pod)
 	}
@@ -179,7 +217,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		}
 	}
 	if len(errs) != 0 {
-		return nil, errors.New(strings.Join(errs, "\n"))
+		return nil, errkit.New(strings.Join(errs, "\n"))
 	}
 	return output, nil
 }
@@ -204,10 +242,16 @@ func (*restoreDataAllFunc) Arguments() []string {
 		RestoreDataAllPodsArg,
 		RestoreDataAllPodOverrideArg,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (r *restoreDataAllFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(r.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
 		return err
 	}

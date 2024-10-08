@@ -11,10 +11,10 @@ use more of Kanister's features to manage the application's data.
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
     installed and setup
 - [helm](https://helm.sh) installed and initialized using the command
-    [helm init]{.title-ref}
+    `helm init`
 - docker
-- A running Kanister controller. See `install`{.interpreted-text
-    role="ref"}
+- A running Kanister controller. See [install](install)
+- Proper RBAC configured for the Kanister controller. See [RBAC Configuration](rbac)
 - Access to an S3 bucket and credentials.
 
 ## Example Application
@@ -33,7 +33,10 @@ kind: Deployment
 metadata:
   name: time-logger
 spec:
-  replicas: 1
+  replicas: 1  
+  selector:
+    matchLabels:
+      app: time-logger
   template:
     metadata:
       labels:
@@ -185,8 +188,7 @@ choose where to store the log based on values in a ConfigMap. ConfigMaps
 are referenced in an ActionSet, which are fetched by the controller and
 made available to Blueprints through parameter templating.
 
-For more on templating in Kanister, see `templates`{.interpreted-text
-role="ref"}.
+For more on templating in Kanister, see [templates](templates).
 
 In this section of the tutorial, we\'re going to use a ConfigMap to
 choose where to backup our time log. We\'ll name our ConfigMap and
@@ -313,8 +315,7 @@ the ConfigMap, we can also push the log to S3. In this Secret, we store
 the credentials as binary data. We can use the templating engine
 `toString` and `quote` functions, courtesy of sprig.
 
-For more on this templating, see `templates`{.interpreted-text
-role="ref"}
+For more on this templating, see [templates](templates)
 
 ``` yaml
 cat <<EOF | kubectl apply -f -
@@ -373,6 +374,41 @@ spec:
         name: aws-creds
         namespace: kanister
 EOF
+```
+
+## Configuring Labels and Annotations of Kanister function pods using ActionSet
+
+We create an ActionSet each time we want to execute a
+Kanister action. This action is going to be defined in Kanister blueprints
+using Kanister functions.
+
+If the specified Kanister function creates a pod, labels and annotations of
+that pod can be configured via ``podLabels`` and ``podAnnotations`` fields
+of the ActionSet resource.
+
+Once these fields are configured in the ActionSet resource, all the pods that
+are created by Kanister functions that is run by this ActionSet would have these
+labels and annotations.
+
+```
+  $ cat <<EOF | kubectl create -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: ActionSet
+  metadata:
+    generateName: s3backup-
+    namespace: kanister
+  spec:
+    actions:
+    - name: backup
+      blueprint: time-log-bp
+      podLabels:
+        labelKeyZero: labelValueZero
+        labelKeyOne: labelValueone
+      podAnnotations:
+        annotationKey: annotationValue
+      object:
+        kind: Deployment
+  EOF
 ```
 
 ## Artifacts

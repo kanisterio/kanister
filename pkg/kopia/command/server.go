@@ -20,6 +20,8 @@ import (
 
 type ServerStartCommandArgs struct {
 	*CommandArgs
+	CacheArgs
+	CacheDirectory       string
 	ServerAddress        string
 	TLSCertFile          string
 	TLSKeyFile           string
@@ -55,6 +57,8 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 
 	args = args.AppendLoggableKV(serverControlUsernameFlag, cmdArgs.ServerUsername)
 	args = args.AppendRedactedKV(serverControlPasswordFlag, cmdArgs.ServerPassword)
+
+	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
 
 	if cmdArgs.ReadOnly {
 		args = args.AppendLoggable(readOnlyFlag)

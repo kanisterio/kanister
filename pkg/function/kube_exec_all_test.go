@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
@@ -42,21 +42,21 @@ type KubeExecAllTest struct {
 	namespace string
 }
 
-var _ = Suite(&KubeExecAllTest{})
+var _ = check.Suite(&KubeExecAllTest{})
 
-func (s *KubeExecAllTest) SetUpSuite(c *C) {
+func (s *KubeExecAllTest) SetUpSuite(c *check.C) {
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	cli, err := kubernetes.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	crCli, err := versioned.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	osCli, err := osversioned.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	s.cli = cli
 	s.crCli = crCli
@@ -69,19 +69,19 @@ func (s *KubeExecAllTest) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
 	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *KubeExecAllTest) TearDownSuite(c *C) {
+func (s *KubeExecAllTest) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -109,14 +109,14 @@ func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
+func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *check.C) {
 	ctx := context.Background()
 	d := testutil.NewTestDeployment(1)
 	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(context.TODO(), d, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	kind := "Deployment"
 	as := crv1alpha1.ActionSpec{
@@ -131,26 +131,26 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 		},
 	}
 	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, s.osCli, as)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	action := "echo"
 	bp := newExecAllBlueprint(kind)
 	phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	for _, p := range phases {
 		_, err = p.Exec(ctx, *bp, action, *tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }
 
-func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
+func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *check.C) {
 	ctx := context.Background()
 	ss := testutil.NewTestStatefulSet(1)
 	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(context.TODO(), ss, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	kind := "StatefulSet"
 	as := crv1alpha1.ActionSpec{
@@ -165,14 +165,14 @@ func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 		},
 	}
 	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	action := "echo"
 	bp := newExecAllBlueprint(kind)
 	phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	for _, p := range phases {
 		_, err = p.Exec(ctx, *bp, action, *tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 	}
 }

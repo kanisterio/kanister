@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -29,18 +29,18 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type ResourceSuite struct {
 	cli       kubernetes.Interface
 	namespace string
 }
 
-var _ = Suite(&ResourceSuite{})
+var _ = check.Suite(&ResourceSuite{})
 
-func (s *ResourceSuite) SetUpSuite(c *C) {
+func (s *ResourceSuite) SetUpSuite(c *check.C) {
 	cli, err := kube.NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cli = cli
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -48,11 +48,11 @@ func (s *ResourceSuite) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 }
 
-func (s *ResourceSuite) TearDownSuite(c *C) {
+func (s *ResourceSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -60,87 +60,87 @@ func (s *ResourceSuite) TearDownSuite(c *C) {
 
 var emptyGetOptions metav1.GetOptions
 
-func (s *ResourceSuite) TestActionSetClient(c *C) {
+func (s *ResourceSuite) TestActionSetClient(c *check.C) {
 	ctx := context.Background()
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = CreateCustomResources(ctx, config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	name := "testactionset"
 	cli, err := crclientv1alpha1.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
 	as1, err := cli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
-	c.Assert(as, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(as, check.NotNil)
 
 	as2, err := cli.ActionSets(s.namespace).Get(ctx, name, emptyGetOptions)
-	c.Assert(err, IsNil)
-	c.Assert(as1, DeepEquals, as2)
+	c.Assert(err, check.IsNil)
+	c.Assert(as1, check.DeepEquals, as2)
 
 	as2.Spec = &crv1alpha1.ActionSetSpec{}
 	as3, err := cli.ActionSets(s.namespace).Update(ctx, as2, metav1.UpdateOptions{})
-	c.Assert(err, IsNil)
-	c.Assert(as1.Spec, IsNil)
-	c.Assert(as3.Spec, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(as1.Spec, check.IsNil)
+	c.Assert(as3.Spec, check.NotNil)
 
 	as4, err := cli.ActionSets(s.namespace).Get(ctx, name, emptyGetOptions)
-	c.Assert(err, IsNil)
-	c.Assert(as4, DeepEquals, as3)
+	c.Assert(err, check.IsNil)
+	c.Assert(as4, check.DeepEquals, as3)
 
 	err = cli.ActionSets(s.namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	_, err = cli.ActionSets(s.namespace).Get(ctx, name, emptyGetOptions)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.NotNil)
 }
 
-func (s *ResourceSuite) TestBlueprintClient(c *C) {
+func (s *ResourceSuite) TestBlueprintClient(c *check.C) {
 	ctx := context.Background()
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	err = CreateCustomResources(ctx, config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	name := "testblueprint"
 	cli, err := crclientv1alpha1.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	bp := &crv1alpha1.Blueprint{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
 	bp1, err := cli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
-	c.Assert(bp, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(bp, check.NotNil)
 
 	bp2, err := cli.Blueprints(s.namespace).Get(ctx, name, emptyGetOptions)
-	c.Assert(err, IsNil)
-	c.Assert(bp1, DeepEquals, bp2)
+	c.Assert(err, check.IsNil)
+	c.Assert(bp1, check.DeepEquals, bp2)
 	bp2.Actions = map[string]*crv1alpha1.BlueprintAction{
 		"backup": {
 			Name: "takebackup",
 		},
 	}
 	bp3, err := cli.Blueprints(s.namespace).Update(ctx, bp2, metav1.UpdateOptions{})
-	c.Assert(err, IsNil)
-	c.Assert(bp1.Actions, IsNil)
-	c.Assert(bp3.Actions, NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(bp1.Actions, check.IsNil)
+	c.Assert(bp3.Actions, check.NotNil)
 
 	bp4, err := cli.Blueprints(s.namespace).Get(ctx, name, emptyGetOptions)
-	c.Assert(err, IsNil)
-	c.Assert(bp4, DeepEquals, bp3)
+	c.Assert(err, check.IsNil)
+	c.Assert(bp4, check.DeepEquals, bp3)
 
 	err = cli.Blueprints(s.namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	_, err = cli.Blueprints(s.namespace).Get(ctx, name, emptyGetOptions)
-	c.Assert(err, NotNil)
+	c.Assert(err, check.NotNil)
 }

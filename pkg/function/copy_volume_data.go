@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -81,11 +81,13 @@ func copyVolumeData(
 	encryptionKey string,
 	insecureTLS bool,
 	podOverride map[string]interface{},
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	// Validate PVC exists
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+		return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
 	}
 
 	// Create a pod with PVCs attached
@@ -100,6 +102,8 @@ func copyVolumeData(
 			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
 		}},
 		PodOverride: podOverride,
+		Annotations: annotations,
+		Labels:      labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -121,12 +125,12 @@ func copyVolumeDataPodFunc(
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
 		}
 
 		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed to write credentials to Pod", "pod", pc.PodName())
 		}
 
 		// Parent context could already be dead, so removing file within new context
@@ -162,12 +166,12 @@ func copyVolumeDataPodFunc(
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to create and upload backup")
+			return nil, errkit.Wrap(err, "Failed to create and upload backup")
 		}
 		// Get the snapshot ID from log
 		backupID := restic.SnapshotIDFromBackupLog(stdout.String())
 		if backupID == "" {
-			return nil, errors.Errorf("Failed to parse the backup ID from logs, backup logs %s", stdout.String())
+			return nil, errkit.New(fmt.Sprintf("Failed to parse the backup ID from logs, backup logs %s", stdout.String()))
 		}
 		fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout.String())
 		if backupSize == "" {
@@ -194,6 +198,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 
 	var namespace, vol, targetPath, encryptionKey string
 	var err error
+	var bpAnnotations, bpLabels map[string]string
 	var insecureTLS bool
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -210,22 +215,54 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
 	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
 
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
+	}
+
 	if err = ValidateProfile(tp.Profile); err != nil {
-		return nil, errors.Wrapf(err, "Failed to validate Profile")
+		return nil, errkit.Wrap(err, "Failed to validate Profile")
 	}
 
 	targetPath = ResolveArtifactPrefix(targetPath, tp.Profile)
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
-	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey, insecureTLS, podOverride)
+	return copyVolumeData(
+		ctx,
+		cli,
+		tp,
+		namespace,
+		vol,
+		targetPath,
+		encryptionKey,
+		insecureTLS,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*copyVolumeDataFunc) RequiredArgs() []string {
@@ -243,10 +280,16 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataArtifactPrefixArg,
 		CopyVolumeDataEncryptionKeyArg,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (c *copyVolumeDataFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(c.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}

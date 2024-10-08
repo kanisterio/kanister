@@ -17,14 +17,14 @@ package command
 import (
 	"strings"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type KopiaMaintenanceTestSuite struct{}
 
-var _ = Suite(&KopiaMaintenanceTestSuite{})
+var _ = check.Suite(&KopiaMaintenanceTestSuite{})
 
-func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
+func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *check.C) {
 	commandArgs := &CommandArgs{
 		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
@@ -96,6 +96,6 @@ func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, Equals, tc.expectedLog)
+		c.Check(cmd, check.Equals, tc.expectedLog)
 	}
 }

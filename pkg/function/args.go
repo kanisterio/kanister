@@ -15,8 +15,10 @@
 package function
 
 import (
+	"fmt"
+
+	"github.com/kanisterio/errkit"
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -29,11 +31,11 @@ import (
 func Arg(args map[string]interface{}, argName string, result interface{}) error {
 	if val, ok := args[argName]; ok {
 		if err := mapstructure.WeakDecode(val, result); err != nil {
-			return errors.Wrapf(err, "Failed to decode arg `%s`", argName)
+			return errkit.Wrap(err, fmt.Sprintf("Failed to decode arg `%s`", argName))
 		}
 		return nil
 	}
-	return errors.New("Argument missing " + argName)
+	return errkit.New("Argument missing " + argName)
 }
 
 // OptArg returns the value of the specified argument if it exists
@@ -105,5 +107,5 @@ func GetYamlList(args map[string]interface{}, argName string) ([]string, error) 
 		err := yaml.Unmarshal(valListBytes, &valList)
 		return valList, err
 	}
-	return nil, errors.Errorf("Invalid %s arg format", argName)
+	return nil, errkit.New(fmt.Sprintf("Invalid %s arg format", argName))
 }

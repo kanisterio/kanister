@@ -19,19 +19,20 @@ import (
 	"strings"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type BlueprintTest struct {
 	backupPhases  []crv1alpha1.BlueprintPhase
-	err           Checker
+	err           check.Checker
 	errContains   string
 	deferPhase    *crv1alpha1.BlueprintPhase
 	restorePhases []crv1alpha1.BlueprintPhase
@@ -43,9 +44,9 @@ const (
 
 type ValidateBlueprint struct{}
 
-var _ = Suite(&ValidateBlueprint{})
+var _ = check.Suite(&ValidateBlueprint{})
 
-func (v *ValidateBlueprint) TestValidate(c *C) {
+func (v *ValidateBlueprint) TestValidate(c *check.C) {
 	for _, tc := range []BlueprintTest{
 		{
 			backupPhases: []crv1alpha1.BlueprintPhase{
@@ -75,7 +76,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 				},
 			},
 			errContains: "Required arg missing: command",
-			err:         NotNil,
+			err:         check.NotNil,
 		},
 		{
 			backupPhases: []crv1alpha1.BlueprintPhase{
@@ -97,7 +98,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 					},
 				},
 			},
-			err: IsNil,
+			err: check.IsNil,
 		},
 		{
 			// function name is incorrect
@@ -121,7 +122,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 				},
 			},
 			errContains: "Requested function {KubeTasks} has not been registered",
-			err:         NotNil,
+			err:         check.NotNil,
 		},
 		{
 			backupPhases: []crv1alpha1.BlueprintPhase{
@@ -135,7 +136,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 					},
 				},
 			},
-			err: IsNil,
+			err: check.IsNil,
 		},
 		{
 			backupPhases: []crv1alpha1.BlueprintPhase{
@@ -149,7 +150,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 				},
 			},
 			errContains: "Required arg missing: command",
-			err:         NotNil,
+			err:         check.NotNil,
 		},
 		{
 			backupPhases: []crv1alpha1.BlueprintPhase{
@@ -163,7 +164,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 				},
 			},
 			errContains: "Required arg missing: command",
-			err:         NotNil,
+			err:         check.NotNil,
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Func: "PrepareData",
 				Name: "51",
@@ -186,7 +187,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 				},
 			},
 			errContains: "Required arg missing: command",
-			err:         NotNil,
+			err:         check.NotNil,
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Func: "PrepareData",
 				Name: "61",
@@ -208,7 +209,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 					},
 				},
 			},
-			err: IsNil,
+			err: check.IsNil,
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Func: "PrepareData",
 				Name: "71",
@@ -227,13 +228,13 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 		}
 		err := Do(bp, kanister.DefaultVersion)
 		if err != nil {
-			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)
+			c.Assert(strings.Contains(err.Error(), tc.errContains), check.Equals, true)
 		}
 		c.Assert(err, tc.err)
 	}
 }
 
-func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
+func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *check.C) {
 	for _, tc := range []BlueprintTest{
 		{
 			backupPhases: []crv1alpha1.BlueprintPhase{
@@ -256,7 +257,7 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 					},
 				},
 			},
-			err: IsNil,
+			err: check.IsNil,
 		},
 		{
 			// blueprint with one function that is registered with default version and
@@ -281,7 +282,7 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 					},
 				},
 			},
-			err:         NotNil,
+			err:         check.NotNil,
 			errContains: "argument ndVersionArg23 is not supported",
 		},
 		{
@@ -305,7 +306,7 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 					},
 				},
 			},
-			err:         NotNil,
+			err:         check.NotNil,
 			errContains: "Required arg missing: ndVersionArg2",
 		},
 		{
@@ -330,20 +331,124 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 					},
 				},
 			},
-			err: IsNil,
+			err: check.IsNil,
 		},
 	} {
 		bp := blueprint()
 		bp.Actions["backup"].Phases = tc.backupPhases
 		err := Do(bp, nonDefaultFuncVersion)
 		if err != nil {
-			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)
+			c.Assert(strings.Contains(err.Error(), tc.errContains), check.Equals, true)
 		}
 		c.Assert(err, tc.err)
 	}
 }
 
-func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
+func (v *ValidateBlueprint) TestValidateAnnLabelArgs(c *check.C) {
+	for _, tc := range []struct {
+		labels      interface{}
+		annotations interface{}
+		error       string
+	}{
+		{
+			labels: map[string]interface{}{
+				"key": "value",
+			},
+			error: "",
+		},
+		{
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "value",
+			},
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "",
+		},
+		{
+			labels: map[string]interface{}{
+				"key$": "value",
+			},
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "label key 'key$' failed validation",
+		},
+		{
+			labels: map[string]interface{}{
+				"key*": "value",
+			},
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "label key 'key*' failed validation",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "value$",
+			},
+			annotations: map[string]interface{}{
+				"key": "value",
+			},
+			error: "label value 'value$' failed validation",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "value",
+			},
+			annotations: map[string]interface{}{
+				"key$": "value",
+			},
+			error: "annotation key 'key$' failed validation",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "value",
+			},
+			annotations: map[string]interface{}{
+				"key": "value$",
+			},
+			error: "",
+		},
+		{
+			labels: map[string]interface{}{
+				"key": "",
+			},
+			annotations: map[string]interface{}{
+				"key": "",
+			},
+			error: "",
+		},
+	} {
+		bp := blueprint()
+		bp.Actions["backup"].Phases = []crv1alpha1.BlueprintPhase{
+			{
+				Func: "KubeTask",
+				Name: "backup",
+				Args: map[string]interface{}{
+					function.PodLabelsArg:      tc.labels,
+					function.PodAnnotationsArg: tc.annotations,
+					"image":                    "",
+					"command":                  "",
+				},
+			},
+		}
+		err := Do(bp, kanister.DefaultVersion)
+		if tc.error != "" {
+			c.Assert(strings.Contains(err.Error(), tc.error), check.Equals, true)
+		} else {
+			c.Assert(err, check.Equals, nil)
+		}
+	}
+}
+
+func (v *ValidateBlueprint) TestValidatePhaseNames(c *check.C) {
 	for _, tc := range []BlueprintTest{
 		{
 			backupPhases: []crv1alpha1.BlueprintPhase{
@@ -355,7 +460,7 @@ func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
 				{Name: "phasefour"},
 				{Name: "phasefive"},
 			},
-			err: IsNil,
+			err: check.IsNil,
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Name: "phasesix",
 			},
@@ -371,7 +476,7 @@ func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
 				{Name: "phasefour"},
 				{Name: "phasefive"},
 			},
-			err:         NotNil,
+			err:         check.NotNil,
 			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Name: "phasesix",
@@ -388,7 +493,7 @@ func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
 				{Name: "phaseone"},
 				{Name: "phasefive"},
 			},
-			err:         NotNil,
+			err:         check.NotNil,
 			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Name: "phasesix",
@@ -405,7 +510,7 @@ func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
 				{Name: "phasefour"},
 				{Name: "phasefive"},
 			},
-			err:         NotNil,
+			err:         check.NotNil,
 			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Name: "phaseone",
@@ -420,7 +525,7 @@ func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
 		}
 		err := validatePhaseNames(bp)
 		if err != nil {
-			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)
+			c.Assert(strings.Contains(err.Error(), tc.errContains), check.Equals, true)
 		}
 		c.Assert(err, tc.err)
 	}

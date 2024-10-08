@@ -21,17 +21,17 @@ import (
 
 	kopiacli "github.com/kopia/kopia/cli"
 	"github.com/kopia/kopia/repo/maintenance"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
-func TestKopiaMaintenanceWrappers(t *testing.T) { TestingT(t) }
+func TestKopiaMaintenanceWrappers(t *testing.T) { check.TestingT(t) }
 
 type KopiaMaintenanceOwnerTestSuite struct{}
 
-var _ = Suite(&KopiaMaintenanceOwnerTestSuite{})
+var _ = check.Suite(&KopiaMaintenanceOwnerTestSuite{})
 
-func (kMaintenanceOwner *KopiaMaintenanceOwnerTestSuite) TestParseMaintenanceOwnerOutput(c *C) {
+func (kMaintenanceOwner *KopiaMaintenanceOwnerTestSuite) TestParseMaintenanceOwnerOutput(c *check.C) {
 	maintInfoResult := kopiacli.MaintenanceInfo{
 		Params: maintenance.Params{
 			Owner: "owner@hostname",
@@ -68,29 +68,29 @@ func (kMaintenanceOwner *KopiaMaintenanceOwnerTestSuite) TestParseMaintenanceOwn
 		},
 	}
 	maintOutput, err := json.Marshal(maintInfoResult)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	for _, tc := range []struct {
 		desc          string
 		output        []byte
 		expectedOwner string
-		expectedErr   Checker
+		expectedErr   check.Checker
 	}{
 		{
 			desc:          "empty output",
 			output:        []byte{},
 			expectedOwner: "",
-			expectedErr:   NotNil,
+			expectedErr:   check.NotNil,
 		},
 		{
 			desc:          "maintenance output",
 			output:        maintOutput,
 			expectedOwner: "owner@hostname",
-			expectedErr:   IsNil,
+			expectedErr:   check.IsNil,
 		},
 	} {
 		owner, err := parseOwner(tc.output)
-		c.Assert(err, tc.expectedErr, Commentf("Case: %s", tc.desc))
-		c.Assert(owner, Equals, tc.expectedOwner, Commentf("Case: %s", tc.desc))
+		c.Assert(err, tc.expectedErr, check.Commentf("Case: %s", tc.desc))
+		c.Assert(owner, check.Equals, tc.expectedOwner, check.Commentf("Case: %s", tc.desc))
 	}
 }

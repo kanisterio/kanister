@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/yaml"
@@ -66,7 +66,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.110.0"
+	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.111.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct {
@@ -97,21 +97,23 @@ func exportRDSSnapshotToLoc(
 	sgIDs []string,
 	profile *param.Profile,
 	postgresToolsImage string,
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
-		return nil, errors.Wrap(err, "Profile Validation failed")
+		return nil, errkit.Wrap(err, "Profile Validation failed")
 	}
 
 	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get AWS creds from profile")
+		return nil, errkit.Wrap(err, "Failed to get AWS creds from profile")
 	}
 
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create RDS client")
+		return nil, errkit.Wrap(err, "Failed to create RDS client")
 	}
 
 	// Create tmp instance from the snapshot
@@ -121,14 +123,14 @@ func exportRDSSnapshotToLoc(
 	if sgIDs == nil {
 		sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+			return nil, errkit.Wrap(err, "Failed to fetch security group ids. InstanceID=", "instanceID=", instanceID)
 		}
 	}
 
 	log.WithContext(ctx).Print("Spin up temporary RDS instance from the snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
 	// Create tmp instance from snapshot
 	if err := restoreFromSnapshot(ctx, rdsCli, tmpInstanceID, dbSubnetGroup, snapshotID, sgIDs); err != nil {
-		return nil, errors.Wrapf(err, "Failed to restore snapshot. SnapshotID=%s", snapshotID)
+		return nil, errkit.Wrap(err, "Failed to restore snapshot. SnapshotID=", "snapshotID=", snapshotID)
 	}
 	defer func() {
 		if err := cleanupRDSDB(ctx, rdsCli, tmpInstanceID); err != nil {
@@ -139,7 +141,7 @@ func exportRDSSnapshotToLoc(
 	// Find host of the instance
 	dbEndpoint, err := findRDSEndpoint(ctx, rdsCli, tmpInstanceID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Couldn't find endpoint for instance %s", tmpInstanceID)
+		return nil, errkit.Wrap(err, "Couldn't find endpoint for instance", "instance", tmpInstanceID)
 	}
 
 	// Create unique backupID
@@ -148,19 +150,35 @@ func exportRDSSnapshotToLoc(
 	// get the engine version
 	dbEngineVersion, err := rdsDBEngineVersion(ctx, rdsCli, tmpInstanceID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
+		return nil, errkit.Wrap(err, "Couldn't find DBInstance Version")
 	}
 
 	// Extract dump from DB
-	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, databases, backupPrefix, backupID, profile, dbEngineVersion, postgresToolsImage)
+	output, err := execDumpCommand(
+		ctx,
+		dbEngine,
+		BackupAction,
+		namespace,
+		dbEndpoint,
+		username,
+		password,
+		databases,
+		backupPrefix,
+		backupID,
+		profile,
+		dbEngineVersion,
+		postgresToolsImage,
+		annotations,
+		labels,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
+		return nil, errkit.Wrap(err, "Unable to extract and push db dump to location")
 	}
 
 	// Convert to yaml format
 	sgIDYaml, err := yaml.Marshal(sgIDs)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", tmpInstanceID)
+		return nil, errkit.Wrap(err, "Failed to create securityGroupID artifact. InstanceID=", "instanceID=", tmpInstanceID)
 	}
 
 	// Add output artifacts
@@ -178,6 +196,7 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 
 	var namespace, instanceID, snapshotID, username, password, dbSubnetGroup, backupArtifact, postgresToolsImage string
 	var dbEngine RDSDBEngine
+	var bpAnnotations, bpLabels map[string]string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -206,6 +225,27 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 	if err := OptArg(args, ExportRDSSnapshotToLocImageArg, &postgresToolsImage, defaultPostgresToolsImage); err != nil {
 		return nil, err
 	}
+	if err := OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
+	}
+
 	// Find databases
 	databases, err := GetYamlList(args, ExportRDSSnapshotToLocDatabasesArg)
 	if err != nil {
@@ -218,7 +258,23 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 		return nil, err
 	}
 
-	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, databases, dbSubnetGroup, backupArtifact, dbEngine, sgIDs, tp.Profile, postgresToolsImage)
+	return exportRDSSnapshotToLoc(
+		ctx,
+		namespace,
+		instanceID,
+		snapshotID,
+		username,
+		password,
+		databases,
+		dbSubnetGroup,
+		backupArtifact,
+		dbEngine,
+		sgIDs,
+		tp.Profile,
+		postgresToolsImage,
+		annotations,
+		labels,
+	)
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
@@ -242,10 +298,16 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 		ExportRDSSnapshotToLocDatabasesArg,
 		ExportRDSSnapshotToLocSecGrpIDArg,
 		ExportRDSSnapshotToLocDBSubnetGroupArg,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (e *exportRDSSnapshotToLocationFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(e.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(e.Arguments(), args); err != nil {
 		return err
 	}
@@ -275,6 +337,8 @@ func execDumpCommand(
 	profile *param.Profile,
 	dbEngineVersion string,
 	postgresToolsImage string,
+	annotations,
+	labels map[string]string,
 ) (map[string]interface{}, error) {
 	// Trim "\n" from creds
 	username = strings.TrimSpace(username)
@@ -289,14 +353,14 @@ func execDumpCommand(
 	// Create Kubernetes client
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 
 	// Create cred secret
 	secretName := fmt.Sprintf("%s-%s", "postgres-secret", rand.String(10))
 	err = createPostgresSecret(cli, secretName, namespace, username, password)
 	if err != nil {
-		return nil, errors.Wrap(err, "Unable to create postgres secret")
+		return nil, errkit.Wrap(err, "Unable to create postgres secret")
 	}
 
 	defer func() {
@@ -305,7 +369,7 @@ func execDumpCommand(
 		}
 	}()
 
-	return kubeTask(ctx, cli, namespace, postgresToolsImage, command, injectPostgresSecrets(secretName))
+	return kubeTask(ctx, cli, namespace, postgresToolsImage, command, injectPostgresSecrets(secretName), annotations, labels)
 }
 
 func prepareCommand(
@@ -344,23 +408,23 @@ func prepareCommand(
 			return command, err
 		}
 	}
-	return nil, errors.New("Invalid RDSDBEngine or RDSAction")
+	return nil, errkit.New("Invalid RDSDBEngine or RDSAction")
 }
 
 func findDBList(ctx context.Context, dbEndpoint, username, password string) ([]string, error) {
 	pg, err := postgres.NewClient(dbEndpoint, username, password, postgres.DefaultConnectDatabase, "disable")
 	if err != nil {
-		return nil, errors.Wrap(err, "Error in creating postgres client")
+		return nil, errkit.Wrap(err, "Error in creating postgres client")
 	}
 
 	// Test DB connection
 	if err := pg.PingDB(ctx); err != nil {
-		return nil, errors.Wrap(err, "Failed to ping postgres database")
+		return nil, errkit.Wrap(err, "Failed to ping postgres database")
 	}
 
 	dbList, err := pg.ListDatabases(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error while listing databases")
+		return nil, errkit.Wrap(err, "Error while listing databases")
 	}
 	return filterRestrictedDB(dbList), nil
 }
@@ -368,7 +432,7 @@ func findDBList(ctx context.Context, dbEndpoint, username, password string) ([]s
 //nolint:unparam
 func postgresBackupCommand(dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile []byte) ([]string, error) {
 	if len(dbList) == 0 {
-		return nil, errors.New("No database found to backup")
+		return nil, errkit.New("No database found to backup")
 	}
 
 	command := []string{

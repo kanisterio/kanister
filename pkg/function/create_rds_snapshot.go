@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/yaml"
@@ -78,19 +78,19 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 	var allocatedStorage int64
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
-		return nil, errors.Wrap(err, "Profile Validation failed")
+		return nil, errkit.Wrap(err, "Profile Validation failed")
 	}
 
 	// Get aws config from profile
 	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get AWS creds from profile")
+		return nil, errkit.Wrap(err, "Failed to get AWS creds from profile")
 	}
 
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create RDS client")
+		return nil, errkit.Wrap(err, "Failed to create RDS client")
 	}
 
 	// Create Snapshot
@@ -110,13 +110,13 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		sgIDs, e = findAuroraSecurityGroups(ctx, rdsCli, instanceID)
 	}
 	if e != nil {
-		return nil, errors.Wrapf(e, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+		return nil, errkit.Wrap(e, "Failed to fetch security group ids. InstanceID=", "instanceID=", instanceID)
 	}
 
 	// Convert to yaml format
 	sgIDYaml, err := yaml.Marshal(sgIDs)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", instanceID)
+		return nil, errkit.Wrap(err, "Failed to create securityGroupID artifact. InstanceID=", "instanceID=", instanceID)
 	}
 
 	var dbSubnetGroup *string
@@ -127,7 +127,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		dbSubnetGroup, e = GetRDSDBSubnetGroup(ctx, rdsCli, instanceID)
 	}
 	if e != nil {
-		return nil, errors.Wrapf(e, "Failed to get dbSubnetGroup ids. InstanceID=%s", instanceID)
+		return nil, errkit.Wrap(e, "Failed to get dbSubnetGroup ids. InstanceID=", "instanceID=", instanceID)
 	}
 
 	output := map[string]interface{}{
@@ -146,13 +146,13 @@ func createSnapshot(ctx context.Context, rdsCli *rds.RDS, snapshotID, instanceID
 	if !isAuroraCluster(dbEngine) {
 		dbSnapshotOutput, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID)
 		if err != nil {
-			return allocatedStorage, errors.Wrap(err, "Failed to create snapshot")
+			return allocatedStorage, errkit.Wrap(err, "Failed to create snapshot")
 		}
 
 		// Wait until snapshot becomes available
 		log.WithContext(ctx).Print("Waiting for RDS snapshot to be available", field.M{"SnapshotID": snapshotID})
 		if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
-			return allocatedStorage, errors.Wrap(err, "Error while waiting snapshot to be available")
+			return allocatedStorage, errkit.Wrap(err, "Error while waiting snapshot to be available")
 		}
 		if dbSnapshotOutput.DBSnapshot != nil && dbSnapshotOutput.DBSnapshot.AllocatedStorage != nil {
 			allocatedStorage = *(dbSnapshotOutput.DBSnapshot.AllocatedStorage)
@@ -160,12 +160,12 @@ func createSnapshot(ctx context.Context, rdsCli *rds.RDS, snapshotID, instanceID
 		return allocatedStorage, nil
 	}
 	if _, err := rdsCli.CreateDBClusterSnapshot(ctx, instanceID, snapshotID); err != nil {
-		return allocatedStorage, errors.Wrap(err, "Failed to create cluster snapshot")
+		return allocatedStorage, errkit.Wrap(err, "Failed to create cluster snapshot")
 	}
 
 	log.WithContext(ctx).Print("Waiting for RDS Aurora snapshot to be available", field.M{"SnapshotID": snapshotID})
 	if err := rdsCli.WaitUntilDBClusterSnapshotAvailable(ctx, snapshotID); err != nil {
-		return allocatedStorage, errors.Wrap(err, "Error while waiting snapshot to be available")
+		return allocatedStorage, errkit.Wrap(err, "Error while waiting snapshot to be available")
 	}
 	return allocatedStorage, nil
 }

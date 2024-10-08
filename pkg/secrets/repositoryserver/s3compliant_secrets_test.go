@@ -15,8 +15,8 @@
 package repositoryserver
 
 import (
-	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"github.com/kanisterio/errkit"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -25,12 +25,12 @@ import (
 
 type S3CompliantSecretTestSuite struct{}
 
-var _ = Suite(&S3CompliantSecretTestSuite{})
+var _ = check.Suite(&S3CompliantSecretTestSuite{})
 
-func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredentials(c *C) {
+func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredentials(c *check.C) {
 	for i, tc := range []struct {
 		secret        Secret
-		errChecker    Checker
+		errChecker    check.Checker
 		expectedError error
 	}{
 		{ // Valid S3 Compatible Secret
@@ -46,7 +46,7 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 					EndpointKey: []byte("endpoint"),
 				},
 			}),
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // Missing required field - Bucket Key
 			secret: NewS3CompliantLocation(&corev1.Secret{
@@ -60,8 +60,8 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 					EndpointKey: []byte("endpoint"),
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
 		},
 		{ // Missing required field - Region Key
 			secret: NewS3CompliantLocation(&corev1.Secret{
@@ -75,8 +75,8 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 					EndpointKey: []byte("endpoint"),
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, "ns", "sec"),
 		},
 		{ // Missing required field - Endpoint Key
 			secret: NewS3CompliantLocation(&corev1.Secret{
@@ -90,8 +90,8 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 					BucketKey: []byte("bucket"),
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, EndpointKey, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, EndpointKey, "ns", "sec"),
 		},
 		{ // Empty Secret
 			secret: NewS3CompliantLocation(&corev1.Secret{
@@ -101,19 +101,19 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 					Namespace: "ns",
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
 		},
 		{ // Nil Secret
 			secret:        NewS3CompliantLocation(nil),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
 		if err != nil {
-			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+			c.Check(err.Error(), check.Equals, tc.expectedError.Error(), check.Commentf("test number: %d", i))
 		}
 	}
 }

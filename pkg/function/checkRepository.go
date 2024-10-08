@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -48,10 +48,21 @@ func (*CheckRepositoryFunc) Name() string {
 	return CheckRepositoryFuncName
 }
 
-func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, insecureTLS bool, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func CheckRepository(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	tp param.TemplateParams,
+	encryptionKey,
+	targetPaths,
+	jobPrefix string,
+	insecureTLS bool,
+	podOverride crv1alpha1.JSONMap,
+	annotations,
+	labels map[string]string,
+) (map[string]interface{}, error) {
 	namespace, err := kube.GetControllerNamespace()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get controller namespace")
+		return nil, errkit.Wrap(err, "Failed to get controller namespace")
 	}
 	options := &kube.PodOptions{
 		Namespace:    namespace,
@@ -59,6 +70,8 @@ func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		Image:        consts.GetKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
 	}
 
 	// Apply the registered ephemeral pod changes.
@@ -81,7 +94,7 @@ func CheckRepositoryPodFunc(
 
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pod.Name)
 		}
 
 		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
@@ -136,6 +149,7 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 
 	var checkRepositoryArtifactPrefix, encryptionKey string
 	var insecureTLS bool
+	var bpAnnotations, bpLabels map[string]string
 	if err := Arg(args, CheckRepositoryArtifactPrefixArg, &checkRepositoryArtifactPrefix); err != nil {
 		return nil, err
 	}
@@ -145,10 +159,30 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err := OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
+	if err := OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
 
 	podOverride, err := GetPodSpecOverride(tp, args, CheckRepositoryPodOverrideArg)
 	if err != nil {
 		return nil, err
+	}
+
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
 	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {
@@ -159,9 +193,20 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
-	return CheckRepository(ctx, cli, tp, encryptionKey, checkRepositoryArtifactPrefix, CheckRepositoryJobPrefix, insecureTLS, podOverride)
+	return CheckRepository(
+		ctx,
+		cli,
+		tp,
+		encryptionKey,
+		checkRepositoryArtifactPrefix,
+		CheckRepositoryJobPrefix,
+		insecureTLS,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*CheckRepositoryFunc) RequiredArgs() []string {
@@ -173,10 +218,16 @@ func (*CheckRepositoryFunc) Arguments() []string {
 		CheckRepositoryArtifactPrefixArg,
 		CheckRepositoryEncryptionKeyArg,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (c *CheckRepositoryFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(c.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
 		return err
 	}

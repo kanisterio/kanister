@@ -16,9 +16,10 @@ package function
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -110,20 +111,20 @@ func (b *backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {
-		return nil, errors.Wrapf(err, "Failed to validate Profile")
+		return nil, errkit.Wrap(err, "Failed to validate Profile")
 	}
 
 	backupArtifactPrefix = ResolveArtifactPrefix(backupArtifactPrefix, tp.Profile)
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	backupOutputs, err := backupData(ctx, cli, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey, insecureTLS, tp)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to backup data")
+		return nil, errkit.Wrap(err, "Failed to backup data")
 	}
 	output := map[string]interface{}{
 		BackupDataOutputBackupID:           backupOutputs.backupID,
@@ -194,12 +195,12 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 	format.LogWithCtx(ctx, pod, container, stdout)
 	format.LogWithCtx(ctx, pod, container, stderr)
 	if err != nil {
-		return backupDataParsedOutput{}, errors.Wrapf(err, "Failed to create and upload backup")
+		return backupDataParsedOutput{}, errkit.Wrap(err, "Failed to create and upload backup")
 	}
 	// Get the snapshot ID from log
 	backupID := restic.SnapshotIDFromBackupLog(stdout)
 	if backupID == "" {
-		return backupDataParsedOutput{}, errors.Errorf("Failed to parse the backup ID from logs, backup logs %s", stdout)
+		return backupDataParsedOutput{}, errkit.New(fmt.Sprintf("Failed to parse the backup ID from logs, backup logs %s", stdout))
 	}
 	// Get the file count and size of the backup from log
 	fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout)

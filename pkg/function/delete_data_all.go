@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -73,6 +73,7 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	var reclaimSpace bool
 	var err error
 	var insecureTLS bool
+	var bpAnnotations, bpLabels map[string]string
 	if err = Arg(args, DeleteDataAllNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
@@ -91,9 +92,29 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
 	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
 	if err != nil {
 		return nil, err
+	}
+
+	annotations := bpAnnotations
+	labels := bpLabels
+	if tp.PodAnnotations != nil {
+		// merge the actionset annotations with blueprint annotations
+		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
+		annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+	}
+
+	if tp.PodLabels != nil {
+		// merge the actionset labels with blueprint labels
+		var actionSetLabels ActionSetLabels = tp.PodLabels
+		labels = actionSetLabels.MergeBPLabels(bpLabels)
 	}
 
 	if err = ValidateProfile(tp.Profile); err != nil {
@@ -101,12 +122,12 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	}
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	input := make(map[string]BackupInfo)
 	err = json.Unmarshal([]byte(backupInfo), &input)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not decode JSON data")
+		return nil, errkit.Wrap(err, "Could not decode JSON data")
 	}
 	var targetPaths []string
 	var deleteIdentifiers []string
@@ -115,7 +136,22 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		deleteIdentifiers = append(deleteIdentifiers, info.BackupID)
 	}
 
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, insecureTLS, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix, podOverride)
+	return deleteData(
+		ctx,
+		cli,
+		tp,
+		reclaimSpace,
+		namespace,
+		encryptionKey,
+		insecureTLS,
+		targetPaths,
+		nil,
+		deleteIdentifiers,
+		deleteDataAllJobPrefix,
+		podOverride,
+		annotations,
+		labels,
+	)
 }
 
 func (*deleteDataAllFunc) RequiredArgs() []string {
@@ -134,10 +170,16 @@ func (*deleteDataAllFunc) Arguments() []string {
 		DeleteDataAllEncryptionKeyArg,
 		DeleteDataAllReclaimSpace,
 		InsecureTLS,
+		PodAnnotationsArg,
+		PodLabelsArg,
 	}
 }
 
 func (d *deleteDataAllFunc) Validate(args map[string]any) error {
+	if err := ValidatePodLabelsAndAnnotations(d.Name(), args); err != nil {
+		return err
+	}
+
 	if err := utils.CheckSupportedArgs(d.Arguments(), args); err != nil {
 		return err
 	}

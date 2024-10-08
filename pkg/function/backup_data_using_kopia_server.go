@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -131,22 +131,22 @@ func (b *backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 
 	userPassphrase, cert, err := userCredentialsAndServerTLS(&tp)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch User Credentials/Certificate Data from Template Params")
+		return nil, errkit.Wrap(err, "Failed to fetch User Credentials/Certificate Data from Template Params")
 	}
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
+		return nil, errkit.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
 	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase, userHostname)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
+		return nil, errkit.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
 	}
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 
 	snapInfo, err := backupDataUsingKopiaServer(
@@ -164,7 +164,7 @@ func (b *backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 		tags,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to backup data using Kopia Repository Server")
+		return nil, errkit.Wrap(err, "Failed to backup data using Kopia Repository Server")
 	}
 
 	var logSize, phySize int64
@@ -226,7 +226,7 @@ func backupDataUsingKopiaServer(
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to connect to Kopia Repository Server")
+		return nil, errkit.Wrap(err, "Failed to connect to Kopia Repository Server")
 	}
 
 	cmd = kopiacmd.SnapshotCreate(
@@ -242,7 +242,7 @@ func backupDataUsingKopiaServer(
 			Parallelism:            utils.GetEnvAsIntOrDefault(kankopia.DataStoreParallelUploadName, kankopia.DefaultDataStoreParallelUpload),
 		})
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to construct snapshot create command")
+		return nil, errkit.Wrap(err, "Failed to construct snapshot create command")
 	}
 	stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
@@ -253,7 +253,7 @@ func backupDataUsingKopiaServer(
 		if strings.Contains(err.Error(), kerrors.ErrCodeOutOfMemoryStr) {
 			message = message + ": " + kerrors.ErrOutOfMemoryStr
 		}
-		return nil, errors.Wrap(err, message)
+		return nil, errkit.Wrap(err, message)
 	}
 	// Parse logs and return snapshot IDs and stats
 	return kopiacmd.ParseSnapshotCreateOutput(stdout, stderr)
@@ -262,14 +262,14 @@ func backupDataUsingKopiaServer(
 func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostname string) (string, string, error) {
 	var userAccessMap map[string]string
 	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
-		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
+		return "", "", errkit.Wrap(err, "Failed to unmarshal User Credentials Data")
 	}
 
 	// Check if hostname provided exists in the User Access Map
 	if hostname != "" {
 		err := checkHostnameExistsInUserAccessMap(userAccessMap, hostname)
 		if err != nil {
-			return "", "", errors.Wrap(err, "Failed to find hostname in the User Access Map")
+			return "", "", errkit.Wrap(err, "Failed to find hostname in the User Access Map")
 		}
 	}
 
@@ -286,7 +286,7 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostname string) (string
 
 	decodedUserPassphrase, err := base64.StdEncoding.DecodeString(userPassphrase)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
+		return "", "", errkit.Wrap(err, "Failed to Decode User Passphrase")
 	}
 	return hostname, string(decodedUserPassphrase), nil
 }
@@ -294,11 +294,11 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds, hostname string) (string
 func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
 	userCredJSON, err := json.Marshal(tp.RepositoryServer.Credentials.ServerUserAccess.Data)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Error marshalling User Credentials Data")
+		return "", "", errkit.Wrap(err, "Error marshalling User Credentials Data")
 	}
 	certJSON, err := json.Marshal(tp.RepositoryServer.Credentials.ServerTLS.Data)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Error marshalling Certificate Data")
+		return "", "", errkit.Wrap(err, "Error marshalling Certificate Data")
 	}
 	return string(userCredJSON), string(certJSON), nil
 }
@@ -306,7 +306,7 @@ func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, erro
 func checkHostnameExistsInUserAccessMap(userAccessMap map[string]string, hostname string) error {
 	// check if hostname that is provided by the user exists in the user access map
 	if _, ok := userAccessMap[hostname]; !ok {
-		return errors.New("hostname provided in the repository server CR does not exist in the user access map")
+		return errkit.New("hostname provided in the repository server CR does not exist in the user access map")
 	}
 	return nil
 }
