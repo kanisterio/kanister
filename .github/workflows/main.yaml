@@ -46,6 +46,14 @@ jobs:
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - run: make golint
 
+  fossa_scan:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - uses: fossas/fossa-action@main # Use a specific version if locking is preferred
+      with:
+        api-key: ${{secrets.FOSSA_API_KEY}}
+
   reno_lint:
     runs-on: ubuntu-20.04
     needs: gomod
@@ -88,6 +96,7 @@ jobs:
         make install-minio
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
+
   build:
     runs-on: ubuntu-20.04
     needs: gomod
@@ -102,11 +111,13 @@ jobs:
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - run: make build BIN=${{ matrix.bin }} GOBORING=true
+
   docs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - run: make docs
+
   release:
     runs-on: ubuntu-20.04
     needs: [lint, test, build, docs]
@@ -127,6 +138,7 @@ jobs:
     - run: docker builder prune -af
     - run: make release-snapshot
     - run: COMMIT_SHA=${{ github.sha }} ./build/push_images.sh
+
   image_tags:
     runs-on: ubuntu-latest
     outputs:
@@ -139,6 +151,7 @@ jobs:
       run: |
         echo "tag_short=short-commit-${COMMIT_SHA::12}" >> $GITHUB_OUTPUT
         echo "tag_long=commit-${COMMIT_SHA}" >> $GITHUB_OUTPUT
+
   release_example_docker_images:
     needs: [release, image_tags]
     permissions:
