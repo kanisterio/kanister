@@ -211,12 +211,6 @@ func (s *KanXSuite) TestError(c *C) {
 	c.Assert(buf.String(), Equals, "")
 }
 
-var _ io.Writer = (*nilWriter)(nil)
-
-type nilWriter struct{}
-
-func (nw *nilWriter) Write(p []byte) (n int, err error) { return }
-
 func (s *KanXSuite) TestParallelStdout(c *C) {
 	d := tmpDir(c)
 	addr := path.Join(d, "kanx.sock")
@@ -244,7 +238,7 @@ func (s *KanXSuite) TestParallelStdout(c *C) {
 	c.Assert(ps[0].GetExitErr(), Equals, "")
 	c.Assert(ps[0].GetExitCode(), Equals, int64(0))
 
-	nw := &nilWriter{}
+	nw := io.Discard
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 	for range make([]struct{}, 100) {
