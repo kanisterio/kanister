@@ -17,9 +17,10 @@ package function
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -95,7 +96,7 @@ func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams)
 	}
 	if (pod != "") == (len(vols) > 0) {
 		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride,
-			errors.Errorf("Require one argument: %s or %s", RestoreDataPodArg, RestoreDataVolsArg)
+			errkit.New(fmt.Sprintf("Require one argument: %s or %s", RestoreDataPodArg, RestoreDataVolsArg))
 	}
 	if err = OptArg(args, RestoreDataBackupTagArg, &tag, nil); err != nil {
 		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
@@ -108,7 +109,7 @@ func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams)
 	}
 	if (tag != "") == (id != "") {
 		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride,
-			errors.Errorf("Require one argument: %s or %s", RestoreDataBackupTagArg, RestoreDataBackupIdentifierArg)
+			errkit.New(fmt.Sprintf("Require one argument: %s or %s", RestoreDataBackupTagArg, RestoreDataBackupIdentifierArg))
 	}
 	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
 	if err != nil {
@@ -141,7 +142,7 @@ func restoreData(
 	for pvcName, mountPoint := range vols {
 		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvcName)
+			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
 		}
 
 		validatedVols[pvcName] = kube.VolumeMountOptions{
@@ -183,12 +184,12 @@ func restoreDataPodFunc(
 
 		// Wait for pod to reach running state
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pod.Name)
 		}
 
 		remover, err := MaybeWriteProfileCredentials(ctx, pc, tp.Profile)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to write credentials to Pod %s", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed to write credentials to Pod", "pod", pc.PodName())
 		}
 
 		// Parent context could already be dead, so removing file within new context
@@ -214,10 +215,10 @@ func restoreDataPodFunc(
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to restore backup")
+			return nil, errkit.Wrap(err, "Failed to restore backup")
 		}
 		out, err := parseLogAndCreateOutput(stdout.String())
-		return out, errors.Wrap(err, "Failed to parse phase output")
+		return out, errkit.Wrap(err, "Failed to parse phase output")
 	}
 }
 
@@ -293,7 +294,7 @@ func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	}
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	return restoreData(
 		ctx,

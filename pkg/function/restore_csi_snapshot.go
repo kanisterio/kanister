@@ -16,10 +16,10 @@ package function
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -225,7 +225,7 @@ func validateVolumeModeArg(volumeMode corev1.PersistentVolumeMode) error {
 	case corev1.PersistentVolumeFilesystem,
 		corev1.PersistentVolumeBlock:
 	default:
-		return errors.New("Given volumeMode " + string(volumeMode) + " is invalid")
+		return errkit.New("Given volumeMode " + string(volumeMode) + " is invalid")
 	}
 	return nil
 }
@@ -237,7 +237,7 @@ func validateVolumeAccessModesArg(accessModes []corev1.PersistentVolumeAccessMod
 			corev1.ReadWriteMany,
 			corev1.ReadWriteOnce:
 		default:
-			return errors.New("Given accessMode " + string(accessModeInArg) + " is invalid")
+			return errkit.New("Given accessMode " + string(accessModeInArg) + " is invalid")
 		}
 	}
 	return nil

@@ -24,10 +24,10 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/gofrs/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/jpillora/backoff"
-	"github.com/pkg/errors"
-	compute "google.golang.org/api/compute/v1"
+	"github.com/kanisterio/errkit"
+	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -114,7 +114,7 @@ func (s *GpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 
 	id, err := uuid.NewV1()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create UUID")
+		return nil, errkit.Wrap(err, "Failed to create UUID")
 	}
 	createDisk := &compute.Disk{
 		Name:   fmt.Sprintf(volumeNameFmt, id.String()),
@@ -177,19 +177,19 @@ func (s *GpdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volu
 
 // SnapshotCopy is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
-	return nil, errors.Errorf("Not implemented")
+	return nil, errkit.New("Not implemented")
 }
 
 // SnapshotCopyWithArgs is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Copy Snapshot with Args not implemented")
+	return nil, errkit.New("Copy Snapshot with Args not implemented")
 }
 
 // SnapshotCreate is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	rbID, uerr := uuid.NewV1()
 	if uerr != nil {
-		return nil, errors.Wrap(uerr, "Failed to create UUID")
+		return nil, errkit.Wrap(uerr, "Failed to create UUID")
 	}
 	rb := &compute.Snapshot{
 		Name:   fmt.Sprintf(snapshotNameFmt, rbID.String()),
@@ -237,7 +237,7 @@ func (s *GpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 // SnapshotCreateWaitForCompletion is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
 	if err := s.waitOnSnapshotID(ctx, snap.ID); err != nil {
-		return errors.Wrapf(err, "Waiting on snapshot %v", snap)
+		return errkit.Wrap(err, "Waiting on snapshot", "snapshot", snap)
 	}
 	return nil
 }
@@ -260,7 +260,7 @@ func (s *GpdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.
 	snap, err := s.service.Snapshots.Get(s.project, id).Context(ctx).Do()
 	if err != nil {
 		if isNotFoundError(err) {
-			return nil, errors.Wrap(err, blockstorage.SnapshotDoesNotExistError)
+			return nil, errkit.Wrap(err, blockstorage.SnapshotDoesNotExistError)
 		}
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func (s *GpdStorage) VolumesList(ctx context.Context, tags map[string]string, zo
 	if isMultiZone(zone) {
 		region, err := getRegionFromZones(zone)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Could not get region from zones %s", zone)
+			return nil, errkit.Wrap(err, "Could not get region from zones", "zones", zone)
 		}
 		req := s.service.RegionDisks.List(s.project, region).Filter(fltrs)
 		if err := req.Pages(ctx, func(page *compute.DiskList) error {
@@ -374,7 +374,7 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	}
 
 	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" {
-		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s", snapshot.Volume.VolumeType, snapshot.Volume.Az)
+		return nil, errkit.New(fmt.Sprintf("Required volume fields not available, volumeType: %s, Az: %s", snapshot.Volume.VolumeType, snapshot.Volume.Az))
 	}
 
 	// Incorporate pre-existing tags if overrides don't already exist
@@ -386,7 +386,7 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	}
 	createDiskID, err := uuid.NewV1()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create UUID")
+		return nil, errkit.Wrap(err, "Failed to create UUID")
 	}
 	createDisk := &compute.Disk{
 		Name:           fmt.Sprintf(volumeNameFmt, createDiskID.String()),
@@ -401,7 +401,7 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	var region string
 	// Validate Zones
 	if region, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
-		return nil, errors.Wrapf(err, "Could not validate zones: %s", snapshot.Volume.Az)
+		return nil, errkit.Wrap(err, "Could not validate", "zones", snapshot.Volume.Az)
 	}
 	kubeCli, err := kube.NewClient()
 	if err != nil {
@@ -432,7 +432,7 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		resp, err = s.service.RegionDisks.Insert(s.project, region, createDisk).Context(ctx).Do()
 	}
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create volume from snapshot")
+		return nil, errkit.Wrap(err, "Failed to create volume from snapshot")
 	}
 
 	if err = s.waitOnOperation(ctx, resp, volZone); err != nil {
@@ -501,7 +501,7 @@ func (s *GpdStorage) SetTags(ctx context.Context, resource interface{}, tags map
 			return s.waitOnOperation(ctx, op, res.Az)
 		}
 	default:
-		return errors.Errorf("Unknown resource type %v (%T)", res, res)
+		return errkit.New(fmt.Sprintf("Unknown resource type %v (%T)", res, res))
 	}
 }
 
@@ -537,9 +537,9 @@ func (s *GpdStorage) waitOnOperation(ctx context.Context, op *compute.Operation,
 			if op.Error != nil {
 				errJSON, merr := op.Error.MarshalJSON()
 				if merr != nil {
-					return false, errors.Errorf("Operation %s failed. Failed to marshal error string with error %s", op.OperationType, merr)
+					return false, errkit.New(fmt.Sprintf("Operation %s failed. Failed to marshal error string with error %s", op.OperationType, merr))
 				}
-				return false, errors.Errorf("%s", errJSON)
+				return false, errkit.New(string(errJSON))
 			}
 			log.Print("Operation done", field.M{"OperationType": op.OperationType})
 			return true, nil
@@ -547,7 +547,7 @@ func (s *GpdStorage) waitOnOperation(ctx context.Context, op *compute.Operation,
 			log.Debug().Print("Operation status update", field.M{"Operation": op.OperationType, "Status": op.Status, "Status message": op.StatusMessage, "Progress": op.Progress})
 			return false, nil
 		default:
-			return false, errors.Errorf("Unknown operation status")
+			return false, errkit.New("Unknown operation status")
 		}
 	})
 }
@@ -563,10 +563,10 @@ func (s *GpdStorage) waitOnSnapshotID(ctx context.Context, id string) error {
 	return poll.WaitWithBackoff(ctx, snapWaitBackoff, func(ctx context.Context) (bool, error) {
 		snap, err := s.service.Snapshots.Get(s.project, id).Context(ctx).Do()
 		if err != nil {
-			return false, errors.Wrapf(err, "Snapshot not found")
+			return false, errkit.Wrap(err, "Snapshot not found")
 		}
 		if snap.Status == "FAILED" {
-			return false, errors.New("Snapshot GCP volume failed")
+			return false, errkit.New("Snapshot GCP volume failed")
 		}
 		if snap.Status == "READY" {
 			log.Print("Snapshot completed", field.M{"SnapshotID": id})
@@ -589,7 +589,7 @@ func isNotFoundError(err error) bool {
 func (s *GpdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
 	rtzMap, err := s.dynamicRegionToZoneMap(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get region to zone map for region (%s)", region)
+		return nil, errkit.Wrap(err, "Failed to get region to zone map for region", "region", region)
 	}
 	zones, ok := rtzMap[region]
 	if !ok {
@@ -601,7 +601,7 @@ func (s *GpdStorage) FromRegion(ctx context.Context, region string) ([]string, e
 func (s *GpdStorage) GetRegions(ctx context.Context) ([]string, error) {
 	regionMap, err := s.dynamicRegionToZoneMap(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch dynamic region map")
+		return nil, errkit.Wrap(err, "Failed to fetch dynamic region map")
 	}
 	regions := []string{}
 	for region := range regionMap {
@@ -641,18 +641,18 @@ func getRegionFromZones(az string) (string, error) {
 	zones := splitZones(az)
 	regions := sets.Set[string]{}
 	if len(zones) < 1 {
-		return "", errors.Errorf("no zones specified, zone: %s", az)
+		return "", errkit.New(fmt.Sprintf("no zones specified, zone: %s", az))
 	}
 	for _, zone := range zones {
 		// Expected format of zone: {locale}-{region}-{zone}
 		splitZone := strings.Split(zone, "-")
 		if len(splitZone) != 3 {
-			return "", errors.Errorf("zone in unexpected format, expected: {locale}-{region}-{zone}, got: %v", zone)
+			return "", errkit.New(fmt.Sprintf("zone in unexpected format, expected: {locale}-{region}-{zone}, got: %v", zone))
 		}
 		regions.Insert(strings.Join(splitZone[0:2], "-"))
 	}
 	if regions.Len() != 1 {
-		return "", errors.Errorf("multiple or no regions gotten from zones, got: %v", regions)
+		return "", errkit.New(fmt.Sprintf("multiple or no regions gotten from zones, got: %v", regions))
 	}
 	return regions.UnsortedList()[0], nil
 }
@@ -662,7 +662,7 @@ func (s *GpdStorage) getSelfLinks(ctx context.Context, zones []string) ([]string
 	for i, zone := range zones {
 		replicaZone, err := s.service.Zones.Get(s.project, zone).Context(ctx).Do()
 		if err != nil {
-			return nil, errors.Wrapf(err, "Could not get Zone %s", zone)
+			return nil, errkit.Wrap(err, "Could not get Zone", "zone", zone)
 		}
 		selfLinks[i] = replicaZone.SelfLink
 	}

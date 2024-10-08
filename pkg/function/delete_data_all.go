@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -122,12 +122,12 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	}
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	input := make(map[string]BackupInfo)
 	err = json.Unmarshal([]byte(backupInfo), &input)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not decode JSON data")
+		return nil, errkit.Wrap(err, "Could not decode JSON data")
 	}
 	var targetPaths []string
 	var deleteIdentifiers []string

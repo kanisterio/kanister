@@ -17,7 +17,7 @@ package secrets
 import (
 	"encoding/base64"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +65,7 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *check.C) {
 				},
 			},
 			errChecker:  check.NotNil,
-			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, "ns", "sec"),
+			expectedErr: errkit.Wrap(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, GCPSecretType, "ns", "sec"),
 		},
 		{ // missing field - GCPServiceKey
 			secret: &corev1.Secret{
@@ -78,7 +78,7 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *check.C) {
 					GCPProjectID: []byte("key_id"),
 				},
 			},
-			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceAccountJSONKey, "ns", "sec"),
+			expectedErr: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPServiceAccountJSONKey, "ns", "sec"),
 			errChecker:  check.NotNil,
 		},
 		{ // missing field - GCPProjectID
@@ -92,7 +92,7 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *check.C) {
 					GCPServiceAccountJSONKey: []byte("service_account_json"),
 				},
 			},
-			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, "ns", "sec"),
+			expectedErr: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, GCPProjectID, "ns", "sec"),
 			errChecker:  check.NotNil,
 		},
 		{ // secret is Empty
@@ -103,12 +103,12 @@ func (s *GCPSecretSuite) TestValidateGCPCredentials(c *check.C) {
 					Namespace: "ns",
 				},
 			},
-			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
+			expectedErr: errkit.Wrap(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
 			errChecker:  check.NotNil,
 		},
 		{ // secret is nil
 			secret:      nil,
-			expectedErr: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
+			expectedErr: errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 			errChecker:  check.NotNil,
 		},
 	} {

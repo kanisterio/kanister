@@ -15,7 +15,7 @@
 package repositoryserver
 
 import (
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,7 +61,7 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 				},
 			}),
 			errChecker:    check.NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, BucketKey, "ns", "sec"),
 		},
 		{ // Missing required field - Region Key
 			secret: NewS3CompliantLocation(&corev1.Secret{
@@ -76,7 +76,7 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 				},
 			}),
 			errChecker:    check.NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, "ns", "sec"),
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, RegionKey, "ns", "sec"),
 		},
 		{ // Missing required field - Endpoint Key
 			secret: NewS3CompliantLocation(&corev1.Secret{
@@ -91,7 +91,7 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 				},
 			}),
 			errChecker:    check.NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, EndpointKey, "ns", "sec"),
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, EndpointKey, "ns", "sec"),
 		},
 		{ // Empty Secret
 			secret: NewS3CompliantLocation(&corev1.Secret{
@@ -102,12 +102,12 @@ func (s *S3CompliantSecretTestSuite) TestValidateRepoServerS3CompliantCredential
 				},
 			}),
 			errChecker:    check.NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
 		},
 		{ // Nil Secret
 			secret:        NewS3CompliantLocation(nil),
 			errChecker:    check.NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()

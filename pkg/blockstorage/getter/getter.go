@@ -16,8 +16,9 @@ package getter
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
@@ -49,7 +50,7 @@ func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blo
 	case blockstorage.TypeAD:
 		return azure.NewProvider(context.Background(), config)
 	default:
-		return nil, errors.Errorf("Unsupported storage type %v", storageType)
+		return nil, errkit.New(fmt.Sprintf("Unsupported storage type %v", storageType))
 	}
 }
 

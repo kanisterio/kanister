@@ -470,11 +470,11 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *check.C) {
 		timeout := 500 * time.Millisecond
 		bgTimeout := 5 * time.Second
 		// We don't have readyToUse and no error, waiting indefinitely
-		err = waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, defaultNamespace, timeout)
+		err = waitOnReadyToUseWithTimeout(ctx, fakeSs, snapshotName, timeout)
 		c.Assert(err, check.NotNil)
 		c.Assert(err.Error(), check.Matches, ".*context deadline exceeded*")
 
-		reply := waitOnReadyToUseInBackground(c, ctx, fakeSs, snapshotName, defaultNamespace, bgTimeout)
+		reply := waitOnReadyToUseInBackground(ctx, fakeSs, snapshotName, bgTimeout)
 		setReadyStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace)
 		select {
 		case err = <-reply:
@@ -490,7 +490,7 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *check.C) {
 		setErrorStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, message)
 
 		// If there is non-transient error, exit right away
-		err = waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, defaultNamespace, timeout)
+		err = waitOnReadyToUseWithTimeout(ctx, fakeSs, snapshotName, timeout)
 		c.Assert(err, check.NotNil)
 		c.Assert(err.Error(), check.Matches, ".*some error.*")
 
@@ -499,11 +499,11 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *check.C) {
 		setErrorStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, message)
 
 		// If there is a transient error, wait with exp backoff which is long
-		err = waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, defaultNamespace, timeout)
+		err = waitOnReadyToUseWithTimeout(ctx, fakeSs, snapshotName, timeout)
 		c.Assert(err, check.NotNil)
 		c.Assert(err.Error(), check.Matches, ".*context deadline exceeded*")
 
-		reply = waitOnReadyToUseInBackground(c, ctx, fakeSs, snapshotName, defaultNamespace, bgTimeout)
+		reply = waitOnReadyToUseInBackground(ctx, fakeSs, snapshotName, bgTimeout)
 		setReadyStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace)
 		select {
 		case err = <-reply:
@@ -518,27 +518,23 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *check.C) {
 // ----------------------------------------------------------------------------
 
 func waitOnReadyToUseInBackground(
-	c *check.C,
 	ctx context.Context,
 	fakeSs snapshot.Snapshotter,
 	snapshotName string,
-	namespace string,
 	timeout time.Duration,
 ) chan error {
 	reply := make(chan error)
 	go func() {
-		err := waitOnReadyToUseWithTimeout(c, ctx, fakeSs, snapshotName, namespace, timeout)
+		err := waitOnReadyToUseWithTimeout(ctx, fakeSs, snapshotName, timeout)
 		reply <- err
 	}()
 	return reply
 }
 
 func waitOnReadyToUseWithTimeout(
-	c *check.C,
 	ctx context.Context,
 	fakeSs snapshot.Snapshotter,
 	snapshotName string,
-	namespace string,
 	timeout time.Duration,
 ) error {
 	deadline := time.Now().Add(timeout)
