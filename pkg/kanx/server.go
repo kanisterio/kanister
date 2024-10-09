@@ -104,12 +104,12 @@ func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps Proc
 	return nil
 }
 
-var processNotFoundError = fmt.Errorf("Process not found")
+var errProcessNotFound = fmt.Errorf("Process not found")
 
 func (s *processServiceServer) Stdout(por *ProcessOutputRequest, ss ProcessService_StdoutServer) error {
 	p, ok := s.processes[por.Pid]
 	if !ok {
-		return errors.WithStack(processNotFoundError)
+		return errors.WithStack(errProcessNotFound)
 	}
 	fh, err := os.Open(p.stdout.Name())
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *processServiceServer) Stdout(por *ProcessOutputRequest, ss ProcessServi
 func (s *processServiceServer) Stderr(por *ProcessOutputRequest, ss ProcessService_StderrServer) error {
 	p, ok := s.processes[por.Pid]
 	if !ok {
-		return errors.WithStack(processNotFoundError)
+		return errors.WithStack(errProcessNotFound)
 	}
 	fh, err := os.Open(p.stderr.Name())
 	if err != nil {
@@ -209,6 +209,6 @@ func (s *Server) Serve(ctx context.Context, addr string) error {
 		return err
 	}
 	log.Info().Print("Listening on socket", field.M{"address": lis.Addr()})
-	defer os.Remove(addr)
+	defer os.Remove(addr) //nolint:errcheck
 	return s.grpcs.Serve(lis)
 }

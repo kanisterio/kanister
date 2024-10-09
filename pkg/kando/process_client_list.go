@@ -19,9 +19,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/kanisterio/kanister/pkg/kanx"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/kanisterio/kanister/pkg/kanx"
 )
 
 func newProcessClientListCommand() *cobra.Command {

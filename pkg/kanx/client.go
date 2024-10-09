@@ -30,7 +30,7 @@ func CreateProcess(ctx context.Context, addr string, name string, args []string)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	c := NewProcessServiceClient(conn)
 	in := &CreateProcessRequest{
 		Name: name,
@@ -44,7 +44,7 @@ func ListProcesses(ctx context.Context, addr string) ([]*Process, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	c := NewProcessServiceClient(conn)
 	in := &ListProcessesRequest{}
 	lpc, err := c.ListProcesses(ctx, in)
@@ -69,7 +69,7 @@ func Stdout(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	c := NewProcessServiceClient(conn)
 	in := &ProcessOutputRequest{
 		Pid: pid,
@@ -86,7 +86,7 @@ func Stderr(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	c := NewProcessServiceClient(conn)
 	in := &ProcessOutputRequest{
 		Pid: pid,

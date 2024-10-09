@@ -237,4 +237,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 )
 
-require k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
+require (
+	github.com/hexops/gotextdiff v1.0.3 // indirect
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
+)

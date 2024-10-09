@@ -19,8 +19,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/kanisterio/kanister/pkg/kanx"
 	"github.com/spf13/cobra"
+
+	"github.com/kanisterio/kanister/pkg/kanx"
 )
 
 func newProcessClientOutputCommand() *cobra.Command {
