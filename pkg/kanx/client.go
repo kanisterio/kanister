@@ -13,6 +13,7 @@ import (
 func unixDialer(ctx context.Context, addr string) (net.Conn, error) {
 	return net.Dial("unix", addr)
 }
+
 func newGRPCConnection(addr string) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -46,8 +47,7 @@ func ListProcesses(ctx context.Context, addr string) ([]*Process, error) {
 	}
 	defer conn.Close() //nolint:errcheck
 	c := NewProcessServiceClient(conn)
-	in := &ListProcessesRequest{}
-	lpc, err := c.ListProcesses(ctx, in)
+	lpc, err := c.ListProcesses(ctx, &ListProcessesRequest{})
 	if err != nil {
 		return nil, err
 	}
