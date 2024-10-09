@@ -18,6 +18,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
+const (
+	tailTickDuration  = 3 * time.Second
+	tempStdoutPattern = "kando.*.stdout"
+	tempStderrPattern = "kando.*.stderr"
+	streamBufferBytes = 4 * 1024 * 1024
+)
+
 type processServiceServer struct {
 	UnimplementedProcessServiceServer
 	processes        map[int64]*process
@@ -38,16 +45,16 @@ type process struct {
 func newProcessServiceServer() *processServiceServer {
 	return &processServiceServer{
 		processes:        map[int64]*process{},
-		tailTickDuration: 3 * time.Second,
+		tailTickDuration: tailTickDuration,
 	}
 }
 
 func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreateProcessRequest) (*Process, error) {
-	stdout, err := os.CreateTemp(s.outputDir, "kando.*.stdout")
+	stdout, err := os.CreateTemp(s.outputDir, tempStdoutPattern)
 	if err != nil {
 		return nil, err
 	}
-	stderr, err := os.CreateTemp(s.outputDir, "kando.*.stderr")
+	stderr, err := os.CreateTemp(s.outputDir, tempStderrPattern)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +142,7 @@ type sender interface {
 }
 
 func (s *processServiceServer) streamOutput(ss sender, p *process, fh *os.File) error {
-	buf := bytes.NewBuffer(make([]byte, 0, 4*1024*1024)) // 4MiB is the max size of a GRPC request
+	buf := bytes.NewBuffer(make([]byte, 0, streamBufferBytes)) // 4MiB is the max size of a GRPC request
 	t := time.NewTicker(s.tailTickDuration)
 	for {
 		n, err := buf.ReadFrom(fh)
