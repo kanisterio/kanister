@@ -47,8 +47,7 @@ func ListProcesses(ctx context.Context, addr string) ([]*Process, error) {
 	}
 	defer conn.Close()
 	c := NewProcessServiceClient(conn)
-	in := &ListProcessesRequest{}
-	lpc, err := c.ListProcesses(ctx, in)
+	lpc, err := c.ListProcesses(ctx, &ListProcessesRequest{})
 	if err != nil {
 		return nil, err
 	}
