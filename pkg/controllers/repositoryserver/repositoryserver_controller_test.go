@@ -279,7 +279,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerStatusIsServerReady(c *c
 	err = testutil.CreateTestKopiaRepository(ctx, s.kubeCli, repoServerCRCreated, testutil.GetDefaultS3CompliantStorageLocation())
 	c.Assert(err, check.IsNil)
 
-	_, err = s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	_, err = s.waitOnRepositoryServerState(repoServerCRCreated.Name)
 	c.Assert(err, check.IsNil)
 
 	err = s.crCli.RepositoryServers(s.repoServerControllerNamespace).Delete(context.Background(), repoServerCRCreated.Name, metav1.DeleteOptions{})
@@ -294,7 +294,7 @@ func (s *RepoServerControllerSuite) TestRepositoryServerCRStateWithoutSecrets(c 
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	state, err := s.waitOnRepositoryServerState(repoServerCRCreated.Name)
 	c.Assert(err, check.NotNil)
 	c.Assert(state, check.Equals, crv1alpha1.Failed)
 
@@ -348,7 +348,7 @@ func (s *RepoServerControllerSuite) TestInvalidRepositoryPassword(c *check.C) {
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	state, err := s.waitOnRepositoryServerState(repoServerCRCreated.Name)
 	c.Assert(err, check.NotNil)
 	c.Assert(state, check.Equals, crv1alpha1.Failed)
 
@@ -373,7 +373,7 @@ func (s *RepoServerControllerSuite) TestInvalidStorageLocation(c *check.C) {
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	state, err := s.waitOnRepositoryServerState(repoServerCRCreated.Name)
 	c.Assert(err, check.NotNil)
 	c.Assert(state, check.Equals, crv1alpha1.Failed)
 
@@ -398,7 +398,7 @@ func (s *RepoServerControllerSuite) TestInvalidStorageLocationCredentials(c *che
 	repoServerCRCreated, err := s.crCli.RepositoryServers(s.repoServerControllerNamespace).Create(ctx, &repoServerCR, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	state, err := s.waitOnRepositoryServerState(c, repoServerCRCreated.Name)
+	state, err := s.waitOnRepositoryServerState(repoServerCRCreated.Name)
 	c.Assert(err, check.NotNil)
 	c.Assert(state, check.Equals, crv1alpha1.Failed)
 
@@ -486,7 +486,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 	return err
 }
 
-func (s *RepoServerControllerSuite) waitOnRepositoryServerState(c *check.C, reposerverName string) (crv1alpha1.RepositoryServerProgress, error) {
+func (s *RepoServerControllerSuite) waitOnRepositoryServerState(reposerverName string) (crv1alpha1.RepositoryServerProgress, error) {
 	ctxTimeout := 10 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+option go_package = "github.com/kanisterio/kanister/pkg/kanx";
+
+package kanx;
+
+service ProcessService {
+  rpc CreateProcesses (CreateProcessRequest) returns (Process) {}
+  rpc ListProcesses (ListProcessesRequest) returns (stream Process) {}
+  rpc Stdout (ProcessOutputRequest) returns (stream Output) {}
+  rpc Stderr (ProcessOutputRequest) returns (stream Output) {}
+}
+
+message CreateProcessRequest {
+    string name = 1;
+    repeated string args = 2;
+}
+
+message ListProcessesRequest {
+}
+
+message ProcessOutputRequest {
+  int64 pid = 1;
+}
+
+message Process {
+  int64 pid = 1;
+  ProcessState state = 2;
+  int64 exitCode = 3;
+  string exitErr = 4;
+}
+
+enum ProcessState {
+  PROCESS_STATE_UNSPECIFIED = 0;
+  PROCESS_STATE_RUNNING = 1;
+  PROCESS_STATE_SUCCEEDED = 2;
+  PROCESS_STATE_FAILED = 3;
+}
+
+message Output {
+    string output = 1;
+}

@@ -153,7 +153,7 @@ func (s *ControllerSuite) TestWatch(c *check.C) {
 	time.Sleep(5 * time.Second)
 }
 
-func (s *ControllerSuite) waitOnActionSetState(c *check.C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
+func (s *ControllerSuite) waitOnActionSetState(as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
@@ -179,7 +179,7 @@ func (s *ControllerSuite) waitOnActionSetState(c *check.C, as *crv1alpha1.Action
 	return errors.Wrapf(err, "State '%s' never reached", state)
 }
 
-func (s *ControllerSuite) waitOnDeferPhaseState(c *check.C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
+func (s *ControllerSuite) waitOnDeferPhaseState(as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -474,7 +474,7 @@ func (s *ControllerSuite) TestEmptyActionSetStatus(c *check.C) {
 		c.Assert(err, check.IsNil)
 	}()
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 }
 
@@ -502,7 +502,7 @@ func (s *ControllerSuite) TestSynchronousFailure(c *check.C) {
 		c.Assert(err, check.IsNil)
 	}()
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateFailed)
 	c.Assert(err, check.IsNil)
 }
 
@@ -663,7 +663,7 @@ func (s *ControllerSuite) TestExecActionSet(c *check.C) {
 			}
 
 			if !cancel {
-				err = s.waitOnActionSetState(c, as, final)
+				err = s.waitOnActionSetState(as, final)
 				c.Assert(err, check.IsNil, check.Commentf("Failed case: %s", tc.name))
 				expectedValue := oldValue + 1
 				err = waitForMetrics(s.ctrl.metrics.actionSetResolutionCounterVec, []string{tc.metricResolution}, expectedValue, time.Second)
@@ -774,14 +774,14 @@ func (s *ControllerSuite) TestDeferPhase(c *check.C) {
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	// make sure deferPhase is also run successfully
-	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
+	err = s.waitOnDeferPhaseState(as, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
@@ -792,9 +792,9 @@ func (s *ControllerSuite) TestDeferPhase(c *check.C) {
 	ras := testutil.NewTestRestoreActionSet(s.namespace, bp.GetName(), s.deployment.GetName(), as.Status.Actions[0].Artifacts)
 	ras, err = s.crCli.ActionSets(s.namespace).Create(ctx, ras, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
-	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(ras, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
-	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateComplete)
+	err = s.waitOnActionSetState(ras, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
@@ -824,14 +824,14 @@ func (s *ControllerSuite) TestDeferPhaseCoreErr(c *check.C) {
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	// wait for deferPhase to be completed, because actionset status would be set to failed as soon as a main phase fails
-	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
+	err = s.waitOnDeferPhaseState(as, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateFailed)
 	c.Assert(err, check.IsNil)
 
 	// get the actionset again to have updated status
@@ -860,14 +860,14 @@ func (s *ControllerSuite) TestDeferPhaseDeferErr(c *check.C) {
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	// wait for deferPhase to fail
-	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateFailed)
+	err = s.waitOnDeferPhaseState(as, crv1alpha1.StateFailed)
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateFailed)
 	c.Assert(err, check.IsNil)
 
 	// get the actionset again to have updated status
@@ -895,13 +895,13 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *check.C) {
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	// Check if the func returned expected output
 	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 
 	// Check if the artifacts got updated correctly
@@ -932,7 +932,7 @@ func (s *ControllerSuite) TestPhaseOutputParallelActions(c *check.C) {
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	// Check if the func returned expected output
@@ -940,7 +940,7 @@ func (s *ControllerSuite) TestPhaseOutputParallelActions(c *check.C) {
 
 	testutil.ReleaseWaitFunc()
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 
 	// Check if the artifacts got updated correctly
@@ -969,13 +969,13 @@ func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *check.C) {
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	// Check if the func returned expected output
 	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 
 	// Check if the artifacts got updated correctly
@@ -1020,13 +1020,13 @@ func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *check.C) {
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	// Check if the func returned expected output
 	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateComplete)
 	c.Assert(err, check.IsNil)
 
 	// Check if the artifacts got updated correctly
@@ -1051,12 +1051,12 @@ func (s *ControllerSuite) TestRenderArtifactsFailure(c *check.C) {
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	c.Assert(testutil.OutputFuncOut(), check.DeepEquals, map[string]interface{}{"key": "myValue"})
 
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateFailed)
 	c.Assert(err, check.IsNil)
 }
 
@@ -1073,7 +1073,7 @@ func (s *ControllerSuite) TestProgressRunningPhase(c *check.C) {
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
 	c.Assert(err, check.IsNil)
 
 	runningPhases := sets.Set[string]{}

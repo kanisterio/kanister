@@ -19,7 +19,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -93,13 +93,13 @@ func kubeTask(
 func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		if err := pc.WaitForPodReady(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
 		}
 		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
 		r, err := pc.StreamPodLogs(ctx)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
+			return nil, errkit.Wrap(err, "Failed to fetch logs from the pod")
 		}
 		out, err := output.LogAndParse(ctx, r)
 		if err != nil {
@@ -107,7 +107,7 @@ func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[str
 		}
 		// Wait for pod completion
 		if err := pc.WaitForPodCompletion(ctx); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pc.PodName())
+			return nil, errkit.Wrap(err, "Failed while waiting for Pod to complete", "pod", pc.PodName())
 		}
 		return out, err
 	}
@@ -159,7 +159,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
 	return kubeTask(
 		ctx,

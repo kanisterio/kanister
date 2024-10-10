@@ -17,7 +17,7 @@ package secrets
 import (
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,7 +93,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *check.C) {
 			},
 			errChecker:            check.NotNil,
 			locationSecretChecker: check.IsNil,
-			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, repositoryserver.TypeKey, "ns", "sec"),
+			expectedError:         errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, repositoryserver.TypeKey, "ns", "sec"),
 		},
 		{ // Unsupported location type
 			secret: &corev1.Secret{
@@ -108,7 +108,7 @@ func (s *SecretUtilsSuite) TestGetLocationSecret(c *check.C) {
 			},
 			errChecker:            check.NotNil,
 			locationSecretChecker: check.IsNil,
-			expectedError:         errors.Wrapf(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, "invalid", "ns", "sec"),
+			expectedError:         errkit.Wrap(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, "invalid", "ns", "sec"),
 		},
 	} {
 		rsecret, err := getLocationSecret(tc.secret)

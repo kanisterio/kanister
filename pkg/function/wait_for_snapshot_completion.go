@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -94,12 +94,12 @@ func waitForSnapshotsCompletion(ctx context.Context, snapshotinfo string, profil
 	PVCData := []VolumeSnapshotInfo{}
 	err := json.Unmarshal([]byte(snapshotinfo), &PVCData)
 	if err != nil {
-		return errors.Wrapf(err, "Could not decode JSON data")
+		return errkit.Wrap(err, "Could not decode JSON data")
 	}
 
 	for _, pvcInfo := range PVCData {
 		if err = ValidateLocationForBlockstorage(profile, pvcInfo.Type); err != nil {
-			return errors.Wrap(err, "Profile validation failed")
+			return errkit.Wrap(err, "Profile validation failed")
 		}
 		config := getConfig(profile, pvcInfo.Type)
 		if pvcInfo.Type == blockstorage.TypeEBS {
@@ -108,14 +108,14 @@ func waitForSnapshotsCompletion(ctx context.Context, snapshotinfo string, profil
 
 		provider, err := getter.Get(pvcInfo.Type, config)
 		if err != nil {
-			return errors.Wrapf(err, "Could not get storage provider %v", pvcInfo.Type)
+			return errkit.Wrap(err, "Could not get storage provider", "provider", pvcInfo.Type)
 		}
 		snapshot, err := provider.SnapshotGet(ctx, pvcInfo.SnapshotID)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to get Snapshot from Provider")
+			return errkit.Wrap(err, "Failed to get Snapshot from Provider")
 		}
 		if err = provider.SnapshotCreateWaitForCompletion(ctx, snapshot); err != nil {
-			return errors.Wrap(err, "Snapshot creation did not complete "+snapshot.ID)
+			return errkit.Wrap(err, "Snapshot creation did not complete "+snapshot.ID)
 		}
 	}
 	return nil
