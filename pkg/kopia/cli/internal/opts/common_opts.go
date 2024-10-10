@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	defaultLogLevel = "error"
+	defaultLogLevel = "debug"
 )
 
 // LogDirectory creates a new log directory option with a given directory.
