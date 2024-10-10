@@ -21,8 +21,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -162,7 +162,7 @@ func perform(ctx context.Context, crCli versioned.Interface, params *PerformPara
 	case len(params.Objects) > 0:
 		as, err = newActionSet(params)
 	default:
-		return errors.New("no objects found to perform action set. Please pass a valid parent action set and/or selector")
+		return errkit.New("no objects found to perform action set. Please pass a valid parent action set and/or selector")
 	}
 	if err != nil {
 		return err
@@ -175,10 +175,10 @@ func perform(ctx context.Context, crCli versioned.Interface, params *PerformPara
 
 func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 	if params.ActionName == "" {
-		return nil, errors.New("action required to create new action set")
+		return nil, errkit.New("action required to create new action set")
 	}
 	if params.Blueprint == "" {
-		return nil, errors.New("blueprint required to create new action set")
+		return nil, errkit.New("blueprint required to create new action set")
 	}
 	actions := make([]crv1alpha1.ActionSpec, 0, len(params.Objects))
 	for _, obj := range params.Objects {
@@ -218,7 +218,7 @@ func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 
 func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1alpha1.ActionSet, error) {
 	if parent.Status == nil || parent.Status.State != crv1alpha1.StateComplete {
-		return nil, errors.Errorf("Request parent ActionSet %s has not been executed", parent.GetName())
+		return nil, errkit.New(fmt.Sprintf("Request parent ActionSet %s has not been executed", parent.GetName()))
 	}
 
 	actions := make([]crv1alpha1.ActionSpec, 0, len(parent.Status.Actions)*max(1, len(params.Objects)))
@@ -302,7 +302,7 @@ func printActionSet(as *crv1alpha1.ActionSet) error {
 	}
 	asYAML, err := yaml.Marshal(as)
 	if err != nil {
-		return errors.New("could not convert generated action set to YAML")
+		return errkit.New("could not convert generated action set to YAML")
 	}
 	fmt.Printf("%s", asYAML)
 	return nil
@@ -420,7 +420,7 @@ func parseConfigMaps(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference,
 	configMapsFromCmd, _ := cmd.Flags().GetStringSlice(configMapsFlagName)
 	cms, err := parseReferences(configMapsFromCmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse config maps")
+		return nil, errkit.Wrap(err, "failed to parse config maps")
 	}
 	return cms, nil
 }
@@ -433,7 +433,7 @@ func parseProfile(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, e
 	if strings.Contains(profileName, "/") {
 		temp := strings.Split(profileName, "/")
 		if len(temp) != 2 {
-			return nil, errors.Errorf("Invalid profile name %s, should be of the form ( --profile namespace/name OR --profile name)", profileName)
+			return nil, errkit.New(fmt.Sprintf("Invalid profile name %s, should be of the form ( --profile namespace/name OR --profile name)", profileName))
 		}
 		ns = temp[0]
 		profileName = temp[1]
@@ -454,7 +454,7 @@ func parseRepositoryServer(cmd *cobra.Command) (*crv1alpha1.ObjectReference, err
 	if strings.Contains(repositoryServerName, "/") {
 		nsName := strings.Split(repositoryServerName, "/")
 		if len(nsName) != 2 {
-			return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName)
+			return nil, errkit.New(fmt.Sprintf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName))
 		}
 		ns := nsName[0]
 		repositoryServerName = nsName[1]
@@ -463,14 +463,14 @@ func parseRepositoryServer(cmd *cobra.Command) (*crv1alpha1.ObjectReference, err
 			Namespace: ns,
 		}, nil
 	}
-	return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName)
+	return nil, errkit.New(fmt.Sprintf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName))
 }
 
 func parseSecrets(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference, error) {
 	secretsFromCmd, _ := cmd.Flags().GetStringSlice(secretsFlagName)
 	secrets, err := parseReferences(secretsFromCmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse secrets")
+		return nil, errkit.Wrap(err, "failed to parse secrets")
 	}
 	return secrets, nil
 }
@@ -510,7 +510,7 @@ func parseObjects(cmd *cobra.Command, cli kubernetes.Interface, osCli osversione
 		// parse selector before making calls to K8s
 		selector, err := labels.Parse(selectorString)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse selector")
+			return nil, errkit.Wrap(err, "failed to parse selector")
 		}
 		kind, _ := cmd.Flags().GetString(selectorKindFlag)
 		sns, _ := cmd.Flags().GetString(selectorNamespaceFlag)
@@ -529,7 +529,7 @@ func parseObjectsFromCmd(objs map[string][]string, parsed map[string]bool) ([]cr
 		for _, resource := range resources {
 			namespace, name, err := parseName(kind, resource)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse %s", kind)
+				return nil, errkit.Wrap(err, fmt.Sprintf("failed to parse %s", kind))
 			}
 			obj := fmt.Sprintf("%s=%s/%s", kind, namespace, name)
 			if _, ok := parsed[obj]; ok || obj == "" {
@@ -548,7 +548,7 @@ func parseObjectsFromCmd(objs map[string][]string, parsed map[string]bool) ([]cr
 			case param.NamespaceKind:
 				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.NamespaceKind, Namespace: namespace, Name: name})
 			default:
-				return nil, errors.Errorf("unsupported or unknown object kind '%s'. Supported %s, %s and %s", kind, param.DeploymentKind, param.StatefulSetKind, param.PVCKind)
+				return nil, errkit.New(fmt.Sprintf("unsupported or unknown object kind '%s'. Supported %s, %s and %s", kind, param.DeploymentKind, param.StatefulSetKind, param.PVCKind))
 			}
 		}
 	}
@@ -572,7 +572,7 @@ func parseGenericObjectReference(s string) (crv1alpha1.ObjectReference, error) {
 	reg := regexp.MustCompile(`([\w-.]*/)*([\w-.]+)/([\w-.]+)/([\w-.]+)/([\w-.]+)`)
 	m := reg.FindStringSubmatch(s)
 	if len(m) != 6 && len(m) != 5 {
-		return crv1alpha1.ObjectReference{}, errors.Errorf("Expected group/version/resource/namespace/name or in the case of core group's resources version/resource/namespace/name . Got %s %d", s, len(m))
+		return crv1alpha1.ObjectReference{}, errkit.New(fmt.Sprintf("Expected group/version/resource/namespace/name or in the case of core group's resources version/resource/namespace/name . Got %s %d", s, len(m)))
 	}
 	return crv1alpha1.ObjectReference{
 		Group:      m[1],
@@ -599,7 +599,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 	case param.DeploymentKind:
 		dpts, err := cli.AppsV1().Deployments(sns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
-			return nil, errors.Errorf("failed to get deployments using selector '%s' in namespace '%s'", selector, sns)
+			return nil, errkit.New(fmt.Sprintf("failed to get deployments using selector '%s' in namespace '%s'", selector, sns))
 		}
 		for _, d := range dpts.Items {
 			appendObj(param.DeploymentKind, d.Namespace, d.Name)
@@ -612,7 +612,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		// use open shift SDK to get the deployment config resource
 		dcs, err := osCli.AppsV1().DeploymentConfigs(sns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get deploymentconfig using select '%s' in namespaces '%s'", selector, sns)
+			return nil, errkit.Wrap(err, fmt.Sprintf("failed to get deploymentconfig using select '%s' in namespaces '%s'", selector, sns))
 		}
 		for _, d := range dcs.Items {
 			appendObj(param.DeploymentConfigKind, d.Namespace, d.Name)
@@ -624,7 +624,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 	case param.StatefulSetKind:
 		ss, err := cli.AppsV1().StatefulSets(sns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
-			return nil, errors.Errorf("failed to get statefulsets using selector '%s' in namespace '%s'", selector, sns)
+			return nil, errkit.New(fmt.Sprintf("failed to get statefulsets using selector '%s' in namespace '%s'", selector, sns))
 		}
 		for _, s := range ss.Items {
 			appendObj(param.StatefulSetKind, s.Namespace, s.Name)
@@ -636,7 +636,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 	case param.PVCKind:
 		pvcs, err := cli.CoreV1().PersistentVolumeClaims(sns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
-			return nil, errors.Errorf("failed to get pvcs using selector '%s' in namespace '%s'", selector, sns)
+			return nil, errkit.New(fmt.Sprintf("failed to get pvcs using selector '%s' in namespace '%s'", selector, sns))
 		}
 		for _, pvc := range pvcs.Items {
 			appendObj(param.PVCKind, pvc.Namespace, pvc.Name)
@@ -644,13 +644,13 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 	case param.NamespaceKind:
 		namespaces, err := cli.CoreV1().Namespaces().List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
-			return nil, errors.Errorf("failed to get namespaces using selector '%s' '", selector)
+			return nil, errkit.New(fmt.Sprintf("failed to get namespaces using selector '%s' '", selector))
 		}
 		for _, ns := range namespaces.Items {
 			appendObj(param.NamespaceKind, ns.Namespace, ns.Name)
 		}
 	default:
-		return nil, errors.Errorf("unsupported or unknown object kind '%s'. Supported %s, %s and %s", kind, param.DeploymentKind, param.StatefulSetKind, param.PVCKind)
+		return nil, errkit.New(fmt.Sprintf("unsupported or unknown object kind '%s'. Supported %s, %s and %s", kind, param.DeploymentKind, param.StatefulSetKind, param.PVCKind))
 	}
 	return objects, nil
 }
@@ -666,7 +666,7 @@ func parseOptions(cmd *cobra.Command) (map[string]string, error) {
 		// Cobra takes care of trimming spaces
 		kvPair := strings.Split(kv, "=")
 		if len(kvPair) != 2 {
-			return nil, errors.Errorf("Expected options as key=value pairs. Got %s", kv)
+			return nil, errkit.New(fmt.Sprintf("Expected options as key=value pairs. Got %s", kv))
 		}
 		options[kvPair[0]] = kvPair[1]
 	}
@@ -710,7 +710,7 @@ func parseReference(r string) (ref, namespace, name string, err error) {
 	reg := regexp.MustCompile(`([\w-.]+)=([\w-.]+)/([\w-.]+)`)
 	matches := reg.FindStringSubmatch(r)
 	if len(matches) != 4 {
-		return "", "", "", errors.Errorf("Expected ref=namespace/name. Got %s", r)
+		return "", "", "", errkit.New(fmt.Sprintf("Expected ref=namespace/name. Got %s", r))
 	}
 	return matches[1], matches[2], matches[3], nil
 }
@@ -722,7 +722,7 @@ func parseName(k string, r string) (namespace, name string, err error) {
 	reg := regexp.MustCompile(`([\w-.]+)/([\w-.]+)`)
 	m := reg.FindStringSubmatch(r)
 	if len(m) != 3 {
-		return "", "", errors.Errorf("Expected namespace/name. Got %s", r)
+		return "", "", errkit.New(fmt.Sprintf("Expected namespace/name. Got %s", r))
 	}
 	return m[1], m[2], nil
 }
@@ -739,7 +739,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 		if p.Blueprint != "" {
 			_, err := crCli.CrV1alpha1().Blueprints(p.Namespace).Get(ctx, p.Blueprint, metav1.GetOptions{})
 			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, "blueprint", p.Blueprint, p.Namespace)
+				msgs <- errkit.Wrap(err, fmt.Sprintf(notFoundTmpl, "blueprint", p.Blueprint, p.Namespace))
 			}
 		}
 	}()
@@ -750,7 +750,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 		if p.Profile != nil {
 			_, err := crCli.CrV1alpha1().Profiles(p.Profile.Namespace).Get(ctx, p.Profile.Name, metav1.GetOptions{})
 			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, "profile", p.Profile.Name, p.Profile.Namespace)
+				msgs <- errkit.Wrap(err, fmt.Sprintf(notFoundTmpl, "profile", p.Profile.Name, p.Profile.Namespace))
 			}
 		}
 	}()
@@ -779,7 +779,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 		for _, cm := range p.ConfigMaps {
 			_, err := cli.CoreV1().ConfigMaps(cm.Namespace).Get(ctx, cm.Name, metav1.GetOptions{})
 			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, "config map", cm.Name, cm.Namespace)
+				msgs <- errkit.Wrap(err, fmt.Sprintf(notFoundTmpl, "config map", cm.Name, cm.Namespace))
 			}
 		}
 	}()
@@ -790,7 +790,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 		for _, secret := range p.Secrets {
 			_, err := cli.CoreV1().Secrets(secret.Namespace).Get(ctx, secret.Name, metav1.GetOptions{})
 			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, "secret", secret.Name, secret.Namespace)
+				msgs <- errkit.Wrap(err, fmt.Sprintf(notFoundTmpl, "secret", secret.Name, secret.Namespace))
 			}
 		}
 	}()
@@ -807,7 +807,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	}
 
 	if vFail {
-		return errors.Errorf("resource verification failed")
+		return errkit.New("resource verification failed")
 	}
 	return nil
 }
@@ -844,16 +844,16 @@ func verifyRepositoryServerParams(ctx context.Context, crCli versioned.Interface
 		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace)
+				return errkit.Wrap(err, fmt.Sprintf("Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace))
 			}
-			return errors.New("error while fetching repo server")
+			return errkit.New("error while fetching repo server")
 		}
 		if waitForRepoServerReady {
 			return waitForKopiaRepositoryServerReady(ctx, crCli, rs)
 		}
 		if rs.Status.Progress != crv1alpha1.Ready {
-			err = errors.New("Repository Server Not Ready")
-			return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
+			err = errkit.New("Repository Server Not Ready")
+			return errkit.Wrap(err, fmt.Sprintf("Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name))
 		}
 	}
 	return nil
@@ -867,7 +867,7 @@ func waitForKopiaRepositoryServerReady(ctx context.Context, crCli versioned.Inte
 		return repositoryServer.Status.Progress == crv1alpha1.Ready, err
 	})
 	if pollErr != nil {
-		return errors.Wrapf(pollErr, "Failed while waiting for Repository Server %s/%s to be Ready", rs.GetNamespace(), rs.GetName())
+		return errkit.Wrap(pollErr, fmt.Sprintf("Failed while waiting for Repository Server %s/%s to be Ready", rs.GetNamespace(), rs.GetName()))
 	}
 	return nil
 }
@@ -896,7 +896,7 @@ func verifyObjectParams(p *PerformParams, cli kubernetes.Interface, osCli osvers
 			_, err = kube.FetchUnstructuredObject(ctx, gvr, obj.Namespace, obj.Name)
 		}
 		if err != nil {
-			return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", obj.Kind, obj.Name, obj.Namespace)
+			return errkit.Wrap(err, fmt.Sprintf("Please make sure '%s' with name '%s' exists in namespace '%s'", obj.Kind, obj.Name, obj.Namespace))
 		}
 	}
 	return nil
@@ -906,7 +906,7 @@ func isDataMoverProvided(cmd *cobra.Command) error {
 	profile := cmd.Flags().Lookup(profileFlagName).Value.String()
 	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
 	if profile == "" && repositoryServer == "" {
-		return errors.New("Neither --profile nor --repository-server flag is provided.\nAction might fail if blueprint is using these resources.")
+		return errkit.New("Neither --profile nor --repository-server flag is provided.\nAction might fail if blueprint is using these resources.")
 	}
 	return nil
 }

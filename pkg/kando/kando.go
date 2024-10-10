@@ -53,6 +53,7 @@ func newRootCommand() *cobra.Command {
 	rootCmd.AddCommand(newOutputCommand())
 	rootCmd.AddCommand(newChronicleCommand())
 	rootCmd.AddCommand(newStreamCommand())
+	rootCmd.AddCommand(newProcessCommand())
 	return rootCmd
 }
 

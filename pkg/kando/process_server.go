@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2020 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kanctl
+package kando
 
 import (
-	"github.com/kanisterio/errkit"
+	"context"
+
+	"github.com/spf13/cobra"
+
+	"github.com/kanisterio/kanister/pkg/kanx"
 )
 
-var errArgsLength = errkit.NewSentinelErr("Incorrect number of arguments")
-
-func newArgsLengthError(format string, args ...interface{}) error {
-	return errkit.Wrap(errArgsLength, format, args...)
+func newProcessServerCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "server",
+		Short: "server",
+		RunE:  runProcessServer,
+	}
+	return cmd
 }
 
-// IsArgsLengthError returns true if the underlying cause was an errArgsLength.
-func IsArgsLengthError(err error) bool {
-	return errkit.Is(err, errArgsLength)
+func runProcessServer(cmd *cobra.Command, args []string) error {
+	address, err := processAddressFlagValue(cmd)
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	return kanx.NewServer().Serve(context.Background(), address)
 }
