@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,11 +111,11 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	}
 	cli, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return errors.Wrap(err, "could not get the kubernetes client")
+		return errkit.Wrap(err, "could not get the kubernetes client")
 	}
 	crCli, err := versioned.NewForConfig(config)
 	if err != nil {
-		return errors.Wrap(err, "could not get the CRD client")
+		return errkit.Wrap(err, "could not get the CRD client")
 	}
 
 	ctx := context.Background()
@@ -141,38 +141,38 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 	// Fetch values of the flags
 	tlsSecret, _ := cmd.Flags().GetString(tlsSecretFlag)
 	if strings.Contains(tlsSecret, "/") {
-		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", tlsSecret)
+		return nil, errkit.New(fmt.Sprintf("Invalid secret name %s, it should not be of the form namespace/name )", tlsSecret))
 	}
 
 	repositoryServerUser, _ := cmd.Flags().GetString(repoServerUserFlag)
 
 	repositoryServerUserAccessSecret, _ := cmd.Flags().GetString(repoServerUserAccessSecretFlag)
 	if strings.Contains(repositoryServerUserAccessSecret, "/") {
-		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerUserAccessSecret)
+		return nil, errkit.New(fmt.Sprintf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerUserAccessSecret))
 	}
 
 	repositoryServerAdminUserAccessSecret, _ := cmd.Flags().GetString(repoServerAdminUserAccessSecretFlag)
 	if strings.Contains(repositoryServerAdminUserAccessSecret, "/") {
-		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerAdminUserAccessSecret)
+		return nil, errkit.New(fmt.Sprintf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerAdminUserAccessSecret))
 	}
 
 	repositoryUser, _ := cmd.Flags().GetString(kopiaRepoUserFlag)
 
 	repositoryPassword, _ := cmd.Flags().GetString(kopiaRepoPasswordSecretFlag)
 	if strings.Contains(repositoryPassword, "/") {
-		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryPassword)
+		return nil, errkit.New(fmt.Sprintf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryPassword))
 	}
 
 	prefix, _ := cmd.Flags().GetString(prefixFlag)
 
 	location, _ := cmd.Flags().GetString(locationSecretFlag)
 	if strings.Contains(location, "/") {
-		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", location)
+		return nil, errkit.New(fmt.Sprintf("Invalid secret name %s, it should not be of the form namespace/name )", location))
 	}
 
 	locationCreds, _ := cmd.Flags().GetString(locationCredsSecretFlag)
 	if strings.Contains(locationCreds, "/") {
-		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", locationCreds)
+		return nil, errkit.New(fmt.Sprintf("Invalid secret name %s, it should not be of the form namespace/name )", locationCreds))
 	}
 
 	ns, err := resolveNamespace(cmd)
@@ -203,7 +203,7 @@ func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParam
 	}
 	cli, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get the kubernetes client")
+		return nil, errkit.Wrap(err, "could not get the kubernetes client")
 	}
 	tlsSecret, err := cli.CoreV1().Secrets(rsParams.namespace).Get(ctx, rsParams.tls, metav1.GetOptions{})
 	if err != nil {
@@ -288,7 +288,7 @@ func waitForRepositoryServerReady(ctx context.Context, cli *kubernetes.Clientset
 	if pollErr != nil {
 		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
 		if err != nil {
-			return errors.Wrapf(err, "Error Getting repository server %s", repositoryServer.GetName())
+			return errkit.Wrap(err, fmt.Sprintf("Error Getting repository server %s", repositoryServer.GetName()))
 		}
 
 		opts := metav1.ListOptions{
@@ -299,7 +299,7 @@ func waitForRepositoryServerReady(ctx context.Context, cli *kubernetes.Clientset
 			return err
 		}
 
-		return errors.Wrapf(pollErr, "Repository Server is not ready.\nCurrent Status: %s\nReason: %s\n", repositoryServer.Status.Progress, events.Items[0].Message)
+		return errkit.Wrap(pollErr, fmt.Sprintf("Repository Server is not ready.\nCurrent Status: %s\nReason: %s\n", repositoryServer.Status.Progress, events.Items[0].Message))
 	}
 	return nil
 }
