@@ -36,6 +36,8 @@ make reno-report VERSION=<pre-release-verstion>
 ```
 And then committed to the pre-release branch.
 
+**IMPORTANT** Reno scans commits to detect release notes. Only committed release notes will be added to the CHANGELOG files.
+
 ### Release workflow
 
 `release` workflow tags the repo using `release_tag` variable either from the merged pre-release PR or from workflow dispatch.
