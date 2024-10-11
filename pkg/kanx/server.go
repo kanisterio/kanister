@@ -199,14 +199,14 @@ func NewServer() *Server {
 }
 
 func (s *Server) Serve(ctx context.Context, addr string) error {
-	stopChan := make(chan os.Signal, 1)
-	signal.Notify(stopChan, syscall.SIGTERM, syscall.SIGINT)
+	ctx, can := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
+	defer can()
 	go func() {
-		select {
-		case sig := <-stopChan:
-			log.Info().Print("Gracefully stopping. Received Signal", field.M{"signal": sig})
-		case <-ctx.Done():
-			log.Info().Print("Gracefully stopping. Context canceled")
+		<-ctx.Done()
+		if err := ctx.Err(); err == context.Canceled {
+			log.Info().Print("Gracefully stopping. Parent context canceled")
+		} else {
+			log.Info().WithError(err).Print("Gracefully stopping.")
 		}
 		s.grpcs.GracefulStop()
 	}()
