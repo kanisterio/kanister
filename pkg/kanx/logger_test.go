@@ -6,12 +6,12 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type LoggerSuite struct{}
 
-var _ = Suite(&LoggerSuite{})
+var _ = check.Suite(&LoggerSuite{})
 
 type Log struct {
 	File     *string `json:"File,omitempty"`
@@ -23,43 +23,43 @@ type Log struct {
 	Boo      *string `json:"boo,omitempty"`
 }
 
-func (s *LoggerSuite) TestLogger(c *C) {
+func (s *LoggerSuite) TestLogger(c *check.C) {
 	buf := bytes.NewBuffer(nil)
 	msg := []byte("hello!")
 
 	lw := newLogWriter(log.Info(), buf)
 
 	n, err := lw.Write(msg)
-	c.Assert(err, IsNil)
-	c.Assert(n, Equals, len(msg))
+	c.Assert(err, check.IsNil)
+	c.Assert(n, check.Equals, len(msg))
 
 	l := Log{}
 	err = json.Unmarshal(buf.Bytes(), &l)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
-	c.Assert(l.File, NotNil)
-	c.Assert(l.Function, NotNil)
-	c.Assert(l.Line, Not(Equals), 0)
-	c.Assert(l.Level, NotNil)
-	c.Assert(*l.Msg, Equals, string(msg))
-	c.Assert(l.Time, NotNil)
-	c.Assert(l.Boo, IsNil)
+	c.Assert(l.File, check.NotNil)
+	c.Assert(l.Function, check.NotNil)
+	c.Assert(l.Line, check.Not(check.Equals), 0)
+	c.Assert(l.Level, check.NotNil)
+	c.Assert(*l.Msg, check.Equals, string(msg))
+	c.Assert(l.Time, check.NotNil)
+	c.Assert(l.Boo, check.IsNil)
 
 	buf.Reset()
 	lw.SetFields(field.M{"boo": "far"})
 	n, err = lw.Write(msg)
-	c.Assert(err, IsNil)
-	c.Assert(n, Equals, len(msg))
+	c.Assert(err, check.IsNil)
+	c.Assert(n, check.Equals, len(msg))
 
 	l = Log{}
 	err = json.Unmarshal(buf.Bytes(), &l)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
-	c.Assert(l.File, NotNil)
-	c.Assert(l.Function, NotNil)
-	c.Assert(l.Line, Not(Equals), 0)
-	c.Assert(l.Level, NotNil)
-	c.Assert(*l.Msg, Equals, string(msg))
-	c.Assert(l.Time, NotNil)
-	c.Assert(*l.Boo, Equals, "far")
+	c.Assert(l.File, check.NotNil)
+	c.Assert(l.Function, check.NotNil)
+	c.Assert(l.Line, check.Not(check.Equals), 0)
+	c.Assert(l.Level, check.NotNil)
+	c.Assert(*l.Msg, check.Equals, string(msg))
+	c.Assert(l.Time, check.NotNil)
+	c.Assert(*l.Boo, check.Equals, "far")
 }
