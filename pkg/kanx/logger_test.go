@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"gopkg.in/check.v1"
+
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
-	"gopkg.in/check.v1"
 )
 
 type LoggerSuite struct{}
