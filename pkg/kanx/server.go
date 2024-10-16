@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -68,15 +69,20 @@ func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreatePro
 		stderr: stderr,
 		cancel: can,
 	}
-	cmd.Stdout = p.stdout
-	cmd.Stderr = p.stderr
+	stdoutLogWriter := newLogWriter(log.Info(), os.Stdout)
+	stderrLogWriter := newLogWriter(log.Info(), os.Stderr)
+	cmd.Stdout = io.MultiWriter(p.stdout, stdoutLogWriter)
+	cmd.Stderr = io.MultiWriter(p.stderr, stderrLogWriter)
 
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
 	}
 	s.processes[int64(cmd.Process.Pid)] = p
-	log.Info().Print(processToProto(p).String(), field.M{"stdout": stdout.Name(), "stderr": stderr.Name()})
+	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdout.Name(), "stderr": stderr.Name()}
+	stdoutLogWriter.SetFields(fields)
+	stderrLogWriter.SetFields(fields)
+	log.Info().Print(processToProto(p).String(), fields)
 	go func() {
 		err := p.cmd.Wait()
 		p.err = err
@@ -85,11 +91,11 @@ func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreatePro
 		}
 		err = stdout.Close()
 		if err != nil {
-			log.Error().WithError(err).Print("Failed to close stdout", field.M{"pid": cmd.Process.Pid})
+			log.Error().WithError(err).Print("Failed to close stdout", fields)
 		}
 		err = stderr.Close()
 		if err != nil {
-			log.Error().WithError(err).Print("Failed to close stderr", field.M{"pid": cmd.Process.Pid})
+			log.Error().WithError(err).Print("Failed to close stderr", fields)
 		}
 		close(p.doneCh)
 		log.Info().Print(processToProto(p).String())
