@@ -32,6 +32,8 @@ type SnapshotCreateCommandArgs struct {
 	Tags                   []string
 	ProgressUpdateInterval time.Duration
 	Parallelism            int
+	EstimationType         string
+	EstimationThreshold    int
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
@@ -48,6 +50,18 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
+
+	if cmdArgs.EstimationType != "" {
+		args = args.AppendLoggableKV(progressEstimationTypeFlag, cmdArgs.EstimationType)
+		if cmdArgs.EstimationType == progressEstimationTypeAdaptive {
+			threshold := cmdArgs.EstimationThreshold
+			if threshold == 0 {
+				threshold = defaultAdaptiveEstimationThreshold
+			}
+			thresholdStr := strconv.Itoa(threshold)
+			args = args.AppendLoggableKV(adaptiveEstimationThresholdFlag, thresholdStr)
+		}
+	}
 	args = addTags(cmdArgs.Tags, args)
 
 	// kube.Exec might timeout after 4h if there is no output from the command
