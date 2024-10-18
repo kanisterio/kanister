@@ -62,6 +62,43 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 		},
 		{
 			f: func() []string {
+				args := SnapshotCreateCommandArgs{
+					CommandArgs:    commandArgs,
+					PathToBackup:   "path/to/backup",
+					Parallelism:    8,
+					EstimationType: "rough",
+				}
+				return SnapshotCreate(args)
+			},
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-estimation-type=rough --progress-update-interval=1h",
+		},
+		{
+			f: func() []string {
+				args := SnapshotCreateCommandArgs{
+					CommandArgs:    commandArgs,
+					PathToBackup:   "path/to/backup",
+					Parallelism:    8,
+					EstimationType: "adaptive",
+				}
+				return SnapshotCreate(args)
+			},
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-estimation-type=adaptive --adaptive-estimation-threshold=300000 --progress-update-interval=1h",
+		},
+		{
+			f: func() []string {
+				args := SnapshotCreateCommandArgs{
+					CommandArgs:         commandArgs,
+					PathToBackup:        "path/to/backup",
+					Parallelism:         8,
+					EstimationType:      "adaptive",
+					EstimationThreshold: 100,
+				}
+				return SnapshotCreate(args)
+			},
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-estimation-type=adaptive --adaptive-estimation-threshold=100 --progress-update-interval=1h",
+		},
+		{
+			f: func() []string {
 				args := SnapshotExpireCommandArgs{
 					CommandArgs: commandArgs,
 					RootID:      "root-id",
