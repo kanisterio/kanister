@@ -16,11 +16,12 @@ package zone
 
 import (
 	"context"
+	"fmt"
 	"hash/fnv"
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -48,7 +49,7 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, kubeCli kubernetes.Inte
 	if len(newZones) == 0 {
 		validZoneNames, err := m.FromRegion(ctx, sourceRegion)
 		if err != nil || len(validZoneNames) == 0 {
-			return nil, errors.Wrapf(err, "No provider zones for region (%s)", sourceRegion)
+			return nil, errkit.Wrap(err, "No provider zones for region", "region", sourceRegion)
 		}
 		for _, zone := range sourceZones {
 			if isZoneValid(zone, validZoneNames) {
@@ -57,7 +58,7 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, kubeCli kubernetes.Inte
 		}
 	}
 	if len(newZones) == 0 {
-		return nil, errors.Errorf("Unable to find valid availability zones for region (%s)", sourceRegion)
+		return nil, errkit.New(fmt.Sprintf("Unable to find valid availability zones for region (%s)", sourceRegion))
 	}
 	var zones []string
 	for z := range newZones {
@@ -155,11 +156,11 @@ const (
 // NodeZonesAndRegion returns cloud provider failure-domain region and zones as reported by K8s
 func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[string]struct{}, string, error) {
 	if cli == nil {
-		return nil, "", errors.New(nodeZonesErr)
+		return nil, "", errkit.New(nodeZonesErr)
 	}
 	ns, err := GetReadySchedulableNodes(cli)
 	if err != nil {
-		return nil, "", errors.Wrap(err, nodeZonesErr)
+		return nil, "", errkit.Wrap(err, nodeZonesErr)
 	}
 	zoneSet := make(map[string]struct{})
 	regionSet := make(map[string]struct{})
@@ -177,10 +178,10 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 		}
 	}
 	if len(regionSet) > 1 {
-		return nil, "", errors.New("Multiple failure domain regions found")
+		return nil, "", errkit.New("Multiple failure domain regions found")
 	}
 	if len(regionSet) == 0 {
-		return nil, "", errors.New("No failure domain regions found")
+		return nil, "", errkit.New("No failure domain regions found")
 	}
 	var region []string
 	for r := range regionSet {
@@ -214,7 +215,7 @@ func GetReadySchedulableNodes(cli kubernetes.Interface) ([]corev1.Node, error) {
 	}
 	log.Info().Print("Available nodes status", field.M{"total": total, "unschedulable": unschedulable, "notReady": notReady})
 	if len(l) == 0 {
-		return nil, errors.New("There are currently no ready, schedulable nodes in the cluster")
+		return nil, errkit.New("There are currently no ready, schedulable nodes in the cluster")
 	}
 	return l, nil
 }

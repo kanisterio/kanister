@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
@@ -55,7 +55,7 @@ const (
 // - session_token
 func ValidateAWSCredentials(secret *corev1.Secret) error {
 	if string(secret.Type) != AWSSecretType {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AWSSecretType, secret.Namespace, secret.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AWSSecretType, secret.Namespace, secret.Name)
 	}
 	count := 0
 	if _, ok := secret.Data[AWSAccessKeyID]; ok {
@@ -68,7 +68,7 @@ func ValidateAWSCredentials(secret *corev1.Secret) error {
 		count++
 	}
 	if len(secret.Data) > count {
-		return errors.New("Secret has an unknown field")
+		return errkit.New("Secret has an unknown field")
 	}
 	return nil
 }
@@ -107,7 +107,7 @@ func ExtractAWSCredentials(ctx context.Context, secret *corev1.Secret, assumeRol
 	}
 	val, err := creds.Get()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get AWS credentials")
+		return nil, errkit.Wrap(err, "Failed to get AWS credentials")
 	}
 	exp, err := creds.ExpiresAt()
 	if err == nil {

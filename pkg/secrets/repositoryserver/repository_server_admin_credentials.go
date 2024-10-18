@@ -15,7 +15,7 @@
 package repositoryserver
 
 import (
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -35,21 +35,21 @@ func NewRepositoryServerAdminCredentials(secret *corev1.Secret) *repositoryServe
 
 func (r *repositoryServerAdminCredentials) Validate() error {
 	if r.credentials == nil {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
 	if len(r.credentials.Data) == 0 {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, r.credentials.Namespace, r.credentials.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, r.credentials.Namespace, r.credentials.Name)
 	}
 
 	// kopia repository server admin credentials secret must have exactly 2 fields
 	if len(r.credentials.Data) != 2 {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, r.credentials.Namespace, r.credentials.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, r.credentials.Namespace, r.credentials.Name)
 	}
 	if _, ok := r.credentials.Data[AdminUsernameKey]; !ok {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminUsernameKey, r.credentials.Namespace, r.credentials.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminUsernameKey, r.credentials.Namespace, r.credentials.Name)
 	}
 	if _, ok := r.credentials.Data[AdminPasswordKey]; !ok {
-		return errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminPasswordKey, r.credentials.Namespace, r.credentials.Name)
+		return errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminPasswordKey, r.credentials.Namespace, r.credentials.Name)
 	}
 	return nil
 }

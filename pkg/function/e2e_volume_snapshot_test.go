@@ -22,7 +22,7 @@ import (
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
@@ -55,21 +55,21 @@ type VolumeSnapshotTestSuite struct {
 	tp        *param.TemplateParams
 }
 
-var _ = Suite(&VolumeSnapshotTestSuite{})
+var _ = check.Suite(&VolumeSnapshotTestSuite{})
 
-func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
+func (s *VolumeSnapshotTestSuite) SetUpTest(c *check.C) {
 	config, err := kube.LoadConfig()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	cli, err := kubernetes.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	crCli, err := versioned.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	osCli, err := osversioned.NewForConfig(config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	s.cli = cli
 	s.crCli = crCli
@@ -78,33 +78,33 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	ns := testutil.NewTestNamespace()
 
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.GetName()
 
 	ctx := context.Background()
 	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, newStatefulSet(s.namespace), metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	pods, _, err := kube.FetchPods(s.cli, s.namespace, ss.UID)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	volToPvc := kube.StatefulSetVolumes(s.cli, ss, &pods[0])
 	pvc := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
-	c.Assert(len(pvc) > 0, Equals, true)
+	c.Assert(len(pvc) > 0, check.Equals, true)
 	id, secret, locationType, err := s.getCreds(c, ctx, s.cli, s.namespace, pvc)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	if id == "" || secret == "" {
 		c.Skip("Skipping the test since storage type not supported")
 	}
 
 	sec := NewTestProfileSecret(id, secret)
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	p := NewTestProfile(s.namespace, sec.GetName(), locationType)
 	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
@@ -119,7 +119,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	}
 
 	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.tp = tp
 }
 
@@ -166,7 +166,7 @@ func NewTestProfile(namespace string, secretName string, locationType crv1alpha1
 	}
 }
 
-func (s *VolumeSnapshotTestSuite) TearDownTest(c *C) {
+func (s *VolumeSnapshotTestSuite) TearDownTest(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -308,31 +308,31 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 	}
 }
 
-func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
+func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *check.C) {
 	ctx := context.Background()
 	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
 	for _, action := range actions {
 		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *s.tp)
-		c.Assert(err, IsNil)
+		c.Assert(err, check.IsNil)
 		for _, p := range phases {
-			c.Assert(param.InitPhaseParams(ctx, s.cli, s.tp, p.Name(), p.Objects()), IsNil)
+			c.Assert(param.InitPhaseParams(ctx, s.cli, s.tp, p.Name(), p.Objects()), check.IsNil)
 			output, err := p.Exec(ctx, *bp, action, *s.tp)
 			if err != nil && strings.Contains(err.Error(), skipTestErrorMsg) {
 				c.Skip("Skipping the test since storage type not supported")
 			}
-			c.Assert(err, IsNil)
+			c.Assert(err, check.IsNil)
 			param.UpdatePhaseParams(ctx, s.tp, p.Name(), output)
 			if action == "backup" {
 				arts, err := param.RenderArtifacts(bp.Actions[action].OutputArtifacts, *s.tp)
-				c.Assert(err, IsNil)
+				c.Assert(err, check.IsNil)
 				s.tp.ArtifactsIn = arts
 			}
 		}
 	}
 }
 
-func (s *VolumeSnapshotTestSuite) getCreds(c *C, ctx context.Context, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
+func (s *VolumeSnapshotTestSuite) getCreds(c *check.C, ctx context.Context, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcname, metav1.GetOptions{})
 	if err != nil {
 		return "", "", "", err
@@ -358,7 +358,7 @@ func (s *VolumeSnapshotTestSuite) getCreds(c *C, ctx context.Context, cli kubern
 	return "", "", "", nil
 }
 
-func GetEnvOrSkip(c *C, varName string) string {
+func GetEnvOrSkip(c *check.C, varName string) string {
 	v := os.Getenv(varName)
 	// Ensure the variable is set
 	if v == "" {

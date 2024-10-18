@@ -15,8 +15,8 @@
 package repositoryserver
 
 import (
-	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	"github.com/kanisterio/errkit"
+	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -25,12 +25,12 @@ import (
 
 type ServerAdminCredentialsSecretSuite struct{}
 
-var _ = Suite(&ServerAdminCredentialsSecretSuite{})
+var _ = check.Suite(&ServerAdminCredentialsSecretSuite{})
 
-func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C) {
+func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *check.C) {
 	for i, tc := range []struct {
 		secret        Secret
-		errChecker    Checker
+		errChecker    check.Checker
 		expectedError error
 	}{
 		{ // Valid Repository Server Admin Credentials Secret
@@ -45,7 +45,7 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 					AdminPasswordKey: []byte("adminpassword"),
 				},
 			}),
-			errChecker: IsNil,
+			errChecker: check.IsNil,
 		},
 		{ // Missing required field - AdminUsernameKey
 			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
@@ -59,8 +59,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 					BucketKey:        []byte("bucketkey"),
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminUsernameKey, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminUsernameKey, "ns", "sec"),
 		},
 		{ // Missing required field - AdminPasswordKey
 			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
@@ -74,8 +74,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 					BucketKey:        []byte("bucketkey"),
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminPasswordKey, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, AdminPasswordKey, "ns", "sec"),
 		},
 		{ // Secret should contain only 2 key value pairs
 			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
@@ -90,8 +90,8 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 					BucketKey:        []byte("invalidkey"),
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.UnknownFieldErrorMsg, "ns", "sec"),
 		},
 		{ // Empty Secret
 			secret: NewRepositoryServerAdminCredentials(&corev1.Secret{
@@ -101,19 +101,19 @@ func (s *GCPSecretCredsSuite) TestValidateRepositoryServerAdminCredentials(c *C)
 					Namespace: "ns",
 				},
 			}),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.EmptySecretErrorMessage, "ns", "sec"),
 		},
 		{ // Nil Secret
 			secret:        NewRepositoryServerAdminCredentials(nil),
-			errChecker:    NotNil,
-			expectedError: errors.Wrapf(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
+			errChecker:    check.NotNil,
+			expectedError: errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage),
 		},
 	} {
 		err := tc.secret.Validate()
 		c.Check(err, tc.errChecker)
 		if err != nil {
-			c.Check(err.Error(), Equals, tc.expectedError.Error(), Commentf("test number: %d", i))
+			c.Check(err.Error(), check.Equals, tc.expectedError.Error(), check.Commentf("test number: %d", i))
 		}
 	}
 }

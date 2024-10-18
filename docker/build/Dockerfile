@@ -3,7 +3,8 @@ LABEL maintainer="Tom Manville<tom@kasten.io>"
 
 ARG TARGETPLATFORM
 
-RUN apt-get update && apt-get -y install apt-transport-https ca-certificates bash git gnupg2 software-properties-common curl jq wget \
+RUN apt-get update && apt-get -y install \
+    apt-transport-https bash ca-certificates curl git gnupg2 jq protobuf-compiler software-properties-common wget \
     && update-ca-certificates
 
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \

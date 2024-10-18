@@ -7,15 +7,16 @@ tool to target the Kubernetes cluster you want to install Kanister on.
 Start by adding the Kanister repository to your local setup:
 
 ``` bash
-helm repo add kanister <https://charts.kanister.io/>
+helm repo add kanister https://charts.kanister.io/
 ```
 
 Use the `helm install` command to install Kanister in the `kanister`
 namespace:
 
 ``` bash
-helm -n kanister upgrade \--install kanister \--create-namespace
-kanister/kanister-operator
+helm -n kanister upgrade \
+--install kanister \
+--create-namespace kanister/kanister-operator
 ```
 
 Confirm that the Kanister workloads are ready:
@@ -38,6 +39,15 @@ Kubernetes. For example, if the latest version of Kubernetes is 1.24,
 Kanister will work with 1.24, 1.23, and 1.22. Support for older versions
 is provided on a best-effort basis. If you are using an older version of
 Kubernetes, please consider upgrading to a newer version.
+:::
+
+::: tip NOTE
+
+To improve the cluster's security, the default installation of Kanister is restricted
+to access only the resources within its own namespace. As a result, Kanister may not be
+able to snapshot or restore applications by default in other namespaces.
+If Blueprint needs access to resources in other namespaces, please follow the steps
+provided [here](rbac) to configure the access correctly.
 :::
 
 ## Configuring Kanister
@@ -63,8 +73,10 @@ you will have to install Kanister with the
 `--set controller.updateCRDs=false` option:
 
 ``` bash
-helm -n kanister upgade \--install kanister \--create-namespace
-kanister/kanister-operator \--set controller.updateCRDs=false
+helm -n kanister upgrade \
+--install kanister \
+--create-namespace kanister/kanister-operator \
+--set controller.updateCRDs=false
 ```
 
 This option lets Helm manage the CRD resources.
@@ -89,13 +101,13 @@ kubectl create secret tls my-tls-secret \--cert /path/to/tls.crt \--key
 ```
 
 Install Kanister, providing the PEM-encoded CA bundle and the
-[tls]{.title-ref} secret name like below:
+`tls` secret name like below:
 
 ``` bash
-helm upgrade \--install kanister kanister/kanister-operator \--namespace
-kanister \--create-namespace \--set bpValidatingWebhook.tls.mode=custom
-\--set bpValidatingWebhook.tls.caBundle=\$(cat /path/to/ca.pem \| base64
--w 0) \--set bpValidatingWebhook.tls.secretName=tls-secret
+helm upgrade --install kanister kanister/kanister-operator --namespace kanister --create-namespace \
+--set bpValidatingWebhook.tls.mode=custom \
+--set bpValidatingWebhook.tls.caBundle=$(cat /path/to/ca.pem | base64 -w 0) \
+--set bpValidatingWebhook.tls.secretName=tls-secret
 ```
 
 ## Building and Deploying from Source

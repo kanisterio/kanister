@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	. "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type ExecSuite struct {
@@ -29,35 +29,35 @@ type ExecSuite struct {
 }
 
 // Valid command
-var _ = Suite(&ExecSuite{
+var _ = check.Suite(&ExecSuite{
 	command: "echo",
 	args:    []string{"success"},
 	output:  "success",
 })
 
 // Invalid command
-var _ = Suite(&ExecSuite{
+var _ = check.Suite(&ExecSuite{
 	command: "invalid",
 	err:     true,
 })
 
 // Check timeout
-var _ = Suite(&ExecSuite{
+var _ = check.Suite(&ExecSuite{
 	command: "sleep",
 	args:    []string{"11m"},
 	err:     true,
 })
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
-func (s *ExecSuite) TestRunCmdWithTimeout(c *C) {
+func (s *ExecSuite) TestRunCmdWithTimeout(c *check.C) {
 	ctx := context.Background()
 	out, err := RunCmdWithTimeout(ctx, s.command, s.args)
 	if s.err {
-		c.Assert(err, NotNil)
+		c.Assert(err, check.NotNil)
 		return
 	}
-	c.Assert(err, IsNil)
-	c.Assert(out, Equals, s.output)
+	c.Assert(err, check.IsNil)
+	c.Assert(out, check.Equals, s.output)
 }

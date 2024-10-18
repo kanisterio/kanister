@@ -25,6 +25,8 @@ Prerequisites
 
 * A running Kanister controller. See :ref:`install`
 
+* Proper RBAC configured for the Kanister controller. See :ref:`rbac`
+
 * Access to an S3 bucket and credentials.
 
 Example Application

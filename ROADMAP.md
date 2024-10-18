@@ -39,3 +39,4 @@ Please join the Kanister community to give feedback on the roadmap
   resurrect https://github.com/kanisterio/kanister/issues/193
 1. Merge the Repository controller into the Kanister controller.
 1. Support for creation of blueprints/actionsets in application namespaces https://github.com/kanisterio/kanister/discussions/2922
+1. Support iterating over multiple resources with the same function https://github.com/kanisterio/kanister/discussions/3001

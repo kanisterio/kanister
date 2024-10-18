@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -30,6 +31,12 @@ const (
 	// LevelVarName is the environment variable that controls
 	// init log levels
 	LevelEnvName = "LOG_LEVEL"
+)
+
+var (
+	ErrEndpointNotSet = errors.New("fluentbit endpoint not set")
+	ErrNonTCPEndpoint = errors.New("fluentbit endpoint scheme must be tcp")
+	ErrPathSet        = errors.New("fluentbit endpoint path is set")
 )
 
 // OutputSink describes the current output sink.
@@ -77,6 +84,22 @@ func SetOutput(sink OutputSink) error {
 	default:
 		return errors.New("not implemented")
 	}
+}
+
+// SetFluentbitOutput sets the fluentbit output
+func SetFluentbitOutput(url *url.URL) error {
+	if url == nil || url.Host == "" {
+		return ErrEndpointNotSet
+	}
+	if url.Scheme != "tcp" {
+		return ErrNonTCPEndpoint
+	}
+	if url.Path != "" {
+		return ErrPathSet
+	}
+	hook := NewFluentbitHook(url.Host)
+	log.AddHook(hook)
+	return nil
 }
 
 var envVarFields field.Fields

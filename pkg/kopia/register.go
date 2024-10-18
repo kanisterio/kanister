@@ -14,8 +14,8 @@
 
 package kopia
 
+// Register supported blob storage providers
 import (
-	// Register supported blob storage providers
 	_ "github.com/kopia/kopia/repo/blob/azure"
 	_ "github.com/kopia/kopia/repo/blob/filesystem"
 	_ "github.com/kopia/kopia/repo/blob/gcs"
