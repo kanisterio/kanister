@@ -112,6 +112,7 @@ jobs:
       release_tag: ${{ needs.run_if.outputs.release_tag }}
 
   publish_charts:
+    runs-on: ubuntu-latest
     needs: [run_if, release_packages]
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
