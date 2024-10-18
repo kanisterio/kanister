@@ -1,2 +1,2 @@
 ---
-features: Introduced new Kanister function ``MultiContainerRun`` to run pods with two containers connected by shared volume
+features: Introduced new Kanister function ``MultiContainerRun`` to run pods with two containers connected by shared volume.
