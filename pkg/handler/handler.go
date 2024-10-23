@@ -60,7 +60,7 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	_, _ = io.WriteString(w, string(js))
+	_, _ = io.Writer.Write(w, js)
 }
 
 // RunWebhookServer starts the validating webhook resources for blueprint kanister resources

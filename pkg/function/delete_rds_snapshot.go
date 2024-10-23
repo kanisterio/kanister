@@ -55,22 +55,22 @@ func (*deleteRDSSnapshotFunc) Name() string {
 	return DeleteRDSSnapshotFuncName
 }
 
-func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Profile, dbEngine RDSDBEngine) (map[string]interface{}, error) {
+func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Profile, dbEngine RDSDBEngine) error {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
-		return nil, errkit.Wrap(err, "Profile Validation failed")
+		return errkit.Wrap(err, "Profile Validation failed")
 	}
 
 	// Get aws config from profile
 	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
 	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to get AWS creds from profile")
+		return errkit.Wrap(err, "Failed to get AWS creds from profile")
 	}
 
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to create RDS client")
+		return errkit.Wrap(err, "Failed to create RDS client")
 	}
 
 	if !isAuroraCluster(string(dbEngine)) {
@@ -82,16 +82,16 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 				switch err.Code() {
 				case awsrds.ErrCodeDBSnapshotNotFoundFault:
 					log.WithContext(ctx).Print("Could not find matching RDS snapshot; might have been deleted previously", field.M{"SnapshotId": snapshotID})
-					return nil, nil
+					return nil
 				default:
-					return nil, errkit.Wrap(err, "Failed to delete snapshot")
+					return errkit.Wrap(err, "Failed to delete snapshot")
 				}
 			}
 		}
 		// Wait until snapshot is deleted
 		log.WithContext(ctx).Print("Waiting for RDS snapshot to be deleted", field.M{"SnapshotID": snapshotID})
 		err = rdsCli.WaitUntilDBSnapshotDeleted(ctx, snapshotID)
-		return nil, errkit.Wrap(err, "Error while waiting for snapshot to be deleted")
+		return errkit.Wrap(err, "Error while waiting for snapshot to be deleted")
 	}
 
 	// delete Aurora DB cluster snapshot
@@ -102,9 +102,9 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 			switch err.Code() {
 			case awsrds.ErrCodeDBClusterSnapshotNotFoundFault:
 				log.WithContext(ctx).Print("Could not find matching Aurora DB cluster snapshot; might have been deleted previously", field.M{"SnapshotId": snapshotID})
-				return nil, nil
+				return nil
 			default:
-				return nil, errkit.Wrap(err, "Error deleting Aurora DB cluster snapshot")
+				return errkit.Wrap(err, "Error deleting Aurora DB cluster snapshot")
 			}
 		}
 	}
@@ -112,7 +112,7 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 	log.WithContext(ctx).Print("Waiting for Aurora DB cluster snapshot to be deleted")
 	err = rdsCli.WaitUntilDBClusterDeleted(ctx, snapshotID)
 
-	return nil, errkit.Wrap(err, "Error waiting for Aurora DB cluster snapshot to be deleted")
+	return errkit.Wrap(err, "Error waiting for Aurora DB cluster snapshot to be deleted")
 }
 
 func (d *deleteRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -130,7 +130,7 @@ func (d *deleteRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParam
 		return nil, err
 	}
 
-	return deleteRDSSnapshot(ctx, snapshotID, tp.Profile, dbEngine)
+	return nil, deleteRDSSnapshot(ctx, snapshotID, tp.Profile, dbEngine)
 }
 
 func (*deleteRDSSnapshotFunc) RequiredArgs() []string {
