@@ -1,0 +1,6 @@
+---
+features:
+  - Introduced a GRPC client/server to ``kando`` to run/check processes.
+other:
+  - Update ubi-minimal base image to ubi-minimal:9.4-1227.1726694542.
+  - Add ``gci`` and ``unparam`` linters to test packages.

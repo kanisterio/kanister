@@ -1,36 +1,29 @@
 # Release Notes
 
-## 0.111.0
+## 0.112.0
 
 ## New Features
 
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Add support for Read-Only and Write Access Modes when connecting to the Kopia Repository Server in `kando`.
+<!-- releasenotes/notes/multi-container-run-function-d488516c0f3b22c6.yaml @ b'278e79a1ab5bc54fb1aa55d13474a49b6f319836' -->
+* Introduced new Kanister function `MultiContainerRun` to run pods with two containers connected by shared volume.
 
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Add support for Cache Size Limits to the `kopia server start` command.
-
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Add support to pass labels and annotations to the methods that create/clone VolumeSnapshot and VolumeSnapshotContent resources.
-
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Support `image` argument for `ExportRDSSnapshotToLocation` and `RestoreRDSSnapshot` functions to override default postgres-kanister-tools image.
-
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Added support to customise the labels and annotations of the temporary pods that are created by some Kanister functions.
-
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Added two new fields, `podLabels` and `podAnnotations`, to the ActionSet. These fields can be used to configure the labels and annotations of the Kanister function pod run by an ActionSet.
+<!-- releasenotes/notes/pre-release-0.112.0-78fed87c3f58d801.yaml @ b'278e79a1ab5bc54fb1aa55d13474a49b6f319836' -->
+* Introduced a GRPC client/server to `kando` to run/check processes.
 
 ## Security Issues
 
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Update Go to 1.22.7 to pull in latest security updates.
+<!-- releasenotes/notes/limit-rbac-kanister-operator-3c933af021b8d48a.yaml @ b'a9edc6dc95d8772de502cb09b386f55e20baa33f' -->
+* Enhanced security by removing the default `edit` `ClusterRoleBinding` assignment, minimizing the risk of excessive permissions.
+
+## Upgrade Notes
+
+<!-- releasenotes/notes/limit-rbac-kanister-operator-3c933af021b8d48a.yaml @ b'a9edc6dc95d8772de502cb09b386f55e20baa33f' -->
+* Users upgrading from previous versions should note that the `edit` `ClusterRoleBinding` is no longer included by default. They must now create their own `Role` / `RoleBinding` with appropriate permissions for Kanister's Service Account in the application's namespace.
 
 ## Other Notes
 
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Update ubi-minimal base image to ubi-minimal:9.4-1227.1725849298.
+<!-- releasenotes/notes/pre-release-0.112.0-78fed87c3f58d801.yaml @ b'278e79a1ab5bc54fb1aa55d13474a49b6f319836' -->
+* Update ubi-minimal base image to ubi-minimal:9.4-1227.1726694542.
 
-<!-- releasenotes/notes/pre-release-0.111.0-478149ddf5d56f80.yaml @ b'07949285eea9a1c7f0768bd8c8354d64278b0d82' -->
-* Add `stylecheck`, `errcheck`, and `misspel` linters to test packages.
+<!-- releasenotes/notes/pre-release-0.112.0-78fed87c3f58d801.yaml @ b'278e79a1ab5bc54fb1aa55d13474a49b6f319836' -->
+* Add `gci` and `unparam` linters to test packages.

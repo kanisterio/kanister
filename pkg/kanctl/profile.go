@@ -20,7 +20,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
@@ -174,15 +174,15 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 	}
 	secret, err = createSecret(ctx, secret, cli)
 	if err != nil {
-		return errors.Wrap(err, "failed to create secret")
+		return errkit.Wrap(err, "failed to create secret")
 	}
 	err = validateProfile(ctx, profile, cli, skipValidation, true)
 	if err != nil {
 		fmt.Printf("validation failed, deleting secret '%s'\n", secret.GetName())
 		if rmErr := deleteSecret(ctx, secret, cli); rmErr != nil {
-			return errors.Wrap(rmErr, "failed to delete secret after validation failed")
+			return errkit.Wrap(rmErr, "failed to delete secret after validation failed")
 		}
-		return errors.Wrap(err, "profile validation failed")
+		return errkit.Wrap(err, "profile validation failed")
 	}
 	return createProfile(ctx, profile, crCli)
 }
@@ -211,7 +211,7 @@ func getLocationParams(cmd *cobra.Command) (*locationParams, error) {
 		lType = crv1alpha1.LocationTypeAzure
 		profileName = "azure-profile-"
 	default:
-		return nil, errors.New("Profile type not supported: " + cmd.Name())
+		return nil, errkit.New("Profile type not supported: " + cmd.Name())
 	}
 	skipSSLVerify, _ := cmd.Flags().GetBool(skipSSLVerifyFlag)
 	return &locationParams{
@@ -368,7 +368,7 @@ func printSecret(secret *corev1.Secret) error {
 	}
 	secYAML, err := yaml.Marshal(secret)
 	if err != nil {
-		return errors.New("could not convert generated secret to YAML")
+		return errkit.New("could not convert generated secret to YAML")
 	}
 	fmt.Printf("%s", secYAML)
 	return nil
@@ -381,7 +381,7 @@ func printProfile(profile *crv1alpha1.Profile) error {
 	}
 	profYAML, err := yaml.Marshal(profile)
 	if err != nil {
-		return errors.New("could not convert generated profile to YAML")
+		return errkit.New("could not convert generated profile to YAML")
 	}
 	fmt.Printf("%s", profYAML)
 	return nil
@@ -399,7 +399,7 @@ func performProfileValidation(p *validateParams) error {
 	ctx := context.Background()
 	cli, crCli, _, err := initializeClients()
 	if err != nil {
-		return errors.Wrap(err, "could not initialize clients for validation")
+		return errkit.Wrap(err, "could not initialize clients for validation")
 	}
 	prof, err := getProfileFromCmd(ctx, crCli, p)
 	if err != nil {

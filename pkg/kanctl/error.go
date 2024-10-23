@@ -15,18 +15,16 @@
 package kanctl
 
 import (
-	"fmt"
-
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
-var errArgsLength = fmt.Errorf("Incorrect number of arguments")
+var errArgsLength = errkit.NewSentinelErr("Incorrect number of arguments")
 
 func newArgsLengthError(format string, args ...interface{}) error {
-	return errors.Wrapf(errArgsLength, format, args...)
+	return errkit.Wrap(errArgsLength, format, args...)
 }
 
-// IsArgsLengthError returns true iff the underlying cause was an errArgsLength.
+// IsArgsLengthError returns true if the underlying cause was an errArgsLength.
 func IsArgsLengthError(err error) bool {
-	return errors.Cause(err) == errArgsLength
+	return errkit.Is(err, errArgsLength)
 }
