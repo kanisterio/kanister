@@ -167,7 +167,7 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 		ServiceAccountName: sa,
 	}
 
-	if opts.EnvironmentVariables != nil && len(opts.EnvironmentVariables) > 0 {
+	if len(opts.EnvironmentVariables) > 0 {
 		defaultSpecs.Containers[0].Env = opts.EnvironmentVariables
 	}
 

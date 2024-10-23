@@ -134,7 +134,7 @@ func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kube
 	}
 	wg.Wait()
 
-	err := fmt.Errorf(strings.Join(errstrings, "\n"))
+	err := errkit.New(strings.Join(errstrings, "\n"))
 	if len(err.Error()) > 0 {
 		return nil, errkit.Wrap(err, "Failed to snapshot one of the volumes")
 	}
