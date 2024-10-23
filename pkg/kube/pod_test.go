@@ -252,7 +252,7 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.Spec.RestartPolicy, check.Equals, po.RestartPolicy)
 		}
 
-		if po.EnvironmentVariables != nil && len(po.EnvironmentVariables) > 0 {
+		if len(po.EnvironmentVariables) > 0 {
 			c.Assert(pod.Spec.Containers[0].Env, check.DeepEquals, po.EnvironmentVariables)
 		}
 
