@@ -66,7 +66,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.112.0"
+	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.113.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct {
