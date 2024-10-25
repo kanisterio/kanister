@@ -12,6 +12,8 @@ import (
 
 	"google.golang.org/grpc"
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -257,9 +259,13 @@ func (s *KanXSuite) TestParallelStdout(c *C) {
 	err = sp.cmd.Process.Kill()
 	c.Assert(err, IsNil)
 
-	ps, err = ListProcesses(ctx, addr)
-	c.Assert(err, IsNil)
-	c.Assert(ps, HasLen, 1)
+	_ = poll.Wait(ctx, func(context.Context) (bool, error) {
+		ps, err = ListProcesses(ctx, addr)
+		c.Assert(err, IsNil)
+		c.Assert(ps, HasLen, 1)
+		return ps[0].GetState() != ProcessState_PROCESS_STATE_RUNNING, nil
+	})
+
 	c.Assert(ps[0].GetPid(), Equals, p.GetPid())
 	c.Assert(ps[0].GetState(), Equals, ProcessState_PROCESS_STATE_FAILED)
 	c.Assert(ps[0].GetExitErr(), Equals, "signal: killed")
