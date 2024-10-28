@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/poll"
 	"google.golang.org/grpc"
 	. "gopkg.in/check.v1"
+	
+	"github.com/kanisterio/kanister/pkg/poll"	
 )
 
 // Hook up gocheck into the "go test" runner.
