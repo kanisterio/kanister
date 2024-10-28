@@ -1,9 +1,9 @@
 package function
 
 import (
-	"github.com/kanisterio/kanister/pkg/param"
-
 	"gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 type ScaleWorkloadSuite struct{}
@@ -34,12 +34,13 @@ func (s *ScaleWorkloadSuite) TestSetArgs(c *check.C) {
 		},
 	} {
 		s := scaleWorkloadFunc{}
-		s.setArgs(param.TemplateParams{
+		err := s.setArgs(param.TemplateParams{
 			StatefulSet: stsParams,
 		}, map[string]interface{}{
 			"replicas": tc.replicas,
 		})
 
+		c.Assert(err, check.IsNil)
 		c.Assert(s.replicas, check.Equals, tc.expectedReplicas)
 	}
 }
