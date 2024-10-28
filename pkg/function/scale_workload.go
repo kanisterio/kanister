@@ -167,8 +167,8 @@ func (s *scaleWorkloadFunc) setArgs(tp param.TemplateParams, args map[string]int
 	case int64:
 		replicas = int32(val)
 	case string:
-		var v int
-		if v, err = strconv.Atoi(val); err != nil {
+		v, err := strconv.ParseInt(val, 10, 32)
+		if err != nil {
 			return errkit.Wrap(err, fmt.Sprintf("Cannot convert %s to int", val))
 		}
 		replicas = int32(v)
