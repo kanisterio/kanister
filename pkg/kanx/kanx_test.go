@@ -12,8 +12,8 @@ import (
 
 	"google.golang.org/grpc"
 	. "gopkg.in/check.v1"
-	
-	"github.com/kanisterio/kanister/pkg/poll"	
+
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 // Hook up gocheck into the "go test" runner.
