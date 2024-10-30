@@ -344,8 +344,14 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runni
 		return nil, nil, errkit.Wrap(err, "Could not list Pods")
 	}
 	for _, pod := range pods.Items {
-		if len(pod.OwnerReferences) != 1 ||
-			pod.OwnerReferences[0].UID != uid {
+		ownerUIDMatches := false
+		for _, ownerRef := range pod.OwnerReferences {
+			if ownerRef.UID == uid {
+				ownerUIDMatches = true
+				break
+			}
+		}
+		if !ownerUIDMatches {
 			continue
 		}
 		if pod.Status.Phase != corev1.PodRunning {
