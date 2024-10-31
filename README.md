@@ -8,6 +8,8 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8699/badge)](https://www.bestpractices.dev/projects/8699)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kanisterio/kanister/badge)](https://securityscorecards.dev/viewer/?uri=github.com/kanisterio/kanister)
 
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B48957%2Fgithub.com%2Fkanisterio%2Fkanister.svg?type=shield&issueType=license)](https://app.fossa.com/projects/custom%2B48957%2Fgithub.com%2Fkanisterio%2Fkanister?ref=badge_shield&issueType=license)
+
 Kanister is a data protection workflow management tool. It provides a set of
 cohesive APIs for defining and curating data operations by abstracting away
 tedious details around executing data operations on Kubernetes. It's extensible
