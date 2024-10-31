@@ -293,14 +293,9 @@ func FetchReplicationController(cli kubernetes.Interface, namespace string, uid 
 	}
 
 	for _, rc := range repCtrls.Items {
-		if len(rc.OwnerReferences) != 1 {
+		if !uidInOwnerRefs(rc.OwnerReferences, uid) {
 			continue
 		}
-
-		if rc.OwnerReferences[0].UID != uid {
-			continue
-		}
-
 		if rc.Annotations[ReplicationControllerRevisionAnnotation] != revision {
 			continue
 		}
@@ -319,12 +314,7 @@ func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, 
 		return nil, errkit.Wrap(err, "Could not list ReplicaSets")
 	}
 	for _, rs := range rss.Items {
-		// We ignore ReplicaSets without a single owner.
-		if len(rs.OwnerReferences) != 1 {
-			continue
-		}
-		// We ignore ReplicaSets owned by other deployments.
-		if rs.OwnerReferences[0].UID != uid {
+		if !uidInOwnerRefs(rs.OwnerReferences, uid) {
 			continue
 		}
 		// We ignore older ReplicaSets
@@ -344,14 +334,7 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runni
 		return nil, nil, errkit.Wrap(err, "Could not list Pods")
 	}
 	for _, pod := range pods.Items {
-		ownerUIDMatches := false
-		for _, ownerRef := range pod.OwnerReferences {
-			if ownerRef.UID == uid {
-				ownerUIDMatches = true
-				break
-			}
-		}
-		if !ownerUIDMatches {
+		if !uidInOwnerRefs(pod.OwnerReferences, uid) {
 			continue
 		}
 		if pod.Status.Phase != corev1.PodRunning {
