@@ -20,6 +20,8 @@ import (
 	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/field"
@@ -194,4 +196,15 @@ func AddLabelsToPodOptionsFromContext(
 			return
 		}
 	}
+}
+
+// uidInOwnerRefs returns true if one of the ownerReferences of an object matches the
+// provided UID.
+func uidInOwnerRefs(ownerReferences []metav1.OwnerReference, uid types.UID) bool {
+	for _, ownerRef := range ownerReferences {
+		if ownerRef.UID == uid {
+			return true
+		}
+	}
+	return false
 }
