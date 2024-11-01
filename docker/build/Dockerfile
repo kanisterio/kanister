@@ -13,6 +13,7 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /
 RUN apt update && apt install -y docker-ce docker-ce-cli containerd.io \
     && apt-get clean
 
+RUN apt-get install apt-transport-https ca-certificates gnupg
 RUN apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
 
 COPY --from=bitnami/kubectl:1.26 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
