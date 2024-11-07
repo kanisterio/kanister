@@ -66,6 +66,7 @@ const (
 	verifyFilesPercentFlag          = "--verify-files-percent"
 	ignorePermissionsError          = "--ignore-permission-errors"
 	noIgnorePermissionsError        = "--no-ignore-permission-errors"
+	fullFlag                        = "--full"
 
 	// Server specific
 	addSubCommand             = "add"

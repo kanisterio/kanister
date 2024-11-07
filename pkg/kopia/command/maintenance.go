@@ -50,7 +50,7 @@ type MaintenanceRunCommandArgs struct {
 // MaintenanceRunCommand returns the kopia command to run manual maintenance
 func MaintenanceRunCommand(cmdArgs MaintenanceRunCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
-	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
+	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand, fullFlag)
 
 	return stringSliceCommand(args)
 }
