@@ -71,7 +71,8 @@ func RunWebhookServer(c *rest.Config) error {
 		return errors.Wrap(err, "Failed to create new webhook manager")
 	}
 	bpValidator := &validatingwebhook.BlueprintValidator{}
-	if err = bpValidator.InjectDecoder(admission.NewDecoder(mgr.GetScheme())); err != nil {
+	decoder := admission.NewDecoder(mgr.GetScheme())
+	if err = bpValidator.InjectDecoder(&decoder); err != nil {
 		return errors.Wrap(err, "Failed to inject decoder")
 	}
 
