@@ -18,7 +18,7 @@ type BlueprintValidator struct {
 
 func (b *BlueprintValidator) Handle(ctx context.Context, r admission.Request) admission.Response {
 	bp := &crv1alpha1.Blueprint{}
-	err := b.decoder.Decode(r, bp)
+	err := (*b.decoder).Decode(r, bp)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}

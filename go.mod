@@ -54,15 +54,15 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
-	//pinned k8s.io to v0.29.x tag
-	k8s.io/api v0.29.10
-	k8s.io/apiextensions-apiserver v0.29.10
-	k8s.io/apimachinery v0.29.10
-	k8s.io/cli-runtime v0.29.10
-	k8s.io/client-go v0.29.10
-	k8s.io/code-generator v0.29.10
-	k8s.io/kubectl v0.29.10
-	sigs.k8s.io/controller-runtime v0.16.6
+	//pinned k8s.io to v0.30.x tag
+	k8s.io/api v0.30.6
+	k8s.io/apiextensions-apiserver v0.30.6
+	k8s.io/apimachinery v0.30.6
+	k8s.io/cli-runtime v0.30.6
+	k8s.io/client-go v0.30.6
+	k8s.io/code-generator v0.30.6
+	k8s.io/kubectl v0.30.6
+	sigs.k8s.io/controller-runtime v0.18.5
 	sigs.k8s.io/yaml v1.3.0
 
 )
@@ -102,7 +102,7 @@ require (
 	github.com/edsrzf/mmap-go v1.1.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
-	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
+	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/felixge/fgprof v0.9.4 // indirect
@@ -111,7 +111,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-logr/zapr v1.2.4 // indirect
+	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/errors v0.22.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
@@ -224,10 +224,10 @@ require (
 	gopkg.in/kothar/go-backblaze.v0 v0.0.0-20210124194846-35409b867216 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/component-base v0.29.10 // indirect
-	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
-	k8s.io/klog/v2 v2.110.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
+	k8s.io/component-base v0.30.6 // indirect
+	k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 // indirect
+	k8s.io/klog/v2 v2.120.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.3-0.20230601165947-6ce0bf390ce3 // indirect
