@@ -15,7 +15,7 @@
 //go:build !unit
 // +build !unit
 
-package kube
+package kube_test
 
 import (
 	"bytes"
