@@ -24,7 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -111,7 +111,7 @@ func authenticateAWSCredentials(
 		return creds, os.Getenv(RoleARNEnvKey), nil
 	}
 
-	return nil, "", errors.New("Missing AWS credentials, please check that either AWS access keys or web identity token are provided")
+	return nil, "", errkit.New("Missing AWS credentials, please check that either AWS access keys or web identity token are provided")
 }
 
 func fetchStaticAWSCredentials(config map[string]string) *credentials.Credentials {
@@ -171,14 +171,14 @@ func switchAWSRole(ctx context.Context, creds *credentials.Credentials, targetRo
 	// If the caller wants to use a specific role, use the credentials initialized above to assume that
 	// role and return those credentials instead
 	creds, err := awsrole.Switch(ctx, creds, targetRole, assumeRoleDuration)
-	return creds, errors.Wrap(err, "Failed to switch roles")
+	return creds, errkit.Wrap(err, "Failed to switch roles")
 }
 
 // GetCredentials returns credentials to use for AWS operations
 func GetCredentials(ctx context.Context, config map[string]string) (*credentials.Credentials, error) {
 	assumeRoleDuration, err := durationFromString(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get assume role duration")
+		return nil, errkit.Wrap(err, "Failed to get assume role duration")
 	}
 	log.Debug().Print("Assume Role Duration setup", field.M{"assumeRoleDuration": assumeRoleDuration})
 
@@ -202,7 +202,7 @@ func getCredentialsWithDuration(
 ) (*credentials.Credentials, error) {
 	sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: duration})
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
+		return nil, errkit.Wrap(err, "Failed to create session to initialize Web Identify credentials")
 	}
 
 	svc := sts.New(sess)
@@ -220,11 +220,11 @@ func getCredentialsWithDuration(
 func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, err error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
-		return nil, "", errors.New("region required for storage type EBS/EFS")
+		return nil, "", errkit.New("region required for storage type EBS/EFS")
 	}
 	creds, err := GetCredentials(ctx, config)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "could not initialize AWS credentials for operation")
+		return nil, "", errkit.Wrap(err, "could not initialize AWS credentials for operation")
 	}
 	return &aws.Config{Credentials: creds}, region, nil
 }
@@ -233,16 +233,16 @@ func IsAwsCredsValid(ctx context.Context, config map[string]string) (bool, error
 	var maxRetries int = 10
 	awsConfig, region, err := GetConfig(ctx, config)
 	if err != nil {
-		return false, errors.Wrap(err, "Failed to get config for AWS creds")
+		return false, errkit.Wrap(err, "Failed to get config for AWS creds")
 	}
 	s, err := session.NewSession(awsConfig)
 	if err != nil {
-		return false, errors.Wrap(err, "Failed to create session with provided creds")
+		return false, errkit.Wrap(err, "Failed to create session with provided creds")
 	}
 	stsCli := sts.New(s, aws.NewConfig().WithRegion(region).WithMaxRetries(maxRetries))
 	_, err = stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
-		return false, errors.Wrap(err, "Failed to get user with provided creds")
+		return false, errkit.Wrap(err, "Failed to get user with provided creds")
 	}
 	return true, nil
 }

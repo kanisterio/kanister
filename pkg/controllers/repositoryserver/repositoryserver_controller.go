@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,11 +69,11 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	logger = logger.V(1)
 	cnf, err := ctrl.GetConfig()
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "Failed to get k8s config")
+		return ctrl.Result{}, errkit.Wrap(err, "Failed to get k8s config")
 	}
 	kubeCli, err := kubernetes.NewForConfig(cnf)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "Failed to get a k8s client")
+		return ctrl.Result{}, errkit.Wrap(err, "Failed to get a k8s client")
 	}
 
 	repositoryServer := &crv1alpha1.RepositoryServer{}

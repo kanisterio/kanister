@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -250,7 +250,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	}
 	u, err := kube.FetchUnstructuredObjectWithCli(ctx, dynCli, gvr, namespace, as.Object.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, namespace, gvr.Group, gvr.Version, gvr.Resource)
+		return nil, errkit.Wrap(err, fmt.Sprintf("could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, namespace, gvr.Group, gvr.Version, gvr.Resource))
 	}
 	tp.Object = u.UnstructuredContent()
 
@@ -264,11 +264,11 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 	}
 	p, err := crCli.CrV1alpha1().Profiles(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errkit.WithStack(err)
 	}
 	cred, err := fetchCredential(ctx, cli, p.Credential)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errkit.WithStack(err)
 	}
 	return &Profile{
 		Location:      p.Location,
@@ -284,7 +284,7 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	}
 	r, err := crCli.CrV1alpha1().RepositoryServers(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errkit.WithStack(err)
 	}
 	serverTLS, err := secretFromSecretRef(ctx, cli, r.Spec.Server.TLSSecretRef)
 	if err != nil {
@@ -300,7 +300,7 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	}
 	repositoryServerService, err := cli.CoreV1().Services(r.Namespace).Get(ctx, r.Status.ServerInfo.ServiceName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, "Error Fetching Repository Server Service")
+		return nil, errkit.Wrap(err, "Error Fetching Repository Server Service")
 	}
 	repositoryServerAddress := fmt.Sprintf("https://%s.%s.%s:%d", repositoryServerService.Name, repositoryServerService.Namespace, clusterLocalDomain, repositoryServerService.Spec.Ports[0].Port)
 	cacheSizeSettings := getKopiaRepositoryCacheSize(r)
@@ -341,23 +341,23 @@ func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1
 	case crv1alpha1.CredentialTypeKopia:
 		return fetchKopiaCredential(ctx, cli, c.KopiaServerSecret)
 	default:
-		return nil, errors.Errorf("CredentialType '%s' not supported", c.Type)
+		return nil, errkit.New(fmt.Sprintf("CredentialType '%s' not supported", c.Type))
 	}
 }
 
 func fetchKeyPairCredential(ctx context.Context, cli kubernetes.Interface, c *crv1alpha1.KeyPair) (*Credential, error) {
 	if c == nil {
-		return nil, errors.New("KVSecret cannot be nil")
+		return nil, errkit.New("KVSecret cannot be nil")
 	}
 	s, err := cli.CoreV1().Secrets(c.Secret.Namespace).Get(ctx, c.Secret.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errkit.WithStack(err)
 	}
 	if _, ok := s.Data[c.IDField]; !ok {
-		return nil, errors.Errorf("Key '%s' not found in secret '%s:%s'", c.IDField, s.GetNamespace(), s.GetName())
+		return nil, errkit.New(fmt.Sprintf("Key '%s' not found in secret '%s:%s'", c.IDField, s.GetNamespace(), s.GetName()))
 	}
 	if _, ok := s.Data[c.SecretField]; !ok {
-		return nil, errors.Errorf("Value '%s' not found in secret '%s:%s'", c.SecretField, s.GetNamespace(), s.GetName())
+		return nil, errkit.New(fmt.Sprintf("Value '%s' not found in secret '%s:%s'", c.SecretField, s.GetNamespace(), s.GetName()))
 	}
 	return &Credential{
 		Type: CredentialTypeKeyPair,
@@ -370,11 +370,11 @@ func fetchKeyPairCredential(ctx context.Context, cli kubernetes.Interface, c *cr
 
 func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *crv1alpha1.ObjectReference) (*Credential, error) {
 	if sr == nil {
-		return nil, errors.New("Secret reference cannot be nil")
+		return nil, errkit.New("Secret reference cannot be nil")
 	}
 	s, err := cli.CoreV1().Secrets(sr.Namespace).Get(ctx, sr.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch the secret")
+		return nil, errkit.Wrap(err, "Failed to fetch the secret")
 	}
 	if err = secrets.ValidateCredentials(s); err != nil {
 		return nil, err
@@ -388,7 +388,7 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 func secretFromSecretRef(ctx context.Context, cli kubernetes.Interface, ref corev1.SecretReference) (*corev1.Secret, error) {
 	secret, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
+		return nil, errkit.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
 	}
 	return secret, nil
 }
@@ -409,7 +409,7 @@ func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string
 	for name, ref := range refs {
 		s, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, errkit.WithStack(err)
 		}
 		secrets[name] = *s
 	}
@@ -421,7 +421,7 @@ func fetchConfigMaps(ctx context.Context, cli kubernetes.Interface, refs map[str
 	for name, ref := range refs {
 		c, err := cli.CoreV1().ConfigMaps(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, errkit.WithStack(err)
 		}
 		configs[name] = *c
 	}
@@ -431,7 +431,7 @@ func fetchConfigMaps(ctx context.Context, cli kubernetes.Interface, refs map[str
 func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*StatefulSetParams, error) {
 	ss, err := cli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errkit.WithStack(err)
 	}
 	ssp := &StatefulSetParams{
 		Name:                   name,
@@ -459,7 +459,7 @@ func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, 
 	// because deploymentconfig is not standard kubernetes resource.
 	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errkit.WithStack(err)
 	}
 
 	dcp := &DeploymentConfigParams{
@@ -496,7 +496,7 @@ func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, 
 func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*DeploymentParams, error) {
 	d, err := cli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errkit.WithStack(err)
 	}
 	dp := &DeploymentParams{
 		Name:                   name,
@@ -551,7 +551,7 @@ func volumes(pod corev1.Pod, volToPvc map[string]string) map[string]string {
 func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*PVCParams, error) {
 	_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errkit.WithStack(err)
 	}
 	return &PVCParams{
 		Name:      name,
@@ -561,32 +561,32 @@ func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, na
 
 func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv1alpha1.KopiaServerSecret) (*Credential, error) {
 	if ks == nil {
-		return nil, errors.New("Kopia Secret reference cannot be nil")
+		return nil, errkit.New("Kopia Secret reference cannot be nil")
 	}
 
 	if ks.UserPassphrase.Secret == nil {
-		return nil, errors.New("Kopia UserPassphrase Secret reference cannot be nil")
+		return nil, errkit.New("Kopia UserPassphrase Secret reference cannot be nil")
 	}
 
 	passSecret, err := cli.CoreV1().Secrets(ks.UserPassphrase.Secret.Namespace).Get(ctx, ks.UserPassphrase.Secret.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch the secret %s/%s", ks.UserPassphrase.Secret.Namespace, ks.UserPassphrase.Secret.Name)
+		return nil, errkit.Wrap(err, "Failed to fetch the secret", "namespace", ks.UserPassphrase.Secret.Namespace, "name", ks.UserPassphrase.Secret.Name)
 	}
 	password, ok := passSecret.Data[ks.UserPassphrase.Key]
 	if !ok {
-		return nil, errors.New("Failed to fetch user passphrase from secret")
+		return nil, errkit.New("Failed to fetch user passphrase from secret")
 	}
 
 	if ks.TLSCert == nil || ks.TLSCert.Secret == nil {
-		return nil, errors.New("Kopia TLS cert Secret reference cannot be nil")
+		return nil, errkit.New("Kopia TLS cert Secret reference cannot be nil")
 	}
 	tlsSecret, err := cli.CoreV1().Secrets(ks.TLSCert.Secret.Namespace).Get(ctx, ks.TLSCert.Secret.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch the secret %s/%s", ks.TLSCert.Secret.Namespace, ks.TLSCert.Secret.Name)
+		return nil, errkit.Wrap(err, "Failed to fetch the secret", "namespace", ks.TLSCert.Secret.Namespace, "name", ks.TLSCert.Secret.Name)
 	}
 	tlsCert, ok := tlsSecret.Data[ks.TLSCert.Key]
 	if !ok {
-		return nil, errors.New("Failed to fetch TLS cert from secret")
+		return nil, errkit.New("Failed to fetch TLS cert from secret")
 	}
 	return &Credential{
 		Type: CredentialTypeKopia,

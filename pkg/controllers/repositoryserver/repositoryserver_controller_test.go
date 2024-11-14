@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
@@ -477,11 +477,11 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(repoServerNa
 	})
 
 	if !serverInfoUpdated && err == nil {
-		err = errors.New("pod name or service name is not set on repository server CR")
+		err = errkit.New("pod name or service name is not set on repository server CR")
 	}
 
 	if err != nil {
-		return errors.Wrapf(err, "failed waiting for RepoServer Info updates in the CR")
+		return errkit.Wrap(err, "failed waiting for RepoServer Info updates in the CR")
 	}
 	return err
 }
@@ -502,12 +502,12 @@ func (s *RepoServerControllerSuite) waitOnRepositoryServerState(reposerverName s
 			return false, nil
 		}
 		if repoServerCR.Status.Progress == crv1alpha1.Failed {
-			return false, errors.New(fmt.Sprintf(" There is failure in staring the repository server, server is in %s state, please check logs", repoServerCR.Status.Progress))
+			return false, errkit.New(fmt.Sprintf("There is failure in staring the repository server, server is in %s state, please check logs", repoServerCR.Status.Progress))
 		}
 		if repoServerCR.Status.Progress == crv1alpha1.Ready {
 			return true, nil
 		}
-		return false, errors.New(fmt.Sprintf("Unexpected Repository server state: %s", repoServerCR.Status.Progress))
+		return false, errkit.New(fmt.Sprintf("Unexpected Repository server state: %s", repoServerCR.Status.Progress))
 	})
 	return repoServerState, err
 }

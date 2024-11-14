@@ -15,7 +15,9 @@
 package kando
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
+	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/output"
@@ -34,7 +36,7 @@ func newOutputCommand() *cobra.Command {
 
 func validateArguments(c *cobra.Command, args []string) error {
 	if len(args) != 2 {
-		return errors.Errorf("Command accepts 2 arguments, received %d arguments", len(args))
+		return errkit.New(fmt.Sprintf("Command accepts 2 arguments, received %d arguments", len(args)))
 	}
 	return output.ValidateKey(args[0])
 }

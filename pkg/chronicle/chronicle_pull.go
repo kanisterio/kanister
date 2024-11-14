@@ -19,7 +19,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -32,7 +32,7 @@ func Pull(ctx context.Context, target io.Writer, p param.Profile, manifest strin
 	// Read Data
 	data, err := io.ReadAll(buf)
 	if err != nil {
-		return errors.Wrap(err, "Could not read chronicle manifest")
+		return errkit.Wrap(err, "Could not read chronicle manifest")
 	}
 	return location.Read(ctx, target, p, string(data))
 }

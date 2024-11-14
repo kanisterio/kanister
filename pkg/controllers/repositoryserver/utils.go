@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -164,12 +164,12 @@ func volumeSpecForName(podSpec corev1.PodSpec, podOverride map[string]interface{
 func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, tlsCertSecretName string, po *kube.PodOptions) error {
 	podSpecBytes, err := json.Marshal(*podOverride)
 	if err != nil {
-		return errors.Wrap(err, "Failed to marshal Pod Override")
+		return errkit.Wrap(err, "Failed to marshal Pod Override")
 	}
 
 	var podOverrideSpec corev1.PodSpec
 	if err := json.Unmarshal(podSpecBytes, &podOverrideSpec); err != nil {
-		return errors.Wrap(err, "Failed to unmarshal Pod Override Spec")
+		return errkit.Wrap(err, "Failed to unmarshal Pod Override Spec")
 	}
 
 	podOverrideSpec.Volumes = append(podOverrideSpec.Volumes, corev1.Volume{
@@ -199,11 +199,11 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 
 	podSpecBytes, err = json.Marshal(podOverrideSpec)
 	if err != nil {
-		return errors.Wrap(err, "Failed to marshal Pod Override Spec")
+		return errkit.Wrap(err, "Failed to marshal Pod Override Spec")
 	}
 
 	if err := json.Unmarshal(podSpecBytes, podOverride); err != nil {
-		return errors.Wrap(err, "Failed to unmarshal Pod Override")
+		return errkit.Wrap(err, "Failed to unmarshal Pod Override")
 	}
 
 	return nil
@@ -235,7 +235,7 @@ func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.V
 func getPodAddress(ctx context.Context, cli kubernetes.Interface, namespace, podName string) (string, error) {
 	p, err := cli.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to get pod")
+		return "", errkit.Wrap(err, "Failed to get pod")
 	}
 	return fmt.Sprintf(repoServerAddressFormat, p.Status.PodIP, repoServerServicePort), nil
 }
@@ -277,17 +277,17 @@ func getVolumes(
 	vols := make(map[string]kube.VolumeMountOptions, 0)
 	var claimName []byte
 	if len(secret.Data) == 0 {
-		return nil, errors.Errorf(secerrors.EmptySecretErrorMessage, secret.Namespace, secret.Name)
+		return nil, errkit.New(fmt.Sprintf(secerrors.EmptySecretErrorMessage, secret.Namespace, secret.Name))
 	}
 	if locationType, ok := (secret.Data[reposerver.TypeKey]); ok && reposerver.LocType(string(locationType)) == reposerver.LocTypeFilestore {
 		if claimName, ok = secret.Data[reposerver.ClaimNameKey]; !ok {
-			return nil, errors.New("Claim name not set for file store location secret, failed to retrieve PVC")
+			return nil, errkit.New("Claim name not set for file store location secret, failed to retrieve PVC")
 		}
 
 		claimNameString := string(claimName)
 		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, claimNameString, metav1.GetOptions{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to validate if PVC %s:%s exists", namespace, claimName)
+			return nil, errkit.Wrap(err, "Failed to validate if PVC exists", "namespace", namespace, "claimName", claimName)
 		}
 
 		vols[claimNameString] = kube.VolumeMountOptions{

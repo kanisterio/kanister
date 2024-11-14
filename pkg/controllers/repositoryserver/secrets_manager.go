@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -76,14 +76,14 @@ func (h *RepoServerHandler) getSecretsFromCR(ctx context.Context) error {
 
 func (h *RepoServerHandler) fetchSecret(ctx context.Context, ref *corev1.SecretReference) (*corev1.Secret, error) {
 	if ref == nil {
-		return nil, errors.New("repository server CR does not have a secret reference set")
+		return nil, errkit.New("repository server CR does not have a secret reference set")
 	}
 
 	h.Logger.Info(fmt.Sprintf("Fetching secret %s from namespace %s", ref.Name, ref.Namespace))
 	secret := corev1.Secret{}
 	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, &secret)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
+		return nil, errkit.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
 	}
 	return &secret, nil
 }

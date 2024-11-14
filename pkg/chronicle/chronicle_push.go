@@ -25,7 +25,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/envdir"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -110,25 +110,25 @@ func pushWithEnv(ctx context.Context, c []string, suffix string, ord int, prof p
 	cmd.Env = append(cmd.Env, env...)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		return errors.Wrap(err, "Failed to open command pipe")
+		return errkit.Wrap(err, "Failed to open command pipe")
 	}
 	cmd.Stderr = os.Stderr
 	cur := fmt.Sprintf("%s-%d", suffix, ord)
 	// Write data to object store
 	if err := cmd.Start(); err != nil {
-		return errors.Wrap(err, "Failed to start chronicle pipe command")
+		return errkit.Wrap(err, "Failed to start chronicle pipe command")
 	}
 	if err := location.Write(ctx, out, prof, cur); err != nil {
-		return errors.Wrap(err, "Failed to write command output to object storage")
+		return errkit.Wrap(err, "Failed to write command output to object storage")
 	}
 	if err := cmd.Wait(); err != nil {
-		return errors.Wrap(err, "Chronicle pipe command failed")
+		return errkit.Wrap(err, "Chronicle pipe command failed")
 	}
 
 	// Write manifest pointing to new data
 	man := strings.NewReader(cur)
 	if err := location.Write(ctx, man, prof, suffix); err != nil {
-		return errors.Wrap(err, "Failed to write command output to object storage")
+		return errkit.Wrap(err, "Failed to write command output to object storage")
 	}
 	// Delete old data
 	prev := fmt.Sprintf("%s-%d", suffix, ord-1)
@@ -139,7 +139,7 @@ func pushWithEnv(ctx context.Context, c []string, suffix string, ord int, prof p
 func readArtifactPathFile(path string) (string, error) {
 	buf, err := os.ReadFile(path)
 	t := strings.TrimSuffix(string(buf), "\n")
-	return t, errors.Wrap(err, "Could not read artifact path file")
+	return t, errkit.Wrap(err, "Could not read artifact path file")
 }
 
 func readProfile(path string) (param.Profile, bool, error) {
@@ -151,10 +151,10 @@ func readProfile(path string) (param.Profile, bool, error) {
 		err = nil
 		return p, false, err
 	case err != nil:
-		return p, false, errors.Wrap(err, "Failed to read profile")
+		return p, false, errkit.Wrap(err, "Failed to read profile")
 	}
 	if err = json.Unmarshal(buf, &p); err != nil {
-		return p, false, errors.Wrap(err, "Failed to unmarshal profile")
+		return p, false, errkit.Wrap(err, "Failed to unmarshal profile")
 	}
 	return p, true, nil
 }
@@ -162,7 +162,7 @@ func readProfile(path string) (param.Profile, bool, error) {
 func writeProfile(path string, p param.Profile) error {
 	buf, err := json.Marshal(p)
 	if err != nil {
-		return errors.Wrap(err, "Failed to write profile")
+		return errkit.Wrap(err, "Failed to write profile")
 	}
 	return os.WriteFile(path, buf, os.ModePerm)
 }

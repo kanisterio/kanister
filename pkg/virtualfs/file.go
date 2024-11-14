@@ -20,8 +20,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/fs"
-	"github.com/pkg/errors"
 )
 
 // file is an in-memory implementation of kopia's fs.File
@@ -80,13 +80,13 @@ func FileFromEndpoint(name, sourceEndpoint string, permissions os.FileMode) *fil
 func httpStreamReader(sourceEndpoint string) (ReaderSeekerCloser, error) {
 	req, err := http.NewRequest("GET", sourceEndpoint, nil)
 	if err != nil {
-		return readCloserWrapper{nil}, errors.Wrap(err, "Failed to generate HTTP request")
+		return readCloserWrapper{nil}, errkit.Wrap(err, "Failed to generate HTTP request")
 	}
 
 	client := http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return readCloserWrapper{nil}, errors.Wrap(err, "Failed to make HTTP request")
+		return readCloserWrapper{nil}, errkit.Wrap(err, "Failed to make HTTP request")
 	}
 
 	return readCloserWrapper{resp.Body}, nil

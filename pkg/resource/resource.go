@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -52,11 +52,11 @@ func CreateCustomResources(ctx context.Context, config *rest.Config) error {
 func newOpKitContext(ctx context.Context, config *rest.Config) (*customresource.Context, error) {
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get k8s client.")
+		return nil, errkit.Wrap(err, "failed to get k8s client.")
 	}
 	apiExtClientset, err := apiextensionsclient.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create k8s API extension clientset")
+		return nil, errkit.Wrap(err, "failed to create k8s API extension clientset")
 	}
 	return &customresource.Context{
 		Clientset:             clientset,

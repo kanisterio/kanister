@@ -17,7 +17,7 @@ package datamover
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
@@ -100,7 +100,7 @@ func (p *profile) connectToKopiaRepositoryServer(ctx context.Context, accessMode
 
 func (p *profile) unmarshalKopiaSnapshot(ctx context.Context) (*snapshot.SnapshotInfo, error) {
 	if p.snapJSON == "" {
-		return nil, errors.New("kopia snapshot information is required to manage data using kopia")
+		return nil, errkit.New("kopia snapshot information is required to manage data using kopia")
 	}
 	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(p.snapJSON)
 	if err != nil {

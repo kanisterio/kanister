@@ -3,7 +3,6 @@ package kanx
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"os"
@@ -12,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"google.golang.org/grpc"
 
 	"github.com/kanisterio/kanister/pkg/field"
@@ -117,12 +116,12 @@ func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps Proc
 	return nil
 }
 
-var errProcessNotFound = fmt.Errorf("Process not found")
+var errProcessNotFound = errkit.NewSentinelErr("Process not found")
 
 func (s *processServiceServer) Stdout(por *ProcessOutputRequest, ss ProcessService_StdoutServer) error {
 	p, ok := s.processes[por.Pid]
 	if !ok {
-		return errors.WithStack(errProcessNotFound)
+		return errkit.WithStack(errProcessNotFound)
 	}
 	fh, err := os.Open(p.stdout.Name())
 	if err != nil {
@@ -134,7 +133,7 @@ func (s *processServiceServer) Stdout(por *ProcessOutputRequest, ss ProcessServi
 func (s *processServiceServer) Stderr(por *ProcessOutputRequest, ss ProcessService_StderrServer) error {
 	p, ok := s.processes[por.Pid]
 	if !ok {
-		return errors.WithStack(errProcessNotFound)
+		return errkit.WithStack(errProcessNotFound)
 	}
 	fh, err := os.Open(p.stderr.Name())
 	if err != nil {

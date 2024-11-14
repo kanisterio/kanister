@@ -21,7 +21,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
 const (
@@ -40,7 +40,7 @@ func marshalOutput(key, value string) (string, error) {
 	}
 	outString, err := json.Marshal(out)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to marshal key-value pair")
+		return "", errkit.Wrap(err, "Failed to marshal key-value pair")
 	}
 	return string(outString), nil
 }
@@ -49,19 +49,19 @@ func marshalOutput(key, value string) (string, error) {
 func UnmarshalOutput(opString []byte) (*Output, error) {
 	p := &Output{}
 	err := json.Unmarshal([]byte(opString), p)
-	return p, errors.Wrap(err, "Failed to unmarshal key-value pair")
+	return p, errkit.Wrap(err, "Failed to unmarshal key-value pair")
 }
 
 // ValidateKey validates the key argument
 func ValidateKey(key string) error {
 	// key should be non-empty
 	if key == "" {
-		return errors.New("Key should not be empty")
+		return errkit.New("Key should not be empty")
 	}
 	// key can contain only alpha numeric characters and underscore
 	valid := regexp.MustCompile("^[a-zA-Z0-9_]*$").MatchString
 	if !valid(key) {
-		return errors.New("Key should contain only alphanumeric characters and underscore")
+		return errkit.New("Key should contain only alphanumeric characters and underscore")
 	}
 	return nil
 }
