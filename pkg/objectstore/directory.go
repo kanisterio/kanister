@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/graymeta/stow"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
 var _ Directory = (*directory)(nil)
@@ -73,9 +73,9 @@ func (d *directory) GetDirectory(ctx context.Context, dir string) (Directory, er
 	items, _, err := d.bucket.container.Items(cloudName(dir), stow.CursorStart, 1)
 	switch {
 	case err != nil:
-		return nil, errors.Wrapf(err, "could not get directory marker %s", dir)
+		return nil, errkit.Wrap(err, fmt.Sprintf("could not get directory marker %s", dir))
 	case len(items) == 0:
-		return nil, errors.Errorf("no items found. could not get directory marker %s", dir)
+		return nil, errkit.New(fmt.Sprintf("no items found. could not get directory marker %s", dir))
 	}
 	return &directory{
 		bucket: d.bucket,
@@ -87,7 +87,7 @@ func (d *directory) GetDirectory(ctx context.Context, dir string) (Directory, er
 // the returned map is indexed by the relative directory name (without trailing '/')
 func (d *directory) ListDirectories(ctx context.Context) (map[string]Directory, error) {
 	if d.path == "" {
-		return nil, errors.New("invalid entry")
+		return nil, errkit.New("invalid entry")
 	}
 
 	directories := make(map[string]Directory)
@@ -130,7 +130,7 @@ func (d *directory) ListDirectories(ctx context.Context) (map[string]Directory, 
 // ListObjects lists all the files that have d.dirname as the prefix.
 func (d *directory) ListObjects(ctx context.Context) ([]string, error) {
 	if d.path == "" {
-		return nil, errors.New("invalid entry")
+		return nil, errkit.New("invalid entry")
 	}
 
 	objects := make([]string, 0, 1)
@@ -155,7 +155,7 @@ func (d *directory) ListObjects(ctx context.Context) ([]string, error) {
 // <bucket>/<d.path>/<everything> including <bucket>/<d.path>/<some dir>/<objects>
 func (d *directory) DeleteDirectory(ctx context.Context) error {
 	if d.path == "" {
-		return errors.New("invalid entry")
+		return errkit.New("invalid entry")
 	}
 	return deleteWithPrefix(ctx, d.bucket.container, cloudName(d.path))
 }
@@ -176,14 +176,14 @@ func deleteWithPrefix(ctx context.Context, c stow.Container, prefix string) erro
 			return c.RemoveItem(item.Name())
 		})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to delete item %s", prefix)
+		return errkit.Wrap(err, fmt.Sprintf("Failed to delete item %s", prefix))
 	}
 	return nil
 }
 
 func (d *directory) Get(ctx context.Context, name string) (io.ReadCloser, map[string]string, error) {
 	if d.path == "" {
-		return nil, nil, errors.New("invalid entry")
+		return nil, nil, errkit.New("invalid entry")
 	}
 
 	objName := d.absPathName(name)
@@ -232,7 +232,7 @@ func (d *directory) GetBytes(ctx context.Context, name string) ([]byte, map[stri
 
 func (d *directory) Put(ctx context.Context, name string, r io.Reader, size int64, tags map[string]string) error {
 	if d.path == "" {
-		return errors.New("invalid entry")
+		return errkit.New("invalid entry")
 	}
 	// Replace any '/' in tags with '-'.
 	sTags := sanitizeTags(tags)
@@ -253,7 +253,7 @@ func (d *directory) PutBytes(ctx context.Context, name string, data []byte, tags
 // Delete removes an object
 func (d *directory) Delete(ctx context.Context, name string) error {
 	if d.path == "" {
-		return errors.New("invalid entry")
+		return errkit.New("invalid entry")
 	}
 
 	objName := d.absPathName(name)

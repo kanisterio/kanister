@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -198,10 +198,10 @@ func resticArgs(profile *param.Profile, repository, encryptionKey string) ([]str
 	case crv1alpha1.LocationTypeAzure:
 		cmd, err = resticAzureArgs(profile, repository)
 	default:
-		return nil, errors.New("Unsupported type '%s' for the location")
+		return nil, errkit.New(fmt.Sprintf("Unsupported type '%s' for the location", profile.Location.Type))
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get arguments")
+		return nil, errkit.Wrap(err, "Failed to get arguments")
 	}
 	return append(cmd, fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey), ResticCommand), nil
 }
@@ -217,7 +217,7 @@ func resticS3Args(profile *param.Profile, repository string) ([]string, error) {
 	}
 	args, err := resticS3CredentialArgs(profile.Credential)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create args from credential")
+		return nil, errkit.Wrap(err, "Failed to create args from credential")
 	}
 	args = append(args, fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository))
 	return args, nil
@@ -233,7 +233,7 @@ func resticS3CredentialArgs(creds param.Credential) ([]string, error) {
 	case param.CredentialTypeSecret:
 		return resticS3CredentialSecretArgs(creds.Secret)
 	default:
-		return nil, errors.Errorf("Unsupported type '%s' for credentials", creds.Type)
+		return nil, errkit.New(fmt.Sprintf("Unsupported type '%s' for credentials", creds.Type))
 	}
 }
 
@@ -301,12 +301,12 @@ func GetOrCreateRepository(
 	// Create a repository
 	cmd, err := InitCommand(profile, artifactPrefix, encryptionKey, insecureTLS)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create init command")
+		return errkit.Wrap(err, "Failed to create init command")
 	}
 	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
-	return errors.Wrapf(err, "Failed to create object store backup location")
+	return errkit.Wrap(err, "Failed to create object store backup location")
 }
 
 // CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots
@@ -323,13 +323,13 @@ func CheckIfRepoIsReachable(
 ) error {
 	_, stderr, err := getLatestSnapshots(ctx, profile, artifactPrefix, encryptionKey, insecureTLS, cli, namespace, pod, container)
 	if IsPasswordIncorrect(stderr) { // If password didn't work
-		return errors.New(PasswordIncorrect)
+		return errkit.New(PasswordIncorrect)
 	}
 	if DoesRepoExist(stderr) {
-		return errors.New(RepoDoesNotExist)
+		return errkit.New(RepoDoesNotExist)
 	}
 	if err != nil {
-		return errors.Wrap(err, "Failed to list snapshots")
+		return errkit.Wrap(err, "Failed to list snapshots")
 	}
 	return nil
 }
@@ -349,7 +349,7 @@ func getLatestSnapshots(
 	// Use the latest snapshots command to check if the repository exists
 	cmd, err := LatestSnapshotsCommand(profile, artifactPrefix, encryptionKey, insecureTLS)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to create snapshot command")
+		return "", "", errkit.Wrap(err, "Failed to create snapshot command")
 	}
 	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
@@ -362,10 +362,10 @@ func SnapshotIDFromSnapshotLog(output string) (string, error) {
 	var result []map[string]interface{}
 	err := json.Unmarshal([]byte(output), &result)
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to unmarshall output from snapshotCommand")
+		return "", errkit.Wrap(err, "Failed to unmarshall output from snapshotCommand")
 	}
 	if len(result) == 0 {
-		return "", errors.New("Snapshot not found")
+		return "", errkit.New("Snapshot not found")
 	}
 	snapID := result[0]["short_id"]
 	return snapID.(string), nil
