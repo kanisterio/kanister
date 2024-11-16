@@ -17,6 +17,8 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	"maps"
+	"sync"
 )
 
 const (
@@ -28,18 +30,21 @@ const (
 
 type processServiceServer struct {
 	UnimplementedProcessServiceServer
+	mu               sync.Mutex
 	processes        map[int64]*process
 	outputDir        string
 	tailTickDuration time.Duration
 }
 
 type process struct {
+	mu       sync.Mutex
 	cmd      *exec.Cmd
 	doneCh   chan struct{}
 	stdout   *os.File
 	stderr   *os.File
 	exitCode int
 	err      error
+	fault    error
 	cancel   context.CancelFunc
 }
 
@@ -78,11 +83,13 @@ func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreatePro
 	if err != nil {
 		return nil, err
 	}
+	s.mu.Lock()
 	s.processes[int64(cmd.Process.Pid)] = p
+	s.mu.Unlock()
 	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdout.Name(), "stderr": stderr.Name()}
 	stdoutLogWriter.SetFields(fields)
 	stderrLogWriter.SetFields(fields)
-	log.Info().Print(processToProto(p).String(), fields)
+	log.Info().Print(processToProtoWithLock(p).String(), fields)
 	go func() {
 		err := p.cmd.Wait()
 		p.err = err
@@ -97,8 +104,9 @@ func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreatePro
 		if err != nil {
 			log.Error().WithError(err).Print("Failed to close stderr", fields)
 		}
+		can()
 		close(p.doneCh)
-		log.Info().Print(processToProto(p).String())
+		log.Info().Print(processToProtoWithLock(p).String())
 	}()
 	return &Process{
 		Pid:   int64(cmd.Process.Pid),
@@ -106,9 +114,23 @@ func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreatePro
 	}, nil
 }
 
+func (s *processServiceServer) GetProcess(ctx context.Context, grp *GetProcessRequest) (*Process, error) {
+	s.mu.Lock()
+	q, ok := s.processes[grp.GetPid()]
+	s.mu.Unlock()
+	if !ok {
+		return nil, errors.WithStack(errProcessNotFound)
+	}
+	ps := processToProtoWithLock(q)
+	return ps, nil
+}
+
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
-	for _, p := range s.processes {
-		ps := processToProto(p)
+	s.mu.Lock()
+	processes := maps.Clone(s.processes)
+	s.mu.Unlock()
+	for _, p := range processes {
+		ps := processToProtoWithLock(p)
 		err := lps.Send(ps)
 		if err != nil {
 			return err
@@ -117,10 +139,14 @@ func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps Proc
 	return nil
 }
 
-var errProcessNotFound = fmt.Errorf("Process not found")
+var (
+	errProcessNotFound = fmt.Errorf("Process not found")
+)
 
 func (s *processServiceServer) Stdout(por *ProcessOutputRequest, ss ProcessService_StdoutServer) error {
+	s.mu.Lock()
 	p, ok := s.processes[por.Pid]
+	s.mu.Unlock()
 	if !ok {
 		return errors.WithStack(errProcessNotFound)
 	}
@@ -132,7 +158,9 @@ func (s *processServiceServer) Stdout(por *ProcessOutputRequest, ss ProcessServi
 }
 
 func (s *processServiceServer) Stderr(por *ProcessOutputRequest, ss ProcessService_StderrServer) error {
+	s.mu.Lock()
 	p, ok := s.processes[por.Pid]
+	s.mu.Unlock()
 	if !ok {
 		return errors.WithStack(errProcessNotFound)
 	}
@@ -189,6 +217,12 @@ func processToProto(p *process) *Process {
 		ps.State = ProcessState_PROCESS_STATE_RUNNING
 	}
 	return ps
+}
+
+func processToProtoWithLock(p *process) *Process {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return processToProto(p)
 }
 
 type Server struct {
