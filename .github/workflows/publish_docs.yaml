@@ -45,9 +45,6 @@ jobs:
           echo "{\"version\":\"${RELEASE_TAG}\"}" > ./.vitepress/version.json
           pnpm docs:build
         working-directory: ./docs_new
-      - name: Download the helm index
-        run: |
-          curl https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}/helm_index.yaml -f -L -o docs_new/.vitepress/dist/index.yaml
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
