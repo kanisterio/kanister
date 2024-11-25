@@ -19,14 +19,15 @@ package kube
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -315,7 +316,7 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *check.C) {
 		ca := action.(testing.CreateAction)
 		p = ca.GetObject().(*corev1.Pod)
 		if len(p.Spec.Volumes[0].Name) > 63 {
-			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
+			return true, nil, errkit.New("spec.volumes[0].name must be no more than 63 characters")
 		}
 		return false, nil, nil
 	})
@@ -364,7 +365,7 @@ func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *check.C) {
 		ca := action.(testing.CreateAction)
 		p = ca.GetObject().(*corev1.Pod)
 		if len(p.Spec.Volumes[0].Name) > 63 {
-			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
+			return true, nil, errkit.New("spec.volumes[0].name must be no more than 63 characters")
 		}
 		return false, nil, nil
 	})
@@ -415,7 +416,7 @@ func (s *PodSuite) TestPodWithBlockModeVolumes(c *check.C) {
 		ca := action.(testing.CreateAction)
 		p = ca.GetObject().(*corev1.Pod)
 		if len(p.Spec.Volumes[0].Name) > 63 {
-			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
+			return true, nil, errkit.New("spec.volumes[0].name must be no more than 63 characters")
 		}
 		return false, nil, nil
 	})
@@ -1242,5 +1243,20 @@ func (s *PodSuite) TestAddAnnotations(c *check.C) {
 	} {
 		tc.podOptions.AddAnnotations(tc.annotations)
 		c.Assert(tc.podOptions, check.DeepEquals, tc.expectedPodOptions)
+	}
+}
+
+func (s *PodSuite) TestSomething(c *check.C) {
+	// Create the fake client
+	fakeClient := fake.NewSimpleClientset()
+
+	// Add a reactor to simulate an error when trying to get a PVC
+	fakeClient.PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, apierrors.NewNotFound(action.GetResource().GroupResource(), action.GetSubresource())
+	})
+
+	_, err := fakeClient.CoreV1().PersistentVolumeClaims("abc").Get(context.TODO(), "def", metav1.GetOptions{})
+	if err != nil {
+		c.Assert(apierrors.IsNotFound(err), check.Equals, true)
 	}
 }

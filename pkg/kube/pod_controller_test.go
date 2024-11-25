@@ -16,7 +16,6 @@ package kube
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -46,14 +45,14 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *check.C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
-	simulatedError := errors.New("SimulatedError")
+	simulatedError := errkit.New("SimulatedError")
 
 	cases := map[string]func(prp *FakePodControllerProcessor, pr PodController){
 		"Pod creation failure": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.CreatePodErr = simulatedError
 			err := pc.StartPod(ctx)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, simulatedError), check.Equals, true)
+			c.Assert(errkit.Is(err, simulatedError), check.Equals, true)
 			c.Assert(pcp.InCreatePodOptions, check.DeepEquals, &PodOptions{
 				Namespace: podControllerNS,
 				Name:      podControllerPodName,
@@ -81,11 +80,11 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *check.C) {
 
 			prp.InCreatePodOptions = nil
 			prp.CreatePodRet = nil
-			prp.CreatePodErr = errors.New("CreatePod should not be invoked")
+			prp.CreatePodErr = errkit.New("CreatePod should not be invoked")
 
 			err = pr.StartPod(ctx)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerPodAlreadyStarted), check.Equals, true)
+			c.Assert(errkit.Is(err, ErrPodControllerPodAlreadyStarted), check.Equals, true)
 			c.Assert(prp.InCreatePodOptions, check.IsNil)
 		},
 	}
@@ -108,13 +107,13 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *check.C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset()
 
-	simulatedError := errkit.Wrap(errors.New("SimulatedError"), "Wrapped")
+	simulatedError := errkit.Wrap(errkit.New("SimulatedError"), "Wrapped")
 
 	cases := map[string]func(pcp *FakePodControllerProcessor, pc PodController){
 		"Waiting failed because pod not started yet": func(pcp *FakePodControllerProcessor, pc PodController) {
 			err := pc.WaitForPodReady(ctx)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), check.Equals, true)
+			c.Assert(errkit.Is(err, ErrPodControllerPodNotStarted), check.Equals, true)
 			c.Assert(pcp.InCreatePodOptions, check.IsNil)
 		},
 		"Waiting failed due to timeout": func(pcp *FakePodControllerProcessor, pc PodController) {
@@ -132,7 +131,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *check.C) {
 			c.Assert(err, check.Not(check.IsNil))
 			c.Assert(pcp.InWaitForPodReadyPodName, check.Equals, podControllerPodName)
 			c.Assert(pcp.InWaitForPodReadyNamespace, check.Equals, podControllerNS)
-			c.Assert(errors.Is(err, pcp.WaitForPodReadyErr), check.Equals, true)
+			c.Assert(errkit.Is(err, pcp.WaitForPodReadyErr), check.Equals, true)
 
 			c.Assert(err.Error(), check.Equals, fmt.Sprintf("Pod failed to become ready in time: %s", simulatedError.Error()))
 			// Check that POD deletion was also invoked with expected arguments
@@ -169,13 +168,13 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *check.C) {
 	cli := fake.NewSimpleClientset()
 
 	untouchedStr := "DEADBEEF"
-	simulatedError := errors.New("SimulatedError")
+	simulatedError := errkit.New("SimulatedError")
 
 	cases := map[string]func(pcp *FakePodControllerProcessor, pc PodController){
 		"Pod not started yet": func(pcp *FakePodControllerProcessor, pc PodController) {
 			err := pc.StopPod(ctx, 30*time.Second, int64(0))
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), check.Equals, true)
+			c.Assert(errkit.Is(err, ErrPodControllerPodNotStarted), check.Equals, true)
 			c.Assert(pcp.InDeletePodPodName, check.Equals, untouchedStr)
 			c.Assert(pcp.InDeletePodNamespace, check.Equals, untouchedStr)
 		},
@@ -192,7 +191,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *check.C) {
 			pcp.DeletePodErr = simulatedError
 			err = pc.StopPod(ctx, 30*time.Second, int64(0))
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, simulatedError), check.Equals, true)
+			c.Assert(errkit.Is(err, simulatedError), check.Equals, true)
 		},
 		"Pod successfully deleted": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.CreatePodRet = &corev1.Pod{
@@ -239,12 +238,12 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			pce, err := pc.GetCommandExecutor()
 			c.Assert(pce, check.IsNil)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), check.Equals, true)
+			c.Assert(errkit.Is(err, ErrPodControllerPodNotStarted), check.Equals, true)
 
 			pfw, err := pc.GetFileWriter()
 			c.Assert(pfw, check.IsNil)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), check.Equals, true)
+			c.Assert(errkit.Is(err, ErrPodControllerPodNotStarted), check.Equals, true)
 		},
 		"Pod not ready yet": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.CreatePodRet = &corev1.Pod{
@@ -258,12 +257,12 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			pce, err := pc.GetCommandExecutor()
 			c.Assert(pce, check.IsNil)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerPodNotReady), check.Equals, true)
+			c.Assert(errkit.Is(err, ErrPodControllerPodNotReady), check.Equals, true)
 
 			pfw, err := pc.GetFileWriter()
 			c.Assert(pfw, check.IsNil)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerPodNotReady), check.Equals, true)
+			c.Assert(errkit.Is(err, ErrPodControllerPodNotReady), check.Equals, true)
 		},
 		"CommandExecutor successfully returned": func(pcp *FakePodControllerProcessor, pc PodController) {
 			pcp.CreatePodRet = &corev1.Pod{
