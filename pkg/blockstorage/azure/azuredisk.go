@@ -549,12 +549,12 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 			return nil, errkit.Wrap(err, "SnapshotsClient.List in SnapshotsList")
 		}
 		for _, snap := range page.Value {
-			k10Snap, err := s.SnapshotParse(ctx, *snap)
+			parsedSnap, err := s.SnapshotParse(ctx, *snap)
 			if err != nil {
 				log.WithError(err).Print("Incorrect Snaphost type", field.M{"SnapshotID": snap.ID})
 				continue
 			}
-			snaps = append(snaps, k10Snap)
+			snaps = append(snaps, parsedSnap)
 		}
 	}
 	snaps = blockstorage.FilterSnapshotsWithTags(snaps, blockstorage.SanitizeTags(tags))
