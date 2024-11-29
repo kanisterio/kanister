@@ -1246,13 +1246,14 @@ func (s *PodSuite) TestAddAnnotations(c *check.C) {
 	}
 }
 
-func (s *PodSuite) TestSomething(c *check.C) {
+// TestErrkitApiErrorsWrapping verifies that apierrors wrapped with errkit.Wrap are still matchable using apierrors matchers
+func (s *PodSuite) TestErrkitApiErrorsWrapping(c *check.C) {
 	// Create the fake client
 	fakeClient := fake.NewSimpleClientset()
 
 	// Add a reactor to simulate an error when trying to get a PVC
 	fakeClient.PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, apierrors.NewNotFound(action.GetResource().GroupResource(), action.GetSubresource())
+		return true, nil, errkit.Wrap(apierrors.NewNotFound(action.GetResource().GroupResource(), action.GetSubresource()), "Some context")
 	})
 
 	_, err := fakeClient.CoreV1().PersistentVolumeClaims("abc").Get(context.TODO(), "def", metav1.GetOptions{})
