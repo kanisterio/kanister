@@ -21,8 +21,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/fs"
-	"github.com/pkg/errors"
 )
 
 // Directory is a mock in-memory implementation of kopia's fs.Directory
@@ -58,7 +58,7 @@ func (d *Directory) AddAllDirs(pathname string, permissions os.FileMode) (subdir
 
 	for _, n := range missing {
 		if p, err = p.AddDir(n, permissions); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("Failed to add sub directory '%s'", n))
+			return nil, errkit.Wrap(err, fmt.Sprintf("Failed to add sub directory '%s'", n))
 		}
 	}
 
@@ -94,10 +94,10 @@ func (d *Directory) Subdir(name string) (*Directory, error) {
 
 	subdir := fs.FindByName(curr.children, name)
 	if subdir == nil {
-		return nil, errors.New(fmt.Sprintf("'%s' not found in '%s'", name, curr.Name()))
+		return nil, errkit.New(fmt.Sprintf("'%s' not found in '%s'", name, curr.Name()))
 	}
 	if !subdir.IsDir() {
-		return nil, errors.New(fmt.Sprintf("'%s' is not a directory in '%s'", name, curr.Name()))
+		return nil, errkit.New(fmt.Sprintf("'%s' is not a directory in '%s'", name, curr.Name()))
 	}
 
 	return subdir.(*Directory), nil
@@ -111,12 +111,12 @@ func (d *Directory) Summary() *fs.DirectorySummary {
 // addChild adds the given entry under d, errors out if the entry is already present
 func (d *Directory) addChild(e fs.Entry) error {
 	if strings.Contains(e.Name(), "/") {
-		return errors.New("Failed to add child entry: name cannot contain '/'")
+		return errkit.New("Failed to add child entry: name cannot contain '/'")
 	}
 
 	child := fs.FindByName(d.children, e.Name())
 	if child != nil {
-		return errors.New("Failed to add child entry: already exists")
+		return errkit.New("Failed to add child entry: already exists")
 	}
 
 	d.children = append(d.children, e)
@@ -138,7 +138,7 @@ func (d *Directory) resolveDirs(pathname string) (parent *Directory, missing []s
 			return p, parts[i:], nil
 		}
 		if !i2.IsDir() {
-			return nil, nil, errors.New(fmt.Sprintf("'%s' is not a directory in '%s'", n, p.Name()))
+			return nil, nil, errkit.New(fmt.Sprintf("'%s' is not a directory in '%s'", n, p.Name()))
 		}
 		p = i2.(*Directory)
 	}
@@ -162,7 +162,7 @@ func AddFileWithStreamSource(d *Directory, filePath, sourceEndpoint string, dirP
 
 	f := FileFromEndpoint(name, sourceEndpoint, filePermissions)
 	if err := p.addChild(f); err != nil {
-		return nil, errors.Wrap(err, "Failed to add file")
+		return nil, errkit.Wrap(err, "Failed to add file")
 	}
 	return f, nil
 }
@@ -177,7 +177,7 @@ func AddFileWithContent(d *Directory, filePath string, content []byte, dirPermis
 
 	f := FileWithContent(name, filePermissions, content)
 	if err := p.addChild(f); err != nil {
-		return nil, errors.Wrap(err, "Failed to add file")
+		return nil, errkit.Wrap(err, "Failed to add file")
 	}
 	return f, nil
 }

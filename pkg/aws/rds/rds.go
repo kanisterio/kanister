@@ -23,7 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -43,7 +43,7 @@ type RDS struct {
 func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS, error) {
 	s, err := session.NewSession(awsConfig)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create session")
+		return nil, errkit.Wrap(err, "Failed to create session")
 	}
 	return &RDS{RDS: rds.New(s, awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(awsConfig.Credentials))}, nil
 }
@@ -143,7 +143,7 @@ func (r RDS) WaitOnDBCluster(ctx context.Context, dbClusterID, status string) er
 	if *descCluster.DBClusters[0].Status == status {
 		return nil
 	}
-	return errors.New(fmt.Sprintf("DBCluster is not in %s state", status))
+	return errkit.New(fmt.Sprintf("DBCluster is not in %s state", status))
 }
 
 func (r RDS) WaitUntilDBClusterDeleted(ctx context.Context, dbClusterID string) error {

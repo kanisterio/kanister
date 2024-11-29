@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
 // Func returns true if the condition is satisfied, or an error if the loop
@@ -71,7 +71,7 @@ func WaitWithRetries(ctx context.Context, numRetries int, r IsRetryableFunc, f F
 // parameters `b`.
 func WaitWithBackoffWithRetries(ctx context.Context, b backoff.Backoff, numRetries int, r IsRetryableFunc, f Func) error {
 	if numRetries < 0 {
-		return errors.New("numRetries must be non-negative")
+		return errkit.New("numRetries must be non-negative")
 	}
 
 	t := time.NewTimer(0)
@@ -99,7 +99,7 @@ func WaitWithBackoffWithRetries(ctx context.Context, b backoff.Backoff, numRetri
 		t.Reset(sleep)
 		select {
 		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), "Context done while polling")
+			return errkit.Wrap(ctx.Err(), "Context done while polling")
 		case <-t.C:
 		}
 	}

@@ -33,7 +33,7 @@ require (
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/kanisterio/errkit v0.0.2
-	github.com/kanisterio/safecli v0.0.8
+	github.com/kanisterio/safecli v0.0.9-0.20241121134252-2ffd9801dcad
 	github.com/kopia/kopia v0.17.1-0.20240927044625-1bceb7155ede
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
@@ -42,7 +42,7 @@ require (
 	//pinned openshift to release-4.5 branch
 	github.com/openshift/api v0.0.0-20231222123017-053aee22b4b4
 	github.com/openshift/client-go v0.0.0-20231221125933-2aa81c72f992
-	github.com/pkg/errors v0.9.1
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
 	github.com/sirupsen/logrus v1.9.3

@@ -16,6 +16,7 @@ package objectstore
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -23,7 +24,7 @@ import (
 	stowaz "github.com/graymeta/stow/azure"
 	stowgcs "github.com/graymeta/stow/google"
 	stows3 "github.com/graymeta/stow/s3"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 )
@@ -119,10 +120,10 @@ func Supported(t ProviderType) bool {
 
 func s3Config(ctx context.Context, config ProviderConfig, secret *Secret) (stowKind string, stowConfig stow.Config, err error) {
 	if secret == nil {
-		return "", nil, errors.New("Invalid Secret value: nil")
+		return "", nil, errkit.New("Invalid Secret value: nil")
 	}
 	if secret.Type != SecretTypeAwsAccessKey {
-		return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
+		return "", nil, errkit.New(fmt.Sprintf("invalid secret type %s", secret.Type))
 	}
 	awsAccessKeyID := secret.Aws.AccessKeyID
 	awsSecretAccessKey := secret.Aws.SecretAccessKey
@@ -151,7 +152,7 @@ func gcsConfig(ctx context.Context, config ProviderConfig, secret *Secret) (stow
 	cm := stow.ConfigMap{}
 	if secret != nil {
 		if secret.Type != SecretTypeGcpServiceAccountKey {
-			return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
+			return "", nil, errkit.New(fmt.Sprintf("invalid secret type %s", secret.Type))
 		}
 		configJSON = secret.Gcp.ServiceKey
 		projectID = secret.Gcp.ProjectID
@@ -177,7 +178,7 @@ func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConf
 	var azAccount, azStorageKey, azEnvName string
 	if secret != nil {
 		if secret.Type != SecretTypeAzStorageAccount {
-			return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
+			return "", nil, errkit.New(fmt.Sprintf("invalid secret type %s", secret.Type))
 		}
 		azAccount = secret.Azure.StorageAccount
 		azStorageKey = secret.Azure.StorageKey
@@ -186,12 +187,12 @@ func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConf
 		var ok bool
 		azAccount, ok = os.LookupEnv("AZURE_STORAGE_ACCOUNT")
 		if !ok {
-			return "", nil, errors.New("AZURE_STORAGE_ACCOUNT environment not set")
+			return "", nil, errkit.New("AZURE_STORAGE_ACCOUNT environment not set")
 		}
 
 		azStorageKey, ok = os.LookupEnv("AZURE_STORAGE_KEY")
 		if !ok {
-			return "", nil, errors.New("AZURE_STORAGE_KEY environment not set")
+			return "", nil, errkit.New("AZURE_STORAGE_KEY environment not set")
 		}
 		azEnvName, _ = os.LookupEnv("AZURE_ENV_NAME") // not required to be set.
 	}
@@ -211,7 +212,7 @@ func getConfig(ctx context.Context, config ProviderConfig, secret *Secret) (stow
 	case ProviderTypeAzure:
 		return azureConfig(ctx, secret)
 	default:
-		return "", nil, errors.Errorf("unknown or unimplemented object store type %s", config.Type)
+		return "", nil, errkit.New(fmt.Sprintf("unknown or unimplemented object store type %s", config.Type))
 	}
 }
 
@@ -222,7 +223,7 @@ func getStowLocation(ctx context.Context, config ProviderConfig, secret *Secret)
 	}
 	location, err := stow.Dial(kind, stowConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not create store provider %+v", config)
+		return nil, errkit.Wrap(err, fmt.Sprintf("could not create store provider %+v", config))
 	}
 	return location, nil
 }

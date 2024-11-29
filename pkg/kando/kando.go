@@ -17,7 +17,7 @@ package kando
 import (
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -60,7 +60,7 @@ func newRootCommand() *cobra.Command {
 func setLogLevel(v string) error {
 	l, err := logrus.ParseLevel(v)
 	if err != nil {
-		return errors.Wrap(err, "Invalid log level: "+v)
+		return errkit.Wrap(err, "Invalid log level: "+v)
 	}
 	logrus.SetLevel(l)
 	return nil

@@ -15,11 +15,12 @@
 package repository
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-openapi/strfmt"
+	"github.com/kanisterio/errkit"
 	"github.com/kanisterio/safecli/command"
-	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli"
 	"github.com/kanisterio/kanister/pkg/kopia/cli/internal"
@@ -91,7 +92,7 @@ func optStorage(l internal.Location, repoPathPrefix string, logger log.Logger) c
 }
 
 func errUnsupportedStorageType(t rs.LocType) command.Applier {
-	err := errors.Wrapf(cli.ErrUnsupportedStorage, "storage location: %v", t)
+	err := errkit.Wrap(cli.ErrUnsupportedStorage, fmt.Sprintf("storage location: %v", t))
 	return command.NewErrorArgument(err)
 }
 

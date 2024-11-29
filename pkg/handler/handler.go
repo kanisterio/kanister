@@ -20,7 +20,7 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -68,12 +68,12 @@ func RunWebhookServer(c *rest.Config) error {
 	log.SetLogger(logr.New(log.NullLogSink{}))
 	mgr, err := manager.New(c, manager.Options{})
 	if err != nil {
-		return errors.Wrap(err, "Failed to create new webhook manager")
+		return errkit.Wrap(err, "Failed to create new webhook manager")
 	}
 	bpValidator := &validatingwebhook.BlueprintValidator{}
 	decoder := admission.NewDecoder(mgr.GetScheme())
 	if err = bpValidator.InjectDecoder(&decoder); err != nil {
-		return errors.Wrap(err, "Failed to inject decoder")
+		return errkit.Wrap(err, "Failed to inject decoder")
 	}
 
 	hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir}
@@ -83,7 +83,7 @@ func RunWebhookServer(c *rest.Config) error {
 	hookServer.Register(metricsPath, promhttp.Handler())
 
 	if err := mgr.Add(hookServer); err != nil {
-		return errors.Wrap(err, "Failed to add new webhook server")
+		return errkit.Wrap(err, "Failed to add new webhook server")
 	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {

@@ -17,7 +17,7 @@ package datamover
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
@@ -71,7 +71,7 @@ func (rs *repositoryServer) Delete(ctx context.Context, destinationPath string) 
 func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context, accessMode repository.AccessMode) (string, error) {
 	hostname, userPassphrase, err := rs.hostnameAndUserPassphrase()
 	if err != nil {
-		return "", errors.Wrap(err, "Error Retrieving Hostname and User Passphrase from Repository Server")
+		return "", errkit.Wrap(err, "Error Retrieving Hostname and User Passphrase from Repository Server")
 	}
 
 	return userPassphrase, repository.ConnectToAPIServer(
@@ -89,7 +89,7 @@ func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context, 
 
 func (rs *repositoryServer) unmarshalKopiaSnapshot() (*snapshot.SnapshotInfo, error) {
 	if rs.snapJSON == "" {
-		return nil, errors.New("kopia snapshot information is required to manage data using kopia")
+		return nil, errkit.New("kopia snapshot information is required to manage data using kopia")
 	}
 	kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(rs.snapJSON)
 	if err != nil {
@@ -127,7 +127,7 @@ func (rs *repositoryServer) hostnameAndUserPassphrase() (string, string, error) 
 func (rs *repositoryServer) checkHostnameExistsInUserAccessMap(userAccessMap map[string]string) error {
 	// check if hostname is provided in the repository server exists in the user access map
 	if _, ok := userAccessMap[rs.hostName]; !ok {
-		return errors.New("hostname provided in the repository server does not exist in the user access map")
+		return errkit.New("hostname provided in the repository server does not exist in the user access map")
 	}
 	return nil
 }

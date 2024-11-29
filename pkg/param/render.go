@@ -21,7 +21,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/ksprig"
@@ -121,7 +121,7 @@ func RenderArtifacts(arts map[string]crv1alpha1.Artifact, tp TemplateParams) (ma
 func renderStringArg(arg string, tp TemplateParams) (string, error) {
 	t, err := template.New("config").Option("missingkey=error").Funcs(ksprig.TxtFuncMap()).Parse(arg)
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", errkit.WithStack(err)
 	}
 	buf := bytes.NewBuffer(nil)
 	if err = t.Execute(buf, tp); err != nil {
@@ -131,7 +131,7 @@ func renderStringArg(arg string, tp TemplateParams) (string, error) {
 		if strings.Contains(err.Error(), undefinedKeyErrorMsg) {
 			return "", newUndefinedKeyError(err.Error())
 		}
-		return "", errors.WithStack(err)
+		return "", errkit.WithStack(err)
 	}
 	return buf.String(), nil
 }
@@ -140,7 +140,7 @@ func newUndefinedKeyError(err string) error {
 	pos := strings.LastIndex(err, undefinedKeyErrorMsg)
 	adjustedPos := pos + len(undefinedKeyErrorMsg)
 	key := strings.Trim(err[adjustedPos:], "\"")
-	return errors.WithStack(errors.New(fmt.Sprintf("Failed to render template: \"%s\" not found", key)))
+	return errkit.WithStack(errkit.New(fmt.Sprintf("Failed to render template: \"%s\" not found", key)))
 }
 
 // RenderObjectRefs function renders object refs from TemplateParams
@@ -153,7 +153,7 @@ func RenderObjectRefs(in map[string]crv1alpha1.ObjectReference, tp TemplateParam
 	for k, v := range in {
 		rv, err := render(v, tp)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not render object reference {%s}", k)
+			return nil, errkit.Wrap(err, fmt.Sprintf("could not render object reference {%s}", k))
 		}
 		out[k] = rv.(crv1alpha1.ObjectReference)
 	}

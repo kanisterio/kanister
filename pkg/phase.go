@@ -16,10 +16,11 @@ package kanister
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/Masterminds/semver"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -63,7 +64,7 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 		// Get the action from Blueprint
 		a, ok := bp.Actions[action]
 		if !ok {
-			return nil, errors.Errorf("Action {%s} not found in action map", action)
+			return nil, errkit.New(fmt.Sprintf("Action {%s} not found in action map", action))
 		}
 		// Render the argument templates for the Phase's function
 		phases := []crv1alpha1.BlueprintPhase{}
@@ -93,11 +94,11 @@ func (p *Phase) setPhaseArgs(phases []crv1alpha1.BlueprintPhase, tp param.Templa
 		}
 
 		if err = utils.CheckRequiredArgs(p.f.RequiredArgs(), args); err != nil {
-			return errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
+			return errkit.Wrap(err, fmt.Sprintf("Required args missing for function %s", p.f.Name()))
 		}
 
 		if err = utils.CheckSupportedArgs(p.f.Arguments(), args); err != nil {
-			return errors.Wrapf(err, "Checking supported args for function %s.", p.f.Name())
+			return errkit.Wrap(err, fmt.Sprintf("Checking supported args for function %s.", p.f.Name()))
 		}
 
 		p.args = args
@@ -120,7 +121,7 @@ func renderFuncArgs(
 func GetDeferPhase(bp crv1alpha1.Blueprint, action, version string, tp param.TemplateParams) (*Phase, error) {
 	a, ok := bp.Actions[action]
 	if !ok {
-		return nil, errors.Errorf("Action {%s} not found in blueprint actions", action)
+		return nil, errkit.New(fmt.Sprintf("Action {%s} not found in blueprint actions", action))
 	}
 
 	if a.DeferPhase == nil {
@@ -150,19 +151,19 @@ func regFuncVersion(f, version string) (semver.Version, error) {
 
 	defaultVersion, funcVersion, err := getFunctionVersion(version)
 	if err != nil {
-		return semver.Version{}, errors.Wrapf(err, "Failed to get function version")
+		return semver.Version{}, errkit.Wrap(err, "Failed to get function version")
 	}
 
 	regVersion := *funcVersion
 	if _, ok := funcs[f]; !ok {
-		return semver.Version{}, errors.Errorf("Requested function {%s} has not been registered", f)
+		return semver.Version{}, errkit.New(fmt.Sprintf("Requested function {%s} has not been registered", f))
 	}
 	if _, ok := funcs[f][regVersion]; !ok {
 		if funcVersion.Equal(defaultVersion) {
-			return semver.Version{}, errors.Errorf("Requested function {%s} has not been registered with version {%s}", f, version)
+			return semver.Version{}, errkit.New(fmt.Sprintf("Requested function {%s} has not been registered with version {%s}", f, version))
 		}
 		if _, ok := funcs[f][*defaultVersion]; !ok {
-			return semver.Version{}, errors.Errorf("Requested function {%s} has not been registered with versions {%s} or {%s}", f, version, DefaultVersion)
+			return semver.Version{}, errkit.New(fmt.Sprintf("Requested function {%s} has not been registered with versions {%s} or {%s}", f, version, DefaultVersion))
 		}
 		log.Info().Print("Falling back to default version of the function", field.M{"Function": f, "PreferredVersion": version, "FallbackVersion": DefaultVersion})
 		return *defaultVersion, nil
@@ -175,7 +176,7 @@ func regFuncVersion(f, version string) (semver.Version, error) {
 func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.TemplateParams) ([]*Phase, error) {
 	a, ok := bp.Actions[action]
 	if !ok {
-		return nil, errors.Errorf("Action {%s} not found in action map", action)
+		return nil, errkit.New(fmt.Sprintf("Action {%s} not found in action map", action))
 	}
 
 	phases := make([]*Phase, 0, len(a.Phases))
@@ -207,7 +208,7 @@ func (p *Phase) Validate(args map[string]any) error {
 func getFunctionVersion(version string) (*semver.Version, *semver.Version, error) {
 	dv, err := semver.NewVersion(DefaultVersion)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to parse default function version")
+		return nil, nil, errkit.Wrap(err, "Failed to parse default function version")
 	}
 	switch version {
 	case DefaultVersion, "":
@@ -215,7 +216,7 @@ func getFunctionVersion(version string) (*semver.Version, *semver.Version, error
 	default:
 		fv, err := semver.NewVersion(version)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Failed to parse function version {%s}", version)
+			return nil, nil, errkit.Wrap(err, fmt.Sprintf("Failed to parse function version {%s}", version))
 		}
 		return dv, fv, nil
 	}

@@ -22,14 +22,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
 // Switch func uses credentials API to automatically generates New Credentials for a given role.
 func Switch(ctx context.Context, creds *credentials.Credentials, role string, duration time.Duration) (*credentials.Credentials, error) {
 	sess, err := session.NewSession(aws.NewConfig().WithCredentials((creds)))
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create session")
+		return nil, errkit.Wrap(err, "Failed to create session")
 	}
 	return stscreds.NewCredentials(sess, role, func(p *stscreds.AssumeRoleProvider) {
 		p.Duration = duration

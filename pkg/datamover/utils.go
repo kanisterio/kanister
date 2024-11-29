@@ -19,7 +19,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
@@ -63,7 +63,7 @@ func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, passwo
 		snapInfo, err = snapshot.WriteFile(ctx, path, sourcePath, password)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to push data using kopia")
+		return nil, errkit.Wrap(err, "Failed to push data using kopia")
 	}
 	snapInfoJSON, err := snapshot.MarshalKopiaSnapshot(snapInfo)
 	if err != nil {
@@ -79,10 +79,10 @@ func sourceReader(source string) (io.Reader, error) {
 	}
 	fi, err := os.Stdin.Stat()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to describe file stdin")
+		return nil, errkit.Wrap(err, "failed to describe file stdin")
 	}
 	if fi.Mode()&os.ModeNamedPipe == 0 {
-		return nil, errors.New("Stdin must be piped when the source parameter is \"-\"")
+		return nil, errkit.New("Stdin must be piped when the source parameter is \"-\"")
 	}
 	return os.Stdin, nil
 }
