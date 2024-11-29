@@ -27,7 +27,6 @@ import (
 	"github.com/gofrs/uuid"
 	json "github.com/json-iterator/go"
 	"github.com/kanisterio/errkit"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -451,7 +450,7 @@ func checkPVCAndPVStatus(ctx context.Context, vol corev1.Volume, p *corev1.Pod, 
 	pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 	if err != nil {
-		if apierrors.IsNotFound(errors.Cause(err)) {
+		if apierrors.IsNotFound(err) {
 			// Do not return err, wait for timeout, since sometimes in case of statefulsets, they trigger creation of a volume
 			return nil
 		}
@@ -470,7 +469,7 @@ func checkPVCAndPVStatus(ctx context.Context, vol corev1.Volume, p *corev1.Pod, 
 		}
 		pv, err := cli.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
 		if err != nil {
-			if apierrors.IsNotFound(errors.Cause(err)) {
+			if apierrors.IsNotFound(err) {
 				// wait for timeout
 				return nil
 			}

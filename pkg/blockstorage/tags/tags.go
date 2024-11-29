@@ -27,7 +27,7 @@ import (
 const (
 	// ClusterTagKey is used to tag resources with the cluster name
 	ClusterTagKey = "kanister.io/clustername"
-	// VersionTagKey is used to tag resources with the K10 version
+	// VersionTagKey is used to tag resources with a version
 	VersionTagKey = "kanister.io/version"
 	// AppNameTag is used to tag volumes with the app they belong to
 	AppNameTag = "kanister.io/appname"
