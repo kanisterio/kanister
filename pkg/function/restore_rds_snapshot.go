@@ -17,6 +17,7 @@ package function
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -335,6 +336,8 @@ func postgresRestoreCommand(pgHost, username, password string, backupArtifactPre
 		replaceCommand = ` sed 's/"LOCALE"/"LC_COLLATE"/' |`
 	}
 
+	profileQuoted := strconv.Quote(string(profile))
+
 	return []string{
 		"bash",
 		"-o",
@@ -344,8 +347,8 @@ func postgresRestoreCommand(pgHost, username, password string, backupArtifactPre
 		"-c",
 		fmt.Sprintf(`
 		export PGHOST=%s
-		kando location pull --profile '%s' --path "%s" - | gunzip -c -f |%s psql -q -U "${PGUSER}" %s
-		`, pgHost, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID), replaceCommand, postgres.DefaultConnectDatabase),
+		kando location pull --profile %s --path "%s" - | gunzip -c -f |%s psql -q -U "${PGUSER}" %s
+		`, pgHost, profileQuoted, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID), replaceCommand, postgres.DefaultConnectDatabase),
 	}, nil
 }
 
