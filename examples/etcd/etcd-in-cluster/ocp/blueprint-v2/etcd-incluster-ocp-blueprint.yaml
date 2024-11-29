@@ -31,11 +31,28 @@ actions:
             kando output etcdPod $ETCD_POD
             kando output etcdNS $etcdns
 
-    - func: KubeTask
+    - func: MultiContainerRun
       name: uploadSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.112.0
-        command:
+        sharedVolumeMedium: Memory
+
+        initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
+
+        backgroundImage: ghcr.io/kanisterio/kanister-kubectl-1.18:0.112.0
+        backgroundCommand:
+          - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            kubectl cp -c etcd {{ .Phases.takeSnapshot.Output.etcdNS }}/{{ .Phases.takeSnapshot.Output.etcdPod }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
+            gzip -c /tmp/etcd-backup.db  > /tmp/data
+
+        outputImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        outputCommand:
           - sh
           - -o
           - errexit
@@ -44,8 +61,9 @@ actions:
           - -c
           - |
             BACKUP_LOCATION='etcd-backup.db.gz'
-            kubectl cp -c etcd {{ .Phases.takeSnapshot.Output.etcdNS }}/{{ .Phases.takeSnapshot.Output.etcdPod }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
-            gzip -c /tmp/etcd-backup.db  | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" --output-name "kopiaOutput" -
+
+            cat /tmp/data > | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" --output-name "kopiaOutput" -
+            kando output backupLocation $BACKUP_LOCATION
 
     - func: KubeTask
       name: removeSnapshot
@@ -73,7 +91,7 @@ actions:
     - func: PrepareData
       name: copyFromObjectStore
       args:
-        image: "ghcr.io/kanisterio/kanister-tools:0.112.0"
+        image: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
         namespace: "{{ .Object.metadata.namespace }}"
         podOverride:
           nodeSelector:
@@ -108,7 +126,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "ghcr.io/kanisterio/kanister-tools:0.112.0"
+        image: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
         command:
         - bash
         - -o

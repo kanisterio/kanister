@@ -8,7 +8,7 @@ actions:
       mssqlCloudDump:
         kopiaSnapshot: "{{ .Phases.dumpToObjectStore.Output.kopiaOutput }}"
     phases:
-      - func: KubeTask
+      - func: MultiContainerRun
         name: dumpToObjectStore
         objects:
           mssql:
@@ -16,8 +16,32 @@ actions:
             name: '{{ index .Object.metadata.labels "app" }}'
             namespace: '{{ .Deployment.Namespace }}'
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.112.0
-          command:
+          sharedVolumeMedium: Memory
+
+          initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
+
+          backgroundImage: ghcr.io/kanisterio/mssql-tools:0.112.0
+          backgroundCommand:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              root_password="{{ index .Phases.dumpToObjectStore.Secrets.mssql.Data "SA_PASSWORD" | toString }}"
+              root_uname="sa"
+              mssql_pod="{{ index .Deployment.Namespace }}/{{ index .Deployment.Pods 0 }}"
+              server_name="{{ index .Deployment.Name }}.{{index .Deployment.Namespace}}.svc.cluster.local"
+              databases=$(/opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "SET NOCOUNT ON; SELECT name FROM sys.databases WHERE name NOT IN ('master','model','msdb','tempdb')" -b -s "," -h -1)
+              for database in $databases; do /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "backup database $database to disk = '/tmp/backup/$database.bak' with format;"; done
+              kubectl cp ${mssql_pod}:/tmp/backup /tmp/backup
+              tar zcvf - -C /tmp/ backup > /tmp/data
+              kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
+
+          outputImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          outputCommand:
             - bash
             - -o
             - errexit
@@ -26,20 +50,13 @@ actions:
             - -c
             - |
               kopiaPath="backup.tar.gz"
-              root_password="{{ index .Phases.dumpToObjectStore.Secrets.mssql.Data "SA_PASSWORD" | toString }}"
-              root_uname="sa"
-              mssql_pod="{{ index .Deployment.Namespace }}/{{ index .Deployment.Pods 0 }}"
-              server_name="{{ index .Deployment.Name }}.{{index .Deployment.Namespace}}.svc.cluster.local"
-              databases=$(/opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "SET NOCOUNT ON; SELECT name FROM sys.databases WHERE name NOT IN ('master','model','msdb','tempdb')" -b -s "," -h -1)
-              for database in $databases; do /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "backup database $database to disk = '/tmp/backup/$database.bak' with format;"; done
-              kubectl cp ${mssql_pod}:/tmp/backup /tmp/backup
-              tar zcvf - -C /tmp/ backup | kando location push --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --output-name "kopiaOutput" -
-              kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
+              cat /tmp/data > kando location push --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --output-name "kopiaOutput" -
+
   restore:
     inputArtifactNames:
       - mssqlCloudDump
     phases:
-      - func: KubeTask
+      - func: MultiContainerRun
         name: restoreFromObjectStore
         objects:
           mssql:
@@ -47,8 +64,13 @@ actions:
             name: '{{ index .Object.metadata.labels "app" }}'
             namespace: '{{ .Deployment.Namespace }}'
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.112.0
-          command:
+          sharedVolumeMedium: Memory
+
+          initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
+
+          backgroundImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          backgroundCommand:
             - bash
             - -o
             - errexit
@@ -58,15 +80,27 @@ actions:
             - |
               kopiaPath="backup.tar.gz"
               kopia_snap='{{ .ArtifactsIn.mssqlCloudDump.KopiaSnapshot }}'
+              kando location pull --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --kopia-snapshot ${kopia_snap} - > /tmp/data
+
+          outputImage: ghcr.io/kanisterio/mssql-tools:0.112.0
+          outputCommand:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
               root_password="{{ index .Phases.restoreFromObjectStore.Secrets.mssql.Data "SA_PASSWORD" | toString }}"
               root_uname="sa"
               mssql_pod="{{ index .Deployment.Namespace }}/{{ index .Deployment.Pods 0 }}"
               server_name="{{ index .Deployment.Name }}.{{ index .Deployment.Namespace }}.svc.cluster.local"
-              kando location pull --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --kopia-snapshot ${kopia_snap} - | tar zxvf - -C /tmp/
+              cat /tmp/data > tar zxvf - -C /tmp/
               kubectl cp /tmp/backup ${mssql_pod}:/tmp/backup
               backup_files=$(ls /tmp/backup)
               for script in $backup_files; do database="$(cut -d'.' -f1 <<<"$script")"; /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "restore database $database from disk = '/tmp/backup/$script' with replace"; done
               kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
+
   delete:
     inputArtifactNames:
       - mssqlCloudDump
@@ -74,7 +108,7 @@ actions:
       - func: KubeTask
         name: deleteFromBlobStore
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.112.0
+          image: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
           command:
             - bash
             - -o
