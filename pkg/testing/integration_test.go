@@ -18,12 +18,13 @@
 package testing
 
 import (
-	context "context"
+	"context"
+	"fmt"
 	"os"
 	test "testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -425,7 +426,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *check.C, as *
 		case err != nil, as.Status == nil:
 			return false, err
 		case as.Status.State == crv1alpha1.StateFailed:
-			return true, errors.Errorf("Actionset failed: %#v", as.Status)
+			return true, errkit.New(fmt.Sprintf("Actionset failed: %#v", as.Status))
 		case as.Status.State == crv1alpha1.StateComplete:
 			return true, nil
 		}
