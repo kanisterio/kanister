@@ -17,7 +17,7 @@ package v1alpha1
 import (
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -86,7 +86,7 @@ func getRepositoryServerFromSpec(spec []byte) (*RepositoryServer, error) {
 	repositoryServer := &RepositoryServer{}
 	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 	if _, _, err := d.Decode([]byte(spec), nil, repositoryServer); err != nil {
-		return nil, errors.Wrap(err, "Failed to decode RepositoryServer")
+		return nil, errkit.Wrap(err, "Failed to decode RepositoryServer")
 	}
 	return repositoryServer, nil
 }
