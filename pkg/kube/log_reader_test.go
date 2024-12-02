@@ -3,9 +3,9 @@ package kube
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	"k8s.io/client-go/rest"
 )
@@ -39,7 +39,7 @@ func (frw *fakeResponseWrapper) Stream(context.Context) (io.ReadCloser, error) {
 }
 
 func (s *LogReaderSuite) TestLogReader(c *check.C) {
-	err := errors.New("TEST")
+	err := errkit.New("TEST")
 	for _, tc := range []struct {
 		rw  *fakeResponseWrapper
 		err error

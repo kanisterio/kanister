@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/check.v1"
 
@@ -59,7 +59,7 @@ func (s *LogSuite) TestLogWithFields(c *check.C) {
 
 func (s *LogSuite) TestLogWithError(c *check.C) {
 	const text = "My error message"
-	err := errors.New("test error")
+	err := errkit.New("test error")
 	entry := testLogMessage(c, text, WithError(err).Print)
 	c.Assert(entry["error"], check.Equals, err.Error())
 	c.Assert(entry["level"], check.Equals, infoLevelStr)
@@ -88,7 +88,7 @@ func (s *LogSuite) TestLogWithContextFields(c *check.C) {
 func (s *LogSuite) TestLogWithContextFieldsAndError(c *check.C) {
 	const text = "My error message"
 	ctx := field.Context(context.Background(), "key", "value")
-	err := errors.New("test error")
+	err := errkit.New("test error")
 	entry := testLogMessage(c, text, WithError(err).WithContext(ctx).Print)
 	c.Assert(entry["level"], check.Equals, infoLevelStr)
 	// Error should be included in the log entry

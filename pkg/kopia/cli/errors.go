@@ -15,29 +15,29 @@
 package cli
 
 import (
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
 // Common errors
 var (
 	// ErrInvalidID is returned when the ID is empty.
-	ErrInvalidID = errors.New("invalid ID")
+	ErrInvalidID = errkit.NewSentinelErr("invalid ID")
 )
 
 // storage errors
 var (
 	// ErrUnsupportedStorage is returned when the storage is not supported.
-	ErrUnsupportedStorage = errors.New("unsupported storage")
+	ErrUnsupportedStorage = errkit.NewSentinelErr("unsupported storage")
 	// ErrInvalidRepoPath is returned when the repoPath is empty.
-	ErrInvalidRepoPath = errors.New("repository path cannot be empty")
+	ErrInvalidRepoPath = errkit.NewSentinelErr("repository path cannot be empty")
 	// ErrInvalidPrefix is returned when the prefix is empty.
-	ErrInvalidPrefix = errors.New("prefix cannot be empty")
+	ErrInvalidPrefix = errkit.NewSentinelErr("prefix cannot be empty")
 	// ErrInvalidBucketName is returned when the bucketName is empty.
-	ErrInvalidBucketName = errors.New("bucket name cannot be empty")
+	ErrInvalidBucketName = errkit.NewSentinelErr("bucket name cannot be empty")
 	// ErrInvalidCredentialsFile is returned when the credentials file is empty.
-	ErrInvalidCredentialsFile = errors.New("credentials file cannot be empty")
+	ErrInvalidCredentialsFile = errkit.NewSentinelErr("credentials file cannot be empty")
 	// ErrInvalidContainerName is returned when the containerName is empty.
-	ErrInvalidContainerName = errors.New("container name cannot be empty")
+	ErrInvalidContainerName = errkit.NewSentinelErr("container name cannot be empty")
 	// ErrInvalidServerURL is returned when the serverURL is empty.
-	ErrInvalidServerURL = errors.New("server URL cannot be empty")
+	ErrInvalidServerURL = errkit.NewSentinelErr("server URL cannot be empty")
 )
