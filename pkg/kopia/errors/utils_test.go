@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/kanisterio/errkit"
-	"github.com/pkg/errors"
 	"gopkg.in/check.v1"
 )
 
@@ -31,17 +30,14 @@ var _ = check.Suite(&KopiaErrorsTestSuite{})
 
 // TestErrCheck verifies that error types are properly detected after wrapping them
 func (s *KopiaErrorsTestSuite) TestErrCheck(c *check.C) {
-	origErr := errors.New("Some error")
+	origErr := errkit.New("Some error")
 
-	errWithMessage := errors.WithMessage(origErr, ErrInvalidPasswordStr)
 	errWrapped := errkit.Wrap(origErr, ErrInvalidPasswordStr)
 
-	c.Assert(IsInvalidPasswordError(errWithMessage), check.Equals, true)
 	c.Assert(IsInvalidPasswordError(errWrapped), check.Equals, true)
 	c.Assert(IsRepoNotFoundError(errWrapped), check.Equals, false)
 
 	permittedErrors := []ErrorType{ErrorInvalidPassword, ErrorRepoNotFound}
-	c.Assert(CheckKopiaErrors(errWithMessage, permittedErrors), check.Equals, true)
 	c.Assert(CheckKopiaErrors(errWrapped, permittedErrors), check.Equals, true)
 
 	wrongErrors := []ErrorType{ErrorRepoNotFound}
