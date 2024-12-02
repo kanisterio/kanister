@@ -17,7 +17,6 @@ package kube
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"os"
 
@@ -90,7 +89,7 @@ func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *check.C) {
 			buf := bytes.NewBuffer([]byte("some file content"))
 			remover, err := pfw.Write(ctx, "/path/to/file", buf)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, simulatedError), check.Equals, true)
+			c.Assert(errkit.Is(err, simulatedError), check.Equals, true)
 			c.Assert(remover, check.IsNil)
 
 			c.Assert(pfwp.podWriter.inWriteNamespace, check.Equals, podFileWriterNS)
@@ -130,7 +129,7 @@ func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *check.C) {
 
 			err = remover.Remove(ctx)
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, simulatedError), check.Equals, true)
+			c.Assert(errkit.Is(err, simulatedError), check.Equals, true)
 			c.Assert(pfwp.podWriter.inRemoveNamespace, check.Equals, podFileWriterNS)
 			c.Assert(pfwp.podWriter.inRemovePodName, check.Equals, podFileWriterPodName)
 			c.Assert(pfwp.podWriter.inRemoveContainerName, check.Equals, podFileWriterContainerName)

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/caller"
@@ -34,9 +34,9 @@ const (
 )
 
 var (
-	ErrEndpointNotSet = errors.New("fluentbit endpoint not set")
-	ErrNonTCPEndpoint = errors.New("fluentbit endpoint scheme must be tcp")
-	ErrPathSet        = errors.New("fluentbit endpoint path is set")
+	ErrEndpointNotSet = errkit.NewSentinelErr("fluentbit endpoint not set")
+	ErrNonTCPEndpoint = errkit.NewSentinelErr("fluentbit endpoint scheme must be tcp")
+	ErrPathSet        = errkit.NewSentinelErr("fluentbit endpoint path is set")
 )
 
 // OutputSink describes the current output sink.
@@ -72,17 +72,17 @@ func SetOutput(sink OutputSink) error {
 	case FluentbitSink:
 		fbitAddr, ok := os.LookupEnv(LoggingServiceHostEnv)
 		if !ok {
-			return errors.New("Unable to find Fluentbit host address")
+			return errkit.New("Unable to find Fluentbit host address")
 		}
 		fbitPort, ok := os.LookupEnv(LoggingServicePortEnv)
 		if !ok {
-			return errors.New("Unable to find Fluentbit logging port")
+			return errkit.New("Unable to find Fluentbit logging port")
 		}
 		hook := NewFluentbitHook(fbitAddr + ":" + fbitPort)
 		log.AddHook(hook)
 		return nil
 	default:
-		return errors.New("not implemented")
+		return errkit.New("not implemented")
 	}
 }
 
