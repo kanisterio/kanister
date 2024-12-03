@@ -17,7 +17,7 @@ package kando
 import (
 	"encoding/json"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/datamover"
@@ -63,10 +63,10 @@ func validateCommandArgs(cmd *cobra.Command) error {
 	profileFlag := cmd.Flags().Lookup(profileFlagName).Value.String()
 	repositoryServerFlag := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
 	if profileFlag != "" && repositoryServerFlag != "" {
-		return errors.New("Either --profile or --repository-server should be provided")
+		return errkit.New("Either --profile or --repository-server should be provided")
 	}
 	if profileFlag == "" && repositoryServerFlag == "" {
-		return errors.New("Please provide either --profile or --repository-server as per the datamover you want to use")
+		return errkit.New("Please provide either --profile or --repository-server as per the datamover you want to use")
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func dataMoverFromCMD(cmd *cobra.Command, kopiaSnapshot, outputName string) (dat
 		}
 		return datamover.NewRepositoryServerDataMover(repositoryServerRef, outputName, kopiaSnapshot, cmd.Flag(repositoryServerUserHostnameFlagName).Value.String()), nil
 	default:
-		return nil, errors.New("Could not initialize DataMover.")
+		return nil, errkit.New("Could not initialize DataMover.")
 	}
 }
 
@@ -104,14 +104,14 @@ func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
 	profileJSON := cmd.Flag(profileFlagName).Value.String()
 	p := &param.Profile{}
 	err := json.Unmarshal([]byte(profileJSON), p)
-	return p, errors.Wrap(err, "failed to unmarshal profile")
+	return p, errkit.Wrap(err, "failed to unmarshal profile")
 }
 
 func unmarshalRepositoryServerFlag(cmd *cobra.Command) (*param.RepositoryServer, error) {
 	repositoryServerJSON := cmd.Flag(repositoryServerFlagName).Value.String()
 	rs := &param.RepositoryServer{}
 	err := json.Unmarshal([]byte(repositoryServerJSON), rs)
-	return rs, errors.Wrap(err, "failed to unmarshal kopia repository server CR")
+	return rs, errkit.Wrap(err, "failed to unmarshal kopia repository server CR")
 }
 
 func dataMoverTypeFromCMD(c *cobra.Command) DataMoverType {
