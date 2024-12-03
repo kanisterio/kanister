@@ -162,6 +162,38 @@ func (s *KanXSuite) TestLongProcess(c *C) {
 	c.Assert(buf.String(), Equals, "")
 }
 
+func (s *KanXSuite) TestGetProcess(c *C) {
+	d := tmpDir(c)
+	addr := path.Join(d, "kanx.sock")
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	server := newTestServer(d)
+	go func() {
+		err := server.Serve(ctx, addr)
+		c.Assert(err, IsNil)
+	}()
+	serverReady(ctx, addr, c)
+
+	p, err := CreateProcess(ctx, addr, "tail", []string{"-f", "/dev/null"})
+	c.Assert(err, IsNil)
+	c.Assert(p.GetPid(), Equals, p.GetPid())
+	c.Assert(p.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(p.GetExitErr(), Equals, "")
+	c.Assert(p.GetExitCode(), Equals, int64(0))
+
+	ps, err := GetProcess(ctx, addr, p.GetPid())
+	c.Assert(err, IsNil)
+	c.Assert(ps.GetPid(), Equals, p.GetPid())
+	c.Assert(ps.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(ps.GetExitErr(), Equals, "")
+	c.Assert(ps.GetExitCode(), Equals, int64(0))
+
+	sp, ok := server.pss.processes[p.GetPid()]
+	c.Assert(ok, Equals, true)
+	err = sp.cmd.Process.Kill()
+	c.Assert(err, IsNil)
+}
+
 func (s *KanXSuite) TestError(c *C) {
 	d := tmpDir(c)
 	addr := path.Join(d, "kanx.sock")
