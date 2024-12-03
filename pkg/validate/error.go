@@ -15,18 +15,16 @@
 package validate
 
 import (
-	"fmt"
-
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
-var errValidate = fmt.Errorf("Validation Failed")
+var errValidate = errkit.NewSentinelErr("Validation Failed")
 
 func errorf(err error, format string, args ...interface{}) error {
-	return errors.Wrapf(err, format, args...)
+	return errkit.Wrap(err, format, args...)
 }
 
-// IsError returns true iff the underlying cause was a validation error.
+// IsError returns true if the underlying cause was a validation error.
 func IsError(err error) bool {
-	return errors.Cause(err) == errValidate
+	return errkit.Is(err, errValidate)
 }

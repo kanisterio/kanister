@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"github.com/prometheus/client_golang/prometheus"
 	promgomodel "github.com/prometheus/client_model/go"
 	"gopkg.in/check.v1"
@@ -171,12 +171,12 @@ func (s *ControllerSuite) waitOnActionSetState(as *crv1alpha1.ActionSet, state c
 		if as.Status.State == crv1alpha1.StatePending || as.Status.State == crv1alpha1.StateRunning {
 			return false, nil
 		}
-		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
+		return false, errkit.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
 	})
 	if err == nil {
 		return nil
 	}
-	return errors.Wrapf(err, "State '%s' never reached", state)
+	return errkit.Wrap(err, fmt.Sprintf("State '%s' never reached", state))
 }
 
 func (s *ControllerSuite) waitOnDeferPhaseState(as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
@@ -201,7 +201,7 @@ func (s *ControllerSuite) waitOnDeferPhaseState(as *crv1alpha1.ActionSet, state 
 	if err == nil {
 		return nil
 	}
-	return errors.Wrapf(err, "State '%s' never reached", state)
+	return errkit.Wrap(err, fmt.Sprintf("State '%s' never reached", state))
 }
 
 func (s *ControllerSuite) waitOnActionSetCompleteWithRunningPhases(as *crv1alpha1.ActionSet, rp *sets.Set[string]) error {
@@ -229,12 +229,12 @@ func (s *ControllerSuite) waitOnActionSetCompleteWithRunningPhases(as *crv1alpha
 			}
 			return false, nil
 		}
-		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
+		return false, errkit.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
 	})
 	if err == nil {
 		return nil
 	}
-	return errors.Wrapf(err, "ActionSet did not reach '%s' state", crv1alpha1.StateComplete)
+	return errkit.Wrap(err, fmt.Sprintf("ActionSet did not reach '%s' state", crv1alpha1.StateComplete))
 }
 
 func newBPWithOutputArtifact() *crv1alpha1.Blueprint {
@@ -731,7 +731,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *check.C) {
 	config, err := kube.LoadConfig()
 	c.Assert(err, check.IsNil)
 	ctlr := New(config, nil)
-	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), as, nilAs, bp)
+	ctlr.logAndErrorEvent(ctx, msg, reason, errkit.New("Testing Event Logs"), as, nilAs, bp)
 
 	// Test ActionSet error event logging
 	events, err := s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, as)
@@ -754,7 +754,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *check.C) {
 
 	// Testing empty Blueprint
 	testbp := &crv1alpha1.Blueprint{}
-	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), testbp)
+	ctlr.logAndErrorEvent(ctx, msg, reason, errkit.New("Testing Event Logs"), testbp)
 	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, testbp)
 	c.Assert(err, check.NotNil)
 	c.Assert(len(events.Items), check.Equals, 0)

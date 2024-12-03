@@ -27,8 +27,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -86,23 +86,23 @@ func New(c *rest.Config, reg prometheus.Registerer) *Controller {
 func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	crClient, err := versioned.NewForConfig(c.config)
 	if err != nil {
-		return errors.Wrap(err, "failed to get a CustomResource client")
+		return errkit.Wrap(err, "failed to get a CustomResource client")
 	}
 	if err := checkCRAccess(ctx, crClient, namespace); err != nil {
 		return err
 	}
 	clientset, err := kubernetes.NewForConfig(c.config)
 	if err != nil {
-		return errors.Wrap(err, "failed to get a k8s client")
+		return errkit.Wrap(err, "failed to get a k8s client")
 	}
 	dynClient, err := dynamic.NewForConfig(c.config)
 	if err != nil {
-		return errors.Wrap(err, "failed to get a k8s dynamic client")
+		return errkit.Wrap(err, "failed to get a k8s dynamic client")
 	}
 
 	osClient, err := osversioned.NewForConfig(c.config)
 	if err != nil {
-		return errors.Wrap(err, "failed to get a openshift client")
+		return errkit.Wrap(err, "failed to get a openshift client")
 	}
 
 	c.crClient = crClient
@@ -134,13 +134,13 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 
 func checkCRAccess(ctx context.Context, cli versioned.Interface, ns string) error {
 	if _, err := cli.CrV1alpha1().ActionSets(ns).List(ctx, metav1.ListOptions{}); err != nil {
-		return errors.Wrap(err, "Could not list ActionSets")
+		return errkit.Wrap(err, "Could not list ActionSets")
 	}
 	if _, err := cli.CrV1alpha1().Blueprints(ns).List(ctx, metav1.ListOptions{}); err != nil {
-		return errors.Wrap(err, "Could not list Blueprints")
+		return errkit.Wrap(err, "Could not list Blueprints")
 	}
 	if _, err := cli.CrV1alpha1().Profiles(ns).List(ctx, metav1.ListOptions{}); err != nil {
-		return errors.Wrap(err, "Could not list Profiles")
+		return errkit.Wrap(err, "Could not list Profiles")
 	}
 	return nil
 }
@@ -220,7 +220,7 @@ func (c *Controller) onAddActionSet(ctx context.Context, t *tomb.Tomb, as *crv1a
 	}
 	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	if err != nil {
-		return errors.WithStack(err)
+		return errkit.WithStack(err)
 	}
 	if err = validate.ActionSet(as); err != nil {
 		return err
@@ -313,13 +313,13 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 	for _, a := range as.Spec.Actions {
 		if a.Blueprint == "" {
 			// TODO: If no blueprint is specified, we should consider a default.
-			err = errors.New("Blueprint is not specified for action")
+			err = errkit.New("Blueprint is not specified for action")
 			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Blueprint not specified", err, as)
 			break
 		}
 		var bp *crv1alpha1.Blueprint
 		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, metav1.GetOptions{}); err != nil {
-			err = errors.Wrap(err, "Failed to query blueprint")
+			err = errkit.Wrap(err, "Failed to query blueprint")
 			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Error", err, as)
 			break
 		}
@@ -349,7 +349,7 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 func (c *Controller) initialActionStatus(a crv1alpha1.ActionSpec, bp *crv1alpha1.Blueprint) (*crv1alpha1.ActionStatus, error) {
 	bpa, ok := bp.Actions[a.Name]
 	if !ok {
-		return nil, errors.Errorf("Action %s for object kind %s not found in blueprint %s", a.Name, a.Object.Kind, a.Blueprint)
+		return nil, errkit.New(fmt.Sprintf("Action %s for object kind %s not found in blueprint %s", a.Name, a.Object.Kind, a.Blueprint))
 	}
 	phases := make([]crv1alpha1.Phase, 0, len(bpa.Phases))
 	for _, p := range bpa.Phases {
@@ -379,14 +379,14 @@ func (c *Controller) initialActionStatus(a crv1alpha1.ActionSpec, bp *crv1alpha1
 
 func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet) (err error) {
 	if as.Status == nil {
-		return errors.New("ActionSet was not initialized")
+		return errkit.New("ActionSet was not initialized")
 	}
 	if as.Status.State != crv1alpha1.StatePending {
 		return nil
 	}
 	as.Status.State = crv1alpha1.StateRunning
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, metav1.UpdateOptions{}); err != nil {
-		return errors.WithStack(err)
+		return errkit.WithStack(err)
 	}
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	// adding labels with prefix "kanister.io/" in the context as field for better logging
@@ -399,7 +399,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 	for i, a := range as.Status.Actions {
 		var bp *crv1alpha1.Blueprint
 		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, metav1.GetOptions{}); err != nil {
-			err = errors.Wrap(err, "Failed to query blueprint")
+			err = errkit.Wrap(err, "Failed to query blueprint")
 			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Error", err, as)
 			break
 		}
@@ -419,7 +419,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 			Message: err.Error(),
 		}
 		_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, metav1.UpdateOptions{})
-		return errors.WithStack(err)
+		return errkit.WithStack(err)
 	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
 	return nil
