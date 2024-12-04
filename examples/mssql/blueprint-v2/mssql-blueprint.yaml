@@ -18,7 +18,7 @@ actions:
         args:
           sharedVolumeMedium: Memory
 
-          initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
           initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
 
           backgroundImage: ghcr.io/kanisterio/mssql-tools:0.112.0
@@ -40,7 +40,7 @@ actions:
               tar zcvf - -C /tmp/ backup > /tmp/data
               kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
 
-          outputImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
           outputCommand:
             - bash
             - -o
@@ -50,7 +50,7 @@ actions:
             - -c
             - |
               kopiaPath="backup.tar.gz"
-              cat /tmp/data > kando location push --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --output-name "kopiaOutput" -
+              cat /tmp/data | kando location push --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --output-name "kopiaOutput" -
 
   restore:
     inputArtifactNames:
@@ -66,10 +66,10 @@ actions:
         args:
           sharedVolumeMedium: Memory
 
-          initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
           initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
 
-          backgroundImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
           backgroundCommand:
             - bash
             - -o
@@ -95,7 +95,7 @@ actions:
               root_uname="sa"
               mssql_pod="{{ index .Deployment.Namespace }}/{{ index .Deployment.Pods 0 }}"
               server_name="{{ index .Deployment.Name }}.{{ index .Deployment.Namespace }}.svc.cluster.local"
-              cat /tmp/data > tar zxvf - -C /tmp/
+              cat /tmp/data | tar zxvf - -C /tmp/
               kubectl cp /tmp/backup ${mssql_pod}:/tmp/backup
               backup_files=$(ls /tmp/backup)
               for script in $backup_files; do database="$(cut -d'.' -f1 <<<"$script")"; /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "restore database $database from disk = '/tmp/backup/$script' with replace"; done
@@ -108,7 +108,7 @@ actions:
       - func: KubeTask
         name: deleteFromBlobStore
         args:
-          image: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+          image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
           command:
             - bash
             - -o

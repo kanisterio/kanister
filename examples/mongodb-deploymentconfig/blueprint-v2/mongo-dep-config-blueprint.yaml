@@ -22,7 +22,7 @@ actions:
         namespace: "{{ .DeploymentConfig.Namespace }}"
         sharedVolumeMedium: Memory
 
-        initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
 
         backgroundImage: bitnami/mongodb:7.0-debian-12
@@ -40,7 +40,7 @@ actions:
             echo $dump_cmd
             ${dump_cmd} > /tmp/data
 
-        outputImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         outputCommand:
           - bash
           - -o
@@ -68,10 +68,10 @@ actions:
         namespace: "{{ .DeploymentConfig.Namespace }}"
         sharedVolumeMedium: Memory
 
-        initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
 
-        backgroundImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         backgroundCommand:
           - bash
           - -o
@@ -107,7 +107,7 @@ actions:
       name: deleteFromStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         command:
           - bash
           - -o

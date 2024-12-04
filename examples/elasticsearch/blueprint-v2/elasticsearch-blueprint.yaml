@@ -23,7 +23,7 @@ actions:
         namespace: "{{ .StatefulSet.Namespace }}"
         sharedVolumeMedium: Memory
 
-        initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
 
         backgroundImage: elasticdump/elasticsearch-dump:latest
@@ -41,7 +41,7 @@ actions:
           master_password="{{ index .Phases.backupToStore.Secrets.esMasterCredSecret.Data "password" | toString }}"
           NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --bulk=true --input=https://${master_username}:${master_password}@${host_name}:9200 --output=$ > /tmp/data
 
-        ouptutImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        ouptutImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         outputCommand:
         - bash
         - -o
@@ -69,10 +69,10 @@ actions:
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
 
-        initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
 
-        backgroundImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         backgroundCommand:
         - bash
         - -o
@@ -109,7 +109,7 @@ actions:
       name: deleteFromStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         command:
         - bash
         - -o

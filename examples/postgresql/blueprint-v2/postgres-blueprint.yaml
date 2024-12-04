@@ -23,7 +23,7 @@ actions:
         namespace: '{{ .StatefulSet.Namespace }}'
         sharedVolumeMedium: Memory
 
-        initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
 
         backgroundImage: postgres:17-bullseye
@@ -40,7 +40,7 @@ actions:
           export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgres-password" | toString }}'
           pg_dumpall --clean -U $PGUSER > /tmp/data
 
-        outputImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         outputCommand:
         - bash
         - -o
@@ -70,10 +70,10 @@ actions:
         namespace: '{{ .StatefulSet.Namespace }}'
         sharedVolumeMedium: Memory
 
-        initImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
 
-        backgroundImage: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         backgroundCommand:
         - bash
         - -o
@@ -98,7 +98,7 @@ actions:
           export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
           export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgres-password" | toString }}'
-          cat /tmp/data > psql -q -U "${PGUSER}"
+          cat /tmp/data | psql -q -U "${PGUSER}"
 
   delete:
     inputArtifactNames:
@@ -109,7 +109,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: {{if .Options.kanisterImage }} {{.Options.kanisterImage}} {{else}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{end}}
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash
