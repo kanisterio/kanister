@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -43,11 +43,11 @@ func (r *RepositoryServerValidator) ValidateUpdate(ctx context.Context, old runt
 	oldrs, ook := old.(*crv1alpha1.RepositoryServer)
 	newrs, nok := new.(*crv1alpha1.RepositoryServer)
 	if !ook || !nok {
-		return nil, errors.New("Either updated object or the old object is not of type RepositoryServer.cr.kanister.io")
+		return nil, errkit.New("Either updated object or the old object is not of type RepositoryServer.cr.kanister.io")
 	}
 	errMsg := fmt.Sprintf("RepositoryServer.cr.kanister.io \"%s\" is invalid: spec.repository.rootPath: Invalid value, Value is immutable", newrs.Name)
 	if oldrs.Spec.Repository.RootPath != newrs.Spec.Repository.RootPath {
-		return nil, errors.New(errMsg)
+		return nil, errkit.New(errMsg)
 	}
 	return nil, nil
 }

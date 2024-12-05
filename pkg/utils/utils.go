@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -56,7 +56,7 @@ func PrintStage(description string, i indicator) {
 func GetNamespaceUID(ctx context.Context, cli kubernetes.Interface, namespace string) (string, error) {
 	ns, err := cli.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to get namespace %s", namespace)
+		return "", errkit.Wrap(err, "Failed to get namespace", "namespace", namespace)
 	}
 	return string(ns.GetUID()), nil
 }
@@ -85,7 +85,7 @@ func GetIntOrDefault(value string, defaultValue int) (int, error) {
 	v, err := strconv.Atoi(value)
 	if err != nil {
 		v = defaultValue
-		return v, errors.New("conversion to integer failed, using default value for the field")
+		return v, errkit.New("conversion to integer failed, using default value for the field")
 	}
 	return v, nil
 }
@@ -121,7 +121,7 @@ func RoundUpDuration(t time.Duration) time.Duration {
 func CheckRequiredArgs(reqArgs []string, args map[string]interface{}) error {
 	for _, a := range reqArgs {
 		if _, ok := args[a]; !ok {
-			return errors.Errorf("Required arg missing: %s", a)
+			return errkit.New(fmt.Sprintf("Required arg missing: %s", a))
 		}
 	}
 	return nil
@@ -132,7 +132,7 @@ func CheckRequiredArgs(reqArgs []string, args map[string]interface{}) error {
 func CheckSupportedArgs(supportedArgs []string, args map[string]interface{}) error {
 	for a := range args {
 		if !slices.Contains(supportedArgs, a) {
-			return errors.Errorf("argument %s is not supported", a)
+			return errkit.New(fmt.Sprintf("argument %s is not supported", a))
 		}
 	}
 	return nil

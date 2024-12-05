@@ -19,13 +19,13 @@ package v1alpha1
 
 import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // RepositoryServerStatusApplyConfiguration represents an declarative configuration of the RepositoryServerStatus type for use
 // with apply.
 type RepositoryServerStatusApplyConfiguration struct {
-	Conditions []v1.Condition                       `json:"conditions,omitempty"`
+	Conditions []v1.ConditionApplyConfiguration     `json:"conditions,omitempty"`
 	ServerInfo *ServerInfoApplyConfiguration        `json:"serverInfo,omitempty"`
 	Progress   *crv1alpha1.RepositoryServerProgress `json:"progress,omitempty"`
 }
@@ -39,9 +39,12 @@ func RepositoryServerStatus() *RepositoryServerStatusApplyConfiguration {
 // WithConditions adds the given value to the Conditions field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *RepositoryServerStatusApplyConfiguration) WithConditions(values ...v1.Condition) *RepositoryServerStatusApplyConfiguration {
+func (b *RepositoryServerStatusApplyConfiguration) WithConditions(values ...*v1.ConditionApplyConfiguration) *RepositoryServerStatusApplyConfiguration {
 	for i := range values {
-		b.Conditions = append(b.Conditions, values[i])
+		if values[i] == nil {
+			panic("nil value passed to WithConditions")
+		}
+		b.Conditions = append(b.Conditions, *values[i])
 	}
 	return b
 }

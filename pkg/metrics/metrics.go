@@ -15,9 +15,9 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/kanisterio/errkit"
 	"github.com/prometheus/client_golang/prometheus"
 	"gonum.org/v1/gonum/stat/combin"
 
@@ -73,7 +73,7 @@ func getLabelCombinations(bl []BoundedLabel) ([]prometheus.Labels, error) {
 		{"operation_type": "restore", "action_set_resolution": "failure"}]
 	*/
 	if !verifyBoundedLabels(bl) {
-		return nil, errors.New("invalid BoundedLabel list")
+		return nil, errkit.New("invalid BoundedLabel list")
 	}
 	labelLens := make([]int, len(bl))
 	for idx, l := range bl {
@@ -241,7 +241,7 @@ func registerGauge(r prometheus.Registerer, g prometheus.Gauge) prometheus.Gauge
 func registerMetricOrDie(r prometheus.Registerer, c prometheus.Collector) prometheus.Collector {
 	if err := r.Register(c); err != nil {
 		are := prometheus.AlreadyRegisteredError{}
-		if !errors.As(err, &are) {
+		if !errkit.As(err, &are) {
 			panic(fmt.Sprintf("failed to register metric. error: %v", err))
 		}
 		// Use already registered metric

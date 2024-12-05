@@ -17,7 +17,7 @@ package validate
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 )
 
@@ -43,23 +43,23 @@ func (s *ErrorSuite) TestIsError(c *check.C) {
 			is:  true,
 		},
 		{
-			err: errors.Wrap(nil, "test"),
+			err: errkit.Wrap(nil, "test"),
 			is:  false,
 		},
 		{
-			err: errors.WithStack(nil),
+			err: errkit.WithStack(nil),
 			is:  false,
 		},
 		{
-			err: errors.Wrap(errValidate, "test"),
+			err: errkit.Wrap(errValidate, "test"),
 			is:  true,
 		},
 		{
-			err: errors.WithStack(errValidate),
+			err: errkit.WithStack(errValidate),
 			is:  true,
 		},
 		{
-			err: errors.New("test"),
+			err: errkit.New("test"),
 			is:  false,
 		},
 	} {

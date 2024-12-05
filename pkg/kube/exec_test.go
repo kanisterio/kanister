@@ -20,10 +20,10 @@ package kube
 import (
 	"bytes"
 	"context"
-	"errors"
 	"strings"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -191,7 +191,7 @@ func (s *ExecSuite) TestErrorInExecWithOptions(c *check.C) {
 		c.Assert(err1, check.Not(check.IsNil))
 
 		var ee1 *ExecError
-		ok := errors.As(err1, &ee1)
+		ok := errkit.As(err1, &ee1)
 		c.Assert(ok, check.Equals, true)
 		c.Assert(ee1.Stdout(), check.Not(check.Equals), testCase.expectedOut)
 		c.Assert(ee1.Stderr(), check.Not(check.Equals), testCase.expectedErr)
@@ -208,7 +208,7 @@ func (s *ExecSuite) TestErrorInExecWithOptions(c *check.C) {
 		c.Assert(err2, check.Not(check.IsNil))
 
 		var ee2 *ExecError
-		ok = errors.As(err2, &ee2)
+		ok = errkit.As(err2, &ee2)
 		c.Assert(ok, check.Equals, true)
 
 		// When error happens, stdout/stderr buffers should contain all lines produced by an app

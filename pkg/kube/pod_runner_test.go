@@ -19,7 +19,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -191,10 +191,10 @@ func afterPodRunTestKeyPresentFunc(labelKey, expectedLabelValue string, isLabelE
 		<-ch
 		labelValue, found := pc.Pod().Labels[labelKey]
 		if found != isLabelExpected {
-			return nil, errors.New("Got different label than expected")
+			return nil, errkit.New("Got different label than expected")
 		}
 		if isLabelExpected && labelValue != expectedLabelValue {
-			return nil, errors.New("Found label doesn't match with expected label")
+			return nil, errkit.New("Found label doesn't match with expected label")
 		}
 		return nil, nil
 	}
