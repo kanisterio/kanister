@@ -41,7 +41,7 @@ actions:
           master_password="{{ index .Phases.backupToStore.Secrets.esMasterCredSecret.Data "password" | toString }}"
           NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --bulk=true --input=https://${master_username}:${master_password}@${host_name}:9200 --output=$ > /tmp/data
 
-        ouptutImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         outputCommand:
         - bash
         - -o
@@ -85,7 +85,7 @@ actions:
           kopia_snap='{{ .ArtifactsIn.esBackup.KopiaSnapshot }}'
           kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip -c > /tmp/data
 
-        ouptutImage: elasticdump/elasticsearch-dump:latest
+        outputImage: elasticdump/elasticsearch-dump:latest
         outputCommand:
         - bash
         - -o

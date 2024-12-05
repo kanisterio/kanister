@@ -73,7 +73,7 @@ actions:
 
         backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         backgroundCommand:
-           - bash
+          - bash
           - -o
           - errexit
           - -o

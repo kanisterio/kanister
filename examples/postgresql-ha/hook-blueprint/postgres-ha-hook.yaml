@@ -26,7 +26,7 @@ actions:
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
         namespace: '{{ .StatefulSet.Namespace }}'
-        image: {{if .Options.psqlImage }} {{.Options.psqlImage}} {{else}} postgres:17-bullseye {{end}}
+        image: '{{if index .Options "psqlImage" }} {{- .Options.psqlImage -}} {{else -}} bitnami/postgresql-repmgr {{- end}}'
         command:
         - bash
         - -o
@@ -41,7 +41,7 @@ actions:
           postgresMaster=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='primary'")
           postgresStandby=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='standby'")
           primaryHost=''${postgresMaster}'.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
-          secondaryHost=''${postgresStandby}'.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local' 
+          secondaryHost=''${postgresStandby}'.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export conn_info_primary='user=repmgr password='${PGREPL}' host='${primaryHost}' dbname=repmgr port=5432 connect_timeout=5'
           export conn_info_standby='user=repmgr password='${PGREPL}' host='${secondaryHost}' dbname=repmgr port=5432 connect_timeout=5'
           psql -U postgres -h $PGHOST -d repmgr -c "update repmgr.nodes set conninfo='${conn_info_primary}' where type='primary'"
