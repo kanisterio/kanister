@@ -40,7 +40,7 @@ actions:
         sharedVolumeMedium: Memory
 
         initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
-        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 777 /tmp/data"]
 
         backgroundImage: ghcr.io/kanisterio/kanister-kubectl-1.18:0.112.0
         backgroundCommand:

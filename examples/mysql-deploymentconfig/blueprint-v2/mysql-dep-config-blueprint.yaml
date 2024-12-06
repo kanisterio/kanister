@@ -22,7 +22,7 @@ actions:
         namespace: "{{ .DeploymentConfig.Namespace }}"
         sharedVolumeMedium: Memory
         initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
-        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 777 /tmp/data"]
 
         ## FIXME: do we want to use mysql 9?
         backgroundImage: mysql:8
@@ -68,7 +68,7 @@ actions:
         sharedVolumeMedium: Memory
 
         initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
-        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data"]
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 777 /tmp/data"]
 
 
         backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
