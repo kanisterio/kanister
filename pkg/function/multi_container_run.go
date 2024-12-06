@@ -242,9 +242,19 @@ func (ktpf *multiContainerRunFunc) Exec(ctx context.Context, tp param.TemplatePa
 	if err = OptArg(args, MultiContainerRunInitCommandArg, &ktpf.initCommand, nil); err != nil {
 		return nil, err
 	}
+
 	if err = OptArg(args, MultiContainerRunNamespaceArg, &ktpf.namespace, ""); err != nil {
 		return nil, err
 	}
+
+	if ktpf.namespace == "" {
+		controllerNamespace, err := kube.GetControllerNamespace()
+		if err != nil {
+			return nil, errkit.Wrap(err, "Failed to get controller namespace")
+		}
+		ktpf.namespace = controllerNamespace
+	}
+
 	if err = OptArg(args, MultiContainerRunVolumeMediumArg, &ktpf.storageMedium, ""); err != nil {
 		return nil, err
 	}
