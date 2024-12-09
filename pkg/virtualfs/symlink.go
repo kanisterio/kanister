@@ -20,7 +20,7 @@ import (
 	"github.com/kopia/kopia/fs"
 )
 
-// inmemorySymlink is a mock in-memory implementation of kopia's fs.Symlink
+// inmemorySymlink is a mock in-memory implementation of Kopia's fs.Symlink
 type inmemorySymlink struct {
 	dirEntry
 }
