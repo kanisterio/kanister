@@ -32,5 +32,5 @@ func (imsl *inmemorySymlink) Readlink(ctx context.Context) (string, error) {
 }
 
 func (imsl *inmemorySymlink) Resolve(ctx context.Context) (fs.Entry, error) {
-	panic("Resolve for mock implementation is not supported")
+	panic("Resolve not supported")
 }
