@@ -162,6 +162,11 @@ func (ktpf *multiContainerRunFunc) run(
 	// FIXME: this doesn't work with pod controller currently so we have to reorder containers
 	ktpf.annotations[defaultContainerAnn] = ktpOutputContainer
 
+	err = setPodSpecServiceAccount(&podSpec, ktpf.namespace, cli)
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to set serviceaccount for pod")
+	}
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: jobPrefix,
@@ -192,6 +197,23 @@ func (ktpf *multiContainerRunFunc) run(
 	}()
 
 	return getPodOutput(ctx, pc)
+}
+
+func setPodSpecServiceAccount(podSpec *corev1.PodSpec, ns string, cli kubernetes.Interface) error {
+	sa := podSpec.ServiceAccountName
+	controllerNamespace, err := kube.GetControllerNamespace()
+	if err != nil {
+		return errkit.Wrap(err, "Failed to get controller namespace")
+	}
+
+	if sa == "" && ns == controllerNamespace {
+		sa, err = kube.GetControllerServiceAccount(cli)
+		if err != nil {
+			return errkit.Wrap(err, "Failed to get Controller Service Account")
+		}
+	}
+	podSpec.ServiceAccountName = sa
+	return nil
 }
 
 // This function is similar to kubeTaskPodFunc
