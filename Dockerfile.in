@@ -1,5 +1,6 @@
-ARG base_image=registry.access.redhat.com/ubi9/ubi-minimal:9.4-1227.1726694542
-FROM ${base_image}
+ARG base_image=default
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.4-1227.1726694542 AS default
+FROM ${base_image} as base
 ARG kanister_version
 
 LABEL name=ARG_BIN \
