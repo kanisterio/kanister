@@ -60,7 +60,7 @@ func NewPostgreSQLDepConfig(name string, templateVersion DBTemplate, storageType
 			"POSTGRESQL_ADMIN_PASSWORD": "secretpassword",
 		},
 		params: map[string]string{
-			"POSTGRESQL_VERSION":  "13-el8",
+			"POSTGRESQL_VERSION":  "15-el8",
 			"POSTGRESQL_DATABASE": "postgres",
 		},
 		storageType:       storageType,
