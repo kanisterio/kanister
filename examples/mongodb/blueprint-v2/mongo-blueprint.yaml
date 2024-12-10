@@ -11,7 +11,7 @@ actions:
         # `kopiaOutput` is the name provided to kando using `--output-name` flag
         kopiaSnapshot: "{{ .Phases.takeConsistentBackup.Output.kopiaOutput }}"
     phases:
-    - func: KubeTask
+    - func: MultiContainerRun
       name: takeConsistentBackup
       objects:
         mongosecret:
@@ -20,8 +20,13 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.113.0
-        command:
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: bitnami/mongodb:7.0-debian-12
+        backgroundCommand:
           - bash
           - -o
           - errexit
@@ -32,15 +37,27 @@ actions:
             host='{{ .StatefulSet.Name }}-0.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
             dbPassword='{{ index .Phases.takeConsistentBackup.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             dump_cmd="mongodump --oplog --gzip --archive --host ${host} -u root -p ${dbPassword}"
+            ${dump_cmd} > /tmp/data
+
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        outputCommand:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
             backup_file_path='rs_backup.gz'
-            ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
+            cat /tmp/data | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
+
   restore:
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `mongoBackup.KopiaSnapshot`
       - mongoBackup
     phases:
-    - func: KubeTask
+    - func: MultiContainerRun
       name: pullFromStore
       objects:
         mongosecret:
@@ -49,8 +66,26 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.113.0
-        command:
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        backgroundCommand:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            backup_file_path='rs_backup.gz'
+            kopia_snap='{{ .ArtifactsIn.mongoBackup.KopiaSnapshot }}'
+            kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - > /tmp/data
+
+        outputImage: bitnami/mongodb:7.0-debian-12
+        outputCommand:
           - bash
           - -o
           - errexit
@@ -61,9 +96,7 @@ actions:
             host='{{ .StatefulSet.Name }}-0.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
             dbPassword='{{ index .Phases.pullFromStore.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             restore_cmd="mongorestore --gzip --archive --oplogReplay --drop --host ${host} -u root -p ${dbPassword}"
-            backup_file_path='rs_backup.gz'
-            kopia_snap='{{ .ArtifactsIn.mongoBackup.KopiaSnapshot }}'
-            kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | ${restore_cmd}
+            cat /tmp/data | ${restore_cmd}
   delete:
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
@@ -74,7 +107,7 @@ actions:
       name: deleteFromStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/mongodb:0.113.0
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
         command:
           - bash
           - -o
