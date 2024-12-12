@@ -50,27 +50,27 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.24.0
 	gonum.org/v1/gonum v0.15.1
-	google.golang.org/api v0.209.0
+	google.golang.org/api v0.210.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
 	//pinned k8s.io to v0.30.x tag
-	k8s.io/api v0.30.6
-	k8s.io/apiextensions-apiserver v0.30.6
-	k8s.io/apimachinery v0.30.6
-	k8s.io/cli-runtime v0.30.6
-	k8s.io/client-go v0.30.6
-	k8s.io/code-generator v0.30.6
-	k8s.io/kubectl v0.30.6
-	sigs.k8s.io/controller-runtime v0.18.5
-	sigs.k8s.io/yaml v1.3.0
+	k8s.io/api v0.30.7
+	k8s.io/apiextensions-apiserver v0.30.7
+	k8s.io/apimachinery v0.30.7
+	k8s.io/cli-runtime v0.30.7
+	k8s.io/client-go v0.30.7
+	k8s.io/code-generator v0.30.7
+	k8s.io/kubectl v0.30.7
+	sigs.k8s.io/controller-runtime v0.18.6
+	sigs.k8s.io/yaml v1.4.0
 
 )
 
 require (
 	cloud.google.com/go v0.116.0 // indirect
-	cloud.google.com/go/auth v0.10.2 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.5 // indirect
+	cloud.google.com/go/auth v0.11.0 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.2.2 // indirect
 	cloud.google.com/go/storage v1.43.0 // indirect
@@ -108,7 +108,6 @@ require (
 	github.com/felixge/fgprof v0.9.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foomo/htpasswd v0.0.0-20200116085101-e3a90e78da9c // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
@@ -215,23 +214,23 @@ require (
 	golang.org/x/time v0.8.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20241113202542-65e8d215514f // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241113202542-65e8d215514f // indirect
-	google.golang.org/grpc v1.68.0
+	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20241113202542-65e8d215514f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241118233622-e639e219e697 // indirect
+	google.golang.org/grpc v1.68.1
 	google.golang.org/protobuf v1.35.2
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/kothar/go-backblaze.v0 v0.0.0-20210124194846-35409b867216 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/component-base v0.30.6 // indirect
+	k8s.io/component-base v0.30.7 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.3-0.20230601165947-6ce0bf390ce3 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
+	sigs.k8s.io/structured-merge-diff/v4 v4.4.3
 )
 
 require k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
