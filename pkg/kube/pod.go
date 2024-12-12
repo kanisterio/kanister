@@ -81,6 +81,7 @@ type PodOptions struct {
 	OwnerReferences          []metav1.OwnerReference
 	EnvironmentVariables     []corev1.EnvVar
 	Lifecycle                *corev1.Lifecycle
+	Node                     string
 }
 
 func (po *PodOptions) AddLabels(labels map[string]string) {
@@ -171,6 +172,12 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 	}
 
 	// Patch default Pod Specs if needed
+
+	fmt.Println("opts.Node - " + opts.Node)
+	if opts.Node != "" {
+		defaultSpecs.NodeName = opts.Node
+	}
+
 	patchedSpecs, err := PatchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create pod. Failed to override pod specs.", "namespace", opts.Namespace, "nameFmt", opts.GenerateName)
@@ -307,6 +314,8 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	log.Debug().WithContext(ctx).Print("Creating POD", field.M{"name": pod.Name, "namespace": pod.Namespace})
 
+	fmt.Println("CreatePod node_name " + pod.Spec.NodeName)
+	log.Debug().WithContext(ctx).Print("CreatePod", field.M{"node_name": pod.Spec.NodeName})
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		log.Error().WithContext(ctx).WithError(err).Print("Failed to create pod.", field.M{"pod": getRedactedPod(pod), "options": getRedactedOptions(opts)})
