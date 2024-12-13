@@ -87,10 +87,12 @@ func (*multiContainerRunFunc) Name() string {
 	return MultiContainerRunFuncName
 }
 
-func (ktpf *multiContainerRunFunc) run(
-	ctx context.Context,
-	cli kubernetes.Interface,
-) (map[string]interface{}, error) {
+func (ktpf *multiContainerRunFunc) run(ctx context.Context) (map[string]interface{}, error) {
+	cli, err := kube.NewClient()
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
+	}
+
 	volumeMounts := []corev1.VolumeMount{
 		{
 			Name:      ktpSharedVolumeName,
@@ -141,7 +143,7 @@ func (ktpf *multiContainerRunFunc) run(
 		},
 	}
 
-	podSpec, err := kube.PatchDefaultPodSpecs(podSpec, ktpf.podOverride)
+	podSpec, err = kube.PatchDefaultPodSpecs(podSpec, ktpf.podOverride)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Unable to apply podOverride", "podSpec", podSpec, "podOverride", ktpf.podOverride)
 	}
@@ -161,6 +163,11 @@ func (ktpf *multiContainerRunFunc) run(
 	}
 	// FIXME: this doesn't work with pod controller currently so we have to reorder containers
 	ktpf.annotations[defaultContainerAnn] = ktpOutputContainer
+
+	err = setPodSpecServiceAccount(&podSpec, ktpf.namespace, cli)
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to set serviceaccount for pod")
+	}
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -192,6 +199,23 @@ func (ktpf *multiContainerRunFunc) run(
 	}()
 
 	return getPodOutput(ctx, pc)
+}
+
+func setPodSpecServiceAccount(podSpec *corev1.PodSpec, ns string, cli kubernetes.Interface) error {
+	sa := podSpec.ServiceAccountName
+	controllerNamespace, err := kube.GetControllerNamespace()
+	if err != nil {
+		return errkit.Wrap(err, "Failed to get controller namespace")
+	}
+
+	if sa == "" && ns == controllerNamespace {
+		sa, err = kube.GetControllerServiceAccount(cli)
+		if err != nil {
+			return errkit.Wrap(err, "Failed to get Controller Service Account")
+		}
+	}
+	podSpec.ServiceAccountName = sa
+	return nil
 }
 
 // This function is similar to kubeTaskPodFunc
@@ -242,9 +266,19 @@ func (ktpf *multiContainerRunFunc) Exec(ctx context.Context, tp param.TemplatePa
 	if err = OptArg(args, MultiContainerRunInitCommandArg, &ktpf.initCommand, nil); err != nil {
 		return nil, err
 	}
+
 	if err = OptArg(args, MultiContainerRunNamespaceArg, &ktpf.namespace, ""); err != nil {
 		return nil, err
 	}
+
+	if ktpf.namespace == "" {
+		controllerNamespace, err := kube.GetControllerNamespace()
+		if err != nil {
+			return nil, errkit.Wrap(err, "Failed to get controller namespace")
+		}
+		ktpf.namespace = controllerNamespace
+	}
+
 	if err = OptArg(args, MultiContainerRunVolumeMediumArg, &ktpf.storageMedium, ""); err != nil {
 		return nil, err
 	}
@@ -273,28 +307,25 @@ func (ktpf *multiContainerRunFunc) Exec(ctx context.Context, tp param.TemplatePa
 		return nil, err
 	}
 
-	ktpf.labels = bpLabels
-	ktpf.annotations = bpAnnotations
+	ktpf.setLabelsAndAnnotations(tp, bpLabels, bpAnnotations)
+
+	return ktpf.run(ctx)
+}
+
+func (ktpf *multiContainerRunFunc) setLabelsAndAnnotations(tp param.TemplateParams, labels, annotation map[string]string) {
+	ktpf.labels = labels
+	ktpf.annotations = annotation
 	if tp.PodAnnotations != nil {
 		// merge the actionset annotations with blueprint annotations
 		var actionSetAnn ActionSetAnnotations = tp.PodAnnotations
-		ktpf.annotations = actionSetAnn.MergeBPAnnotations(bpAnnotations)
+		ktpf.annotations = actionSetAnn.MergeBPAnnotations(annotation)
 	}
 
 	if tp.PodLabels != nil {
 		// merge the actionset labels with blueprint labels
 		var actionSetLabels ActionSetLabels = tp.PodLabels
-		ktpf.labels = actionSetLabels.MergeBPLabels(bpLabels)
+		ktpf.labels = actionSetLabels.MergeBPLabels(labels)
 	}
-
-	cli, err := kube.NewClient()
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
-	}
-	return ktpf.run(
-		ctx,
-		cli,
-	)
 }
 
 func (*multiContainerRunFunc) RequiredArgs() []string {
