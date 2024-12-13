@@ -60,8 +60,30 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *check.C) {
 			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
 				fmt.Sprintf(`
 		export PGHOST=%s
-		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | sed 's/"LOCALE"/"LC_COLLATE"/' | psql -q -U "${PGUSER}" %s
+		kando location pull --profile "%s" --path "%s" - | gunzip -c -f | sed 's/"LOCALE"/"LC_COLLATE"/' | psql -q -U "${PGUSER}" %s
 		`, "db-endpoint", "null", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), postgres.DefaultConnectDatabase),
+			},
+		},
+		{
+			name:            "PostgreS restore command with profile",
+			dbEngine:        PostgrSQLEngine,
+			action:          RestoreAction,
+			dbEndpoint:      "db-endpoint",
+			username:        "test-user",
+			password:        "secret-pass",
+			backupPrefix:    "/backup/postgres-backup",
+			backupID:        "backup-id",
+			dbEngineVersion: "12.7",
+			errChecker:      check.IsNil,
+			dbList:          []string{"template1"},
+			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
+				fmt.Sprintf(`
+		export PGHOST=%s
+		kando location pull --profile "{\"Location\":{\"type\":\"\",\"bucket\":\"\",\"endpoint\":\"\",\"prefix\":\"\",\"region\":\"\"},\"Credential\":{\"Type\":\"\",\"KeyPair\":null,\"Secret\":null,\"KopiaServerSecret\":null},\"SkipSSLVerify\":false}" --path "%s" - | gunzip -c -f | sed 's/"LOCALE"/"LC_COLLATE"/' | psql -q -U "${PGUSER}" %s
+		`, "db-endpoint", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), postgres.DefaultConnectDatabase),
+			},
+			tp: param.TemplateParams{
+				Profile: &param.Profile{},
 			},
 		},
 		{
@@ -79,7 +101,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *check.C) {
 			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
 				fmt.Sprintf(`
 		export PGHOST=%s
-		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" %s
+		kando location pull --profile "%s" --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" %s
 		`, "db-endpoint", "null", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), postgres.DefaultConnectDatabase),
 			},
 		},
@@ -106,7 +128,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *check.C) {
 			for db in "${dblist[@]}";
 			  do echo "backing up $db db" && pg_dump $db -C --inserts > /backup/$db.sql;
 			done
-			tar -zc backup | kando location push --profile '%s' --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
+			tar -zc backup | kando location push --profile "%s" --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
 			kando output %s ${BACKUP_ID}`,
 					"db-endpoint", "/backup/postgres-backup", "backup-id", strings.Join([]string{"template1"}, " "), "null", ExportRDSSnapshotToLocBackupID),
 			},

@@ -15,11 +15,11 @@
 package ksprig_test
 
 import (
-	"errors"
 	"strings"
 	"testing"
 	"text/template"
 
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/ksprig"
@@ -74,7 +74,7 @@ func (f *FipsOnlySprigSuite) TestUnsupportedTxtFuncMapUsage(c *check.C) {
 		err = temp.Execute(nil, "")
 
 		var sprigErr ksprig.UnsupportedSprigUsageErr
-		c.Assert(errors.As(err, &sprigErr), check.Equals, true)
+		c.Assert(errkit.As(err, &sprigErr), check.Equals, true)
 		c.Assert(sprigErr.Usage, check.Equals, tc.usageErr)
 	}
 }

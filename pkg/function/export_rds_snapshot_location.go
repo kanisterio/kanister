@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -435,6 +436,8 @@ func postgresBackupCommand(dbEndpoint, username, password string, dbList []strin
 		return nil, errkit.New("No database found to backup")
 	}
 
+	profileQuoted := strconv.Quote(string(profile))
+
 	command := []string{
 		"bash",
 		"-o",
@@ -452,9 +455,9 @@ func postgresBackupCommand(dbEndpoint, username, password string, dbList []strin
 			for db in "${dblist[@]}";
 			  do echo "backing up $db db" && pg_dump $db -C --inserts > /backup/$db.sql;
 			done
-			tar -zc backup | kando location push --profile '%s' --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
+			tar -zc backup | kando location push --profile %s --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
 			kando output %s ${BACKUP_ID}`,
-			dbEndpoint, backupPrefix, backupID, strings.Join(dbList, " "), profile, ExportRDSSnapshotToLocBackupID),
+			dbEndpoint, backupPrefix, backupID, strings.Join(dbList, " "), profileQuoted, ExportRDSSnapshotToLocBackupID),
 	}
 	return command, nil
 }

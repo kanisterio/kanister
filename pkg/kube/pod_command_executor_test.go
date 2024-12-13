@@ -17,11 +17,11 @@ package kube
 import (
 	"bytes"
 	"context"
-	"errors"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -129,7 +129,7 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *check.C) {
 			prp.execWithOptionsSyncEnd.Sync()
 
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, context.DeadlineExceeded), check.Equals, true)
+			c.Assert(errkit.Is(err, context.DeadlineExceeded), check.Equals, true)
 		},
 		"Cancelled": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
 			var err error
@@ -151,7 +151,7 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *check.C) {
 			prp.execWithOptionsSyncEnd.Sync() // Release ExecWithOptions
 
 			c.Assert(err, check.Not(check.IsNil))
-			c.Assert(errors.Is(err, context.Canceled), check.Equals, true)
+			c.Assert(errkit.Is(err, context.Canceled), check.Equals, true)
 		},
 		"Successful execution": func(ctx context.Context, pr PodCommandExecutor, prp *fakePodCommandExecutorProcessor) {
 			var err error
