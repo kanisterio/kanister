@@ -30,3 +30,7 @@ var _ fs.Symlink = (*inmemorySymlink)(nil)
 func (imsl *inmemorySymlink) Readlink(ctx context.Context) (string, error) {
 	panic("Symlinks not supported")
 }
+
+func (imsl *inmemorySymlink) Resolve(ctx context.Context) (fs.Entry, error) {
+	panic("Resolve not supported")
+}
