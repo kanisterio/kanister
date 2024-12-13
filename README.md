@@ -97,7 +97,7 @@ vulnerabilities.
 
 The Kanister community meetings happen once every two weeks on Thursday, 16:00
 UTC, where we discuss ongoing interesting features, issues, and pull requests.
-Come join us! Everyone is welcome! 🙌 (Zoom link is pinned on Slack)
+Come join us! Everyone is welcome! 🙌 (Zoom link is bookmarked on Slack.)
 
 If you are currently using Kanister, we would love to hear about it! Feel free
 to add your organization to the [`ADOPTERS.md`](ADOPTERS.md) by submitting a
