@@ -56,19 +56,21 @@ func (w *ResourceWatcher) Watch(objType runtime.Object, done <-chan struct{}) {
 		w.resource.Plural,
 		w.namespace,
 		fields.Everything())
-	_, controller := cache.NewInformer(
-		source,
+	_, controller := cache.NewInformerWithOptions(
+		cache.InformerOptions{
+			ListerWatcher: source,
 
-		// The object type.
-		objType,
+			// The object type.
+			ObjectType: objType,
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			ResyncPeriod: 0,
 
-		// Your custom resource event handlers.
-		w.resourceEventHandlers)
+			// Your custom resource event handlers.
+			Handler: w.resourceEventHandlers,
+		})
 
 	go controller.Run(done)
 	<-done
