@@ -15,7 +15,6 @@ Pull request process is described in [contributing guide](./CONTRIBUTING.md#subm
     - Reviewer should request changes from contributor to add tests
 - If change in the PR needs documentation
     - Reviewer should request new docs or update to existing docs
-    - `/docs` and `/docs_new` need to be kept in sync until we deprecate `/docs`
 - If PR introduces breaking changes, fixes a bug or adds a new feature, there should be a [release note](#release-notes)
     - Reviewer may request changes from the contributor to add a release note
     - Reviewer may add a release note by themself in order to unblock the merge process

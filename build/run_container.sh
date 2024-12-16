@@ -22,7 +22,6 @@ set -o nounset
 
 PWD="${PWD:-$(pwd)}"
 
-DOCS_BUILD_IMAGE="${DOCS_BUILD_IMAGE:-ghcr.io/kanisterio/docker-sphinx:0.2.0}"
 BUILD_IMAGE="${BUILD_IMAGE:-ghcr.io/kanisterio/build:latest}"
 PKG="${PKG:-github.com/kanisterio/kanister}"
 
@@ -104,13 +103,6 @@ shell() {
   EXTRA_PARAMS="-ti" run_build_container
 }
 
-docs() {
-  check_param "CMD"
-
-  echo "Running docs container..."
-  IMAGE=${DOCS_BUILD_IMAGE} run_docs_container
-}
-
 crd_docs() {
   check_param "CMD"
 
@@ -124,7 +116,6 @@ Usage: ${0} <operation>
 Where operation is one of the following:
   build: run some command within a build container
   crd_docs: build API docs within a container
-  docs: build docs within a container
   shell: run build container in interactive shell mode
 EOM
     exit 1
@@ -135,9 +126,6 @@ case "${1}" in
         # Alphabetically sorted
         crd_docs)
             time -p crd_docs
-            ;;
-        docs)
-            time -p docs
             ;;
         run)
             time -p run

@@ -193,31 +193,15 @@ make integration-test openshift ocp_version=4.13
 
 ## Documentation
 
-The source of the documentation is found in the `docs` folder. They are written
-in the [reStructuredText](https://docutils.sourceforge.io/rst.html) format.
-
-To rebuild the documentation:
-
-```sh
-make docs
-```
-
-The `docs` target uses the `ghcr.io/kanisterio/docker-sphinx` public image to
-generate the HTML documents and store them in your local `/docs/_build/html`
-folder.
-
-## New Documentation
-
-We have started experimenting, and will soon fully transition, to using
- [VitePress](https://vitepress.dev/) to generate Kanister documentation.
+We use [VitePress](https://vitepress.dev/) to generate Kanister documentation.
 This requires the documentation files to be written in 
 [Markdown](https://www.markdownguide.org/), along with some 
 [extensions](https://vitepress.dev/guide/markdown).
 
-This new documentation system offers a live-dev server that will dynamically
+This documentation system offers a live-dev server that will dynamically
 render Markdown documentation files as you are making changes to them on your
 local machine/branch.
-To start this development server, place yourself in the `docs_new` folder, then
+To start this development server, place yourself in the `docs` folder, then
 run the following commands:
 
 ```sh
@@ -230,6 +214,13 @@ pages, Javascript/CSS files, etc.), use this command:
 ```sh
 pnpm run docs:build
 ```
+
+Alternatively to build docs using a docker container, you can run:
+```sh
+make docs
+```
+
+This will create the `docs_new/.vitepress/dist` folder with html docs there.
 
 To start a local webserver that you can use to preview the documentation that
 has been rendered by the command above, use this command:
@@ -252,7 +243,7 @@ written in Go. They are located in the `pkg/function` folder.
 Take a look at this [PR](https://github.com/kanisterio/kanister/pull/1282) to
 see how to write a new Kanister Function.
 
-Don't forget to update the documentation at `docs/functions.rst` with
+Don't forget to update the documentation at `docs/functions.md` with
 configuration information and examples to show off your new function.
 
 ## Build Kanister image
