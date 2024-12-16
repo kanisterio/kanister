@@ -1,5 +1,5 @@
 ARG base_image=default
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.4-1227.1726694542 AS default
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 AS default
 
 FROM ${base_image}
 ARG kanister_version
