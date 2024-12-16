@@ -202,3 +202,69 @@ func (s *MultiContainerRunSuite) TestMultiContainerRunWithInit(c *C) {
 		}
 	}
 }
+
+func multiContainerRunPhaseWithoutNamespace() crv1alpha1.BlueprintPhase {
+	return crv1alpha1.BlueprintPhase{
+		Name: "testMultiContainerRun",
+		Func: MultiContainerRunFuncName,
+		Args: map[string]interface{}{
+			MultiContainerRunBackgroundImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunBackgroundCommandArg: []string{
+				"sh",
+				"-c",
+				"echo foo > /tmp/file",
+			},
+			MultiContainerRunOutputImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunOutputCommandArg: []string{
+				"sh",
+				"-c",
+				"while [ ! -e /tmp/file  ]; do sleep 1; done; kando output value $(cat /tmp/file)",
+			},
+		},
+	}
+}
+
+func (s *MultiContainerRunSuite) TestMultiContainerRunWithoutNamespace(c *C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	tp := param.TemplateParams{
+		StatefulSet: &param.StatefulSetParams{
+			Namespace: s.namespace,
+		},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []map[string]interface{}{
+				{
+					"name":            "background",
+					"imagePullPolicy": "Always",
+				},
+				{
+					"name":            "output",
+					"imagePullPolicy": "Always",
+				},
+			},
+		},
+	}
+	action := "test"
+	for _, tc := range []struct {
+		bp   *crv1alpha1.Blueprint
+		outs []map[string]interface{}
+	}{
+		{
+			bp: newTaskBlueprint(multiContainerRunPhaseWithoutNamespace()),
+			outs: []map[string]interface{}{
+				{
+					"value": "foo",
+				},
+			},
+		},
+	} {
+		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
+		c.Assert(err, IsNil)
+		c.Assert(phases, HasLen, len(tc.outs))
+		for i, p := range phases {
+			out, err := p.Exec(ctx, *tc.bp, action, tp)
+			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+			c.Assert(out, DeepEquals, tc.outs[i])
+		}
+	}
+}
