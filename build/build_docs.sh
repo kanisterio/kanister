@@ -3,7 +3,7 @@
 set -o errexit
 set -o xtrace
 
-cd docs_new
+cd docs
 
 if [[ -z ${VERSION} ]]
 then

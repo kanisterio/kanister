@@ -220,7 +220,7 @@ Alternatively to build docs using a docker container, you can run:
 make docs
 ```
 
-This will create the `docs_new/.vitepress/dist` folder with html docs there.
+This will create the `docs/.vitepress/dist` folder with html docs there.
 
 To start a local webserver that you can use to preview the documentation that
 has been rendered by the command above, use this command:
