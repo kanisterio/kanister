@@ -32,7 +32,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/kanisterio/errkit v0.0.2
+	github.com/kanisterio/errkit v0.0.3
 	github.com/kanisterio/safecli v0.0.9
 	github.com/kopia/kopia v0.17.1-0.20240927044625-1bceb7155ede
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
