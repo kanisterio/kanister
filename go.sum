@@ -377,10 +377,10 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
-github.com/kanisterio/errkit v0.0.2 h1:3v3HGz9lHIbZR6Jr9qIJpRjaqUX0rsJSLMEQGsMHiUk=
-github.com/kanisterio/errkit v0.0.2/go.mod h1:ViQ6kPJ2gTJDEvRytmwde7pzG9/sndObF9BPZoEZixc=
-github.com/kanisterio/safecli v0.0.9 h1:MBjXbS82fWhGUaOX1MP+xGyTcouh1GRzzu4EzqQV0rY=
-github.com/kanisterio/safecli v0.0.9/go.mod h1:y1oYVoT2eqsmySCIS5yOzrxaYVywlMSEdWEKfLhBjgs=
+github.com/kanisterio/errkit v0.0.3 h1:1wHaTqV4DZE0XrN+Nq7Q2M8kyKnV8NhhEF3OB7A/Pd8=
+github.com/kanisterio/errkit v0.0.3/go.mod h1:0xesKaif6++1IXFdhb6fywa40J07odjwWq3IKzxWC3A=
+github.com/kanisterio/safecli v0.0.10 h1:oS3XMYUkzutKatV50cI0IGgPrdHnOuKpFkVv6rpS0mQ=
+github.com/kanisterio/safecli v0.0.10/go.mod h1:MWc9fYCCiQCZv2uVJ3GZTEFc/1B/cIecU9R71NpSr18=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20231101232131-9321daa23aae h1:2cl4yuAJpdmLCx7G8eIsfNlQBLEfw0JDj6mTTyqc5qg=
