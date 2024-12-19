@@ -17,7 +17,7 @@ as possible. The maintainers will then coordinate a release date with you.
 ## Security Advisories
 
 When serious security problems in Kanister are discovered and corrected, the
-maintainers issue a security advisory, describing the problem and containing a
+[maintainers](MAINTAINERS.md) issue a security advisory, describing the problem and containing a
 pointer to the fix. These will be announced on the Kanister's mailing list and
 websites and be visible in [github security advisories](https://github.com/kanisterio/kanister/security/advisories).
 
