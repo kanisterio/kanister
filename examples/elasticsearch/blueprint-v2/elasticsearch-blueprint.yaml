@@ -36,7 +36,6 @@ actions:
         - -c
         - |
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-          backup_file_path='backup.gz'
           master_username="{{ index .Phases.backupToStore.Secrets.esMasterCredSecret.Data "username" | toString }}"
           master_password="{{ index .Phases.backupToStore.Secrets.esMasterCredSecret.Data "password" | toString }}"
           NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --bulk=true --input=https://${master_username}:${master_password}@${host_name}:9200 --output=$ > /tmp/data
@@ -50,8 +49,8 @@ actions:
         - pipefail
         - -c
         - |
+          backup_file_path='backup.gz'
           cat /tmp/data | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
-
 
   restore:
     inputArtifactNames:
