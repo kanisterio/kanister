@@ -63,7 +63,6 @@ actions:
             BACKUP_LOCATION='etcd-backup.db.gz'
 
             cat /tmp/data | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" --output-name "kopiaOutput" -
-            kando output backupLocation $BACKUP_LOCATION
 
     - func: KubeTask
       name: removeSnapshot
