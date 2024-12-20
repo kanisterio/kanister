@@ -57,7 +57,7 @@ Regardless of your familiarity with this project, documentation help is always
 appreciated.
 
 Once you found an issue that interests you, post a comment to the issue, asking
-the maintainers to assign it to you.
+the [maintainers](MAINTAINERS.md) to assign it to you.
 
 ### Coding Standard
 
@@ -128,7 +128,7 @@ discussion
 The pull request template is designed to help you convey this information.
 
 In general, smaller pull requests are easier to review and merge than bigger
-ones. It's always a good idea to collaborate with the maintainers to determine
+ones. It's always a good idea to collaborate with the [maintainers](MAINTAINERS.md) to determine
 how best to break up a big pull request.
 
 Once the maintainers approve your PR, they will label it as `kueue`. The

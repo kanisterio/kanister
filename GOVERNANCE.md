@@ -11,11 +11,11 @@ to follow the Kanister [Code of Conduct](CODE_OF_CONDUCT.md).
 Contributions to the code base, documentation, or other components in the
 Kanister GitHub organization must follow the guidelines described in the
 [CONTRIBUTING.md](CONTRIBUTING.md) document. Whether these contributions get
-merged into the project is the prerogative of the maintainers.
+merged into the project is the prerogative of the [maintainers](MAINTAINERS.md).
 
 ## Maintainers
 
-Maintainers are responsible for the overall security, quality and integrity of
+[Maintainers](MAINTAINERS.md) are responsible for the overall security, quality and integrity of
 the project. They propose, manage, review, approve/reject major change and
 enhancement requests. They also have the ability to merge code into the project.
 See the [MAINTAINERS.md](MAINTAINERS.md) document for the full list of
@@ -46,5 +46,5 @@ decide whether to grant maintainer status.
 
 This governance is a living document and its policies will need to be updated
 over time to meet the community's needs. Until the steering committee is set
-up, the maintainers will have full ownership of this governance. Changes can be
+up, the [maintainers](MAINTAINERS.md) will have full ownership of this governance. Changes can be
 proposed at any time, but a super majority is required to approve any updates.

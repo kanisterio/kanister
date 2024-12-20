@@ -1,5 +1,5 @@
 FROM postgres:9.6-alpine
-LABEL maintainer="vkamra@kasten.io"
+LABEL maintainer="kanister.maintainers@veeam.com"
 
 ENV DEBIAN_FRONTEND noninteractive
 

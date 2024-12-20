@@ -81,7 +81,7 @@ LABEL name="kanister-tools" \
     version="${kan_tools_version}" \
     release="${kan_tools_version}" \
     summary="Operator for data protection workflow management on Kubernetes" \
-    maintainer="Pavan N Devaraj<pavan.n.devaraj@veeam.com>" \
+    maintainer="Kanister maintainers<kanister.maintainers@veeam.com>" \
     description="Tools for application-specific data protection"
 
 COPY --from=builder /restic/restic /usr/local/bin/restic

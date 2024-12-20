@@ -1,5 +1,5 @@
 FROM mongo:3.6
-LABEL maintainer="Tom Manville <tom@kasten.io>"
+LABEL maintainer="Kanister maintainers <kanister.maintainers@veeam.com>"
 
 USER root
 

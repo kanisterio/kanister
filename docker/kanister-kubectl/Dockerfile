@@ -7,7 +7,7 @@ LABEL name="kanister-kubectl" \
     vendor="Kanister" \
     version="${kubectl_version}" \
     summary="Kanster tools with kubectl" \
-    maintainer="Tom Manville<tom@kasten.io>"
+    maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/${kubectl_version}/bin/linux/amd64/kubectl \
     && chmod +x ./kubectl \
