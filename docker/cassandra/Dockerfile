@@ -6,7 +6,7 @@ FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 # Actual image base
 FROM bitnami/cassandra:5.0.0
 
-MAINTAINER "Kanister maintainers <kanister.maintainers@veeam.com>"
+LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 # Install restic to take backups
 COPY --from=TOOLS_IMAGE /usr/local/bin/restic /usr/local/bin/restic

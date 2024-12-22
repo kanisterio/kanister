@@ -1,6 +1,6 @@
 FROM couchbase:enterprise-7.6.3
 
-MAINTAINER "Kanister maintainers <kanister.maintainers@veeam.com>"
+LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 # Install Kanister tools
 RUN apt-get update && apt-get install libdigest-sha-perl -y
