@@ -1,4 +1,4 @@
-awscli==1.36.23
+awscli==1.36.28
 wal-e==1.1.1
 pip==24.3.1
 setuptools==75.6.0
