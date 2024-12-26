@@ -77,10 +77,7 @@ func (d *deleteCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParam
 	if err != nil {
 		return nil, err
 	}
-	snapshotter, err := snapshot.NewSnapshotter(kubeCli, dynCli)
-	if err != nil {
-		return nil, err
-	}
+	snapshotter := snapshot.NewSnapshotter(kubeCli, dynCli)
 	if _, err := deleteCSISnapshot(ctx, snapshotter, name, namespace); err != nil {
 		return nil, err
 	}

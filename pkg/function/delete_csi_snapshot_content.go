@@ -73,11 +73,7 @@ func (d *deleteCSISnapshotContentFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, err
 	}
 
-	snapshotter, err := snapshot.NewSnapshotter(kubeCli, dynCli)
-	if err != nil {
-		return nil, err
-	}
-
+	snapshotter := snapshot.NewSnapshotter(kubeCli, dynCli)
 	return nil, deleteCSISnapshotContent(ctx, snapshotter, name)
 }
 
