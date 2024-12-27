@@ -14,7 +14,7 @@
 
 FROM ARG_FROM
 
-MAINTAINER Vaibhav Kamra <vkamra@kasten.io>
+LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 ADD bin/ARG_ARCH/ARG_BIN /ARG_BIN
 
