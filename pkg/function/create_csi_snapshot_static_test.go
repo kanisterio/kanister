@@ -75,15 +75,14 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 
 		scheme := runtime.NewScheme()
 		dynCli := dynfake.NewSimpleDynamicClient(scheme)
-		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynCli)
-		c.Assert(err, check.IsNil)
+		fakeSnapshotter := snapshot.NewSnapshotter(fakeCli, dynCli)
 
 		namespace := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespace,
 			},
 		}
-		_, err = fakeCli.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
+		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
 		c.Assert(err, check.IsNil)
 
 		gv := strings.Split(api.GroupVersion, "/")

@@ -74,8 +74,7 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 
 		scheme := runtime.NewScheme()
 		dynCli := dynfake.NewSimpleDynamicClient(scheme)
-		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynCli)
-		c.Assert(err, check.IsNil)
+		fakeSnapshotter := snapshot.NewSnapshotter(fakeCli, dynCli)
 
 		source := &snapshot.Source{
 			Handle:                  snapshotNamespace,
@@ -85,7 +84,7 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 		fakeSnapshotContentMeta := snapshot.ObjectMeta{
 			Name: snapshotContentName,
 		}
-		err = fakeSnapshotter.CreateContentFromSource(ctx, source, snapshotName,
+		err := fakeSnapshotter.CreateContentFromSource(ctx, source, snapshotName,
 			snapshotNamespace, deletionPolicy, fakeSnapshotContentMeta)
 		c.Assert(err, check.IsNil)
 

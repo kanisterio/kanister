@@ -91,8 +91,7 @@ func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *check.C) {
 		c.Assert(err, check.IsNil)
 
 		scheme := runtime.NewScheme()
-		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
-		c.Assert(err, check.IsNil)
+		fakeSnapshotter := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
 
 		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
 		c.Assert(err, check.IsNil)

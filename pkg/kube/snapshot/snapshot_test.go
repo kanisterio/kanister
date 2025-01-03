@@ -151,6 +151,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(deletedSnap.Name, check.Equals, snap.Name)
 	_, err = fakeSs.Delete(context.Background(), snap.Name, snap.Namespace)
+	c.Assert(err, check.IsNil)
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *check.C) {
