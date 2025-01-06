@@ -48,7 +48,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
 	go.uber.org/zap v1.27.0
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.25.0
 	gonum.org/v1/gonum v0.15.1
 	google.golang.org/api v0.214.0
 	google.golang.org/grpc v1.69.2
