@@ -18,17 +18,12 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/kanisterio/errkit"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
@@ -122,36 +117,6 @@ type Source struct {
 	Driver                  string
 	RestoreSize             *int64
 	VolumeSnapshotClassName string
-}
-
-// NewSnapshotter creates and return new Snapshotter object
-func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Snapshotter, error) {
-	ctx := context.Background()
-	// Check if v1 (stable) snapshot API exists
-	exists, err := kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), GroupName, Version)
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to call discovery APIs")
-	}
-	if exists {
-		return NewSnapshotStable(kubeCli, dynCli), nil
-	}
-	// Check if v1beta1 snapshot API exists
-	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1beta1.GroupName, v1beta1.Version)
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to call discovery APIs")
-	}
-	if exists {
-		return NewSnapshotBeta(kubeCli, dynCli), nil
-	}
-	// Check if v1alpha1 snapshot API exists
-	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1alpha1.GroupName, v1alpha1.Version)
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to call discovery APIs")
-	}
-	if exists {
-		return NewSnapshotAlpha(kubeCli, dynCli), nil
-	}
-	return nil, errkit.New("Snapshot resources not supported")
 }
 
 // We use regexp to match because errors written in vs.Status.Error.Message are strings

@@ -39,80 +39,60 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) SetUpSuite(c *check.C) {}
 func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c *check.C) {
 	const (
 		snapshotName   = "test-snapshot"
-		namespace      = "test-namespace"
 		deletionPolicy = "Retain"
 		driver         = "test-driver"
-		snapshotClass  = "test-snapshot-class"
 		snapshotHandle = "test-snapshot-handle"
 	)
 
-	for _, api := range []*metav1.APIResourceList{
-		{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       snapshot.VolSnapKind,
-				APIVersion: "v1alpha1",
-			},
-			GroupVersion: fmt.Sprintf("%s/v1alpha1", snapshot.GroupName),
+	api := &metav1.APIResourceList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       snapshot.VolSnapKind,
+			APIVersion: "v1",
 		},
-		{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       snapshot.VolSnapKind,
-				APIVersion: "v1beta1",
-			},
-			GroupVersion: fmt.Sprintf("%s/v1beta1", snapshot.GroupName),
-		},
-		{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       snapshot.VolSnapKind,
-				APIVersion: "v1",
-			},
-			GroupVersion: fmt.Sprintf("%s/%s", snapshot.GroupName, snapshot.Version),
-		},
-	} {
-		ctx := context.Background()
-		fakeCli := fake.NewSimpleClientset()
-		fakeCli.Resources = []*metav1.APIResourceList{api}
-
-		scheme := runtime.NewScheme()
-		dynCli := dynfake.NewSimpleDynamicClient(scheme)
-		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynCli)
-		c.Assert(err, check.IsNil)
-
-		namespace := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
-			},
-		}
-		_, err = fakeCli.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
-		c.Assert(err, check.IsNil)
-
-		gv := strings.Split(api.GroupVersion, "/")
-		gvr := schema.GroupVersionResource{
-			Group:    gv[0],
-			Version:  gv[1],
-			Resource: snapshot.VolumeSnapshotClassResourcePlural,
-		}
-
-		snapshotClass := snapshot.UnstructuredVolumeSnapshotClass(
-			gvr,
-			snapshotClass,
-			driver,
-			deletionPolicy,
-			nil)
-		_, err = dynCli.Resource(gvr).Create(ctx, snapshotClass, metav1.CreateOptions{})
-		c.Assert(err, check.IsNil)
-
-		_, err = createCSISnapshotStatic(
-			ctx,
-			fakeSnapshotter,
-			snapshotName,
-			namespace.GetName(),
-			driver,
-			snapshotHandle,
-			snapshotClass.GetName(), false)
-		c.Assert(err, check.IsNil)
-
-		err = fakeCli.CoreV1().Namespaces().Delete(ctx, namespace.GetName(), metav1.DeleteOptions{})
-		c.Assert(err, check.IsNil)
+		GroupVersion: fmt.Sprintf("%s/%s", snapshot.GroupName, snapshot.Version),
 	}
+	ctx := context.Background()
+	fakeCli := fake.NewSimpleClientset()
+	fakeCli.Resources = []*metav1.APIResourceList{api}
+
+	scheme := runtime.NewScheme()
+	dynCli := dynfake.NewSimpleDynamicClient(scheme)
+	fakeSnapshotter := snapshot.NewSnapshotter(fakeCli, dynCli)
+
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-namespace",
+		},
+	}
+	_, err := fakeCli.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	gv := strings.Split(api.GroupVersion, "/")
+	gvr := schema.GroupVersionResource{
+		Group:    gv[0],
+		Version:  gv[1],
+		Resource: snapshot.VolumeSnapshotClassResourcePlural,
+	}
+
+	snapshotClass := snapshot.UnstructuredVolumeSnapshotClass(
+		gvr,
+		snapshotClass,
+		driver,
+		deletionPolicy,
+		nil)
+	_, err = dynCli.Resource(gvr).Create(ctx, snapshotClass, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	_, err = createCSISnapshotStatic(
+		ctx,
+		fakeSnapshotter,
+		snapshotName,
+		namespace.GetName(),
+		driver,
+		snapshotHandle,
+		snapshotClass.GetName(), false)
+	c.Assert(err, check.IsNil)
+
+	err = fakeCli.CoreV1().Namespaces().Delete(ctx, namespace.GetName(), metav1.DeleteOptions{})
+	c.Assert(err, check.IsNil)
 }

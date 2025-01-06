@@ -85,8 +85,7 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *check.C) {
 		c.Assert(err, check.IsNil)
 
 		scheme := runtime.NewScheme()
-		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
-		c.Assert(err, check.IsNil)
+		fakeSnapshotter := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
 
 		originalPVC := &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{

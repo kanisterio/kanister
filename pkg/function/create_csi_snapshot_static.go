@@ -112,11 +112,7 @@ func (c *createCSISnapshotStaticFunc) Exec(ctx context.Context, tp param.Templat
 		return nil, err
 	}
 
-	snapshotter, err := snapshot.NewSnapshotter(kubeCli, dynCli)
-	if err != nil {
-		return nil, err
-	}
-
+	snapshotter := snapshot.NewSnapshotter(kubeCli, dynCli)
 	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
 	vs, err := createCSISnapshotStatic(ctx, snapshotter, name, namespace, driver, snapshotHandle, snapshotClass, waitForReady)
