@@ -237,3 +237,7 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.2 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.1 // indirect
 )
+
+require github.com/stretchr/testify v1.9.0
+
+require github.com/pmezard/go-difflib v1.0.0 // indirect
