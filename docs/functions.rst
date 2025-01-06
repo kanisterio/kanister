@@ -1881,6 +1881,64 @@ For this phase, we will use the ``backupIdentifier`` Artifact provided by backup
       podLabels:
         labelKey: labelValue
 
+.. _backupdataallusingkopiaserver:
+
+BackupDataAllUsingKopiaServer
+-----------------------------
+
+This function concurrently backs up data from one or more pods into an
+object store supported by Kanister using Kopia Repository Server as a data mover.
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that backup the volume and store it on the object store.
+
+   Additionally, in order to use this function, a RepositoryServer CR is needed
+   while creating the :ref:`actionsets`
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace of the container that you want to backup the data of
+   `pods`, No, `string`, pods in which you want to backup the data of (by default runs on all the pods)
+   `container`, Yes, `string`, name of the kanister sidecar container
+   `includePath`, Yes, `string`, path of the data to be backed up
+   `repositoryServerUserHostname`, No, `string`, user's hostname to access the kopia repository server. Hostname would be available in the user access credential secret
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `BackupAllUsingKopiaServerInfo`,`string`, info about snapshot id required for restore
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backup-all:
+    outputArtifacts:
+      backupIdentifier:
+        keyValue:
+          backupInfo: "{{ .Phases.backupToS3All.Output.BackupAllUsingKopiaServerInfo }}"
+    phases:
+      - func: BackupDataAllUsingKopiaServer
+        name: backupToS3All
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          pods: "{{ index .Deployment.Pods 0 }}"
+          container: kanister-sidecar
+          includePath: /var/log
+
 Registering Functions
 ---------------------
 
