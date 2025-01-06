@@ -5,7 +5,7 @@ FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
 FROM bitnami/mongodb:7.0-debian-12
 
-LABEL maintainer="Tom Manville <tom@kasten.io>"
+LABEL maintainer="Kanister maintainers <kanister.maintainers@veeam.com>"
 
 # Update gosu from recent version
 COPY --from=TOOLS_IMAGE /usr/local/bin/gosu /usr/local/bin/gosu

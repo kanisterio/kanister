@@ -18,7 +18,7 @@ When reviewing a PR, a reviewer should check if there are release notes added if
 
 ## Generating changelogs
 
-Changelogs would be generated for each release by maintainers as a part of the release process.
+Changelogs would be generated for each release by [maintainers](../MAINTAINERS.md) as a part of the release process.
 
 Changelog can be generated using:
 

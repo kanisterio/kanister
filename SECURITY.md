@@ -9,7 +9,7 @@ You can report a new vulnerability using
 
 Alternatively you can report it via kanisterio google group "Contact owners and managers" button: https://groups.google.com/g/kanisterio/about
 
-The maintainers will help diagnose the severity of the issue and determine how
+The [maintainers](MAINTAINERS.md) will help diagnose the severity of the issue and determine how
 to address the issue. Issues deemed to be non-critical will be filed as GitHub
 issues. Critical issues will receive immediate attention and be fixed as quickly
 as possible. The maintainers will then coordinate a release date with you.
@@ -17,7 +17,7 @@ as possible. The maintainers will then coordinate a release date with you.
 ## Security Advisories
 
 When serious security problems in Kanister are discovered and corrected, the
-maintainers issue a security advisory, describing the problem and containing a
+[maintainers](MAINTAINERS.md) issue a security advisory, describing the problem and containing a
 pointer to the fix. These will be announced on the Kanister's mailing list and
 websites and be visible in [github security advisories](https://github.com/kanisterio/kanister/security/advisories).
 

@@ -1,5 +1,5 @@
 FROM golang:1.23-bullseye
-LABEL maintainer="Tom Manville<tom@kasten.io>"
+LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 ARG TARGETPLATFORM
 
