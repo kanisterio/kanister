@@ -193,6 +193,40 @@ func (s *KanXSuite) TestGetProcess(c *C) {
 	c.Assert(err, IsNil)
 }
 
+func (s *KanXSuite) TestListProcess(c *C) {
+	d := tmpDir(c)
+	addr := path.Join(d, "kanx.sock")
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	server := newTestServer(d)
+	go func() {
+		err := server.Serve(ctx, addr)
+		c.Assert(err, IsNil)
+	}()
+	serverReady(ctx, addr, c)
+
+	p, err := CreateProcess(ctx, addr, "tail", []string{"-f", "/dev/null"})
+	c.Assert(err, IsNil)
+	c.Assert(p.GetPid(), Equals, p.GetPid())
+	c.Assert(p.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(p.GetExitErr(), Equals, "")
+	c.Assert(p.GetExitCode(), Equals, int64(0))
+
+	// test ListProcess
+	ps, err := ListProcesses(ctx, addr)
+	c.Assert(err, IsNil)
+	c.Assert(ps, HasLen, 1)
+	c.Assert(ps[0].GetPid(), Equals, p.GetPid())
+	c.Assert(ps[0].GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(ps[0].GetExitErr(), Equals, "")
+	c.Assert(ps[0].GetExitCode(), Equals, int64(0))
+
+	sp, ok := server.pss.processes[p.GetPid()]
+	c.Assert(ok, Equals, true)
+	err = sp.cmd.Process.Kill()
+	c.Assert(err, IsNil)
+}
+
 func (s *KanXSuite) TestError(c *C) {
 	d := tmpDir(c)
 	addr := path.Join(d, "kanx.sock")
@@ -230,7 +264,7 @@ func (s *KanXSuite) TestError(c *C) {
 		return p0.GetState() != ProcessState_PROCESS_STATE_RUNNING, nil
 	})
 
-	// test error details from ListProcesses
+	// test error details from GetProcesses
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_FAILED)
 	c.Assert(p0.GetExitErr(), Equals, "signal: killed")
