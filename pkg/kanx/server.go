@@ -49,7 +49,7 @@ func newProcessServiceServer() *processServiceServer {
 	}
 }
 
-func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreateProcessRequest) (*Process, error) {
+func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProcessRequest) (*Process, error) {
 	stdout, err := os.CreateTemp(s.outputDir, tempStdoutPattern)
 	if err != nil {
 		return nil, err
@@ -105,6 +105,14 @@ func (s *processServiceServer) CreateProcesses(_ context.Context, cpr *CreatePro
 	}, nil
 }
 
+func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRequest) (*Process, error) {
+	q, ok := s.processes[grp.GetPid()]
+	if !ok {
+		return nil, errkit.WithStack(errProcessNotFound)
+	}
+	return processToProto(q), nil
+}
+
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
 	for _, p := range s.processes {
 		ps := processToProto(p)
@@ -118,7 +126,7 @@ func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps Proc
 
 var errProcessNotFound = errkit.NewSentinelErr("Process not found")
 
-func (s *processServiceServer) Stdout(por *ProcessOutputRequest, ss ProcessService_StdoutServer) error {
+func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_StdoutServer) error {
 	p, ok := s.processes[por.Pid]
 	if !ok {
 		return errkit.WithStack(errProcessNotFound)
@@ -130,7 +138,7 @@ func (s *processServiceServer) Stdout(por *ProcessOutputRequest, ss ProcessServi
 	return s.streamOutput(ss, p, fh)
 }
 
-func (s *processServiceServer) Stderr(por *ProcessOutputRequest, ss ProcessService_StderrServer) error {
+func (s *processServiceServer) Stderr(por *ProcessPidRequest, ss ProcessService_StderrServer) error {
 	p, ok := s.processes[por.Pid]
 	if !ok {
 		return errkit.WithStack(errProcessNotFound)
