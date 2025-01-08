@@ -253,7 +253,7 @@ func (s *KanXSuite) TestListProcess(c *C) {
 	sp, ok := server.pss.processes[p.GetPid()]
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
-	c.Assert(err, Equals, os.ErrProcessDone)
+	c.Assert(err, IsNil)
 }
 
 func (s *KanXSuite) TestError(c *C) {
