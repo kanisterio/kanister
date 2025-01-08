@@ -113,6 +113,19 @@ func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRe
 	return processToProto(q), nil
 }
 
+func (s *processServiceServer) WaitProcess(ctx context.Context, wpr *ProcessPidRequest) (*Process, error) {
+	q, ok := s.processes[wpr.GetPid()]
+	if !ok {
+		return nil, errkit.WithStack(errProcessNotFound)
+	}
+	select {
+	case <-ctx.Done():
+		return processToProto(q), ctx.Err()
+	case <-q.doneCh:
+		return processToProto(q), nil
+	}
+}
+
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
 	for _, p := range s.processes {
 		ps := processToProto(p)
@@ -176,7 +189,6 @@ func (s *processServiceServer) streamOutput(ss sender, p *process, fh *os.File) 
 		if err != nil {
 			return err
 		}
-		buf.Reset()
 	}
 }
 

@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ProcessService_CreateProcess_FullMethodName = "/kanx.ProcessService/CreateProcess"
 	ProcessService_GetProcess_FullMethodName    = "/kanx.ProcessService/GetProcess"
+	ProcessService_WaitProcess_FullMethodName   = "/kanx.ProcessService/WaitProcess"
 	ProcessService_ListProcesses_FullMethodName = "/kanx.ProcessService/ListProcesses"
 	ProcessService_Stdout_FullMethodName        = "/kanx.ProcessService/Stdout"
 	ProcessService_Stderr_FullMethodName        = "/kanx.ProcessService/Stderr"
@@ -32,6 +33,7 @@ const (
 type ProcessServiceClient interface {
 	CreateProcess(ctx context.Context, in *CreateProcessRequest, opts ...grpc.CallOption) (*Process, error)
 	GetProcess(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (*Process, error)
+	WaitProcess(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (*Process, error)
 	ListProcesses(ctx context.Context, in *ListProcessesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Process], error)
 	Stdout(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Output], error)
 	Stderr(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Output], error)
@@ -59,6 +61,16 @@ func (c *processServiceClient) GetProcess(ctx context.Context, in *ProcessPidReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Process)
 	err := c.cc.Invoke(ctx, ProcessService_GetProcess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *processServiceClient) WaitProcess(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (*Process, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Process)
+	err := c.cc.Invoke(ctx, ProcessService_WaitProcess_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +140,7 @@ type ProcessService_StderrClient = grpc.ServerStreamingClient[Output]
 type ProcessServiceServer interface {
 	CreateProcess(context.Context, *CreateProcessRequest) (*Process, error)
 	GetProcess(context.Context, *ProcessPidRequest) (*Process, error)
+	WaitProcess(context.Context, *ProcessPidRequest) (*Process, error)
 	ListProcesses(*ListProcessesRequest, grpc.ServerStreamingServer[Process]) error
 	Stdout(*ProcessPidRequest, grpc.ServerStreamingServer[Output]) error
 	Stderr(*ProcessPidRequest, grpc.ServerStreamingServer[Output]) error
@@ -146,6 +159,9 @@ func (UnimplementedProcessServiceServer) CreateProcess(context.Context, *CreateP
 }
 func (UnimplementedProcessServiceServer) GetProcess(context.Context, *ProcessPidRequest) (*Process, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProcess not implemented")
+}
+func (UnimplementedProcessServiceServer) WaitProcess(context.Context, *ProcessPidRequest) (*Process, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WaitProcess not implemented")
 }
 func (UnimplementedProcessServiceServer) ListProcesses(*ListProcessesRequest, grpc.ServerStreamingServer[Process]) error {
 	return status.Errorf(codes.Unimplemented, "method ListProcesses not implemented")
@@ -213,6 +229,24 @@ func _ProcessService_GetProcess_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProcessService_WaitProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessPidRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProcessServiceServer).WaitProcess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProcessService_WaitProcess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProcessServiceServer).WaitProcess(ctx, req.(*ProcessPidRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProcessService_ListProcesses_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ListProcessesRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -260,6 +294,10 @@ var ProcessService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProcess",
 			Handler:    _ProcessService_GetProcess_Handler,
+		},
+		{
+			MethodName: "WaitProcess",
+			Handler:    _ProcessService_WaitProcess_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

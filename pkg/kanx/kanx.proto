@@ -7,6 +7,7 @@ package kanx;
 service ProcessService {
   rpc CreateProcess (CreateProcessRequest) returns (Process) {}
   rpc GetProcess (ProcessPidRequest) returns (Process) {}
+  rpc WaitProcess (ProcessPidRequest) returns (Process) {}
   rpc ListProcesses (ListProcessesRequest) returns (stream Process) {}
   rpc Stdout (ProcessPidRequest) returns (stream Output) {}
   rpc Stderr (ProcessPidRequest) returns (stream Output) {}
@@ -41,3 +42,4 @@ enum ProcessState {
 message Output {
   string output = 1;
 }
+

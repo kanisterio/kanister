@@ -193,6 +193,35 @@ func (s *KanXSuite) TestGetProcess(c *C) {
 	c.Assert(err, IsNil)
 }
 
+func (s *KanXSuite) TestWaitProcess(c *C) {
+	d := tmpDir(c)
+	addr := path.Join(d, "kanx.sock")
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	server := newTestServer(d)
+	go func() {
+		err := server.Serve(ctx, addr)
+		c.Assert(err, IsNil)
+	}()
+	serverReady(ctx, addr, c)
+
+	p, err := CreateProcess(ctx, addr, "sleep", []string{"1s"})
+	c.Assert(err, IsNil)
+
+	// test WaitProcess
+	p0, err := WaitProcess(ctx, addr, p.GetPid())
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_SUCCEEDED)
+	c.Assert(p0.GetExitErr(), Equals, "")
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	sp, ok := server.pss.processes[p.GetPid()]
+	c.Assert(ok, Equals, true)
+	err = sp.cmd.Process.Kill()
+	c.Assert(err, Equals, os.ErrProcessDone)
+}
+
 func (s *KanXSuite) TestListProcess(c *C) {
 	d := tmpDir(c)
 	addr := path.Join(d, "kanx.sock")
@@ -224,7 +253,7 @@ func (s *KanXSuite) TestListProcess(c *C) {
 	sp, ok := server.pss.processes[p.GetPid()]
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
-	c.Assert(err, IsNil)
+	c.Assert(err, Equals, os.ErrProcessDone)
 }
 
 func (s *KanXSuite) TestError(c *C) {
