@@ -20,7 +20,7 @@ import (
 	"time"
 
 	uuid "github.com/gofrs/uuid"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
@@ -57,7 +57,7 @@ func (*mockGetter) Get(storageType blockstorage.Type, config map[string]string) 
 	case blockstorage.TypeGPD:
 		return Get(storageType)
 	default:
-		return nil, errors.New("Get failed")
+		return nil, errkit.New("Get failed")
 	}
 }
 
@@ -65,7 +65,7 @@ func (*mockGetter) Get(storageType blockstorage.Type, config map[string]string) 
 func Get(storageType blockstorage.Type) (*Provider, error) {
 	volumeUUID, err := uuid.NewV1()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create UUID")
+		return nil, errkit.Wrap(err, "Failed to create UUID")
 	}
 	volume := blockstorage.Volume{
 		Type:        storageType,
@@ -84,7 +84,7 @@ func Get(storageType blockstorage.Type) (*Provider, error) {
 	snapVol := volume
 	snapUUID, err := uuid.NewV1()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create UUID")
+		return nil, errkit.Wrap(err, "Failed to create UUID")
 	}
 	snapshot := blockstorage.Snapshot{
 		Type:        storageType,
@@ -122,7 +122,7 @@ func (p *Provider) VolumeCreate(context.Context, blockstorage.Volume) (*blocksto
 func (p *Provider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
 	volUUID, err := uuid.NewV1()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create UUID")
+		return nil, errkit.Wrap(err, "Failed to create UUID")
 	}
 	vol := blockstorage.Volume{
 		Type:        snapshot.Type,
@@ -197,7 +197,7 @@ func (p *Provider) SetTags(ctx context.Context, resource interface{}, tags map[s
 	case *blockstorage.Snapshot:
 		return nil
 	default:
-		return errors.Errorf("Unsupported resource type %v(%T)", res, res)
+		return errkit.New(fmt.Sprintf("Unsupported resource type %v(%T)", res, res))
 	}
 }
 

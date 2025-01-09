@@ -22,7 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/jpillora/backoff"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -50,20 +50,20 @@ type RepoServerHandler struct {
 
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
 	if err := h.getSecretsFromCR(ctx); err != nil {
-		return errors.Wrap(err, "Failed to get Kopia API server secrets")
+		return errkit.Wrap(err, "Failed to get Kopia API server secrets")
 	}
 
 	svc, err := h.reconcileService(ctx)
 	if err != nil {
-		return errors.Wrap(err, "Failed to reconcile service")
+		return errkit.Wrap(err, "Failed to reconcile service")
 	}
 
 	envVars, pod, err := h.reconcilePod(ctx, svc)
 	if err != nil {
-		return errors.Wrap(err, "Failed to reconcile Kopia API server pod")
+		return errkit.Wrap(err, "Failed to reconcile Kopia API server pod")
 	}
 	if err := h.waitForPodReady(ctx, pod); err != nil {
-		return errors.Wrap(err, "Kopia API server pod not in ready state")
+		return errkit.Wrap(err, "Kopia API server pod not in ready state")
 	}
 
 	// envVars are set only when credentials are of type AWS/Azure.
@@ -95,7 +95,7 @@ func (h *RepoServerHandler) reconcileService(ctx context.Context) (*corev1.Servi
 		return nil, err
 	}
 	if err := h.updateServerInfoInCRStatus(ctx, h.RepositoryServer.Status.ServerInfo.PodName, svc.Name); err != nil {
-		return nil, errors.Wrap(err, "Failed to update service name in RepositoryServer /status")
+		return nil, errkit.Wrap(err, "Failed to update service name in RepositoryServer /status")
 	}
 	return svc, err
 }
@@ -131,7 +131,7 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 	}
 	err := h.Reconciler.Create(ctx, &svc)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create RepositoryServer service")
+		return nil, errkit.Wrap(err, "Failed to create RepositoryServer service")
 	}
 
 	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
@@ -184,7 +184,7 @@ func (h *RepoServerHandler) createPodAndUpdateStatus(ctx context.Context, repoSe
 		return nil, nil, err
 	}
 	if err := h.updateServerInfoInCRStatus(ctx, pod.Name, h.RepositoryServer.Status.ServerInfo.ServiceName); err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to update pod name in RepositoryServer /status")
+		return nil, nil, errkit.Wrap(err, "Failed to update pod name in RepositoryServer /status")
 	}
 	return envVars, pod, nil
 }
@@ -236,7 +236,7 @@ func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace s
 		return nil, nil, err
 	}
 	if err := h.Reconciler.Create(ctx, pod); err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to create RepositoryServer pod")
+		return nil, nil, errkit.Wrap(err, "Failed to create RepositoryServer pod")
 	}
 	return pod, envVars, err
 }
@@ -284,7 +284,7 @@ func (h *RepoServerHandler) preparePodOverride(ctx context.Context, po *kube.Pod
 		h.RepositoryServerSecrets.serverTLS.Name,
 		po,
 	); err != nil {
-		return nil, errors.Wrap(err, "Failed to attach TLS Certificate configuration")
+		return nil, errkit.Wrap(err, "Failed to attach TLS Certificate configuration")
 	}
 	return podOverride, nil
 }
@@ -315,7 +315,7 @@ func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, podN
 
 func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod) error {
 	if err := kube.WaitForPodReady(ctx, h.KubeCli, pod.Namespace, pod.Name); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Failed while waiting for pod %s to be ready", pod.Name))
+		return errkit.Wrap(err, fmt.Sprintf("Failed while waiting for pod %s to be ready", pod.Name))
 	}
 	return nil
 }

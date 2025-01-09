@@ -86,7 +86,7 @@ If you have any questions or run into issues, feel free to reach out to us on
 GitHub issues or pull requests that have been inactive for more than 60 days
 will be labeled as stale. If they remained inactive for another 30 days, they
 will be automatically closed. To be exempted from the issue lifecycle, discuss
-with a maintainer the reasons behind the exemption, and add the `frozen` label
+with a [maintainer](MAINTAINERS.md) the reasons behind the exemption, and add the `frozen` label
 to the issue or pull request.
 
 If you discovered any security issues, refer to our [`SECURITY.md`](SECURITY.md)
@@ -97,7 +97,7 @@ vulnerabilities.
 
 The Kanister community meetings happen once every two weeks on Thursday, 16:00
 UTC, where we discuss ongoing interesting features, issues, and pull requests.
-Come join us! Everyone is welcome! 🙌 (Zoom link is pinned on Slack)
+Come join us! Everyone is welcome! 🙌 (Zoom link is bookmarked on Slack.)
 
 If you are currently using Kanister, we would love to hear about it! Feel free
 to add your organization to the [`ADOPTERS.md`](ADOPTERS.md) by submitting a

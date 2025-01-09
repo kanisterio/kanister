@@ -234,7 +234,7 @@ func (d *directory) Put(ctx context.Context, name string, r io.Reader, size int6
 	if d.path == "" {
 		return errors.New("invalid entry")
 	}
-	// K10 tags include '/'. Remove them, at least for S3
+	// Replace any '/' in tags with '-'.
 	sTags := sanitizeTags(tags)
 
 	objName := d.absPathName(name)

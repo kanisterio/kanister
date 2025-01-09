@@ -60,49 +60,31 @@ func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *check.C) {
 }
 
 func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *check.C) {
-	for _, apiResourceList := range []*metav1.APIResourceList{
-		{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "VolumeSnapshot",
-				APIVersion: "v1alpha1",
-			},
-			GroupVersion: "snapshot.storage.k8s.io/v1alpha1",
+	api := &metav1.APIResourceList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "VolumeSnapshot",
+			APIVersion: "v1",
 		},
-		{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "VolumeSnapshot",
-				APIVersion: "v1beta1",
-			},
-			GroupVersion: "snapshot.storage.k8s.io/v1beta1",
-		},
-		{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "VolumeSnapshot",
-				APIVersion: "v1",
-			},
-			GroupVersion: "snapshot.storage.k8s.io/v1",
-		},
-	} {
-		ctx := context.Background()
-		fakeCli := fake.NewSimpleClientset()
-		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
-
-		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
-		c.Assert(err, check.IsNil)
-
-		scheme := runtime.NewScheme()
-		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
-		c.Assert(err, check.IsNil)
-
-		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
-		c.Assert(err, check.IsNil)
-
-		_, err = createCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace, testSuite.pvcName, testSuite.volumeSnapshotClass, false, nil)
-		c.Assert(err, check.IsNil)
-
-		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
-		c.Assert(err, check.IsNil)
+		GroupVersion: "snapshot.storage.k8s.io/v1",
 	}
+	ctx := context.Background()
+	fakeCli := fake.NewSimpleClientset()
+	fakeCli.Resources = []*metav1.APIResourceList{api}
+
+	_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	scheme := runtime.NewScheme()
+	fakeSnapshotter := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
+
+	_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	_, err = createCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace, testSuite.pvcName, testSuite.volumeSnapshotClass, false, nil)
+	c.Assert(err, check.IsNil)
+
+	err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
+	c.Assert(err, check.IsNil)
 }
 
 func getPVCManifest(pvcName, storageClassName string) *corev1.PersistentVolumeClaim {

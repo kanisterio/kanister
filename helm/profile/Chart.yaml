@@ -5,10 +5,8 @@ name: profile
 home: https://kanister.io/
 version: 0.112.0
 maintainers:
-  - email: tom@kasten.io
-    name: tdmanv
-  - email: ilya@kasten.io
-    name: depohmel
+  - email: kanister.maintainers@veeam.com
+    name: Kanister Maintainers
 icon: https://kasten.io/assets/img/kanister-logo.png
 appVersion: 0.1.0
 source: https://github.com/kanisterio/kanister

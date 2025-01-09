@@ -74,14 +74,14 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.4-1227.1726694542
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
     version="${kan_tools_version}" \
     release="${kan_tools_version}" \
     summary="Operator for data protection workflow management on Kubernetes" \
-    maintainer="Pavan N Devaraj<pavan.n.devaraj@veeam.com>" \
+    maintainer="Kanister maintainers<kanister.maintainers@veeam.com>" \
     description="Tools for application-specific data protection"
 
 COPY --from=builder /restic/restic /usr/local/bin/restic

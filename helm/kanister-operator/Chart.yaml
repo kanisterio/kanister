@@ -4,10 +4,8 @@ name: kanister-operator
 version: 0.2.3
 home: https://kanister.io/
 maintainers:
-  - email: ilya@kasten.io
-    name: depohmel
-  - email: tom@kasten.io
-    name: tdmanv
+  - email: kanister.maintainers@veeam.com
+    name: Kanister Maintainers
 icon: https://kasten.io/assets/img/kanister-logo.png
 appVersion: 0.112.0
 source: https://github.com/kanisterio/kanister

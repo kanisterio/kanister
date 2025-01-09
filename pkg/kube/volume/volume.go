@@ -204,10 +204,7 @@ func getPVCRestoreSize(ctx context.Context, args *CreatePVCFromSnapshotArgs) (*r
 		quantities = append(quantities, &s)
 	}
 
-	sns, err := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to get snapshotter")
-	}
+	sns := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
 	snap, err := sns.Get(ctx, args.SnapshotName, args.Namespace)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to get snapshot")

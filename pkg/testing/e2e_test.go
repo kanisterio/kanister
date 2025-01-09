@@ -23,7 +23,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -166,7 +166,7 @@ func (s *E2ESuite) TestKubeExec(c *check.C) {
 		case err != nil, as.Status == nil:
 			return false, err
 		case as.Status.State == crv1alpha1.StateFailed:
-			return true, errors.Errorf("Actionset failed: %#v", as.Status)
+			return true, errkit.New(fmt.Sprintf("Actionset failed: %#v", as.Status))
 		case as.Status.State == crv1alpha1.StateComplete:
 			return true, nil
 		}
@@ -290,7 +290,7 @@ func (s *E2ESuite) TestKubeTask(c *check.C) {
 		case err != nil, as.Status == nil:
 			return false, err
 		case as.Status.State == crv1alpha1.StateFailed:
-			return true, errors.Errorf("Actionset failed: %#v", as.Status)
+			return true, errkit.New(fmt.Sprintf("Actionset failed: %#v", as.Status))
 		case as.Status.State == crv1alpha1.StateComplete:
 			return true, nil
 		}
@@ -524,7 +524,7 @@ func (s *E2ESuite) waitForActionSetComplete(asName string) error {
 		case err != nil, as.Status == nil:
 			return false, err
 		case as.Status.State == crv1alpha1.StateFailed:
-			return true, errors.Errorf("Actionset failed: %#v", as.Status)
+			return true, errkit.New(fmt.Sprintf("Actionset failed: %#v", as.Status))
 		case as.Status.State == crv1alpha1.StateComplete:
 			return true, nil
 		}
@@ -553,7 +553,7 @@ func (s *E2ESuite) waitForFunctionPodReady() error {
 		}
 
 		if len(pods.Items) > 1 {
-			return false, errors.New("more than one kanister-job pod found")
+			return false, errkit.New("more than one kanister-job pod found")
 		}
 
 		return true, nil
@@ -564,7 +564,7 @@ func verifyAnnotationsInFunctionPod(funcPodAnnotations, expectedAnnotations map[
 	for k, v := range expectedAnnotations {
 		val, ok := funcPodAnnotations[k]
 		if !ok || v != val {
-			return errors.New(fmt.Sprintf("Either key %s, is not found in pod annotations or, its values (%s and %s) don't match", k, v, val))
+			return errkit.New(fmt.Sprintf("Either key %s, is not found in pod annotations or, its values (%s and %s) don't match", k, v, val))
 		}
 	}
 	return nil
@@ -574,7 +574,7 @@ func verifyLabelsInFunctionPod(funcPodLabels, expectedLabels map[string]string) 
 	for k, v := range expectedLabels {
 		val, ok := funcPodLabels[k]
 		if !ok || v != val {
-			return errors.New(fmt.Sprintf("Either key %s, is not found in pod labels or, its values (%s and %s) don't match", k, v, val))
+			return errkit.New(fmt.Sprintf("Either key %s, is not found in pod labels or, its values (%s and %s) don't match", k, v, val))
 		}
 	}
 	return nil

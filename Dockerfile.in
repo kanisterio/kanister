@@ -1,4 +1,6 @@
-ARG base_image=registry.access.redhat.com/ubi9/ubi-minimal:9.4-1227.1726694542
+ARG base_image=default
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 AS default
+
 FROM ${base_image}
 ARG kanister_version
 
@@ -7,7 +9,7 @@ LABEL name=ARG_BIN \
       version="${kanister_version}" \
       release="${kanister_version}" \
       summary="Microservice for application-specific data management" \
-      maintainer="Tom Manville<tom@kasten.io>" \
+      maintainer="Kanister maintainers<kanister.maintainers@veeam.com>" \
       description="Frameworks and utilities for application-specific data management, has updated openssl-libs."
 
 RUN microdnf -y update openssl-libs cyrus-sasl-lib && \

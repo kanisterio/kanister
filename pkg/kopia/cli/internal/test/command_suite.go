@@ -15,9 +15,9 @@
 package test
 
 import (
+	"github.com/kanisterio/errkit"
 	"github.com/kanisterio/safecli"
 	"github.com/kanisterio/safecli/test"
-	"github.com/pkg/errors"
 	"gopkg.in/check.v1"
 )
 
@@ -62,8 +62,7 @@ func (t *CommandTest) assertNoError(c *check.C, err error) {
 
 // assertError checks the error against ExpectedErr.
 func (t *CommandTest) assertError(c *check.C, err error) {
-	actualErr := errors.Cause(err)
-	c.Assert(actualErr, check.Equals, t.ExpectedErr)
+	c.Assert(errkit.Is(err, t.ExpectedErr), check.Equals, true)
 }
 
 // assertCLI asserts the builder's CLI output against ExpectedCLI.

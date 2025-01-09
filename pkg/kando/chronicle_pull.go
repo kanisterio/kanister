@@ -20,7 +20,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/chronicle"
@@ -51,7 +51,7 @@ type locationParams struct {
 func unmarshalProfile(prof string) (*param.Profile, error) {
 	p := &param.Profile{}
 	err := json.Unmarshal([]byte(prof), p)
-	return p, errors.Wrap(err, "failed to unmarshal profile")
+	return p, errkit.Wrap(err, "failed to unmarshal profile")
 }
 
 //nolint:unparam

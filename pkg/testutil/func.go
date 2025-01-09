@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -48,7 +48,7 @@ var (
 )
 
 func failFunc(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error) {
-	err := errors.New("Kanister function failed")
+	err := errkit.New("Kanister function failed")
 	failFuncCh <- err
 	return nil, err
 }
