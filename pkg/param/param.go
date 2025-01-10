@@ -59,9 +59,13 @@ type TemplateParams struct {
 	Object           map[string]interface{}
 	Phases           map[string]*Phase
 	DeferPhase       *Phase
-	PodOverride      crv1alpha1.JSONMap
-	PodAnnotations   map[string]string
-	PodLabels        map[string]string
+	// PhasePodOverrides should be used to access pod override in a phase function
+	// using CurrentPhase value
+	PhasePodOverrides map[string]crv1alpha1.JSONMap
+	// PodOverride field should not be used and will be deprecated
+	PodOverride    crv1alpha1.JSONMap
+	PodAnnotations map[string]string
+	PodLabels      map[string]string
 }
 
 // DeploymentConfigParams are params for deploymentconfig, will be used if working on open shift cluster
@@ -194,16 +198,17 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	}
 	now := time.Now().UTC()
 	tp := TemplateParams{
-		ArtifactsIn:      as.Artifacts,
-		ConfigMaps:       cms,
-		Secrets:          secrets,
-		Profile:          prof,
-		RepositoryServer: repoServer,
-		Time:             now.Format(timeFormat),
-		Options:          as.Options,
-		PodOverride:      as.PodOverride,
-		PodAnnotations:   as.PodAnnotations,
-		PodLabels:        as.PodLabels,
+		ArtifactsIn:       as.Artifacts,
+		ConfigMaps:        cms,
+		Secrets:           secrets,
+		Profile:           prof,
+		RepositoryServer:  repoServer,
+		Time:              now.Format(timeFormat),
+		Options:           as.Options,
+		PhasePodOverrides: as.PhasePodOverrides,
+		PodOverride:       as.PodOverride,
+		PodAnnotations:    as.PodAnnotations,
+		PodLabels:         as.PodLabels,
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace

@@ -106,7 +106,13 @@ type ActionSpec struct {
 	RepositoryServer *ObjectReference `json:"repositoryServer,omitempty"`
 	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
+	// DEPRECATED! please use PhasePodOverrides instead to specify overrides per phase
+	// If PhasePodOverrides is defined for a phase, it will replace this value
 	PodOverride JSONMap `json:"podOverride,omitempty"`
+	// PhasePodOverrides is used to specify pod specs that will override default
+	// specs for phases in the action.
+	// Keys should be phase names and values should be pod specs
+	PhasePodOverrides map[string]JSONMap `json:"phasePodOverrides,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options,omitempty"`
