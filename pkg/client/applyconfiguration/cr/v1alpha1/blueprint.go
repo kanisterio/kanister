@@ -24,7 +24,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// BlueprintApplyConfiguration represents an declarative configuration of the Blueprint type for use
+// BlueprintApplyConfiguration represents a declarative configuration of the Blueprint type for use
 // with apply.
 type BlueprintApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -32,7 +32,7 @@ type BlueprintApplyConfiguration struct {
 	Actions                          map[string]*v1alpha1.BlueprintAction `json:"actions,omitempty"`
 }
 
-// Blueprint constructs an declarative configuration of the Blueprint type for use with
+// Blueprint constructs a declarative configuration of the Blueprint type for use with
 // apply.
 func Blueprint(name, namespace string) *BlueprintApplyConfiguration {
 	b := &BlueprintApplyConfiguration{}
@@ -213,4 +213,10 @@ func (b *BlueprintApplyConfiguration) WithActions(entries map[string]*v1alpha1.B
 		b.Actions[k] = v
 	}
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *BlueprintApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

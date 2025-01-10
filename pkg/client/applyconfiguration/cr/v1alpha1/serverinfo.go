@@ -17,14 +17,14 @@ limitations under the License.
 
 package v1alpha1
 
-// ServerInfoApplyConfiguration represents an declarative configuration of the ServerInfo type for use
+// ServerInfoApplyConfiguration represents a declarative configuration of the ServerInfo type for use
 // with apply.
 type ServerInfoApplyConfiguration struct {
 	PodName     *string `json:"podName,omitempty"`
 	ServiceName *string `json:"serviceName,omitempty"`
 }
 
-// ServerInfoApplyConfiguration constructs an declarative configuration of the ServerInfo type for use with
+// ServerInfoApplyConfiguration constructs a declarative configuration of the ServerInfo type for use with
 // apply.
 func ServerInfo() *ServerInfoApplyConfiguration {
 	return &ServerInfoApplyConfiguration{}

@@ -21,25 +21,26 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
-// ActionSpecApplyConfiguration represents an declarative configuration of the ActionSpec type for use
+// ActionSpecApplyConfiguration represents a declarative configuration of the ActionSpec type for use
 // with apply.
 type ActionSpecApplyConfiguration struct {
-	Name             *string                                      `json:"name,omitempty"`
-	Object           *ObjectReferenceApplyConfiguration           `json:"object,omitempty"`
-	Blueprint        *string                                      `json:"blueprint,omitempty"`
-	Artifacts        map[string]ArtifactApplyConfiguration        `json:"artifacts,omitempty"`
-	ConfigMaps       map[string]ObjectReferenceApplyConfiguration `json:"configMaps,omitempty"`
-	Secrets          map[string]ObjectReferenceApplyConfiguration `json:"secrets,omitempty"`
-	Profile          *ObjectReferenceApplyConfiguration           `json:"profile,omitempty"`
-	RepositoryServer *ObjectReferenceApplyConfiguration           `json:"repositoryServer,omitempty"`
-	PodOverride      *crv1alpha1.JSONMap                          `json:"podOverride,omitempty"`
-	Options          map[string]string                            `json:"options,omitempty"`
-	PreferredVersion *string                                      `json:"preferredVersion,omitempty"`
-	PodLabels        map[string]string                            `json:"podLabels,omitempty"`
-	PodAnnotations   map[string]string                            `json:"podAnnotations,omitempty"`
+	Name              *string                                      `json:"name,omitempty"`
+	Object            *ObjectReferenceApplyConfiguration           `json:"object,omitempty"`
+	Blueprint         *string                                      `json:"blueprint,omitempty"`
+	Artifacts         map[string]ArtifactApplyConfiguration        `json:"artifacts,omitempty"`
+	ConfigMaps        map[string]ObjectReferenceApplyConfiguration `json:"configMaps,omitempty"`
+	Secrets           map[string]ObjectReferenceApplyConfiguration `json:"secrets,omitempty"`
+	Profile           *ObjectReferenceApplyConfiguration           `json:"profile,omitempty"`
+	RepositoryServer  *ObjectReferenceApplyConfiguration           `json:"repositoryServer,omitempty"`
+	PodOverride       *crv1alpha1.JSONMap                          `json:"podOverride,omitempty"`
+	PhasePodOverrides map[string]crv1alpha1.JSONMap                `json:"phasePodOverrides,omitempty"`
+	Options           map[string]string                            `json:"options,omitempty"`
+	PreferredVersion  *string                                      `json:"preferredVersion,omitempty"`
+	PodLabels         map[string]string                            `json:"podLabels,omitempty"`
+	PodAnnotations    map[string]string                            `json:"podAnnotations,omitempty"`
 }
 
-// ActionSpecApplyConfiguration constructs an declarative configuration of the ActionSpec type for use with
+// ActionSpecApplyConfiguration constructs a declarative configuration of the ActionSpec type for use with
 // apply.
 func ActionSpec() *ActionSpecApplyConfiguration {
 	return &ActionSpecApplyConfiguration{}
@@ -132,6 +133,20 @@ func (b *ActionSpecApplyConfiguration) WithRepositoryServer(value *ObjectReferen
 // If called multiple times, the PodOverride field is set to the value of the last call.
 func (b *ActionSpecApplyConfiguration) WithPodOverride(value crv1alpha1.JSONMap) *ActionSpecApplyConfiguration {
 	b.PodOverride = &value
+	return b
+}
+
+// WithPhasePodOverrides puts the entries into the PhasePodOverrides field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the PhasePodOverrides field,
+// overwriting an existing map entries in PhasePodOverrides field with the same key.
+func (b *ActionSpecApplyConfiguration) WithPhasePodOverrides(entries map[string]crv1alpha1.JSONMap) *ActionSpecApplyConfiguration {
+	if b.PhasePodOverrides == nil && len(entries) > 0 {
+		b.PhasePodOverrides = make(map[string]crv1alpha1.JSONMap, len(entries))
+	}
+	for k, v := range entries {
+		b.PhasePodOverrides[k] = v
+	}
 	return b
 }
 

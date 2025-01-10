@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// ServerApplyConfiguration represents an declarative configuration of the Server type for use
+// ServerApplyConfiguration represents a declarative configuration of the Server type for use
 // with apply.
 type ServerApplyConfiguration struct {
 	UserAccess     *UserAccessApplyConfiguration `json:"userAccess,omitempty"`
@@ -29,7 +29,7 @@ type ServerApplyConfiguration struct {
 	TLSSecretRef   *v1.SecretReference           `json:"tlsSecretRef,omitempty"`
 }
 
-// ServerApplyConfiguration constructs an declarative configuration of the Server type for use with
+// ServerApplyConfiguration constructs a declarative configuration of the Server type for use with
 // apply.
 func Server() *ServerApplyConfiguration {
 	return &ServerApplyConfiguration{}

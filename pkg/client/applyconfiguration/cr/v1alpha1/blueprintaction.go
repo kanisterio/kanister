@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-// BlueprintActionApplyConfiguration represents an declarative configuration of the BlueprintAction type for use
+// BlueprintActionApplyConfiguration represents a declarative configuration of the BlueprintAction type for use
 // with apply.
 type BlueprintActionApplyConfiguration struct {
 	Name               *string                               `json:"name,omitempty"`
@@ -30,7 +30,7 @@ type BlueprintActionApplyConfiguration struct {
 	DeferPhase         *BlueprintPhaseApplyConfiguration     `json:"deferPhase,omitempty"`
 }
 
-// BlueprintActionApplyConfiguration constructs an declarative configuration of the BlueprintAction type for use with
+// BlueprintActionApplyConfiguration constructs a declarative configuration of the BlueprintAction type for use with
 // apply.
 func BlueprintAction() *BlueprintActionApplyConfiguration {
 	return &BlueprintActionApplyConfiguration{}

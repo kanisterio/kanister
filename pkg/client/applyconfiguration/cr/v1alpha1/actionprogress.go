@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ActionProgressApplyConfiguration represents an declarative configuration of the ActionProgress type for use
+// ActionProgressApplyConfiguration represents a declarative configuration of the ActionProgress type for use
 // with apply.
 type ActionProgressApplyConfiguration struct {
 	RunningPhase           *string  `json:"runningPhase,omitempty"`
@@ -33,7 +33,7 @@ type ActionProgressApplyConfiguration struct {
 	LastTransitionTime     *v1.Time `json:"lastTransitionTime,omitempty"`
 }
 
-// ActionProgressApplyConfiguration constructs an declarative configuration of the ActionProgress type for use with
+// ActionProgressApplyConfiguration constructs a declarative configuration of the ActionProgress type for use with
 // apply.
 func ActionProgress() *ActionProgressApplyConfiguration {
 	return &ActionProgressApplyConfiguration{}

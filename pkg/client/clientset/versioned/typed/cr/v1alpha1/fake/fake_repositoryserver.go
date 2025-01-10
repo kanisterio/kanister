@@ -43,22 +43,24 @@ var repositoryserversKind = v1alpha1.SchemeGroupVersion.WithKind("RepositoryServ
 
 // Get takes name of the repositoryServer, and returns the corresponding repositoryServer object, and an error if there is any.
 func (c *FakeRepositoryServers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.RepositoryServer, err error) {
+	emptyResult := &v1alpha1.RepositoryServer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(repositoryserversResource, c.ns, name), &v1alpha1.RepositoryServer{})
+		Invokes(testing.NewGetActionWithOptions(repositoryserversResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.RepositoryServer), err
 }
 
 // List takes label and field selectors, and returns the list of RepositoryServers that match those selectors.
 func (c *FakeRepositoryServers) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.RepositoryServerList, err error) {
+	emptyResult := &v1alpha1.RepositoryServerList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(repositoryserversResource, repositoryserversKind, c.ns, opts), &v1alpha1.RepositoryServerList{})
+		Invokes(testing.NewListActionWithOptions(repositoryserversResource, repositoryserversKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -77,40 +79,43 @@ func (c *FakeRepositoryServers) List(ctx context.Context, opts v1.ListOptions) (
 // Watch returns a watch.Interface that watches the requested repositoryServers.
 func (c *FakeRepositoryServers) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(repositoryserversResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(repositoryserversResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a repositoryServer and creates it.  Returns the server's representation of the repositoryServer, and an error, if there is any.
 func (c *FakeRepositoryServers) Create(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.CreateOptions) (result *v1alpha1.RepositoryServer, err error) {
+	emptyResult := &v1alpha1.RepositoryServer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(repositoryserversResource, c.ns, repositoryServer), &v1alpha1.RepositoryServer{})
+		Invokes(testing.NewCreateActionWithOptions(repositoryserversResource, c.ns, repositoryServer, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.RepositoryServer), err
 }
 
 // Update takes the representation of a repositoryServer and updates it. Returns the server's representation of the repositoryServer, and an error, if there is any.
 func (c *FakeRepositoryServers) Update(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.UpdateOptions) (result *v1alpha1.RepositoryServer, err error) {
+	emptyResult := &v1alpha1.RepositoryServer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(repositoryserversResource, c.ns, repositoryServer), &v1alpha1.RepositoryServer{})
+		Invokes(testing.NewUpdateActionWithOptions(repositoryserversResource, c.ns, repositoryServer, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.RepositoryServer), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeRepositoryServers) UpdateStatus(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.UpdateOptions) (*v1alpha1.RepositoryServer, error) {
+func (c *FakeRepositoryServers) UpdateStatus(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.UpdateOptions) (result *v1alpha1.RepositoryServer, err error) {
+	emptyResult := &v1alpha1.RepositoryServer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(repositoryserversResource, "status", c.ns, repositoryServer), &v1alpha1.RepositoryServer{})
+		Invokes(testing.NewUpdateSubresourceActionWithOptions(repositoryserversResource, "status", c.ns, repositoryServer, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.RepositoryServer), err
 }
@@ -125,7 +130,7 @@ func (c *FakeRepositoryServers) Delete(ctx context.Context, name string, opts v1
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeRepositoryServers) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(repositoryserversResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(repositoryserversResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.RepositoryServerList{})
 	return err
@@ -133,11 +138,12 @@ func (c *FakeRepositoryServers) DeleteCollection(ctx context.Context, opts v1.De
 
 // Patch applies the patch and returns the patched repositoryServer.
 func (c *FakeRepositoryServers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RepositoryServer, err error) {
+	emptyResult := &v1alpha1.RepositoryServer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(repositoryserversResource, c.ns, name, pt, data, subresources...), &v1alpha1.RepositoryServer{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(repositoryserversResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.RepositoryServer), err
 }
@@ -155,11 +161,12 @@ func (c *FakeRepositoryServers) Apply(ctx context.Context, repositoryServer *crv
 	if name == nil {
 		return nil, fmt.Errorf("repositoryServer.Name must be provided to Apply")
 	}
+	emptyResult := &v1alpha1.RepositoryServer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(repositoryserversResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.RepositoryServer{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(repositoryserversResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions()), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.RepositoryServer), err
 }
@@ -178,11 +185,12 @@ func (c *FakeRepositoryServers) ApplyStatus(ctx context.Context, repositoryServe
 	if name == nil {
 		return nil, fmt.Errorf("repositoryServer.Name must be provided to Apply")
 	}
+	emptyResult := &v1alpha1.RepositoryServer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(repositoryserversResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1alpha1.RepositoryServer{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(repositoryserversResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions(), "status"), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.RepositoryServer), err
 }

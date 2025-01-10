@@ -21,7 +21,7 @@ import (
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
-// PhaseApplyConfiguration represents an declarative configuration of the Phase type for use
+// PhaseApplyConfiguration represents a declarative configuration of the Phase type for use
 // with apply.
 type PhaseApplyConfiguration struct {
 	Name     *string                          `json:"name,omitempty"`
@@ -30,7 +30,7 @@ type PhaseApplyConfiguration struct {
 	Progress *PhaseProgressApplyConfiguration `json:"progress,omitempty"`
 }
 
-// PhaseApplyConfiguration constructs an declarative configuration of the Phase type for use with
+// PhaseApplyConfiguration constructs a declarative configuration of the Phase type for use with
 // apply.
 func Phase() *PhaseApplyConfiguration {
 	return &PhaseApplyConfiguration{}

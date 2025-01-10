@@ -17,13 +17,13 @@ limitations under the License.
 
 package v1alpha1
 
-// ErrorApplyConfiguration represents an declarative configuration of the Error type for use
+// ErrorApplyConfiguration represents a declarative configuration of the Error type for use
 // with apply.
 type ErrorApplyConfiguration struct {
 	Message *string `json:"message,omitempty"`
 }
 
-// ErrorApplyConfiguration constructs an declarative configuration of the Error type for use with
+// ErrorApplyConfiguration constructs a declarative configuration of the Error type for use with
 // apply.
 func Error() *ErrorApplyConfiguration {
 	return &ErrorApplyConfiguration{}

@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-// BlueprintPhaseApplyConfiguration represents an declarative configuration of the BlueprintPhase type for use
+// BlueprintPhaseApplyConfiguration represents a declarative configuration of the BlueprintPhase type for use
 // with apply.
 type BlueprintPhaseApplyConfiguration struct {
 	Func       *string                                      `json:"func,omitempty"`
@@ -26,7 +26,7 @@ type BlueprintPhaseApplyConfiguration struct {
 	Args       map[string]interface{}                       `json:"args,omitempty"`
 }
 
-// BlueprintPhaseApplyConfiguration constructs an declarative configuration of the BlueprintPhase type for use with
+// BlueprintPhaseApplyConfiguration constructs a declarative configuration of the BlueprintPhase type for use with
 // apply.
 func BlueprintPhase() *BlueprintPhaseApplyConfiguration {
 	return &BlueprintPhaseApplyConfiguration{}

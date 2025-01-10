@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// RepositoryServerStatusApplyConfiguration represents an declarative configuration of the RepositoryServerStatus type for use
+// RepositoryServerStatusApplyConfiguration represents a declarative configuration of the RepositoryServerStatus type for use
 // with apply.
 type RepositoryServerStatusApplyConfiguration struct {
 	Conditions []v1.ConditionApplyConfiguration     `json:"conditions,omitempty"`
@@ -30,7 +30,7 @@ type RepositoryServerStatusApplyConfiguration struct {
 	Progress   *crv1alpha1.RepositoryServerProgress `json:"progress,omitempty"`
 }
 
-// RepositoryServerStatusApplyConfiguration constructs an declarative configuration of the RepositoryServerStatus type for use with
+// RepositoryServerStatusApplyConfiguration constructs a declarative configuration of the RepositoryServerStatus type for use with
 // apply.
 func RepositoryServerStatus() *RepositoryServerStatusApplyConfiguration {
 	return &RepositoryServerStatusApplyConfiguration{}

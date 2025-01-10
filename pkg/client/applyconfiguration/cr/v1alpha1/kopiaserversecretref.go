@@ -17,14 +17,14 @@ limitations under the License.
 
 package v1alpha1
 
-// KopiaServerSecretRefApplyConfiguration represents an declarative configuration of the KopiaServerSecretRef type for use
+// KopiaServerSecretRefApplyConfiguration represents a declarative configuration of the KopiaServerSecretRef type for use
 // with apply.
 type KopiaServerSecretRefApplyConfiguration struct {
 	Key    *string                            `json:"key,omitempty"`
 	Secret *ObjectReferenceApplyConfiguration `json:"secret,omitempty"`
 }
 
-// KopiaServerSecretRefApplyConfiguration constructs an declarative configuration of the KopiaServerSecretRef type for use with
+// KopiaServerSecretRefApplyConfiguration constructs a declarative configuration of the KopiaServerSecretRef type for use with
 // apply.
 func KopiaServerSecretRef() *KopiaServerSecretRefApplyConfiguration {
 	return &KopiaServerSecretRefApplyConfiguration{}

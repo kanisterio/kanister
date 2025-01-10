@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-// KopiaServerSecretApplyConfiguration represents an declarative configuration of the KopiaServerSecret type for use
+// KopiaServerSecretApplyConfiguration represents a declarative configuration of the KopiaServerSecret type for use
 // with apply.
 type KopiaServerSecretApplyConfiguration struct {
 	Username       *string                                 `json:"username,omitempty"`
@@ -27,7 +27,7 @@ type KopiaServerSecretApplyConfiguration struct {
 	ConnectOptions map[string]int                          `json:"connectOptions,omitempty"`
 }
 
-// KopiaServerSecretApplyConfiguration constructs an declarative configuration of the KopiaServerSecret type for use with
+// KopiaServerSecretApplyConfiguration constructs a declarative configuration of the KopiaServerSecret type for use with
 // apply.
 func KopiaServerSecret() *KopiaServerSecretApplyConfiguration {
 	return &KopiaServerSecretApplyConfiguration{}

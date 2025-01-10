@@ -21,14 +21,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// StorageApplyConfiguration represents an declarative configuration of the Storage type for use
+// StorageApplyConfiguration represents a declarative configuration of the Storage type for use
 // with apply.
 type StorageApplyConfiguration struct {
 	SecretRef           *v1.SecretReference `json:"secretRef,omitempty"`
 	CredentialSecretRef *v1.SecretReference `json:"credentialSecretRef,omitempty"`
 }
 
-// StorageApplyConfiguration constructs an declarative configuration of the Storage type for use with
+// StorageApplyConfiguration constructs a declarative configuration of the Storage type for use with
 // apply.
 func Storage() *StorageApplyConfiguration {
 	return &StorageApplyConfiguration{}

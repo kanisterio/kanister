@@ -21,7 +21,7 @@ import (
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
-// ActionSetStatusApplyConfiguration represents an declarative configuration of the ActionSetStatus type for use
+// ActionSetStatusApplyConfiguration represents a declarative configuration of the ActionSetStatus type for use
 // with apply.
 type ActionSetStatusApplyConfiguration struct {
 	State    *v1alpha1.State                   `json:"state,omitempty"`
@@ -30,7 +30,7 @@ type ActionSetStatusApplyConfiguration struct {
 	Progress *ActionProgressApplyConfiguration `json:"progress,omitempty"`
 }
 
-// ActionSetStatusApplyConfiguration constructs an declarative configuration of the ActionSetStatus type for use with
+// ActionSetStatusApplyConfiguration constructs a declarative configuration of the ActionSetStatus type for use with
 // apply.
 func ActionSetStatus() *ActionSetStatusApplyConfiguration {
 	return &ActionSetStatusApplyConfiguration{}

@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// ActionSetApplyConfiguration represents an declarative configuration of the ActionSet type for use
+// ActionSetApplyConfiguration represents a declarative configuration of the ActionSet type for use
 // with apply.
 type ActionSetApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -32,7 +32,7 @@ type ActionSetApplyConfiguration struct {
 	Status                           *ActionSetStatusApplyConfiguration `json:"status,omitempty"`
 }
 
-// ActionSet constructs an declarative configuration of the ActionSet type for use with
+// ActionSet constructs a declarative configuration of the ActionSet type for use with
 // apply.
 func ActionSet(name, namespace string) *ActionSetApplyConfiguration {
 	b := &ActionSetApplyConfiguration{}
@@ -215,4 +215,10 @@ func (b *ActionSetApplyConfiguration) WithSpec(value *ActionSetSpecApplyConfigur
 func (b *ActionSetApplyConfiguration) WithStatus(value *ActionSetStatusApplyConfiguration) *ActionSetApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *ActionSetApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }

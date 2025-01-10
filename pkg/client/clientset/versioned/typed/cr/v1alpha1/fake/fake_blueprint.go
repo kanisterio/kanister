@@ -43,22 +43,24 @@ var blueprintsKind = v1alpha1.SchemeGroupVersion.WithKind("Blueprint")
 
 // Get takes name of the blueprint, and returns the corresponding blueprint object, and an error if there is any.
 func (c *FakeBlueprints) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Blueprint, err error) {
+	emptyResult := &v1alpha1.Blueprint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(blueprintsResource, c.ns, name), &v1alpha1.Blueprint{})
+		Invokes(testing.NewGetActionWithOptions(blueprintsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Blueprint), err
 }
 
 // List takes label and field selectors, and returns the list of Blueprints that match those selectors.
 func (c *FakeBlueprints) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.BlueprintList, err error) {
+	emptyResult := &v1alpha1.BlueprintList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(blueprintsResource, blueprintsKind, c.ns, opts), &v1alpha1.BlueprintList{})
+		Invokes(testing.NewListActionWithOptions(blueprintsResource, blueprintsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -77,28 +79,30 @@ func (c *FakeBlueprints) List(ctx context.Context, opts v1.ListOptions) (result 
 // Watch returns a watch.Interface that watches the requested blueprints.
 func (c *FakeBlueprints) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(blueprintsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(blueprintsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a blueprint and creates it.  Returns the server's representation of the blueprint, and an error, if there is any.
 func (c *FakeBlueprints) Create(ctx context.Context, blueprint *v1alpha1.Blueprint, opts v1.CreateOptions) (result *v1alpha1.Blueprint, err error) {
+	emptyResult := &v1alpha1.Blueprint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(blueprintsResource, c.ns, blueprint), &v1alpha1.Blueprint{})
+		Invokes(testing.NewCreateActionWithOptions(blueprintsResource, c.ns, blueprint, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Blueprint), err
 }
 
 // Update takes the representation of a blueprint and updates it. Returns the server's representation of the blueprint, and an error, if there is any.
 func (c *FakeBlueprints) Update(ctx context.Context, blueprint *v1alpha1.Blueprint, opts v1.UpdateOptions) (result *v1alpha1.Blueprint, err error) {
+	emptyResult := &v1alpha1.Blueprint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(blueprintsResource, c.ns, blueprint), &v1alpha1.Blueprint{})
+		Invokes(testing.NewUpdateActionWithOptions(blueprintsResource, c.ns, blueprint, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Blueprint), err
 }
@@ -113,7 +117,7 @@ func (c *FakeBlueprints) Delete(ctx context.Context, name string, opts v1.Delete
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeBlueprints) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(blueprintsResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(blueprintsResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.BlueprintList{})
 	return err
@@ -121,11 +125,12 @@ func (c *FakeBlueprints) DeleteCollection(ctx context.Context, opts v1.DeleteOpt
 
 // Patch applies the patch and returns the patched blueprint.
 func (c *FakeBlueprints) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Blueprint, err error) {
+	emptyResult := &v1alpha1.Blueprint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(blueprintsResource, c.ns, name, pt, data, subresources...), &v1alpha1.Blueprint{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(blueprintsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Blueprint), err
 }
@@ -143,11 +148,12 @@ func (c *FakeBlueprints) Apply(ctx context.Context, blueprint *crv1alpha1.Bluepr
 	if name == nil {
 		return nil, fmt.Errorf("blueprint.Name must be provided to Apply")
 	}
+	emptyResult := &v1alpha1.Blueprint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(blueprintsResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.Blueprint{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(blueprintsResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions()), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Blueprint), err
 }
