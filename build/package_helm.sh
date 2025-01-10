@@ -38,7 +38,7 @@ main() {
 
     local repo_args="--url ${HELM_RELEASE_REPO_URL}"
 
-    if curl ${HELM_RELEASE_REPO_INDEX} -o ${PACKAGE_FOLDER}/cur_index.yaml
+    if curl -L ${HELM_RELEASE_REPO_INDEX} -o ${PACKAGE_FOLDER}/cur_index.yaml
     then
         repo_args="${repo_args} --merge ${PACKAGE_FOLDER}/cur_index.yaml"
     fi

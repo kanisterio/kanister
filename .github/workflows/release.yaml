@@ -84,14 +84,8 @@ jobs:
       with:
         ref: ${{ env.RELEASE_TAG }}
         fetch-depth: 0
-    - name: build helm charts
-      run: |
-        export PACKAGE_FOLDER=helm_package
-        export HELM_RELEASE_REPO_URL=https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}
-        export HELM_RELEASE_REPO_INDEX=https://charts.kanister.io/
-        make package-helm VERSION=${RELEASE_TAG}
-    - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+    # - name: Free Disk Space (Ubuntu)
+      # uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
     - name: gorelease
       run: make gorelease
       env:
@@ -118,13 +112,25 @@ jobs:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       RELEASE_TAG: ${{ needs.run_if.outputs.release_tag }}
     steps:
-      - name: clone helm pages
+      - name: Checkout kanister repo
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - name: Build helm charts
+        run: |
+          export PACKAGE_FOLDER=helm_package
+          export HELM_RELEASE_REPO_URL=https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}
+          export HELM_RELEASE_REPO_INDEX=https://charts.kanister.io/index.yaml
+          make package-helm VERSION=${RELEASE_TAG}
+      - name: Upload chart archives to release
+        run: |
+          gh release upload ${RELEASE_TAG} helm_package/kanister-operator-*
+      - name: Clone charts pages repo
         run: |
           git clone https://infraq:${GH_TOKEN}@github.com/kanisterio/kanister-charts
-      - name: Download the helm index
-        working-directory: ./kanister-charts
+      - name: Copy helm index
         run: |
-          curl https://github.com/kanisterio/kanister/releases/download/${RELEASE_TAG}/helm_index.yaml -f -L -o index.yaml
+          cp ./helm_package/index.yaml ./kanister-charts/
       - name: Commit changes
         working-directory: ./kanister-charts
         run: |
