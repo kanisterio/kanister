@@ -28,6 +28,7 @@ func newProcessClientCommand() *cobra.Command {
 		Short: "Send commands to the process server",
 	}
 	cmd.AddCommand(newProcessClientCreateCommand())
+	cmd.AddCommand(newProcessClientGetCommand())
 	cmd.AddCommand(newProcessClientListCommand())
 	cmd.AddCommand(newProcessClientOutputCommand())
 	cmd.PersistentFlags().BoolP(processAsJSONFlagName, "j", false, "Display output as json")
