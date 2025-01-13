@@ -37,7 +37,23 @@ func CreateProcess(ctx context.Context, addr string, name string, args []string)
 		Name: name,
 		Args: args,
 	}
-	return c.CreateProcesses(ctx, in)
+	return c.CreateProcess(ctx, in)
+}
+
+func GetProcess(ctx context.Context, addr string, pid int64) (*Process, error) {
+	conn, err := newGRPCConnection(addr)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close() //nolint:errcheck
+	c := NewProcessServiceClient(conn)
+	wpc, err := c.GetProcess(ctx, &ProcessPidRequest{
+		Pid: pid,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return wpc, nil
 }
 
 func ListProcesses(ctx context.Context, addr string) ([]*Process, error) {
@@ -71,7 +87,7 @@ func Stdout(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	}
 	defer conn.Close() //nolint:errcheck
 	c := NewProcessServiceClient(conn)
-	in := &ProcessOutputRequest{
+	in := &ProcessPidRequest{
 		Pid: pid,
 	}
 	sc, err := c.Stdout(ctx, in)
@@ -88,7 +104,7 @@ func Stderr(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	}
 	defer conn.Close() //nolint:errcheck
 	c := NewProcessServiceClient(conn)
-	in := &ProcessOutputRequest{
+	in := &ProcessPidRequest{
 		Pid: pid,
 	}
 	sc, err := c.Stderr(ctx, in)
