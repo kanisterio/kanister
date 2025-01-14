@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	processAsJSONFlagName           = "as-json"
+	processAsJSONFlagName = "as-json"
 )
 
 func newProcessClientCommand() *cobra.Command {
