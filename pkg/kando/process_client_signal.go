@@ -17,7 +17,6 @@ package kando
 import (
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 
 	"github.com/spf13/cobra"
