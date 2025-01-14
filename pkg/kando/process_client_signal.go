@@ -37,7 +37,7 @@ func newProcessClientSignalCommand() *cobra.Command {
 }
 
 func runProcessClientSignal(cmd *cobra.Command, args []string) error {
-	return runProcessClientSignalWithOutput(os.Stdout, cmd, args)
+	return runProcessClientSignalWithOutput(cmd.OutOrStdout(), cmd, args)
 }
 
 func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
