@@ -6,8 +6,8 @@ package kanx;
 
 service ProcessService {
   rpc CreateProcess (CreateProcessRequest) returns (Process) {}
-  rpc ListProcesses (ListProcessesRequest) returns (stream Process) {}
   rpc GetProcess (ProcessPidRequest) returns (Process) {}
+  rpc ListProcesses (ListProcessesRequest) returns (stream Process) {}
   rpc SignalProcess (SignalProcessRequest) returns (Process) {}
   rpc Stdout (ProcessPidRequest) returns (stream Output) {}
   rpc Stderr (ProcessPidRequest) returns (stream Output) {}

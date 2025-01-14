@@ -29,7 +29,7 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           run_install: false
-          package_json_file: docs_new/package.json
+          package_json_file: docs/package.json
           version: 8
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -39,16 +39,16 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Install dependencies
         run: pnpm install
-        working-directory: ./docs_new
+        working-directory: ./docs
       - name: Build with VitePress
         run: |
           echo "{\"version\":\"${RELEASE_TAG}\"}" > ./.vitepress/version.json
           pnpm docs:build
-        working-directory: ./docs_new
+        working-directory: ./docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs_new/.vitepress/dist
+          path: docs/.vitepress/dist
           name: docs
 
   publish_docs:
