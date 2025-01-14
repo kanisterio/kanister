@@ -20,7 +20,6 @@ import (
 
 const (
 	processAsJSONFlagName           = "as-json"
-	processSignalIdentifierFlagName = "signal"
 )
 
 func newProcessClientCommand() *cobra.Command {
@@ -34,7 +33,6 @@ func newProcessClientCommand() *cobra.Command {
 	cmd.AddCommand(newProcessClientSignalCommand())
 	cmd.AddCommand(newProcessClientOutputCommand())
 	cmd.PersistentFlags().BoolP(processAsJSONFlagName, "j", false, "Display output as json")
-	cmd.PersistentFlags().IntP(processSignalIdentifierFlagName, "s", 2, "number of the signal to be sent")
 	return cmd
 }
 
