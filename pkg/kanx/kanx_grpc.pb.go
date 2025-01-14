@@ -22,6 +22,7 @@ const (
 	ProcessService_CreateProcess_FullMethodName = "/kanx.ProcessService/CreateProcess"
 	ProcessService_GetProcess_FullMethodName    = "/kanx.ProcessService/GetProcess"
 	ProcessService_ListProcesses_FullMethodName = "/kanx.ProcessService/ListProcesses"
+	ProcessService_SignalProcess_FullMethodName = "/kanx.ProcessService/SignalProcess"
 	ProcessService_Stdout_FullMethodName        = "/kanx.ProcessService/Stdout"
 	ProcessService_Stderr_FullMethodName        = "/kanx.ProcessService/Stderr"
 )
@@ -33,6 +34,7 @@ type ProcessServiceClient interface {
 	CreateProcess(ctx context.Context, in *CreateProcessRequest, opts ...grpc.CallOption) (*Process, error)
 	GetProcess(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (*Process, error)
 	ListProcesses(ctx context.Context, in *ListProcessesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Process], error)
+	SignalProcess(ctx context.Context, in *SignalProcessRequest, opts ...grpc.CallOption) (*Process, error)
 	Stdout(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Output], error)
 	Stderr(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Output], error)
 }
@@ -84,6 +86,16 @@ func (c *processServiceClient) ListProcesses(ctx context.Context, in *ListProces
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProcessService_ListProcessesClient = grpc.ServerStreamingClient[Process]
 
+func (c *processServiceClient) SignalProcess(ctx context.Context, in *SignalProcessRequest, opts ...grpc.CallOption) (*Process, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Process)
+	err := c.cc.Invoke(ctx, ProcessService_SignalProcess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *processServiceClient) Stdout(ctx context.Context, in *ProcessPidRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Output], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ProcessService_ServiceDesc.Streams[1], ProcessService_Stdout_FullMethodName, cOpts...)
@@ -129,6 +141,7 @@ type ProcessServiceServer interface {
 	CreateProcess(context.Context, *CreateProcessRequest) (*Process, error)
 	GetProcess(context.Context, *ProcessPidRequest) (*Process, error)
 	ListProcesses(*ListProcessesRequest, grpc.ServerStreamingServer[Process]) error
+	SignalProcess(context.Context, *SignalProcessRequest) (*Process, error)
 	Stdout(*ProcessPidRequest, grpc.ServerStreamingServer[Output]) error
 	Stderr(*ProcessPidRequest, grpc.ServerStreamingServer[Output]) error
 	mustEmbedUnimplementedProcessServiceServer()
@@ -149,6 +162,9 @@ func (UnimplementedProcessServiceServer) GetProcess(context.Context, *ProcessPid
 }
 func (UnimplementedProcessServiceServer) ListProcesses(*ListProcessesRequest, grpc.ServerStreamingServer[Process]) error {
 	return status.Errorf(codes.Unimplemented, "method ListProcesses not implemented")
+}
+func (UnimplementedProcessServiceServer) SignalProcess(context.Context, *SignalProcessRequest) (*Process, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SignalProcess not implemented")
 }
 func (UnimplementedProcessServiceServer) Stdout(*ProcessPidRequest, grpc.ServerStreamingServer[Output]) error {
 	return status.Errorf(codes.Unimplemented, "method Stdout not implemented")
@@ -224,6 +240,24 @@ func _ProcessService_ListProcesses_Handler(srv interface{}, stream grpc.ServerSt
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ProcessService_ListProcessesServer = grpc.ServerStreamingServer[Process]
 
+func _ProcessService_SignalProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignalProcessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProcessServiceServer).SignalProcess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProcessService_SignalProcess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProcessServiceServer).SignalProcess(ctx, req.(*SignalProcessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProcessService_Stdout_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ProcessPidRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -260,6 +294,10 @@ var ProcessService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProcess",
 			Handler:    _ProcessService_GetProcess_Handler,
+		},
+		{
+			MethodName: "SignalProcess",
+			Handler:    _ProcessService_SignalProcess_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

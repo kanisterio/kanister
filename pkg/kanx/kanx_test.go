@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -193,7 +194,7 @@ func (s *KanXSuite) TestGetProcess(c *C) {
 	c.Assert(err, IsNil)
 }
 
-func (s *KanXSuite) TestListProcess(c *C) {
+func (s *KanXSuite) TestSignalProcess_Int(c *C) {
 	d := tmpDir(c)
 	addr := path.Join(d, "kanx.sock")
 	ctx, can := context.WithCancel(context.Background())
@@ -205,26 +206,124 @@ func (s *KanXSuite) TestListProcess(c *C) {
 	}()
 	serverReady(ctx, addr, c)
 
-	p, err := CreateProcess(ctx, addr, "tail", []string{"-f", "/dev/null"})
+	p, err := CreateProcess(ctx, addr, "sleep", []string{"1s"})
 	c.Assert(err, IsNil)
-	c.Assert(p.GetPid(), Equals, p.GetPid())
-	c.Assert(p.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
-	c.Assert(p.GetExitErr(), Equals, "")
-	c.Assert(p.GetExitCode(), Equals, int64(0))
 
-	// test ListProcess
-	ps, err := ListProcesses(ctx, addr)
+	// test SignalProcess, SIGINT
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGINT))
 	c.Assert(err, IsNil)
-	c.Assert(ps, HasLen, 1)
-	c.Assert(ps[0].GetPid(), Equals, p.GetPid())
-	c.Assert(ps[0].GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
-	c.Assert(ps[0].GetExitErr(), Equals, "")
-	c.Assert(ps[0].GetExitCode(), Equals, int64(0))
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(p0.GetExitErr(), Equals, "")
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	// wait for termination
+	err = Stderr(ctx, addr, p.GetPid(), io.Discard)
+	c.Assert(err, IsNil)
+
+	// get final process state
+	p0, err = GetProcess(ctx, addr, p.GetPid())
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_FAILED)
+	c.Assert(p0.GetExitErr(), Equals, "signal: interrupt")
+	c.Assert(p0.GetExitCode(), Equals, int64(-1))
 
 	sp, ok := server.pss.processes[p.GetPid()]
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
+	c.Assert(err, Equals, os.ErrProcessDone)
+}
+
+// TestSignalProcess_Stp don't assume that a signal leads to a process termination.
+func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
+	d := tmpDir(c)
+	addr := path.Join(d, "kanx.sock")
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	server := newTestServer(d)
+	go func() {
+		err := server.Serve(ctx, addr)
+		c.Assert(err, IsNil)
+	}()
+	serverReady(ctx, addr, c)
+
+	p, err := CreateProcess(ctx, addr, "sleep", []string{"1s"})
 	c.Assert(err, IsNil)
+
+	// test SignalProcess, SIGSTOP
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGSTOP))
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(p0.GetExitErr(), Equals, "")
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	// test SignalProcess, SIGCONT
+	p0, err = SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGCONT))
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(p0.GetExitErr(), Equals, "")
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	// wait for termination
+	err = Stderr(ctx, addr, p.GetPid(), io.Discard)
+	c.Assert(err, IsNil)
+
+	// get final process state
+	p0, err = GetProcess(ctx, addr, p.GetPid())
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_SUCCEEDED)
+	c.Assert(p0.GetExitErr(), Equals, "")
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	sp, ok := server.pss.processes[p.GetPid()]
+	c.Assert(ok, Equals, true)
+	err = sp.cmd.Process.Kill()
+	c.Assert(err, Equals, os.ErrProcessDone)
+}
+
+func (s *KanXSuite) TestSignalProcess_Kill(c *C) {
+	d := tmpDir(c)
+	addr := path.Join(d, "kanx.sock")
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	server := newTestServer(d)
+	go func() {
+		err := server.Serve(ctx, addr)
+		c.Assert(err, IsNil)
+	}()
+	serverReady(ctx, addr, c)
+
+	p, err := CreateProcess(ctx, addr, "sleep", []string{"1s"})
+	c.Assert(err, IsNil)
+
+	// test SignalProcess, SIGKILL
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGKILL))
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(p0.GetExitErr(), Equals, "")
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	// wait for termination
+	err = Stderr(ctx, addr, p.GetPid(), io.Discard)
+	c.Assert(err, IsNil)
+
+	// get final process state
+	p0, err = GetProcess(ctx, addr, p.GetPid())
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_FAILED)
+	c.Assert(p0.GetExitErr(), Equals, "signal: killed")
+	c.Assert(p0.GetExitCode(), Equals, int64(-1))
+
+	sp, ok := server.pss.processes[p.GetPid()]
+	c.Assert(ok, Equals, true)
+	err = sp.cmd.Process.Kill()
+	c.Assert(err, Equals, os.ErrProcessDone)
 }
 
 func (s *KanXSuite) TestError(c *C) {

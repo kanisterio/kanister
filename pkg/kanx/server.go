@@ -39,6 +39,7 @@ type process struct {
 	stderr   *os.File
 	exitCode int
 	err      error
+	fault    error
 	cancel   context.CancelFunc
 }
 
@@ -96,6 +97,7 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 		if err != nil {
 			log.Error().WithError(err).Print("Failed to close stderr", fields)
 		}
+		can()
 		close(p.doneCh)
 		log.Info().Print(processToProto(p).String())
 	}()
@@ -109,6 +111,22 @@ func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRe
 	q, ok := s.processes[grp.GetPid()]
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
+	}
+	ps := processToProto(q)
+	return ps, nil
+}
+
+func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalProcessRequest) (*Process, error) {
+	q, ok := s.processes[grp.GetPid()]
+	if !ok {
+		return nil, errkit.WithStack(errProcessNotFound)
+	}
+	// low level signal call
+	syssig := syscall.Signal(grp.Signal)
+	err := q.cmd.Process.Signal(syssig)
+	if err != nil {
+		q.fault = err
+		return processToProto(q), err
 	}
 	return processToProto(q), nil
 }
@@ -176,7 +194,6 @@ func (s *processServiceServer) streamOutput(ss sender, p *process, fh *os.File) 
 		if err != nil {
 			return err
 		}
-		buf.Reset()
 	}
 }
 

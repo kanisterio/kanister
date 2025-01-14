@@ -80,6 +80,23 @@ func ListProcesses(ctx context.Context, addr string) ([]*Process, error) {
 	}
 }
 
+func SignalProcess(ctx context.Context, addr string, pid int64, signal int32) (*Process, error) {
+	conn, err := newGRPCConnection(addr)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close() //nolint:errcheck
+	c := NewProcessServiceClient(conn)
+	wpc, err := c.SignalProcess(ctx, &SignalProcessRequest{
+		Pid:    pid,
+		Signal: signal,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return wpc, nil
+}
+
 func Stdout(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	conn, err := newGRPCConnection(addr)
 	if err != nil {
@@ -90,11 +107,11 @@ func Stdout(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	in := &ProcessPidRequest{
 		Pid: pid,
 	}
-	sc, err := c.Stdout(ctx, in)
+	poc, err := c.Stdout(ctx, in)
 	if err != nil {
 		return err
 	}
-	return output(ctx, out, sc)
+	return output(ctx, out, poc)
 }
 
 func Stderr(ctx context.Context, addr string, pid int64, out io.Writer) error {
@@ -107,11 +124,11 @@ func Stderr(ctx context.Context, addr string, pid int64, out io.Writer) error {
 	in := &ProcessPidRequest{
 		Pid: pid,
 	}
-	sc, err := c.Stderr(ctx, in)
+	poc, err := c.Stderr(ctx, in)
 	if err != nil {
 		return err
 	}
-	return output(ctx, out, sc)
+	return output(ctx, out, poc)
 }
 
 type recver interface {
