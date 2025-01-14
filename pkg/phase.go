@@ -59,6 +59,11 @@ func (p *Phase) Objects() map[string]crv1alpha1.ObjectReference {
 // Exec renders the argument templates in this Phase's Func and executes with
 // those arguments.
 func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) (map[string]interface{}, error) {
+	// Prepare phase-specific template params
+	// TODO: in the future we might create a separate type for phase execution
+	// template params instead of using blueprint level params
+	tp = p.preparePhaseTemplateParams(tp)
+
 	if p.args == nil {
 		// Get the action from Blueprint
 		a, ok := bp.Actions[action]
@@ -79,6 +84,18 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 	}
 	// Execute the function
 	return p.f.Exec(ctx, tp, p.args)
+}
+
+func (p *Phase) preparePhaseTemplateParams(tp param.TemplateParams) param.TemplateParams {
+	phasePodOverride, ok := tp.PhasePodOverrides[p.name]
+
+	if ok { // There is a phase specific podOverride
+		tp.PodOverride = phasePodOverride
+	}
+
+	// TODO: add phase specific labels and annotations support
+
+	return tp
 }
 
 func (p *Phase) setPhaseArgs(phases []crv1alpha1.BlueprintPhase, tp param.TemplateParams) error {
