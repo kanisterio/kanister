@@ -16,6 +16,7 @@ package kando
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -34,6 +35,10 @@ func newProcessClientCreateCommand() *cobra.Command {
 }
 
 func runProcessClientCreate(cmd *cobra.Command, args []string) error {
+	return runProcessClientCreateWithOutput(cmd.OutOrStdout(), cmd, args)
+}
+
+func runProcessClientCreateWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
 	addr, err := processAddressFlagValue(cmd)
 	if err != nil {
 		return err
@@ -41,11 +46,14 @@ func runProcessClientCreate(cmd *cobra.Command, args []string) error {
 	asJSON := processAsJSONFlagValue(cmd)
 	cmd.SilenceUsage = true
 	p, err := kanx.CreateProcess(cmd.Context(), addr, args[0], args[1:])
-	if !asJSON {
-		fmt.Printf("Created process: %v\n", p)
-		return err
+	if asJSON {
+		buf, err := protojson.Marshal(p)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(out, string(buf))
+	} else {
+		fmt.Fprintln(out, "Process: ", p.String())
 	}
-	buf, err := protojson.Marshal(p)
-	fmt.Println(string(buf))
 	return err
 }
