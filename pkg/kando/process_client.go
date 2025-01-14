@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	processAsJSONFlagName = "as-json"
+	processAsJSONFlagName           = "as-json"
+	processSignalIdentifierFlagName = "signal"
 )
 
 func newProcessClientCommand() *cobra.Command {
@@ -28,10 +29,12 @@ func newProcessClientCommand() *cobra.Command {
 		Short: "Send commands to the process server",
 	}
 	cmd.AddCommand(newProcessClientCreateCommand())
-	cmd.AddCommand(newProcessClientGetCommand())
 	cmd.AddCommand(newProcessClientListCommand())
+	cmd.AddCommand(newProcessClientGetCommand())
+	cmd.AddCommand(newProcessClientSignalCommand())
 	cmd.AddCommand(newProcessClientOutputCommand())
 	cmd.PersistentFlags().BoolP(processAsJSONFlagName, "j", false, "Display output as json")
+	cmd.PersistentFlags().IntP(processSignalIdentifierFlagName, "s", 2, "number of the signal to be sent")
 	return cmd
 }
 
@@ -41,4 +44,12 @@ func processAsJSONFlagValue(cmd *cobra.Command) bool {
 		panic(err.Error())
 	}
 	return b
+}
+
+func processSignalIdentifierFlagValue(cmd *cobra.Command) int {
+	q, err := cmd.Flags().GetInt(processSignalIdentifierFlagName)
+	if err != nil {
+		panic(err.Error())
+	}
+	return q
 }
