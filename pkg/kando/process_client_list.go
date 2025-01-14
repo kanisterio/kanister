@@ -17,7 +17,6 @@ package kando
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -36,7 +35,7 @@ func newProcessClientListCommand() *cobra.Command {
 }
 
 func runProcessClientList(cmd *cobra.Command, _args []string) error {
-	return runProcessClientListWithOutput(os.Stdout, cmd)
+	return runProcessClientListWithOutput(cmd.OutOrStdout(), cmd)
 }
 
 func runProcessClientListWithOutput(out io.Writer, cmd *cobra.Command) error {

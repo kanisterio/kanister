@@ -15,9 +15,8 @@
 package kando
 
 import (
-	"context"
 	"fmt"
-	"os"
+	"io"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -37,7 +36,10 @@ func newProcessClientGetCommand() *cobra.Command {
 }
 
 func runProcessClientGet(cmd *cobra.Command, args []string) error {
-	cmd.SetContext(context.Background())
+	return runProcessClientGetWithOutput(cmd.OutOrStdout(), cmd, args)
+}
+
+func runProcessClientGetWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
 	pid, err := strconv.Atoi(args[0])
 	if err != nil {
 		return err
@@ -52,7 +54,6 @@ func runProcessClientGet(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	out := os.Stdout
 	if asJSON {
 		buf, err := protojson.Marshal(p)
 		if err != nil {

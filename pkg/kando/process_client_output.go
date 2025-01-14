@@ -15,8 +15,7 @@
 package kando
 
 import (
-	"context"
-	"os"
+	"io"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -35,7 +34,10 @@ func newProcessClientOutputCommand() *cobra.Command {
 }
 
 func runProcessClientOutput(cmd *cobra.Command, args []string) error {
-	cmd.SetContext(context.Background())
+	return runProcessClientOutputWithOutput(cmd.OutOrStdout(), cmd, args)
+}
+
+func runProcessClientOutputWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
 	pid, err := strconv.Atoi(args[0])
 	if err != nil {
 		return err
@@ -45,5 +47,5 @@ func runProcessClientOutput(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	cmd.SilenceUsage = true
-	return kanx.Stdout(cmd.Context(), addr, int64(pid), os.Stdout)
+	return kanx.Stdout(cmd.Context(), addr, int64(pid), out)
 }
