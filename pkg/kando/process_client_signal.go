@@ -28,8 +28,9 @@ import (
 
 func newProcessClientSignalCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "signal",
-		Short: "signal",
+		Use:   "signal SIGNAL PID",
+		Short: "send a signal to a managed process",
+		Args:  cobra.ExactArgs(2),
 		RunE:  runProcessClientSignal,
 	}
 	return cmd
@@ -44,11 +45,14 @@ func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
+	signal, err := strconv.Atoi(args[1])
+	if err != nil {
+		return err
+	}
 	addr, err := processAddressFlagValue(cmd)
 	if err != nil {
 		return err
 	}
-	signal := processSignalIdentifierFlagValue(cmd)
 	asJSON := processAsJSONFlagValue(cmd)
 	cmd.SilenceUsage = true
 	p, err := kanx.SignalProcess(cmd.Context(), addr, int64(pid), int32(signal))

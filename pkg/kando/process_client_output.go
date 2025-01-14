@@ -26,8 +26,9 @@ import (
 
 func newProcessClientOutputCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "output",
-		Short: "output",
+		Use:   "output PID",
+		Short: "stream output of a managed process",
+		Args:  cobra.ExactArgs(1),
 		RunE:  runProcessClientOutput,
 	}
 	return cmd

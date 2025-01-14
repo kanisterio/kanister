@@ -28,8 +28,9 @@ import (
 
 func newProcessClientGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "get",
+		Use:   "get PID",
+		Short: "get the state of a single managed process",
+		Args:  cobra.ExactArgs(1),
 		RunE:  runProcessClientGet,
 	}
 	return cmd

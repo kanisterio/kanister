@@ -28,7 +28,8 @@ import (
 func newProcessClientListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "list",
+		Short: "list PID and disposition of all managed processes",
+		Args:  cobra.NoArgs,
 		RunE:  runProcessClientList,
 	}
 	return cmd

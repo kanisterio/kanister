@@ -25,7 +25,8 @@ import (
 func newProcessServerCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server",
-		Short: "server",
+		Short: "start the KanX server",
+		Args:  cobra.NoArgs,
 		RunE:  runProcessServer,
 	}
 	return cmd

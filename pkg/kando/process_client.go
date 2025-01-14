@@ -31,7 +31,6 @@ func newProcessClientCommand() *cobra.Command {
 	cmd.AddCommand(newProcessClientCreateCommand())
 	cmd.AddCommand(newProcessClientGetCommand())
 	cmd.AddCommand(newProcessClientListCommand())
-	cmd.AddCommand(newProcessClientGetCommand())
 	cmd.AddCommand(newProcessClientSignalCommand())
 	cmd.AddCommand(newProcessClientOutputCommand())
 	cmd.PersistentFlags().BoolP(processAsJSONFlagName, "j", false, "Display output as json")
@@ -45,12 +44,4 @@ func processAsJSONFlagValue(cmd *cobra.Command) bool {
 		panic(err.Error())
 	}
 	return b
-}
-
-func processSignalIdentifierFlagValue(cmd *cobra.Command) int {
-	q, err := cmd.Flags().GetInt(processSignalIdentifierFlagName)
-	if err != nil {
-		panic(err.Error())
-	}
-	return q
 }
