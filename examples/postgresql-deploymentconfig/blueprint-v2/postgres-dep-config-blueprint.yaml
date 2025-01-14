@@ -26,7 +26,7 @@ actions:
         initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
-        backgroundImage: postgres:17-bullseye
+        backgroundImage: postgres:15-bullseye
         backgroundCommand:
         - bash
         - -o
