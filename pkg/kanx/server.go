@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/kanisterio/errkit"
+	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 
 	"github.com/kanisterio/kanister/pkg/field"
@@ -91,6 +92,8 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	log.Info().Print(processToProto(p).String(), fields)
 	go func() {
 		err := p.cmd.Wait()
+		p.mu.Lock()
+		defer p.mu.Unlock()
 		p.err = err
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			p.exitCode = exiterr.ExitCode()
@@ -142,15 +145,11 @@ func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalPro
 }
 
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
-	prs := make([]Process, 0, len(s.processes))
 	s.mu.Lock()
-	for _, p := range s.processes {
-		prs = append(prs, *processToProtoWithLock(p))
-	}
+	vals := maps.Values(s.processes)
 	s.mu.Unlock()
-
-	for _, pr := range prs {
-		err := lps.Send(&pr)
+	for _, p := range vals {
+		err := lps.Send(processToProtoWithLock(p))
 		if err != nil {
 			return err
 		}
