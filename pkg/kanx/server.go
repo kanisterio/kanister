@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -27,12 +28,14 @@ const (
 
 type processServiceServer struct {
 	UnimplementedProcessServiceServer
+	mu               *sync.Mutex
 	processes        map[int64]*process
 	outputDir        string
 	tailTickDuration time.Duration
 }
 
 type process struct {
+	mu       *sync.Mutex
 	cmd      *exec.Cmd
 	doneCh   chan struct{}
 	stdout   *os.File
@@ -45,6 +48,7 @@ type process struct {
 
 func newProcessServiceServer() *processServiceServer {
 	return &processServiceServer{
+		mu:               &sync.Mutex{},
 		processes:        map[int64]*process{},
 		tailTickDuration: tailTickDuration,
 	}
@@ -78,7 +82,9 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	if err != nil {
 		return nil, err
 	}
+	s.mu.Lock()
 	s.processes[int64(cmd.Process.Pid)] = p
+	s.mu.Unlock()
 	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdout.Name(), "stderr": stderr.Name()}
 	stdoutLogWriter.SetFields(fields)
 	stderrLogWriter.SetFields(fields)
@@ -108,16 +114,20 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 }
 
 func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRequest) (*Process, error) {
+	s.mu.Lock()
 	q, ok := s.processes[grp.GetPid()]
+	s.mu.Unlock()
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
 	}
-	ps := processToProto(q)
+	ps := processToProtoWithLock(q)
 	return ps, nil
 }
 
 func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalProcessRequest) (*Process, error) {
+	s.mu.Lock()
 	q, ok := s.processes[grp.GetPid()]
+	s.mu.Unlock()
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
 	}
@@ -126,15 +136,21 @@ func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalPro
 	err := q.cmd.Process.Signal(syssig)
 	if err != nil {
 		q.fault = err
-		return processToProto(q), err
+		return processToProtoWithLock(q), err
 	}
-	return processToProto(q), nil
+	return processToProtoWithLock(q), nil
 }
 
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
+	prs := make([]Process, 0, len(s.processes))
+	s.mu.Lock()
 	for _, p := range s.processes {
-		ps := processToProto(p)
-		err := lps.Send(ps)
+		prs = append(prs, *processToProtoWithLock(p))
+	}
+	s.mu.Unlock()
+
+	for _, pr := range prs {
+		err := lps.Send(&pr)
 		if err != nil {
 			return err
 		}
@@ -145,7 +161,9 @@ func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps Proc
 var errProcessNotFound = errkit.NewSentinelErr("Process not found")
 
 func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_StdoutServer) error {
+	s.mu.Lock()
 	p, ok := s.processes[por.Pid]
+	s.mu.Unlock()
 	if !ok {
 		return errkit.WithStack(errProcessNotFound)
 	}
@@ -157,7 +175,9 @@ func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_
 }
 
 func (s *processServiceServer) Stderr(por *ProcessPidRequest, ss ProcessService_StderrServer) error {
+	s.mu.Lock()
 	p, ok := s.processes[por.Pid]
+	s.mu.Unlock()
 	if !ok {
 		return errkit.WithStack(errProcessNotFound)
 	}
@@ -195,6 +215,12 @@ func (s *processServiceServer) streamOutput(ss sender, p *process, fh *os.File) 
 			return err
 		}
 	}
+}
+
+func processToProtoWithLock(p *process) *Process {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return processToProto(p)
 }
 
 func processToProto(p *process) *Process {
