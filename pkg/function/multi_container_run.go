@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"encoding/json"
 	"sort"
 	"time"
 
@@ -302,7 +303,12 @@ func (ktpf *multiContainerRunFunc) Exec(ctx context.Context, tp param.TemplatePa
 		return nil, err
 	}
 
-	ktpf.podOverride, err = GetPodSpecOverride(tp, args, MultiContainerRunPodOverrideArg)
+	actionSetOverride, err := prepareActionSetPodSpecOverride(tp.PodOverride)
+	if err != nil {
+		return nil, errkit.Wrap(err, "Unable to process podOverride from ActionSet spec")
+	}
+
+	ktpf.podOverride, err = GetAndMergePodSpecOverride(actionSetOverride, args, MultiContainerRunPodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -310,6 +316,71 @@ func (ktpf *multiContainerRunFunc) Exec(ctx context.Context, tp param.TemplatePa
 	ktpf.setLabelsAndAnnotations(tp, bpLabels, bpAnnotations)
 
 	return ktpf.run(ctx)
+}
+
+// Since we use different container names compared to other functions, users might
+// specify override for "container" container meaning to override "worker containers"
+// We take override of the "container" container and copy that to worker containers
+// TODO: This is a temporary solution until phase-specific podOverride argument is
+// implemented for tha actionset
+func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1.JSONMap, error) {
+	containers, ok := getContainersFromOverride(podOverride)
+	if !ok { // No containers overriden
+		return podOverride, nil
+	}
+	hasBackgroundOrOutput := false
+
+	var containerOverride *corev1.Container
+	otherContainers := []corev1.Container{}
+
+	for _, container := range containers {
+		switch container.Name {
+		case "container":
+			containerOverride = &container
+		case "background":
+			// FIXME: what do we do with otherContainers??
+			hasBackgroundOrOutput = true
+		case "output":
+			// FIXME: what do we do with otherContainers??
+			hasBackgroundOrOutput = true
+		default:
+			otherContainers = append(otherContainers, container)
+		}
+	}
+
+	// "container" override is defined, but not specific overrides
+	// Assume the intention was to override "worker containers"
+	if containerOverride != nil && !hasBackgroundOrOutput {
+		backgroundContainer := *containerOverride
+		backgroundContainer.Name = "background"
+		outputContainer := *containerOverride
+		outputContainer.Name = "output"
+		resultContainers := append(otherContainers, backgroundContainer, outputContainer)
+		podOverride["containers"] = nil
+		return kube.CreateAndMergeJSONPatch(podOverride, crv1alpha1.JSONMap{"containers": resultContainers})
+	}
+
+	// If "container" override is not defined, nothing to do
+
+	// If both "container" and either "background" or "output" overrides are defined
+	// Assume user knows what they're doing and keep override as is
+
+	return podOverride, nil
+}
+
+func getContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Container, bool) {
+	containersRaw, ok := podOverride["containers"]
+	if !ok {
+		return nil, false
+	}
+	// we're trying to enforce stricter types here
+	jsonString, err := json.Marshal(containersRaw)
+	if err != nil {
+		return nil, false
+	}
+	var containers []corev1.Container
+	err = json.Unmarshal(jsonString, &containers)
+	return containers, err == nil
 }
 
 func (ktpf *multiContainerRunFunc) setLabelsAndAnnotations(tp param.TemplateParams, labels, annotation map[string]string) {
