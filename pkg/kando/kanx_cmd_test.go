@@ -56,7 +56,21 @@ type ProcessResult struct {
 	State string `json:"state"`
 }
 
-func (s *KanXCmdSuite) TestProcessClient(c *C) {
+func executeCommand(c *C, ctx context.Context, stdout, stderr io.Writer, args ...string) error {
+	rc := newRootCommand()
+	rc.SetErr(stderr)
+	rc.SetOut(stdout)
+	rc.SetArgs(args)
+	return rc.ExecuteContext(ctx)
+}
+
+func executeCommandWithReset(c *C, ctx context.Context, stdout, stderr *bytes.Buffer, args ...string) error {
+	stdout.Reset()
+	stderr.Reset()
+	return executeCommand(c, ctx, stdout, stderr, args...)
+}
+
+func (s *KanXCmdSuite) TestProcessClientCreate(c *C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -68,30 +82,75 @@ func (s *KanXCmdSuite) TestProcessClient(c *C) {
 	c.Assert(err, IsNil)
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	rc := newRootCommand()
-	rc.SetErr(stderr)
-	rc.SetOut(stdout)
-	rc.SetArgs([]string{"process", "client", "--as-json", "-a", addr, "create", "sleep", "2s"})
-	// create command to test
-	err = rc.ExecuteContext(ctx)
+	err = executeCommand(c, ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "sleep", "2s")
 	c.Assert(err, IsNil)
-	stdouts := stdout.String()
-	stderrs := stderr.String()
 	pr := &ProcessResult{}
-	err = json.Unmarshal([]byte(stdouts), pr)
+	err = json.Unmarshal([]byte(stdout.String()), pr)
 	c.Assert(err, IsNil)
-	c.Assert(stderrs, Equals, "")
+	c.Assert(stderr.String(), Equals, "")
 	// get output
-	stdout.Reset()
-	stderr.Reset()
-	rc = newRootCommand()
-	rc.SetErr(stderr)
-	rc.SetOut(stdout)
-	rc.SetArgs([]string{"process", "client", "-a", addr, "output", pr.Pid})
-	err = rc.ExecuteContext(ctx)
+	err = executeCommandWithReset(c, ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
 	c.Assert(err, IsNil)
-	stdouts = stdout.String()
-	stderrs = stderr.String()
-	c.Assert(stdouts, Equals, "")
-	c.Assert(stderrs, Equals, "")
+	c.Assert(stdout.String(), Equals, "")
+	c.Assert(stderr.String(), Equals, "")
+}
+
+func (s *KanXCmdSuite) TestProcessClientOutput(c *C) {
+	addr := c.MkDir() + "/kanister.sock"
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	go func() {
+		err := startServer(ctx, addr, nil, nil)
+		c.Assert(err, IsNil)
+	}()
+	err := waitSock(ctx, addr)
+	c.Assert(err, IsNil)
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	err = executeCommand(c, ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "echo", "hello world")
+	c.Assert(err, IsNil)
+	pr := &ProcessResult{}
+	err = json.Unmarshal([]byte(stdout.String()), pr)
+	c.Assert(err, IsNil)
+	c.Assert(stderr.String(), Equals, "")
+	// get output
+	err = executeCommandWithReset(c, ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
+	c.Assert(err, IsNil)
+	c.Assert(stdout.String(), Equals, "hello world\n")
+	c.Assert(stderr.String(), Equals, "")
+}
+
+func (s *KanXCmdSuite) TestProcessClientGet(c *C) {
+	addr := c.MkDir() + "/kanister.sock"
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	go func() {
+		err := startServer(ctx, addr, nil, nil)
+		c.Assert(err, IsNil)
+	}()
+	err := waitSock(ctx, addr)
+	c.Assert(err, IsNil)
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	err = executeCommand(c, ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "echo", "hello world")
+	c.Assert(err, IsNil)
+	pr := &ProcessResult{}
+	err = json.Unmarshal([]byte(stdout.String()), pr)
+	c.Assert(err, IsNil)
+	c.Assert(pr.Pid, Not(Equals), "")
+	c.Assert(pr.State, Equals, "PROCESS_STATE_RUNNING")
+	c.Assert(stderr.String(), Equals, "")
+	// get output
+	err = executeCommandWithReset(c, ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
+	c.Assert(err, IsNil)
+	c.Assert(stdout.String(), Equals, "hello world\n")
+	c.Assert(stderr.String(), Equals, "")
+	err = executeCommandWithReset(c, ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "get", pr.Pid)
+	c.Assert(err, IsNil)
+	pr = &ProcessResult{}
+	err = json.Unmarshal([]byte(stdout.String()), pr)
+	c.Assert(err, IsNil)
+	c.Assert(pr.Pid, Not(Equals), "")
+	c.Assert(pr.State, Equals, "PROCESS_STATE_SUCCEEDED")
+	c.Assert(stderr.String(), Equals, "")
 }
