@@ -81,7 +81,7 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	if err != nil {
 		return nil, err
 	}
-	s.processes.Store(int64(cmd.Process.Pid), p)
+	s.storeProcess(int64(cmd.Process.Pid), p)
 	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdout.Name(), "stderr": stderr.Name()}
 	stdoutLogWriter.SetFields(fields)
 	stderrLogWriter.SetFields(fields)
@@ -152,10 +152,7 @@ func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps Proc
 	var err error
 	s.processes.Range(func(key, value any) bool {
 		err = lps.Send(processToProtoWithLock(value.(*process)))
-		if err != nil {
-			return false
-		}
-		return true
+		return err == nil
 	})
 	return err
 }
