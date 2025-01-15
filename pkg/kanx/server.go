@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 
 const (
 	tailTickDuration  = 3 * time.Second
+	tempPidPattern    = "kando.*.pid"
 	tempStdoutPattern = "kando.*.stdout"
 	tempStderrPattern = "kando.*.stderr"
 	streamBufferBytes = 4 * 1024 * 1024
@@ -27,12 +29,13 @@ const (
 
 type processServiceServer struct {
 	UnimplementedProcessServiceServer
-	processes        map[int64]*process
+	processes        *sync.Map
 	outputDir        string
 	tailTickDuration time.Duration
 }
 
 type process struct {
+	mu       *sync.Mutex
 	cmd      *exec.Cmd
 	doneCh   chan struct{}
 	stdout   *os.File
@@ -45,17 +48,17 @@ type process struct {
 
 func newProcessServiceServer() *processServiceServer {
 	return &processServiceServer{
-		processes:        map[int64]*process{},
+		processes:        &sync.Map{},
 		tailTickDuration: tailTickDuration,
 	}
 }
 
 func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProcessRequest) (*Process, error) {
-	stdout, err := os.CreateTemp(s.outputDir, tempStdoutPattern)
+	stdoutfd, err := os.CreateTemp(s.outputDir, tempStdoutPattern)
 	if err != nil {
 		return nil, err
 	}
-	stderr, err := os.CreateTemp(s.outputDir, tempStderrPattern)
+	stderrfd, err := os.CreateTemp(s.outputDir, tempStderrPattern)
 	if err != nil {
 		return nil, err
 	}
@@ -63,10 +66,11 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	ctx, can := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, cpr.GetName(), cpr.GetArgs()...)
 	p := &process{
+		mu:     &sync.Mutex{},
 		cmd:    cmd,
 		doneCh: make(chan struct{}),
-		stdout: stdout,
-		stderr: stderr,
+		stdout: stdoutfd,
+		stderr: stderrfd,
 		cancel: can,
 	}
 	stdoutLogWriter := newLogWriter(log.Info(), os.Stdout)
@@ -78,22 +82,29 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	if err != nil {
 		return nil, err
 	}
-	s.processes[int64(cmd.Process.Pid)] = p
-	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdout.Name(), "stderr": stderr.Name()}
+
+	s.storeProcess(int64(cmd.Process.Pid), p)
+	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdoutfd.Name(), "stderr": stderrfd.Name()}
 	stdoutLogWriter.SetFields(fields)
 	stderrLogWriter.SetFields(fields)
 	log.Info().Print(processToProto(p).String(), fields)
+	// one goroutine in server per forked process.  link between pid and output files will be lost
+	// if &process structure is lost.
 	go func() {
+		// wait until process is finished
 		err := p.cmd.Wait()
+		// possible readers concurrent to write: lock the p structure for exit status update.
+		p.mu.Lock()
+		defer p.mu.Unlock()
 		p.err = err
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			p.exitCode = exiterr.ExitCode()
 		}
-		err = stdout.Close()
+		err = stdoutfd.Close()
 		if err != nil {
 			log.Error().WithError(err).Print("Failed to close stdout", fields)
 		}
-		err = stderr.Close()
+		err = stderrfd.Close()
 		if err != nil {
 			log.Error().WithError(err).Print("Failed to close stderr", fields)
 		}
@@ -107,45 +118,55 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	}, nil
 }
 
+func (s *processServiceServer) loadProcess(pid int64) (*process, bool) {
+	v, ok := s.processes.Load(pid)
+	if !ok {
+		return nil, false
+	}
+	return v.(*process), true
+}
+
+func (s *processServiceServer) storeProcess(pid int64, p *process) {
+	s.processes.Store(pid, p)
+}
+
 func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRequest) (*Process, error) {
-	q, ok := s.processes[grp.GetPid()]
+	p, ok := s.loadProcess(grp.GetPid())
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
 	}
-	ps := processToProto(q)
+	ps := processToProtoWithLock(p)
 	return ps, nil
 }
 
 func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalProcessRequest) (*Process, error) {
-	q, ok := s.processes[grp.GetPid()]
+	p, ok := s.loadProcess(grp.GetPid())
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
 	}
 	// low level signal call
 	syssig := syscall.Signal(grp.Signal)
-	err := q.cmd.Process.Signal(syssig)
+	err := p.cmd.Process.Signal(syssig)
 	if err != nil {
-		q.fault = err
-		return processToProto(q), err
+		// `fault` tracks IPC errors
+		p.fault = err
 	}
-	return processToProto(q), nil
+	return processToProtoWithLock(p), err
 }
 
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
-	for _, p := range s.processes {
-		ps := processToProto(p)
-		err := lps.Send(ps)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	var err error
+	s.processes.Range(func(key, value any) bool {
+		err = lps.Send(processToProtoWithLock(value.(*process)))
+		return err == nil
+	})
+	return err
 }
 
 var errProcessNotFound = errkit.NewSentinelErr("Process not found")
 
 func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_StdoutServer) error {
-	p, ok := s.processes[por.Pid]
+	p, ok := s.loadProcess(por.Pid)
 	if !ok {
 		return errkit.WithStack(errProcessNotFound)
 	}
@@ -157,7 +178,7 @@ func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_
 }
 
 func (s *processServiceServer) Stderr(por *ProcessPidRequest, ss ProcessService_StderrServer) error {
-	p, ok := s.processes[por.Pid]
+	p, ok := s.loadProcess(por.Pid)
 	if !ok {
 		return errkit.WithStack(errProcessNotFound)
 	}
@@ -195,6 +216,12 @@ func (s *processServiceServer) streamOutput(ss sender, p *process, fh *os.File) 
 			return err
 		}
 	}
+}
+
+func processToProtoWithLock(p *process) *Process {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return processToProto(p)
 }
 
 func processToProto(p *process) *Process {
