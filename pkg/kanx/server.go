@@ -21,6 +21,7 @@ import (
 
 const (
 	tailTickDuration  = 3 * time.Second
+	tempPidPattern    = "kando.*.pid"
 	tempStdoutPattern = "kando.*.stdout"
 	tempStderrPattern = "kando.*.stderr"
 	streamBufferBytes = 4 * 1024 * 1024
@@ -53,11 +54,11 @@ func newProcessServiceServer() *processServiceServer {
 }
 
 func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProcessRequest) (*Process, error) {
-	stdout, err := os.CreateTemp(s.outputDir, tempStdoutPattern)
+	stdoutfd, err := os.CreateTemp(s.outputDir, tempStdoutPattern)
 	if err != nil {
 		return nil, err
 	}
-	stderr, err := os.CreateTemp(s.outputDir, tempStderrPattern)
+	stderrfd, err := os.CreateTemp(s.outputDir, tempStderrPattern)
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +69,8 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 		mu:     &sync.Mutex{},
 		cmd:    cmd,
 		doneCh: make(chan struct{}),
-		stdout: stdout,
-		stderr: stderr,
+		stdout: stdoutfd,
+		stderr: stderrfd,
 		cancel: can,
 	}
 	stdoutLogWriter := newLogWriter(log.Info(), os.Stdout)
@@ -81,24 +82,29 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	if err != nil {
 		return nil, err
 	}
+
 	s.storeProcess(int64(cmd.Process.Pid), p)
-	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdout.Name(), "stderr": stderr.Name()}
+	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdoutfd.Name(), "stderr": stderrfd.Name()}
 	stdoutLogWriter.SetFields(fields)
 	stderrLogWriter.SetFields(fields)
 	log.Info().Print(processToProto(p).String(), fields)
+	// one goroutine in server per forked process.  link between pid and output files will be lost
+	// if &process structure is lost.
 	go func() {
+		// wait until process is finished
 		err := p.cmd.Wait()
+		// possible readers concurrent to write: lock the p structure for exit status update.
 		p.mu.Lock()
 		defer p.mu.Unlock()
 		p.err = err
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			p.exitCode = exiterr.ExitCode()
 		}
-		err = stdout.Close()
+		err = stdoutfd.Close()
 		if err != nil {
 			log.Error().WithError(err).Print("Failed to close stdout", fields)
 		}
-		err = stderr.Close()
+		err = stderrfd.Close()
 		if err != nil {
 			log.Error().WithError(err).Print("Failed to close stderr", fields)
 		}
@@ -142,10 +148,10 @@ func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalPro
 	syssig := syscall.Signal(grp.Signal)
 	err := p.cmd.Process.Signal(syssig)
 	if err != nil {
+		// `fault` tracks IPC errors
 		p.fault = err
-		return processToProtoWithLock(p), err
 	}
-	return processToProtoWithLock(p), nil
+	return processToProtoWithLock(p), err
 }
 
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
