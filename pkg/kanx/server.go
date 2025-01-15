@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/kanisterio/errkit"
-	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 
 	"github.com/kanisterio/kanister/pkg/field"
@@ -29,8 +28,7 @@ const (
 
 type processServiceServer struct {
 	UnimplementedProcessServiceServer
-	mu               *sync.Mutex
-	processes        map[int64]*process
+	processes        *sync.Map
 	outputDir        string
 	tailTickDuration time.Duration
 }
@@ -49,8 +47,7 @@ type process struct {
 
 func newProcessServiceServer() *processServiceServer {
 	return &processServiceServer{
-		mu:               &sync.Mutex{},
-		processes:        map[int64]*process{},
+		processes:        &sync.Map{},
 		tailTickDuration: tailTickDuration,
 	}
 }
@@ -83,9 +80,7 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	if err != nil {
 		return nil, err
 	}
-	s.mu.Lock()
-	s.processes[int64(cmd.Process.Pid)] = p
-	s.mu.Unlock()
+	s.processes.Store(int64(cmd.Process.Pid), p)
 	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdout.Name(), "stderr": stderr.Name()}
 	stdoutLogWriter.SetFields(fields)
 	stderrLogWriter.SetFields(fields)
@@ -116,53 +111,58 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	}, nil
 }
 
+func (s *processServiceServer) loadProcess(pid int64) (*process, bool) {
+	v, ok := s.processes.Load(pid)
+	if !ok {
+		return nil, false
+	}
+	return v.(*process), true
+}
+
+func (s *processServiceServer) storeProcess(pid int64, p *process) {
+	s.processes.Store(pid, p)
+}
+
 func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRequest) (*Process, error) {
-	s.mu.Lock()
-	q, ok := s.processes[grp.GetPid()]
-	s.mu.Unlock()
+	p, ok := s.loadProcess(grp.GetPid())
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
 	}
-	ps := processToProtoWithLock(q)
+	ps := processToProtoWithLock(p)
 	return ps, nil
 }
 
 func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalProcessRequest) (*Process, error) {
-	s.mu.Lock()
-	q, ok := s.processes[grp.GetPid()]
-	s.mu.Unlock()
+	p, ok := s.loadProcess(grp.GetPid())
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
 	}
 	// low level signal call
 	syssig := syscall.Signal(grp.Signal)
-	err := q.cmd.Process.Signal(syssig)
+	err := p.cmd.Process.Signal(syssig)
 	if err != nil {
-		q.fault = err
-		return processToProtoWithLock(q), err
+		p.fault = err
+		return processToProtoWithLock(p), err
 	}
-	return processToProtoWithLock(q), nil
+	return processToProtoWithLock(p), nil
 }
 
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
-	s.mu.Lock()
-	vals := maps.Values(s.processes)
-	s.mu.Unlock()
-	for _, p := range vals {
-		err := lps.Send(processToProtoWithLock(p))
+	var err error
+	s.processes.Range(func(key, value any) bool {
+		err = lps.Send(processToProtoWithLock(value.(*process)))
 		if err != nil {
-			return err
+			return false
 		}
-	}
-	return nil
+		return true
+	})
+	return err
 }
 
 var errProcessNotFound = errkit.NewSentinelErr("Process not found")
 
 func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_StdoutServer) error {
-	s.mu.Lock()
-	p, ok := s.processes[por.Pid]
-	s.mu.Unlock()
+	p, ok := s.loadProcess(por.Pid)
 	if !ok {
 		return errkit.WithStack(errProcessNotFound)
 	}
@@ -174,9 +174,7 @@ func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_
 }
 
 func (s *processServiceServer) Stderr(por *ProcessPidRequest, ss ProcessService_StderrServer) error {
-	s.mu.Lock()
-	p, ok := s.processes[por.Pid]
-	s.mu.Unlock()
+	p, ok := s.loadProcess(por.Pid)
 	if !ok {
 		return errkit.WithStack(errProcessNotFound)
 	}
