@@ -56,7 +56,7 @@ type ProcessResult struct {
 	State string `json:"state"`
 }
 
-func executeCommand(c *C, ctx context.Context, stdout, stderr io.Writer, args ...string) error {
+func executeCommand(ctx context.Context, stdout, stderr io.Writer, args ...string) error {
 	rc := newRootCommand()
 	rc.SetErr(stderr)
 	rc.SetOut(stdout)
@@ -64,10 +64,10 @@ func executeCommand(c *C, ctx context.Context, stdout, stderr io.Writer, args ..
 	return rc.ExecuteContext(ctx)
 }
 
-func executeCommandWithReset(c *C, ctx context.Context, stdout, stderr *bytes.Buffer, args ...string) error {
+func executeCommandWithReset(ctx context.Context, stdout, stderr *bytes.Buffer, args ...string) error {
 	stdout.Reset()
 	stderr.Reset()
-	return executeCommand(c, ctx, stdout, stderr, args...)
+	return executeCommand(ctx, stdout, stderr, args...)
 }
 
 func (s *KanXCmdSuite) TestProcessClientCreate(c *C) {
@@ -82,14 +82,14 @@ func (s *KanXCmdSuite) TestProcessClientCreate(c *C) {
 	c.Assert(err, IsNil)
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	err = executeCommand(c, ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "sleep", "2s")
+	err = executeCommand(ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "sleep", "2s")
 	c.Assert(err, IsNil)
 	pr := &ProcessResult{}
-	err = json.Unmarshal([]byte(stdout.String()), pr)
+	err = json.Unmarshal(stdout.Bytes(), pr)
 	c.Assert(err, IsNil)
 	c.Assert(stderr.String(), Equals, "")
 	// get output
-	err = executeCommandWithReset(c, ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
+	err = executeCommandWithReset(ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
 	c.Assert(err, IsNil)
 	c.Assert(stdout.String(), Equals, "")
 	c.Assert(stderr.String(), Equals, "")
@@ -107,14 +107,14 @@ func (s *KanXCmdSuite) TestProcessClientOutput(c *C) {
 	c.Assert(err, IsNil)
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	err = executeCommand(c, ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "echo", "hello world")
+	err = executeCommand(ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "echo", "hello world")
 	c.Assert(err, IsNil)
 	pr := &ProcessResult{}
-	err = json.Unmarshal([]byte(stdout.String()), pr)
+	err = json.Unmarshal(stdout.Bytes(), pr)
 	c.Assert(err, IsNil)
 	c.Assert(stderr.String(), Equals, "")
 	// get output
-	err = executeCommandWithReset(c, ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
+	err = executeCommandWithReset(ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
 	c.Assert(err, IsNil)
 	c.Assert(stdout.String(), Equals, "hello world\n")
 	c.Assert(stderr.String(), Equals, "")
@@ -132,23 +132,23 @@ func (s *KanXCmdSuite) TestProcessClientGet(c *C) {
 	c.Assert(err, IsNil)
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	err = executeCommand(c, ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "echo", "hello world")
+	err = executeCommand(ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "create", "echo", "hello world")
 	c.Assert(err, IsNil)
 	pr := &ProcessResult{}
-	err = json.Unmarshal([]byte(stdout.String()), pr)
+	err = json.Unmarshal(stdout.Bytes(), pr)
 	c.Assert(err, IsNil)
 	c.Assert(pr.Pid, Not(Equals), "")
 	c.Assert(pr.State, Equals, "PROCESS_STATE_RUNNING")
 	c.Assert(stderr.String(), Equals, "")
 	// get output
-	err = executeCommandWithReset(c, ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
+	err = executeCommandWithReset(ctx, stdout, stderr, "process", "client", "-a", addr, "output", pr.Pid)
 	c.Assert(err, IsNil)
 	c.Assert(stdout.String(), Equals, "hello world\n")
 	c.Assert(stderr.String(), Equals, "")
-	err = executeCommandWithReset(c, ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "get", pr.Pid)
+	err = executeCommandWithReset(ctx, stdout, stderr, "process", "client", "--as-json", "-a", addr, "get", pr.Pid)
 	c.Assert(err, IsNil)
 	pr = &ProcessResult{}
-	err = json.Unmarshal([]byte(stdout.String()), pr)
+	err = json.Unmarshal(stdout.Bytes(), pr)
 	c.Assert(err, IsNil)
 	c.Assert(pr.Pid, Not(Equals), "")
 	c.Assert(pr.State, Equals, "PROCESS_STATE_SUCCEEDED")
