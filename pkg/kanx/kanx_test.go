@@ -210,7 +210,7 @@ func (s *KanXSuite) TestSignalProcess_Int(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGINT
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGINT))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGINT))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -252,7 +252,7 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGSTOP
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGSTOP))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGSTOP))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -260,7 +260,7 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(p0.GetExitCode(), Equals, int64(0))
 
 	// test SignalProcess, SIGCONT
-	p0, err = SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGCONT))
+	p0, err = SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGCONT))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -272,6 +272,45 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(err, IsNil)
 
 	// get final process state
+	p0, err = GetProcess(ctx, addr, p.GetPid())
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Equals, p.GetPid())
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_SUCCEEDED)
+	c.Assert(p0.GetExitErr(), Equals, "")
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	sp, ok := server.pss.loadProcess(p.GetPid())
+	c.Assert(ok, Equals, true)
+	err = sp.cmd.Process.Kill()
+	c.Assert(err, Equals, os.ErrProcessDone)
+}
+
+// TestSignalProcess_Fault
+func (s *KanXSuite) TestSignalProcess_Fault(c *C) {
+	d := tmpDir(c)
+	addr := path.Join(d, "kanx.sock")
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	server := newTestServer(d)
+	go func() {
+		err := server.Serve(ctx, addr)
+		c.Assert(err, IsNil)
+	}()
+	serverReady(ctx, addr, c)
+
+	p, err := CreateProcess(ctx, addr, "sleep", []string{"1s"})
+	c.Assert(err, IsNil)
+
+	// test SignalProcess, SIGSTOP
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(2^63))
+	// expect a fault signaling process.
+	c.Assert(err, Not(IsNil))
+
+	// wait for termination
+	err = Stderr(ctx, addr, p.GetPid(), io.Discard)
+	c.Assert(err, IsNil)
+
+	// get final process state which should be successful
 	p0, err = GetProcess(ctx, addr, p.GetPid())
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
@@ -301,7 +340,7 @@ func (s *KanXSuite) TestSignalProcess_Kill(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGKILL
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGKILL))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGKILL))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
