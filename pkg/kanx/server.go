@@ -83,7 +83,6 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	if err != nil {
 		return nil, err
 	}
-
 	s.storeProcess(int64(cmd.Process.Pid), p)
 	fields := field.M{"pid": cmd.Process.Pid, "stdout": stdoutfd.Name(), "stderr": stderrfd.Name()}
 	stdoutLogWriter.SetFields(fields)
@@ -139,7 +138,7 @@ func (s *processServiceServer) storeProcess(pid int64, p *process) {
 	s.processes.Store(pid, p)
 }
 
-func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRequest) (*Process, error) {
+func (s *processServiceServer) GetProcess(_ context.Context, grp *ProcessPidRequest) (*Process, error) {
 	p, ok := s.loadProcess(grp.GetPid())
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
@@ -147,7 +146,7 @@ func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRe
 	return processToProtoWithLock(p), nil
 }
 
-func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalProcessRequest) (*Process, error) {
+func (s *processServiceServer) SignalProcess(_ context.Context, grp *SignalProcessRequest) (*Process, error) {
 	p, ok := s.loadProcess(grp.GetPid())
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
@@ -158,13 +157,12 @@ func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalPro
 	defer p.mu.Unlock()
 	err := p.cmd.Process.Signal(syssig)
 	if err != nil {
-		// `fault` tracks IPC errors
 		p.fault = err
 	}
 	return processToProto(p), err
 }
 
-func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
+func (s *processServiceServer) ListProcesses(_ *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {
 	var err error
 	s.processes.Range(func(key, value any) bool {
 		err = lps.Send(processToProtoWithLock(value.(*process)))
