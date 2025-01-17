@@ -36,7 +36,7 @@ func newTestServer(dir string) *Server {
 	return &Server{
 		grpcs: grpc.NewServer(opts...),
 		pss: &processServiceServer{
-			processes:        map[int64]*process{},
+			processes:        &sync.Map{},
 			outputDir:        dir,
 			tailTickDuration: time.Nanosecond,
 		},
@@ -144,7 +144,7 @@ func (s *KanXSuite) TestLongProcess(c *C) {
 		c.Assert(buf.String(), Equals, "")
 		c.Assert(isCancelled, Equals, true)
 	}()
-	sp, ok := server.pss.processes[p.GetPid()]
+	sp, ok := server.pss.loadProcess(p.GetPid())
 	c.Assert(ok, Equals, true)
 	isCancelled = true
 	err = sp.cmd.Process.Kill()
@@ -188,7 +188,7 @@ func (s *KanXSuite) TestGetProcess(c *C) {
 	c.Assert(p0.GetExitErr(), Equals, "")
 	c.Assert(p0.GetExitCode(), Equals, int64(0))
 
-	sp, ok := server.pss.processes[p.GetPid()]
+	sp, ok := server.pss.loadProcess(p.GetPid())
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
 	c.Assert(err, IsNil)
@@ -210,7 +210,7 @@ func (s *KanXSuite) TestSignalProcess_Int(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGINT
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGINT))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGINT))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -229,7 +229,7 @@ func (s *KanXSuite) TestSignalProcess_Int(c *C) {
 	c.Assert(p0.GetExitErr(), Equals, "signal: interrupt")
 	c.Assert(p0.GetExitCode(), Equals, int64(-1))
 
-	sp, ok := server.pss.processes[p.GetPid()]
+	sp, ok := server.pss.loadProcess(p.GetPid())
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
 	c.Assert(err, Equals, os.ErrProcessDone)
@@ -252,7 +252,7 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGSTOP
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGSTOP))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGSTOP))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -260,7 +260,7 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(p0.GetExitCode(), Equals, int64(0))
 
 	// test SignalProcess, SIGCONT
-	p0, err = SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGCONT))
+	p0, err = SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGCONT))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -279,7 +279,7 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(p0.GetExitErr(), Equals, "")
 	c.Assert(p0.GetExitCode(), Equals, int64(0))
 
-	sp, ok := server.pss.processes[p.GetPid()]
+	sp, ok := server.pss.loadProcess(p.GetPid())
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
 	c.Assert(err, Equals, os.ErrProcessDone)
@@ -301,7 +301,7 @@ func (s *KanXSuite) TestSignalProcess_Kill(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGKILL
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGKILL))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGKILL))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -320,7 +320,7 @@ func (s *KanXSuite) TestSignalProcess_Kill(c *C) {
 	c.Assert(p0.GetExitErr(), Equals, "signal: killed")
 	c.Assert(p0.GetExitCode(), Equals, int64(-1))
 
-	sp, ok := server.pss.processes[p.GetPid()]
+	sp, ok := server.pss.loadProcess(p.GetPid())
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
 	c.Assert(err, Equals, os.ErrProcessDone)
@@ -352,7 +352,7 @@ func (s *KanXSuite) TestError(c *C) {
 	c.Assert(p0.GetExitErr(), Equals, "")
 	c.Assert(p0.GetExitCode(), Equals, int64(0))
 
-	sp, ok := server.pss.processes[p.GetPid()]
+	sp, ok := server.pss.loadProcess(p.GetPid())
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
 	c.Assert(err, IsNil)
@@ -420,7 +420,7 @@ func (s *KanXSuite) TestParallelStdout(c *C) {
 		}()
 	}
 
-	sp, ok := server.pss.processes[p.GetPid()]
+	sp, ok := server.pss.loadProcess(p.GetPid())
 	c.Assert(ok, Equals, true)
 	err = sp.cmd.Process.Kill()
 	c.Assert(err, IsNil)
