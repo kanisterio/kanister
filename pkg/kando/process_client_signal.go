@@ -27,7 +27,7 @@ import (
 
 func newProcessClientSignalCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "signal SIGNAL PID",
+		Use:   "signal PID SIGNAL",
 		Short: "send a signal to a managed process",
 		Args:  cobra.ExactArgs(2),
 		RunE:  runProcessClientSignal,
