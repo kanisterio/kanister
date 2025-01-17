@@ -157,6 +157,7 @@ func (s *processServiceServer) SignalProcess(_ context.Context, grp *SignalProce
 	defer p.mu.Unlock()
 	err := p.cmd.Process.Signal(syssig)
 	if err != nil {
+		// `fault` tracks IPC errors
 		p.fault = err
 	}
 	return processToProto(p), err
