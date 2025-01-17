@@ -34,6 +34,8 @@ type processServiceServer struct {
 }
 
 type process struct {
+	// many reads on process data and only a write on process exit - use RWMutex.
+	// minimal risk of reads blocking writes.
 	mu       *sync.RWMutex
 	cmd      *exec.Cmd
 	doneCh   chan struct{}
@@ -90,14 +92,21 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	// one goroutine in server per forked process.  link between pid and output files will be lost
 	// if &process structure is lost.
 	go func() {
-		// wait until process is finished
+		// wait until process is finished.  do not use lock as there may be readers or writers
+		// on p and cmd is not expected to change (the state in cmd is system managed)
 		err := p.cmd.Wait()
 		// possible readers concurrent to write: lock the p structure for exit status update.
+		// keep the lock period as short as possible.  remove the possibility of blocking
+		// on log writes by moving them outside the region of the lock.
+		// go doesn't have lock promotion, so there's a small gap here from when Wait finishes
+		// until acquiring a write lock.
 		p.mu.Lock()
 		p.err = err
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			p.exitCode = exiterr.ExitCode()
 		}
+		// no action will be taken on close errors, so just save the errors for logging
+		// later
 		stdoutErr := stdoutfd.Close()
 		stderrErr := stderrfd.Close()
 		can()
@@ -145,12 +154,14 @@ func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalPro
 	}
 	// low level signal call
 	syssig := syscall.Signal(grp.Signal)
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	err := p.cmd.Process.Signal(syssig)
 	if err != nil {
 		// `fault` tracks IPC errors
 		p.fault = err
 	}
-	return processToProtoWithLock(p), err
+	return processToProto(p), err
 }
 
 func (s *processServiceServer) ListProcesses(lpr *ListProcessesRequest, lps ProcessService_ListProcessesServer) error {

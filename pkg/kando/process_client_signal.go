@@ -40,11 +40,11 @@ func runProcessClientSignal(cmd *cobra.Command, args []string) error {
 }
 
 func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
-	pid, err := strconv.Atoi(args[0])
+	pid, err := strconv.ParseInt(args[0], 0, 64)
 	if err != nil {
 		return err
 	}
-	signal, err := strconv.Atoi(args[1])
+	signal, err := strconv.ParseInt(args[1], 0, 64)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []
 	}
 	asJSON := processAsJSONFlagValue(cmd)
 	cmd.SilenceUsage = true
-	p, err := kanx.SignalProcess(cmd.Context(), addr, int64(pid), int32(signal))
+	p, err := kanx.SignalProcess(cmd.Context(), addr, pid, signal)
 	if err != nil {
 		return err
 	}
