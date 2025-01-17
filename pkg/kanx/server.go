@@ -90,11 +90,12 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	// one goroutine in server per forked process.  link between pid and output files will be lost
 	// if &process structure is lost.
 	go func() {
+		// wait until process is finished
+		err := p.cmd.Wait()
 		// possible readers concurrent to write: lock the p structure for exit status update.
 		p.mu.Lock()
-		// wait until process is finished
-		p.err = p.cmd.Wait()
-		if exiterr, ok := p.err.(*exec.ExitError); ok {
+		p.err = err
+		if exiterr, ok := err.(*exec.ExitError); ok {
 			p.exitCode = exiterr.ExitCode()
 		}
 		stdoutErr := stdoutfd.Close()
@@ -134,8 +135,7 @@ func (s *processServiceServer) GetProcess(ctx context.Context, grp *ProcessPidRe
 	if !ok {
 		return nil, errkit.WithStack(errProcessNotFound)
 	}
-	ps := processToProtoWithLock(p)
-	return ps, nil
+	return processToProtoWithLock(p), nil
 }
 
 func (s *processServiceServer) SignalProcess(ctx context.Context, grp *SignalProcessRequest) (*Process, error) {
