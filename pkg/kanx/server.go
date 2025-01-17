@@ -21,7 +21,6 @@ import (
 
 const (
 	tailTickDuration  = 3 * time.Second
-	tempPidPattern    = "kando.*.pid"
 	tempStdoutPattern = "kando.*.stdout"
 	tempStderrPattern = "kando.*.stderr"
 	streamBufferBytes = 4 * 1024 * 1024
@@ -35,7 +34,7 @@ type processServiceServer struct {
 }
 
 type process struct {
-	mu       *sync.Mutex
+	mu       *sync.RWMutex
 	cmd      *exec.Cmd
 	doneCh   chan struct{}
 	stdout   *os.File
@@ -91,26 +90,26 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	// one goroutine in server per forked process.  link between pid and output files will be lost
 	// if &process structure is lost.
 	go func() {
-		// wait until process is finished
-		err := p.cmd.Wait()
 		// possible readers concurrent to write: lock the p structure for exit status update.
 		p.mu.Lock()
-		defer p.mu.Unlock()
-		p.err = err
-		if exiterr, ok := err.(*exec.ExitError); ok {
+		// wait until process is finished
+		p.err = p.cmd.Wait()
+		if exiterr, ok := p.err.(*exec.ExitError); ok {
 			p.exitCode = exiterr.ExitCode()
 		}
-		err = stdoutfd.Close()
-		if err != nil {
-			log.Error().WithError(err).Print("Failed to close stdout", fields)
-		}
-		err = stderrfd.Close()
-		if err != nil {
-			log.Error().WithError(err).Print("Failed to close stderr", fields)
-		}
+		stdoutErr := stdoutfd.Close()
+		stderrErr := stderrfd.Close()
 		can()
 		close(p.doneCh)
-		log.Info().Print(processToProto(p).String())
+		prc := processToProto(p)
+		p.mu.Unlock()
+		if stdoutErr != nil {
+			log.Error().WithError(err).Print("Failed to close stdout", fields)
+		}
+		if stderrErr != nil {
+			log.Error().WithError(err).Print("Failed to close stderr", fields)
+		}
+		log.Info().Print(prc.String())
 	}()
 	return &Process{
 		Pid:   int64(cmd.Process.Pid),
@@ -219,8 +218,8 @@ func (s *processServiceServer) streamOutput(ss sender, p *process, fh *os.File) 
 }
 
 func processToProtoWithLock(p *process) *Process {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	return processToProto(p)
 }
 
