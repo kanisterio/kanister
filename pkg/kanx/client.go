@@ -80,7 +80,7 @@ func ListProcesses(ctx context.Context, addr string) ([]*Process, error) {
 	}
 }
 
-func SignalProcess(ctx context.Context, addr string, pid int64, signal int32) (*Process, error) {
+func SignalProcess(ctx context.Context, addr string, pid int64, signal int64) (*Process, error) {
 	conn, err := newGRPCConnection(addr)
 	if err != nil {
 		return nil, err
