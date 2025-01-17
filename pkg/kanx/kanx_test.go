@@ -210,7 +210,7 @@ func (s *KanXSuite) TestSignalProcess_Int(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGINT
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGINT))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGINT))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -252,7 +252,7 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGSTOP
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGSTOP))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGSTOP))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -260,7 +260,7 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(p0.GetExitCode(), Equals, int64(0))
 
 	// test SignalProcess, SIGCONT
-	p0, err = SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGCONT))
+	p0, err = SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGCONT))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
@@ -301,7 +301,7 @@ func (s *KanXSuite) TestSignalProcess_Kill(c *C) {
 	c.Assert(err, IsNil)
 
 	// test SignalProcess, SIGKILL
-	p0, err := SignalProcess(ctx, addr, p.GetPid(), int64(syscall.SIGKILL))
+	p0, err := SignalProcess(ctx, addr, p.GetPid(), int32(syscall.SIGKILL))
 	c.Assert(err, IsNil)
 	c.Assert(p0.GetPid(), Equals, p.GetPid())
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)

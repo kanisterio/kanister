@@ -65,7 +65,7 @@ func (s *processServiceServer) CreateProcess(_ context.Context, cpr *CreateProce
 	ctx, can := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, cpr.GetName(), cpr.GetArgs()...)
 	p := &process{
-		mu:     &sync.Mutex{},
+		mu:     &sync.RWMutex{},
 		cmd:    cmd,
 		doneCh: make(chan struct{}),
 		stdout: stdoutfd,
