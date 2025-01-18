@@ -15,11 +15,21 @@
 package kando
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/spf13/cobra"
+
+	"github.com/kanisterio/kanister/pkg/kanx"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
-	processAsJSONFlagName = "as-json"
+	processSignalProxyFlagName = "signal-proxy"
+	processAsJSONFlagName      = "as-json"
 )
 
 func newProcessClientCommand() *cobra.Command {
@@ -28,6 +38,7 @@ func newProcessClientCommand() *cobra.Command {
 		Short: "Send commands to the process server",
 	}
 	cmd.AddCommand(newProcessClientCreateCommand())
+	cmd.AddCommand(newProcessClientExecuteCommand())
 	cmd.AddCommand(newProcessClientGetCommand())
 	cmd.AddCommand(newProcessClientListCommand())
 	cmd.AddCommand(newProcessClientSignalCommand())
@@ -42,4 +53,41 @@ func processAsJSONFlagValue(cmd *cobra.Command) bool {
 		panic(err.Error())
 	}
 	return b
+}
+
+func proxySetup(ctx context.Context, addr string, pid int64) {
+	log.Info().WithContext(ctx).Print(fmt.Sprintf("signal proxy is running for process %d", pid))
+	signalTermChan := make(chan os.Signal, 1)
+	signal.Notify(signalTermChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+	BREAK:
+		for {
+			select {
+			case sig := <-signalTermChan:
+				ossig, ok := sig.(syscall.Signal)
+				if !ok {
+					log.Info().WithContext(ctx).Print(fmt.Sprintf("signal %v is invalid, ignored for process %d", sig, pid))
+					continue
+				}
+				log.Info().WithContext(ctx).Print(fmt.Sprintf("signal %v received for process %d", sig, pid))
+				_, err := kanx.SignalProcess(ctx, addr, pid, int64(ossig))
+				if err != nil {
+					signal.Reset(ossig)
+					log.Error().WithContext(ctx).WithError(err).Print(fmt.Sprintf("error on signal %v for process %d", sig, pid))
+					break BREAK
+				}
+				log.Info().WithContext(ctx).Print(fmt.Sprintf("signal %v sent for process %d", sig, pid))
+			case <-ctx.Done():
+				break BREAK
+			}
+		}
+	}()
+}
+
+func procesSignalProxyAddFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().BoolP(processSignalProxyFlagName, "p", false, "pass signals from client to server")
+}
+
+func processSignalProxyFlagValue(cmd *cobra.Command) (bool, error) {
+	return cmd.Flags().GetBool(processSignalProxyFlagName)
 }
