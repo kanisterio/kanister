@@ -25,6 +25,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/version"
 )
 
+var logLevel string
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -43,10 +45,9 @@ func newRootCommand() *cobra.Command {
 		Version: version.VersionString(),
 	}
 
-	var v string
-	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", logrus.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "v", logrus.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentPreRunE = func(*cobra.Command, []string) error {
-		return setLogLevel(v)
+		return setLogLevel(logLevel)
 	}
 
 	rootCmd.AddCommand(newLocationCommand())
