@@ -58,6 +58,7 @@ func proxySetup(ctx context.Context, addr string, pid int64) {
 	signalTermChan := make(chan os.Signal, 1)
 	signal.Notify(signalTermChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
+	BREAK:
 		for {
 			select {
 			case sig := <-signalTermChan:
@@ -71,11 +72,11 @@ func proxySetup(ctx context.Context, addr string, pid int64) {
 				if err != nil {
 					signal.Reset(ossig)
 					log.Error().WithContext(ctx).WithError(err).Print(fmt.Sprintf("error on signal %v for process %d", sig, pid))
-					break
+					break BREAK
 				}
 				log.Info().WithContext(ctx).Print(fmt.Sprintf("signal %v sent for process %d", sig, pid))
 			case <-ctx.Done():
-				break
+				break BREAK
 			}
 		}
 	}()
@@ -103,11 +104,9 @@ func runProcessClientOutputWithOutput(stdout, stderr io.Writer, cmd *cobra.Comma
 	go func() { errc <- kanx.Stdout(ctx, addr, pid, stdout) }()
 	go func() { errc <- kanx.Stderr(ctx, addr, pid, stderr) }()
 	for i := 0; i < 2; i++ {
-		select {
-		case err0 := <-errc:
-			if err0 != nil {
-				err = errkit.Append(err, err0)
-			}
+		err0 := <-errc
+		if err0 != nil {
+			err = errkit.Append(err, err0)
 		}
 	}
 	canfn()
