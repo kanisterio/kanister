@@ -72,9 +72,9 @@ Specifically, this means:
 The [golangci-lint](https://golangci-lint.run/) tool is used to enforce many
 styling and safety rules.
 
-When creating or updating code, insure the copyright year and author header is up to date
+When creating or updating code, ensure the copyright year and author header are up to date
 by statically copying the [boilerplace header](/build/boilerplate.go.txt) at the top or
-by inclusion for dynamic source code files.
+by including it for dynamic source code files.
 
 ### Creating A Local Build
 
