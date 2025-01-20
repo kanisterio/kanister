@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-// ConfigurationApplyConfiguration represents an declarative configuration of the Configuration type for use
+// ConfigurationApplyConfiguration represents a declarative configuration of the Configuration type for use
 // with apply.
 type ConfigurationApplyConfiguration struct {
 	CacheDirectory *string `json:"cacheDirectory,omitempty"`
@@ -25,7 +25,7 @@ type ConfigurationApplyConfiguration struct {
 	ConfigFilePath *string `json:"configFilePath,omitempty"`
 }
 
-// ConfigurationApplyConfiguration constructs an declarative configuration of the Configuration type for use with
+// ConfigurationApplyConfiguration constructs a declarative configuration of the Configuration type for use with
 // apply.
 func Configuration() *ConfigurationApplyConfiguration {
 	return &ConfigurationApplyConfiguration{}

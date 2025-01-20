@@ -19,8 +19,8 @@ package v1alpha1
 
 import (
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -37,25 +37,17 @@ type ActionSetLister interface {
 
 // actionSetLister implements the ActionSetLister interface.
 type actionSetLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1alpha1.ActionSet]
 }
 
 // NewActionSetLister returns a new ActionSetLister.
 func NewActionSetLister(indexer cache.Indexer) ActionSetLister {
-	return &actionSetLister{indexer: indexer}
-}
-
-// List lists all ActionSets in the indexer.
-func (s *actionSetLister) List(selector labels.Selector) (ret []*v1alpha1.ActionSet, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.ActionSet))
-	})
-	return ret, err
+	return &actionSetLister{listers.New[*v1alpha1.ActionSet](indexer, v1alpha1.Resource("actionset"))}
 }
 
 // ActionSets returns an object that can list and get ActionSets.
 func (s *actionSetLister) ActionSets(namespace string) ActionSetNamespaceLister {
-	return actionSetNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return actionSetNamespaceLister{listers.NewNamespaced[*v1alpha1.ActionSet](s.ResourceIndexer, namespace)}
 }
 
 // ActionSetNamespaceLister helps list and get ActionSets.
@@ -73,26 +65,5 @@ type ActionSetNamespaceLister interface {
 // actionSetNamespaceLister implements the ActionSetNamespaceLister
 // interface.
 type actionSetNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all ActionSets in the indexer for a given namespace.
-func (s actionSetNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.ActionSet, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.ActionSet))
-	})
-	return ret, err
-}
-
-// Get retrieves the ActionSet from the indexer for a given namespace and name.
-func (s actionSetNamespaceLister) Get(name string) (*v1alpha1.ActionSet, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("actionset"), name)
-	}
-	return obj.(*v1alpha1.ActionSet), nil
+	listers.ResourceIndexer[*v1alpha1.ActionSet]
 }
