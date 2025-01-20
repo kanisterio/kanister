@@ -181,17 +181,8 @@ golint:
 codegen:
 	@$(MAKE) run CMD="./build/codegen.sh"
 
-DOCS_CMD = "cd docs && make clean &&          \
-                doc8 --max-line-length 90 --ignore D000 . && \
-                make spelling && make html"
-
 docs:
-ifeq ($(DOCKER_BUILD),"true")
-	@echo "running DOCS_CMD in the containerized build environment"
-	@PWD=$(PWD) ARCH=$(ARCH) CMD=$(DOCS_CMD) /bin/bash ./build/run_container.sh docs
-else
-	@/bin/bash -c $(DOCS_CMD)
-endif
+	@$(MAKE) run BUILD_IMAGE="node:20-slim" CMD="VERSION=$(VERSION) ./build/build_docs.sh"
 
 API_DOCS_CMD = "gen-crd-api-reference-docs 			\
 		-config docs/api_docs/config.json 	\
@@ -226,23 +217,6 @@ dotfile-clean:
 
 bin-clean:
 	rm -rf .go bin
-
-release-docs: docs
-	@if [ -z ${AWS_ACCESS_KEY_ID} ] || [ -z ${AWS_SECRET_ACCESS_KEY} ]; then\
-		echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Exiting.";\
-		exit 1;\
-	fi;\
-
-	@if [ -f "docs/_build/html/index.html" ]; then\
-		aws s3 sync docs/_build/html $(DOCS_RELEASE_BUCKET) --delete;\
-		echo "Success";\
-	else\
-		echo "No built docs found";\
-		exit 1;\
-	fi;\
-
-release-helm:
-	@/bin/bash ./build/release_helm.sh $(VERSION)
 
 package-helm:
 	@$(MAKE) run CMD="PACKAGE_FOLDER=${PACKAGE_FOLDER} HELM_RELEASE_REPO_URL=${HELM_RELEASE_REPO_URL} HELM_RELEASE_REPO_INDEX=${HELM_RELEASE_REPO_INDEX} ./build/package_helm.sh $(VERSION)"

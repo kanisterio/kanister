@@ -17,6 +17,7 @@ package kando
 import (
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -24,41 +25,47 @@ import (
 	"github.com/kanisterio/kanister/pkg/kanx"
 )
 
-func newProcessClientListCommand() *cobra.Command {
+func newProcessClientSignalCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "list PID and disposition of all managed processes",
-		Args:  cobra.NoArgs,
-		RunE:  runProcessClientList,
+		Use:   "signal PID SIGNAL",
+		Short: "send a signal to a managed process",
+		Args:  cobra.ExactArgs(2),
+		RunE:  runProcessClientSignal,
 	}
 	return cmd
 }
 
-func runProcessClientList(cmd *cobra.Command, _args []string) error {
-	return runProcessClientListWithOutput(cmd.OutOrStdout(), cmd)
+func runProcessClientSignal(cmd *cobra.Command, args []string) error {
+	return runProcessClientSignalWithOutput(cmd.OutOrStdout(), cmd, args)
 }
 
-func runProcessClientListWithOutput(out io.Writer, cmd *cobra.Command) error {
+func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
+	pid, err := strconv.ParseInt(args[0], 0, 64)
+	if err != nil {
+		return err
+	}
+	signal, err := strconv.ParseInt(args[1], 0, 64)
+	if err != nil {
+		return err
+	}
 	addr, err := processAddressFlagValue(cmd)
 	if err != nil {
 		return err
 	}
 	asJSON := processAsJSONFlagValue(cmd)
 	cmd.SilenceUsage = true
-	ps, err := kanx.ListProcesses(cmd.Context(), addr)
+	p, err := kanx.SignalProcess(cmd.Context(), addr, pid, signal)
 	if err != nil {
 		return err
 	}
-	for _, p := range ps {
-		if asJSON {
-			buf, err := protojson.Marshal(p)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(out, string(buf))
-		} else {
-			fmt.Fprintln(out, "Process: ", p.String())
+	if asJSON {
+		buf, err := protojson.Marshal(p)
+		if err != nil {
+			return err
 		}
+		fmt.Fprintln(out, string(buf))
+	} else {
+		fmt.Fprintln(out, "Process: ", p.String())
 	}
 	return nil
 }

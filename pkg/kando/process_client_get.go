@@ -17,6 +17,7 @@ package kando
 import (
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -24,41 +25,43 @@ import (
 	"github.com/kanisterio/kanister/pkg/kanx"
 )
 
-func newProcessClientListCommand() *cobra.Command {
+func newProcessClientGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "list PID and disposition of all managed processes",
-		Args:  cobra.NoArgs,
-		RunE:  runProcessClientList,
+		Use:   "get PID",
+		Short: "get the state of a single managed process",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runProcessClientGet,
 	}
 	return cmd
 }
 
-func runProcessClientList(cmd *cobra.Command, _args []string) error {
-	return runProcessClientListWithOutput(cmd.OutOrStdout(), cmd)
+func runProcessClientGet(cmd *cobra.Command, args []string) error {
+	return runProcessClientGetWithOutput(cmd.OutOrStdout(), cmd, args)
 }
 
-func runProcessClientListWithOutput(out io.Writer, cmd *cobra.Command) error {
+func runProcessClientGetWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
+	pid, err := strconv.Atoi(args[0])
+	if err != nil {
+		return err
+	}
 	addr, err := processAddressFlagValue(cmd)
 	if err != nil {
 		return err
 	}
 	asJSON := processAsJSONFlagValue(cmd)
 	cmd.SilenceUsage = true
-	ps, err := kanx.ListProcesses(cmd.Context(), addr)
+	p, err := kanx.GetProcess(cmd.Context(), addr, int64(pid))
 	if err != nil {
 		return err
 	}
-	for _, p := range ps {
-		if asJSON {
-			buf, err := protojson.Marshal(p)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(out, string(buf))
-		} else {
-			fmt.Fprintln(out, "Process: ", p.String())
+	if asJSON {
+		buf, err := protojson.Marshal(p)
+		if err != nil {
+			return err
 		}
+		fmt.Fprintln(out, string(buf))
+	} else {
+		fmt.Fprintln(out, "Process: ", p.String())
 	}
 	return nil
 }
