@@ -61,7 +61,7 @@ func runProcessClientGetWithOutput(out io.Writer, cmd *cobra.Command, args []str
 		}
 		fmt.Fprintln(out, string(buf))
 	} else {
-		fmt.Fprintln(out, "Process: ", p.String())
+		fmt.Fprintln(out, "Process: ", p)
 	}
 	return nil
 }
