@@ -16,8 +16,9 @@ package discovery
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
@@ -28,7 +29,7 @@ import (
 func AllGVRs(ctx context.Context, cli discovery.DiscoveryInterface) ([]schema.GroupVersionResource, error) {
 	arls, err := cli.ServerPreferredResources()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to list APIResources")
+		return nil, errkit.Wrap(err, "Failed to list APIResources")
 	}
 	return apiToGroupVersion(arls)
 }
@@ -36,7 +37,7 @@ func AllGVRs(ctx context.Context, cli discovery.DiscoveryInterface) ([]schema.Gr
 func NamespacedGVRs(ctx context.Context, cli discovery.DiscoveryInterface) ([]schema.GroupVersionResource, error) {
 	arls, err := cli.ServerPreferredNamespacedResources()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to list APIResources")
+		return nil, errkit.Wrap(err, "Failed to list APIResources")
 	}
 	return apiToGroupVersion(arls)
 }
@@ -62,7 +63,7 @@ func ignoreGroupErrs(exclude filter.ResourceTypeMatcher, arls []*metav1.APIResou
 	for k := range out.Groups {
 		gvr := schema.GroupVersionResource{Group: k.Group, Version: k.Version, Resource: ""}
 		if !exclude.Any(gvr) {
-			return nil, errors.Wrap(err, "Failed to list APIResources")
+			return nil, errkit.Wrap(err, "Failed to list APIResources")
 		}
 	}
 	return apiToGroupVersion(arls)
@@ -73,7 +74,7 @@ func apiToGroupVersion(arls []*metav1.APIResourceList) ([]schema.GroupVersionRes
 	for _, arl := range arls {
 		gv, err := schema.ParseGroupVersion(arl.GroupVersion)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to Parse GroupVersion %s", arl.GroupVersion)
+			return nil, errkit.Wrap(err, fmt.Sprintf("Failed to Parse GroupVersion %s", arl.GroupVersion))
 		}
 		for _, ar := range arl.APIResources {
 			// Although APIResources have Group and Version fields they're empty as of client-go v1.13.1

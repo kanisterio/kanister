@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -75,7 +75,7 @@ func updateActionProgress(
 ) (bool, error) {
 	actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
 	if err != nil {
-		return false, errors.Wrap(err, "Failed to get actionset")
+		return false, errkit.Wrap(err, "Failed to get actionset")
 	}
 
 	if actionSet.Status == nil {
@@ -206,7 +206,7 @@ func SetActionSetPercentCompleted(actionSet *crv1alpha1.ActionSet) error {
 
 			pp, err := strconv.Atoi(phase.Progress.ProgressPercent)
 			if err != nil {
-				return errors.Wrap(err, "Invalid phase progress percent")
+				return errkit.Wrap(err, "Invalid phase progress percent")
 			}
 			actionProgress += pp
 		}
