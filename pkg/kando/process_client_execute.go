@@ -16,35 +16,32 @@ package kando
 
 import (
 	"context"
+	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/kanisterio/kanister/pkg/kanx"
 )
 
-func newProcessClientOutputCommand() *cobra.Command {
+func newProcessClientExecuteCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "output PID",
-		Short: "stream output of a managed process",
-		Args:  cobra.ExactArgs(1),
-		RunE:  runProcessClientOutput,
+		Use:   "execute CMD ARG...",
+		Short: "execute a new managed process and follow output. provides option of forwarding signals from client to server",
+		Args:  cobra.MinimumNArgs(1),
+		RunE:  runProcessClientExecute,
 	}
 	procesSignalProxyAddFlag(cmd)
 	return cmd
 }
 
-func runProcessClientOutput(cmd *cobra.Command, args []string) error {
-	return runProcessClientOutputWithOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), cmd, args)
+func runProcessClientExecute(cmd *cobra.Command, args []string) error {
+	return runProcessClientExecuteWithOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), cmd, args)
 }
 
-func runProcessClientOutputWithOutput(stdout, stderr io.Writer, cmd *cobra.Command, args []string) error {
-	pid, err := strconv.ParseInt(args[0], 0, 64)
-	if err != nil {
-		return err
-	}
+func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Command, args []string) error {
 	addr, err := processAddressFlagValue(cmd)
 	if err != nil {
 		return err
@@ -53,9 +50,25 @@ func runProcessClientOutputWithOutput(stdout, stderr io.Writer, cmd *cobra.Comma
 	if err != nil {
 		return err
 	}
+	asJSON := processAsJSONFlagValue(cmd)
 	cmd.SilenceUsage = true
 	ctx, canfn := context.WithCancel(cmd.Context())
 	defer canfn()
+	p, err := kanx.CreateProcess(ctx, addr, args[0], args[1:])
+	if err != nil {
+		return err
+	}
+	if asJSON {
+		buf, err := protojson.Marshal(p)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(stdout, string(buf))
+	} else {
+		fmt.Fprintln(stdout, "Process: ", p)
+	}
+
+	pid := p.Pid
 	errc := make(chan error)
 	if proxy {
 		proxySetup(ctx, addr, pid)
@@ -64,8 +77,8 @@ func runProcessClientOutputWithOutput(stdout, stderr io.Writer, cmd *cobra.Comma
 	go func() { errc <- kanx.Stderr(ctx, addr, pid, stderr) }()
 	for i := 0; i < 2; i++ {
 		err0 := <-errc
+		// workaround bug in errkit
 		if err0 != nil {
-			// workaround bug in errkit
 			err = errkit.Append(err, err0)
 		}
 	}

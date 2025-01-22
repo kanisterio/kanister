@@ -16,6 +16,7 @@ package command
 
 import (
 	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
+	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
 type ServerStartCommandArgs struct {
@@ -35,8 +36,7 @@ type ServerStartCommandArgs struct {
 	MetricsListenAddress string
 }
 
-// ServerStart returns the kopia command for starting the Kopia API Server
-func ServerStart(cmdArgs ServerStartCommandArgs) []string {
+func commonCommand(cmdArgs ServerStartCommandArgs) logsafe.Cmd {
 	args := commonArgs(&CommandArgs{ConfigFilePath: cmdArgs.ConfigFilePath, LogDirectory: cmdArgs.LogDirectory})
 
 	if cmdArgs.AutoGenerateCert {
@@ -76,8 +76,17 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 		// To start the server and run in the background
 		args = args.AppendLoggable(redirectToDevNull, runInBackground)
 	}
+	return args
+}
 
-	return bashCommand(args)
+// ServerStart returns the kopia command for starting the Kopia API Server
+func ServerStart(cmdArgs ServerStartCommandArgs) []string {
+	return bashCommand(commonCommand(cmdArgs))
+}
+
+// ServerStartKanx returns the kopia command for starting the Kopia API Server
+func ServerStartKanx(cmdArgs ServerStartCommandArgs) []string {
+	return kanxCommand(bashCommandAsLogSafe(commonCommand(cmdArgs)))
 }
 
 type ServerRefreshCommandArgs struct {
