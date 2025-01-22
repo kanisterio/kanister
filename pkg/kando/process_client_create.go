@@ -27,7 +27,7 @@ import (
 func newProcessClientCreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create CMD ARG...",
-		Short: "create a new managed process",
+		Short: "create a new managed process.",
 		Args:  cobra.MinimumNArgs(1),
 		RunE:  runProcessClientCreate,
 	}

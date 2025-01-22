@@ -29,7 +29,7 @@ import (
 func newProcessClientExecuteCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "execute CMD ARG...",
-		Short: "execute a new managed process",
+		Short: "execute a new managed process and follow output. provides option of forwarding signals from client to server",
 		Args:  cobra.MinimumNArgs(1),
 		RunE:  runProcessClientExecute,
 	}
