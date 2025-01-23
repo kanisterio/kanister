@@ -38,7 +38,7 @@ const (
 	snapshotValue = "snapshot"
 
 	//nolint:lll
-	snapshotCreateOutputRegEx       = `(?P<spinner>[|/\-\\\*]).+[^\d](?P<numHashed>\d+) hashed \((?P<hashedSize>[^\)]+)\), (?P<numCached>\d+) cached \((?P<cachedSize>[^\)]+)\), uploaded (?P<uploadedSize>[^\)]+), (?:estimating...|estimated (?P<estimatedSize>[^\)]+) \((?P<estimatedProgress>[^\)]+)\%\).+)`
+	snapshotCreateOutputRegEx       = `(?P<spinner>[|/\-\\\*]).+[^\d](?P<numHashed>\d+) hashed \((?P<hashedSize>[^\)]+)\), (?P<numCached>\d+) cached \((?P<cachedSize>[^\)]+)\), uploaded (?P<uploadedSize>[^\)]+)(?: \([^)]*\))*, (?:estimating...|estimated (?P<estimatedSize>[^\)]+) \((?P<estimatedProgress>[^\)]+)\%\).+)`
 	restoreOutputRegEx              = `Processed (?P<processedCount>\d+) \((?P<processedSize>.*)\) of (?P<totalCount>\d+) \((?P<totalSize>.*)\) (?P<dataRate>.*) \((?P<percentage>.*)%\) remaining (?P<remainingTime>.*)\.`
 	extractSnapshotIDRegEx          = `Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`
 	repoTotalSizeFromBlobStatsRegEx = `Total: (\d+)$`
@@ -227,8 +227,11 @@ func SnapshotStatsFromSnapshotCreate(
 	// Match a pattern starting with "*" (signifying upload finished), and containing
 	// the repeated pattern "<\d+> <type> (<humanized size base 10>),",
 	// where <type> is "hashed", "cached", and "uploaded".
-	// Example input:
+	// Example inputs:
 	// 	 * 0 hashing, 1 hashed (2 B), 3 cached (40 KB), uploaded 6.7 GB, estimated 1092.3 MB (100.0%) 0s left
+	// 	 * 0 hashing, 1 hashed (2 B), 3 cached (40 KB), uploaded 6.7 GB (3 errors ignored), estimated 1092.3 MB (100.0%) 0s left
+	// 	 * 0 hashing, 1 hashed (2 B), 3 cached (40 KB), uploaded 6.7 GB (1 fatal errors), estimated 1092.3 MB (100.0%) 0s left
+	// 	 * 0 hashing, 1 hashed (2 B), 3 cached (40 KB), uploaded 6.7 GB (1 fatal errors) (3 errors ignored), estimated 1092.3 MB (100.0%) 0s left
 	// Expected output:
 	// SnapshotCreateStats{
 	// 		filesHashed:  1,
