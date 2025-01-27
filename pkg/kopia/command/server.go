@@ -86,7 +86,7 @@ func ServerStart(cmdArgs ServerStartCommandArgs) []string {
 
 // ServerStartKanx returns the kopia command for starting the Kopia API Server
 func ServerStartKanx(cmdArgs ServerStartCommandArgs) []string {
-	return kanxCommand(bashCommandAsLogSafe(commonCommand(cmdArgs)))
+	return MakeKanxCommand(ServerStart(cmdArgs))
 }
 
 type ServerRefreshCommandArgs struct {
