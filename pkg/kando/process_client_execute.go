@@ -51,6 +51,10 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 		return err
 	}
 	asJSON := processAsJSONFlagValue(cmd)
+	asQuiet := processAsQuietFlagValue(cmd)
+	if asQuiet {
+		cmd.SilenceErrors = true
+	}
 	cmd.SilenceUsage = true
 	ctx, canfn := context.WithCancel(cmd.Context())
 	defer canfn()
@@ -58,14 +62,16 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 	if err != nil {
 		return err
 	}
-	if asJSON {
-		buf, err := protojson.Marshal(p)
-		if err != nil {
-			return err
+	if !asQuiet {
+		if asJSON {
+			buf, err := protojson.Marshal(p)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(stdout, string(buf))
+		} else {
+			fmt.Fprintln(stdout, "Process: ", p)
 		}
-		fmt.Fprintln(stdout, string(buf))
-	} else {
-		fmt.Fprintln(stdout, "Process: ", p)
 	}
 
 	pid := p.Pid

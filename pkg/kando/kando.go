@@ -20,6 +20,8 @@ import (
 	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/status"
 
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/version"
@@ -32,7 +34,12 @@ var logLevel string
 func Execute() {
 	root := newRootCommand()
 	if err := root.Execute(); err != nil {
-		log.WithError(err).Print("Kando failed to execute")
+		// check to see if the error is a gRPC error
+		if status.Convert(err) != nil {
+			log.Info().WithError(err).Print("Kando failed to execute gRPC call")
+			os.Exit(69)
+		}
+		log.Info().WithError(err).Print("Kando failed to execute")
 		os.Exit(1)
 	}
 }
@@ -46,8 +53,13 @@ func newRootCommand() *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "v", logrus.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
-	rootCmd.PersistentPreRunE = func(*cobra.Command, []string) error {
-		return setLogLevel(logLevel)
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		err := setLogLevel(logLevel)
+		if err != nil {
+			return err
+		}
+		grpclog.SetLoggerV2(grpclogLogger(cmd))
+		return nil
 	}
 
 	rootCmd.AddCommand(newLocationCommand())
@@ -59,10 +71,13 @@ func newRootCommand() *cobra.Command {
 }
 
 func setLogLevel(v string) error {
-	l, err := logrus.ParseLevel(v)
+	lgl, err := logrus.ParseLevel(v)
 	if err != nil {
-		return errkit.Wrap(err, "Invalid log level: "+v)
+		return errkit.New("Invalid log level")
 	}
-	logrus.SetLevel(l)
+	// set application logger log level. (kanister/log/log.go)
+	log.SetLevel(log.Level(lgl))
+	// set "std" logrus logger.  GRPC uses this (logrus/exported)
+	logrus.SetLevel(lgl)
 	return nil
 }

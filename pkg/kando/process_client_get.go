@@ -40,7 +40,7 @@ func runProcessClientGet(cmd *cobra.Command, args []string) error {
 }
 
 func runProcessClientGetWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
-	pid, err := strconv.Atoi(args[0])
+	pid, err := strconv.ParseInt(args[0], 0, 64)
 	if err != nil {
 		return err
 	}
@@ -48,20 +48,26 @@ func runProcessClientGetWithOutput(out io.Writer, cmd *cobra.Command, args []str
 	if err != nil {
 		return err
 	}
+	asQuiet := processAsQuietFlagValue(cmd)
+	if asQuiet {
+		cmd.SilenceErrors = true
+	}
 	asJSON := processAsJSONFlagValue(cmd)
 	cmd.SilenceUsage = true
-	p, err := kanx.GetProcess(cmd.Context(), addr, int64(pid))
+	p, err := kanx.GetProcess(cmd.Context(), addr, pid)
 	if err != nil {
 		return err
 	}
-	if asJSON {
-		buf, err := protojson.Marshal(p)
-		if err != nil {
-			return err
+	if !asQuiet {
+		if asJSON {
+			buf, err := protojson.Marshal(p)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(out, string(buf))
+		} else {
+			fmt.Fprintln(out, "Process: ", p)
 		}
-		fmt.Fprintln(out, string(buf))
-	} else {
-		fmt.Fprintln(out, "Process: ", p)
 	}
 	return nil
 }
