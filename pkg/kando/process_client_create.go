@@ -44,10 +44,14 @@ func runProcessClientCreateWithOutput(out io.Writer, cmd *cobra.Command, args []
 		return err
 	}
 	asJSON := processAsJSONFlagValue(cmd)
+	asQuiet := processAsQuietFlagValue(cmd)
 	cmd.SilenceUsage = true
 	p, err := kanx.CreateProcess(cmd.Context(), addr, args[0], args[1:])
 	if err != nil {
 		return err
+	}
+	if asQuiet {
+		return nil
 	}
 	if asJSON {
 		buf, err := protojson.Marshal(p)

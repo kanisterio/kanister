@@ -31,6 +31,7 @@ import (
 const (
 	processSignalProxyFlagName = "signal-proxy"
 	processAsJSONFlagName      = "as-json"
+	processAsQuietFlagName     = "quiet"
 )
 
 func newProcessClientCommand() *cobra.Command {
@@ -45,11 +46,20 @@ func newProcessClientCommand() *cobra.Command {
 	cmd.AddCommand(newProcessClientSignalCommand())
 	cmd.AddCommand(newProcessClientOutputCommand())
 	cmd.PersistentFlags().BoolP(processAsJSONFlagName, "j", false, "Display output as json")
+	cmd.PersistentFlags().BoolP(processAsQuietFlagName, "q", false, "Quiet process information output")
 	return cmd
 }
 
 func processAsJSONFlagValue(cmd *cobra.Command) bool {
 	b, err := cmd.Flags().GetBool(processAsJSONFlagName)
+	if err != nil {
+		panic(err.Error())
+	}
+	return b
+}
+
+func processAsQuietFlagValue(cmd *cobra.Command) bool {
+	b, err := cmd.Flags().GetBool(processAsQuietFlagName)
 	if err != nil {
 		panic(err.Error())
 	}
