@@ -59,16 +59,17 @@ func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
-	if !asQuiet {
-		if asJSON {
-			buf, err := protojson.Marshal(p)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(out, string(buf))
-		} else {
-			fmt.Fprintln(out, "Process: ", p)
+	if asQuiet {
+		return nil
+	}
+	if asJSON {
+		buf, err := protojson.Marshal(p)
+		if err != nil {
+			return err
 		}
+		fmt.Fprintln(out, string(buf))
+	} else {
+		fmt.Fprintln(out, "Process: ", p)
 	}
 	return nil
 }
