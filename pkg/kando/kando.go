@@ -34,7 +34,12 @@ var logLevel string
 func Execute() {
 	root := newRootCommand()
 	if err := root.Execute(); err != nil {
-		log.WithError(err).Print("Kando failed to execute")
+		// check to see if the error is a gRPC error
+		if status.Convert(err) != nil {
+			log.Info().WithError(err).Print("Kando failed to execute gRPC call")
+			os.Exit(69)
+		}
+		log.Info().WithError(err).Print("Kando failed to execute")
 		os.Exit(1)
 	}
 }
