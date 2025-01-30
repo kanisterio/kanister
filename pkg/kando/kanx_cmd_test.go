@@ -18,11 +18,9 @@ type KanXCmdSuite struct{}
 
 var _ = Suite(&KanXCmdSuite{})
 
-func startServer(ctx context.Context, addr string, stdout, stderr io.Writer) error {
+func startServer(ctx context.Context, addr string) error {
 	rc := newRootCommand()
 	rc.SetArgs([]string{"process", "server", "-a", addr})
-	rc.SetOut(stdout)
-	rc.SetErr(stderr)
 	return rc.ExecuteContext(ctx)
 }
 
@@ -75,7 +73,7 @@ func (s *KanXCmdSuite) TestProcessClientCreate(c *C) {
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
 	go func() {
-		err := startServer(ctx, addr, nil, nil)
+		err := startServer(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
 	err := waitSock(ctx, addr)
@@ -101,7 +99,7 @@ func (s *KanXCmdSuite) TestProcessClientOutput(c *C) {
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
 	go func() {
-		err := startServer(ctx, addr, nil, nil)
+		err := startServer(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
 	err := waitSock(ctx, addr)
@@ -127,7 +125,7 @@ func (s *KanXCmdSuite) TestProcessClientExecute_RedirectStdout(c *C) {
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
 	go func() {
-		err := startServer(ctx, addr, nil, nil)
+		err := startServer(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
 	err := waitSock(ctx, addr)
@@ -153,7 +151,7 @@ func (s *KanXCmdSuite) TestProcessClientExecute_RedirectStderr(c *C) {
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
 	go func() {
-		err := startServer(ctx, addr, nil, nil)
+		err := startServer(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
 	err := waitSock(ctx, addr)
@@ -176,7 +174,7 @@ func (s *KanXCmdSuite) TestProcessClientExecute_Exit1(c *C) {
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
 	go func() {
-		err := startServer(ctx, addr, nil, nil)
+		err := startServer(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
 	err := waitSock(ctx, addr)
@@ -202,7 +200,7 @@ func (s *KanXCmdSuite) TestProcessClientGet(c *C) {
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
 	go func() {
-		err := startServer(ctx, addr, nil, nil)
+		err := startServer(ctx, addr)
 		c.Assert(err, IsNil)
 	}()
 	err := waitSock(ctx, addr)
