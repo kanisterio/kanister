@@ -2,6 +2,7 @@ package kanx
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/url"
@@ -149,4 +150,10 @@ func output(ctx context.Context, out io.Writer, sc recver) error {
 			return err
 		}
 	}
+}
+
+type ProcessExitCode int
+
+func (e ProcessExitCode) Error() string {
+	return fmt.Sprintf("exit status %d", e)
 }

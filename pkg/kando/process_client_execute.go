@@ -18,12 +18,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/kanisterio/kanister/pkg/kanx"
+)
+
+const (
+	GRPC_CODE_OFFSET = 15
 )
 
 func newProcessClientExecuteCommand() *cobra.Command {
@@ -38,7 +45,22 @@ func newProcessClientExecuteCommand() *cobra.Command {
 }
 
 func runProcessClientExecute(cmd *cobra.Command, args []string) error {
-	return runProcessClientExecuteWithOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), cmd, args)
+	err := runProcessClientExecuteWithOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), cmd, args)
+	if err == nil {
+		return nil
+	}
+	// err is a positive command exit code
+	err0, ok := err.(kanx.ProcessExitCode)
+	if ok {
+		os.Exit(int(err0))
+	}
+	// err is gRPC error.  this will tell users of connectivity problems
+	// with the server
+	err1, ok := status.FromError(err)
+	if ok && err1.Code() != codes.OK {
+		os.Exit(int(GRPC_CODE_OFFSET + err1.Code()))
+	}
+	return err
 }
 
 func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Command, args []string) error {
@@ -53,12 +75,14 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 	asJSON := processAsJSONFlagValue(cmd)
 	asQuiet := processAsQuietFlagValue(cmd)
 	cmd.SilenceUsage = true
-	ctx, canfn := context.WithCancel(cmd.Context())
-	defer canfn()
+	ctx, canfn0 := context.WithCancel(cmd.Context())
+	defer canfn0()
+	// start the process in the server
 	p, err := kanx.CreateProcess(ctx, addr, args[0], args[1:])
 	if err != nil {
 		return err
 	}
+	// output the process metadata
 	if !asQuiet {
 		if asJSON {
 			buf, err := protojson.Marshal(p)
@@ -70,20 +94,39 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 			fmt.Fprintln(stdout, "Process: ", p)
 		}
 	}
-
 	pid := p.Pid
+	// setup signal proxies if requested
 	errc := make(chan error)
 	if proxy {
 		proxySetup(ctx, addr, pid)
 	}
+	// process stdout and stderr in background
 	go func() { errc <- kanx.Stdout(ctx, addr, pid, stdout) }()
 	go func() { errc <- kanx.Stderr(ctx, addr, pid, stderr) }()
+	// wait for process completion keeping errors for Stdout and Stderr calls
 	for i := 0; i < 2; i++ {
 		err0 := <-errc
 		// workaround bug in errkit
 		if err0 != nil {
 			err = errkit.Append(err, err0)
 		}
+	}
+	if err != nil {
+		return err
+	}
+	// get terminal state of the process.  Ideally this would be returned in Stdout,
+	// Stderr or via a Wait function for now we wait for process completion and then
+	// call GetProcess to get the final state
+	ctx, canfn1 := context.WithCancel(cmd.Context())
+	defer canfn1()
+	p, err = kanx.GetProcess(ctx, addr, pid)
+	if err != nil {
+		return err
+	}
+	// exit codes from process need to be proxied so that KanX clients can respond
+	// to them
+	if p.ExitCode != 0 {
+		err = kanx.ProcessExitCode(p.ExitCode)
 	}
 	return err
 }
