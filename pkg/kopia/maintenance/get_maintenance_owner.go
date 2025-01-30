@@ -72,6 +72,41 @@ func GetMaintenanceOwnerForConnectedRepository(
 	return parseOwner(stdout.Bytes())
 }
 
+// GetMaintenanceOwnerForConnectedRepositoryKanx executes maintenance info command,
+// and returns maintenance owner.
+func GetMaintenanceOwnerForConnectedRepositoryKanx(
+	ctx context.Context,
+	podController kube.PodController,
+	configFilePath,
+	logDirectory string,
+) (string, error) {
+	pod := podController.Pod()
+	container := pod.Spec.Containers[0].Name
+	commandExecutor, err := podController.GetCommandExecutor()
+	if err != nil {
+		return "", err
+	}
+
+	args := command.MaintenanceInfoCommandArgs{
+		CommandArgs: &command.CommandArgs{
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
+		},
+		GetJSONOutput: true,
+	}
+	cmd := command.MaintenanceInfo(args)
+
+	var stdout, stderr bytes.Buffer
+	err = commandExecutor.Exec(ctx, command.MakeKanxCommand(cmd), nil, &stdout, &stderr)
+	format.LogWithCtx(ctx, pod.Name, container, stdout.String())
+	format.LogWithCtx(ctx, pod.Name, container, stderr.String())
+	if err != nil {
+		return "", err
+	}
+
+	return parseOwner(stdout.Bytes())
+}
+
 func parseOwner(output []byte) (string, error) {
 	maintInfo := kopiacli.MaintenanceInfo{}
 	if err := json.Unmarshal(output, &maintInfo); err != nil {

@@ -15,11 +15,13 @@
 package kando
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/grpclog"
 
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/version"
@@ -46,8 +48,13 @@ func newRootCommand() *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "v", logrus.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
-	rootCmd.PersistentPreRunE = func(*cobra.Command, []string) error {
-		return setLogLevel(logLevel)
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		err := setLogLevel(logLevel)
+		if err != nil {
+			return err
+		}
+		grpclog.SetLoggerV2(grpclogLogger(cmd))
+		return nil
 	}
 
 	rootCmd.AddCommand(newLocationCommand())
@@ -59,10 +66,13 @@ func newRootCommand() *cobra.Command {
 }
 
 func setLogLevel(v string) error {
-	l, err := logrus.ParseLevel(v)
+	lgl, err := logrus.ParseLevel(v)
 	if err != nil {
-		return errkit.Wrap(err, "Invalid log level: "+v)
+		return errkit.Wrap(err, fmt.Sprintf("Invalid log level: %s", v))
 	}
-	logrus.SetLevel(l)
+	// set application logger log level. (kanister/log/log.go)
+	log.SetLevel(log.Level(lgl))
+	// set "std" logrus logger.  GRPC uses this (logrus/exported)
+	logrus.SetLevel(lgl)
 	return nil
 }

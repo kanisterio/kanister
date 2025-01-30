@@ -17,10 +17,11 @@ package location
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"path/filepath"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
@@ -124,7 +125,7 @@ func writeData(ctx context.Context, pType objectstore.ProviderType, profile para
 	}
 
 	if err := bucket.Put(ctx, path, input, size, nil); err != nil {
-		return errors.Wrapf(err, "failed to write contents to bucket '%s'", profile.Location.Bucket)
+		return errkit.Wrap(err, fmt.Sprintf("failed to write contents to bucket '%s'", profile.Location.Bucket))
 	}
 
 	return nil
@@ -173,7 +174,7 @@ func getProviderType(lType crv1alpha1.LocationType) (objectstore.ProviderType, e
 	case crv1alpha1.LocationTypeAzure:
 		return objectstore.ProviderTypeAzure, nil
 	default:
-		return "", errors.Errorf("Unsupported Location type: %s", lType)
+		return "", errkit.New(fmt.Sprintf("Unsupported Location type: %s", lType))
 	}
 }
 
@@ -209,7 +210,7 @@ func getOSSecret(ctx context.Context, pType objectstore.ProviderType, cred param
 	case objectstore.ProviderTypeAzure:
 		return getAzureSecret(cred)
 	default:
-		return nil, errors.Errorf("unknown or unsupported provider type '%s'", pType)
+		return nil, errkit.New(fmt.Sprintf("unknown or unsupported provider type '%s'", pType))
 	}
 	return secret, nil
 }
@@ -228,7 +229,7 @@ func getAzureSecret(cred param.Credential) (*objectstore.Secret, error) {
 	case param.CredentialTypeSecret:
 		azSecret, err := secrets.ExtractAzureCredentials(cred.Secret)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to extract azure credentials")
+			return nil, errkit.Wrap(err, "Failed to extract azure credentials")
 		}
 		os.Azure = azSecret
 	}
@@ -258,6 +259,6 @@ func getAWSSecret(ctx context.Context, cred param.Credential) (*objectstore.Secr
 		}
 		return os, nil
 	default:
-		return nil, errors.Errorf("Unsupported type '%s' for credential", cred.Type)
+		return nil, errkit.New(fmt.Sprintf("Unsupported type '%s' for credential", cred.Type))
 	}
 }

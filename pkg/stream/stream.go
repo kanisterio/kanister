@@ -19,9 +19,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
-	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	kansnapshot "github.com/kanisterio/kanister/pkg/kopia/snapshot"
@@ -37,7 +37,7 @@ const (
 func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEndpoint string) error {
 	rep, err := repository.Open(ctx, configFile, password, "kanister stream push")
 	if err != nil {
-		return errors.Wrap(err, "Failed to open kopia repository")
+		return errkit.Wrap(err, "Failed to open kopia repository")
 	}
 	// Initialize a directory tree with given file
 	// The following will create <dirPath>/<filePath> objects
@@ -46,10 +46,10 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 	// `dir/file` objects will be created under it
 	root, err := virtualfs.NewDirectory(filepath.Base(dirPath))
 	if err != nil {
-		return errors.Wrap(err, "Failed to create root directory")
+		return errkit.Wrap(err, "Failed to create root directory")
 	}
 	if _, err = virtualfs.AddFileWithStreamSource(root, filePath, sourceEndpoint, defaultPermissions, defaultPermissions); err != nil {
-		return errors.Wrap(err, "Failed to add file with the given stream source to the root directory")
+		return errkit.Wrap(err, "Failed to add file with the given stream source to the root directory")
 	}
 
 	// Setup kopia uploader
@@ -66,5 +66,5 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 
 	// Create a kopia snapshot
 	_, _, err = kansnapshot.SnapshotSource(ctx, rep, u, sourceInfo, root, snapshotDescription)
-	return errors.Wrap(err, "Failed to create kopia snapshot")
+	return errkit.Wrap(err, "Failed to create kopia snapshot")
 }
