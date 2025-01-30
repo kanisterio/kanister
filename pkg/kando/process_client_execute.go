@@ -29,6 +29,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/kanx"
 )
 
+var (
+	exit = os.Exit
+)
+
 const (
 	GrpcCodeOffset = 15
 )
@@ -52,13 +56,13 @@ func runProcessClientExecute(cmd *cobra.Command, args []string) error {
 	// err is a positive command exit code
 	err0, ok := err.(kanx.ProcessExitCode)
 	if ok {
-		os.Exit(int(err0))
+		exit(int(err0))
 	}
 	// err is gRPC error.  this will tell users of connectivity problems
 	// with the server
 	err1, ok := status.FromError(err)
 	if ok && err1.Code() != codes.OK {
-		os.Exit(int(GrpcCodeOffset + err1.Code()))
+		exit(int(GrpcCodeOffset + err1.Code()))
 	}
 	return err
 }
@@ -111,6 +115,7 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 			err = errkit.Append(err, err0)
 		}
 	}
+	close(errc)
 	if err != nil {
 		return err
 	}
