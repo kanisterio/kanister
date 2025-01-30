@@ -1,0 +1,172 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: postgres-bp
+actions:
+  backup:
+    kind: StatefulSet
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          backupArtifactLocation: "{{ .Phases.copyFiles.Output.backupArtifactLocation }}"
+          backupID: "{{ .Phases.copyFiles.Output.backupID }}"
+          backupTag: "{{ .Phases.copyFiles.Output.backupTag }}"
+          pvc: '{{- range $key, $_ := index .StatefulSet.PersistentVolumeClaims (index .StatefulSet.Pods 0) -}}{{$key}}{{break}}{{end}}'
+
+    deferPhase:
+      func: KubeOps
+      args:
+        operation: delete
+        objectReference:
+          apiVersion: v1
+          resource: "pods"
+          name: "{{ .Phases.createBackupPod.Output.name }}"
+          namespace: '{{ .StatefulSet.Namespace }}'
+
+    phases:
+    - name: createBackupPod
+      func: KubeOps
+      objects:
+        pgSecret:
+          kind: Secret
+          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        operation: create
+        namespace: '{{ .StatefulSet.Namespace }}'
+        spec: |-
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            generateName: postgres-backup-session
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: container
+                image: bitnami/postgresql:16
+                command:
+                - bash
+                - -o
+                - errexit
+                - -o
+                - pipefail
+                - -c
+                - |
+                  export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+                  export PGUSER='postgres'
+                  export PGPASSWORD='{{ index .Phases.createBackupPod.Secrets.pgSecret.Data "postgres-password" | toString }}'
+                  ## Create file descriptor to send commands to psql
+                  mkfifo /tmp/pg_in
+                  ## Create "holder" process to keep pg_in open
+                  while sleep 1; do :; done >/tmp/pg_in &
+                  ## Save "holder" PID to a file to kill it later
+                  echo $! > /tmp/holder_pid
+                  ## Run psql session reading from pg_in and writing ot pg_out
+                  ## Using tee here to keep the pod logs (might need to replace with just `> /tmp/pg_out`)
+                  ## TODO: should we track stderr here?
+                  cat /tmp/pg_in | psql -U ${PGUSER} | tee /tmp/pg_out
+
+    - func: WaitV2
+      name: waitForPodReady
+      args:
+        timeout: 5m
+        conditions:
+          anyOf:
+          - condition: '{{ $available := false }}{{ range $condition := $.status.conditions }}{{ if and (eq .type "ContainersReady") (eq .status "True") }}{{ $available = true }}{{ end }}{{ end }}{{ $available }}'
+            objectReference:
+              apiVersion: "v1"
+              name: "{{ .Phases.createBackupPod.Output.name }}"
+              namespace: '{{ .StatefulSet.Namespace }}'
+              resource: "pods"
+
+    - name: startBackup
+      func: KubeExec
+      args:
+        namespace: '{{ .StatefulSet.Namespace }}'
+        pod: "{{ .Phases.createBackupPod.Output.name }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          ## Send pg_backup_start command to psql session
+          echo "SELECT pg_backup_start(label => 'kanister_backup', fast => false);" > /tmp/pg_in
+          ## Make sure operation completed
+          ## TODO: maybe there's a better way to fail/log here?
+          grep -q pg_backup_start <(tail -f /tmp/pg_out)
+
+    - name: copyFiles
+      func: CopyVolumeData
+      args:
+        namespace: '{{ .StatefulSet.Namespace }}'
+        ## TODO: maybe there's a better way of doing that in go templates
+        volume: '{{- range $key, $_ := index .StatefulSet.PersistentVolumeClaims (index .StatefulSet.Pods 0) -}}{{$key}}{{break}}{{end}}'
+        # volume: '{{ index .StatefulSet.PersistentVolumeClaims 0 }}'
+        dataArtifactPrefix: s3-bucket/path/artifactPrefix
+
+    - name: stopBackup
+      func: KubeExec
+      args:
+        namespace: '{{ .StatefulSet.Namespace }}'
+        pod: "{{ .Phases.createBackupPod.Output.name }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          ## Send pg_backup_stop command to psql session
+          echo "SELECT * FROM pg_backup_stop(wait_for_archive => true);" > /tmp/pg_in
+          ## Make sure operation completed
+          ## TODO: maybe there's a better way to fail/log here?
+          grep -q "LABEL: kanister_backup" <(tail -f /tmp/pg_out)
+
+  restore:
+    kind: StatefulSet
+    inputArtifactNames:
+    - cloudObject
+    phases:
+    - func: ScaleWorkload
+      name: ShutdownApplication
+      args:
+        namespace: '{{.StatefulSet.Namespace }}'
+        name: '{{ .StatefulSet.Name }}'
+        kind: StatefulSet
+        replicas: 0
+
+    - func: RestoreData
+      name: RestoreFromObjectStore
+      args:
+        namespace: '{{.StatefulSet.Namespace }}'
+        # pod: '{{ index .StatefulSet.Pods 0 }}'
+        volumes:
+          '{{ .ArtifactsIn.cloudObject.KeyValue.pvc }}': '/mnt/vol_data/{{ .ArtifactsIn.cloudObject.KeyValue.pvc }}'
+
+        image: ghcr.io/kanisterio/kanister-tools:0.110.0
+        backupArtifactPrefix: s3-bucket/path/artifactPrefix
+        backupTag: '{{ .ArtifactsIn.cloudObject.KeyValue.backupTag }}'
+
+    deferPhase:
+      func: ScaleWorkload
+      name: StartupApplication
+      args:
+        namespace: '{{.StatefulSet.Namespace }}'
+        name: '{{ .StatefulSet.Name }}'
+        kind: StatefulSet
+        replicas: '{{ len .StatefulSet.Pods }}'
+
+  delete:
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: DeleteData
+      name: deleteFromObjectStore
+      args:
+        namespace: '{{.StatefulSet.Namespace }}'
+        backupArtifactPrefix: s3-bucket/path/artifactPrefix
+        backupID: "{{ .ArtifactsIn.cloudObject.KeyValue.backupID }}"
