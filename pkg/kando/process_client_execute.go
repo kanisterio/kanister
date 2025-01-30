@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	GRPC_CODE_OFFSET = 15
+	GrpcCodeOffset = 15
 )
 
 func newProcessClientExecuteCommand() *cobra.Command {
@@ -58,7 +58,7 @@ func runProcessClientExecute(cmd *cobra.Command, args []string) error {
 	// with the server
 	err1, ok := status.FromError(err)
 	if ok && err1.Code() != codes.OK {
-		os.Exit(int(GRPC_CODE_OFFSET + err1.Code()))
+		os.Exit(int(GrpcCodeOffset + err1.Code()))
 	}
 	return err
 }
