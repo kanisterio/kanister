@@ -13,7 +13,7 @@ These are the current Kanister maintainers:
 * Prasad Ghangal @PrasadG193
 * Vivek Singh @viveksinghggits
 * Daniil Fedotov @hairyhum
-* Eugen Sumin @e-sumin
+* Mark Lavi @mlavi
 
 ## Maintainer Responsibilities
 

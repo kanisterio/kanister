@@ -15,9 +15,11 @@
 package kando
 
 import (
+	"context"
 	"io"
 	"strconv"
 
+	"github.com/kanisterio/errkit"
 	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/kanx"
@@ -30,15 +32,16 @@ func newProcessClientOutputCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runProcessClientOutput,
 	}
+	procesSignalProxyAddFlag(cmd)
 	return cmd
 }
 
 func runProcessClientOutput(cmd *cobra.Command, args []string) error {
-	return runProcessClientOutputWithOutput(cmd.OutOrStdout(), cmd, args)
+	return runProcessClientOutputWithOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), cmd, args)
 }
 
-func runProcessClientOutputWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
-	pid, err := strconv.Atoi(args[0])
+func runProcessClientOutputWithOutput(stdout, stderr io.Writer, cmd *cobra.Command, args []string) error {
+	pid, err := strconv.ParseInt(args[0], 0, 64)
 	if err != nil {
 		return err
 	}
@@ -46,6 +49,25 @@ func runProcessClientOutputWithOutput(out io.Writer, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
+	proxy, err := processSignalProxyFlagValue(cmd)
+	if err != nil {
+		return err
+	}
 	cmd.SilenceUsage = true
-	return kanx.Stdout(cmd.Context(), addr, int64(pid), out)
+	ctx, canfn := context.WithCancel(cmd.Context())
+	defer canfn()
+	errc := make(chan error)
+	if proxy {
+		proxySetup(ctx, addr, pid)
+	}
+	go func() { errc <- kanx.Stdout(ctx, addr, pid, stdout) }()
+	go func() { errc <- kanx.Stderr(ctx, addr, pid, stderr) }()
+	for i := 0; i < 2; i++ {
+		err0 := <-errc
+		if err0 != nil {
+			// workaround bug in errkit
+			err = errkit.Append(err, err0)
+		}
+	}
+	return err
 }

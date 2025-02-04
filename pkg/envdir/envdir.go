@@ -20,7 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 )
 
 func EnvDir(dir string) ([]string, error) {
@@ -30,7 +30,7 @@ func EnvDir(dir string) ([]string, error) {
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
+		return nil, errkit.Wrap(err, "failed to read env from dir:"+dir)
 	}
 	e := make([]string, 0, len(entries))
 	for _, entry := range entries {
@@ -40,11 +40,11 @@ func EnvDir(dir string) ([]string, error) {
 		p := filepath.Join(dir, entry.Name())
 		f, err := os.Open(p)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
+			return nil, errkit.Wrap(err, "failed to read env from dir:"+dir)
 		}
 		c, err := io.ReadAll(f)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
+			return nil, errkit.Wrap(err, "failed to read env from dir:"+dir)
 		}
 		e = append(e, fmt.Sprintf("%s=%s", entry.Name(), c))
 	}

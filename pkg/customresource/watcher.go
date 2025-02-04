@@ -16,8 +16,7 @@
 package customresource
 
 import (
-	"errors"
-
+	"github.com/kanisterio/errkit"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -26,7 +25,7 @@ import (
 
 var (
 	// ErrVersionOutdated indicates that the custom resource is outdated and needs to be refreshed
-	ErrVersionOutdated = errors.New("requested version is outdated in apiserver")
+	ErrVersionOutdated = errkit.NewSentinelErr("requested version is outdated in apiserver")
 )
 
 // ResourceWatcher watches a custom resource for desired state
