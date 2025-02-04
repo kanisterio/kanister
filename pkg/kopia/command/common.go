@@ -65,7 +65,6 @@ func bashCommand(args logsafe.Cmd) []string {
 }
 
 func MakeKanxCommand(args []string) []string {
-	log.Info().Print("KanX Command", field.M{"Command": args})
 	return append([]string{"kando", "process", "client", "execute", "--signal-proxy", "--quiet", "--"}, args...)
 }
 
