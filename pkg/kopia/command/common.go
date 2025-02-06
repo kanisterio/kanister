@@ -64,6 +64,10 @@ func bashCommand(args logsafe.Cmd) []string {
 	return []string{"bash", "-o", "errexit", "-c", args.PlainText()}
 }
 
+func MakeKanxCommand(args []string) []string {
+	return append([]string{"kando", "process", "client", "execute", "--signal-proxy", "--quiet", "--"}, args...)
+}
+
 func stringSliceCommand(args logsafe.Cmd) []string {
 	log.Info().Print("Kopia Command", field.M{"Command": args.String()})
 	return args.StringSliceCMD()

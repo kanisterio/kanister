@@ -15,8 +15,6 @@
 package kando
 
 import (
-	"context"
-
 	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/kanx"
@@ -39,5 +37,5 @@ func runProcessServer(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	return kanx.NewServer().Serve(context.Background(), address)
+	return kanx.NewServer().Serve(cmd.Context(), address)
 }

@@ -27,7 +27,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -81,7 +81,7 @@ func (p *provider) CreateBucket(ctx context.Context, bucketName string) (Bucket,
 	}
 	c, err := l.CreateContainer(bucketName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create bucket %s", bucketName)
+		return nil, errkit.Wrap(err, fmt.Sprintf("failed to create bucket %s", bucketName))
 	}
 	return newBucket(cfg, c, l), nil
 }
@@ -99,7 +99,7 @@ func (p *provider) GetBucket(ctx context.Context, bucketName string) (Bucket, er
 	}
 	c, err := l.Container(bucketName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get bucket %s", bucketName)
+		return nil, errkit.Wrap(err, fmt.Sprintf("failed to get bucket %s", bucketName))
 	}
 	return newBucket(cfg, c, l), nil
 }
@@ -155,7 +155,7 @@ func (p *provider) bucketConfig(ctx context.Context, bucketName string) (Provide
 
 func s3BucketConfig(ctx context.Context, c ProviderConfig, s *Secret, bucketName string) (ProviderConfig, error) {
 	if s == nil || s.Aws == nil {
-		return c, errors.New("AWS Secret required to get region")
+		return c, errkit.New("AWS Secret required to get region")
 	}
 	r, err := s3BucketRegion(ctx, c, *s, bucketName)
 	if err != nil {
@@ -179,7 +179,7 @@ type s3Provider struct {
 // then the return value will be "".
 func (p *s3Provider) GetRegionForBucket(ctx context.Context, bucketName string) (string, error) {
 	if p.secret == nil || p.secret.Aws == nil {
-		return "", errors.New("AWS Secret required to get region")
+		return "", errkit.New("AWS Secret required to get region")
 	}
 	return s3BucketRegion(ctx, p.config, *p.secret, bucketName)
 }
@@ -191,7 +191,7 @@ func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketN
 	}
 	s, err := session.NewSession(c)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create session, region = %s", r)
+		return "", errkit.Wrap(err, fmt.Sprintf("failed to create session, region = %s", r))
 	}
 	svc := s3.New(s)
 

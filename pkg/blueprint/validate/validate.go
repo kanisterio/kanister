@@ -17,7 +17,7 @@ package validate
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -40,20 +40,20 @@ func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 		phases, err := kanister.GetPhases(*bp, name, funcVersion, param.TemplateParams{})
 		if err != nil {
 			utils.PrintStage(fmt.Sprintf("validation of action %s", name), utils.Fail)
-			return errors.Wrapf(err, "%s action %s", BPValidationErr, name)
+			return errkit.Wrap(err, fmt.Sprintf("%s action %s", BPValidationErr, name))
 		}
 
 		// validate deferPhase's argument
 		deferPhase, err := kanister.GetDeferPhase(*bp, name, funcVersion, param.TemplateParams{})
 		if err != nil {
 			utils.PrintStage(fmt.Sprintf("validation of action %s", name), utils.Fail)
-			return errors.Wrapf(err, "%s action %s", BPValidationErr, name)
+			return errkit.Wrap(err, fmt.Sprintf("%s action %s", BPValidationErr, name))
 		}
 
 		if deferPhase != nil {
 			if err := deferPhase.Validate(action.DeferPhase.Args); err != nil {
 				utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", deferPhase.Name(), name), utils.Fail)
-				return errors.Wrapf(err, "%s phase %s in action %s", BPValidationErr, deferPhase.Name(), name)
+				return errkit.Wrap(err, fmt.Sprintf("%s phase %s in action %s", BPValidationErr, deferPhase.Name(), name))
 			}
 			utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", deferPhase.Name(), name), utils.Pass)
 		}
@@ -63,7 +63,7 @@ func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 			// validate function's mandatory arguments
 			if err := phase.Validate(action.Phases[i].Args); err != nil {
 				utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", phase.Name(), name), utils.Fail)
-				return errors.Wrapf(err, "%s phase %s in action %s", BPValidationErr, phase.Name(), name)
+				return errkit.Wrap(err, fmt.Sprintf("%s phase %s in action %s", BPValidationErr, phase.Name(), name))
 			}
 			utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", phase.Name(), name), utils.Pass)
 		}
@@ -83,7 +83,7 @@ func validatePhaseNames(bp *crv1alpha1.Blueprint) error {
 
 		for _, phase := range allPhases {
 			if val := phasesCount[phase.Name]; val >= 1 {
-				return errors.New(fmt.Sprintf("%s: Duplicated phase name is not allowed. Violating phase '%s'", BPValidationErr, phase.Name))
+				return errkit.New(fmt.Sprintf("%s: Duplicated phase name is not allowed. Violating phase '%s'", BPValidationErr, phase.Name))
 			}
 			phasesCount[phase.Name] = 1
 		}

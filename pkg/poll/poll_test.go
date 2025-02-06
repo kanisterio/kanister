@@ -16,13 +16,13 @@ package poll
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime"
 	"testing"
 	"time"
 
 	"github.com/jpillora/backoff"
+	"github.com/kanisterio/errkit"
 	"gopkg.in/check.v1"
 )
 
@@ -139,7 +139,7 @@ func (s *PollSuite) TestWaitWithRetriesTimeout(c *check.C) {
 	defer runtime.GOMAXPROCS(maxprocs)
 
 	f := func(context.Context) (bool, error) {
-		return false, errors.New("retryable")
+		return false, errkit.New("retryable")
 	}
 	errf := func(err error) bool {
 		return err.Error() == "retryable"
