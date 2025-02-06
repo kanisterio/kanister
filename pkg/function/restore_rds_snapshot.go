@@ -108,6 +108,9 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 		RestoreRDSSnapshotDBSubnetGroup,
 		PodAnnotationsArg,
 		PodLabelsArg,
+		CredentialsSourceArg,
+		CredentialsSecretArg,
+		RegionArg,
 	}
 }
 
@@ -153,6 +156,11 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		return nil, err
 	}
 	if err := OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+
+	credentialsSource, err := parseCredentialsSource(args)
+	if err != nil {
 		return nil, err
 	}
 
@@ -208,7 +216,8 @@ func (r *restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		password,
 		dbEngine,
 		sgIDs,
-		tp.Profile,
+		*credentialsSource,
+		tp,
 		postgresToolsImage,
 		annotations,
 		labels,
@@ -235,19 +244,22 @@ func restoreRDSSnapshot(
 	password string,
 	dbEngine RDSDBEngine,
 	sgIDs []string,
-	profile *param.Profile,
+	credentialsSource awsCredentialsSource,
+	tp param.TemplateParams,
 	postgresToolsImage string,
 	annotations,
 	labels map[string]string,
 ) (map[string]interface{}, error) {
+	profile := tp.Profile
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errkit.Wrap(err, "Error validating profile")
 	}
 
-	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
+	awsConfig, region, err := getAwsConfig(ctx, credentialsSource, tp)
+
 	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to get AWS creds from profile")
+		return nil, errkit.Wrap(err, "Failed to get AWS creds")
 	}
 
 	// Create rds client
@@ -256,8 +268,8 @@ func restoreRDSSnapshot(
 		return nil, errkit.Wrap(err, "Failed to create RDS client")
 	}
 
-	// Restore from snapshot
 	if snapshotID != "" {
+		// Restore from snapshot
 		// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
 		// Find security group ids
 		if sgIDs == nil {
@@ -270,9 +282,26 @@ func restoreRDSSnapshot(
 			return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, subnetGroup, snapshotID, sgIDs)
 		}
 		return nil, restoreAuroraFromSnapshot(ctx, rdsCli, instanceID, subnetGroup, snapshotID, string(dbEngine), sgIDs)
+	} else {
+		// Restore from dump
+		return restoreFromDump(ctx, namespace, instanceID, backupArtifactPrefix, backupID, username, password, dbEngine, profile, postgresToolsImage, annotations, labels, rdsCli)
 	}
+}
 
-	// Restore from dump
+func restoreFromDump(ctx context.Context,
+	namespace,
+	instanceID,
+	backupArtifactPrefix,
+	backupID,
+	username,
+	password string,
+	dbEngine RDSDBEngine,
+	profile *param.Profile,
+	postgresToolsImage string,
+	annotations,
+	labels map[string]string,
+	rdsCli *rds.RDS,
+) (map[string]interface{}, error) {
 	descOp, err := rdsCli.DescribeDBInstances(ctx, instanceID)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to describe DB instance. InstanceID=", "instanceID=", instanceID)
@@ -310,6 +339,7 @@ func restoreRDSSnapshot(
 		RestoreRDSSnapshotEndpoint: dbEndpoint,
 	}, nil
 }
+
 func findSecurityGroupIDs(ctx context.Context, rdsCli *rds.RDS, instanceID, dbEngine string) ([]string, error) {
 	if !isAuroraCluster(dbEngine) {
 		return findSecurityGroups(ctx, rdsCli, instanceID)
