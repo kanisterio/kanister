@@ -55,16 +55,11 @@ func (*deleteRDSSnapshotFunc) Name() string {
 	return DeleteRDSSnapshotFuncName
 }
 
-func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Profile, dbEngine RDSDBEngine) error {
-	// Validate profile
-	if err := ValidateProfile(profile); err != nil {
-		return errkit.Wrap(err, "Profile Validation failed")
-	}
-
+func deleteRDSSnapshot(ctx context.Context, snapshotID string, credentialsSource awsCredentialsSource, tp param.TemplateParams, dbEngine RDSDBEngine) error {
 	// Get aws config from profile
-	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
+	awsConfig, region, err := getAwsConfig(ctx, credentialsSource, tp)
 	if err != nil {
-		return errkit.Wrap(err, "Failed to get AWS creds from profile")
+		return errkit.Wrap(err, "Failed to get AWS creds")
 	}
 
 	// Create rds client
@@ -130,7 +125,12 @@ func (d *deleteRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParam
 		return nil, err
 	}
 
-	return nil, deleteRDSSnapshot(ctx, snapshotID, tp.Profile, dbEngine)
+	credentialsSource, err := parseCredentialsSource(args)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, deleteRDSSnapshot(ctx, snapshotID, *credentialsSource, tp, dbEngine)
 }
 
 func (*deleteRDSSnapshotFunc) RequiredArgs() []string {
@@ -141,6 +141,9 @@ func (*deleteRDSSnapshotFunc) Arguments() []string {
 	return []string{
 		DeleteRDSSnapshotSnapshotIDArg,
 		CreateRDSSnapshotDBEngine,
+		CredentialsSourceArg,
+		CredentialsSecretArg,
+		RegionArg,
 	}
 }
 

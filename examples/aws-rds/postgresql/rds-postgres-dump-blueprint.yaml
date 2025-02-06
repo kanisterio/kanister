@@ -17,6 +17,9 @@ actions:
       name: createSnapshot
       args:
         instanceID: '{{ index .Object.data "postgres.instanceid" }}'
+        credentialsSource: secret
+        credentialsSecret: aws
+        region: '{{ .Options.region }}'
     - func: ExportRDSSnapshotToLocation
       name: exportSnapshot
       objects:
@@ -35,10 +38,16 @@ actions:
         snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
         backupArtifactPrefix: test-postgresql-instance/postgres
         dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
+        credentialsSource: secret
+        credentialsSecret: aws
+        region: '{{ .Options.region }}'
     - func: DeleteRDSSnapshot
       name: deleteSnapshot
       args:
         snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+        credentialsSource: secret
+        credentialsSecret: aws
+        region: '{{ .Options.region }}'
   restore:
     inputArtifactNames:
     - backupInfo
@@ -60,6 +69,9 @@ actions:
         password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
         dbEngine: "PostgreSQL"
         dbSubnetGroup: "{{ .ArtifactsIn.backupInfo.KeyValue.dbSubnetGroup }}"
+        credentialsSource: secret
+        credentialsSecret: aws
+        region: '{{ .Options.region }}'
   delete:
     phases:
     - func: KubeTask

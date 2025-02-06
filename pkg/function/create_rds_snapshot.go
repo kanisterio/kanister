@@ -74,17 +74,12 @@ func (*createRDSSnapshotFunc) Name() string {
 	return CreateRDSSnapshotFuncName
 }
 
-func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
+func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEngine, credentialsSource awsCredentialsSource, tp param.TemplateParams) (map[string]interface{}, error) {
 	var allocatedStorage int64
-	// Validate profile
-	if err := ValidateProfile(profile); err != nil {
-		return nil, errkit.Wrap(err, "Profile Validation failed")
-	}
 
-	// Get aws config from profile
-	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
+	awsConfig, region, err := getAwsConfig(ctx, credentialsSource, tp)
 	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to get AWS creds from profile")
+		return nil, errkit.Wrap(err, "Failed to get AWS creds")
 	}
 
 	// Create rds client
@@ -185,7 +180,12 @@ func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePar
 		return nil, err
 	}
 
-	return createRDSSnapshot(ctx, instanceID, dbEngine, tp.Profile)
+	credentialsSource, err := parseCredentialsSource(args)
+	if err != nil {
+		return nil, err
+	}
+
+	return createRDSSnapshot(ctx, instanceID, dbEngine, *credentialsSource, tp)
 }
 
 func (*createRDSSnapshotFunc) RequiredArgs() []string {
@@ -198,6 +198,9 @@ func (crs *createRDSSnapshotFunc) Arguments() []string {
 	return []string{
 		CreateRDSSnapshotInstanceIDArg,
 		CreateRDSSnapshotDBEngine,
+		CredentialsSourceArg,
+		CredentialsSecretArg,
+		RegionArg,
 	}
 }
 
