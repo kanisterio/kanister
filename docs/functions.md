@@ -752,6 +752,12 @@ with an application. It takes individual snapshot of each PVC which can
 be then restored later. It generates an output that contains the
 Snapshot info required for restoring PVCs.
 
+::: tip WARNING
+
+The *CreateVolumeSnapshot* will be deprecated soon. We recommend using [CreateCSISnapshot](#createcsisnapshot) instead.
+CSI snapshotting should have better support for underlying storage providers.
+:::
+
 ::: tip NOTE
 
 Currently we only support PVC snapshots on AWS EBS. Support for more
@@ -801,6 +807,12 @@ This function is used to wait for completion of snapshot operations
 initiated using the [CreateVolumeSnapshot](#createvolumesnapshot) function.
 function.
 
+::: tip WARNING
+
+   The *WaitForSnapshotCompletion* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot).
+   We recommend using [CreateCSISnapshot](#createcsisnapshot) instead, which will wait for completion by default.
+:::
+
 Arguments:
 
   | Argument  | Required | Type   | Description |
@@ -812,6 +824,12 @@ Arguments:
 This function is used to restore one or more PVCs of an application from
 the snapshots taken using the [CreateVolumeSnapshot](#createvolumesnapshot) function.
 It deletes old PVCs, if present and creates new PVCs from the snapshots taken earlier.
+
+::: tip WARNING
+
+   The *CreateVolumeFromSnapshot* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot). We recommend using CSI snapshotting functions ([CreateCSISnapshot](#createcsisnapshot) and [RestoreCSISnapshot](#restorecsisnapshot)) instead.
+   CSI snapshotting should have better support for underlying storage providers.
+:::
 
 Arguments:
 
@@ -853,6 +871,13 @@ by the [CreateVolumeSnapshot](#createvolumesnapshot) function.
 
 This function is used to delete snapshots of PVCs taken using the
 [CreateVolumeSnapshot](#createvolumesnapshot) function.
+
+
+::: tip WARNING
+
+   The *DeleteVolumeSnapshot* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot). We recommend using CSI snapshotting functions ([CreateCSISnapshot](#createcsisnapshot) and [DeleteCSISnapshot](#deletecsisnapshot)) instead.
+   CSI snapshotting should have better support for underlying storage providers.
+:::
 
 Arguments:
 
