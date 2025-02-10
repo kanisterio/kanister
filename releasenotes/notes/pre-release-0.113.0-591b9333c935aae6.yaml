@@ -1,0 +1,14 @@
+---
+features:
+  - Added gRPC call to support sending of UNIX signals to ``kando`` managed processes
+  - Added command line option to follow stdout/stderr of ``kando`` managed processes
+fixes:
+  - The Kopia snapshot command output parser now skips the ignored and fatal error counts
+  - Set default namespace and serviceaccount for MultiContainerRun pods
+upgrade:
+  - Upgrade to K8s 1.31 API
+deprecations:
+  - K8s VolumeSnapshot is now GA, remove support for beta and alpha APIs
+other:
+  - Change ``TIMEOUT_WORKER_POD_READY`` environment variable to ``KANISTER_POD_READY_WAIT_TIMEOUT``
+  - Errors are now handled with https://github.com/kanisterio/errkit across the board
