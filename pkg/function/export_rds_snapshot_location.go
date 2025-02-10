@@ -67,7 +67,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.112.0"
+	defaultPostgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.113.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct {
@@ -96,19 +96,21 @@ func exportRDSSnapshotToLoc(
 	backupPrefix string,
 	dbEngine RDSDBEngine,
 	sgIDs []string,
-	profile *param.Profile,
+	credentialsSource awsCredentialsSource,
+	tp param.TemplateParams,
 	postgresToolsImage string,
 	annotations,
 	labels map[string]string,
 ) (map[string]interface{}, error) {
+	profile := tp.Profile
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errkit.Wrap(err, "Profile Validation failed")
 	}
 
-	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
+	awsConfig, region, err := getAwsConfig(ctx, credentialsSource, tp)
 	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to get AWS creds from profile")
+		return nil, errkit.Wrap(err, "Failed to get AWS creds")
 	}
 
 	// Create rds client
@@ -259,6 +261,11 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 		return nil, err
 	}
 
+	credentialsSource, err := parseCredentialsSource(args)
+	if err != nil {
+		return nil, err
+	}
+
 	return exportRDSSnapshotToLoc(
 		ctx,
 		namespace,
@@ -271,7 +278,8 @@ func (e *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.Tem
 		backupArtifact,
 		dbEngine,
 		sgIDs,
-		tp.Profile,
+		*credentialsSource,
+		tp,
 		postgresToolsImage,
 		annotations,
 		labels,
@@ -301,6 +309,9 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 		ExportRDSSnapshotToLocDBSubnetGroupArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
+		CredentialsSourceArg,
+		CredentialsSecretArg,
+		RegionArg,
 	}
 }
 
