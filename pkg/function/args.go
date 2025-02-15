@@ -55,16 +55,21 @@ func ArgExists(args map[string]interface{}, argName string) bool {
 
 // GetPodSpecOverride merges PodOverride specs passed in args and TemplateParams and returns combined Override specs
 func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, argName string) (crv1alpha1.JSONMap, error) {
+	return GetAndMergePodSpecOverride(tp.PodOverride, args, argName)
+}
+
+// GetAndMergePodSpecOverride merges PodOverride specs passed in args and actionSetOverride and returns combined Override specs
+func GetAndMergePodSpecOverride(actionSetOverride crv1alpha1.JSONMap, args map[string]interface{}, argName string) (crv1alpha1.JSONMap, error) {
 	var podOverride crv1alpha1.JSONMap
 	var err error
-	if err = OptArg(args, KubeTaskPodOverrideArg, &podOverride, tp.PodOverride); err != nil {
+	if err = OptArg(args, argName, &podOverride, actionSetOverride); err != nil {
 		return nil, err
 	}
 
 	// Check if PodOverride specs are passed through actionset
 	// If yes, override podOverride specs
-	if tp.PodOverride != nil {
-		podOverride, err = kube.CreateAndMergeJSONPatch(podOverride, tp.PodOverride)
+	if actionSetOverride != nil {
+		podOverride, err = kube.CreateAndMergeJSONPatch(podOverride, actionSetOverride)
 		if err != nil {
 			return nil, err
 		}
