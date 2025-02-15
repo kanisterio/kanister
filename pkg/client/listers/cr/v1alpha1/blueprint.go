@@ -19,8 +19,8 @@ package v1alpha1
 
 import (
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -37,25 +37,17 @@ type BlueprintLister interface {
 
 // blueprintLister implements the BlueprintLister interface.
 type blueprintLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1alpha1.Blueprint]
 }
 
 // NewBlueprintLister returns a new BlueprintLister.
 func NewBlueprintLister(indexer cache.Indexer) BlueprintLister {
-	return &blueprintLister{indexer: indexer}
-}
-
-// List lists all Blueprints in the indexer.
-func (s *blueprintLister) List(selector labels.Selector) (ret []*v1alpha1.Blueprint, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Blueprint))
-	})
-	return ret, err
+	return &blueprintLister{listers.New[*v1alpha1.Blueprint](indexer, v1alpha1.Resource("blueprint"))}
 }
 
 // Blueprints returns an object that can list and get Blueprints.
 func (s *blueprintLister) Blueprints(namespace string) BlueprintNamespaceLister {
-	return blueprintNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return blueprintNamespaceLister{listers.NewNamespaced[*v1alpha1.Blueprint](s.ResourceIndexer, namespace)}
 }
 
 // BlueprintNamespaceLister helps list and get Blueprints.
@@ -73,26 +65,5 @@ type BlueprintNamespaceLister interface {
 // blueprintNamespaceLister implements the BlueprintNamespaceLister
 // interface.
 type blueprintNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Blueprints in the indexer for a given namespace.
-func (s blueprintNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.Blueprint, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Blueprint))
-	})
-	return ret, err
-}
-
-// Get retrieves the Blueprint from the indexer for a given namespace and name.
-func (s blueprintNamespaceLister) Get(name string) (*v1alpha1.Blueprint, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("blueprint"), name)
-	}
-	return obj.(*v1alpha1.Blueprint), nil
+	listers.ResourceIndexer[*v1alpha1.Blueprint]
 }

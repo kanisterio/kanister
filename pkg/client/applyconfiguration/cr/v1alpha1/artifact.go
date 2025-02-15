@@ -17,14 +17,14 @@ limitations under the License.
 
 package v1alpha1
 
-// ArtifactApplyConfiguration represents an declarative configuration of the Artifact type for use
+// ArtifactApplyConfiguration represents a declarative configuration of the Artifact type for use
 // with apply.
 type ArtifactApplyConfiguration struct {
 	KeyValue      map[string]string `json:"keyValue,omitempty"`
 	KopiaSnapshot *string           `json:"kopiaSnapshot,omitempty"`
 }
 
-// ArtifactApplyConfiguration constructs an declarative configuration of the Artifact type for use with
+// ArtifactApplyConfiguration constructs a declarative configuration of the Artifact type for use with
 // apply.
 func Artifact() *ArtifactApplyConfiguration {
 	return &ArtifactApplyConfiguration{}

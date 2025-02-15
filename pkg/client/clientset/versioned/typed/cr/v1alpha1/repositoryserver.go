@@ -19,9 +19,6 @@ package v1alpha1
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
 
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/client/applyconfiguration/cr/v1alpha1"
@@ -29,7 +26,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // RepositoryServersGetter has a method to return a RepositoryServerInterface.
@@ -42,6 +39,7 @@ type RepositoryServersGetter interface {
 type RepositoryServerInterface interface {
 	Create(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.CreateOptions) (*v1alpha1.RepositoryServer, error)
 	Update(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.UpdateOptions) (*v1alpha1.RepositoryServer, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 	UpdateStatus(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.UpdateOptions) (*v1alpha1.RepositoryServer, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
@@ -50,206 +48,25 @@ type RepositoryServerInterface interface {
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RepositoryServer, err error)
 	Apply(ctx context.Context, repositoryServer *crv1alpha1.RepositoryServerApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RepositoryServer, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
 	ApplyStatus(ctx context.Context, repositoryServer *crv1alpha1.RepositoryServerApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RepositoryServer, err error)
 	RepositoryServerExpansion
 }
 
 // repositoryServers implements RepositoryServerInterface
 type repositoryServers struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*v1alpha1.RepositoryServer, *v1alpha1.RepositoryServerList, *crv1alpha1.RepositoryServerApplyConfiguration]
 }
 
 // newRepositoryServers returns a RepositoryServers
 func newRepositoryServers(c *CrV1alpha1Client, namespace string) *repositoryServers {
 	return &repositoryServers{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*v1alpha1.RepositoryServer, *v1alpha1.RepositoryServerList, *crv1alpha1.RepositoryServerApplyConfiguration](
+			"repositoryservers",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *v1alpha1.RepositoryServer { return &v1alpha1.RepositoryServer{} },
+			func() *v1alpha1.RepositoryServerList { return &v1alpha1.RepositoryServerList{} }),
 	}
-}
-
-// Get takes name of the repositoryServer, and returns the corresponding repositoryServer object, and an error if there is any.
-func (c *repositoryServers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.RepositoryServer, err error) {
-	result = &v1alpha1.RepositoryServer{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of RepositoryServers that match those selectors.
-func (c *repositoryServers) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.RepositoryServerList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1alpha1.RepositoryServerList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested repositoryServers.
-func (c *repositoryServers) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a repositoryServer and creates it.  Returns the server's representation of the repositoryServer, and an error, if there is any.
-func (c *repositoryServers) Create(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.CreateOptions) (result *v1alpha1.RepositoryServer, err error) {
-	result = &v1alpha1.RepositoryServer{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(repositoryServer).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a repositoryServer and updates it. Returns the server's representation of the repositoryServer, and an error, if there is any.
-func (c *repositoryServers) Update(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.UpdateOptions) (result *v1alpha1.RepositoryServer, err error) {
-	result = &v1alpha1.RepositoryServer{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		Name(repositoryServer.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(repositoryServer).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *repositoryServers) UpdateStatus(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.UpdateOptions) (result *v1alpha1.RepositoryServer, err error) {
-	result = &v1alpha1.RepositoryServer{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		Name(repositoryServer.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(repositoryServer).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the repositoryServer and deletes it. Returns an error if one occurs.
-func (c *repositoryServers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *repositoryServers) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched repositoryServer.
-func (c *repositoryServers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RepositoryServer, err error) {
-	result = &v1alpha1.RepositoryServer{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied repositoryServer.
-func (c *repositoryServers) Apply(ctx context.Context, repositoryServer *crv1alpha1.RepositoryServerApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RepositoryServer, err error) {
-	if repositoryServer == nil {
-		return nil, fmt.Errorf("repositoryServer provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(repositoryServer)
-	if err != nil {
-		return nil, err
-	}
-	name := repositoryServer.Name
-	if name == nil {
-		return nil, fmt.Errorf("repositoryServer.Name must be provided to Apply")
-	}
-	result = &v1alpha1.RepositoryServer{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *repositoryServers) ApplyStatus(ctx context.Context, repositoryServer *crv1alpha1.RepositoryServerApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RepositoryServer, err error) {
-	if repositoryServer == nil {
-		return nil, fmt.Errorf("repositoryServer provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(repositoryServer)
-	if err != nil {
-		return nil, err
-	}
-
-	name := repositoryServer.Name
-	if name == nil {
-		return nil, fmt.Errorf("repositoryServer.Name must be provided to Apply")
-	}
-
-	result = &v1alpha1.RepositoryServer{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("repositoryservers").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }
