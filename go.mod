@@ -254,3 +254,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/gcp v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 )
+
+require github.com/stretchr/testify v1.9.0
+
+require github.com/pmezard/go-difflib v1.0.0 // indirect
