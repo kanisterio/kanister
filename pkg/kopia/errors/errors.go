@@ -24,4 +24,7 @@ const (
 	ErrCodeOutOfMemoryStr        = "command terminated with exit code 137"
 	ErrBucketDoesNotExistStr     = "bucket doesn't exist"
 	ErrUnableToListFromBucketStr = "unable to list from the bucket"
+
+	ErrMissingRequiredFieldMsg      = "missing required field: %s for storage provider %s"
+	ErrStorageOptionsCannotBeNilMsg = "storage options cannot be nil for the provider %s"
 )
