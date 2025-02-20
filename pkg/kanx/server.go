@@ -265,7 +265,8 @@ func NewServer() *Server {
 }
 
 func (s *Server) Serve(ctx context.Context, addr string) error {
-	ctx, can := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
+	// os.Interrupt is a platform specific interrupt
+	ctx, can := signal.NotifyContext(ctx, syscall.SIGTERM, os.Interrupt)
 	defer can()
 	go func() {
 		<-ctx.Done()

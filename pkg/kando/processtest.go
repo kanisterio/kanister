@@ -39,8 +39,8 @@ func executeCommand(ctx context.Context, stdout, stderr io.Writer, args ...strin
 	return rc.ExecuteContext(ctx)
 }
 
-func executeCommandWithReset(ctx context.Context, stdout, stderr *bytes.Buffer, args ...string) error {
-	stdout.Reset()
-	stderr.Reset()
-	return executeCommand(ctx, stdout, stderr, args...)
+func resetBuffers(bufs ...*bytes.Buffer) {
+	for _, buf := range bufs {
+		buf.Reset()
+	}
 }
