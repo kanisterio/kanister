@@ -81,6 +81,9 @@ type PodOptions struct {
 	OwnerReferences          []metav1.OwnerReference
 	EnvironmentVariables     []corev1.EnvVar
 	Lifecycle                *corev1.Lifecycle
+	// In some situations, if it's required to schedule the pod on specific node,
+	// nodeName can be used to set that node name.
+	NodeName string
 }
 
 func (po *PodOptions) AddLabels(labels map[string]string) {
@@ -281,6 +284,10 @@ func createPodSpec(opts *PodOptions, patchedSpecs corev1.PodSpec, ns string) *co
 
 	for key, value := range opts.Labels {
 		pod.ObjectMeta.Labels[key] = value
+	}
+
+	if opts.NodeName != "" {
+		pod.Spec.NodeName = opts.NodeName
 	}
 
 	pod.Namespace = ns
