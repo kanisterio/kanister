@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"time"
 )
 
 func startServer(ctx context.Context, addr string) error {
@@ -15,14 +16,20 @@ func startServer(ctx context.Context, addr string) error {
 	return rc.ExecuteContext(ctx)
 }
 
-func waitSock(ctx context.Context, addr string) error {
-	lst, err := os.Lstat(addr)
+// waitSock wait for socket file to appear.  This signifies that the KanX server has started
+func waitSock(ctx context.Context, path string) error {
+	lst, err := os.Lstat(path)
+	// wait until the file exists and ModeSocket is set
 	for ctx.Err() == nil && (err != nil || lst.Mode()&os.ModeSocket == 0) {
-		lst, err = os.Lstat(addr)
+		// brain-dead sleep - waste time until file state might change
+		time.Sleep(100 * time.Millisecond)
+		lst, err = os.Lstat(path)
 	}
+	// return the context error if there is one.
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
+	// otherwise return the error from Lstat
 	return err
 }
 
