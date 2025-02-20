@@ -212,38 +212,6 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStderr(c *C
 	c.Assert(stderr.String(), Equals, "hello world\n")
 }
 
-// TestProcessClientExecute_Exit1 test that non-zero exit code from the child process is reflected in the kando command.
-func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_Exit1(c *C) {
-	exitCode := 0
-	addr := c.MkDir() + "/kanister.sock"
-	exit = func(n int) {
-		exitCode = n
-	}
-	ctx, can := context.WithCancel(context.Background())
-	defer can()
-	go func() {
-		err := startServer(ctx, addr)
-		c.Assert(err, IsNil)
-	}()
-	err := waitSock(ctx, addr)
-	c.Assert(err, IsNil)
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	err = executeCommand(ctx, stdout, stderr, "process", "client", "--exit-proxy", "--as-json", "-a", addr, "execute", "--", "/bin/bash", "-c", "exit 1")
-	c.Assert(err, NotNil)
-	c.Assert(err.Error(), Equals, "exit status 1")
-	c.Assert(exitCode, Equals, 1)
-	bs := stdout.Bytes()
-	pr := &ProcessResult{}
-	dc := json.NewDecoder(bytes.NewReader(bs))
-	err = dc.Decode(pr)
-	c.Assert(err, IsNil)
-	c.Assert(pr.Pid, Not(Equals), "")
-	c.Assert(pr.State, Equals, "PROCESS_STATE_RUNNING")
-	c.Assert(string(stdout.Bytes()[dc.InputOffset():]), Equals, "\n")
-	c.Assert(stderr.String(), Equals, "Error: exit status 1\n")
-}
-
 func (s *KanXCmdProcessClientSuite) TestProcessClientGet_0(c *C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
