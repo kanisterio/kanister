@@ -34,6 +34,7 @@ require (
 	github.com/kanisterio/errkit v0.0.3
 	github.com/kanisterio/safecli v0.0.10
 	github.com/kopia/kopia v0.20.2-0.20250717071305-692c1f465ba3
+	github.com/kastenhq/datamover v0.0.0-20250704200940-80224e387e93
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
