@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/status"
 
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/version"
@@ -34,7 +35,12 @@ var logLevel string
 func Execute() {
 	root := newRootCommand()
 	if err := root.Execute(); err != nil {
-		log.WithError(err).Print("Kando failed to execute")
+		// check to see if the error is a gRPC error
+		if status.Convert(err) != nil {
+			log.Info().WithError(err).Print("Kando failed to execute gRPC call")
+			os.Exit(69)
+		}
+		log.Info().WithError(err).Print("Kando failed to execute")
 		os.Exit(1)
 	}
 }
@@ -68,7 +74,7 @@ func newRootCommand() *cobra.Command {
 func setLogLevel(v string) error {
 	lgl, err := logrus.ParseLevel(v)
 	if err != nil {
-		return errkit.Wrap(err, fmt.Sprintf("Invalid log level: %s", v))
+		return errkit.New(fmt.Sprintf("Invalid log level: %s", v))
 	}
 	// set application logger log level. (kanister/log/log.go)
 	log.SetLevel(log.Level(lgl))
