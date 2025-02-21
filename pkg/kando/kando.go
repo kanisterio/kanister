@@ -15,8 +15,8 @@
 package kando
 
 import (
-	"os"
 	"fmt"
+	"os"
 
 	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
