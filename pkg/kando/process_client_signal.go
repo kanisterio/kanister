@@ -52,8 +52,11 @@ func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
-	asQuiet := processAsQuietFlagValue(cmd)
 	asJSON := processAsJSONFlagValue(cmd)
+	asQuiet := processAsQuietFlagValue(cmd)
+	if asQuiet {
+		cmd.SilenceErrors = true
+	}
 	cmd.SilenceUsage = true
 	p, err := kanx.SignalProcess(cmd.Context(), addr, pid, signal)
 	if err != nil {
