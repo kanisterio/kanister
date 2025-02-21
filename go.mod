@@ -5,6 +5,7 @@ go 1.22.12
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
 	github.com/graymeta/stow => github.com/kastenhq/stow v0.2.6-kasten.1.0.20231101232131-9321daa23aae
+	github.com/kastenhq/datamover v0.0.0-unpublished => ../datamover
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 	golang.org/x/net => golang.org/x/net v0.33.0
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
@@ -34,6 +35,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/kanisterio/errkit v0.0.3
 	github.com/kanisterio/safecli v0.0.10
+	github.com/kastenhq/datamover v0.0.0-unpublished
 	github.com/kopia/kopia v0.18.3-0.20250113233333-aa96483aaded
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
@@ -104,7 +106,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/edsrzf/mmap-go v1.2.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
-	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/color v1.18.0 // indirect
