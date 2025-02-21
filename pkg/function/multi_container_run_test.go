@@ -268,3 +268,156 @@ func (s *MultiContainerRunSuite) TestMultiContainerRunWithoutNamespace(c *C) {
 		}
 	}
 }
+
+func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *C) {
+	originalOverride := crv1alpha1.JSONMap{
+		"containers": []interface{}{
+			map[string]interface{}{
+				"name":            "background",
+				"imagePullPolicy": "Always",
+				"resources":       map[string]interface{}{},
+			},
+			map[string]interface{}{
+				"name":            "output",
+				"imagePullPolicy": "Always",
+				"resources":       map[string]interface{}{},
+			},
+		},
+	}
+	podOverride, err := prepareActionSetPodSpecOverride(originalOverride)
+	c.Assert(err, IsNil)
+	c.Assert(podOverride, DeepEquals, originalOverride)
+
+	originalOverride = crv1alpha1.JSONMap{
+		"containers": []interface{}{
+			map[string]interface{}{
+				"name":            "other_container",
+				"imagePullPolicy": "Always",
+				"resources":       map[string]interface{}{},
+			},
+		},
+	}
+	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
+	c.Assert(err, IsNil)
+	c.Assert(podOverride, DeepEquals, originalOverride)
+
+	originalOverride = crv1alpha1.JSONMap{
+		"containers": []interface{}{
+			map[string]interface{}{
+				"name":            "container",
+				"imagePullPolicy": "Always",
+				"resources":       map[string]interface{}{},
+			},
+			map[string]interface{}{
+				"name":            "other_container",
+				"imagePullPolicy": "Never",
+				"resources":       map[string]interface{}{},
+			},
+		},
+	}
+
+	expectedOverride := crv1alpha1.JSONMap{
+		"containers": []interface{}{
+			map[string]interface{}{
+				"name":            "other_container",
+				"imagePullPolicy": "Never",
+				"resources":       map[string]interface{}{},
+			},
+			map[string]interface{}{
+				"name":            "background",
+				"imagePullPolicy": "Always",
+				"resources":       map[string]interface{}{},
+			},
+			map[string]interface{}{
+				"name":            "output",
+				"imagePullPolicy": "Always",
+				"resources":       map[string]interface{}{},
+			},
+		},
+	}
+	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
+	c.Assert(err, IsNil)
+	c.Assert(podOverride, DeepEquals, expectedOverride)
+
+	originalOverride = crv1alpha1.JSONMap{
+		"containers": []interface{}{
+			map[string]interface{}{
+				"name": "container",
+				"resources": map[string]interface{}{
+					"limits": map[string]interface{}{
+						"memory": "128Mi",
+					},
+				},
+			},
+		},
+	}
+
+	expectedOverride = crv1alpha1.JSONMap{
+		"containers": []interface{}{
+			map[string]interface{}{
+				"name": "background",
+				"resources": map[string]interface{}{
+					"limits": map[string]interface{}{
+						"memory": "128Mi",
+					},
+				},
+			},
+			map[string]interface{}{
+				"name": "output",
+				"resources": map[string]interface{}{
+					"limits": map[string]interface{}{
+						"memory": "128Mi",
+					},
+				},
+			},
+		},
+	}
+	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
+	c.Assert(err, IsNil)
+	c.Assert(podOverride, DeepEquals, expectedOverride)
+
+	originalOverride = crv1alpha1.JSONMap{
+		"containers": []interface{}{
+			map[string]interface{}{
+				"name": "container",
+				"resources": map[string]interface{}{
+					"limits": map[string]interface{}{
+						"memory": "128Mi",
+					},
+				},
+			},
+			map[string]interface{}{
+				"name": "background",
+				"resources": map[string]interface{}{
+					"limits": map[string]interface{}{
+						"memory": "128Mi",
+					},
+				},
+			},
+		},
+	}
+
+	expectedOverride = crv1alpha1.JSONMap{
+		"containers": []interface{}{
+			map[string]interface{}{
+				"name": "container",
+				"resources": map[string]interface{}{
+					"limits": map[string]interface{}{
+						"memory": "128Mi",
+					},
+				},
+			},
+			map[string]interface{}{
+				"name": "background",
+				"resources": map[string]interface{}{
+					"limits": map[string]interface{}{
+						"memory": "128Mi",
+					},
+				},
+			},
+		},
+	}
+	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
+	c.Assert(err, IsNil)
+	c.Assert(podOverride, DeepEquals, expectedOverride)
+}
