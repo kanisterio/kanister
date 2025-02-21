@@ -62,7 +62,7 @@ func GetMaintenanceOwnerForConnectedRepository(
 	cmd := command.MaintenanceInfo(args)
 
 	var stdout, stderr bytes.Buffer
-	err = commandExecutor.Exec(ctx, command.MakeKanxCommand(cmd), nil, &stdout, &stderr)
+	err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
 	format.LogWithCtx(ctx, pod.Name, container, stdout.String())
 	format.LogWithCtx(ctx, pod.Name, container, stderr.String())
 	if err != nil {
