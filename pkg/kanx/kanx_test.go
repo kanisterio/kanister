@@ -35,7 +35,7 @@ func tmpDir(c *C) string {
 	// limit the size of the address while retaining some of the properties
 	// of the original directory name
 	hs := adler32.Checksum([]byte(c.TestName()))
-	d, err := os.MkdirTemp("", fmt.Sprintf("%08x%.20s", hs, c.TestName()))
+	d, err := os.MkdirTemp("", fmt.Sprintf("%.20s%08x", c.TestName(), hs))
 	c.Log("Directory: ", d)
 	c.Assert(err, IsNil)
 	return d
@@ -448,4 +448,54 @@ func (s *KanXSuite) TestCreateProcess_Exit2(c *C) {
 	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_FAILED)
 	c.Assert(p0.GetExitErr(), Equals, "signal: killed")
 	c.Assert(p0.GetExitCode(), Equals, int64(-1))
+}
+
+type countWriter struct {
+	C     *C
+	Count int64
+}
+
+func (w *countWriter) Write(p []byte) (int, error) {
+	l := len(p)
+	w.Count += int64(l)
+	return l, nil
+}
+
+func (s *KanXSuite) TestCreateProcess_BufferOverflow_1(c *C) {
+	d := tmpDir(c)
+	addr := path.Join(d, "kanx.sock")
+	ctx, can := context.WithCancel(context.Background())
+	defer can()
+	server := newTestServer(d)
+	go func() {
+		err := server.Serve(ctx, addr)
+		c.Assert(err, IsNil)
+	}()
+	serverReady(ctx, addr, c)
+
+	p0, err := CreateProcess(ctx, addr, "/bin/bash", []string{"-c", "yes | dd bs=8192 count=1024"})
+	c.Assert(err, IsNil)
+	c.Assert(p0.GetPid(), Not(Equals), 0)
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_RUNNING)
+	c.Assert(p0.GetExitErr(), Equals, "")
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	_ = poll.Wait(ctx, func(context.Context) (bool, error) {
+		p0, err = GetProcess(ctx, addr, p0.GetPid())
+		c.Assert(err, IsNil)
+		return p0.GetState() != ProcessState_PROCESS_STATE_RUNNING, nil
+	})
+
+	c.Assert(p0.GetState(), Equals, ProcessState_PROCESS_STATE_SUCCEEDED)
+	c.Assert(p0.GetExitCode(), Equals, int64(0))
+
+	cw := &countWriter{C: c}
+	err = Stdout(ctx, addr, p0.GetPid(), cw)
+	c.Assert(err, IsNil)
+	c.Assert(cw.Count, Equals, int64(1024*8192))
+
+	// Conditions that will exist if the gRPC buffer overflows:
+	//
+	//	c.Assert(err, NotNil)
+	//	c.Assert(err.Error(), Matches, ".*received message larger than max.*")
 }
