@@ -64,11 +64,6 @@ func bashCommand(args logsafe.Cmd) []string {
 	return []string{"bash", "-o", "errexit", "-c", args.PlainText()}
 }
 
-func bashCommandAsLogSafe(args logsafe.Cmd) logsafe.Cmd {
-	log.Info().Print("Kopia Command", field.M{"Command": args.String()})
-	return logsafe.NewLoggable("bash", "-o", "errexit", "-c").Combine(args)
-}
-
 func MakeKanxCommand(args []string) []string {
 	return append([]string{"kando", "process", "client", "execute", "--signal-proxy", "--exit-proxy", "--quiet", "--"}, args...)
 }
