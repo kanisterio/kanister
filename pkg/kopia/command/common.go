@@ -65,7 +65,7 @@ func bashCommand(args logsafe.Cmd) []string {
 }
 
 func MakeKanxCommand(args []string) []string {
-	return append([]string{"kando", "process", "client", "execute", "--signal-proxy", "--quiet", "--"}, args...)
+	return append([]string{"kando", "process", "client", "execute", "--signal-proxy", "--exit-proxy", "--quiet", "--"}, args...)
 }
 
 func stringSliceCommand(args logsafe.Cmd) []string {

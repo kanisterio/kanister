@@ -29,6 +29,7 @@ import (
 )
 
 const (
+	processExitProxyFlagName   = "exit-proxy"
 	processSignalProxyFlagName = "signal-proxy"
 	processAsJSONFlagName      = "as-json"
 	processAsQuietFlagName     = "quiet"
@@ -100,10 +101,18 @@ func proxySignals(ctx context.Context, signalTermChan chan os.Signal, addr strin
 	}
 }
 
-func procesSignalProxyAddFlag(cmd *cobra.Command) {
+func processSignalProxyAddFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolP(processSignalProxyFlagName, "p", false, "pass signals from client to server")
 }
 
 func processSignalProxyFlagValue(cmd *cobra.Command) (bool, error) {
 	return cmd.Flags().GetBool(processSignalProxyFlagName)
+}
+
+func processExitProxyAddFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().BoolP(processExitProxyFlagName, "x", false, "return exit code of the server process")
+}
+
+func processExitProxyFlagValue(cmd *cobra.Command) (bool, error) {
+	return cmd.Flags().GetBool(processExitProxyFlagName)
 }

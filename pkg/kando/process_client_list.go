@@ -44,6 +44,10 @@ func runProcessClientListWithOutput(out io.Writer, cmd *cobra.Command) error {
 		return err
 	}
 	asJSON := processAsJSONFlagValue(cmd)
+	asQuiet := processAsQuietFlagValue(cmd)
+	if asQuiet {
+		cmd.SilenceErrors = true
+	}
 	cmd.SilenceUsage = true
 	ps, err := kanx.ListProcesses(cmd.Context(), addr)
 	if err != nil {
