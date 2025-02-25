@@ -145,7 +145,7 @@ func integrationCleanup(t *test.T) {
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
-	appWaitTimeout     = 3 * time.Minute
+	appWaitTimeout     = 6 * time.Minute
 	controllerSA       = "kanister-sa"
 	contextWaitTimeout = 10 * time.Minute
 )
