@@ -752,6 +752,12 @@ with an application. It takes individual snapshot of each PVC which can
 be then restored later. It generates an output that contains the
 Snapshot info required for restoring PVCs.
 
+::: tip WARNING
+
+The *CreateVolumeSnapshot* will be deprecated soon. We recommend using [CreateCSISnapshot](#createcsisnapshot) instead.
+CSI snapshotting should have better support for underlying storage providers.
+:::
+
 ::: tip NOTE
 
 Currently we only support PVC snapshots on AWS EBS. Support for more
@@ -801,6 +807,12 @@ This function is used to wait for completion of snapshot operations
 initiated using the [CreateVolumeSnapshot](#createvolumesnapshot) function.
 function.
 
+::: tip WARNING
+
+   The *WaitForSnapshotCompletion* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot).
+   We recommend using [CreateCSISnapshot](#createcsisnapshot) instead, which will wait for completion by default.
+:::
+
 Arguments:
 
   | Argument  | Required | Type   | Description |
@@ -812,6 +824,12 @@ Arguments:
 This function is used to restore one or more PVCs of an application from
 the snapshots taken using the [CreateVolumeSnapshot](#createvolumesnapshot) function.
 It deletes old PVCs, if present and creates new PVCs from the snapshots taken earlier.
+
+::: tip WARNING
+
+   The *CreateVolumeFromSnapshot* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot). We recommend using CSI snapshotting functions ([CreateCSISnapshot](#createcsisnapshot) and [RestoreCSISnapshot](#restorecsisnapshot)) instead.
+   CSI snapshotting should have better support for underlying storage providers.
+:::
 
 Arguments:
 
@@ -853,6 +871,13 @@ by the [CreateVolumeSnapshot](#createvolumesnapshot) function.
 
 This function is used to delete snapshots of PVCs taken using the
 [CreateVolumeSnapshot](#createvolumesnapshot) function.
+
+
+::: tip WARNING
+
+   The *DeleteVolumeSnapshot* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot). We recommend using CSI snapshotting functions ([CreateCSISnapshot](#createcsisnapshot) and [DeleteCSISnapshot](#deletecsisnapshot)) instead.
+   CSI snapshotting should have better support for underlying storage providers.
+:::
 
 Arguments:
 
@@ -938,6 +963,15 @@ Arguments:
   | ---------- | :------: | ------ | ----------- |
   | instanceID | Yes      | string | ID of RDS instance you want to create snapshot of |
   | dbEngine   | No       | string | Required in case of RDS Aurora instance. Supported DB Engines: `aurora` `aurora-mysql` and `aurora-postgresql` |
+  | credentialsSource | No | string | Source for aws credentials. Supported sources: `profile`, `secret`, `serviceaccount`. Default value is `profile` |
+  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset |
+  | region | No | string | AWS region to use. Derived from profile or serviceaccount if not set |
+
+::: tip NOTE
+
+`credentialsSource: serviceaccount` uses kanister operator service account. IAM role for service
+account should be set up to access the RDS database.
+:::
 
 Outputs:
 
@@ -994,6 +1028,10 @@ Arguments:
   | image                | No       | string     | kanister-tools image to be used for running export job |
   | podAnnotations       | No       | map[string]string       | custom annotations for the temporary pod that gets created |
   | podLabels            | No       | map[string]string       | custom labels for the temporary pod that gets created |
+  | credentialsSource | No | string | Source for aws credentials. Supported sources: `profile`, `secret`, `serviceaccount`. Default value is `profile` |
+  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be [referenced in the Actionset](templates.html#secrets) |
+  | region | No | string | AWS region to use. Derived from profile or serviceaccount if not set |
+
 
 ::: tip NOTE
 
@@ -1004,6 +1042,19 @@ associated with instance with `instanceID` and will pass the same. - If
 `backupArtifactPrefix` argument is not set, `instanceID` will be used as
 *backupArtifactPrefix*. - If `dbSubnetGroup` argument is not
 set, `default` DB Subnet group will be used.
+:::
+
+::: tip NOTE
+
+If `credentialsSource` is configured to `profile` (default behaviour), the profile used has to be
+an S3 profile configured with the same region as the database snapshot.
+If it's required to export to another region, `credentialSource: secret` or `credentialSource: serviceaccount` can be used.
+:::
+
+::: tip NOTE
+
+`credentialsSource: serviceaccount` uses kanister operator service account. IAM role for service
+account should be set up to access the RDS database.
 :::
 
 Outputs:
@@ -1069,13 +1120,13 @@ stored in an object storage.
 
 ::: tip NOTE
 
-\- If [snapshotID] is set, the function will restore RDS
-instance from the RDS snapshot. Otherwise *backupID* needs
-to be set to restore the RDS instance from data dump. - While restoring
-the data from RDS snapshot if RDS instance (where we have to restore the
-data) doesn\'t exist, the RDS instance will be created. But if the data
+- If `snapshotID` is set, the function will restore RDS
+instance from the RDS snapshot. Otherwise `backupID` needs
+to be set to restore the RDS instance from data dump.
+- While restoring the data from RDS snapshot if RDS instance (where we have to restore the
+data) doesn't exist, the RDS instance will be created. But if the data
 is being restored from the Object Storage (data dump) and the RDS
-instance doesn\'t exist new RDS instance will not be created and will
+instance doesn't exist new RDS instance will not be created and will
 result in an error.
 :::
 
@@ -1096,15 +1147,25 @@ Arguments:
   | image                | No       | string     |  kanister-tools image to be used for running restore, only relevant when restoring from data dump (if `snapshotID` is empty) |
   | podAnnotations       | No       | map[string]string       | custom annotations for the temporary pod that gets created |
   | podLabels            | No       | map[string]string       | custom labels for the temporary pod that gets created |
+  | credentialsSource | No | string | Source for aws credentials. Supported sources: `profile`, `secret`, `serviceaccount`. Default value is `profile` |
+  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset |
+  | region | No | string | AWS region to use. Derived from profile or serviceaccount if not set |
+
 
 ::: tip NOTE
 
-\- If `snapshotID` is not set, restore will be done from data dump. In
-that case `backupID` [arg] is required. - If
-`securityGroupID` argument is not set, `RestoreRDSSnapshot` will find
+- If `snapshotID` is not set, restore will be done from data dump. In
+that case `backupID` arg is required.
+- If `securityGroupID` argument is not set, `RestoreRDSSnapshot` will find
 out Security Group IDs associated with instance with `instanceID` and
-will pass the same. - If `dbSubnetGroup` argument is not set, `default`
-DB Subnet group will be used.
+will pass the same.
+- If `dbSubnetGroup` argument is not set, `default` DB Subnet group will be used.
+:::
+
+::: tip NOTE
+
+`credentialsSource: serviceaccount` uses kanister operator service account. IAM role for service
+account should be set up to access the RDS database.
 :::
 
 Outputs:
@@ -1153,6 +1214,15 @@ Arguments:
   | Argument   | Required | Type   | Description |
   | ---------- | :------: | ------ | ----------- |
   | snapshotID | No       | string | ID of the RDS snapshot |
+  | credentialsSource | No | string | Source for aws credentials. Supported sources: `profile`, `secret`, `serviceaccount`. Default value is `profile` |
+  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset |
+  | region | No | string | AWS region to use. Derived from profile or serviceaccount if not set |
+
+::: tip NOTE
+
+`credentialsSource: serviceaccount` uses kanister operator service account. IAM role for service
+account should be set up to access the RDS database.
+:::
 
 Example:
 

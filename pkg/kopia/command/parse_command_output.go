@@ -40,6 +40,7 @@ const (
 	//nolint:lll
 	snapshotCreateOutputRegEx       = `(?P<spinner>[|/\-\\\*]).+[^\d](?P<numHashed>\d+) hashed \((?P<hashedSize>[^\)]+)\), (?P<numCached>\d+) cached \((?P<cachedSize>[^\)]+)\), uploaded (?P<uploadedSize>[^\)]+)(?: \([^)]*\))*, (?:estimating...|estimated (?P<estimatedSize>[^\)]+) \((?P<estimatedProgress>[^\)]+)\%\).+)`
 	restoreOutputRegEx              = `Processed (?P<processedCount>\d+) \((?P<processedSize>.*)\) of (?P<totalCount>\d+) \((?P<totalSize>.*)\) (?P<dataRate>.*) \((?P<percentage>.*)%\) remaining (?P<remainingTime>.*)\.`
+	restoreResultOutputRegEx        = `Restored (?P<processedFilesCount>\d+) files, (?P<processedDirCount>\d+) directories and (?P<processedSymLinksCount>\d+) symbolic links \((?P<restoredSize>[^\)]+)\).`
 	extractSnapshotIDRegEx          = `Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`
 	repoTotalSizeFromBlobStatsRegEx = `Total: (\d+)$`
 	repoCountFromBlobStatsRegEx     = `Count: (\d+)$`
@@ -207,8 +208,9 @@ type SnapshotCreateStats struct {
 }
 
 var (
-	kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx)
-	kopiaRestorePattern  = regexp.MustCompile(restoreOutputRegEx)
+	kopiaProgressPattern      = regexp.MustCompile(snapshotCreateOutputRegEx)
+	kopiaRestorePattern       = regexp.MustCompile(restoreOutputRegEx)
+	kopiaRestoreResultPattern = regexp.MustCompile(restoreResultOutputRegEx)
 )
 
 // SnapshotStatsFromSnapshotCreate parses the output of a `kopia snapshot
@@ -430,6 +432,66 @@ func parseKopiaRestoreProgressLine(line string) (stats *RestoreStats) {
 		FilesTotal:      int64(totalCount),
 		SizeTotalB:      int64(totalSize),
 		ProgressPercent: int64(progressPercent),
+	}
+}
+
+// RestoreResultFromRestoreOutput parses the output of a `kopia restore`
+// line-by-line in search of restore result statistics.
+// It returns nil if no final statistics are found.
+func RestoreResultFromRestoreOutput(
+	restoreStderrOutput string,
+) (stats *RestoreStats) {
+	if restoreStderrOutput == "" {
+		return nil
+	}
+	logs := regexp.MustCompile("[\r\n]").Split(restoreStderrOutput, -1)
+
+	for _, l := range logs {
+		lineStats := parseKopiaRestoreResultLine(l)
+		if lineStats != nil {
+			// NOTE: overwriting result with the last matching line
+			// even if there was a matching line before that
+			stats = lineStats
+		}
+	}
+
+	return stats
+}
+
+// parseKopiaRestoreResultLine parses final restore stats from the output log line,
+// which is expected to be in the following format:
+// Restored 1 files, 1 directories and 0 symbolic links (1.1 GB).
+func parseKopiaRestoreResultLine(line string) (stats *RestoreStats) {
+	match := kopiaRestoreResultPattern.FindStringSubmatch(line)
+	if len(match) < 4 {
+		return nil
+	}
+
+	groups := make(map[string]string)
+	for i, name := range kopiaRestoreResultPattern.SubexpNames() {
+		if i != 0 && name != "" {
+			groups[name] = match[i]
+		}
+	}
+
+	processedFilesCount, err := strconv.Atoi(groups["processedFilesCount"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse number of processed files", field.M{"processedFilesCount": groups["processedFilesCount"]})
+		return nil
+	}
+
+	restoredSize, err := humanize.ParseBytes(groups["restoredSize"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse amount of restored bytes", field.M{"restoredSize": groups["restoredSize"]})
+		return nil
+	}
+
+	return &RestoreStats{
+		FilesProcessed:  int64(processedFilesCount),
+		SizeProcessedB:  int64(restoredSize),
+		FilesTotal:      int64(processedFilesCount),
+		SizeTotalB:      int64(restoredSize),
+		ProgressPercent: int64(100),
 	}
 }
 

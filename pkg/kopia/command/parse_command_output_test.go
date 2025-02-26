@@ -513,6 +513,49 @@ func (kParse *KopiaParseUtilsTestSuite) TestRestoreStatsFromRestoreOutput(c *che
 	}
 }
 
+func (kParse *KopiaParseUtilsTestSuite) TestRestoreResultFromRestoreOutput(c *check.C) {
+	type args struct {
+		restoreOutput string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantStats *RestoreStats
+	}{
+		{
+			name: "Basic test case",
+			args: args{
+				restoreOutput: "Processed 2 (397.5 MB) of 3 (3.1 GB) 14.9 MB/s (12.6%) remaining 3m3s.\r\nRestored 1 files, 1 directories and 0 symbolic links (1.1 GB).",
+			},
+			wantStats: &RestoreStats{
+				FilesProcessed:  1,
+				SizeProcessedB:  1100000000,
+				FilesTotal:      1,
+				SizeTotalB:      1100000000,
+				ProgressPercent: 100,
+			},
+		},
+		{
+			name: "Not finished test case",
+			args: args{
+				restoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (0.4%) remaining 6m10s.",
+			},
+			wantStats: nil,
+		},
+		{
+			name: "Ignore incomplete stats without during estimation",
+			args: args{
+				restoreOutput: "Processed 2 (32.8 KB) of 2 (3.1 GB).",
+			},
+			wantStats: nil,
+		},
+	}
+	for _, tt := range tests {
+		stats := RestoreResultFromRestoreOutput(tt.args.restoreOutput)
+		c.Check(stats, check.DeepEquals, tt.wantStats, check.Commentf("Failed for %s", tt.name))
+	}
+}
+
 func (kParse *KopiaParseUtilsTestSuite) TestPhysicalSizeFromBlobStatsRaw(c *check.C) {
 	for _, tc := range []struct {
 		blobStatsOutput string
