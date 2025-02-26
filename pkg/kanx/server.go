@@ -1,7 +1,6 @@
 package kanx
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"net"
@@ -23,7 +22,7 @@ const (
 	tailTickDuration  = 3 * time.Second
 	tempStdoutPattern = "kando.*.stdout"
 	tempStderrPattern = "kando.*.stderr"
-	streamBufferBytes = 4 * 1024 * 1024
+	streamBufferBytes = (4 * 1024 * 1024) / 2 // must be below gRPC's 4MiB over-the-wire message limit
 )
 
 type processServiceServer struct {
@@ -177,7 +176,7 @@ var errProcessNotFound = errkit.NewSentinelErr("Process not found")
 func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_StdoutServer) error {
 	p, ok := s.loadProcess(por.Pid)
 	if !ok {
-		return errkit.WithStack(errProcessNotFound)
+		return errProcessNotFound
 	}
 	fh, err := os.Open(p.stdout.Name())
 	if err != nil {
@@ -189,7 +188,7 @@ func (s *processServiceServer) Stdout(por *ProcessPidRequest, ss ProcessService_
 func (s *processServiceServer) Stderr(por *ProcessPidRequest, ss ProcessService_StderrServer) error {
 	p, ok := s.loadProcess(por.Pid)
 	if !ok {
-		return errkit.WithStack(errProcessNotFound)
+		return errProcessNotFound
 	}
 	fh, err := os.Open(p.stderr.Name())
 	if err != nil {
@@ -203,13 +202,13 @@ type sender interface {
 }
 
 func (s *processServiceServer) streamOutput(ss sender, p *process, fh *os.File) error {
-	buf := bytes.NewBuffer(make([]byte, 0, streamBufferBytes)) // 4MiB is the max size of a GRPC request
+	buf := make([]byte, streamBufferBytes) // 2MiB buffer for gRPC requests
 	t := time.NewTicker(s.tailTickDuration)
 	for {
-		n, err := buf.ReadFrom(fh)
+		n, err0 := fh.Read(buf)
 		switch {
-		case err != nil:
-			return err
+		case err0 != nil && err0 != io.EOF:
+			return err0
 		case n == 0:
 			select {
 			case <-p.doneCh:
@@ -219,10 +218,13 @@ func (s *processServiceServer) streamOutput(ss sender, p *process, fh *os.File) 
 			<-t.C
 			continue
 		}
-		o := &Output{Output: buf.String()}
-		err = ss.Send(o)
-		if err != nil {
-			return err
+		o := &Output{Output: string(buf[:n])}
+		err1 := ss.Send(o)
+		if err1 != nil {
+			return err1
+		}
+		if err0 == io.EOF {
+			return nil
 		}
 	}
 }
@@ -265,7 +267,8 @@ func NewServer() *Server {
 }
 
 func (s *Server) Serve(ctx context.Context, addr string) error {
-	ctx, can := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
+	// os.Interrupt is a platform specific interrupt
+	ctx, can := signal.NotifyContext(ctx, syscall.SIGTERM, os.Interrupt)
 	defer can()
 	go func() {
 		<-ctx.Done()
