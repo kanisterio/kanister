@@ -16,6 +16,7 @@ package kando
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -44,7 +45,8 @@ func newProcessClientExecuteCommand() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		RunE:  runProcessClientExecute,
 	}
-	procesSignalProxyAddFlag(cmd)
+	processSignalProxyAddFlag(cmd)
+	processExitProxyAddFlag(cmd)
 	return cmd
 }
 
@@ -54,7 +56,8 @@ func runProcessClientExecute(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 	// err is a positive command exit code
-	err0, ok := err.(kanx.ProcessExitCode)
+	err0 := kanx.ProcessExitCode(0)
+	ok := errors.As(err, &err0)
 	if ok {
 		exit(int(err0))
 	}
@@ -72,13 +75,20 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 	if err != nil {
 		return err
 	}
-	proxy, err := processSignalProxyFlagValue(cmd)
+	signalProxy, err := processSignalProxyFlagValue(cmd)
+	if err != nil {
+		return err
+	}
+	exitProxy, err := processExitProxyFlagValue(cmd)
 	if err != nil {
 		return err
 	}
 	asJSON := processAsJSONFlagValue(cmd)
 	asQuiet := processAsQuietFlagValue(cmd)
 	cmd.SilenceUsage = true
+	if asQuiet {
+		cmd.SilenceErrors = true
+	}
 	ctx, canfn0 := context.WithCancel(cmd.Context())
 	defer canfn0()
 	// start the process in the server
@@ -101,7 +111,7 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 	pid := p.Pid
 	// setup signal proxies if requested
 	errc := make(chan error)
-	if proxy {
+	if signalProxy {
 		proxySetup(ctx, addr, pid)
 	}
 	// process stdout and stderr in background
@@ -119,6 +129,9 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 	if err != nil {
 		return err
 	}
+	if !exitProxy {
+		return nil
+	}
 	// get terminal state of the process.  Ideally this would be returned in Stdout,
 	// Stderr or via a Wait function for now we wait for process completion and then
 	// call GetProcess to get the final state
@@ -131,7 +144,7 @@ func runProcessClientExecuteWithOutput(stdout, stderr io.Writer, cmd *cobra.Comm
 	// exit codes from process need to be proxied so that KanX clients can respond
 	// to them
 	if p.ExitCode != 0 {
-		err = kanx.ProcessExitCode(p.ExitCode)
+		return kanx.ProcessExitCode(p.ExitCode)
 	}
-	return err
+	return nil
 }
