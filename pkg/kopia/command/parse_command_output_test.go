@@ -16,6 +16,7 @@ package command
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
@@ -277,9 +278,16 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapSizeStatsFromSnapListAll(c *chec
 }
 
 func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *check.C) {
+	interstitialSubstrings := []string{
+		"",
+		" (3 errors ignored)",
+		" (5 fatal errors)",
+		" (5 fatal errors) (3 errors ignored)",
+	}
 	type args struct {
-		snapCreateOutput  string
-		matchOnlyFinished bool
+		// this is a format string, with the %s being replace by one of the interstitial substrings above.
+		snapCreateOutputFmt string
+		matchOnlyFinished   bool
 	}
 	tests := []struct {
 		name      string
@@ -289,7 +297,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Basic test case",
 			args: args{
-				snapCreateOutput: " \\ 0 hashing, 1 hashed (2 B), 3 cached (40 KB), uploaded 6.7 GB, estimated 2044.2 MB (95.5%) 0s left",
+				snapCreateOutputFmt: " \\ 0 hashing, 1 hashed (2 B), 3 cached (40 KB), uploaded 6.7 GB%s, estimated 2044.2 MB (95.5%%) 0s left",
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     1,
@@ -304,7 +312,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Real test case",
 			args: args{
-				snapCreateOutput: " - 0 hashing, 283 hashed (219.5 MB), 0 cached (0 B), uploaded 10.5 MB, estimated 6.01 MB (91.7%) 1s left",
+				snapCreateOutputFmt: " - 0 hashing, 283 hashed (219.5 MB), 0 cached (0 B), uploaded 10.5 MB%s, estimated 6.01 MB (91.7%%) 1s left",
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     283,
@@ -319,7 +327,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Check multiple digits each field",
 			args: args{
-				snapCreateOutput: " * 0 hashing, 123 hashed (1234.5 MB), 123 cached (1234 B), uploaded 1234.5 KB, estimated 941.2 KB (100.0%) 0s left",
+				snapCreateOutputFmt: " * 0 hashing, 123 hashed (1234.5 MB), 123 cached (1234 B), uploaded 1234.5 KB%s, estimated 941.2 KB (100.0%%) 0s left",
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     123,
@@ -334,15 +342,15 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Ignore running output when expecting completed line",
 			args: args{
-				snapCreateOutput:  "| 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB, estimating...",
-				matchOnlyFinished: true,
+				snapCreateOutputFmt: "| 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB%s, estimating...",
+				matchOnlyFinished:   true,
 			},
 			wantStats: nil,
 		},
 		{
 			name: "Check estimating when running",
 			args: args{
-				snapCreateOutput: "| 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB, estimating...",
+				snapCreateOutputFmt: "| 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB%s, estimating...",
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     1,
@@ -357,8 +365,8 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Check estimating when finished",
 			args: args{
-				snapCreateOutput:  "* 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB, estimating...",
-				matchOnlyFinished: true,
+				snapCreateOutputFmt: "* 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB%s, estimating...",
+				matchOnlyFinished:   true,
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     1,
@@ -373,8 +381,8 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Progress 100% and still not ready - set 99%",
 			args: args{
-				snapCreateOutput:  "| 0 hashing, 123 hashed (1234.5 MB), 123 cached (1234 B), uploaded 1234.5 KB, estimated 941.2 KB (100.0%) 0s left",
-				matchOnlyFinished: false,
+				snapCreateOutputFmt: "| 0 hashing, 123 hashed (1234.5 MB), 123 cached (1234 B), uploaded 1234.5 KB%s, estimated 941.2 KB (100.0%%) 0s left",
+				matchOnlyFinished:   false,
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     123,
@@ -389,8 +397,8 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Progress is over 100% and still not ready - set 99%",
 			args: args{
-				snapCreateOutput:  "| 0 hashing, 20 hashed (95.1 MB), 20730 cached (4.4 GB), uploaded 21.5 MB, estimated 1.3 GB (340.0%) 0s left",
-				matchOnlyFinished: false,
+				snapCreateOutputFmt: "| 0 hashing, 20 hashed (95.1 MB), 20730 cached (4.4 GB), uploaded 21.5 MB%s, estimated 1.3 GB (340.0%%) 0s left",
+				matchOnlyFinished:   false,
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     20,
@@ -405,8 +413,8 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Progress is over 100% and finished - set 100%",
 			args: args{
-				snapCreateOutput:  " * 0 hashing, 20 hashed (95.1 MB), 20730 cached (4.4 GB), uploaded 21.5 MB, estimated 1.3 GB (340.0%) 0s left",
-				matchOnlyFinished: false,
+				snapCreateOutputFmt: " * 0 hashing, 20 hashed (95.1 MB), 20730 cached (4.4 GB), uploaded 21.5 MB%s, estimated 1.3 GB (340.0%%) 0s left",
+				matchOnlyFinished:   false,
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     20,
@@ -421,7 +429,7 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		{
 			name: "Progress is less 100% and finished - set 100%",
 			args: args{
-				snapCreateOutput: " * 0 hashing, 283 hashed (219.5 MB), 0 cached (0 B), uploaded 10.5 MB, estimated 6.01 MB (91.7%) 1s left",
+				snapCreateOutputFmt: " * 0 hashing, 283 hashed (219.5 MB), 0 cached (0 B), uploaded 10.5 MB%s, estimated 6.01 MB (91.7%%) 1s left",
 			},
 			wantStats: &SnapshotCreateStats{
 				FilesHashed:     283,
@@ -435,8 +443,11 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *c
 		},
 	}
 	for _, tt := range tests {
-		stats := SnapshotStatsFromSnapshotCreate(tt.args.snapCreateOutput, tt.args.matchOnlyFinished)
-		c.Check(stats, check.DeepEquals, tt.wantStats, check.Commentf("Failed for %s", tt.name))
+		for _, interstital := range interstitialSubstrings {
+			outputString := fmt.Sprintf(tt.args.snapCreateOutputFmt, interstital)
+			stats := SnapshotStatsFromSnapshotCreate(outputString, tt.args.matchOnlyFinished)
+			c.Check(stats, check.DeepEquals, tt.wantStats, check.Commentf("Failed for %s [%s]", tt.name, outputString))
+		}
 	}
 }
 
@@ -498,6 +509,49 @@ func (kParse *KopiaParseUtilsTestSuite) TestRestoreStatsFromRestoreOutput(c *che
 	}
 	for _, tt := range tests {
 		stats := RestoreStatsFromRestoreOutput(tt.args.restoreOutput)
+		c.Check(stats, check.DeepEquals, tt.wantStats, check.Commentf("Failed for %s", tt.name))
+	}
+}
+
+func (kParse *KopiaParseUtilsTestSuite) TestRestoreResultFromRestoreOutput(c *check.C) {
+	type args struct {
+		restoreOutput string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantStats *RestoreStats
+	}{
+		{
+			name: "Basic test case",
+			args: args{
+				restoreOutput: "Processed 2 (397.5 MB) of 3 (3.1 GB) 14.9 MB/s (12.6%) remaining 3m3s.\r\nRestored 1 files, 1 directories and 0 symbolic links (1.1 GB).",
+			},
+			wantStats: &RestoreStats{
+				FilesProcessed:  1,
+				SizeProcessedB:  1100000000,
+				FilesTotal:      1,
+				SizeTotalB:      1100000000,
+				ProgressPercent: 100,
+			},
+		},
+		{
+			name: "Not finished test case",
+			args: args{
+				restoreOutput: "Processed 2 (13.7 MB) of 2 (3.1 GB) 8.5 MB/s (0.4%) remaining 6m10s.",
+			},
+			wantStats: nil,
+		},
+		{
+			name: "Ignore incomplete stats without during estimation",
+			args: args{
+				restoreOutput: "Processed 2 (32.8 KB) of 2 (3.1 GB).",
+			},
+			wantStats: nil,
+		},
+	}
+	for _, tt := range tests {
+		stats := RestoreResultFromRestoreOutput(tt.args.restoreOutput)
 		c.Check(stats, check.DeepEquals, tt.wantStats, check.Commentf("Failed for %s", tt.name))
 	}
 }

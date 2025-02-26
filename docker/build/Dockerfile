@@ -1,4 +1,4 @@
-FROM golang:1.23-bullseye
+FROM golang:1.24-bullseye
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 ARG TARGETPLATFORM

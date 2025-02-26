@@ -1,0 +1,2 @@
+---
+features: Type ``PodOptions`` can now be used to configure the node name of the pod that is going to be created. 

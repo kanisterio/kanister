@@ -23,7 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 
 	kaws "github.com/kanisterio/kanister/pkg/aws"
 )
@@ -38,7 +38,8 @@ func IsBucketNotFoundError(err error) bool {
 	if err == nil {
 		return false
 	}
-	if awsErr, ok := errors.Cause(err).(awserr.Error); ok {
+	var awsErr awserr.Error
+	if errkit.As(err, &awsErr) {
 		code := awsErr.Code()
 		return code == bucketNotFound || code == noSuchBucket
 	}
@@ -55,7 +56,7 @@ func awsConfig(ctx context.Context, pc ProviderConfig, s SecretAws) (*aws.Config
 	}
 	cfg, r, err := kaws.GetConfig(ctx, c)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create aws config")
+		return nil, "", errkit.Wrap(err, "failed to create aws config")
 	}
 	cfg = cfg.WithRegion(r)
 	if pc.Endpoint != "" {

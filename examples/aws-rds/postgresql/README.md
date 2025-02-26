@@ -9,7 +9,7 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.112.0 installed in your cluster
+- Kanister controller version 0.113.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
@@ -45,7 +45,7 @@ aws rds wait db-instance-available --db-instance-identifier=test-postgresql-inst
 
 Create a configmap which contains information to connect to the RDS DB instance
 
-```
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -82,6 +82,32 @@ data operations such as backup should go. This is stored as a `profiles.cr.kanis
 requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
 can be shared between Kanister-enabled application instances.
 
+### Configure a secret to access RDS
+
+By default the blueprints in this example are using credentials from the profile to access RDS
+resources.
+
+If you want to export your backups to a different region or a different object store (recommended),
+you need to provide alternative credential configuration.
+
+Here we use k8s secret with AWS credentials.
+You need to make sure credentials provided in this secret can be used to access RDS operations.
+
+```yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rds-secret
+  namespace: pgtestrds
+type: secrets.kanister.io/aws
+data:
+  aws_access_key_id: "<your access key id>"
+  aws_secret_access_key: "<you secret>"
+  role: ""
+```
+
+This secret needs to be referenced in the acitonset.
 
 ### Create Blueprint
 
@@ -97,6 +123,12 @@ So as you can see we will have to create a blueprint depending on how are we goi
 
 Use `rds-postgres-snap-blueprint.yaml` or `rds-postgres-blueprint.yaml` Blueprint if you want to take backup using RDS snapshots or you can use `rds-postgres-dump-blueprint.yaml` Blueprint if you want to extract postgres dump from snapshot and push to S3 storage
 
+**NOTE:**
+- The `rds-postgres-dump-blueprint.yaml` blueprint demonstrates how to use credentials from the secret.
+- The `rds-postgres-snap-blueprint.yaml` blueprint demonstrates how to use credentials from the profile.
+
+To change that you can modify the blueprints using those examples and documentation in https://docs.kanister.io/functions.html#createrdssnapshot
+
 
 ```bash
 $ kubectl create -f <blueprint> -n kasten-io
@@ -106,40 +138,57 @@ $ kubectl create -f <blueprint> -n kasten-io
 
 You can now take a snapshot of the PostgreSQL RDS instance data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
 
-> If you have deployed your application which uses RDS instance in namespace other than `pgtestrds`, you need to modify the commands used below to use the correct namespace
+Get profile:
 
 ```bash
 $ kubectl get profile -n pgtestrds
 NAME               AGE
 s3-profile-sph7s   2h
+```
+
+Create actionset file:
+
+> Use correct blueprint name (one of `rds-postgres-dump-bp` or `rds-postgres-snapshot-bp`) you have created earlier
+> If you have deployed your application which uses RDS instance in namespace other than `pgtestrds`, you need to modify the commands used below to use the correct namespace
+> Please make sure `region` option corresponds to the AWS region where your RDS is deployed.
+
+```yaml
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  name: rds-backup
+  namespace: kasten-io
+spec:
+  actions:
+  - name: backup
+    blueprint: <blueprint-name>
+    object:
+      apiVersion: v1
+      name: dbconfig
+      namespace: pgtestrds
+      resource: configmaps
+    profile:
+      name: <your profile>
+      namespace: pgtestrds
+    secrets:
+      aws:
+        name: rds-secret
+        namespace: pgtestrds
+    options:
+      region: <rds region>
+```
+
+Where:
+- dbconfig is a configmap holding RDS infromation
+  Please see pgtest/deploy/config.yaml for configmap format
+- rds-secret is an AWS secret with access to RDS resources
 
 
-# Use correct blueprint name (one of `rds-postgres-dump-bp` or `rds-postgres-snapshot-bp`) you have created earlier
+Apply actionset:
 
-cat <<EOF | kubectl apply -f -
-> apiVersion: cr.kanister.io/v1alpha1
-> kind: ActionSet
-> metadata:
->   name: rds-backup
->   namespace: kasten-io
-> spec:
->   actions:
->   - name: backup
->     blueprint: <blueprint-name>
->     object:
->       apiVersion: v1
->       name: dbconfig
->       namespace: pgtestrds
->       resource: configmaps
->     profile:
->       name: s3-profile-sph7s
->       namespace: pgtestrds
-> EOF
+```bash
+$ kubectl apply -f rds-backup-actionset.yaml
 actionset.cr.kanister.io/rds-backup created
-
-# Where,
-# dbconfig is a configmap holding RDS infromation
-# Please see pgtest/deploy/config.yaml for configmap format
 
 # View the status of the actionset
 $ kubectl --namespace kasten-io describe actionset rds-backup

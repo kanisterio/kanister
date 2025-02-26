@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -34,7 +34,7 @@ func ActionSet(ctx context.Context, cli crclientv1alpha1.CrV1alpha1Interface, ns
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		as, err := cli.ActionSets(ns).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
-			return false, errors.WithStack(err)
+			return false, errkit.WithStack(err)
 		}
 		if err = validate.ActionSet(as); err != nil {
 			return false, err
@@ -52,7 +52,7 @@ func ActionSet(ctx context.Context, cli crclientv1alpha1.CrV1alpha1Interface, ns
 		}
 		if err != nil {
 			msg := fmt.Sprintf("Failed to update ActionSet %s", name)
-			return false, errors.Wrap(err, msg)
+			return false, errkit.Wrap(err, msg)
 		}
 		return true, nil
 	})

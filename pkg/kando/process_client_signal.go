@@ -27,7 +27,7 @@ import (
 
 func newProcessClientSignalCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "signal SIGNAL PID",
+		Use:   "signal PID SIGNAL",
 		Short: "send a signal to a managed process",
 		Args:  cobra.ExactArgs(2),
 		RunE:  runProcessClientSignal,
@@ -40,11 +40,11 @@ func runProcessClientSignal(cmd *cobra.Command, args []string) error {
 }
 
 func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []string) error {
-	pid, err := strconv.Atoi(args[0])
+	pid, err := strconv.ParseInt(args[0], 0, 64)
 	if err != nil {
 		return err
 	}
-	signal, err := strconv.Atoi(args[1])
+	signal, err := strconv.ParseInt(args[1], 0, 64)
 	if err != nil {
 		return err
 	}
@@ -52,11 +52,15 @@ func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
+	asQuiet := processAsQuietFlagValue(cmd)
 	asJSON := processAsJSONFlagValue(cmd)
 	cmd.SilenceUsage = true
-	p, err := kanx.SignalProcess(cmd.Context(), addr, int64(pid), int32(signal))
+	p, err := kanx.SignalProcess(cmd.Context(), addr, pid, signal)
 	if err != nil {
 		return err
+	}
+	if asQuiet {
+		return nil
 	}
 	if asJSON {
 		buf, err := protojson.Marshal(p)
@@ -65,7 +69,7 @@ func runProcessClientSignalWithOutput(out io.Writer, cmd *cobra.Command, args []
 		}
 		fmt.Fprintln(out, string(buf))
 	} else {
-		fmt.Fprintln(out, "Process: ", p.String())
+		fmt.Fprintln(out, "Process: ", p)
 	}
 	return nil
 }

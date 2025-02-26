@@ -57,6 +57,7 @@ func NewMysqlDB(name string) HelmApp {
 				"auth.rootPassword": "mysecretpassword",
 				"image.pullPolicy":  "Always",
 			},
+			Version: "12.2.4",
 		},
 	}
 }

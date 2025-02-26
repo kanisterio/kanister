@@ -27,7 +27,7 @@ message ProcessPidRequest {
 
 message SignalProcessRequest {
   int64 pid = 1;
-  int32 signal = 2;
+  int64 signal = 2;
 }
 
 message Process {

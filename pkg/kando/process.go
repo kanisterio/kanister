@@ -15,23 +15,56 @@
 package kando
 
 import (
+	"io"
 	"net"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/grpclog"
 )
 
 const (
 	processAddressFlagName = "address"
 )
 
+// grpclogLogger method taken from grpclog/loggerv2.go:newLoggerV2
+// see also logging/logrus/grpclogger.go.
+// grpclogger.go may be the best way to setup the loggers
+// but kanister logging, while using logrus, does not seem to offer a straightforward
+// interface for performing the interfacing in the grpclogger.go example.
+func grpclogLogger(cmd *cobra.Command) grpclog.LoggerV2 {
+	var infow, warnw, errorw io.Writer
+	infow = io.Discard
+	warnw = io.Discard
+	errorw = io.Discard
+	switch {
+	case logrus.IsLevelEnabled(logrus.InfoLevel):
+		infow = cmd.ErrOrStderr()
+	case logrus.IsLevelEnabled(logrus.WarnLevel):
+		warnw = cmd.ErrOrStderr()
+	case logrus.IsLevelEnabled(logrus.ErrorLevel):
+		errorw = cmd.ErrOrStderr()
+	}
+	return grpclog.NewLoggerV2(infow, warnw, errorw)
+}
+
 func newProcessCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "process <command>",
 		Short: "Manage kando processes",
 	}
+
 	cmd.AddCommand(newProcessServerCommand())
 	cmd.AddCommand(newProcessClientCommand())
 	cmd.PersistentFlags().StringP(processAddressFlagName, "a", "/tmp/kanister.sock", "The path of a unix socket of the process server")
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		err := setLogLevel(logLevel)
+		if err != nil {
+			return err
+		}
+		grpclog.SetLoggerV2(grpclogLogger(cmd))
+		return nil
+	}
 	return cmd
 }
 

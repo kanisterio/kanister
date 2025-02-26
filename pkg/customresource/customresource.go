@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
-	"github.com/pkg/errors"
+	"github.com/kanisterio/errkit"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -116,18 +116,18 @@ func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
 func createCRD(context Context, resource CustomResource) error {
 	c, err := rawCRDFromFile(fmt.Sprintf("%s.yaml", resource.Name))
 	if err != nil {
-		return errors.Wrap(err, "Getting raw CRD from CRD manifests")
+		return errkit.Wrap(err, "Getting raw CRD from CRD manifests")
 	}
 
 	crd, err := getCRDFromSpec(c)
 	if err != nil {
-		return errors.Wrap(err, "Getting CRD object from CRD bytes")
+		return errkit.Wrap(err, "Getting CRD object from CRD bytes")
 	}
 
 	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Context, crd, metav1.CreateOptions{})
 	if err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return errors.Errorf("Failed to create %s CRD. %+v", resource.Name, err)
+			return errkit.New(fmt.Sprintf("Failed to create %s CRD. %+v", resource.Name, err))
 		}
 
 		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
