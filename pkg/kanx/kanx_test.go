@@ -294,7 +294,7 @@ func (s *KanXSuite) TestSignalProcess_Stp(c *C) {
 	c.Assert(err, Equals, os.ErrProcessDone)
 }
 
-// TestSignalProcess_Kill check process state after a SIGKILL signal has been sent.
+// TestSignalProcess_Kill checks process state after a SIGKILL signal has been sent.
 // this should result in an error in the process structure and a client error stating
 // that the process was killed
 func (s *KanXSuite) TestSignalProcess_Kill(c *C) {
