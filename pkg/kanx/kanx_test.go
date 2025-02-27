@@ -462,6 +462,7 @@ func (w *countWriter) Write(p []byte) (int, error) {
 }
 
 func (s *KanXSuite) TestCreateProcess_BufferOverflow_1(c *C) {
+	c.Skip("Buffer Overflow Test being skipped due to excessive logging.  issue #3386")
 	d := tmpDir(c)
 	addr := path.Join(d, "kanx.sock")
 	ctx, can := context.WithCancel(context.Background())
