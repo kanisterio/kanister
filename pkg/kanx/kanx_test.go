@@ -108,7 +108,7 @@ func (s *KanXSuite) TestShortProcess(c *C) {
 		return p.GetState() != ProcessState_PROCESS_STATE_RUNNING, nil
 	})
 
-	// get the output from the coammnd.  stdout should contain "hello", stderr should be empty.
+	// get the output from the command.  stdout should contain "hello", stderr should be empty.
 	buf := bytes.NewBuffer(make([]byte, 0, 1024*1024))
 	err = Stdout(ctx, addr, p.GetPid(), buf)
 	c.Assert(err, IsNil)
