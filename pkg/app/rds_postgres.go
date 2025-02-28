@@ -214,6 +214,8 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 			"postgres.databases":  makeYamlList(pdb.databases),
 			"postgres.user":       pdb.username,
 			"postgres.secret":     pdb.secretName,
+			"aws.secret":          pdb.secretName, // Using same secret for postgres and aws
+			"aws.region":          pdb.region,
 		},
 	}
 	_, err = pdb.cli.CoreV1().ConfigMaps(ns).Create(ctx, dbconfig, metav1.CreateOptions{})

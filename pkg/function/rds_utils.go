@@ -12,6 +12,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
@@ -71,8 +72,8 @@ func getAwsConfig(ctx context.Context, credentialsSource awsCredentialsSource, t
 		// Get aws config from profile
 		return getAWSConfigFromProfile(ctx, profile, credentialsSource.region)
 	case CredentialSourceSecret:
-		if secret, ok := tp.Secrets[credentialsSource.secret]; ok {
-			return getAWSConfigFromSecret(ctx, secret, credentialsSource.region)
+		if secret, ok := getParamSecret(tp, credentialsSource.secret); ok {
+			return getAWSConfigFromSecret(ctx, *secret, credentialsSource.region)
 		}
 		return nil, "", errkit.New("Cannot find secret in actionset secrets", "secret", credentialsSource.secret)
 	case CredentialSourceServiceAccount:
@@ -80,6 +81,22 @@ func getAwsConfig(ctx context.Context, credentialsSource awsCredentialsSource, t
 	default:
 		return nil, "", errkit.New("Invalid awsCredentials type", "type", credentialsSource.sourceType)
 	}
+}
+
+// getParamSecret tries to get secret with a specified name in actionset or phase secrets
+func getParamSecret(tp param.TemplateParams, secretName string) (*corev1.Secret, bool) {
+	// Actionset secrets
+	if secret, ok := tp.Secrets[secretName]; ok {
+		return &secret, ok
+	}
+	// Technically tp.CurrentPhase should always be set
+	if tp.CurrentPhase == nil {
+		log.Info().Print("WARNING: CurrentPhase is not set in phase execution!")
+		return nil, false
+	} else if secret, ok := tp.CurrentPhase.Secrets[secretName]; ok {
+		return &secret, ok
+	}
+	return nil, false
 }
 
 func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile, region string) (*awssdk.Config, string, error) {
@@ -103,11 +120,6 @@ func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile, region
 }
 
 func getAWSConfigFromSecret(ctx context.Context, secret corev1.Secret, region string) (*awssdk.Config, string, error) {
-	err := secrets.ValidateAWSCredentials(&secret)
-	if err != nil {
-		return nil, "", errkit.Wrap(err, "Invalid AWS credential")
-	}
-
 	config := map[string]string{
 		aws.AccessKeyID:     string(secret.Data[secrets.AWSAccessKeyID]),
 		aws.SecretAccessKey: string(secret.Data[secrets.AWSSecretAccessKey]),
