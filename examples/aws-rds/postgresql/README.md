@@ -41,46 +41,22 @@ aws rds create-db-instance \
 aws rds wait db-instance-available --db-instance-identifier=test-postgresql-instance
 ```
 
-## Create configmap
-
-Create a configmap which contains information to connect to the RDS DB instance
+## Create DB secret
 
 ```yaml
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  annotations:
-    kasten.io/config: dataservice
-  name: dbconfig
-data:
-  postgres.instanceid: test-rds-postgresql
-  postgres.host: test-rds-postgresql.example.ap-south-1.rds.amazonaws.com
-  postgres.databases: |
-    - postgres
-    - template1
-  postgres.secret: dbcreds # name of K8s secret in the same namespace
+  name: dbcreds
+  namespace: pgtestrds
+type: Opaque
+stringData:
+  username: <username>
+  password: <password>
 ```
 
-## Integrating with Kanister
+This secret needs to be referenced in the configmap.
 
-### Create Profile
-
-Create Profile CR if not created already
-
-```bash
-$ kanctl create profile s3compliant --access-key <aws-access-key-id> \
-	--secret-key <aws-secret-key> \
-	--region <region-name> \
-	--namespace pgtestrds
-```
-
-**NOTE:**
-
-The command will configure a location where artifacts resulting from Kanister
-data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
-*CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
-requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
-can be shared between Kanister-enabled application instances.
 
 ### Configure a secret to access RDS
 
@@ -101,13 +77,60 @@ metadata:
   name: rds-secret
   namespace: pgtestrds
 type: secrets.kanister.io/aws
-data:
+stringData:
   aws_access_key_id: "<your access key id>"
   aws_secret_access_key: "<you secret>"
   role: ""
 ```
 
-This secret needs to be referenced in the acitonset.
+This secret needs to be referenced in the configmap.
+
+
+## Create configmap
+
+Create a configmap which contains information to connect to the RDS DB instance
+
+**NOTE** If you want to export your backups to a different region or a different object store (recommended) you need to also set the region where your RDS instance is deployed with `aws.region` parameter below. You don't need this setting otherwise.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    kasten.io/config: dataservice
+  name: dbconfig
+  namespace: pgtestrds
+data:
+  postgres.instanceid: test-rds-postgresql
+  postgres.host: test-rds-postgresql.example.ap-south-1.rds.amazonaws.com
+  postgres.databases: |
+    - postgres
+    - template1
+  postgres.secret: dbcreds # name of K8s secret in the same namespace with postgres credentials
+  aws.secret: rds-secret # name of K8s secret in the same namespace with aws credentials
+  aws.region: <aws region>
+```
+
+## Integrating with Kanister
+
+### Create Profile
+
+Create Profile CR if not created already.
+
+```bash
+$ kanctl create profile s3compliant --access-key <aws-access-key-id> \
+	--secret-key <aws-secret-key> \
+	--region <region-name> \
+	--namespace pgtestrds
+```
+
+**NOTE:**
+
+The command will configure a location where artifacts resulting from Kanister
+data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
+*CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
+requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
+can be shared between Kanister-enabled application instances.
 
 ### Create Blueprint
 
@@ -150,14 +173,13 @@ Create actionset file:
 
 > Use correct blueprint name (one of `rds-postgres-dump-bp` or `rds-postgres-snapshot-bp`) you have created earlier
 > If you have deployed your application which uses RDS instance in namespace other than `pgtestrds`, you need to modify the commands used below to use the correct namespace
-> Please make sure `region` option corresponds to the AWS region where your RDS is deployed.
 
 ```yaml
 apiVersion: cr.kanister.io/v1alpha1
 kind: ActionSet
 metadata:
   name: rds-backup
-  namespace: kasten-io
+  namespace: kanister
 spec:
   actions:
   - name: backup
@@ -170,19 +192,11 @@ spec:
     profile:
       name: <your profile>
       namespace: pgtestrds
-    secrets:
-      aws:
-        name: rds-secret
-        namespace: pgtestrds
-    options:
-      region: <rds region>
 ```
 
 Where:
 - dbconfig is a configmap holding RDS infromation
   Please see pgtest/deploy/config.yaml for configmap format
-- rds-secret is an AWS secret with access to RDS resources
-
 
 Apply actionset:
 

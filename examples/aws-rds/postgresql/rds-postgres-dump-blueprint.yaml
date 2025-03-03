@@ -15,17 +15,26 @@ actions:
     phases:
     - func: CreateRDSSnapshot
       name: createSnapshot
+      objects:
+        awssecret:
+          kind: Secret
+          name: '{{ index .Object.data "aws.secret" }}'
+          namespace: "{{ .Object.metadata.namespace }}"
       args:
         instanceID: '{{ index .Object.data "postgres.instanceid" }}'
         credentialsSource: secret
-        credentialsSecret: aws
-        region: '{{ .Options.region }}'
+        credentialsSecret: awssecret
+        region: '{{ index .Object.data "aws.region" }}'
     - func: ExportRDSSnapshotToLocation
       name: exportSnapshot
       objects:
         dbsecret:
           kind: Secret
           name: '{{ index .Object.data "postgres.secret" }}'
+          namespace: "{{ .Object.metadata.namespace }}"
+        awssecret:
+          kind: Secret
+          name: '{{ index .Object.data "aws.secret" }}'
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
@@ -39,15 +48,20 @@ actions:
         backupArtifactPrefix: test-postgresql-instance/postgres
         dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
         credentialsSource: secret
-        credentialsSecret: aws
-        region: '{{ .Options.region }}'
+        credentialsSecret: awssecret
+        region: '{{ index .Object.data "aws.region" }}'
     - func: DeleteRDSSnapshot
       name: deleteSnapshot
+      objects:
+        awssecret:
+          kind: Secret
+          name: '{{ index .Object.data "aws.secret" }}'
+          namespace: "{{ .Object.metadata.namespace }}"
       args:
         snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
         credentialsSource: secret
-        credentialsSecret: aws
-        region: '{{ .Options.region }}'
+        credentialsSecret: awssecret
+        region: '{{ index .Object.data "aws.region" }}'
   restore:
     inputArtifactNames:
     - backupInfo
@@ -58,6 +72,10 @@ actions:
         dbsecret:
           kind: Secret
           name: '{{ index .Object.data "postgres.secret" }}'
+          namespace: "{{ .Object.metadata.namespace }}"
+        awssecret:
+          kind: Secret
+          name: '{{ index .Object.data "aws.secret" }}'
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
@@ -70,8 +88,8 @@ actions:
         dbEngine: "PostgreSQL"
         dbSubnetGroup: "{{ .ArtifactsIn.backupInfo.KeyValue.dbSubnetGroup }}"
         credentialsSource: secret
-        credentialsSecret: aws
-        region: '{{ .Options.region }}'
+        credentialsSecret: awssecret
+        region: '{{ index .Object.data "aws.region" }}'
   delete:
     phases:
     - func: KubeTask
