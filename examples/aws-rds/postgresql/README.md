@@ -117,14 +117,14 @@ There are two ways that you can use to backup and restore RDS instance data:
 1. Create RDS instance snapshot. It can be achieved using two ways:
 - By using Kanister functions in blueprint : Using `rds-postgres-snap-blueprint.yaml` Blueprint
 - By using `aws` cli directly in blueprint : Using `rds-postgres-blueprint.yaml` Blueprint
-2. Create RDS snapshot, extract postgres data and push that data to S3 storage - Using `rds-postgres-dump-blueprint.yaml` Blueprint
+2. Create RDS snapshot, extract postgres data and push that data to S3 storage - Using `rds-postgres-remote-dump-blueprint.yaml` Blueprint
 
 So as you can see we will have to create a blueprint depending on how are we going to take the backup.
 
-Use `rds-postgres-snap-blueprint.yaml` or `rds-postgres-blueprint.yaml` Blueprint if you want to take backup using RDS snapshots or you can use `rds-postgres-dump-blueprint.yaml` Blueprint if you want to extract postgres dump from snapshot and push to S3 storage
+Use `rds-postgres-snap-blueprint.yaml` or `rds-postgres-blueprint.yaml` Blueprint if you want to take backup using RDS snapshots or you can use `rds-postgres-remote-dump-blueprint.yaml` Blueprint if you want to extract postgres dump from snapshot and push to S3 storage
 
 **NOTE:**
-- The `rds-postgres-dump-blueprint.yaml` blueprint demonstrates how to use credentials from the secret.
+- The `rds-postgres-remote-dump-blueprint.yaml` blueprint demonstrates how to use credentials from the secret.
 - The `rds-postgres-snap-blueprint.yaml` blueprint demonstrates how to use credentials from the profile.
 
 To change that you can modify the blueprints using those examples and documentation in https://docs.kanister.io/functions.html#createrdssnapshot
