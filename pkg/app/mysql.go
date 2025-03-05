@@ -54,10 +54,10 @@ func NewMysqlDB(name string) HelmApp {
 			Chart:    "mysql",
 			RepoName: helm.BitnamiRepoName,
 			Values: map[string]string{
-				"auth.rootPassword": "mysecretpassword",
-				"image.pullPolicy":  "Always",
+				"auth.usePasswordFiles": "false",
+				"auth.rootPassword":     "mysecretpassword",
+				"image.pullPolicy":      "Always",
 			},
-			Version: "12.2.4",
 		},
 	}
 }
