@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-// ObjectReferenceApplyConfiguration represents an declarative configuration of the ObjectReference type for use
+// ObjectReferenceApplyConfiguration represents a declarative configuration of the ObjectReference type for use
 // with apply.
 type ObjectReferenceApplyConfiguration struct {
 	APIVersion *string `json:"apiVersion,omitempty"`
@@ -28,7 +28,7 @@ type ObjectReferenceApplyConfiguration struct {
 	Namespace  *string `json:"namespace,omitempty"`
 }
 
-// ObjectReferenceApplyConfiguration constructs an declarative configuration of the ObjectReference type for use with
+// ObjectReferenceApplyConfiguration constructs a declarative configuration of the ObjectReference type for use with
 // apply.
 func ObjectReference() *ObjectReferenceApplyConfiguration {
 	return &ObjectReferenceApplyConfiguration{}
