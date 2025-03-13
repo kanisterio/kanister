@@ -64,6 +64,18 @@ version to install.
 The source of the `values.yaml` file can be found on
 [GitHub](https://github.com/kanisterio/kanister/blob/master/helm/kanister-operator/values.yaml).
 
+## Installation in air-gapped environment
+
+In the situation where the K8s cluster is isolated from the internet, below are
+the images that need to be copied to the local container registry, to make
+Kanister work successfully.
+
+- Kanister Controller (ghcr.io/kanisterio/controller)
+- Kanister Tools (ghcr.io/kanisterio/kanister-tools)
+
+Apart from above images, the images that are being used in the blueprint would
+also need to be present in the local container registry.
+
 ## Managing Custom Resource Definitions (CRDs)
 
 The default RBAC settings in the Helm chart permit Kanister to manage
