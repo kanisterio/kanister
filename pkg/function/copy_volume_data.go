@@ -55,6 +55,7 @@ const (
 	CopyVolumeDataOutputBackupFileCount        = "fileCount"
 	CopyVolumeDataOutputBackupSize             = "size"
 	CopyVolumeDataOutputPhysicalSize           = "phySize"
+	CopyVolumeDataOutputPodName                = "copyVolumeDataPodName"
 )
 
 func init() {
