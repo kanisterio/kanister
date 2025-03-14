@@ -55,7 +55,7 @@ type RestoreVolumeDataDM struct {
 	Namespace          string
 	Image              string
 	Volume             string // PVC??
-	DataMoverServerRef dataMoverServerRef
+	DataMoverServerRef DataMoverServerRef
 	DataPath           string
 	BackupId           string
 	ClientSecret       string
@@ -153,7 +153,7 @@ func (rvd *RestoreVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParam
 	}
 	rvd.Secrets = secretNames
 
-	var serverRef dataMoverServerRef
+	var serverRef DataMoverServerRef
 	if err = Arg(args, RestoreVolumeDataDMArgDatamoverServer, &serverRef); err != nil {
 		return nil, err
 	}
