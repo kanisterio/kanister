@@ -61,7 +61,6 @@ type CopyVolumeDataDM struct {
 	Namespace          string
 	Image              string
 	Volume             string // PVC??
-	ReadOnly           bool
 	DataMoverServerRef DataMoverServerRef
 	DataPath           string
 	Tag                string
@@ -238,17 +237,19 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 		return nil, errkit.Wrap(err, "Cannot parse kopia snapshot create output")
 	}
 
-	var logSize, phySize int64
+	var logSize, phySize, fileCount int64
 	if snapInfo.Stats != nil {
 		stats := snapInfo.Stats
 		logSize = stats.SizeHashedB + stats.SizeCachedB
 		phySize = stats.SizeUploadedB
+		fileCount = stats.FilesHashed + stats.FilesCached
 	}
 
 	output := map[string]any{
-		BackupDataOutputBackupID:           snapInfo.SnapshotID,
-		BackupDataOutputBackupSize:         humanize.Bytes(uint64(logSize)),
-		BackupDataOutputBackupPhysicalSize: humanize.Bytes(uint64(phySize)),
+		CopyVolumeDataOutputBackupID:        snapInfo.SnapshotID,
+		CopyVolumeDataOutputBackupSize:      humanize.Bytes(uint64(logSize)),
+		CopyVolumeDataOutputPhysicalSize:    humanize.Bytes(uint64(phySize)),
+		CopyVolumeDataOutputBackupFileCount: fileCount,
 	}
 	return output, nil
 }
