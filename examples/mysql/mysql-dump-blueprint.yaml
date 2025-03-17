@@ -1,0 +1,78 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mysql-blueprint
+actions:
+  backup:
+    outputArtifacts:
+      dump:
+        keyValue:
+          s3path: "{{ .Phases.dumpToStore.Output.s3path }}"
+    phases:
+    - func: CallFunc
+      name: dumpToStore
+      objects:
+        mysqlSecret:
+          kind: Secret
+          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        namespace: kanister
+        ref: dump-db-blueprint
+        action: backup
+        phase: dumpToStore
+        args:
+          Namespace: {{ .StatefulSet.Namespace }}
+          DBImage: mysql:8
+          DBCommand:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+            mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases > /tmp/data
+
+  restore:
+    inputArtifactNames:
+    - dump
+    phases:
+    - func: CallFunc
+      name: restoreFromStore
+      objects:
+        mysqlSecret:
+          kind: Secret
+          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        namespace: kanister
+        ref: dump-db-blueprint
+        action: restore
+        phase: restoreFromStore
+        args:
+          Namespace: {{ .StatefulSet.Namespace }}
+          DBImage: mysql:8
+          DBCommand:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+            cat /tmp/data | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
+
+  delete:
+    inputArtifactNames:
+    - dump
+    phases:
+    - func: CallFunc
+      name: deleteFromBlobStore
+      args:
+        namespace: kanister
+        ref: dump-db-blueprint
+        action: delete
+        phase: deleteFromBlobStore

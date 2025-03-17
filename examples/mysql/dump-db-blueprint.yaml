@@ -1,0 +1,84 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: dump-db-blueprint
+actions:
+  ## Args:
+  ## Namespace - namespace for dump pod
+  ## DBImage - image of database dump container
+  ## DBCommand - command for database dump container
+  backup:
+    phases:
+    - func: MultiContainerRun
+      name: dumpToStore
+      args:
+        namespace: "{{ .Args.Namespace }}"
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: {{ .Args.DBImage }}
+        backgroundCommand: {{ .Args.DBCommand }}
+
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        ## FIXME: maybe modify s3_path with arg (e.g. BackupPrefix)??
+        outputCommand:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="/backups/{{ .Args.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.gz"
+          cat /tmp/data | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          kando output s3path ${s3_path}
+  ## Input artifacts: dump
+  ## Args:
+  ## Namespace
+  ## DBImage
+  ## DBCommand
+  restore:
+    phases:
+    - func: MultiContainerRun
+      name: restoreFromStore
+      args:
+        namespace: "{{ .Args.Namespace }}"
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        backgroundCommand:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="{{ .ArtifactsIn.dump.KeyValue.s3path }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip > /tmp/data
+
+        outputImage: {{ .Args.DBImage }}
+        outputCommand: {{ .Args.DBCommand }}
+  ## Input artifacts: dump
+  delete:
+    phases:
+    - func: KubeTask
+      name: deleteFromBlobStore
+      args:
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        namespace: "{{ .Namespace.Name }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="{{ .ArtifactsIn.dump.KeyValue.s3path }}"
+          kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}

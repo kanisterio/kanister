@@ -60,6 +60,9 @@ func (p *Phase) Objects() map[string]crv1alpha1.ObjectReference {
 // Exec renders the argument templates in this Phase's Func and executes with
 // those arguments.
 func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) (map[string]interface{}, error) {
+	// FIXME: these args are only used here.
+	// What's the point of setting them in the phase object???
+	// What's the point of going back to the blueprint and the action to set them???
 	if p.args == nil {
 		// Get the action from Blueprint
 		a, ok := bp.Actions[action]
@@ -128,21 +131,12 @@ func GetDeferPhase(bp crv1alpha1.Blueprint, action, version string, tp param.Tem
 		return nil, nil
 	}
 
-	regVersion, err := regFuncVersion(a.DeferPhase.Func, version)
+	phase, err := preparePhase(*a.DeferPhase, version, tp)
 	if err != nil {
 		return nil, err
 	}
 
-	objs, err := param.RenderObjectRefs(a.DeferPhase.ObjectRefs, tp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Phase{
-		name:    a.DeferPhase.Name,
-		objects: objs,
-		f:       funcs[a.DeferPhase.Func][regVersion],
-	}, nil
+	return phase, nil
 }
 
 func regFuncVersion(f, version string) (semver.Version, error) {
@@ -182,22 +176,44 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 	phases := make([]*Phase, 0, len(a.Phases))
 	// Check that all requested phases are registered and render object refs
 	for _, p := range a.Phases {
-		regVersion, err := regFuncVersion(p.Func, version)
+		phase, err := preparePhase(p, version, tp)
 		if err != nil {
 			return nil, err
 		}
 
-		objs, err := param.RenderObjectRefs(p.ObjectRefs, tp)
-		if err != nil {
-			return nil, err
-		}
-		phases = append(phases, &Phase{
-			name:    p.Name,
-			objects: objs,
-			f:       funcs[p.Func][regVersion],
-		})
+		phases = append(phases, phase)
 	}
 	return phases, nil
+}
+
+func GetPhase(bp crv1alpha1.Blueprint, action, version, phaseName string, tp param.TemplateParams) (*Phase, error) {
+	a, ok := bp.Actions[action]
+	if !ok {
+		return nil, errkit.New(fmt.Sprintf("Action {%s} not found in action map", action))
+	}
+	for _, p := range a.Phases {
+		if p.Name == phaseName {
+			return preparePhase(p, version, tp)
+		}
+	}
+	return nil, errkit.New("Phase not found in blueprint", "blueprint", bp.Name, "action", action, "name", phaseName)
+}
+
+func preparePhase(phase crv1alpha1.BlueprintPhase, version string, tp param.TemplateParams) (*Phase, error) {
+	regVersion, err := regFuncVersion(phase.Func, version)
+	if err != nil {
+		return nil, err
+	}
+
+	objs, err := param.RenderObjectRefs(phase.ObjectRefs, tp)
+	if err != nil {
+		return nil, err
+	}
+	return &Phase{
+		name:    phase.Name,
+		objects: objs,
+		f:       funcs[phase.Func][regVersion],
+	}, nil
 }
 
 // Validate gets the provided arguments from a blueprint and calls Validate method of function to valdiate a function.
