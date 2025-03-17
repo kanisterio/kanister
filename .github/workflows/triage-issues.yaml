@@ -39,6 +39,6 @@ jobs:
       name: Update project
       uses: alex-page/github-project-automation-plus@303f24a24c67ce7adf565a07e96720faf126fe36 # v0.9.0
       with:
-        repo-token: ${{ secrets.GH_TOKEN }} # must use a PAT here
+        repo-token: ${{ secrets.KANISTER_BOT_GH_TOKEN }} # must use a PAT here
         project: Kanister
         column: To Be Triaged

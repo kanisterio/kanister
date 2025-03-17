@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [run_if, release_packages]
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GH_TOKEN: ${{ secrets.KANISTER_BOT_GH_TOKEN }}
       RELEASE_TAG: ${{ needs.run_if.outputs.release_tag }}
     steps:
       - name: Checkout kanister repo
@@ -127,15 +127,15 @@ jobs:
           gh release upload ${RELEASE_TAG} helm_package/kanister-operator-*
       - name: Clone charts pages repo
         run: |
-          git clone https://infraq:${GH_TOKEN}@github.com/kanisterio/kanister-charts
+          git clone https://kanister-bot:${GH_TOKEN}@github.com/kanisterio/kanister-charts
       - name: Copy helm index
         run: |
           cp ./helm_package/index.yaml ./kanister-charts/
       - name: Commit changes
         working-directory: ./kanister-charts
         run: |
-          git config --global user.name 'Kasten Production'
-          git config --global user.email 'infra@kasten.io'
+          git config --global user.name 'Kasten Bot'
+          git config --global user.email 'kanister.maintainers@veeam.com'
           git add -A
           git commit -s -m "Update chart index to ${RELEASE_TAG}"
       - name: Push changes
