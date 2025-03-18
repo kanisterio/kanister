@@ -20,7 +20,7 @@ linters:
     # - depguard # Disabling temporarily due to https://github.com/golangci/golangci-lint/issues/3906
     - dogsled
     - dupl
-    - exportloopref
+    # - exportloopref
     - importas
     - misspell
     - nestif
