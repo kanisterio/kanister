@@ -11,7 +11,7 @@ actions:
         # `kopiaOutput` is the name provided to kando using `--output-name` flag
         kopiaSnapshot: "{{ .Phases.dumpToStore.Output.kopiaOutput }}"
     phases:
-    - func: KubeTask
+    - func: MultiContainerRun
       name: dumpToStore
       objects:
         mysqlSecret:
@@ -19,9 +19,27 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.113.0
         namespace: "{{ .StatefulSet.Namespace }}"
-        command:
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: mysql:8
+        backgroundCommand:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          root_password="{{ index .Phases.dumpToStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+          dump_cmd="mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases"
+          ${dump_cmd} > /tmp/data
+
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        outputCommand:
         - bash
         - -o
         - errexit
@@ -30,16 +48,15 @@ actions:
         - -c
         - |
           backup_file_path="dump.sql"
-          root_password="{{ index .Phases.dumpToStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          dump_cmd="mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases"
-          ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
+          cat /tmp/data | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
+
   restore:
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`
     - mysqlBackup
     phases:
-    - func: KubeTask
+    - func: MultiContainerRun
       name: restoreFromStore
       objects:
         mysqlSecret:
@@ -47,9 +64,14 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.113.0
         namespace: "{{ .StatefulSet.Namespace }}"
-        command:
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        backgroundCommand:
         - bash
         - -o
         - errexit
@@ -59,9 +81,20 @@ actions:
         - |
           backup_file_path="dump.sql"
           kopia_snap='{{ .ArtifactsIn.mysqlBackup.KopiaSnapshot }}'
+          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - > /tmp/data
+
+        outputImage: mysql:8
+        outputCommand:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
           root_password="{{ index .Phases.restoreFromStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          restore_cmd="mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}"
-          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | ${restore_cmd}
+          cat /tmp/data | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
+
   delete:
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
@@ -71,7 +104,7 @@ actions:
     - func: KubeTask
       name: deleteFromStore
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.113.0
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
