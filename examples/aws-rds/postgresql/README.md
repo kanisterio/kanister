@@ -41,46 +41,22 @@ aws rds create-db-instance \
 aws rds wait db-instance-available --db-instance-identifier=test-postgresql-instance
 ```
 
-## Create configmap
-
-Create a configmap which contains information to connect to the RDS DB instance
+## Create DB secret
 
 ```yaml
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  annotations:
-    kasten.io/config: dataservice
-  name: dbconfig
-data:
-  postgres.instanceid: test-rds-postgresql
-  postgres.host: test-rds-postgresql.example.ap-south-1.rds.amazonaws.com
-  postgres.databases: |
-    - postgres
-    - template1
-  postgres.secret: dbcreds # name of K8s secret in the same namespace
+  name: dbcreds
+  namespace: pgtestrds
+type: Opaque
+stringData:
+  username: <username>
+  password: <password>
 ```
 
-## Integrating with Kanister
+This secret needs to be referenced in the configmap.
 
-### Create Profile
-
-Create Profile CR if not created already
-
-```bash
-$ kanctl create profile s3compliant --access-key <aws-access-key-id> \
-	--secret-key <aws-secret-key> \
-	--region <region-name> \
-	--namespace pgtestrds
-```
-
-**NOTE:**
-
-The command will configure a location where artifacts resulting from Kanister
-data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
-*CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
-requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
-can be shared between Kanister-enabled application instances.
 
 ### Configure a secret to access RDS
 
@@ -101,13 +77,60 @@ metadata:
   name: rds-secret
   namespace: pgtestrds
 type: secrets.kanister.io/aws
-data:
+stringData:
   aws_access_key_id: "<your access key id>"
   aws_secret_access_key: "<you secret>"
   role: ""
 ```
 
-This secret needs to be referenced in the acitonset.
+This secret needs to be referenced in the configmap.
+
+
+## Create configmap
+
+Create a configmap which contains information to connect to the RDS DB instance
+
+**NOTE** If you want to export your backups to a different region or a different object store (recommended) you need to also set the region where your RDS instance is deployed with `aws.region` parameter below. You don't need this setting otherwise.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    kasten.io/config: dataservice
+  name: dbconfig
+  namespace: pgtestrds
+data:
+  postgres.instanceid: test-rds-postgresql
+  postgres.host: test-rds-postgresql.example.ap-south-1.rds.amazonaws.com
+  postgres.databases: |
+    - postgres
+    - template1
+  postgres.secret: dbcreds # name of K8s secret in the same namespace with postgres credentials
+  aws.secret: rds-secret # name of K8s secret in the same namespace with aws credentials
+  aws.region: <aws region>
+```
+
+## Integrating with Kanister
+
+### Create Profile
+
+Create Profile CR if not created already.
+
+```bash
+$ kanctl create profile s3compliant --access-key <aws-access-key-id> \
+	--secret-key <aws-secret-key> \
+	--region <region-name> \
+	--namespace pgtestrds
+```
+
+**NOTE:**
+
+The command will configure a location where artifacts resulting from Kanister
+data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
+*CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
+requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
+can be shared between Kanister-enabled application instances.
 
 ### Create Blueprint
 
@@ -117,14 +140,14 @@ There are two ways that you can use to backup and restore RDS instance data:
 1. Create RDS instance snapshot. It can be achieved using two ways:
 - By using Kanister functions in blueprint : Using `rds-postgres-snap-blueprint.yaml` Blueprint
 - By using `aws` cli directly in blueprint : Using `rds-postgres-blueprint.yaml` Blueprint
-2. Create RDS snapshot, extract postgres data and push that data to S3 storage - Using `rds-postgres-remote-dump-blueprint.yaml` Blueprint
+2. Create RDS snapshot, extract postgres data and push that data to S3 storage - Using `rds-postgres-dump-blueprint.yaml` Blueprint
 
 So as you can see we will have to create a blueprint depending on how are we going to take the backup.
 
-Use `rds-postgres-snap-blueprint.yaml` or `rds-postgres-blueprint.yaml` Blueprint if you want to take backup using RDS snapshots or you can use `rds-postgres-remote-dump-blueprint.yaml` Blueprint if you want to extract postgres dump from snapshot and push to S3 storage
+Use `rds-postgres-snap-blueprint.yaml` or `rds-postgres-blueprint.yaml` Blueprint if you want to take backup using RDS snapshots or you can use `rds-postgres-dump-blueprint.yaml` Blueprint if you want to extract postgres dump from snapshot and push to S3 storage
 
 **NOTE:**
-- The `rds-postgres-remote-dump-blueprint.yaml` blueprint demonstrates how to use credentials from the secret.
+- The `rds-postgres-dump-blueprint.yaml` blueprint demonstrates how to use credentials from the secret.
 - The `rds-postgres-snap-blueprint.yaml` blueprint demonstrates how to use credentials from the profile.
 
 To change that you can modify the blueprints using those examples and documentation in https://docs.kanister.io/functions.html#createrdssnapshot
@@ -150,14 +173,13 @@ Create actionset file:
 
 > Use correct blueprint name (one of `rds-postgres-dump-bp` or `rds-postgres-snapshot-bp`) you have created earlier
 > If you have deployed your application which uses RDS instance in namespace other than `pgtestrds`, you need to modify the commands used below to use the correct namespace
-> Please make sure `region` option corresponds to the AWS region where your RDS is deployed.
 
 ```yaml
 apiVersion: cr.kanister.io/v1alpha1
 kind: ActionSet
 metadata:
   name: rds-backup
-  namespace: kasten-io
+  namespace: kanister
 spec:
   actions:
   - name: backup
@@ -170,19 +192,11 @@ spec:
     profile:
       name: <your profile>
       namespace: pgtestrds
-    secrets:
-      aws:
-        name: rds-secret
-        namespace: pgtestrds
-    options:
-      region: <rds region>
 ```
 
 Where:
 - dbconfig is a configmap holding RDS infromation
   Please see pgtest/deploy/config.yaml for configmap format
-- rds-secret is an AWS secret with access to RDS resources
-
 
 Apply actionset:
 
