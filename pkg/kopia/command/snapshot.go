@@ -196,6 +196,7 @@ type SnapshotVerifyCommandArgs struct {
 	FileQueueLength    *int
 	FileParallelism    *int
 	MaxErrors          *int
+	GetJSONOutput      bool
 }
 
 // SnapshotVerify returns kopia command verifying snapshots with given snapshot IDs.
@@ -230,6 +231,10 @@ func SnapshotVerify(cmdArgs SnapshotVerifyCommandArgs) []string {
 
 	for _, source := range cmdArgs.Sources {
 		args = args.AppendLoggableKV(sourcesFlag, source)
+	}
+
+	if cmdArgs.GetJSONOutput {
+		args = args.AppendLoggable(jsonFlag)
 	}
 
 	for _, snapID := range cmdArgs.SnapshotIDs {
