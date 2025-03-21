@@ -96,6 +96,13 @@ func (p *Phase) setPhaseArgs(phases []crv1alpha1.BlueprintPhase, tp param.Templa
 			return err
 		}
 
+		for key, val := range tp.Args {
+			if args[key] != nil {
+				log.Info().Print("ARG OVERRIDE ", field.M{"argName": key, "argVal": val, "oldVal": args[key]})
+				args[key] = val
+			}
+		}
+
 		if err = utils.CheckRequiredArgs(p.f.RequiredArgs(), args); err != nil {
 			return errkit.Wrap(err, fmt.Sprintf("Required args missing for function %s", p.f.Name()))
 		}

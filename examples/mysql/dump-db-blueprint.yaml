@@ -12,17 +12,17 @@ actions:
     - func: MultiContainerRun
       name: dumpToStore
       args:
-        namespace: "{{ .Args.Namespace }}"
+        namespace: "{{ .Options.Namespace }}"
         sharedVolumeMedium: Memory
 
         initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
-        backgroundImage: {{ .Args.DBImage }}
-        backgroundCommand: {{ .Args.DBCommand }}
+        backgroundImage: "{{ .Options.DBImage }}"
+        backgroundCommand: placeholder
 
         outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
-        ## FIXME: maybe modify s3_path with arg (e.g. BackupPrefix)??
+        ## TODO: maybe modify s3_path with arg (e.g. BackupPrefix)??
         outputCommand:
         - bash
         - -o
@@ -31,7 +31,7 @@ actions:
         - pipefail
         - -c
         - |
-          s3_path="/backups/{{ .Args.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.gz"
+          s3_path="/backups/{{ .Options.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.gz"
           cat /tmp/data | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   ## Input artifacts: dump
@@ -44,7 +44,7 @@ actions:
     - func: MultiContainerRun
       name: restoreFromStore
       args:
-        namespace: "{{ .Args.Namespace }}"
+        namespace: "{{ .Options.Namespace }}"
         sharedVolumeMedium: Memory
 
         initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
@@ -62,8 +62,8 @@ actions:
           s3_path="{{ .ArtifactsIn.dump.KeyValue.s3path }}"
           kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip > /tmp/data
 
-        outputImage: {{ .Args.DBImage }}
-        outputCommand: {{ .Args.DBCommand }}
+        outputImage: "{{ .Options.DBImage }}"
+        outputCommand: placeholder
   ## Input artifacts: dump
   delete:
     phases:

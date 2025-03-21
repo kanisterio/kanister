@@ -3,13 +3,47 @@ kind: Blueprint
 metadata:
   name: mysql-blueprint
 actions:
+  backupmultiple:
+    outputArtifacts:
+      dump:
+        keyValue:
+          s3pathFirst: '{{  index (index .Phases.dumpToStoreMulti.Output "0") "s3path" }}'
+    phases:
+    - func: CallMulti
+      name: dumpToStoreMulti
+      objects:
+        mysqlSecret:
+          kind: Secret
+          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        namespace: kanister
+        ref: dump-db-blueprint
+        action: backup
+        phase: dumpToStore
+        iterations:
+        - options:
+            Namespace: "{{ .StatefulSet.Namespace }}"
+            DBImage: mysql:8
+          overrideArgs:
+            backgroundCommand:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              root_password="{{ index .Phases.dumpToStoreMulti.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+              mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases > /tmp/data
+
   backup:
     outputArtifacts:
       dump:
         keyValue:
           s3path: "{{ .Phases.dumpToStore.Output.s3path }}"
     phases:
-    - func: CallFunc
+    - func: CallPhase
       name: dumpToStore
       objects:
         mysqlSecret:
@@ -21,10 +55,11 @@ actions:
         ref: dump-db-blueprint
         action: backup
         phase: dumpToStore
-        args:
-          Namespace: {{ .StatefulSet.Namespace }}
+        options:
+          Namespace: "{{ .StatefulSet.Namespace }}"
           DBImage: mysql:8
-          DBCommand:
+        overrideArgs:
+          backgroundCommand:
           - bash
           - -o
           - errexit
@@ -32,14 +67,14 @@ actions:
           - pipefail
           - -c
           - |
-            root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+            root_password="{{ index .Phases.dumpToStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
             mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases > /tmp/data
 
   restore:
     inputArtifactNames:
     - dump
     phases:
-    - func: CallFunc
+    - func: CallPhase
       name: restoreFromStore
       objects:
         mysqlSecret:
@@ -51,10 +86,11 @@ actions:
         ref: dump-db-blueprint
         action: restore
         phase: restoreFromStore
-        args:
-          Namespace: {{ .StatefulSet.Namespace }}
+        options:
+          Namespace: "{{ .StatefulSet.Namespace }}"
           DBImage: mysql:8
-          DBCommand:
+        overrideArgs:
+          outputCommand:
           - bash
           - -o
           - errexit
@@ -62,14 +98,14 @@ actions:
           - pipefail
           - -c
           - |
-            root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+            root_password="{{ index .Phases.restoreFromStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
             cat /tmp/data | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
 
   delete:
     inputArtifactNames:
     - dump
     phases:
-    - func: CallFunc
+    - func: CallPhase
       name: deleteFromBlobStore
       args:
         namespace: kanister
