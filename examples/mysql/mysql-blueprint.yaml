@@ -7,19 +7,36 @@ actions:
     outputArtifacts:
       mysqlCloudDump:
         keyValue:
-          s3path: "{{ .Phases.dumpToObjectStore.Output.s3path }}"
+          s3path: "{{ .Phases.dumpToStore.Output.s3path }}"
     phases:
-    - func: KubeTask
-      name: dumpToObjectStore
+    - func: MultiContainerRun
+      name: dumpToStore
       objects:
         mysqlSecret:
           kind: Secret
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.113.0
         namespace: "{{ .StatefulSet.Namespace }}"
-        command:
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: mysql:8
+        backgroundCommand:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          root_password="{{ index .Phases.dumpToStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases > /tmp/data
+
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        outputCommand:
         - bash
         - -o
         - errexit
@@ -28,24 +45,29 @@ actions:
         - -c
         - |
           s3_path="/mysql-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
-          root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          cat /tmp/data | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
+
   restore:
     inputArtifactNames:
     - mysqlCloudDump
     phases:
-    - func: KubeTask
-      name: restoreFromBlobStore
+    - func: MultiContainerRun
+      name: restoreFromStore
       objects:
         mysqlSecret:
           kind: Secret
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.113.0
         namespace: "{{ .StatefulSet.Namespace }}"
-        command:
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.112.0 {{- end}}'
+        backgroundCommand:
         - bash
         - -o
         - errexit
@@ -54,8 +76,20 @@ actions:
         - -c
         - |
           s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip > /tmp/data
+
+        outputImage: mysql:8
+        outputCommand:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
           root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
+          cat /tmp/data | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
+
   delete:
     inputArtifactNames:
     - mysqlCloudDump
@@ -63,7 +97,7 @@ actions:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.113.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.112.0
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
