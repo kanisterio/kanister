@@ -48,6 +48,7 @@ updates:
         patterns:
         - "actions/*"
         - "github/codeql-action"
+        - "pnpm/action-setup"
       docker:
         patterns:
         - "docker/*"
