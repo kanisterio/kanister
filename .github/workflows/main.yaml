@@ -148,6 +148,7 @@ jobs:
     with:
       image_tag: v9.99.9-dev
       ref: ${{ github.ref }}
+      platforms: linux/amd64
       extra_tags: |
         ${{ needs.image_tags.outputs.tag_short }}
         ${{ needs.image_tags.outputs.tag_long }}

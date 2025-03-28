@@ -173,3 +173,4 @@ jobs:
     with:
       image_tag: ${{ needs.run_if.outputs.release_tag }}
       ref: ${{ needs.run_if.outputs.release_tag }}
+      platforms: linux/amd64
