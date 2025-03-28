@@ -1,6 +1,7 @@
 module github.com/kanisterio/kanister
 
 go 1.22.12
+
 toolchain go1.24.1
 
 replace (
