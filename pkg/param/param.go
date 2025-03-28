@@ -57,6 +57,7 @@ type TemplateParams struct {
 	RepositoryServer *RepositoryServer
 	Options          map[string]string
 	Object           map[string]interface{}
+	CurrentPhase     *Phase
 	Phases           map[string]*Phase
 	DeferPhase       *Phase
 	PodOverride      crv1alpha1.JSONMap
