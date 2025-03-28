@@ -56,6 +56,7 @@ type TemplateParams struct {
 	Profile          *Profile
 	RepositoryServer *RepositoryServer
 	Options          map[string]string
+	Args             map[string]interface{}
 	Object           map[string]interface{}
 	CurrentPhase     *Phase
 	Phases           map[string]*Phase
@@ -201,6 +202,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		Profile:          prof,
 		RepositoryServer: repoServer,
 		Time:             now.Format(timeFormat),
+		Args:             make(map[string]interface{}),
 		Options:          as.Options,
 		PodOverride:      as.PodOverride,
 		PodAnnotations:   as.PodAnnotations,
