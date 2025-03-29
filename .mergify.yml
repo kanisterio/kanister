@@ -1,21 +1,44 @@
 queue_rules:
   - name: default
-    conditions:
+    queue_conditions:
       - and:
-        - "#approved-reviews-by>=1"
-        - check-success=gomod
-        - check-success=lint
-        - check-success=test (test)
-        - check-success=test (integration-test)
-        - check-success=test (helm-test)
-        - check-success=build (controller)
-        - check-success=build (kanctl)
-        - check-success=build (kando)
-        - check-success=docs
-        - label=kueue
-        - label!="hold off merging"
+          - base=master
+          - "#approved-reviews-by>=1"
+          - check-success=gomod
+          - check-success=lint
+          - check-success=test (test)
+          - check-success=test (integration-test)
+          - check-success=test (helm-test)
+          - check-success=build (controller)
+          - check-success=build (kanctl)
+          - check-success=build (kando)
+          - check-success=docs
+          - label=kueue
+          - label!="hold off merging"
+    merge_conditions:
+      - and:
+          - "#approved-reviews-by>=1"
+          - check-success=gomod
+          - check-success=lint
+          - check-success=test (test)
+          - check-success=test (integration-test)
+          - check-success=test (helm-test)
+          - check-success=build (controller)
+          - check-success=build (kanctl)
+          - check-success=build (kando)
+          - check-success=docs
+          - label=kueue
+          - label!="hold off merging"
+
+    merge_method: squash
 
 pull_request_rules:
+  - name: delete head branch after merge
+    conditions:
+      - merged
+    actions:
+      delete_head_branch:
+        force: false
   - name: Automatic merge
     conditions:
       - and:
@@ -34,11 +57,3 @@ pull_request_rules:
         - label!="hold off merging"
     actions:
       queue:
-        name: default
-        method: squash
-  - name: delete head branch after merge
-    conditions:
-      - merged
-    actions:
-      delete_head_branch:
-        force: false
