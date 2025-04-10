@@ -21,7 +21,7 @@ import (
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
-// CredentialApplyConfiguration represents an declarative configuration of the Credential type for use
+// CredentialApplyConfiguration represents a declarative configuration of the Credential type for use
 // with apply.
 type CredentialApplyConfiguration struct {
 	Type              *v1alpha1.CredentialType             `json:"type,omitempty"`
@@ -30,7 +30,7 @@ type CredentialApplyConfiguration struct {
 	KopiaServerSecret *KopiaServerSecretApplyConfiguration `json:"kopiaServerSecret,omitempty"`
 }
 
-// CredentialApplyConfiguration constructs an declarative configuration of the Credential type for use with
+// CredentialApplyConfiguration constructs a declarative configuration of the Credential type for use with
 // apply.
 func Credential() *CredentialApplyConfiguration {
 	return &CredentialApplyConfiguration{}
