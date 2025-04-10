@@ -111,3 +111,23 @@ Define a custom kanister-tools image
 {{- define "kanister-tools.image" -}}
     {{- printf "%s:%s" (.Values.kanisterToolsImage.image) (.Values.kanisterToolsImage.tag) -}}
 {{- end -}}
+
+{{/*
+Define a security Context at Pod level
+*/}}
+{{- define "podSecurityContext" -}}
+    {{- if .Values.podSecurityContext }}
+    securityContext: 
+      {{ toYaml .Values.podSecurityContext  | nindent 6  }}
+    {{- end }}
+{{- end -}}
+
+{{/*
+Define a security Context at Container level
+*/}}
+{{- define "containerSecurityContext" -}}
+    {{- if .Values.containerSecurityContext }}
+    securityContext:
+      {{ toYaml .Values.containerSecurityContext | nindent 6 }}
+    {{- end }}
+{{- end -}}
