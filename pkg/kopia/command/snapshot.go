@@ -208,6 +208,10 @@ func SnapshotVerify(cmdArgs SnapshotVerifyCommandArgs) []string {
 		args = args.AppendLoggableKV(verifyFilesPercentFlag, fmt.Sprintf("%v", *cmdArgs.VerifyFilesPercent))
 	}
 
+	if cmdArgs.MaxErrors != nil {
+		args = args.AppendLoggableKV(maxErrorsFlag, strconv.Itoa(*cmdArgs.MaxErrors))
+	}
+
 	if cmdArgs.Parallelism != nil {
 		parallelismStr := strconv.Itoa(*cmdArgs.Parallelism)
 		args = args.AppendLoggableKV(parallelFlag, parallelismStr)
