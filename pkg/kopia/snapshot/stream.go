@@ -28,6 +28,7 @@ import (
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/restore"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
+	"github.com/kopia/kopia/snapshot/upload"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
@@ -97,7 +98,7 @@ func Write(ctx context.Context, source io.ReadCloser, path, password string) (*S
 	})
 
 	// Setup kopia uploader
-	u := snapshotfs.NewUploader(rep)
+	u := upload.NewUploader(rep)
 
 	// Create a kopia snapshot
 	snapID, snapshotSize, err := SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
@@ -138,7 +139,7 @@ func WriteFile(ctx context.Context, path, sourcePath, password string) (*Snapsho
 	}
 
 	// Setup kopia uploader
-	u := snapshotfs.NewUploader(rep)
+	u := upload.NewUploader(rep)
 
 	// Create a kopia snapshot
 	snapID, snapshotSize, err := SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
