@@ -32,6 +32,8 @@ type SnapshotCreateCommandArgs struct {
 	Tags                   []string
 	ProgressUpdateInterval time.Duration
 	Parallelism            int
+	ParallelismFile        int
+	ParallelismDir         int
 	EstimationType         string
 	EstimationThreshold    int
 }
@@ -50,6 +52,16 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
+
+	if cmdArgs.ParallelismFile != 0 {
+		parallelismFileStr := strconv.Itoa(cmdArgs.ParallelismFile)
+		args = args.AppendLoggableKV(parallelFileFlag, parallelismFileStr)
+	}
+
+	if cmdArgs.ParallelismDir != 0 {
+		parallelismDirStr := strconv.Itoa(cmdArgs.ParallelismDir)
+		args = args.AppendLoggableKV(parallelDirFlag, parallelismDirStr)
+	}
 
 	if cmdArgs.EstimationType != "" {
 		args = args.AppendLoggableKV(progressEstimationTypeFlag, cmdArgs.EstimationType)

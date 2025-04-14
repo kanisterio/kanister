@@ -51,6 +51,8 @@ const (
 	LogLevelInfo                    = "info"
 	maxErrorsFlag                   = "--max-errors"
 	parallelFlag                    = "--parallel"
+	parallelFileFlag                = "--parallel-file-reads"
+	parallelDirFlag                 = "--parallel-dir-reads"
 	progressEstimationTypeFlag      = "--progress-estimation-type"
 	adaptiveEstimationThresholdFlag = "--adaptive-estimation-threshold"
 	progressEstimationTypeAdaptive  = "adaptive"
