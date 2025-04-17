@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package kanctl provides a command-line interface for managing Kanister custom resources.
 package kanctl
 
 import (

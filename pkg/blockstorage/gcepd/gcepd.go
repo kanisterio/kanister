@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package gcepd provides an implementation of the blockstorage.Provider interface
+// for Google Cloud Platform's Persistent Disk (GCP PD) storage.
 package gcepd
 
 import (

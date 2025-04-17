@@ -1,3 +1,5 @@
+// Package kanx provides helper functions for managing gRPC connections and
+// interacting with processes over gRPC.
 package kanx
 
 import (

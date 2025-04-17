@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package testutil provides utility functions and test objects for use in unit tests.
 package testutil
 
 import (
@@ -208,7 +209,7 @@ func NewSecretProfileFromLocation(location crv1alpha1.Location) (*corev1.Secret,
 		key = os.Getenv(blockstorage.AzureStorageAccount)
 		val = os.Getenv(blockstorage.AzureStorageKey)
 	default:
-		return nil, nil, fmt.Errorf("Invalid location type '%s'", location.Type)
+		return nil, nil, fmt.Errorf("invalid location type '%s'", location.Type)
 	}
 	data["access_key_id"] = key
 	data["secret_access_key"] = val

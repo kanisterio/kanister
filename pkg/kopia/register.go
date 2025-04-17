@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package kopia provides integration with Kopia, a fast and secure backup tool.
+// It registers supported blob storage providers for use with Kopia repositories.
 package kopia
 
 // Register supported blob storage providers

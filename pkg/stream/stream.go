@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package stream provides functionality to stream data to an object store
+// by reading it from a given endpoint into an in-memory filesystem.
 package stream
 
 import (

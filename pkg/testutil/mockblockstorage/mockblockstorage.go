@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package mockblockstorage provides a mock implementation of the blockstorage.Provider interface
+// for testing purposes. It simulates storage operations such as volume and snapshot management.
 package mockblockstorage
 
 import (

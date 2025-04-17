@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package internal provides internal utilities and abstractions for working
+// with the Kopia command-line interface.
 package internal
 
 import (

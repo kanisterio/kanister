@@ -73,7 +73,7 @@ func getBlueprintFromSpec(spec []byte) (*Blueprint, error) {
 	blueprint := &Blueprint{}
 	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 	if _, _, err := d.Decode([]byte(spec), nil, blueprint); err != nil {
-		return nil, errkit.Wrap(err, "Failed to decode spec into object")
+		return nil, errkit.Wrap(err, "failed to decode spec into object")
 	}
 	return blueprint, nil
 }

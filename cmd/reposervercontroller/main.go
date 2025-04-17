@@ -12,6 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements the entry point for the Repository Server Controller.
+// This controller is responsible for managing the lifecycle of RepositoryServer
+// custom resources in a Kubernetes cluster. It sets up the necessary controllers,
+// health checks, and optionally a validating webhook for custom resource validation.
+//
+// The controller uses the controller-runtime library to manage reconciliation loops
+// and integrates with Kubernetes client-go for interacting with the cluster API.
 package main
 
 import (
@@ -39,6 +46,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
+
 	//nolint:gci
 	//+kubebuilder:scaffold:imports
 

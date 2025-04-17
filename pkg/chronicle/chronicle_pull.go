@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package chronicle provides functionality for managing and retrieving
+// chronicle data.
 package chronicle
 
 import (

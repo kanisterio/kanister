@@ -438,10 +438,10 @@ func (ktpf *multiContainerRunFunc) Validate(args map[string]any) error {
 	return utils.CheckRequiredArgs(ktpf.RequiredArgs(), args)
 }
 
-func (k *multiContainerRunFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (ktpf *multiContainerRunFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    k.progressPercent,
+		ProgressPercent:    ktpf.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

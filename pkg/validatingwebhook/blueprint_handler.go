@@ -1,3 +1,5 @@
+// Package validatingwebhook provides functionality for validating Kubernetes resources
+// using admission webhooks.
 package validatingwebhook
 
 import (

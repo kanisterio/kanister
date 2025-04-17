@@ -19,6 +19,7 @@ Some of the code below came from https://github.com/coreos/etcd-operator
 which also has the apache 2.0 license.
 */
 
+// Package v1alpha1 contains API schema definitions for the Kanister custom resources.
 package v1alpha1
 
 import (

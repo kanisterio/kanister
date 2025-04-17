@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package storage provides logging utilities including a no-operation logger
+// and a string-based logger for testing and debugging purposes.
 package storage
 
 import (

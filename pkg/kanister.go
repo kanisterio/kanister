@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package kanister provides functionality for registering and managing custom
+// actions (Funcs) that can be executed as part of user-defined workflows.
 package kanister
 
 import (

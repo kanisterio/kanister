@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package opts provides utility functions to create command-line options
+// for kopia.
 package opts
 
 import "github.com/kanisterio/safecli/command"

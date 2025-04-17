@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package filter provides utilities for filtering Kubernetes resources
+// based on their GroupVersionResource (GVR), names, and labels.
 package filter
 
 import (
@@ -44,8 +46,8 @@ func (r ResourceTypeRequirement) Matches(gvr schema.GroupVersionResource) bool {
 }
 
 // Empty returns true if ResourceTypeRequirement has no fields set
-func (rtr ResourceTypeRequirement) Empty() bool {
-	return rtr.Group == "" && rtr.Version == "" && rtr.Resource == ""
+func (r ResourceTypeRequirement) Empty() bool {
+	return r.Group == "" && r.Version == "" && r.Resource == ""
 }
 
 func matches(sel, val string) bool {

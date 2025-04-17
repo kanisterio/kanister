@@ -204,12 +204,12 @@ func (crs *createRDSSnapshotFunc) Arguments() []string {
 	}
 }
 
-func (c *createRDSSnapshotFunc) Validate(args map[string]any) error {
-	if err := utils.CheckSupportedArgs(c.Arguments(), args); err != nil {
+func (crs *createRDSSnapshotFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(crs.Arguments(), args); err != nil {
 		return err
 	}
 
-	return utils.CheckRequiredArgs(c.RequiredArgs(), args)
+	return utils.CheckRequiredArgs(crs.RequiredArgs(), args)
 }
 
 func (crs *createRDSSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

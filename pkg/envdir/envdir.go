@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package envdir provides functionality to read environment variables
+// from files within a specified directory.
 package envdir
 
 import (

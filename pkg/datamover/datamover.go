@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package datamover provides an interface for implementing data movement
+// operations such as pulling, pushing, and deleting data from object storage.
 package datamover
 
 import "context"

@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package testing provides integration test suites for various database and application configurations.
 package testing
 
 import (
