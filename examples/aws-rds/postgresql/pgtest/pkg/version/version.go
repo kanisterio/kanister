@@ -14,6 +14,7 @@
  limitations under the License.
 */
 
+// Package version provides utilities for managing and retrieving the application version.
 package version
 
 // VERSION is the app-global version string, which should be substituted with a

@@ -125,7 +125,7 @@ func (r *restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 		return nil, err
 	}
 	if size.IsZero() {
-		return nil, fmt.Errorf("Failed to restore CSI snapshot. restoreSize argument cannot be zero")
+		return nil, fmt.Errorf("failed to restore CSI snapshot. restoreSize argument cannot be zero")
 	}
 	restoreArgs.RestoreSize = &size
 
@@ -170,10 +170,10 @@ func (r *restoreCSISnapshotFunc) Validate(args map[string]any) error {
 	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
 }
 
-func (d *restoreCSISnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (r *restoreCSISnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    d.progressPercent,
+		ProgressPercent:    r.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

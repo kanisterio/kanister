@@ -192,10 +192,10 @@ func (c *createVolumeFromSnapshotFunc) Validate(args map[string]any) error {
 	return utils.CheckRequiredArgs(c.RequiredArgs(), args)
 }
 
-func (crs *createVolumeFromSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (c *createVolumeFromSnapshotFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    crs.progressPercent,
+		ProgressPercent:    c.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

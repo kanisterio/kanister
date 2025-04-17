@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package snapshot provides an interface and utility functions for managing
+// Kubernetes VolumeSnapshots and VolumeSnapshotContents.
 package snapshot
 
 import (

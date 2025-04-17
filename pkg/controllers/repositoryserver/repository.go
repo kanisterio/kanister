@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package repositoryserver provides functionality for managing and connecting to
+// Kopia repositories in the context of a repository server.
 package repositoryserver
 
 import (

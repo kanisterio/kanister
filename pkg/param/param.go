@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package param provides utilities and structures for managing template parameters
+// and fetching Kubernetes resources required for Kanister actions.
 package param
 
 import (

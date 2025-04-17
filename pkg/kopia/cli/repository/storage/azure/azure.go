@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package azure provides functionality to create and manage Azure storage
+// subcommands for the Kopia CLI.
 package azure
 
 import (

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package app provides interfaces and types for managing applications
+// that can be installed, configured, and managed in a Kubernetes cluster.
 package app
 
 import (

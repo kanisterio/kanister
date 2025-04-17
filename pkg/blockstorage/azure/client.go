@@ -14,6 +14,9 @@
 
 // TODO: Switch to using the latest azure sdk and remove nolint.
 // Related Ticket- https://github.com/kanisterio/kanister/issues/168
+
+// Package azure provides a client implementation for interacting with Azure's
+// block storage services.
 package azure
 
 import (

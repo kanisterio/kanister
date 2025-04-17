@@ -80,7 +80,7 @@ func FindVersion() (HelmVersion, error) {
 	if strings.HasPrefix(out, "v3") {
 		return V3, nil
 	}
-	return "", fmt.Errorf("Unsupported helm version %s", out)
+	return "", fmt.Errorf("unsupported helm version %s", out)
 }
 
 // GetHelmBinName returns a helm bin name from env var

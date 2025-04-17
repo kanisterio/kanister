@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package maintenance provides utilities and functions to manage and interact
+// with Kopia maintenance operations.
 package maintenance
 
 import (

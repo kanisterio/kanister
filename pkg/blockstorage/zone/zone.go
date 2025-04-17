@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package zone provides utilities for working with availability zones and regions
+// in a Kubernetes cluster.
 package zone
 
 import (

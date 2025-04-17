@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package customresource provides utilities for creating and managing Kubernetes
+// Custom Resource Definitions (CRDs) and their lifecycle.
 package customresource
 
 import (
@@ -74,12 +76,12 @@ func CreateCustomResources(context Context, resources []CustomResource) error {
 	// CRD is available on v1.7.0 and above. TPR became deprecated on v1.7.0
 	serverVersion, err := context.Clientset.Discovery().ServerVersion()
 	if err != nil {
-		return fmt.Errorf("Error getting server version: %v", err)
+		return fmt.Errorf("error getting server version: %v", err)
 	}
 	kubeVersion := semver.MustParse(serverVersion.GitVersion)
 
 	if kubeVersion.LessThan(semver.MustParse(serverVersionV170)) {
-		return fmt.Errorf("Kubernetes versions less than 1.7.0 not supported")
+		return fmt.Errorf("kubernetes versions less than 1.7.0 not supported")
 	}
 	var lastErr error
 	for _, resource := range resources {
@@ -108,7 +110,7 @@ func getCRDFromSpec(spec []byte) (*apiextensionsv1.CustomResourceDefinition, err
 func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
 	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 	if _, _, err := d.Decode(spec, nil, intoObj); err != nil {
-		return fmt.Errorf("Failed to decode spec into object: %s; spec %s\n", err.Error(), spec)
+		return fmt.Errorf("failed to decode spec into object: %s; spec %s", err.Error(), spec)
 	}
 	return nil
 }
@@ -116,18 +118,18 @@ func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
 func createCRD(context Context, resource CustomResource) error {
 	c, err := rawCRDFromFile(fmt.Sprintf("%s.yaml", resource.Name))
 	if err != nil {
-		return errkit.Wrap(err, "Getting raw CRD from CRD manifests")
+		return errkit.Wrap(err, "getting raw CRD from CRD manifests")
 	}
 
 	crd, err := getCRDFromSpec(c)
 	if err != nil {
-		return errkit.Wrap(err, "Getting CRD object from CRD bytes")
+		return errkit.Wrap(err, "getting CRD object from CRD bytes")
 	}
 
 	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Context, crd, metav1.CreateOptions{})
 	if err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return errkit.New(fmt.Sprintf("Failed to create %s CRD. %+v", resource.Name, err))
+			return errkit.New(fmt.Sprintf("failed to create %s CRD. %+v", resource.Name, err))
 		}
 
 		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -145,7 +147,7 @@ func createCRD(context Context, resource CustomResource) error {
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to update existing CRD: %s\n", err.Error())
+			return fmt.Errorf("failed to update existing CRD: %s", err.Error())
 		}
 	}
 	return nil
@@ -171,7 +173,7 @@ func waitForCRDInit(context Context, resource CustomResource) error {
 				}
 			case apiextensionsv1.NamesAccepted:
 				if cond.Status == apiextensionsv1.ConditionFalse {
-					return false, fmt.Errorf("Name conflict: %v ", cond.Reason)
+					return false, fmt.Errorf("name conflict: %v ", cond.Reason)
 				}
 			}
 		}

@@ -1,3 +1,6 @@
+// Package caller provides utilities for retrieving information about the call stack,
+// such as the function name, file path, and line number of a caller. This is useful
+// for debugging, logging, and tracing the execution of a program.
 package caller
 
 import (

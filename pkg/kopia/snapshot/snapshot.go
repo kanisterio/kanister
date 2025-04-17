@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package snapshot provides functionality for creating, managing, and deleting
+// Kopia snapshots.
 package snapshot
 
 import (

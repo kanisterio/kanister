@@ -1,3 +1,6 @@
+// It includes commands for performing backups, restores, snapshots, and repository management.
+// The package also supports integration with various cloud storage providers such as S3, GCS, and Azure.
+// Additionally, it provides helper functions for parsing Restic logs and handling credentials.
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package restic provides utility functions to interact with the Restic backup tool.
 package restic
 
 import (

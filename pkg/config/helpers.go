@@ -1,3 +1,4 @@
+// Package config provides utilities for managing Kubernetes cluster configurations.
 package config
 
 import (

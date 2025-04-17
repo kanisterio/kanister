@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package helm provides an interface and structures to manage Helm repositories
+// and charts.
 package helm
 
 import "context"

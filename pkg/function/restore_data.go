@@ -354,10 +354,10 @@ func (r *restoreDataFunc) Validate(args map[string]any) error {
 	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
 }
 
-func (d *restoreDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (r *restoreDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    d.progressPercent,
+		ProgressPercent:    r.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

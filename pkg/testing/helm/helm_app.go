@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package helm provides utilities for managing Helm applications, including
+// installing, upgrading, and uninstalling Helm charts.
 package helm
 
 import (

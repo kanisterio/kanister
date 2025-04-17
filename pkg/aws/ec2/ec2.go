@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package ec2 provides a wrapper around the AWS EC2 SDK to simplify interactions
+// with EC2 resources such as security groups, subnets, and VPCs.
 package ec2
 
 import (

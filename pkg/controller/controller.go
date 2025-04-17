@@ -18,6 +18,8 @@ Some of the code below came from https://github.com/coreos/etcd-operator
 which also has the apache 2.0 license.
 */
 
+// Package controller provides the implementation of the Kanister controller,
+// which manages custom resources such as ActionSets and Blueprints.
 package controller
 
 import (

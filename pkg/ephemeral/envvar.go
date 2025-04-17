@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package ephemeral provides utilities for managing ephemeral environment variables
+// in Kubernetes containers and pods.
 package ephemeral
 
 import (

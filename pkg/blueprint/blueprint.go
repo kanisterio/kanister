@@ -21,6 +21,7 @@
 //   e.g if you have to use this pkg in tests of pkg/testing pkg, the command should look like -
 //   "ln -sf ../../pkg/blueprint/blueprints blueprints"
 
+// Package blueprint provides utilities for working with Kanister Blueprints.
 package blueprint
 
 import (

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package aws provides utilities for interacting with AWS services, including
+// credential management, role switching, and configuration setup.
 package aws
 
 import (
@@ -230,7 +232,7 @@ func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Co
 }
 
 func IsAwsCredsValid(ctx context.Context, config map[string]string) (bool, error) {
-	var maxRetries int = 10
+	maxRetries := 10
 	awsConfig, region, err := GetConfig(ctx, config)
 	if err != nil {
 		return false, errkit.Wrap(err, "Failed to get config for AWS creds")

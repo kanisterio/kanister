@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package output provides utilities for handling and validating key-value
+// pairs, marshaling and unmarshaling them into JSON format, and printing
+// them in a structured manner.
 package output
 
 import (

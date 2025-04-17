@@ -203,10 +203,10 @@ func (ktf *kubeTaskFunc) Validate(args map[string]any) error {
 	return utils.CheckRequiredArgs(ktf.RequiredArgs(), args)
 }
 
-func (k *kubeTaskFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (ktf *kubeTaskFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    k.progressPercent,
+		ProgressPercent:    ktf.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

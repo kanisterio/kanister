@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package validate provides functions to validate ActionSets, Blueprints, Profiles, and other Kanister resources.
 package validate
 
 import (
