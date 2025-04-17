@@ -240,7 +240,10 @@ func backupDataUsingKopiaServer(
 			Tags:                   tags,
 			ProgressUpdateInterval: 0,
 			Parallelism:            utils.GetEnvAsIntOrDefault(kankopia.DataStoreParallelUploadName, kankopia.DefaultDataStoreParallelUpload),
+			ParallelismFile:        utils.GetEnvAsIntOrDefault(kankopia.DataStoreParallelFileOpsUploadsName, kankopia.DefaultDataStoreParallelFileUploads),
+			ParallelismDir:         utils.GetEnvAsIntOrDefault(kankopia.DataStoreParallelDirOpsUploadsName, kankopia.DefaultDataStoreParallelDirUploads),
 		})
+
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to construct snapshot create command")
 	}
