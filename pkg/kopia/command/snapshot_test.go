@@ -58,7 +58,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 				}
 				return SnapshotCreate(args)
 			},
-			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=0 --parallel-file-reads=8 --progress-update-interval=1h",
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=0 --parallel-file-operations=8 --progress-update-interval=1h",
 		},
 		{
 			f: func() []string {
@@ -70,7 +70,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 				}
 				return SnapshotCreate(args)
 			},
-			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=0 --parallel-dir-reads=8 --progress-update-interval=1h",
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=0 --parallel-dir-operations=8 --progress-update-interval=1h",
 		},
 		{
 			f: func() []string {
