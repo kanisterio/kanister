@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-// ActionStatusApplyConfiguration represents an declarative configuration of the ActionStatus type for use
+// ActionStatusApplyConfiguration represents a declarative configuration of the ActionStatus type for use
 // with apply.
 type ActionStatusApplyConfiguration struct {
 	Name       *string                               `json:"name,omitempty"`
@@ -28,7 +28,7 @@ type ActionStatusApplyConfiguration struct {
 	DeferPhase *PhaseApplyConfiguration              `json:"deferPhase,omitempty"`
 }
 
-// ActionStatusApplyConfiguration constructs an declarative configuration of the ActionStatus type for use with
+// ActionStatusApplyConfiguration constructs a declarative configuration of the ActionStatus type for use with
 // apply.
 func ActionStatus() *ActionStatusApplyConfiguration {
 	return &ActionStatusApplyConfiguration{}

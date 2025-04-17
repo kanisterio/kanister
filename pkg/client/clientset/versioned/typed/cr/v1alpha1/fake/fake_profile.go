@@ -43,22 +43,24 @@ var profilesKind = v1alpha1.SchemeGroupVersion.WithKind("Profile")
 
 // Get takes name of the profile, and returns the corresponding profile object, and an error if there is any.
 func (c *FakeProfiles) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Profile, err error) {
+	emptyResult := &v1alpha1.Profile{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(profilesResource, c.ns, name), &v1alpha1.Profile{})
+		Invokes(testing.NewGetActionWithOptions(profilesResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Profile), err
 }
 
 // List takes label and field selectors, and returns the list of Profiles that match those selectors.
 func (c *FakeProfiles) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ProfileList, err error) {
+	emptyResult := &v1alpha1.ProfileList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(profilesResource, profilesKind, c.ns, opts), &v1alpha1.ProfileList{})
+		Invokes(testing.NewListActionWithOptions(profilesResource, profilesKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -77,28 +79,30 @@ func (c *FakeProfiles) List(ctx context.Context, opts v1.ListOptions) (result *v
 // Watch returns a watch.Interface that watches the requested profiles.
 func (c *FakeProfiles) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(profilesResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(profilesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a profile and creates it.  Returns the server's representation of the profile, and an error, if there is any.
 func (c *FakeProfiles) Create(ctx context.Context, profile *v1alpha1.Profile, opts v1.CreateOptions) (result *v1alpha1.Profile, err error) {
+	emptyResult := &v1alpha1.Profile{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(profilesResource, c.ns, profile), &v1alpha1.Profile{})
+		Invokes(testing.NewCreateActionWithOptions(profilesResource, c.ns, profile, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Profile), err
 }
 
 // Update takes the representation of a profile and updates it. Returns the server's representation of the profile, and an error, if there is any.
 func (c *FakeProfiles) Update(ctx context.Context, profile *v1alpha1.Profile, opts v1.UpdateOptions) (result *v1alpha1.Profile, err error) {
+	emptyResult := &v1alpha1.Profile{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(profilesResource, c.ns, profile), &v1alpha1.Profile{})
+		Invokes(testing.NewUpdateActionWithOptions(profilesResource, c.ns, profile, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Profile), err
 }
@@ -113,7 +117,7 @@ func (c *FakeProfiles) Delete(ctx context.Context, name string, opts v1.DeleteOp
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeProfiles) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(profilesResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(profilesResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ProfileList{})
 	return err
@@ -121,11 +125,12 @@ func (c *FakeProfiles) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 
 // Patch applies the patch and returns the patched profile.
 func (c *FakeProfiles) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Profile, err error) {
+	emptyResult := &v1alpha1.Profile{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(profilesResource, c.ns, name, pt, data, subresources...), &v1alpha1.Profile{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(profilesResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Profile), err
 }
@@ -143,11 +148,12 @@ func (c *FakeProfiles) Apply(ctx context.Context, profile *crv1alpha1.ProfileApp
 	if name == nil {
 		return nil, fmt.Errorf("profile.Name must be provided to Apply")
 	}
+	emptyResult := &v1alpha1.Profile{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(profilesResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.Profile{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(profilesResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions()), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Profile), err
 }
