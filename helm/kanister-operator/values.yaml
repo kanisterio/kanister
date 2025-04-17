@@ -89,3 +89,17 @@ tolerations: []
 #
 # node labels for pod assignment. Evaluated as template
 nodeSelector: {}
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  runAsNonRoot: true
+
+containerSecurityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  privileged: false
+  capabilities:
+    drop:
+    - ALL
