@@ -11,7 +11,7 @@ jobs:
   ## Make sure go.mod and go.sum files are up-to-date with the code
   ## TODO: make this fail if they're not up-to-date to inform the committer to udpate them
   gomod:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       gomod: ${{ steps.gomod.outputs.gomod }}
       gosum: ${{ steps.gosum.outputs.gosum }}
@@ -35,7 +35,7 @@ jobs:
           echo FILE
         } >> "$GITHUB_OUTPUT"
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: gomod
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -47,7 +47,7 @@ jobs:
     - run: make golint
 
   reno_lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: gomod
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -62,7 +62,7 @@ jobs:
       run: make reno-report
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: gomod
     strategy:
       fail-fast: false
@@ -89,7 +89,7 @@ jobs:
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: gomod
     strategy:
       matrix:
@@ -103,12 +103,12 @@ jobs:
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - run: make build BIN=${{ matrix.bin }} GOBORING=true
   docs:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     - run: make docs
   release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [lint, test, build, docs]
     if: github.ref_name == 'master' || startsWith(github.ref, 'refs/tags')
     permissions:
