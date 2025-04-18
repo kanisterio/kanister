@@ -53,11 +53,13 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 
+	// must omit flag if not specified.  Not all versions of kopia will support ParallelismFile
 	if cmdArgs.ParallelismFile != 0 {
 		parallelismFileStr := strconv.Itoa(cmdArgs.ParallelismFile)
 		args = args.AppendLoggableKV(parallelFileFlag, parallelismFileStr)
 	}
 
+	// must omit flag if not specified.  Not all versions of kopia will support ParallelismDir
 	if cmdArgs.ParallelismDir != 0 {
 		parallelismDirStr := strconv.Itoa(cmdArgs.ParallelismDir)
 		args = args.AppendLoggableKV(parallelDirFlag, parallelismDirStr)
