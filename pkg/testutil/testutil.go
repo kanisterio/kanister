@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package testutil provides utility functions and test objects for use in unit tests.
 package testutil
 
 import (

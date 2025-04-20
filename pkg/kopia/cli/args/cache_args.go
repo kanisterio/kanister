@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package args provides structures and utilities for managing arguments
+// related to the Kopia CLI, including cache configuration options.
 package args
 
 // Cache provides the cache arguments for Kopia CLI.

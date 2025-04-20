@@ -25,7 +25,7 @@ var _ = check.Suite(&HelperSuite{})
 func (s *HelperSuite) SetUpSuite(c *check.C) {
 }
 
-func (h *HelperSuite) TestStringSlice(c *check.C) {
+func (s *HelperSuite) TestStringSlice(c *check.C) {
 	source := []string{"test1", "test2"}
 	target := StringSlice(&source)
 	c.Assert(target[0], check.Equals, source[0])

@@ -132,12 +132,12 @@ func (*scaleWorkloadFunc) Arguments() []string {
 	}
 }
 
-func (r *scaleWorkloadFunc) Validate(args map[string]any) error {
-	if err := utils.CheckSupportedArgs(r.Arguments(), args); err != nil {
+func (s *scaleWorkloadFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(s.Arguments(), args); err != nil {
 		return err
 	}
 
-	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
+	return utils.CheckRequiredArgs(s.RequiredArgs(), args)
 }
 
 func (s *scaleWorkloadFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

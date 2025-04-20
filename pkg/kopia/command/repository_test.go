@@ -342,7 +342,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
 	})
 }
 
-func (kRepoStatus *RepositoryUtilsSuite) TestRepositoryStatusCommand(c *check.C) {
+func (s *RepositoryUtilsSuite) TestRepositoryStatusCommand(c *check.C) {
 	for _, tc := range []struct {
 		f           func() []string
 		expectedLog string

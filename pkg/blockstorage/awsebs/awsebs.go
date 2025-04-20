@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package awsebs provides an implementation of block storage operations for AWS Elastic Block Store (EBS).
 package awsebs
 
 // AWS EBS Volume storage
@@ -121,7 +122,7 @@ func (s *EbsStorage) CheckVolumeCreate(ctx context.Context) (bool, error) {
 	var zoneName *string
 	var err error
 	var size int64 = 1
-	var dryRun bool = true
+	dryRun := true
 
 	ec2Cli, err := newEC2Client(*s.config.Region, s.config)
 	if err != nil {

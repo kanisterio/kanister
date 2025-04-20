@@ -1,5 +1,7 @@
-// TODO: Switch to using the latest azure sdk and remove nolint.
-// Related Ticket- https://github.com/kanisterio/kanister/issues/1684
+// Note: This package currently uses an older version of the Azure SDK and includes
+// a TODO to migrate to the latest SDK version. Refer to the related ticket:
+// https://github.com/kanisterio/kanister/issues/1684
+
 package azure
 
 import (

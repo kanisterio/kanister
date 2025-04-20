@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package function provides utility functions for handling arguments and
+// processing k8s resources,
 package function
 
 import (

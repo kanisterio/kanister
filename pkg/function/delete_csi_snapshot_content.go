@@ -97,10 +97,10 @@ func (d *deleteCSISnapshotContentFunc) Validate(args map[string]any) error {
 	return utils.CheckRequiredArgs(d.RequiredArgs(), args)
 }
 
-func (c *deleteCSISnapshotContentFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (d *deleteCSISnapshotContentFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    c.progressPercent,
+		ProgressPercent:    d.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

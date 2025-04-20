@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package customresource provides utilities for creating and managing Kubernetes
+// Custom Resource Definitions (CRDs) and their lifecycle.
 package customresource
 
 import (
@@ -108,7 +110,7 @@ func getCRDFromSpec(spec []byte) (*apiextensionsv1.CustomResourceDefinition, err
 func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
 	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 	if _, _, err := d.Decode(spec, nil, intoObj); err != nil {
-		return fmt.Errorf("Failed to decode spec into object: %s; spec %s\n", err.Error(), spec)
+		return fmt.Errorf("Failed to decode spec into object: %s; spec %s", err.Error(), spec)
 	}
 	return nil
 }
@@ -145,7 +147,7 @@ func createCRD(context Context, resource CustomResource) error {
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to update existing CRD: %s\n", err.Error())
+			return fmt.Errorf("Failed to update existing CRD: %s", err.Error())
 		}
 	}
 	return nil

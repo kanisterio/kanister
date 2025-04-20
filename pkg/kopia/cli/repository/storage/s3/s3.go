@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package s3 provides functionality for interacting with S3 storage backends
+// in the context of the Kopia repository.
 package s3
 
 import (

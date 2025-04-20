@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package command provides utilities and functions for constructing and executing
+// commands related to Kopia, a backup and restore tool.
 package command
 
 import (

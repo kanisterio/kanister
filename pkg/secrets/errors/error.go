@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package errors provides error definitions and messages used for secret validation and handling.
 package errors
 
 import "fmt"
