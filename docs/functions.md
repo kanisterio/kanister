@@ -95,7 +95,9 @@ Example:
 ### KubeTask
 
 KubeTask spins up a new container and executes a command via a Pod. This
-allows you to run a new Pod from a Blueprint.
+allows you to run a new Pod from a Blueprint. The ServiceAccount of the newly
+created Pod can configured using the `podOverride` function argument like shown
+below: 
 
   | Argument    | Required | Type                    | Description |
   | ----------- | :------: | ----------------------- | ----------- |
@@ -115,6 +117,7 @@ Example:
     namespace: "{{ .Deployment.Namespace }}"
     image: busybox
     podOverride:
+      serviceAccountName: <sa-name>
       containers:
       - name: container
         imagePullPolicy: IfNotPresent
