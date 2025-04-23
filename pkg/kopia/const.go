@@ -24,8 +24,20 @@ const (
 	// DataStoreParallelUploadName is the Environmental Variable set in Kanister
 	// For Parallelism to be used by Kopia for backup action
 	DataStoreParallelUploadName = "DATA_STORE_PARALLEL_UPLOAD"
+	// DataStoreParallelFileOpsUploadsName is the Environmental Variable set in Kanister
+	// for controlling the number of parallel file operations during snapshot
+	DataStoreParallelFileOpsUploadsName = "DATA_STORE_PARALLEL_FILE_OPS_UPLOAD"
+	// DataStoreParallelDirOpsUploadsName is the Environmental Variable set in Kanister
+	// for controlling the number of parallel directory operations during snapshot
+	DataStoreParallelDirOpsUploadsName = "DATA_STORE_PARALLEL_DIR_OPS_UPLOAD"
 	// DefaultDataStoreParallelUpload is the Default Value of Parallelism
 	DefaultDataStoreParallelUpload = 8
+	// DefaultDataStoreParallelFileUploads is the Default Value of for file parallel operations.  Defaults to 0
+	// which means share the goroutine pool controlled by DataStoreParallelUploadName
+	DefaultDataStoreParallelFileUploads = 0
+	// DefaultDataStoreParallelDirUploads is the Default Value of for directory parallel operations.  Defaults to 0
+	// which means share the goroutine pool controlled by DataStoreParallelUploadName
+	DefaultDataStoreParallelDirUploads = 0
 	// DataStoreParallelDownloadName is the Environmental Variable set in Kanister
 	// for Parallelism to be used by Kopia for restore action
 	DataStoreParallelDownloadName = "DATA_STORE_PARALLEL_DOWNLOAD"

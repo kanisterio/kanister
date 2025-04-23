@@ -53,6 +53,30 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 				args := SnapshotCreateCommandArgs{
 					CommandArgs:            commandArgs,
 					PathToBackup:           "path/to/backup",
+					ProgressUpdateInterval: 0,
+					ParallelismFile:        8,
+				}
+				return SnapshotCreate(args)
+			},
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=0 --parallel-file-operations=8 --progress-update-interval=1h",
+		},
+		{
+			f: func() []string {
+				args := SnapshotCreateCommandArgs{
+					CommandArgs:            commandArgs,
+					PathToBackup:           "path/to/backup",
+					ProgressUpdateInterval: 0,
+					ParallelismDir:         8,
+				}
+				return SnapshotCreate(args)
+			},
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=0 --parallel-dir-operations=8 --progress-update-interval=1h",
+		},
+		{
+			f: func() []string {
+				args := SnapshotCreateCommandArgs{
+					CommandArgs:            commandArgs,
+					PathToBackup:           "path/to/backup",
 					ProgressUpdateInterval: 1*time.Minute + 35*time.Second,
 					Parallelism:            8,
 				}
