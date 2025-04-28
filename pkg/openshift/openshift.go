@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package openshift provides an interface and utilities for interacting with
+// an OpenShift cluster.
 package openshift
 
 import (

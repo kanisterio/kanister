@@ -220,7 +220,7 @@ func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 	return errkit.Wrap(cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace), "Failed to uninstall helm release", "release", pdb.chart.Release)
 }
 
-func (pdp *PostgresDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+func (pdb *PostgresDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
 	return nil
 }
 

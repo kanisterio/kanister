@@ -1,3 +1,5 @@
+// Package progress provides functionality to track and update the progress of
+// actions and phases within an ActionSet.
 package progress
 
 import (

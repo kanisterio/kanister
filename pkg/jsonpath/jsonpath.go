@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package jsonpath provides helper functions for working with JSONPath expressions.
 package jsonpath
 
 import (

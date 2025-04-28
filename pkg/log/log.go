@@ -1,3 +1,4 @@
+// Package log provides helper functions for structured and leveled logging.
 package log
 
 import (

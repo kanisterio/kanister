@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package cli provides utilities and error definitions for interacting with the Kopia CLI.
 package cli
 
 import (
