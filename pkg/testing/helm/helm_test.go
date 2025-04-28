@@ -199,6 +199,121 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 	}
 }
 
+// Test for Pod and Container-level securityContext in the Helm chart
+func (h *HelmTestSuite) TestSecurityContextInHelmChart(c *check.C) {
+	defaultPodSecurityValues := corev1.PodSecurityContext{
+		RunAsUser:    intPtr(1000),
+		FSGroup:      intPtr(2000),
+		RunAsNonRoot: boolPtr(true),
+		RunAsGroup:   intPtr(3000),
+	}
+
+	defaultContainerSecurityValues := corev1.SecurityContext{
+		ReadOnlyRootFilesystem:   boolPtr(true),
+		AllowPrivilegeEscalation: boolPtr(false),
+		Privileged:               boolPtr(false),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+	}
+
+	podSecurity := corev1.PodSecurityContext{
+		RunAsUser:    intPtr(9000),
+		FSGroup:      intPtr(9000),
+		RunAsNonRoot: boolPtr(true),
+		RunAsGroup:   intPtr(9000),
+	}
+
+	containerSecurity := corev1.SecurityContext{
+		ReadOnlyRootFilesystem:   boolPtr(false),
+		AllowPrivilegeEscalation: boolPtr(true),
+		Privileged:               boolPtr(true),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+	}
+
+	var testCases = []struct {
+		testName                  string
+		helmValues                map[string]string
+		expectedPodSecurity       *corev1.PodSecurityContext
+		expectedContainerSecurity *corev1.SecurityContext
+	}{
+		{
+			testName: "Pod and Container security context are set",
+			helmValues: map[string]string{
+				"containerSecurityContext.capabilities.drop[0]":     "ALL",
+				"containerSecurityContext.privileged":               "true",
+				"containerSecurityContext.allowPrivilegeEscalation": "true",
+				"containerSecurityContext.readOnlyRootFilesystem":   "false",
+				"podSecurityContext.runAsUser":                      "9000",
+				"podSecurityContext.fsGroup":                        "9000",
+				"podSecurityContext.runAsNonRoot":                   "true",
+				"podSecurityContext.runAsGroup":                     "9000",
+			},
+			expectedPodSecurity:       &podSecurity,
+			expectedContainerSecurity: &containerSecurity,
+		},
+		{
+			testName: "Only Container security context is getting overwritten",
+			helmValues: map[string]string{
+				"containerSecurityContext.capabilities.drop[0]":     "ALL",
+				"containerSecurityContext.privileged":               "true",
+				"containerSecurityContext.allowPrivilegeEscalation": "true",
+				"containerSecurityContext.readOnlyRootFilesystem":   "false",
+			},
+			expectedPodSecurity:       &defaultPodSecurityValues,
+			expectedContainerSecurity: &containerSecurity,
+		},
+		{
+			testName: "Only Pod security context is getting overwritten",
+			helmValues: map[string]string{
+				"podSecurityContext.runAsUser":    "9000",
+				"podSecurityContext.fsGroup":      "9000",
+				"podSecurityContext.runAsNonRoot": "true",
+				"podSecurityContext.runAsGroup":   "9000",
+			},
+			expectedPodSecurity:       &podSecurity,
+			expectedContainerSecurity: &defaultContainerSecurityValues,
+		},
+	}
+
+	for _, tc := range testCases {
+		c.Logf("Test name: %s", tc.testName)
+		defer func() {
+			h.helmApp.dryRun = false
+		}()
+
+		testApp, err := NewHelmApp(tc.helmValues, kanisterName, "../../../helm/kanister-operator", kanisterName, "", true)
+		c.Assert(err, check.IsNil)
+
+		out, err := testApp.Install()
+		c.Assert(err, check.IsNil)
+
+		resources := helm.ResourcesFromRenderedManifest(out, func(kind helm.K8sObjectType) bool {
+			return kind == helm.K8sObjectTypeDeployment
+		})
+		c.Assert(len(resources), check.Equals, 1)
+
+		deployments, err := helm.K8sObjectsFromRenderedResources[*appsv1.Deployment](resources)
+		c.Assert(err, check.IsNil)
+
+		var obj = deployments[h.deploymentName]
+		c.Assert(obj, check.NotNil)
+
+		c.Assert(obj.Spec.Template.Spec.SecurityContext, check.DeepEquals, tc.expectedPodSecurity)
+		c.Assert(obj.Spec.Template.Spec.Containers[0].SecurityContext, check.DeepEquals, tc.expectedContainerSecurity)
+	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func intPtr(i int64) *int64 {
+	return &i
+}
+
 func (h *HelmTestSuite) TearDownSuite(c *check.C) {
 	c.Log("Uninstalling chart")
 	err := h.helmApp.Uninstall()
