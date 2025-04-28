@@ -309,11 +309,11 @@ func (s *BlockStorageProviderSuite) getConfig(c *check.C, region string) map[str
 	return config
 }
 
-func (b *BlockStorageProviderSuite) isRegional(az string) bool {
+func (s *BlockStorageProviderSuite) isRegional(az string) bool {
 	return strings.Contains(az, volume.RegionZoneSeparator)
 }
 
-func (b *BlockStorageProviderSuite) TestFilterSnasphotWithTags(c *check.C) {
+func (s *BlockStorageProviderSuite) TestFilterSnasphotWithTags(c *check.C) {
 	snapshot1 := &blockstorage.Snapshot{ID: "snap1", Tags: blockstorage.SnapshotTags{
 		{Key: "key1", Value: "val1"},
 		{Key: "key3", Value: ""},

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package ksprig provides helper functions for working with FIPS.
 package ksprig
 
 import (

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main for a kanister operator
+// Package main provides the entry point for the Kanister operator.
+// The Kanister operator is responsible for managing and executing
+// data operations on Kubernetes clusters using Kanister blueprints.
 package main
 
 import (

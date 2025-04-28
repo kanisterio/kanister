@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package role provides functionality to manage AWS IAM roles and credentials.
 package role
 
 import (

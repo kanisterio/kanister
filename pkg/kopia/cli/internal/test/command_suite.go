@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package test provides utilities for testing CLI commands using the safecli library.
 package test
 
 import (

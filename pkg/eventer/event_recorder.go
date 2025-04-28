@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package eventer provides utilities for recording Kubernetes events.
 package eventer
 
 import (

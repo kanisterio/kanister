@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package volume provides utilities for managing Kubernetes PersistentVolumes (PVs) and PersistentVolumeClaims (PVCs),
+// including creation, deletion, and restoration from snapshots.
 package volume
 
 import (

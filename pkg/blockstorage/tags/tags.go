@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package tags provides utilities for managing and manipulating tags
+// that are used to label and identify resources.
 package tags
 
 import (
