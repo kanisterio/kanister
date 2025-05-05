@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"time"
 
@@ -190,6 +191,9 @@ func (p *podController) WaitForPodCompletion(ctx context.Context) error {
 	}
 
 	if err := p.pcp.WaitForPodCompletion(ctx, p.pod.Namespace, p.pod.Name); err != nil {
+		data, _ := json.Marshal(err)
+		err = errkit.New(string(data))
+
 		log.WithError(err).Print("Pod failed to complete in time", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
 		return errkit.Wrap(err, "Pod failed to complete in time")
 	}
