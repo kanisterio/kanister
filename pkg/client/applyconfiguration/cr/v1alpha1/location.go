@@ -21,7 +21,7 @@ import (
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
-// LocationApplyConfiguration represents an declarative configuration of the Location type for use
+// LocationApplyConfiguration represents a declarative configuration of the Location type for use
 // with apply.
 type LocationApplyConfiguration struct {
 	Type     *v1alpha1.LocationType `json:"type,omitempty"`
@@ -31,7 +31,7 @@ type LocationApplyConfiguration struct {
 	Region   *string                `json:"region,omitempty"`
 }
 
-// LocationApplyConfiguration constructs an declarative configuration of the Location type for use with
+// LocationApplyConfiguration constructs a declarative configuration of the Location type for use with
 // apply.
 func Location() *LocationApplyConfiguration {
 	return &LocationApplyConfiguration{}

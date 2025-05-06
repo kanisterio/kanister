@@ -17,14 +17,14 @@ limitations under the License.
 
 package v1alpha1
 
-// CacheSizeSettingsApplyConfiguration represents an declarative configuration of the CacheSizeSettings type for use
+// CacheSizeSettingsApplyConfiguration represents a declarative configuration of the CacheSizeSettings type for use
 // with apply.
 type CacheSizeSettingsApplyConfiguration struct {
 	Metadata *int `json:"metadata,omitempty"`
 	Content  *int `json:"content,omitempty"`
 }
 
-// CacheSizeSettingsApplyConfiguration constructs an declarative configuration of the CacheSizeSettings type for use with
+// CacheSizeSettingsApplyConfiguration constructs a declarative configuration of the CacheSizeSettings type for use with
 // apply.
 func CacheSizeSettings() *CacheSizeSettingsApplyConfiguration {
 	return &CacheSizeSettingsApplyConfiguration{}
