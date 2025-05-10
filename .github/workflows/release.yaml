@@ -143,26 +143,19 @@ jobs:
         run: |
           git push
 
-  ## TODO: using https://github.com/slackapi/slack-github-action/blob/main/README.md#technique-3-slack-incoming-webhook
-  ## we need to set up incoming webhook
-  ## Alternatively we can also configure a bot token https://github.com/slackapi/slack-github-action/blob/main/README.md#technique-2-slack-app
-  # notify_slack:
-  #   needs: [release_packages, build_docs]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Send slack notification
-  #       id: slack
-  #       uses: slackapi/slack-github-action@v1.26.0
-  #       with:
-  #         ## TODO: optionally include more information?
-  #         payload: |
-  #           {
-  #             "text": "Kanister release published: ${RELEASE_URL}",
-  #           }
-  #       env:
-  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  #         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-  #         RELEASE_URL: ${{ needs.release_packages.outputs.release_url }}
+  notify_slack:
+    needs: [release_packages, build_docs]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send slack notification
+        id: slack
+        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          ## TODO: optionally include more information?
+          payload: |
+            text: "Kanister release published: ${{ needs.release_packages.outputs.release_url }}"
 
   release_example_docker_images:
     needs: [run_if, release_packages]
