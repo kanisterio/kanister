@@ -25,6 +25,7 @@ import (
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/dynamic"
@@ -60,8 +61,7 @@ spec:
           name: http
           protocol: TCP`
 
-	serviceSpec = `apiVersion: apps/v1
-apiVersion: v1
+	serviceSpec = `apiVersion: v1
 kind: Service
 metadata:
   name: %s
@@ -73,7 +73,7 @@ spec:
     targetPort: 80
   selector:
     app: demo
-  type: ClusterIP`
+  type: %s`
 
 	fooCRSpec = `apiVersion: samplecontroller.k8s.io/v1alpha1
 kind: Foo
@@ -143,6 +143,25 @@ func createPhase(namespace string, spec string) crv1alpha1.BlueprintPhase {
 	}
 }
 
+func patchPhase(gvr schema.GroupVersionResource, name, namespace, spec string) crv1alpha1.BlueprintPhase {
+	return crv1alpha1.BlueprintPhase{
+		Name: "patchDeploy",
+		Func: KubeOpsFuncName,
+		Args: map[string]interface{}{
+			KubeOpsOperationArg: "patch",
+			KubeOpsNamespaceArg: namespace,
+			KubeOpsObjectReferenceArg: map[string]interface{}{
+				"apiVersion": gvr.Version,
+				"group":      gvr.Group,
+				"resource":   gvr.Resource,
+				"name":       name,
+				"namespace":  namespace,
+			},
+			KubeOpsSpecArg: spec,
+		},
+	}
+}
+
 func deletePhase(gvr schema.GroupVersionResource, name, namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "deleteDeploy",
@@ -161,13 +180,18 @@ func deletePhase(gvr schema.GroupVersionResource, name, namespace string) crv1al
 	}
 }
 
-func createInSpecsNsPhase(spec, name, namespace string) crv1alpha1.BlueprintPhase {
+func createInSpecsNsPhase(spec string, config []string) crv1alpha1.BlueprintPhase {
+	params := make([]interface{}, len(config))
+	for i, v := range config {
+		params[i] = v
+	}
+
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-in-def-ns",
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
-			KubeOpsSpecArg:      fmt.Sprintf(spec, name, namespace),
+			KubeOpsSpecArg:      fmt.Sprintf(spec, params...),
 		},
 	}
 }
@@ -195,25 +219,28 @@ func (s *KubeOpsSuite) TestKubeOps(c *check.C) {
 		name        string
 		spec        string
 		expResource resourceRef
+		config      []string
 	}{
 		{
-			name: fmt.Sprintf("%s-%s", testServiceName, rand.String(8)),
-			spec: serviceSpec,
+			name:   fmt.Sprintf("%s-%s", testServiceName, rand.String(8)),
+			spec:   serviceSpec,
+			config: []string{"ClusterIP"},
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
 				namespace: s.namespace,
 			},
 		},
 		{
-			name: fmt.Sprintf("%s-%s", "example-foo", rand.String(8)),
-			spec: fooCRSpec,
+			name:   fmt.Sprintf("%s-%s", "example-foo", rand.String(8)),
+			spec:   fooCRSpec,
+			config: []string{},
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "samplecontroller.k8s.io", Version: "v1alpha1", Resource: "foos"},
 				namespace: s.namespace,
 			},
 		},
 	} {
-		bp := newCreateResourceBlueprint(createInSpecsNsPhase(tc.spec, tc.name, s.namespace))
+		bp := newCreateResourceBlueprint(createInSpecsNsPhase(tc.spec, append([]string{tc.name, s.namespace}, tc.config...)))
 		phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, check.IsNil)
 		for _, p := range phases {
@@ -236,29 +263,43 @@ func (s *KubeOpsSuite) TestKubeOps(c *check.C) {
 	}
 }
 
-func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *check.C) {
+func (s *KubeOpsSuite) TestKubeOpsCreatePatchDeleteWithCoreResource(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{}
 	action := "test"
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
 	serviceName := fmt.Sprintf("%s-%s", testServiceName, rand.String(8))
-	spec := fmt.Sprintf(serviceSpec, serviceName, s.namespace)
+	spec := fmt.Sprintf(serviceSpec, serviceName, s.namespace, "ClusterIP")
+	patchedSpec := fmt.Sprintf(serviceSpec, serviceName, s.namespace, "NodePort")
 
-	bp := newCreateResourceBlueprint(createPhase(s.namespace, spec),
-		deletePhase(gvr, serviceName, s.namespace))
+	bp := newCreateResourceBlueprint(
+		createPhase(s.namespace, spec),
+		patchPhase(gvr, serviceName, s.namespace, patchedSpec),
+		deletePhase(gvr, serviceName, s.namespace),
+	)
+
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 	c.Assert(err, check.IsNil)
 	for _, p := range phases {
 		out, err := p.Exec(ctx, bp, action, tp)
 		c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
-
-		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(ctx, serviceName, metav1.GetOptions{})
+		us, err := s.dynCli.Resource(gvr).Namespace(s.namespace).Get(ctx, serviceName, metav1.GetOptions{})
 		if p.Name() == "deleteDeploy" {
 			c.Assert(err, check.NotNil)
 			c.Assert(apierrors.IsNotFound(err), check.Equals, true)
 		} else {
 			c.Assert(err, check.IsNil)
+		}
+
+		// Validation for patch phase,
+		if p.Name() == "patchDeploy" {
+			// Check if the namespace is patched
+			svc := &corev1.Service{}
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(us.Object, svc)
+			c.Assert(err, check.IsNil)
+			c.Assert(svc.Spec, check.NotNil)
+			c.Assert(svc.Spec.Type, check.Equals, corev1.ServiceTypeNodePort)
 		}
 
 		expOut := map[string]interface{}{

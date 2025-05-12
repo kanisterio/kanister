@@ -23,10 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"sigs.k8s.io/yaml"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -40,6 +42,8 @@ const (
 	CreateOperation Operation = "create"
 	// DeleteOperation represents kubectl delete operation
 	DeleteOperation Operation = "delete"
+	// PatchOperation represents kubectl patch operation
+	PatchOperation Operation = "patch"
 )
 
 // KubectlOperation implements methods to perform kubectl operations
@@ -116,6 +120,28 @@ func (k *KubectlOperation) Delete(ctx context.Context, objRef crv1alpha1.ObjectR
 		return &objRef, err
 	}
 	return waitForResourceDeletion(ctx, k, objRef, namespace)
+}
+
+// Patch k8s resource from spec manifest.
+func (k *KubectlOperation) Patch(ctx context.Context, objRef crv1alpha1.ObjectReference, spec string) (*crv1alpha1.ObjectReference, error) {
+	patchBytes, err := yaml.YAMLToJSON([]byte(spec))
+	if err != nil {
+		return &objRef, err
+	}
+
+	_, err = k.
+		dynCli.
+		Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).
+		Namespace(objRef.Namespace).
+		Patch(
+			ctx,
+			objRef.Name,
+			types.StrategicMergePatchType, // recommended for Kubernetes-native objects.
+			patchBytes,
+			metav1.PatchOptions{},
+		)
+
+	return &objRef, err
 }
 
 // waitForResourceDeletion repeatedly checks for NotFound error after fetching the resource
