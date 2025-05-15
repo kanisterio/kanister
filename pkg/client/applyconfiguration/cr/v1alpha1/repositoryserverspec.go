@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-// RepositoryServerSpecApplyConfiguration represents an declarative configuration of the RepositoryServerSpec type for use
+// RepositoryServerSpecApplyConfiguration represents a declarative configuration of the RepositoryServerSpec type for use
 // with apply.
 type RepositoryServerSpecApplyConfiguration struct {
 	Storage    *StorageApplyConfiguration    `json:"storage,omitempty"`
@@ -25,7 +25,7 @@ type RepositoryServerSpecApplyConfiguration struct {
 	Server     *ServerApplyConfiguration     `json:"server,omitempty"`
 }
 
-// RepositoryServerSpecApplyConfiguration constructs an declarative configuration of the RepositoryServerSpec type for use with
+// RepositoryServerSpecApplyConfiguration constructs a declarative configuration of the RepositoryServerSpec type for use with
 // apply.
 func RepositoryServerSpec() *RepositoryServerSpecApplyConfiguration {
 	return &RepositoryServerSpecApplyConfiguration{}
