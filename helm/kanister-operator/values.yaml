@@ -16,6 +16,9 @@ kanisterToolsImage:
   tag: 0.113.0
 rbac:
   create: true
+
+podAnnotations: {}
+
 serviceAccount:
   create: true
   name:
