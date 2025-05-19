@@ -1,4 +1,4 @@
-awscli==1.40.13
+awscli==1.40.18
 pip==25.1.1
-setuptools==80.4.0
+setuptools==80.7.1
 wheel==0.45.1
