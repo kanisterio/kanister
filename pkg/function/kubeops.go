@@ -119,7 +119,13 @@ func execKubeOperation(ctx context.Context, dynCli dynamic.Interface, op kube.Op
 			return nil, errkit.New(fmt.Sprintf("missing one or more required fields name/namespace/group/apiVersion/resource in objectReference for %s operation", kube.DeleteOperation))
 		}
 		return kubeopsOp.Delete(ctx, objRef, namespace)
+	case kube.PatchOperation:
+		if len(spec) == 0 {
+			return nil, errkit.New(fmt.Sprintf("spec cannot be empty for %s operation", kube.PatchOperation))
+		}
+		return kubeopsOp.Patch(ctx, objRef, spec)
 	}
+
 	return nil, errkit.New(fmt.Sprintf("invalid operation '%s'", op))
 }
 
