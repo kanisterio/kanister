@@ -51,6 +51,8 @@ spec:
         - name: KANISTER_METRICS_ENABLED
           value: {{ .Values.controller.metrics.enabled | quote }}
 {{ include "containerSecurityContext" . | indent 4 }}
+{{ include "livenessProbe" . | indent 4 }}
+{{ include "readinessProbe" . | indent 4 }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}

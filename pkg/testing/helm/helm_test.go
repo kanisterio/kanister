@@ -23,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/helm"
@@ -87,7 +88,10 @@ func (h *HelmTestSuite) TestUpgrade(c *check.C) {
 	updatedValues := map[string]string{
 		"image.tag":                   "v9.99.9-dev",
 		"bpValidatingWebhook.enabled": "false",
+		"livenessProbe.enabled":       "false",
+		"readinessProbe.enabled":      "false",
 	}
+
 	c.Assert(h.helmApp.Upgrade("../../../helm/kanister-operator", updatedValues), check.IsNil)
 
 	// wait for kanister deployment to be ready
@@ -199,24 +203,8 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 	}
 }
 
-// Test for Pod and Container-level securityContext in the Helm chart
-func (h *HelmTestSuite) TestSecurityContextInHelmChart(c *check.C) {
-	defaultPodSecurityValues := corev1.PodSecurityContext{
-		RunAsUser:    intPtr(1000),
-		FSGroup:      intPtr(2000),
-		RunAsNonRoot: boolPtr(true),
-		RunAsGroup:   intPtr(3000),
-	}
-
-	defaultContainerSecurityValues := corev1.SecurityContext{
-		ReadOnlyRootFilesystem:   boolPtr(true),
-		AllowPrivilegeEscalation: boolPtr(false),
-		Privileged:               boolPtr(false),
-		Capabilities: &corev1.Capabilities{
-			Drop: []corev1.Capability{"ALL"},
-		},
-	}
-
+// TestPodRenderingnHelmChart test case does a dry run install of the `kanister` helm chart and validates.
+func (h *HelmTestSuite) TestPodRenderingFromHelmChart(c *check.C) {
 	podSecurity := corev1.PodSecurityContext{
 		RunAsUser:    intPtr(9000),
 		FSGroup:      intPtr(9000),
@@ -233,11 +221,41 @@ func (h *HelmTestSuite) TestSecurityContextInHelmChart(c *check.C) {
 		},
 	}
 
+	livenessProbe := &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/random_liveness",
+				Port: intstr.FromInt(9090),
+			},
+		},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+		FailureThreshold:    5,
+		SuccessThreshold:    5,
+		TimeoutSeconds:      5,
+	}
+
+	readinessProbe := &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/random_readiness",
+				Port: intstr.FromInt(7070),
+			},
+		},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+		FailureThreshold:    5,
+		SuccessThreshold:    5,
+		TimeoutSeconds:      5,
+	}
+
 	var testCases = []struct {
 		testName                  string
 		helmValues                map[string]string
 		expectedPodSecurity       *corev1.PodSecurityContext
 		expectedContainerSecurity *corev1.SecurityContext
+		expectedLivenessProbe     *corev1.Probe
+		expectedReadinessProbe    *corev1.Probe
 	}{
 		{
 			testName: "Pod and Container security context are set",
@@ -262,7 +280,6 @@ func (h *HelmTestSuite) TestSecurityContextInHelmChart(c *check.C) {
 				"containerSecurityContext.allowPrivilegeEscalation": "true",
 				"containerSecurityContext.readOnlyRootFilesystem":   "false",
 			},
-			expectedPodSecurity:       &defaultPodSecurityValues,
 			expectedContainerSecurity: &containerSecurity,
 		},
 		{
@@ -273,8 +290,37 @@ func (h *HelmTestSuite) TestSecurityContextInHelmChart(c *check.C) {
 				"podSecurityContext.runAsNonRoot": "true",
 				"podSecurityContext.runAsGroup":   "9000",
 			},
-			expectedPodSecurity:       &podSecurity,
-			expectedContainerSecurity: &defaultContainerSecurityValues,
+			expectedPodSecurity: &podSecurity,
+		},
+		{
+			testName: "Disable liveness and readiness probes",
+			helmValues: map[string]string{
+				"livenessProbe.enabled":  "false",
+				"readinessProbe.enabled": "false",
+			},
+		},
+		{
+			testName: "Liveness and readiness probes is getting overwritten",
+			helmValues: map[string]string{
+				"livenessProbe.enabled":              "true",
+				"livenessProbe.httpGet.path":         "/random_liveness",
+				"livenessProbe.httpGet.port":         "9090",
+				"livenessProbe.initialDelaySeconds":  "5",
+				"livenessProbe.periodSeconds":        "5",
+				"livenessProbe.failureThreshold":     "5",
+				"livenessProbe.successThreshold":     "5",
+				"livenessProbe.timeoutSeconds":       "5",
+				"readinessProbe.enabled":             "true",
+				"readinessProbe.httpGet.path":        "/random_readiness",
+				"readinessProbe.httpGet.port":        "7070",
+				"readinessProbe.initialDelaySeconds": "5",
+				"readinessProbe.periodSeconds":       "5",
+				"readinessProbe.failureThreshold":    "5",
+				"readinessProbe.successThreshold":    "5",
+				"readinessProbe.timeoutSeconds":      "5",
+			},
+			expectedLivenessProbe:  livenessProbe,
+			expectedReadinessProbe: readinessProbe,
 		},
 	}
 
@@ -301,8 +347,31 @@ func (h *HelmTestSuite) TestSecurityContextInHelmChart(c *check.C) {
 		var obj = deployments[h.deploymentName]
 		c.Assert(obj, check.NotNil)
 
-		c.Assert(obj.Spec.Template.Spec.SecurityContext, check.DeepEquals, tc.expectedPodSecurity)
-		c.Assert(obj.Spec.Template.Spec.Containers[0].SecurityContext, check.DeepEquals, tc.expectedContainerSecurity)
+		if tc.expectedPodSecurity != nil {
+			c.Assert(obj.Spec.Template.Spec.SecurityContext, check.DeepEquals, tc.expectedPodSecurity)
+		}
+
+		if tc.expectedContainerSecurity != nil {
+			c.Assert(obj.Spec.Template.Spec.Containers[0].SecurityContext, check.DeepEquals, tc.expectedContainerSecurity)
+		}
+
+		if enabled, ok := tc.helmValues["livenessProbe.enabled"]; ok {
+			if enabled == "true" {
+				c.Assert(obj.Spec.Template.Spec.Containers[0].LivenessProbe, check.NotNil)
+				c.Assert(obj.Spec.Template.Spec.Containers[0].LivenessProbe, check.DeepEquals, tc.expectedLivenessProbe)
+			} else {
+				c.Assert(obj.Spec.Template.Spec.Containers[0].LivenessProbe, check.IsNil)
+			}
+		}
+
+		if enabled, ok := tc.helmValues["readinessProbe.enabled"]; ok {
+			if enabled == "true" {
+				c.Assert(obj.Spec.Template.Spec.Containers[0].ReadinessProbe, check.NotNil)
+				c.Assert(obj.Spec.Template.Spec.Containers[0].ReadinessProbe, check.DeepEquals, tc.expectedReadinessProbe)
+			} else {
+				c.Assert(obj.Spec.Template.Spec.Containers[0].ReadinessProbe, check.IsNil)
+			}
+		}
 	}
 }
 

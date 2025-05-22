@@ -131,3 +131,37 @@ Define a security Context at Container level
       {{ toYaml .Values.containerSecurityContext | nindent 6 }}
     {{- end }}
 {{- end -}}
+
+{{/*
+Define a livenessprobe
+*/}}
+{{- define "livenessProbe" -}}
+    {{- if .Values.livenessProbe.enabled }}
+    livenessProbe:
+      httpGet:
+        path: {{ .Values.livenessProbe.httpGet.path }}
+        port: {{ .Values.livenessProbe.httpGet.port }}
+      initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+      periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+      timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+      failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+      successThreshold: {{ .Values.livenessProbe.successThreshold }}
+    {{- end }}
+{{- end -}}
+
+{{/*
+Define a readinessprobe
+*/}}
+{{- define "readinessProbe" -}}
+    {{- if .Values.readinessProbe.enabled }}
+    readinessProbe:
+      httpGet:
+        path: {{ .Values.readinessProbe.httpGet.path }}
+        port: {{ .Values.readinessProbe.httpGet.port }}
+      initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+      periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+      timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+      failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+      successThreshold: {{ .Values.readinessProbe.successThreshold }}
+    {{- end }}
+{{- end -}}
