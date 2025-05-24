@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// RepositoryServerApplyConfiguration represents an declarative configuration of the RepositoryServer type for use
+// RepositoryServerApplyConfiguration represents a declarative configuration of the RepositoryServer type for use
 // with apply.
 type RepositoryServerApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -32,7 +32,7 @@ type RepositoryServerApplyConfiguration struct {
 	Status                           *RepositoryServerStatusApplyConfiguration `json:"status,omitempty"`
 }
 
-// RepositoryServer constructs an declarative configuration of the RepositoryServer type for use with
+// RepositoryServer constructs a declarative configuration of the RepositoryServer type for use with
 // apply.
 func RepositoryServer(name, namespace string) *RepositoryServerApplyConfiguration {
 	b := &RepositoryServerApplyConfiguration{}
@@ -215,4 +215,10 @@ func (b *RepositoryServerApplyConfiguration) WithSpec(value *RepositoryServerSpe
 func (b *RepositoryServerApplyConfiguration) WithStatus(value *RepositoryServerStatusApplyConfiguration) *RepositoryServerApplyConfiguration {
 	b.Status = value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *RepositoryServerApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }
