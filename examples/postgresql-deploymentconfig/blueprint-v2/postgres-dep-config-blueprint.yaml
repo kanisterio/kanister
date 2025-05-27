@@ -26,7 +26,7 @@ actions:
         initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
-        backgroundImage: postgres:15-bullseye
+        backgroundImage: postgres:13-bullseye
         backgroundCommand:
         - bash
         - -o
@@ -86,7 +86,7 @@ actions:
           kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
           kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - > /tmp/data
 
-        outputImage: postgres:17-bullseye
+        outputImage: postgres:13-bullseye
         outputCommand:
         - bash
         - -o
