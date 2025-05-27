@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package blockstorage provides an abstraction layer for interacting with
+// underlying block storage providers.
 package blockstorage
 
 import (

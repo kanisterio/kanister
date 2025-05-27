@@ -95,7 +95,9 @@ Example:
 ### KubeTask
 
 KubeTask spins up a new container and executes a command via a Pod. This
-allows you to run a new Pod from a Blueprint.
+allows you to run a new Pod from a Blueprint. The ServiceAccount of the newly
+created Pod can configured using the `podOverride` function argument like shown
+below: 
 
   | Argument    | Required | Type                    | Description |
   | ----------- | :------: | ----------------------- | ----------- |
@@ -115,6 +117,7 @@ Example:
     namespace: "{{ .Deployment.Namespace }}"
     image: busybox
     podOverride:
+      serviceAccountName: <sa-name>
       containers:
       - name: container
         imagePullPolicy: IfNotPresent
@@ -964,7 +967,7 @@ Arguments:
   | instanceID | Yes      | string | ID of RDS instance you want to create snapshot of |
   | dbEngine   | No       | string | Required in case of RDS Aurora instance. Supported DB Engines: `aurora` `aurora-mysql` and `aurora-postgresql` |
   | credentialsSource | No | string | Source for aws credentials. Supported sources: `profile`, `secret`, `serviceaccount`. Default value is `profile` |
-  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset |
+  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset or `objects` in the blueprint phase |
   | region | No | string | AWS region to use. Derived from profile or serviceaccount if not set |
 
 ::: tip NOTE
@@ -1029,7 +1032,7 @@ Arguments:
   | podAnnotations       | No       | map[string]string       | custom annotations for the temporary pod that gets created |
   | podLabels            | No       | map[string]string       | custom labels for the temporary pod that gets created |
   | credentialsSource | No | string | Source for aws credentials. Supported sources: `profile`, `secret`, `serviceaccount`. Default value is `profile` |
-  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be [referenced in the Actionset](templates.html#secrets) |
+  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be [referenced in the Actionset](templates.html#secrets) or `objects` in the blueprint phase |
   | region | No | string | AWS region to use. Derived from profile or serviceaccount if not set |
 
 
@@ -1148,7 +1151,7 @@ Arguments:
   | podAnnotations       | No       | map[string]string       | custom annotations for the temporary pod that gets created |
   | podLabels            | No       | map[string]string       | custom labels for the temporary pod that gets created |
   | credentialsSource | No | string | Source for aws credentials. Supported sources: `profile`, `secret`, `serviceaccount`. Default value is `profile` |
-  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset |
+  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset or `objects` in the blueprint phase |
   | region | No | string | AWS region to use. Derived from profile or serviceaccount if not set |
 
 
@@ -1215,7 +1218,7 @@ Arguments:
   | ---------- | :------: | ------ | ----------- |
   | snapshotID | No       | string | ID of the RDS snapshot |
   | credentialsSource | No | string | Source for aws credentials. Supported sources: `profile`, `secret`, `serviceaccount`. Default value is `profile` |
-  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset |
+  | credentialsSecret | No | string | Secret to get credentials from. Only used with `credentialsSource: secret`. Secret with this name should be referenced in the Actionset or `objects` in the blueprint phase |
   | region | No | string | AWS region to use. Derived from profile or serviceaccount if not set |
 
 ::: tip NOTE

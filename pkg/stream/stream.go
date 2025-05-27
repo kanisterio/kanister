@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package stream provides functionality to stream data to an object store
+// by reading it from a given endpoint into an in-memory filesystem.
 package stream
 
 import (
@@ -21,7 +23,7 @@ import (
 
 	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/snapshot"
-	"github.com/kopia/kopia/snapshot/snapshotfs"
+	"github.com/kopia/kopia/snapshot/upload"
 
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	kansnapshot "github.com/kanisterio/kanister/pkg/kopia/snapshot"
@@ -53,7 +55,7 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 	}
 
 	// Setup kopia uploader
-	u := snapshotfs.NewUploader(rep)
+	u := upload.NewUploader(rep)
 	// Fail full snapshot if errors are encountered during upload
 	u.FailFast = true
 

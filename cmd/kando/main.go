@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main is the entry point for the kando CLI tool, which is part of the Kanister project.
+// The kando CLI provides various commands to interact with and manage Kanister operations.
 package main
 
 import (

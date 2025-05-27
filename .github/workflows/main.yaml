@@ -11,12 +11,12 @@ jobs:
   ## Make sure go.mod and go.sum files are up-to-date with the code
   ## TODO: make this fail if they're not up-to-date to inform the committer to udpate them
   gomod:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       gomod: ${{ steps.gomod.outputs.gomod }}
       gosum: ${{ steps.gosum.outputs.gosum }}
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     - run: make go-mod-tidy
     - id: gomod
       run: |
@@ -35,10 +35,10 @@ jobs:
           echo FILE
         } >> "$GITHUB_OUTPUT"
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: gomod
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -47,14 +47,14 @@ jobs:
     - run: make golint
 
   reno_lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: gomod
     steps:
-    - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         fetch-depth: 0
-    - name: reset_git_extension
-      run: git config --unset-all extensions.worktreeconfig
+    # - name: reset_git_extension
+    #   run: git config --unset-all extensions.worktreeconfig
     - name: reno_lint
       run: make reno-lint
     ## Reno lint does not catch some errors which make reno report fail
@@ -62,14 +62,14 @@ jobs:
       run: make reno-report
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: gomod
     strategy:
       fail-fast: false
       matrix:
         testSuite: [test, integration-test, helm-test]
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -89,13 +89,13 @@ jobs:
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: gomod
     strategy:
       matrix:
         bin: [controller, kanctl, kando]
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     ## Sync go.mod and go.sum files from gomod job
     - name: restore_gomod
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
@@ -103,20 +103,20 @@ jobs:
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - run: make build BIN=${{ matrix.bin }} GOBORING=true
   docs:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     - run: make docs
   release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [lint, test, build, docs]
     if: github.ref_name == 'master' || startsWith(github.ref, 'refs/tags')
     permissions:
       packages: write
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     - run: make go-mod-tidy
-    - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+    - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -148,6 +148,7 @@ jobs:
     with:
       image_tag: v9.99.9-dev
       ref: ${{ github.ref }}
+      platforms: linux/amd64
       extra_tags: |
         ${{ needs.image_tags.outputs.tag_short }}
         ${{ needs.image_tags.outputs.tag_long }}

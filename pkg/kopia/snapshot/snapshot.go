@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package snapshot provides functionality for creating, managing, and deleting
+// Kopia snapshots.
 package snapshot
 
 import (
@@ -27,7 +29,7 @@ import (
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/policy"
-	"github.com/kopia/kopia/snapshot/snapshotfs"
+	"github.com/kopia/kopia/snapshot/upload"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
@@ -37,7 +39,7 @@ import (
 func SnapshotSource(
 	ctx context.Context,
 	rep repo.RepositoryWriter,
-	u *snapshotfs.Uploader,
+	u *upload.Uploader,
 	sourceInfo snapshot.SourceInfo,
 	rootDir fs.Entry,
 	description string,

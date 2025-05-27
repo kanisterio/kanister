@@ -1,5 +1,5 @@
 # Build Kopia binary
-FROM golang:1.24-bullseye AS builder
+FROM golang:1.24.3-bullseye@sha256:abe2e2bb9bc0342dd1ba2f719af5c6b3859ca9ad93a7d9bcdd21310bda0327e1 AS builder
 
 ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
@@ -61,7 +61,7 @@ USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-FROM debian:bullseye
+FROM debian:bullseye@sha256:cf48c31af360e1c0a0aedd33aae4d928b68c2cdf093f1612650eb1ff434d1c34
 
 WORKDIR /kopia
 
@@ -74,7 +74,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package location provides utilities for interacting with object storage
+// locations such as AWS S3, Google Cloud Storage, and Azure Blob Storage.
 package location
 
 import (

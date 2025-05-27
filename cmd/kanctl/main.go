@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main for a kanister operator
+// Package main provides the entry point for the kanctl command-line tool,
+// which is part of the Kanister project. Kanister is a framework for
+// application-level data management on Kubernetes. The kanctl tool allows
+// users to interact with Kanister resources and perform various operations
+// such as creating, executing, and managing blueprints and actions.
 package main
 
 import (

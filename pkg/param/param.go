@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package param provides utilities and structures for managing template parameters
+// and fetching Kubernetes resources required for Kanister actions.
 package param
 
 import (
@@ -57,6 +59,7 @@ type TemplateParams struct {
 	RepositoryServer *RepositoryServer
 	Options          map[string]string
 	Object           map[string]interface{}
+	CurrentPhase     *Phase
 	Phases           map[string]*Phase
 	DeferPhase       *Phase
 	PodOverride      crv1alpha1.JSONMap

@@ -78,6 +78,8 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			return nil, err
 		}
 	}
+	// To simplify usage of the phase secrets in phase functions
+	tp.CurrentPhase = tp.Phases[p.name]
 	// Execute the function
 	return p.f.Exec(ctx, tp, p.args)
 }
