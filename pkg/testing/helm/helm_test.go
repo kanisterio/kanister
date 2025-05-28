@@ -203,6 +203,67 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 	}
 }
 
+// TestPodAnnotationsFromKanisterHelmDryRunInstall test case does a dry run install of the `kanister` helm chart and validates
+// use cases for `podAnnotations` attributes in the helmValues.yaml.
+func (h *HelmTestSuite) TestPodAnnotationsFromKanisterHelmDryRunInstall(c *check.C) {
+	expectedAnnotations := map[string]string{
+		"annotation-key1": "annotation-value1",
+		"annotation-key2": "annotation-value2",
+	}
+
+	var testCases = []struct {
+		testName            string
+		helmValues          map[string]string
+		expectedAnnotations map[string]string
+	}{
+		{
+			testName: "Pod annotations are present",
+			helmValues: map[string]string{
+				"bpValidatingWebhook.enabled":    "false",
+				"podAnnotations.annotation-key1": "annotation-value1",
+				"podAnnotations.annotation-key2": "annotation-value2",
+			},
+			expectedAnnotations: expectedAnnotations,
+		},
+		{
+			testName: "No pod annotations are present",
+			helmValues: map[string]string{
+				"bpValidatingWebhook.enabled": "false",
+			},
+			expectedAnnotations: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		c.Logf("Test name: %s", tc.testName)
+		defer func() {
+			h.helmApp.dryRun = false
+		}()
+
+		// Installing kanister release from local kanister-operator - Dry run
+		testApp, err := NewHelmApp(tc.helmValues, kanisterName, "../../../helm/kanister-operator", kanisterName, "", true)
+		c.Assert(err, check.IsNil)
+
+		out, err := testApp.Install()
+		c.Assert(err, check.IsNil)
+
+		resources := helm.ResourcesFromRenderedManifest(out, func(kind helm.K8sObjectType) bool {
+			return kind == helm.K8sObjectTypeDeployment
+		})
+		c.Assert(len(resources) > 0, check.Equals, true)
+
+		// Take the deployment resources
+		deployments, err := helm.K8sObjectsFromRenderedResources[*appsv1.Deployment](resources)
+		c.Assert(err, check.IsNil)
+
+		// Use only the required deployment
+		var obj = deployments[h.deploymentName]
+		c.Assert(obj, check.NotNil)
+
+		c.Assert(obj.Spec.Template.ObjectMeta.Annotations, check.DeepEquals, tc.expectedAnnotations)
+	}
+}
+
 // TestPodRenderingnHelmChart test case does a dry run install of the `kanister` helm chart and validates.
 func (h *HelmTestSuite) TestPodRenderingFromHelmChart(c *check.C) {
 	podSecurity := corev1.PodSecurityContext{
