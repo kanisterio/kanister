@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// ProfileApplyConfiguration represents an declarative configuration of the Profile type for use
+// ProfileApplyConfiguration represents a declarative configuration of the Profile type for use
 // with apply.
 type ProfileApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
@@ -33,7 +33,7 @@ type ProfileApplyConfiguration struct {
 	SkipSSLVerify                    *bool                         `json:"skipSSLVerify,omitempty"`
 }
 
-// Profile constructs an declarative configuration of the Profile type for use with
+// Profile constructs a declarative configuration of the Profile type for use with
 // apply.
 func Profile(name, namespace string) *ProfileApplyConfiguration {
 	b := &ProfileApplyConfiguration{}
@@ -224,4 +224,10 @@ func (b *ProfileApplyConfiguration) WithCredential(value *CredentialApplyConfigu
 func (b *ProfileApplyConfiguration) WithSkipSSLVerify(value bool) *ProfileApplyConfiguration {
 	b.SkipSSLVerify = &value
 	return b
+}
+
+// GetName retrieves the value of the Name field in the declarative configuration.
+func (b *ProfileApplyConfiguration) GetName() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.Name
 }
