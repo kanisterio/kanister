@@ -1244,15 +1244,15 @@ actions:
 
 ### KubeOps
 
-This function is used to create or delete Kubernetes resources.
+This function is used to create, patch or delete Kubernetes resources.
 
 Arguments:
 
   | Argument        | Required | Type                     | Description |
   | --------------- | :------: | ------------------------ | ----------- |
-  | operation       | Yes      | string                   | `create` or `delete` Kubernetes resource |
+  | operation       | Yes      | string                   | `create` , `patch` or `delete` Kubernetes resource |
   | namespace       | No       | string                   | namespace in which the operation is executed |
-  | spec            | No       | string                   | resource spec that needs to be created |
+  | spec            | No       | string                   | resource spec that needs to be created or patched |
   | objectReference | No       | map[string]interface{}   | object reference for delete operation |
 
 Example:
@@ -1286,6 +1286,27 @@ Example:
               - containerPort: 80
                 name: http
                 protocol: TCP
+- func: KubeOps
+  name: patchDeploy
+  args:
+    operation: patch
+    objectReference:
+      apiVersion: "{{ .Phases.createDeploy.Output.apiVersion }}"
+      group: "{{ .Phases.createDeploy.Output.group }}"
+      resource: "{{ .Phases.createDeploy.Output.resource }}"
+      name: "{{ .Phases.createDeploy.Output.name }}"
+      namespace: "{{ .Phases.createDeploy.Output.namespace }}"
+    spec: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ .Deployment.Name }}"
+        labels:
+          "dummy-label-key": "dummy-label-annotation"
+        annotations:
+          "dummy-annotations-key": "dummy-annotations-annotation"
+      spec:
+        replicas: 5
 - func: KubeOps
   name: deleteDeploy
   args:
