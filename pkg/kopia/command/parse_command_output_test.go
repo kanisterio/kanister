@@ -122,7 +122,11 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput
 		{
 			output: `Snapshotting u2@h2:/tmp/aaa1 ...
 			* 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB, estimating...
-		   {"id":"00000000000000000000001","source":{"host":"h2","userName":"u2","path":"/tmp/aaa1"},"description":"","startTime":"2021-05-26T05:29:07.206854927Z","endTime":"2021-05-26T05:29:07.207328392Z","rootEntry":{"name":"aaa1","type":"d","mode":"0755","mtime":"2021-05-19T15:45:34.448853232Z","obj":"ka68ba7abe0818b24a2b0647aeeb02f29","summ":{"size":0,"files":1,"symlinks":0,"dirs":1,"maxTime":"2021-05-19T15:45:34.448853232Z","numFailed":0}}}
+		   {"id":"00000000000000000000001","source":{"host":"h2","userName":"u2","path":"/tmp/aaa1"},` +
+				`"description":"","startTime":"2021-05-26T05:29:07.206854927Z",` +
+				`"endTime":"2021-05-26T05:29:07.207328392Z","rootEntry":{"name":"aaa1","type":"d",` +
+				`"mode":"0755","mtime":"2021-05-19T15:45:34.448853232Z","obj":"ka68ba7abe0818b24a2b0647aeeb02f29",` +
+				`"summ":{"size":0,"files":1,"symlinks":0,"dirs":1,"maxTime":"2021-05-19T15:45:34.448853232Z","numFailed":0}}}
 		   `,
 			checker:        check.IsNil,
 			expectedSnapID: "00000000000000000000001",
@@ -144,7 +148,12 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput
 			expectedRootID: "",
 		},
 		{
-			output:         `{"id":"1b6639b9797dc77dd4ddf57723918187","source":{"host":"da","userName":"kk","path":"/mnt/nfspvc"},"description":"","startTime":"2023-07-13T00:08:08.049239555Z","endTime":"2023-07-13T00:08:08.054904252Z","incomplete":"canceled","rootEntry":{"name":"nfspvc","type":"d","mode":"0755","mtime":"2023-07-11T20:33:41.386653643Z","obj":"k453085aaf775ecb9018a3fa8e276ca5d","summ":{"size":0,"files":0,"symlinks":0,"dirs":2,"maxTime":"2023-07-11T20:33:27.628326361Z","incomplete":"canceled","numFailed":1,"errors":[{"path":"for1001","error":"permission denied"}]}}}`,
+			output: `{"id":"1b6639b9797dc77dd4ddf57723918187","source":{"host":"da","userName":"kk","path":"/mnt/nfspvc"},` +
+				`"description":"","startTime":"2023-07-13T00:08:08.049239555Z","endTime":"2023-07-13T00:08:08.054904252Z",` +
+				`"incomplete":"canceled","rootEntry":{"name":"nfspvc","type":"d","mode":"0755",` +
+				`"mtime":"2023-07-11T20:33:41.386653643Z","obj":"k453085aaf775ecb9018a3fa8e276ca5d",` +
+				`"summ":{"size":0,"files":0,"symlinks":0,"dirs":2,"maxTime":"2023-07-11T20:33:27.628326361Z",` +
+				`"incomplete":"canceled","numFailed":1,"errors":[{"path":"for1001","error":"permission denied"}]}}}`,
 			checker:        check.NotNil,
 			expectedSnapID: "",
 			expectedRootID: "",
@@ -755,7 +764,9 @@ func (kParse *KopiaParseUtilsTestSuite) TestErrorsFromOutput(c *check.C) {
 		// Some real error case
 		{"ERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/"}},
 		// The same as previous but with coloured ERROR word
-		{string([]byte{27, 91, 51, 49, 109, 69, 82, 82, 79, 82, 27, 91, 48, 109, 32, 111, 112, 101, 110, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 58, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 32, 105, 115, 32, 110, 111, 116, 32, 99, 111, 110, 110, 101, 99, 116, 101, 100, 46}), []string{"open repository: repository is not connected."}},
+		{string([]byte{27, 91, 51, 49, 109, 69, 82, 82, 79, 82, 27, 91, 48, 109, 32, 111, 112, 101, 110, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 58, 32,
+			114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 32, 105, 115, 32, 110, 111, 116, 32, 99, 111, 110, 110, 101, 99, 116, 101, 100, 46}),
+			[]string{"open repository: repository is not connected."}},
 		// Multiple error lines (seems not possible in real life, but just to cover this possibility)
 		{"ERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/\r\nERROR another error", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/", "another error"}},
 		// Error surrounded by other output
