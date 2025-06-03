@@ -99,12 +99,9 @@ var _ = check.Suite(&test.ArgumentSuite{Cmd: "cmd", Arguments: []test.ArgumentTe
 			}
 			var args command.Arguments
 			for idx, l := range locations {
-				t, err := strfmt.ParseDateTime(
+				t, _ := strfmt.ParseDateTime(
 					fmt.Sprintf("2021-02-%02dT01:02:03.000Z", idx),
 				)
-				if err != nil {
-					panic(err) // This is a test with known good values
-				}
 				args = append(args, optPointInTime(l, t))
 			}
 			return args

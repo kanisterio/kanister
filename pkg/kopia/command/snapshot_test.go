@@ -82,9 +82,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 				}
 				return SnapshotCreate(args)
 			},
-			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key " +
-				"snapshot create path/to/backup --json --parallel=8 --progress-estimation-type=adaptive " +
-				"--adaptive-estimation-threshold=300000 --progress-update-interval=1h",
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-estimation-type=adaptive --adaptive-estimation-threshold=300000 --progress-update-interval=1h",
 		},
 		{
 			f: func() []string {
@@ -97,9 +95,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 				}
 				return SnapshotCreate(args)
 			},
-			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key " +
-				"snapshot create path/to/backup --json --parallel=8 --progress-estimation-type=adaptive " +
-				"--adaptive-estimation-threshold=100 --progress-update-interval=1h",
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-estimation-type=adaptive --adaptive-estimation-threshold=100 --progress-update-interval=1h",
 		},
 		{
 			f: func() []string {
@@ -219,10 +215,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 				}
 				return SnapshotVerify(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key " +
-				"snapshot verify --verify-files-percent=12.345 --max-errors=11235 --parallel=123 " +
-				"--file-queue-length=456 --file-parallelism=890 --directory-id=d1 --directory-id=d2 " +
-				"--file-id=f1 --file-id=f2 --sources=s1 --sources=s2 --json id1 id2",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot verify --verify-files-percent=12.345 --max-errors=11235 --parallel=123 --file-queue-length=456 --file-parallelism=890 --directory-id=d1 --directory-id=d2 --file-id=f1 --file-id=f2 --sources=s1 --sources=s2 --json id1 id2",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

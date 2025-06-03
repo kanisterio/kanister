@@ -59,13 +59,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *check.C) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log " +
-				"server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt " +
-				"--tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname " +
-				"--server-password=a-user-password --server-control-username=a-username@a-hostname " +
-				"--server-control-password=a-user-password --cache-directory=cache/dir " +
-				"--content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 --enable-pprof " +
-				"--metrics-listen-addr=a-server-address:51516 > /dev/null 2>&1 &",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --cache-directory=cache/dir --content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 --enable-pprof --metrics-listen-addr=a-server-address:51516 > /dev/null 2>&1 &",
 		},
 		{
 			f: func() []string {
@@ -83,12 +77,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *check.C) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log " +
-				"server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt " +
-				"--tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname " +
-				"--server-password=a-user-password --server-control-username=a-username@a-hostname " +
-				"--server-control-password=a-user-password --cache-directory=cache/dir " +
-				"--content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 > /dev/null 2>&1 &",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --cache-directory=cache/dir --content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 > /dev/null 2>&1 &",
 		},
 		{
 			f: func() []string {
@@ -106,12 +95,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *check.C) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log " +
-				"server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt " +
-				"--tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname " +
-				"--server-password=a-user-password --server-control-username=a-username@a-hostname " +
-				"--server-control-password=a-user-password --cache-directory=cache/dir " +
-				"--content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --cache-directory=cache/dir --content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500",
 		},
 		{
 			f: func() []string {
@@ -129,12 +113,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *check.C) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log " +
-				"server start --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt " +
-				"--tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname " +
-				"--server-password=a-user-password --server-control-username=a-username@a-hostname " +
-				"--server-control-password=a-user-password --cache-directory=cache/dir " +
-				"--content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 > /dev/null 2>&1 &",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --cache-directory=cache/dir --content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 > /dev/null 2>&1 &",
 		},
 		{
 			f: func() []string {
@@ -154,13 +133,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *check.C) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log " +
-				"server start --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt " +
-				"--tls-key-file=/path/to/key/tls.key --htpasswd-file=/path/htpasswd " +
-				"--server-username=a-username@a-hostname --server-password=a-user-password " +
-				"--server-control-username=a-username@a-hostname --server-control-password=a-user-password " +
-				"--cache-directory=cache/dir --content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 " +
-				"--readonly > /dev/null 2>&1 &",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --htpasswd-file=/path/htpasswd --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --cache-directory=cache/dir --content-cache-size-limit-mb=500 --metadata-cache-size-limit-mb=500 --readonly > /dev/null 2>&1 &",
 		},
 		{
 			f: func() []string {
@@ -173,9 +146,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *check.C) {
 				}
 				return ServerStatus(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server status " +
-				"--address=a-server-address --server-cert-fingerprint=a-fingerprint " +
-				"--server-username=a-username@a-hostname --server-password=a-user-password",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server status --address=a-server-address --server-cert-fingerprint=a-fingerprint --server-username=a-username@a-hostname --server-password=a-user-password",
 		},
 		{
 			f: func() []string {
@@ -249,9 +220,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *check.C) {
 				}
 				return ServerRefresh(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key " +
-				"server refresh --server-cert-fingerprint=a-fingerprint --address=a-server-address " +
-				"--server-username=a-username@a-hostname --server-password=a-user-password",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server refresh --server-cert-fingerprint=a-fingerprint --address=a-server-address --server-username=a-username@a-hostname --server-password=a-user-password",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
