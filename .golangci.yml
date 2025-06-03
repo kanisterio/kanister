@@ -38,6 +38,11 @@ run:
 issues:
   exclude-use-default: false
   exclude-rules:
+    - path: '_test.go'
+      linters:
+        - lll
+        - dupl
+
     - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
         - unparam
