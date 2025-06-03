@@ -93,7 +93,10 @@ var _ = check.Suite(test.NewCommandSuite([]test.CommandTest{
 	{
 		Name: "repository connect with PIT and ReadOnly",
 		Command: func() (*safecli.Builder, error) {
-			pit, _ := strfmt.ParseDateTime("2021-02-03T01:02:03Z")
+			pit, err := strfmt.ParseDateTime("2021-02-03T01:02:03Z")
+			if err != nil {
+				panic(err) // This is a test with known good values
+			}
 			args := ConnectArgs{
 				Common:         common,
 				Cache:          cache,
