@@ -1,4 +1,3 @@
-version: "2"
 run:
   build-tags:
     - integration
@@ -20,73 +19,61 @@ linters:
     - staticcheck
     - unparam
     - whitespace
-  settings:
-    errcheck:
-      exclude-functions:
-        - fmt.Fprintln
-    gocyclo:
-      min-complexity: 20
-    importas:
-      alias:
-        - pkg: k8s.io/apimachinery/pkg/api/errors
-          alias: apierrors
-        - pkg: k8s.io/api/core/v1
-          alias: corev1
-        - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
-          alias: metav1
-        - pkg: github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1
-          alias: crv1alpha1
-      no-unaliased: true
-    lll:
-      line-length: 240
-    nakedret:
-      max-func-lines: 2
-    nestif:
-      min-complexity: 6
-    staticcheck:
-      checks:
-        - all
-        - -ST1001
-        - -ST1005
-        - -ST1016
-        - -ST1023
-  exclusions:
-    generated: lax
-    rules:
-      - linters:
-          - dupl
-          - lll
-          - nestif
-        path: _test.go
-      - linters:
-          - unparam
-        text: '`ctx` is unused'
-    paths:
-      - pkg/client/applyconfiguration/cr/v1alpha1
-      - pkg/client/clientset
-      - pkg/client/informers
-      - pkg/client/listers
-      - third_party$
-      - builtin$
-      - examples$
-formatters:
-  enable:
     - gci
     - gofmt
-  settings:
-    gci:
-      sections:
-        - standard
-        - default
-        - prefix(github.com/kanisterio/kanister)
-        - blank
-  exclusions:
-    generated: lax
-    paths:
-      - pkg/client/applyconfiguration/cr/v1alpha1
-      - pkg/client/clientset
-      - pkg/client/informers
-      - pkg/client/listers
-      - third_party$
-      - builtin$
-      - examples$
+linters-settings:
+  errcheck:
+    exclude-functions:
+      - fmt.Fprintln
+  gocyclo:
+    min-complexity: 20
+  importas:
+    alias:
+      - pkg: k8s.io/apimachinery/pkg/api/errors
+        alias: apierrors
+      - pkg: k8s.io/api/core/v1
+        alias: corev1
+      - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+        alias: metav1
+      - pkg: github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1
+        alias: crv1alpha1
+    no-unaliased: true
+  lll:
+    line-length: 240
+  nakedret:
+    max-func-lines: 2
+  nestif:
+    min-complexity: 6
+  staticcheck:
+    checks:
+      - all
+      - -ST1001
+      - -ST1005
+      - -ST1016
+      - -ST1023
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/kanisterio/kanister)
+      - blank
+    skip-generated: true
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: '_test.go'
+      linters:
+        - lll
+        - dupl
+        - nestif
+    - text: "`ctx` is unused"
+      linters:
+        - unparam
+  exclude-dirs:
+    - pkg/client/applyconfiguration/cr/v1alpha1
+    - pkg/client/clientset
+    - pkg/client/informers
+    - pkg/client/listers
+    - third_party$
+    - builtin$
+    - examples$
