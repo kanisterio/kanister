@@ -513,26 +513,27 @@ func (s *RepoServerControllerSuite) waitOnRepositoryServerState(reposerverName s
 }
 
 func setRepositoryServerSecretsInCR(secrets *repositoryServerSecrets, repoServerCR *crv1alpha1.RepositoryServer) {
-	if secrets != nil {
-		if secrets.serverAdmin != nil {
-			repoServerCR.Spec.Server.AdminSecretRef.Name = secrets.serverAdmin.Name
-		}
-		if secrets.repositoryPassword != nil {
-			repoServerCR.Spec.Repository.PasswordSecretRef.Name = secrets.repositoryPassword.Name
-		}
+	if secrets == nil {
+		return
+	}
+	if secrets.serverAdmin != nil {
+		repoServerCR.Spec.Server.AdminSecretRef.Name = secrets.serverAdmin.Name
+	}
+	if secrets.repositoryPassword != nil {
+		repoServerCR.Spec.Repository.PasswordSecretRef.Name = secrets.repositoryPassword.Name
+	}
 
-		if secrets.serverUserAccess != nil {
-			repoServerCR.Spec.Server.UserAccess.UserAccessSecretRef.Name = secrets.serverUserAccess.Name
-		}
-		if secrets.serverTLS != nil {
-			repoServerCR.Spec.Server.TLSSecretRef.Name = secrets.serverTLS.Name
-		}
-		if secrets.storage != nil {
-			repoServerCR.Spec.Storage.SecretRef.Name = secrets.storage.Name
-		}
-		if secrets.storageCredentials != nil {
-			repoServerCR.Spec.Storage.CredentialSecretRef.Name = secrets.storageCredentials.Name
-		}
+	if secrets.serverUserAccess != nil {
+		repoServerCR.Spec.Server.UserAccess.UserAccessSecretRef.Name = secrets.serverUserAccess.Name
+	}
+	if secrets.serverTLS != nil {
+		repoServerCR.Spec.Server.TLSSecretRef.Name = secrets.serverTLS.Name
+	}
+	if secrets.storage != nil {
+		repoServerCR.Spec.Storage.SecretRef.Name = secrets.storage.Name
+	}
+	if secrets.storageCredentials != nil {
+		repoServerCR.Spec.Storage.CredentialSecretRef.Name = secrets.storageCredentials.Name
 	}
 }
 
