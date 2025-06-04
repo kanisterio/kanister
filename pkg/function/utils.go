@@ -15,6 +15,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -35,6 +36,24 @@ const (
 const (
 	defaultContainerAnn = "kubectl.kubernetes.io/default-container"
 )
+
+// ExecAndLog executes a command using the provided executor and logs the output.
+// It encapsulates the common pattern of executing a command and logging both stdout and stderr.
+// Returns the stdout and stderr content as strings along with any execution error.
+func ExecAndLog(ctx context.Context, executor kube.PodCommandExecutor, cmd []string, pod *corev1.Pod) (stdout, stderr string, err error) {
+	var stdoutBuf, stderrBuf bytes.Buffer
+	
+	err = executor.Exec(ctx, cmd, nil, &stdoutBuf, &stderrBuf)
+	
+	// Get the container name - use the first container as that's the pattern used in existing code
+	containerName := pod.Spec.Containers[0].Name
+	
+	// Log the output regardless of whether the command succeeded or failed
+	format.LogWithCtx(ctx, pod.Name, containerName, stdoutBuf.String())
+	format.LogWithCtx(ctx, pod.Name, containerName, stderrBuf.String())
+	
+	return stdoutBuf.String(), stderrBuf.String(), err
+}
 
 // ValidateCredentials verifies if the given credentials have appropriate values set
 func ValidateCredentials(creds *param.Credential) error {

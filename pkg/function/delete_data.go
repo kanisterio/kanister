@@ -150,14 +150,11 @@ func deleteDataPodFunc(
 				return nil, err
 			}
 
-			var stdout, stderr bytes.Buffer
-			err = podCommandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+			stdout, _, err := ExecAndLog(ctx, podCommandExecutor, cmd, pod)
 			if err != nil {
 				return nil, errkit.Wrap(err, "Failed to forget data, could not get snapshotID from tag", "Tag", deleteTag)
 			}
-			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout.String())
+			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout)
 			if err != nil {
 				return nil, errkit.Wrap(err, "Failed to forget data, could not get snapshotID from tag", "Tag", deleteTag)
 			}
@@ -170,10 +167,7 @@ func deleteDataPodFunc(
 				return nil, err
 			}
 
-			var stdout, stderr bytes.Buffer
-			err = podCommandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+			_, _, err = ExecAndLog(ctx, podCommandExecutor, cmd, pod)
 			if err != nil {
 				return nil, errkit.Wrap(err, "Failed to forget data")
 			}

@@ -15,7 +15,6 @@
 package function
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -29,7 +28,6 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -161,19 +159,16 @@ func copyVolumeDataPodFunc(
 		if err != nil {
 			return nil, err
 		}
-		var stdout, stderr bytes.Buffer
-		err = ex.Exec(ctx, cmd, nil, &stdout, &stderr)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+		stdout, _, err := ExecAndLog(ctx, ex, cmd, pod)
 		if err != nil {
 			return nil, errkit.Wrap(err, "Failed to create and upload backup")
 		}
 		// Get the snapshot ID from log
-		backupID := restic.SnapshotIDFromBackupLog(stdout.String())
+		backupID := restic.SnapshotIDFromBackupLog(stdout)
 		if backupID == "" {
-			return nil, errkit.New(fmt.Sprintf("Failed to parse the backup ID from logs, backup logs %s", stdout.String()))
+			return nil, errkit.New(fmt.Sprintf("Failed to parse the backup ID from logs, backup logs %s", stdout))
 		}
-		fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout.String())
+		fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout)
 		if backupSize == "" {
 			log.Debug().Print("Could not parse backup stats from backup log")
 		}
