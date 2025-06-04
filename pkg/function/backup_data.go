@@ -191,9 +191,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 	if err != nil {
 		return backupDataParsedOutput{}, err
 	}
-	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
-	format.LogWithCtx(ctx, pod, container, stdout)
-	format.LogWithCtx(ctx, pod, container, stderr)
+	stdout, stderr, err := KubeExecAndLog(ctx, cli, namespace, pod, container, cmd, nil)
 	if err != nil {
 		return backupDataParsedOutput{}, errkit.Wrap(err, "Failed to create and upload backup")
 	}

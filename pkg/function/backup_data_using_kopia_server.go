@@ -222,9 +222,7 @@ func backupDataUsingKopiaServer(
 		},
 	})
 
-	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	stdout, stderr, err := KubeExecAndLogNoCtx(ctx, cli, namespace, pod, container, cmd, nil)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to connect to Kopia Repository Server")
 	}
@@ -244,9 +242,7 @@ func backupDataUsingKopiaServer(
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to construct snapshot create command")
 	}
-	stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	stdout, stderr, err = KubeExecAndLogNoCtx(ctx, cli, namespace, pod, container, cmd, nil)
 
 	message := "Failed to create and upload backup"
 	if err != nil {

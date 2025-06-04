@@ -15,7 +15,6 @@
 package function
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -199,12 +198,9 @@ func pruneData(
 		return "", err
 	}
 
-	var stdout, stderr bytes.Buffer
-	err = podCommandExecutor.Exec(context.Background(), cmd, nil, &stdout, &stderr)
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+	stdout, _, err := ExecAndLogNoCtx(context.Background(), podCommandExecutor, cmd, pod)
 
-	spaceFreed := restic.SpaceFreedFromPruneLog(stdout.String())
+	spaceFreed := restic.SpaceFreedFromPruneLog(stdout)
 	return spaceFreed, errkit.Wrap(err, "Failed to prune data after forget")
 }
 
