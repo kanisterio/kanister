@@ -1,11 +1,13 @@
 run:
-  build-tags:
+  build-tags:                           # All linters will run with below mentioned build tags.
     - integration
 linters:
-  enable:
+  enable:                               # Additional linters enabled beyond defaults:
+                                        #   Default linters: errcheck, gosimple, govet, ineffassign, staticcheck, typecheck, unused
     - asciicheck
     - dogsled
     - dupl
+    # - exportloopref
     - gocognit
     - gocritic
     - gocyclo
@@ -66,14 +68,14 @@ issues:
         - lll
         - dupl
         - nestif
-    - text: "`ctx` is unused"
+    - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
       linters:
         - unparam
-  exclude-dirs:
-    - pkg/client/applyconfiguration/cr/v1alpha1
-    - pkg/client/clientset
-    - pkg/client/informers
-    - pkg/client/listers
+  exclude-dirs:                         # Directories to exclude from linting.
+    - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen
+    - pkg/client/clientset # generated from code-gen
+    - pkg/client/informers # generated from code-gen
+    - pkg/client/listers # generated from code-gen
     - third_party$
     - builtin$
     - examples$
