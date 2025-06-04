@@ -9,11 +9,6 @@ import (
 	"strings"
 
 	"github.com/kanisterio/errkit"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/client-go/kubernetes"
-
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
@@ -21,6 +16,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -43,16 +42,16 @@ const (
 // Returns the stdout and stderr content as strings along with any execution error.
 func ExecAndLog(ctx context.Context, executor kube.PodCommandExecutor, cmd []string, pod *corev1.Pod) (stdout, stderr string, err error) {
 	var stdoutBuf, stderrBuf bytes.Buffer
-	
+
 	err = executor.Exec(ctx, cmd, nil, &stdoutBuf, &stderrBuf)
-	
+
 	// Get the container name - use the first container as that's the pattern used in existing code
 	containerName := pod.Spec.Containers[0].Name
-	
+
 	// Log the output regardless of whether the command succeeded or failed
 	format.LogWithCtx(ctx, pod.Name, containerName, stdoutBuf.String())
 	format.LogWithCtx(ctx, pod.Name, containerName, stderrBuf.String())
-	
+
 	return stdoutBuf.String(), stderrBuf.String(), err
 }
 
@@ -61,16 +60,16 @@ func ExecAndLog(ctx context.Context, executor kube.PodCommandExecutor, cmd []str
 // Returns the stdout and stderr content as strings along with any execution error.
 func ExecAndLogNoCtx(ctx context.Context, executor kube.PodCommandExecutor, cmd []string, pod *corev1.Pod) (stdout, stderr string, err error) {
 	var stdoutBuf, stderrBuf bytes.Buffer
-	
+
 	err = executor.Exec(ctx, cmd, nil, &stdoutBuf, &stderrBuf)
-	
+
 	// Get the container name - use the first container as that's the pattern used in existing code
 	containerName := pod.Spec.Containers[0].Name
-	
+
 	// Log the output regardless of whether the command succeeded or failed
 	format.Log(pod.Name, containerName, stdoutBuf.String())
 	format.Log(pod.Name, containerName, stderrBuf.String())
-	
+
 	return stdoutBuf.String(), stderrBuf.String(), err
 }
 
@@ -79,11 +78,11 @@ func ExecAndLogNoCtx(ctx context.Context, executor kube.PodCommandExecutor, cmd 
 // Returns the stdout and stderr content as strings along with any execution error.
 func KubeExecAndLog(ctx context.Context, cli kubernetes.Interface, namespace, pod, container string, cmd []string, stdin io.Reader) (stdout, stderr string, err error) {
 	stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod, container, cmd, stdin)
-	
+
 	// Log the output regardless of whether the command succeeded or failed
 	format.LogWithCtx(ctx, pod, container, stdout)
 	format.LogWithCtx(ctx, pod, container, stderr)
-	
+
 	return stdout, stderr, err
 }
 
@@ -92,11 +91,11 @@ func KubeExecAndLog(ctx context.Context, cli kubernetes.Interface, namespace, po
 // Returns the stdout and stderr content as strings along with any execution error.
 func KubeExecAndLogNoCtx(ctx context.Context, cli kubernetes.Interface, namespace, pod, container string, cmd []string, stdin io.Reader) (stdout, stderr string, err error) {
 	stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod, container, cmd, stdin)
-	
+
 	// Log the output regardless of whether the command succeeded or failed
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
-	
+
 	return stdout, stderr, err
 }
 
