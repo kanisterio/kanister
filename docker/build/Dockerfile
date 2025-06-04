@@ -19,7 +19,7 @@ COPY --from=goreleaser/goreleaser:v1.26.2 /usr/bin/goreleaser /usr/local/bin/
 
 COPY --from=alpine/helm:3.12.2 /usr/bin/helm /usr/local/bin/
 
-COPY --from=golangci/golangci-lint:v1.64.7 /usr/bin/golangci-lint /usr/local/bin/
+COPY --from=golangci/golangci-lint:v2.1.6 /usr/bin/golangci-lint /usr/local/bin/
 
 RUN wget -O /usr/local/bin/kind \
       https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -) \
