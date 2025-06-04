@@ -48,6 +48,12 @@ issues:
       linters:
         - unparam
 
+  exclude-dirs:                         # Directories to exclude from linting.
+    - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen
+    - pkg/client/clientset # generated from code-gen
+    - pkg/client/informers # generated from code-gen
+    - pkg/client/listers # generated from code-gen
+
 linters-settings:
   gocyclo:
     min-complexity: 20
@@ -81,8 +87,4 @@ linters-settings:
     exclude-functions:
       - fmt.Fprintln
 
-exclude-dirs:
-  - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen
-  - pkg/client/clientset # generated from code-gen
-  - pkg/client/informers # generated from code-gen
-  - pkg/client/listers # generated from code-gen
+
