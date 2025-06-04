@@ -20,7 +20,7 @@ set -o nounset
 CONFIG_FILE=".golangci.yml"
 
 echo "Running golangci-lint from config file: ${CONFIG_FILE}"
-golangci-lint run --config=${CONFIG_FILE}
+golangci-lint run --config=${CONFIG_FILE} --timeout=10m
 
 echo "PASS"
 echo

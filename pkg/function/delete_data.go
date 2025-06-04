@@ -15,7 +15,6 @@
 package function
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -30,7 +29,6 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
@@ -150,14 +148,11 @@ func deleteDataPodFunc(
 				return nil, err
 			}
 
-			var stdout, stderr bytes.Buffer
-			err = podCommandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+			stdout, _, err := ExecAndLog(ctx, podCommandExecutor, cmd, pod)
 			if err != nil {
 				return nil, errkit.Wrap(err, "Failed to forget data, could not get snapshotID from tag", "Tag", deleteTag)
 			}
-			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout.String())
+			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout)
 			if err != nil {
 				return nil, errkit.Wrap(err, "Failed to forget data, could not get snapshotID from tag", "Tag", deleteTag)
 			}
@@ -170,10 +165,7 @@ func deleteDataPodFunc(
 				return nil, err
 			}
 
-			var stdout, stderr bytes.Buffer
-			err = podCommandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+			_, _, err = ExecAndLog(ctx, podCommandExecutor, cmd, pod)
 			if err != nil {
 				return nil, errkit.Wrap(err, "Failed to forget data")
 			}
@@ -205,12 +197,9 @@ func pruneData(
 		return "", err
 	}
 
-	var stdout, stderr bytes.Buffer
-	err = podCommandExecutor.Exec(context.Background(), cmd, nil, &stdout, &stderr)
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+	stdout, _, err := ExecAndLogNoCtx(context.Background(), podCommandExecutor, cmd, pod)
 
-	spaceFreed := restic.SpaceFreedFromPruneLog(stdout.String())
+	spaceFreed := restic.SpaceFreedFromPruneLog(stdout)
 	return spaceFreed, errkit.Wrap(err, "Failed to prune data after forget")
 }
 
