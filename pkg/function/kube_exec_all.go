@@ -25,7 +25,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
@@ -127,7 +126,7 @@ func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps
 	for _, p := range ps {
 		for _, c := range cs {
 			go func(p string, c string) {
-				stdout, stderr, err := KubeExecAndLog(ctx, cli, namespace, p, c, cmd, nil)
+				stdout, _, err := KubeExecAndLog(ctx, cli, namespace, p, c, cmd, nil)
 				errChan <- err
 				output = output + "\n" + stdout
 			}(p, c)
