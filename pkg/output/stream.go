@@ -41,7 +41,7 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, []
 		_ = r.Close()
 	}()
 
-	state := InitState()
+	state := initState()
 
 	reader := bufio.NewReaderSize(r, bufferSize64k)
 
@@ -76,7 +76,7 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, []
 	}
 }
 
-func InitState() scanState {
+func initState() scanState {
 	return scanState{
 		outputBuf:       []byte(nil),
 		readingOutput:   false,
@@ -84,7 +84,7 @@ func InitState() scanState {
 	}
 }
 
-func ReadPhaseOutputState(outputBuf []byte) scanState {
+func readPhaseOutputState(outputBuf []byte) scanState {
 	return scanState{
 		outputBuf:       outputBuf,
 		readingOutput:   true,
@@ -92,7 +92,7 @@ func ReadPhaseOutputState(outputBuf []byte) scanState {
 	}
 }
 
-func CheckSeparatorSuffixState(separatorSuffix []byte) scanState {
+func checkSeparatorSuffixState(separatorSuffix []byte) scanState {
 	return scanState{
 		outputBuf:       []byte(nil),
 		readingOutput:   false,
@@ -109,14 +109,14 @@ func handleOutput(
 ) (scanState, error) {
 	if isPrefix {
 		// Accumulate phase output
-		return ReadPhaseOutputState(append(state.outputBuf, line...)), nil
+		return readPhaseOutputState(append(state.outputBuf, line...)), nil
 	}
 	// Reached the end of the line while reading phase output
 	if err := f(ctx, append(state.outputBuf, line...)); err != nil {
 		return state, err
 	}
 	// Transition out of readingOutput state
-	return InitState(), nil
+	return initState(), nil
 }
 
 func handleSeparatorSuffix(
@@ -148,10 +148,10 @@ func handleLog(
 		splitSeparator, separatorSuffix := checkSplitSeparator(line)
 		if splitSeparator != -1 {
 			// Transition to separatorSuffix state to check next line
-			return CheckSeparatorSuffixState(separatorSuffix), nil
+			return checkSeparatorSuffixState(separatorSuffix), nil
 		}
 
-		return InitState(), nil
+		return initState(), nil
 	}
 	// Log everything before separator as plain output
 	prefix := line[0:indexOfPOString]
@@ -172,11 +172,11 @@ func captureOutputContent(
 	outputContent := line[startIndex:]
 	if !isPrefix {
 		if err := f(ctx, outputContent); err != nil {
-			return InitState(), err
+			return initState(), err
 		}
-		return InitState(), nil
+		return initState(), nil
 	}
-	return ReadPhaseOutputState(append([]byte(nil), outputContent...)), nil
+	return readPhaseOutputState(append([]byte(nil), outputContent...)), nil
 }
 
 func checkSplitSeparator(line []byte) (splitSeparator int, separatorSuffix []byte) {
