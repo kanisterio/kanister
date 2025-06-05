@@ -5,17 +5,17 @@ import (
 	"testing"
 	"time"
 
-	v1 "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { v1.TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 type KanXCmdProcessServerSuite struct{}
 
-var _ = v1.Suite(&KanXCmdProcessServerSuite{})
+var _ = check.Suite(&KanXCmdProcessServerSuite{})
 
-func (s *KanXCmdProcessServerSuite) TestProcessServer(c *v1.C) {
+func (s *KanXCmdProcessServerSuite) TestProcessServer(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithTimeout(context.Background(), time.Second)
 	rc := newRootCommand()
@@ -28,6 +28,6 @@ func (s *KanXCmdProcessServerSuite) TestProcessServer(c *v1.C) {
 		}
 	}()
 	err := waitSock(ctx, addr)
-	c.Assert(err, v1.IsNil)
+	c.Assert(err, check.IsNil)
 	can()
 }
