@@ -61,15 +61,15 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, []
 		}
 		switch {
 		case state.readingOutput:
-			if state, err = handleOutput(state, line, isPrefix, ctx, f); err != nil {
+			if state, err = handleOutput(ctx, state, line, isPrefix, f); err != nil {
 				return err
 			}
 		case len(state.separatorSuffix) > 0:
-			if state, err = handleSeparatorSuffix(state, line, isPrefix, ctx, f); err != nil {
+			if state, err = handleSeparatorSuffix(ctx, state, line, isPrefix, f); err != nil {
 				return err
 			}
 		default:
-			if state, err = handleLog(line, isPrefix, ctx, f); err != nil {
+			if state, err = handleLog(ctx, line, isPrefix, f); err != nil {
 				return err
 			}
 		}
@@ -101,10 +101,10 @@ func CheckSeparatorSuffixState(separatorSuffix []byte) scanState {
 }
 
 func handleOutput(
+	ctx context.Context,
 	state scanState,
 	line []byte,
 	isPrefix bool,
-	ctx context.Context,
 	f func(context.Context, []byte) error,
 ) (scanState, error) {
 	if isPrefix {
@@ -120,23 +120,23 @@ func handleOutput(
 }
 
 func handleSeparatorSuffix(
+	ctx context.Context,
 	state scanState,
 	line []byte,
 	isPrefix bool,
-	ctx context.Context,
 	f func(context.Context, []byte) error,
 ) (scanState, error) {
 	if bytes.Index(line, state.separatorSuffix) == 0 {
-		return captureOutputContent(line, isPrefix, len(state.separatorSuffix), ctx, f)
+		return captureOutputContent(ctx, line, isPrefix, len(state.separatorSuffix), f)
 	}
 	// Read log like normal
-	return handleLog(line, isPrefix, ctx, f)
+	return handleLog(ctx, line, isPrefix, f)
 }
 
 func handleLog(
+	ctx context.Context,
 	line []byte,
 	isPrefix bool,
-	ctx context.Context,
 	f func(context.Context, []byte) error,
 ) (scanState, error) {
 	indexOfPOString := bytes.Index(line, []byte(PhaseOpString))
@@ -159,14 +159,14 @@ func handleLog(
 		logOutput(ctx, prefix)
 	}
 
-	return captureOutputContent(line, isPrefix, indexOfPOString+len(PhaseOpString), ctx, f)
+	return captureOutputContent(ctx, line, isPrefix, indexOfPOString+len(PhaseOpString), f)
 }
 
 func captureOutputContent(
+	ctx context.Context,
 	line []byte,
 	isPrefix bool,
 	startIndex int,
-	ctx context.Context,
 	f func(context.Context, []byte) error,
 ) (scanState, error) {
 	outputContent := line[startIndex:]

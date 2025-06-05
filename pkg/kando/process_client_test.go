@@ -5,14 +5,14 @@ import (
 	"context"
 	"encoding/json"
 
-	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 )
 
 type KanXCmdProcessClientSuite struct{}
 
-var _ = Suite(&KanXCmdProcessClientSuite{})
+var _ = check.Suite(&KanXCmdProcessClientSuite{})
 
-func (s *KanXCmdProcessClientSuite) TestProcessClientCreate(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientCreate(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -38,7 +38,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientCreate(c *C) {
 	c.Assert(stderr.String(), Equals, "")
 }
 
-func (s *KanXCmdProcessClientSuite) TestProcessClientList_0(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientList_0(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -64,7 +64,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientList_0(c *C) {
 	c.Assert(stderr.String(), Equals, "")
 }
 
-func (s *KanXCmdProcessClientSuite) TestProcessClientList_1(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientList_1(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -96,7 +96,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientList_1(c *C) {
 	c.Assert(stderr.String(), Equals, "")
 }
 
-func (s *KanXCmdProcessClientSuite) TestProcessClientSignal(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientSignal(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -137,7 +137,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientSignal(c *C) {
 }
 
 // TestProcessClientOutput check that output command outputs stdout and stderr to their respective FDs.
-func (s *KanXCmdProcessClientSuite) TestProcessClientOutput(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientOutput(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -164,7 +164,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientOutput(c *C) {
 }
 
 // TestProcessClientExecute_RedirectStdout checks that stdout contains JSON process metadata and process output without additional output from logging.
-func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStdout(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStdout(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -190,7 +190,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStdout(c *C
 }
 
 // TestProcessClientExecute_RedirectStderr checks that stderr without additional output from logging.
-func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStderr(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStderr(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -212,7 +212,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStderr(c *C
 	c.Assert(stderr.String(), Equals, "hello world\n")
 }
 
-func (s *KanXCmdProcessClientSuite) TestProcessClientGet_0(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientGet_0(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()
@@ -249,7 +249,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientGet_0(c *C) {
 	c.Assert(stderr.String(), Equals, "")
 }
 
-func (s *KanXCmdProcessClientSuite) TestProcessClientGet_1(c *C) {
+func (s *KanXCmdProcessClientSuite) TestProcessClientGet_1(c *check.C) {
 	addr := c.MkDir() + "/kanister.sock"
 	ctx, can := context.WithCancel(context.Background())
 	defer can()

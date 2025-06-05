@@ -22,19 +22,19 @@ import (
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
-var _ Secret = &aws{}
+var _ Secret = &AWS{}
 
-type aws struct {
+type AWS struct {
 	storageLocation *corev1.Secret
 }
 
-func NewAWSLocation(secret *corev1.Secret) *aws {
-	return &aws{
+func NewAWSLocation(secret *corev1.Secret) *AWS {
+	return &AWS{
 		storageLocation: secret,
 	}
 }
 
-func (l *aws) Validate() (err error) {
+func (l *AWS) Validate() (err error) {
 	if l.storageLocation == nil {
 		return errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
