@@ -25,7 +25,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
@@ -103,18 +102,18 @@ func (*kubeExecAllFunc) Arguments() []string {
 	}
 }
 
-func (k *kubeExecAllFunc) Validate(args map[string]any) error {
-	if err := utils.CheckSupportedArgs(k.Arguments(), args); err != nil {
+func (kef *kubeExecAllFunc) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(kef.Arguments(), args); err != nil {
 		return err
 	}
 
-	return utils.CheckRequiredArgs(k.RequiredArgs(), args)
+	return utils.CheckRequiredArgs(kef.RequiredArgs(), args)
 }
 
-func (k *kubeExecAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (kef *kubeExecAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    k.progressPercent,
+		ProgressPercent:    kef.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }
@@ -127,9 +126,7 @@ func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps
 	for _, p := range ps {
 		for _, c := range cs {
 			go func(p string, c string) {
-				stdout, stderr, err := kube.Exec(ctx, cli, namespace, p, c, cmd, nil)
-				format.LogWithCtx(ctx, p, c, stdout)
-				format.LogWithCtx(ctx, p, c, stderr)
+				stdout, _, err := KubeExecAndLog(ctx, cli, namespace, p, c, cmd, nil)
 				errChan <- err
 				output = output + "\n" + stdout
 			}(p, c)

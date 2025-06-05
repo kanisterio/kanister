@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package getter provides functionality to resolve and retrieve block storage
+// providers based on the specified storage type and configuration.
 package getter
 
 import (

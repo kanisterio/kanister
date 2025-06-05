@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements the entry point for the Repository Server Controller.
+// This controller is responsible for managing the lifecycle of RepositoryServer
+// custom resources in a Kubernetes cluster. It sets up the necessary controllers,
+// health checks, and optionally a validating webhook for custom resource validation.
 package main
 
 import (

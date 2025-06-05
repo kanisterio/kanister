@@ -23,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/helm"
@@ -87,7 +88,10 @@ func (h *HelmTestSuite) TestUpgrade(c *check.C) {
 	updatedValues := map[string]string{
 		"image.tag":                   "v9.99.9-dev",
 		"bpValidatingWebhook.enabled": "false",
+		"livenessProbe.enabled":       "false",
+		"readinessProbe.enabled":      "false",
 	}
+
 	c.Assert(h.helmApp.Upgrade("../../../helm/kanister-operator", updatedValues), check.IsNil)
 
 	// wait for kanister deployment to be ready
@@ -199,6 +203,179 @@ func (h *HelmTestSuite) TestSelectedDeploymentAttrFromKanisterHelmDryRunInstall(
 	}
 }
 
+// TestPodRenderingnHelmChart test case does a dry run install of the `kanister` helm chart and validates.
+func (h *HelmTestSuite) TestPodRenderingFromHelmChart(c *check.C) {
+	podSecurity := corev1.PodSecurityContext{
+		RunAsUser:    intPtr(9000),
+		FSGroup:      intPtr(9000),
+		RunAsNonRoot: boolPtr(true),
+		RunAsGroup:   intPtr(9000),
+	}
+
+	containerSecurity := corev1.SecurityContext{
+		ReadOnlyRootFilesystem:   boolPtr(false),
+		AllowPrivilegeEscalation: boolPtr(true),
+		Privileged:               boolPtr(true),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+	}
+
+	livenessProbe := &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/random_liveness",
+				Port: intstr.FromInt(9090),
+			},
+		},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+		FailureThreshold:    5,
+		SuccessThreshold:    5,
+		TimeoutSeconds:      5,
+	}
+
+	readinessProbe := &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/random_readiness",
+				Port: intstr.FromInt(7070),
+			},
+		},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+		FailureThreshold:    5,
+		SuccessThreshold:    5,
+		TimeoutSeconds:      5,
+	}
+
+	var testCases = []struct {
+		testName                  string
+		helmValues                map[string]string
+		expectedPodSecurity       *corev1.PodSecurityContext
+		expectedContainerSecurity *corev1.SecurityContext
+		expectedLivenessProbe     *corev1.Probe
+		expectedReadinessProbe    *corev1.Probe
+	}{
+		{
+			testName: "Pod and Container security context are set",
+			helmValues: map[string]string{
+				"containerSecurityContext.capabilities.drop[0]":     "ALL",
+				"containerSecurityContext.privileged":               "true",
+				"containerSecurityContext.allowPrivilegeEscalation": "true",
+				"containerSecurityContext.readOnlyRootFilesystem":   "false",
+				"podSecurityContext.runAsUser":                      "9000",
+				"podSecurityContext.fsGroup":                        "9000",
+				"podSecurityContext.runAsNonRoot":                   "true",
+				"podSecurityContext.runAsGroup":                     "9000",
+			},
+			expectedPodSecurity:       &podSecurity,
+			expectedContainerSecurity: &containerSecurity,
+		},
+		{
+			testName: "Only Container security context is getting overwritten",
+			helmValues: map[string]string{
+				"containerSecurityContext.capabilities.drop[0]":     "ALL",
+				"containerSecurityContext.privileged":               "true",
+				"containerSecurityContext.allowPrivilegeEscalation": "true",
+				"containerSecurityContext.readOnlyRootFilesystem":   "false",
+			},
+			expectedContainerSecurity: &containerSecurity,
+		},
+		{
+			testName: "Only Pod security context is getting overwritten",
+			helmValues: map[string]string{
+				"podSecurityContext.runAsUser":    "9000",
+				"podSecurityContext.fsGroup":      "9000",
+				"podSecurityContext.runAsNonRoot": "true",
+				"podSecurityContext.runAsGroup":   "9000",
+			},
+			expectedPodSecurity: &podSecurity,
+		},
+		{
+			testName: "Disable liveness and readiness probes",
+			helmValues: map[string]string{
+				"livenessProbe.enabled":  "false",
+				"readinessProbe.enabled": "false",
+			},
+		},
+		{
+			testName: "Liveness and readiness probes is getting overwritten",
+			helmValues: map[string]string{
+				"livenessProbe.enabled":              "true",
+				"livenessProbe.httpGet.path":         "/random_liveness",
+				"livenessProbe.httpGet.port":         "9090",
+				"livenessProbe.initialDelaySeconds":  "5",
+				"livenessProbe.periodSeconds":        "5",
+				"livenessProbe.failureThreshold":     "5",
+				"livenessProbe.successThreshold":     "5",
+				"livenessProbe.timeoutSeconds":       "5",
+				"readinessProbe.enabled":             "true",
+				"readinessProbe.httpGet.path":        "/random_readiness",
+				"readinessProbe.httpGet.port":        "7070",
+				"readinessProbe.initialDelaySeconds": "5",
+				"readinessProbe.periodSeconds":       "5",
+				"readinessProbe.failureThreshold":    "5",
+				"readinessProbe.successThreshold":    "5",
+				"readinessProbe.timeoutSeconds":      "5",
+			},
+			expectedLivenessProbe:  livenessProbe,
+			expectedReadinessProbe: readinessProbe,
+		},
+	}
+
+	for _, tc := range testCases {
+		c.Logf("Test name: %s", tc.testName)
+		defer func() {
+			h.helmApp.dryRun = false
+		}()
+
+		testApp, err := NewHelmApp(tc.helmValues, kanisterName, "../../../helm/kanister-operator", kanisterName, "", true)
+		c.Assert(err, check.IsNil)
+
+		out, err := testApp.Install()
+		c.Assert(err, check.IsNil)
+
+		resources := helm.ResourcesFromRenderedManifest(out, func(kind helm.K8sObjectType) bool {
+			return kind == helm.K8sObjectTypeDeployment
+		})
+		c.Assert(len(resources), check.Equals, 1)
+
+		deployments, err := helm.K8sObjectsFromRenderedResources[*appsv1.Deployment](resources)
+		c.Assert(err, check.IsNil)
+
+		var obj = deployments[h.deploymentName]
+		c.Assert(obj, check.NotNil)
+
+		if tc.expectedPodSecurity != nil {
+			c.Assert(obj.Spec.Template.Spec.SecurityContext, check.DeepEquals, tc.expectedPodSecurity)
+		}
+
+		if tc.expectedContainerSecurity != nil {
+			c.Assert(obj.Spec.Template.Spec.Containers[0].SecurityContext, check.DeepEquals, tc.expectedContainerSecurity)
+		}
+
+		if enabled, ok := tc.helmValues["livenessProbe.enabled"]; ok {
+			if enabled == "true" {
+				c.Assert(obj.Spec.Template.Spec.Containers[0].LivenessProbe, check.NotNil)
+				c.Assert(obj.Spec.Template.Spec.Containers[0].LivenessProbe, check.DeepEquals, tc.expectedLivenessProbe)
+			} else {
+				c.Assert(obj.Spec.Template.Spec.Containers[0].LivenessProbe, check.IsNil)
+			}
+		}
+
+		if enabled, ok := tc.helmValues["readinessProbe.enabled"]; ok {
+			if enabled == "true" {
+				c.Assert(obj.Spec.Template.Spec.Containers[0].ReadinessProbe, check.NotNil)
+				c.Assert(obj.Spec.Template.Spec.Containers[0].ReadinessProbe, check.DeepEquals, tc.expectedReadinessProbe)
+			} else {
+				c.Assert(obj.Spec.Template.Spec.Containers[0].ReadinessProbe, check.IsNil)
+			}
+		}
+	}
+}
+
+
 // TestPodAnnotationsFromKanisterHelmDryRunInstall test case does a dry run install of the `kanister` helm chart and validates
 // use cases for `podAnnotations` attributes in the helmValues.yaml. This function is specific to `deployment` resource.
 func (h *HelmTestSuite) TestPodAnnotationsFromKanisterHelmDryRunInstall(c *check.C) {
@@ -254,6 +431,14 @@ func (h *HelmTestSuite) TestPodAnnotationsFromKanisterHelmDryRunInstall(c *check
 
 		c.Assert(obj.Spec.Template.ObjectMeta.Annotations, check.DeepEquals, tc.expectedAnnotations)
 	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func intPtr(i int64) *int64 {
+	return &i
 }
 
 func (h *HelmTestSuite) TearDownSuite(c *check.C) {

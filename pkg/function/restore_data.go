@@ -15,7 +15,6 @@
 package function
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -27,7 +26,6 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
@@ -210,14 +208,11 @@ func restoreDataPodFunc(
 		if err != nil {
 			return nil, err
 		}
-		var stdout, stderr bytes.Buffer
-		err = ex.Exec(ctx, cmd, nil, &stdout, &stderr)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+		stdout, _, err := ExecAndLog(ctx, ex, cmd, pod)
 		if err != nil {
 			return nil, errkit.Wrap(err, "Failed to restore backup")
 		}
-		out, err := parseLogAndCreateOutput(stdout.String())
+		out, err := parseLogAndCreateOutput(stdout)
 		return out, errkit.Wrap(err, "Failed to parse phase output")
 	}
 }
@@ -354,10 +349,10 @@ func (r *restoreDataFunc) Validate(args map[string]any) error {
 	return utils.CheckRequiredArgs(r.RequiredArgs(), args)
 }
 
-func (d *restoreDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (r *restoreDataFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    d.progressPercent,
+		ProgressPercent:    r.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

@@ -1,62 +1,35 @@
+run:
+  build-tags:                           # All linters will run with below mentioned build tags.
+    - integration
 linters:
-  disable-all: false                    # This enabled 7 default linters as of golangci-lint@v1.50.0:
-                                        #   1. errcheck
-                                        #   2. gosimple
-                                        #   3. govet
-                                        #   4. ineffassign
-                                        #   5. staticcheck
-                                        #   6. typecheck
-                                        #   7. unused
-  enable:
-    - gofmt
-    - whitespace
-    - gocognit
-    - unparam
-    - gocyclo
-    - gocritic
-    - lll
-    - nakedret
+  enable:                               # Additional linters enabled beyond defaults:
+                                        #   Default linters: errcheck, gosimple, govet, ineffassign, staticcheck, typecheck, unused
     - asciicheck
-    # - depguard # Disabling temporarily due to https://github.com/golangci/golangci-lint/issues/3906
     - dogsled
     - dupl
     # - exportloopref
-    - importas
-    - misspell
-    - nestif
-    - gci
+    - gocognit
+    - gocritic
+    - gocyclo
     - goprintffuncname
+    - importas
+    - lll
+    - misspell
+    - nakedret
+    - nestif
     - nolintlint
-    - stylecheck
-
-run:
-  timeout: 10m                          # golangci-lint run's timeout.
-
-  build-tags:                           # All linters will run with below mentioned build tags.
-    - "integration"
-
-issues:
-  exclude-use-default: false
-  exclude-rules:
-    - path: '_test.go'
-      linters:
-        - lll
-        - dupl
-        - nestif
-
-    - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
-      linters:
-        - unparam
-
+    - staticcheck
+    - unparam
+    - whitespace
+    - gci
+    - gofmt
 linters-settings:
+  errcheck:
+    exclude-functions:
+      - fmt.Fprintln
   gocyclo:
     min-complexity: 20
-  lll:
-    line-length: 240
-  nakedret:
-    max-func-lines: 2
   importas:
-    no-unaliased: true
     alias:
       - pkg: k8s.io/apimachinery/pkg/api/errors
         alias: apierrors
@@ -66,8 +39,20 @@ linters-settings:
         alias: metav1
       - pkg: github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1
         alias: crv1alpha1
+    no-unaliased: true
+  lll:
+    line-length: 240
+  nakedret:
+    max-func-lines: 2
   nestif:
     min-complexity: 6
+  staticcheck:
+    checks:
+      - all
+      - -ST1001
+      - -ST1005
+      - -ST1016
+      - -ST1023
   gci:
     sections:
       - standard
@@ -75,14 +60,20 @@ linters-settings:
       - prefix(github.com/kanisterio/kanister)
       - blank
     skip-generated: true
-  stylecheck:
-    checks: [ "all", "-ST1001", "-ST1005", "-ST1016", "-ST1023", "-ST1000"]
-  errcheck:
-    exclude-functions:
-      - fmt.Fprintln
-
-exclude-dirs:
-  - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen
-  - pkg/client/clientset # generated from code-gen
-  - pkg/client/informers # generated from code-gen
-  - pkg/client/listers # generated from code-gen
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: '_test.go'
+      linters:
+        - dupl
+    - text: "`ctx` is unused"           # Context might not be in use in places, but for consistency, we pass it.
+      linters:
+        - unparam
+  exclude-dirs:                         # Directories to exclude from linting.
+    - pkg/client/applyconfiguration/cr/v1alpha1 # generated from code-gen
+    - pkg/client/clientset # generated from code-gen
+    - pkg/client/informers # generated from code-gen
+    - pkg/client/listers # generated from code-gen
+    - third_party$
+    - builtin$
+    - examples$

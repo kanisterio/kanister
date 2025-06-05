@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package rds provides utilities for managing AWS RDS resources, such as creating, deleting,
+// and describing RDS instances, clusters, snapshots, and related operations.
 package rds
 
 import (

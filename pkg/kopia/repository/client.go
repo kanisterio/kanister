@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package repository provides functionality to interact with Kopia repositories,
+// including connecting to the Kopia API server, opening repositories, and managing
+// repository configurations.
 package repository
 
 import (

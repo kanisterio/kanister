@@ -31,11 +31,28 @@ actions:
             kando output etcdPod $ETCD_POD
             kando output etcdNS $etcdns
 
-    - func: KubeTask
+    - func: MultiContainerRun
       name: uploadSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.113.0
-        command:
+        sharedVolumeMedium: Memory
+
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
+
+        backgroundImage: ghcr.io/kanisterio/kanister-kubectl-1.18:0.113.0
+        backgroundCommand:
+          - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            kubectl cp -c etcd {{ .Phases.takeSnapshot.Output.etcdNS }}/{{ .Phases.takeSnapshot.Output.etcdPod }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
+            gzip -c /tmp/etcd-backup.db  > /tmp/data
+
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        outputCommand:
           - sh
           - -o
           - errexit
@@ -44,8 +61,8 @@ actions:
           - -c
           - |
             BACKUP_LOCATION='etcd-backup.db.gz'
-            kubectl cp -c etcd {{ .Phases.takeSnapshot.Output.etcdNS }}/{{ .Phases.takeSnapshot.Output.etcdPod }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
-            gzip -c /tmp/etcd-backup.db  | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" --output-name "kopiaOutput" -
+
+            cat /tmp/data | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" --output-name "kopiaOutput" -
 
     - func: KubeTask
       name: removeSnapshot
@@ -66,14 +83,14 @@ actions:
     # having label `etcd-restore`. The pod is used to download the backup file from the
     # object store and copy it to the /mnt/data location of the PV mapped to PVC `pvc-etcd`.
     # The PV's mount path is /mnt/data on leader node where the cluster-ocp-restore.sh
-    # script would be executed. 
+    # script would be executed.
     inputArtifactNames:
     - etcdBackup
     phases:
     - func: PrepareData
       name: copyFromObjectStore
       args:
-        image: "ghcr.io/kanisterio/kanister-tools:0.113.0"
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
         namespace: "{{ .Object.metadata.namespace }}"
         podOverride:
           nodeSelector:
@@ -84,7 +101,7 @@ actions:
             effect: "NoSchedule"
           containers:
           - name: container
-            securityContext:    
+            securityContext:
               privileged: true
         volumes:
           pvc-etcd: "/mnt/data"
@@ -108,7 +125,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "ghcr.io/kanisterio/kanister-tools:0.113.0"
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
         command:
         - bash
         - -o

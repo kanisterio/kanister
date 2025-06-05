@@ -19,6 +19,7 @@ spec:
       {{end}}
     spec:
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
+{{ include "podSecurityContext" . | indent 2 }}
 {{- if or .Values.bpValidatingWebhook.enabled .Values.validatingWebhook.repositoryserver.enabled }}
       volumes:
         - name: webhook-certs
@@ -49,6 +50,9 @@ spec:
           value: {{ .Values.dataStore.parallelism.download | quote }}
         - name: KANISTER_METRICS_ENABLED
           value: {{ .Values.controller.metrics.enabled | quote }}
+{{ include "containerSecurityContext" . | indent 4 }}
+{{ include "livenessProbe" . | indent 4 }}
+{{ include "readinessProbe" . | indent 4 }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}

@@ -1,4 +1,4 @@
-FROM golang:1.24.2-bullseye@sha256:f0fe88a509ede4f792cbd42056e939c210a1b2be282cfe89c57a654ef8707cd2
+FROM golang:1.24.3-bullseye@sha256:abe2e2bb9bc0342dd1ba2f719af5c6b3859ca9ad93a7d9bcdd21310bda0327e1
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 ARG TARGETPLATFORM
@@ -19,7 +19,7 @@ COPY --from=goreleaser/goreleaser:v1.26.2 /usr/bin/goreleaser /usr/local/bin/
 
 COPY --from=alpine/helm:3.12.2 /usr/bin/helm /usr/local/bin/
 
-COPY --from=golangci/golangci-lint:v1.64.7 /usr/bin/golangci-lint /usr/local/bin/
+COPY --from=golangci/golangci-lint:v2.1.6 /usr/bin/golangci-lint /usr/local/bin/
 
 RUN wget -O /usr/local/bin/kind \
       https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -) \

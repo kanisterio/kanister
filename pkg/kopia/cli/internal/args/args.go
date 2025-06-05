@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package args provides utilities for creating and managing command-line arguments
+// used in the Kopia CLI.
 package args
 
 import (

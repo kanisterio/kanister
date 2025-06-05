@@ -76,6 +76,11 @@ updates:
       interval: weekly
     commit-message:
       prefix: "deps(docker):"
+    groups:
+      base-images:
+        patterns:
+        - "golang*"
+        - "*ubi9*"
     directories:
       - "/"
       - "/docker/build"

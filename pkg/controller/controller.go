@@ -18,10 +18,14 @@ Some of the code below came from https://github.com/coreos/etcd-operator
 which also has the apache 2.0 license.
 */
 
+// Package controller provides the implementation of the Kanister controller,
+// which manages custom resources such as ActionSets and Blueprints.
 package controller
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -57,6 +61,11 @@ import (
 
 	_ "github.com/kanisterio/kanister/pkg/metrics"
 )
+
+type errorWithDetails interface {
+	error
+	Details() errkit.ErrorDetails
+}
 
 // Controller represents a controller object for kanister custom resources
 type Controller struct {
@@ -499,6 +508,13 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 				doneProgressTrack()
 			} else {
 				msg = fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
+			}
+
+			var ewd errorWithDetails
+			if errors.As(err, &ewd) {
+				details := ewd.Details()
+				data, _ := json.Marshal(details)
+				err = errkit.Wrap(err, string(data))
 			}
 
 			var rf func(*crv1alpha1.ActionSet) error

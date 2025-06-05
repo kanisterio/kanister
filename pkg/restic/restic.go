@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package restic provides utility functions to interact with the Restic backup tool.
 package restic
 
 import (
