@@ -373,7 +373,7 @@ func (s *KanXSuite) TestCreateProcess_Exit2(c *check.C) {
 }
 
 type countWriter struct {
-	C     *C
+	C     *check.C
 	Count int64
 }
 
