@@ -19,7 +19,7 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
 const (
 	ServerReadTimeout = 90 * time.Second
@@ -29,7 +29,7 @@ type KanXSuite struct{}
 
 var _ = check.Suite(&KanXSuite{})
 
-func tmpDir(c *C) string {
+func tmpDir(c *check.C) string {
 	// unix socket addresses typically cannot be longer than 100 characters
 	// limit the size of the address while retaining some of the properties
 	// of the original directory name
@@ -52,7 +52,7 @@ func newTestServer(dir string) *Server {
 	}
 }
 
-func serverReady(ctx context.Context, addr string, c *C) {
+func serverReady(ctx context.Context, addr string, c *check.C) {
 	ctx, can := context.WithTimeout(ctx, ServerReadTimeout)
 	defer can()
 	for {
