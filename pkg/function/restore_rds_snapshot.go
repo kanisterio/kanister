@@ -282,10 +282,9 @@ func restoreRDSSnapshot(
 			return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, subnetGroup, snapshotID, sgIDs)
 		}
 		return nil, restoreAuroraFromSnapshot(ctx, rdsCli, instanceID, subnetGroup, snapshotID, string(dbEngine), sgIDs)
-	} else {
-		// Restore from dump
-		return restoreFromDump(ctx, namespace, instanceID, backupArtifactPrefix, backupID, username, password, dbEngine, profile, postgresToolsImage, annotations, labels, rdsCli)
 	}
+	// Restore from dump
+	return restoreFromDump(ctx, namespace, instanceID, backupArtifactPrefix, backupID, username, password, dbEngine, profile, postgresToolsImage, annotations, labels, rdsCli)
 }
 
 func restoreFromDump(ctx context.Context,

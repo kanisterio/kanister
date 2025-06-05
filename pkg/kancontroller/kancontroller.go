@@ -40,7 +40,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 
-	_ "github.com/kanisterio/kanister/pkg/function"
+	_ "github.com/kanisterio/kanister/pkg/function" // Import for side effects - registers functions
 )
 
 const (

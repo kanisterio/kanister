@@ -767,7 +767,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	// Objects
 	go func() {
 		defer wg.Done()
-		err := verifyObjectParams(p, cli, osCli, ctx)
+		err := verifyObjectParams(ctx, p, cli, osCli)
 		if err != nil {
 			msgs <- err
 		}
@@ -872,7 +872,7 @@ func waitForKopiaRepositoryServerReady(ctx context.Context, crCli versioned.Inte
 	return nil
 }
 
-func verifyObjectParams(p *PerformParams, cli kubernetes.Interface, osCli osversioned.Interface, ctx context.Context) error {
+func verifyObjectParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, osCli osversioned.Interface) error {
 	var err error
 	for _, obj := range p.Objects {
 		switch obj.Kind {

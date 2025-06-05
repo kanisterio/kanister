@@ -27,15 +27,15 @@ import (
 )
 
 // Check that Profile implements DataMover interface
-var _ DataMover = (*profile)(nil)
+var _ DataMover = (*Profile)(nil)
 
-type profile struct {
+type Profile struct {
 	outputName string
 	profile    *param.Profile
 	snapJSON   string
 }
 
-func (p *profile) Pull(ctx context.Context, sourcePath, destinationPath string) error {
+func (p *Profile) Pull(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
 		kopiaSnap, err := p.unmarshalKopiaSnapshot(ctx)
 		if err != nil {
@@ -53,7 +53,7 @@ func (p *profile) Pull(ctx context.Context, sourcePath, destinationPath string) 
 	return locationPull(ctx, p.profile, destinationPath, target)
 }
 
-func (p *profile) Push(ctx context.Context, sourcePath, destinationPath string) error {
+func (p *Profile) Push(ctx context.Context, sourcePath, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
 		if err := p.connectToKopiaRepositoryServer(ctx, repository.WriteAccess); err != nil {
 			return err
@@ -68,7 +68,7 @@ func (p *profile) Push(ctx context.Context, sourcePath, destinationPath string) 
 	return locationPush(ctx, p.profile, destinationPath, source)
 }
 
-func (p *profile) Delete(ctx context.Context, destinationPath string) error {
+func (p *Profile) Delete(ctx context.Context, destinationPath string) error {
 	if p.profile.Location.Type == crv1alpha1.LocationTypeKopia {
 		kopiaSnap, err := p.unmarshalKopiaSnapshot(ctx)
 		if err != nil {
@@ -82,7 +82,7 @@ func (p *profile) Delete(ctx context.Context, destinationPath string) error {
 	return locationDelete(ctx, p.profile, destinationPath)
 }
 
-func (p *profile) connectToKopiaRepositoryServer(ctx context.Context, accessMode repository.AccessMode) error {
+func (p *Profile) connectToKopiaRepositoryServer(ctx context.Context, accessMode repository.AccessMode) error {
 	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(p.profile.Credential.KopiaServerSecret.ConnectOptions)
 	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(p.profile.Credential.KopiaServerSecret.ConnectOptions)
 	return repository.ConnectToAPIServer(
@@ -98,7 +98,7 @@ func (p *profile) connectToKopiaRepositoryServer(ctx context.Context, accessMode
 	)
 }
 
-func (p *profile) unmarshalKopiaSnapshot(ctx context.Context) (*snapshot.SnapshotInfo, error) {
+func (p *Profile) unmarshalKopiaSnapshot(ctx context.Context) (*snapshot.SnapshotInfo, error) {
 	if p.snapJSON == "" {
 		return nil, errkit.New("kopia snapshot information is required to manage data using kopia")
 	}
@@ -109,8 +109,8 @@ func (p *profile) unmarshalKopiaSnapshot(ctx context.Context) (*snapshot.Snapsho
 	return &kopiaSnap, nil
 }
 
-func NewProfileDataMover(prof *param.Profile, outputName, snapJSON string) *profile {
-	return &profile{
+func NewProfileDataMover(prof *param.Profile, outputName, snapJSON string) *Profile {
+	return &Profile{
 		outputName: outputName,
 		profile:    prof,
 		snapJSON:   snapJSON,

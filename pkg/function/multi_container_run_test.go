@@ -19,7 +19,7 @@ import (
 	"os"
 	"time"
 
-	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -31,16 +31,16 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-var _ = Suite(&MultiContainerRunSuite{})
+var _ = check.Suite(&MultiContainerRunSuite{})
 
 type MultiContainerRunSuite struct {
 	cli       kubernetes.Interface
 	namespace string
 }
 
-func (s *MultiContainerRunSuite) SetUpSuite(c *C) {
+func (s *MultiContainerRunSuite) SetUpSuite(c *check.C) {
 	cli, err := kube.NewClient()
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.cli = cli
 
 	ns := &corev1.Namespace{
@@ -49,15 +49,15 @@ func (s *MultiContainerRunSuite) SetUpSuite(c *C) {
 		},
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	s.namespace = cns.Name
 	err = os.Setenv("POD_NAMESPACE", cns.Name)
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 	err = os.Setenv("POD_SERVICE_ACCOUNT", "default")
-	c.Assert(err, IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *MultiContainerRunSuite) TearDownSuite(c *C) {
+func (s *MultiContainerRunSuite) TearDownSuite(c *check.C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -85,7 +85,7 @@ func multiContainerRunPhase(namespace string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-func (s *MultiContainerRunSuite) TestMultiContainerRun(c *C) {
+func (s *MultiContainerRunSuite) TestMultiContainerRun(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
@@ -120,12 +120,12 @@ func (s *MultiContainerRunSuite) TestMultiContainerRun(c *C) {
 		},
 	} {
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
-		c.Assert(err, IsNil)
-		c.Assert(phases, HasLen, len(tc.outs))
+		c.Assert(err, check.IsNil)
+		c.Assert(phases, check.HasLen, len(tc.outs))
 		for i, p := range phases {
 			out, err := p.Exec(ctx, *tc.bp, action, tp)
-			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			c.Assert(out, DeepEquals, tc.outs[i])
+			c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
+			c.Assert(out, check.DeepEquals, tc.outs[i])
 		}
 	}
 }
@@ -158,7 +158,7 @@ func multiContainerRunPhaseWithInit(namespace string) crv1alpha1.BlueprintPhase 
 	}
 }
 
-func (s *MultiContainerRunSuite) TestMultiContainerRunWithInit(c *C) {
+func (s *MultiContainerRunSuite) TestMultiContainerRunWithInit(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
@@ -193,12 +193,12 @@ func (s *MultiContainerRunSuite) TestMultiContainerRunWithInit(c *C) {
 		},
 	} {
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
-		c.Assert(err, IsNil)
-		c.Assert(phases, HasLen, len(tc.outs))
+		c.Assert(err, check.IsNil)
+		c.Assert(phases, check.HasLen, len(tc.outs))
 		for i, p := range phases {
 			out, err := p.Exec(ctx, *tc.bp, action, tp)
-			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			c.Assert(out, DeepEquals, tc.outs[i])
+			c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
+			c.Assert(out, check.DeepEquals, tc.outs[i])
 		}
 	}
 }
@@ -224,7 +224,7 @@ func multiContainerRunPhaseWithoutNamespace() crv1alpha1.BlueprintPhase {
 	}
 }
 
-func (s *MultiContainerRunSuite) TestMultiContainerRunWithoutNamespace(c *C) {
+func (s *MultiContainerRunSuite) TestMultiContainerRunWithoutNamespace(c *check.C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
@@ -259,17 +259,17 @@ func (s *MultiContainerRunSuite) TestMultiContainerRunWithoutNamespace(c *C) {
 		},
 	} {
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
-		c.Assert(err, IsNil)
-		c.Assert(phases, HasLen, len(tc.outs))
+		c.Assert(err, check.IsNil)
+		c.Assert(phases, check.HasLen, len(tc.outs))
 		for i, p := range phases {
 			out, err := p.Exec(ctx, *tc.bp, action, tp)
-			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			c.Assert(out, DeepEquals, tc.outs[i])
+			c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
+			c.Assert(out, check.DeepEquals, tc.outs[i])
 		}
 	}
 }
 
-func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *C) {
+func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *check.C) {
 	originalOverride := crv1alpha1.JSONMap{
 		"containers": []interface{}{
 			map[string]interface{}{
@@ -285,8 +285,8 @@ func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *C) {
 		},
 	}
 	podOverride, err := prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, IsNil)
-	c.Assert(podOverride, DeepEquals, originalOverride)
+	c.Assert(err, check.IsNil)
+	c.Assert(podOverride, check.DeepEquals, originalOverride)
 
 	originalOverride = crv1alpha1.JSONMap{
 		"containers": []interface{}{
@@ -298,8 +298,8 @@ func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *C) {
 		},
 	}
 	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, IsNil)
-	c.Assert(podOverride, DeepEquals, originalOverride)
+	c.Assert(err, check.IsNil)
+	c.Assert(podOverride, check.DeepEquals, originalOverride)
 
 	originalOverride = crv1alpha1.JSONMap{
 		"containers": []interface{}{
@@ -336,8 +336,8 @@ func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *C) {
 		},
 	}
 	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, IsNil)
-	c.Assert(podOverride, DeepEquals, expectedOverride)
+	c.Assert(err, check.IsNil)
+	c.Assert(podOverride, check.DeepEquals, expectedOverride)
 
 	originalOverride = crv1alpha1.JSONMap{
 		"containers": []interface{}{
@@ -373,8 +373,8 @@ func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *C) {
 		},
 	}
 	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, IsNil)
-	c.Assert(podOverride, DeepEquals, expectedOverride)
+	c.Assert(err, check.IsNil)
+	c.Assert(podOverride, check.DeepEquals, expectedOverride)
 
 	originalOverride = crv1alpha1.JSONMap{
 		"containers": []interface{}{
@@ -418,6 +418,6 @@ func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *C) {
 		},
 	}
 	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, IsNil)
-	c.Assert(podOverride, DeepEquals, expectedOverride)
+	c.Assert(err, check.IsNil)
+	c.Assert(podOverride, check.DeepEquals, expectedOverride)
 }

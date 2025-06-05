@@ -26,16 +26,16 @@ import (
 )
 
 // Check that RepositoryServer implements DataMover interface
-var _ DataMover = (*repositoryServer)(nil)
+var _ DataMover = (*RepositoryServer)(nil)
 
-type repositoryServer struct {
+type RepositoryServer struct {
 	outputName       string
 	repositoryServer *param.RepositoryServer
 	snapJSON         string
 	hostName         string
 }
 
-func (rs *repositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
+func (rs *RepositoryServer) Pull(ctx context.Context, sourcePath, destinationPath string) error {
 	kopiaSnap, err := rs.unmarshalKopiaSnapshot()
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (rs *repositoryServer) Pull(ctx context.Context, sourcePath, destinationPat
 	return kopiaLocationPull(ctx, kopiaSnap.ID, destinationPath, sourcePath, password)
 }
 
-func (rs *repositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
+func (rs *RepositoryServer) Push(ctx context.Context, sourcePath, destinationPath string) error {
 	password, err := rs.connectToKopiaRepositoryServer(ctx, repository.WriteAccess)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (rs *repositoryServer) Push(ctx context.Context, sourcePath, destinationPat
 	return err
 }
 
-func (rs *repositoryServer) Delete(ctx context.Context, destinationPath string) error {
+func (rs *RepositoryServer) Delete(ctx context.Context, destinationPath string) error {
 	kopiaSnap, err := rs.unmarshalKopiaSnapshot()
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (rs *repositoryServer) Delete(ctx context.Context, destinationPath string) 
 	return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, password)
 }
 
-func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context, accessMode repository.AccessMode) (string, error) {
+func (rs *RepositoryServer) connectToKopiaRepositoryServer(ctx context.Context, accessMode repository.AccessMode) (string, error) {
 	hostname, userPassphrase, err := rs.hostnameAndUserPassphrase()
 	if err != nil {
 		return "", errkit.Wrap(err, "Error Retrieving Hostname and User Passphrase from Repository Server")
@@ -87,7 +87,7 @@ func (rs *repositoryServer) connectToKopiaRepositoryServer(ctx context.Context, 
 	)
 }
 
-func (rs *repositoryServer) unmarshalKopiaSnapshot() (*snapshot.SnapshotInfo, error) {
+func (rs *RepositoryServer) unmarshalKopiaSnapshot() (*snapshot.SnapshotInfo, error) {
 	if rs.snapJSON == "" {
 		return nil, errkit.New("kopia snapshot information is required to manage data using kopia")
 	}
@@ -98,7 +98,7 @@ func (rs *repositoryServer) unmarshalKopiaSnapshot() (*snapshot.SnapshotInfo, er
 	return &kopiaSnap, nil
 }
 
-func (rs *repositoryServer) hostnameAndUserPassphrase() (string, string, error) {
+func (rs *RepositoryServer) hostnameAndUserPassphrase() (string, string, error) {
 	var hostname, userPassphrase string
 	userAccessMap := make(map[string]string)
 	for key, value := range rs.repositoryServer.Credentials.ServerUserAccess.Data {
@@ -124,7 +124,7 @@ func (rs *repositoryServer) hostnameAndUserPassphrase() (string, string, error) 
 	return hostname, string(userPassphrase), nil
 }
 
-func (rs *repositoryServer) checkHostnameExistsInUserAccessMap(userAccessMap map[string]string) error {
+func (rs *RepositoryServer) checkHostnameExistsInUserAccessMap(userAccessMap map[string]string) error {
 	// check if hostname is provided in the repository server exists in the user access map
 	if _, ok := userAccessMap[rs.hostName]; !ok {
 		return errkit.New("hostname provided in the repository server does not exist in the user access map")
@@ -132,8 +132,8 @@ func (rs *repositoryServer) checkHostnameExistsInUserAccessMap(userAccessMap map
 	return nil
 }
 
-func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJSON, userHostname string) *repositoryServer {
-	return &repositoryServer{
+func NewRepositoryServerDataMover(repoServer *param.RepositoryServer, outputName, snapJSON, userHostname string) *RepositoryServer {
+	return &RepositoryServer{
 		outputName:       outputName,
 		repositoryServer: repoServer,
 		snapJSON:         snapJSON,

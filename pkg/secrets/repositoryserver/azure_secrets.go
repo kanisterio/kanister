@@ -21,19 +21,19 @@ import (
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
-var _ Secret = &azure{}
+var _ Secret = &Azure{}
 
-type azure struct {
+type Azure struct {
 	storageLocation *corev1.Secret
 }
 
-func NewAzureLocation(secret *corev1.Secret) *azure {
-	return &azure{
+func NewAzureLocation(secret *corev1.Secret) *Azure {
+	return &Azure{
 		storageLocation: secret,
 	}
 }
 
-func (l *azure) Validate() error {
+func (l *Azure) Validate() error {
 	if l.storageLocation == nil {
 		return errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}

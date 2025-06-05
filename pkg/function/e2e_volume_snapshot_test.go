@@ -92,7 +92,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *check.C) {
 	volToPvc := kube.StatefulSetVolumes(s.cli, ss, &pods[0])
 	pvc := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
 	c.Assert(len(pvc) > 0, check.Equals, true)
-	id, secret, locationType, err := s.getCreds(c, ctx, s.cli, s.namespace, pvc)
+	id, secret, locationType, err := s.getCreds(ctx, c, s.cli, s.namespace, pvc)
 	c.Assert(err, check.IsNil)
 	if id == "" || secret == "" {
 		c.Skip("Skipping the test since storage type not supported")
@@ -332,7 +332,7 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *check.C) {
 	}
 }
 
-func (s *VolumeSnapshotTestSuite) getCreds(c *check.C, ctx context.Context, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
+func (s *VolumeSnapshotTestSuite) getCreds(ctx context.Context, c *check.C, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcname, metav1.GetOptions{})
 	if err != nil {
 		return "", "", "", err

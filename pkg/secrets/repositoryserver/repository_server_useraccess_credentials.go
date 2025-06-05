@@ -21,19 +21,19 @@ import (
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
-var _ Secret = &repositoryServerUserAccessCredentials{}
-
-type repositoryServerUserAccessCredentials struct {
+type RepositoryServerUserAccessCredentials struct {
 	credentials *corev1.Secret
 }
 
-func NewRepositoryServerUserAccessCredentials(secret *corev1.Secret) *repositoryServerUserAccessCredentials {
-	return &repositoryServerUserAccessCredentials{
+var _ Secret = &RepositoryServerUserAccessCredentials{}
+
+func NewRepositoryServerUserAccessCredentials(secret *corev1.Secret) *RepositoryServerUserAccessCredentials {
+	return &RepositoryServerUserAccessCredentials{
 		credentials: secret,
 	}
 }
 
-func (r *repositoryServerUserAccessCredentials) Validate() error {
+func (r *RepositoryServerUserAccessCredentials) Validate() error {
 	if r.credentials == nil {
 		return errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}
