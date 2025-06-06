@@ -164,8 +164,9 @@ type RepositoryServerCredentials struct {
 
 // Phase represents a Blueprint phase and contains the phase output
 type Phase struct {
-	Secrets map[string]corev1.Secret
-	Output  map[string]interface{}
+	Secrets    map[string]corev1.Secret
+	ConfigMaps map[string]corev1.ConfigMap
+	Output     map[string]interface{}
 }
 
 const (
@@ -175,6 +176,7 @@ const (
 	PVCKind              = "pvc"
 	NamespaceKind        = "namespace"
 	SecretKind           = "secret"
+	ConfigMapKind        = "configmap"
 )
 
 // New function fetches and returns the desired params
@@ -207,6 +209,8 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		PodOverride:      as.PodOverride,
 		PodAnnotations:   as.PodAnnotations,
 		PodLabels:        as.PodLabels,
+		DeferPhase:       &Phase{},
+		Phases:           make(map[string]*Phase),
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace
@@ -619,17 +623,35 @@ func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *Template
 	if tp.Phases == nil {
 		tp.Phases = make(map[string]*Phase)
 	}
-	secrets, err := fetchSecrets(ctx, cli, filterByKind(objects, SecretKind))
+	phase, err := GetPhaseParams(ctx, cli, objects)
 	if err != nil {
 		return err
 	}
-	tp.Phases[phaseName] = &Phase{
-		Secrets: secrets,
-	}
+	tp.Phases[phaseName] = phase
 
-	tp.DeferPhase = &Phase{
-		Secrets: secrets,
-	}
+	return nil
+}
 
+func GetPhaseParams(ctx context.Context, cli kubernetes.Interface, objects map[string]crv1alpha1.ObjectReference) (*Phase, error) {
+	secrets, err := fetchSecrets(ctx, cli, filterByKind(objects, SecretKind))
+	if err != nil {
+		return nil, err
+	}
+	configMaps, err := fetchConfigMaps(ctx, cli, filterByKind(objects, ConfigMapKind))
+	if err != nil {
+		return nil, err
+	}
+	return &Phase{
+		Secrets:    secrets,
+		ConfigMaps: configMaps,
+	}, nil
+}
+
+func InitDeferPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *TemplateParams, objects map[string]crv1alpha1.ObjectReference) error {
+	phase, err := GetPhaseParams(ctx, cli, objects)
+	if err != nil {
+		return err
+	}
+	tp.DeferPhase = phase
 	return nil
 }
