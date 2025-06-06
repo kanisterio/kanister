@@ -15,7 +15,6 @@
 package function
 
 import (
-	"bytes"
 	"context"
 	"time"
 
@@ -27,7 +26,6 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
@@ -134,15 +132,12 @@ func backupDataStatsPodFunc(
 			return nil, errkit.Wrap(err, "Unable to get pod command executor")
 		}
 
-		var stdout, stderr bytes.Buffer
-		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+		stdout, _, err := ExecAndLog(ctx, commandExecutor, cmd, pod)
 		if err != nil {
 			return nil, errkit.Wrap(err, "Failed to get backup stats")
 		}
 		// Get File Count and Size from Stats
-		mode, fc, size := restic.SnapshotStatsFromStatsLog(stdout.String())
+		mode, fc, size := restic.SnapshotStatsFromStatsLog(stdout)
 		if fc == "" || size == "" {
 			return nil, errkit.New("Failed to parse snapshot stats from logs")
 		}

@@ -15,7 +15,6 @@
 package function
 
 import (
-	"bytes"
 	"context"
 	"time"
 
@@ -26,7 +25,6 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -257,10 +255,7 @@ func deleteDataFromServerPodFunc(
 			return nil, errkit.Wrap(err, "Unable to get pod command executor")
 		}
 
-		var stdout, stderr bytes.Buffer
-		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+		_, _, err = ExecAndLog(ctx, commandExecutor, cmd, pod)
 		if err != nil {
 			return nil, errkit.Wrap(err, "Failed to connect to Kopia Repository server")
 		}
@@ -274,11 +269,7 @@ func deleteDataFromServerPodFunc(
 				},
 				SnapID: snapID,
 			})
-		stdout.Reset()
-		stderr.Reset()
-		err = commandExecutor.Exec(ctx, cmd, nil, &stdout, &stderr)
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout.String())
-		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr.String())
+		_, _, err = ExecAndLog(ctx, commandExecutor, cmd, pod)
 		return nil, errkit.Wrap(err, "Failed to delete backup from Kopia API server")
 	}
 }
