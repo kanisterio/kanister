@@ -175,7 +175,7 @@ type backupDataParsedOutput struct {
 }
 
 func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey string, insecureTLS bool, tp param.TemplateParams) (backupDataParsedOutput, error) {
-	pw, err := GetPodWriter(ctx, cli, namespace, pod, container, tp.Profile)
+	pw, err := GetPodWriter(cli, ctx, namespace, pod, container, tp.Profile)
 	if err != nil {
 		return backupDataParsedOutput{}, err
 	}
