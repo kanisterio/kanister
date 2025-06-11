@@ -193,6 +193,7 @@ func MaybeWriteProfileCredentials(ctx context.Context, pc kube.PodController, pr
 }
 
 // GetPodWriter creates a file with Google credentials if the given profile points to a GCS location
+//
 //nolint:revive // context-as-argument: maintaining backward compatibility for public API
 func GetPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (kube.PodWriter, error) {
 	if profile.Location.Type == crv1alpha1.LocationTypeGCS {
