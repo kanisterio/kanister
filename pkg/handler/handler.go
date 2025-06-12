@@ -70,9 +70,23 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.Writer.Write(w, js)
 }
 
+type readinessCheckHandler struct {
+	mgr ctrl.Manager
+}
+
+func (rch *readinessCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := combinedReadinessCheck(rch.mgr)(r); err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.WriteString(w, `{"status":"ready"}`)
+}
+
 func combinedReadinessCheck(mgr ctrl.Manager) healthz.Checker {
 	return func(_ *http.Request) error {
-		if !mgr.GetCache().WaitForCacheSync(context.Background()) {
+		if mgr != nil && !mgr.GetCache().WaitForCacheSync(context.Background()) {
 			return fmt.Errorf("controller cache not synced")
 		}
 
@@ -132,6 +146,7 @@ func RunWebhookServer(c *rest.Config) error {
 func NewServer() *http.Server {
 	m := &http.ServeMux{}
 	m.Handle(livenessPath, &healthCheckHandler{})
+	m.Handle(readinessPath, &readinessCheckHandler{})
 	m.Handle(metricsPath, promhttp.Handler())
 	return &http.Server{Addr: healthCheckAddr, Handler: m}
 }
