@@ -1,4 +1,4 @@
-FROM golang:1.24.3-bullseye@sha256:abe2e2bb9bc0342dd1ba2f719af5c6b3859ca9ad93a7d9bcdd21310bda0327e1
+FROM golang:1.24.4-bullseye@sha256:12152217ef79f60fd71a64375d818b7be68c69c7611ca471c2e2c28324cbf4cd
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 ARG TARGETPLATFORM
