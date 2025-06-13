@@ -43,22 +43,24 @@ var actionsetsKind = v1alpha1.SchemeGroupVersion.WithKind("ActionSet")
 
 // Get takes name of the actionSet, and returns the corresponding actionSet object, and an error if there is any.
 func (c *FakeActionSets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ActionSet, err error) {
+	emptyResult := &v1alpha1.ActionSet{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(actionsetsResource, c.ns, name), &v1alpha1.ActionSet{})
+		Invokes(testing.NewGetActionWithOptions(actionsetsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.ActionSet), err
 }
 
 // List takes label and field selectors, and returns the list of ActionSets that match those selectors.
 func (c *FakeActionSets) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ActionSetList, err error) {
+	emptyResult := &v1alpha1.ActionSetList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(actionsetsResource, actionsetsKind, c.ns, opts), &v1alpha1.ActionSetList{})
+		Invokes(testing.NewListActionWithOptions(actionsetsResource, actionsetsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -77,28 +79,30 @@ func (c *FakeActionSets) List(ctx context.Context, opts v1.ListOptions) (result 
 // Watch returns a watch.Interface that watches the requested actionSets.
 func (c *FakeActionSets) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(actionsetsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(actionsetsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a actionSet and creates it.  Returns the server's representation of the actionSet, and an error, if there is any.
 func (c *FakeActionSets) Create(ctx context.Context, actionSet *v1alpha1.ActionSet, opts v1.CreateOptions) (result *v1alpha1.ActionSet, err error) {
+	emptyResult := &v1alpha1.ActionSet{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(actionsetsResource, c.ns, actionSet), &v1alpha1.ActionSet{})
+		Invokes(testing.NewCreateActionWithOptions(actionsetsResource, c.ns, actionSet, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.ActionSet), err
 }
 
 // Update takes the representation of a actionSet and updates it. Returns the server's representation of the actionSet, and an error, if there is any.
 func (c *FakeActionSets) Update(ctx context.Context, actionSet *v1alpha1.ActionSet, opts v1.UpdateOptions) (result *v1alpha1.ActionSet, err error) {
+	emptyResult := &v1alpha1.ActionSet{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(actionsetsResource, c.ns, actionSet), &v1alpha1.ActionSet{})
+		Invokes(testing.NewUpdateActionWithOptions(actionsetsResource, c.ns, actionSet, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.ActionSet), err
 }
@@ -113,7 +117,7 @@ func (c *FakeActionSets) Delete(ctx context.Context, name string, opts v1.Delete
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeActionSets) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(actionsetsResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(actionsetsResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ActionSetList{})
 	return err
@@ -121,11 +125,12 @@ func (c *FakeActionSets) DeleteCollection(ctx context.Context, opts v1.DeleteOpt
 
 // Patch applies the patch and returns the patched actionSet.
 func (c *FakeActionSets) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ActionSet, err error) {
+	emptyResult := &v1alpha1.ActionSet{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(actionsetsResource, c.ns, name, pt, data, subresources...), &v1alpha1.ActionSet{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(actionsetsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.ActionSet), err
 }
@@ -143,11 +148,12 @@ func (c *FakeActionSets) Apply(ctx context.Context, actionSet *crv1alpha1.Action
 	if name == nil {
 		return nil, fmt.Errorf("actionSet.Name must be provided to Apply")
 	}
+	emptyResult := &v1alpha1.ActionSet{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(actionsetsResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.ActionSet{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(actionsetsResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions()), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.ActionSet), err
 }
