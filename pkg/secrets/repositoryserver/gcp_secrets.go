@@ -21,19 +21,19 @@ import (
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
-var _ Secret = &gcp{}
+var _ Secret = &GCP{}
 
-type gcp struct {
+type GCP struct {
 	storageLocation *corev1.Secret
 }
 
-func NewGCPLocation(secret *corev1.Secret) *gcp {
-	return &gcp{
+func NewGCPLocation(secret *corev1.Secret) *GCP {
+	return &GCP{
 		storageLocation: secret,
 	}
 }
 
-func (l *gcp) Validate() error {
+func (l *GCP) Validate() error {
 	if l.storageLocation == nil {
 		return errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}

@@ -18,19 +18,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ Secret = &fileStore{}
+var _ Secret = &FileStore{}
 
-type fileStore struct {
+type FileStore struct {
 	storageLocation *corev1.Secret
 }
 
-func NewFileStoreLocation(secret *corev1.Secret) *fileStore {
-	return &fileStore{
+func NewFileStoreLocation(secret *corev1.Secret) *FileStore {
+	return &FileStore{
 		storageLocation: secret,
 	}
 }
 
-func (l *fileStore) Validate() error {
+func (l *FileStore) Validate() error {
 	// Currently empty since all the fields are optional
 	return nil
 }

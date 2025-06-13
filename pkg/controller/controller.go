@@ -59,7 +59,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/reconcile"
 	"github.com/kanisterio/kanister/pkg/validate"
 
-	_ "github.com/kanisterio/kanister/pkg/metrics"
+	_ "github.com/kanisterio/kanister/pkg/metrics" // Import for side effects - registers metrics
 )
 
 type errorWithDetails interface {

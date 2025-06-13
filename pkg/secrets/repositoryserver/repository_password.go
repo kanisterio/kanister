@@ -21,20 +21,20 @@ import (
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
-var _ Secret = &repositoryPassword{}
-
-type repositoryPassword struct {
+type RepositoryPassword struct {
 	password *corev1.Secret
 }
 
-func NewRepoPassword(secret *corev1.Secret) *repositoryPassword {
-	return &repositoryPassword{
+var _ Secret = &RepositoryPassword{}
+
+func NewRepoPassword(secret *corev1.Secret) *RepositoryPassword {
+	return &RepositoryPassword{
 		password: secret,
 	}
 }
 
 // Validate the kopia repository password for required fields as well as unknown fields
-func (r *repositoryPassword) Validate() error {
+func (r *RepositoryPassword) Validate() error {
 	if r.password == nil {
 		return errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}

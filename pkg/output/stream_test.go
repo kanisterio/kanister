@@ -60,7 +60,7 @@ var runes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567
 func generateRandomRunes(r *rand.Rand, length int, endline rune) []rune {
 	totalLength := length
 	if endline != NoEndline {
-		totalLength += 1
+		totalLength++
 	}
 	line := make([]rune, totalLength)
 	var last rune

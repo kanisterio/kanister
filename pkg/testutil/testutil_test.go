@@ -80,7 +80,7 @@ func (s *TestUtilSuite) TestDeployment(c *check.C) {
 			name: ss.GetName(),
 		},
 	} {
-		testCRs(c, ctx, crCli, ns.GetName(), po.kind, po.name)
+		testCRs(ctx, c, crCli, ns.GetName(), po.kind, po.name)
 	}
 
 	cm := NewTestConfigMap()
@@ -90,7 +90,7 @@ func (s *TestUtilSuite) TestDeployment(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
-func testCRs(c *check.C, ctx context.Context, cli crclientv1alpha1.CrV1alpha1Interface, namespace, poKind, poName string) {
+func testCRs(ctx context.Context, c *check.C, cli crclientv1alpha1.CrV1alpha1Interface, namespace, poKind, poName string) {
 	var err error
 	bp := NewTestBlueprint(poKind, FailFuncName)
 	bp = BlueprintWithConfigMap(bp)

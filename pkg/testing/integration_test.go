@@ -225,7 +225,7 @@ func (s *IntegrationSuite) TestRun(c *check.C) {
 		s.skip = true
 		c.Skip("Could not create a Profile")
 	}
-	profileName := s.createProfile(c, ctx)
+	profileName := s.createProfile(ctx, c)
 
 	// Install db
 	err = s.app.Install(ctx, s.namespace)
@@ -350,7 +350,7 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 	}
 }
 
-func (s *IntegrationSuite) createProfile(c *check.C, ctx context.Context) string {
+func (s *IntegrationSuite) createProfile(ctx context.Context, c *check.C) string {
 	secret, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.profile.secret, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 

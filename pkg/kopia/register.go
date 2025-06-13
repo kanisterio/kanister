@@ -18,8 +18,8 @@ package kopia
 
 // Register supported blob storage providers
 import (
-	_ "github.com/kopia/kopia/repo/blob/azure"
-	_ "github.com/kopia/kopia/repo/blob/filesystem"
-	_ "github.com/kopia/kopia/repo/blob/gcs"
-	_ "github.com/kopia/kopia/repo/blob/s3"
+	_ "github.com/kopia/kopia/repo/blob/azure"      // Azure blob storage support
+	_ "github.com/kopia/kopia/repo/blob/filesystem" // Filesystem storage support
+	_ "github.com/kopia/kopia/repo/blob/gcs"        // Google Cloud Storage support
+	_ "github.com/kopia/kopia/repo/blob/s3"         // S3-compatible storage support
 )
