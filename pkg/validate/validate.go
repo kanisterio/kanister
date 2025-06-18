@@ -148,14 +148,9 @@ func ProfileSchema(p *crv1alpha1.Profile) error {
 			return errorf(errValidate, "Bucket not specified")
 		}
 
-		if p.Location.Endpoint == "" {
-			return errorf(errValidate, "Endpoint not specified")
-		}
-
-		if p.Location.Region == "" {
+		if p.Location.Endpoint == "" && p.Location.Region == "" {
 			return errorf(errValidate, "Bucket region not specified")
 		}
-
 	}
 	return nil
 }
