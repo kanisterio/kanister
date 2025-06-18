@@ -116,7 +116,7 @@ The CSI VolumeSnapshot created by the backup action can be cleaned up using the 
 
 ```bash
 # Make sure to use correct backup actionset name here
-$ kanctl --namespace kanister create actionset --action delete --from backup-mlvcv --namespacenamespacetargets kanister
+$ kanctl --namespace kanister create actionset --action delete --from backup-mlvcv --namespacetargets kanister
 actionset delete-backup-mlvcv-cq6bw created
 
 # View the status of the ActionSet
