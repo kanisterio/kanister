@@ -48,7 +48,7 @@ $ kubectl --namespace kanister get actionset s3backup-f4c4q -oyaml
 ### 3. Restore the Application
 
 ```bash
-$ kanctl --namespace kanister create actionset --action restore --from "s3backup-f4c4q"
+$ kanctl --namespace kanister create actionset --action restore --from "s3backup-f4c4q" --profile kanister/s3-profile
 actionset "restore-s3restore-g235d-23d2f" created
 
 # View the status of the actionset
