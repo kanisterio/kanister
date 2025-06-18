@@ -12,3 +12,5 @@
 CHANGELOG.rst
 CHANGELOG_CURRENT.rst
 /helm_package
+.vscode/launch.json
+.vscode/settings.json
