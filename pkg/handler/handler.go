@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/kanisterio/errkit"
@@ -40,12 +41,35 @@ import (
 )
 
 const (
-	healthCheckAddr = ":8081"
-	livenessPath    = "/healthz"
-	readinessPath   = "/readyz"
-	metricsPath     = "/metrics"
-	whHandlePath    = "/validate/v1alpha1/blueprint"
+	livenessPathEnvVar  = "LIVENESS_PATH"
+	readinessPathEnvVar = "READINESS_PATH"
+	healthPortEnvVar    = "HEALTH_PORT"
+	metricsPath         = "/metrics"
+	whHandlePath        = "/validate/v1alpha1/blueprint"
 )
+
+var (
+	healthCheckAddr string
+	livenessPath    string
+	readinessPath   string
+)
+
+func init() {
+	// set default values for health checks.
+	healthCheckAddr = ":8000"
+	livenessPath = "/v0/healthz"
+	readinessPath = "/readyz"
+
+	if lp := os.Getenv(livenessPathEnvVar); lp != "" {
+		livenessPath = lp
+	}
+	if rp := os.Getenv(readinessPathEnvVar); rp != "" {
+		readinessPath = rp
+	}
+	if hp := os.Getenv(healthPortEnvVar); hp != "" {
+		healthCheckAddr = fmt.Sprintf(":%s", hp)
+	}
+}
 
 // Info provides information about kanister controller
 type Info struct {
