@@ -689,9 +689,8 @@ func waitForMetrics(metrics prometheus.CounterVec, labels []string, expected flo
 		current := getCounterVecValue(metrics, labels)
 		if current == expected {
 			return true, nil
-		} else {
-			return false, nil
 		}
+		return false, nil
 	})
 
 	return err
