@@ -39,7 +39,7 @@ Create Profile CR if not created already
 ```bash
 $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 	--secret-key <aws-secret-key> \
-	--bucket <s3-bucket-name>  --endpoint <endpoint> --region <region-name> \
+	--bucket <s3-bucket-name> --region <region-name> \
 	--namespace mongo-test
 ```
 
