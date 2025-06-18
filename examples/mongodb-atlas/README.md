@@ -162,7 +162,7 @@ The artifacts created by the backup action can be cleaned up using the
 following command.
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from backup-tfjps
+$ kanctl --namespace kanister create actionset --action delete --from backup-tfjps --namespacetargets kanister
 actionset delete-backup-tfjps-gcjb2 created
 
 # View the status of the ActionSet

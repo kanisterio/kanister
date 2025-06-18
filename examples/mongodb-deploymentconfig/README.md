@@ -215,7 +215,7 @@ As you can see the data that we deleted in previous step, to imitate disaster, h
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-~ kanctl --namespace kanister create actionset --action delete --from "backup-hdrxr"
+~ kanctl --namespace kanister create actionset --action delete --from "backup-hdrxr" --namespacetargets kanister
 actionset delete-backup-hdrxr-fbllx created
 ```
 

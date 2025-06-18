@@ -316,7 +316,7 @@ As you can see we have successfully restored the data into the PostgreSQL databa
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-~  kanctl --namespace kanister  create actionset --action delete --from backup-tnf2d
+~  kanctl --namespace kanister  create actionset --action delete --from backup-tnf2d --namespacetargets kanister
 actionset delete-backup-tnf2d-qxl6k created
 
 # View the status of the ActionSet
