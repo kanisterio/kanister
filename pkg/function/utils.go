@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -35,6 +37,68 @@ const (
 const (
 	defaultContainerAnn = "kubectl.kubernetes.io/default-container"
 )
+
+// ExecAndLog executes a command using the provided executor and logs the output.
+// It encapsulates the common pattern of executing a command and logging both stdout and stderr.
+// Returns the stdout and stderr content as strings along with any execution error.
+func ExecAndLog(ctx context.Context, executor kube.PodCommandExecutor, cmd []string, pod *corev1.Pod) (stdout, stderr string, err error) {
+	var stdoutBuf, stderrBuf bytes.Buffer
+
+	err = executor.Exec(ctx, cmd, nil, &stdoutBuf, &stderrBuf)
+
+	// Get the container name - use the first container as that's the pattern used in existing code
+	containerName := pod.Spec.Containers[0].Name
+
+	// Log the output regardless of whether the command succeeded or failed
+	format.LogWithCtx(ctx, pod.Name, containerName, stdoutBuf.String())
+	format.LogWithCtx(ctx, pod.Name, containerName, stderrBuf.String())
+
+	return stdoutBuf.String(), stderrBuf.String(), err
+}
+
+// ExecAndLogNoCtx executes a command using the provided executor and logs the output without context.
+// It encapsulates the common pattern of executing a command and logging both stdout and stderr.
+// Returns the stdout and stderr content as strings along with any execution error.
+func ExecAndLogNoCtx(ctx context.Context, executor kube.PodCommandExecutor, cmd []string, pod *corev1.Pod) (stdout, stderr string, err error) {
+	var stdoutBuf, stderrBuf bytes.Buffer
+
+	err = executor.Exec(ctx, cmd, nil, &stdoutBuf, &stderrBuf)
+
+	// Get the container name - use the first container as that's the pattern used in existing code
+	containerName := pod.Spec.Containers[0].Name
+
+	// Log the output regardless of whether the command succeeded or failed
+	format.Log(pod.Name, containerName, stdoutBuf.String())
+	format.Log(pod.Name, containerName, stderrBuf.String())
+
+	return stdoutBuf.String(), stderrBuf.String(), err
+}
+
+// KubeExecAndLog executes a command using kube.Exec and logs the output with context.
+// It encapsulates the common pattern of executing a command via kube.Exec and logging both stdout and stderr.
+// Returns the stdout and stderr content as strings along with any execution error.
+func KubeExecAndLog(ctx context.Context, cli kubernetes.Interface, namespace, pod, container string, cmd []string, stdin io.Reader) (stdout, stderr string, err error) {
+	stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod, container, cmd, stdin)
+
+	// Log the output regardless of whether the command succeeded or failed
+	format.LogWithCtx(ctx, pod, container, stdout)
+	format.LogWithCtx(ctx, pod, container, stderr)
+
+	return stdout, stderr, err
+}
+
+// KubeExecAndLogNoCtx executes a command using kube.Exec and logs the output without context.
+// It encapsulates the common pattern of executing a command via kube.Exec and logging both stdout and stderr.
+// Returns the stdout and stderr content as strings along with any execution error.
+func KubeExecAndLogNoCtx(ctx context.Context, cli kubernetes.Interface, namespace, pod, container string, cmd []string, stdin io.Reader) (stdout, stderr string, err error) {
+	stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod, container, cmd, stdin)
+
+	// Log the output regardless of whether the command succeeded or failed
+	format.Log(pod, container, stdout)
+	format.Log(pod, container, stderr)
+
+	return stdout, stderr, err
+}
 
 // ValidateCredentials verifies if the given credentials have appropriate values set
 func ValidateCredentials(creds *param.Credential) error {
@@ -129,6 +193,8 @@ func MaybeWriteProfileCredentials(ctx context.Context, pc kube.PodController, pr
 }
 
 // GetPodWriter creates a file with Google credentials if the given profile points to a GCS location
+//
+//nolint:revive // context-as-argument: maintaining backward compatibility for public API
 func GetPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (kube.PodWriter, error) {
 	if profile.Location.Type == crv1alpha1.LocationTypeGCS {
 		pw := kube.NewPodWriter(cli, consts.GoogleCloudCredsFilePath, bytes.NewBufferString(profile.Credential.KeyPair.Secret))

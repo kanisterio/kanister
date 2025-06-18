@@ -28,7 +28,6 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -191,9 +190,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 	if err != nil {
 		return backupDataParsedOutput{}, err
 	}
-	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
-	format.LogWithCtx(ctx, pod, container, stdout)
-	format.LogWithCtx(ctx, pod, container, stderr)
+	stdout, _, err := KubeExecAndLog(ctx, cli, namespace, pod, container, cmd, nil)
 	if err != nil {
 		return backupDataParsedOutput{}, errkit.Wrap(err, "Failed to create and upload backup")
 	}

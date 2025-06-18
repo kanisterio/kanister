@@ -88,8 +88,8 @@ func (h *HelmTestSuite) TestUpgrade(c *check.C) {
 	updatedValues := map[string]string{
 		"image.tag":                   "v9.99.9-dev",
 		"bpValidatingWebhook.enabled": "false",
-		"livenessProbe.enabled":       "false",
-		"readinessProbe.enabled":      "false",
+		"livenessProbe.enabled":       "true",
+		"readinessProbe.enabled":      "true",
 	}
 
 	c.Assert(h.helmApp.Upgrade("../../../helm/kanister-operator", updatedValues), check.IsNil)

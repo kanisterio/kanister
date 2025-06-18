@@ -25,6 +25,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/utils"
 
+	// Import for function registration - ensures all functions are available for validation
 	_ "github.com/kanisterio/kanister/pkg/function"
 )
 

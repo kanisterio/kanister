@@ -28,7 +28,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
@@ -124,7 +123,7 @@ func (b *backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 		return nil, err
 	}
 
-	var tags []string = nil
+	var tags []string
 	if tagsStr != "" {
 		tags = strings.Split(tagsStr, ",")
 	}
@@ -222,9 +221,7 @@ func backupDataUsingKopiaServer(
 		},
 	})
 
-	stdout, stderr, err := kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	_, _, err = KubeExecAndLogNoCtx(ctx, cli, namespace, pod, container, cmd, nil)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to connect to Kopia Repository Server")
 	}
@@ -244,9 +241,8 @@ func backupDataUsingKopiaServer(
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to construct snapshot create command")
 	}
-	stdout, stderr, err = kube.Exec(ctx, cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	var stdout, stderr string
+	stdout, stderr, err = KubeExecAndLogNoCtx(ctx, cli, namespace, pod, container, cmd, nil)
 
 	message := "Failed to create and upload backup"
 	if err != nil {

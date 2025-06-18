@@ -52,7 +52,7 @@ func (lt *logTail) Write(p []byte) (int, error) {
 			continue
 		}
 		lt.lines[lt.idx%lt.len] = l
-		lt.idx += 1
+		lt.idx++
 	}
 
 	return len(p), nil
