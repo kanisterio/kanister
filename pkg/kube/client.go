@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	// Import for authentication plugins (GCP, AWS, Azure, OIDC, etc.)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 

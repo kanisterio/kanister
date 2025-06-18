@@ -217,14 +217,14 @@ func (r RDS) DeleteDBCluster(ctx context.Context, instanceID string) (*rds.Delet
 }
 
 func (r RDS) CreateDBSubnetGroup(ctx context.Context, dbSubnetGroupName, dbSubnetGroupDescription string, subnetIDs []string) (*rds.CreateDBSubnetGroupOutput, error) {
-	var subnetIds []*string
+	var awsSubnetIDs []*string
 	for _, ID := range subnetIDs {
-		subnetIds = append(subnetIds, aws.String(ID))
+		awsSubnetIDs = append(awsSubnetIDs, aws.String(ID))
 	}
 	dbsgi := &rds.CreateDBSubnetGroupInput{
 		DBSubnetGroupName:        aws.String(dbSubnetGroupName),
 		DBSubnetGroupDescription: aws.String(dbSubnetGroupDescription),
-		SubnetIds:                subnetIds,
+		SubnetIds:                awsSubnetIDs,
 	}
 	return r.CreateDBSubnetGroupWithContext(ctx, dbsgi)
 }
