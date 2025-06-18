@@ -231,7 +231,7 @@ mysql> SELECT * FROM pets;
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from backup-rslmb --namespacetargets kanister --profile mysql-test/s3-profile-drnw9
+$ kanctl --namespace kanister create actionset --action delete --from backup-rslmb --namespacetargets kanister
 actionset delete-backup-rslmb-cq6bw created
 
 # View the status of the ActionSet
