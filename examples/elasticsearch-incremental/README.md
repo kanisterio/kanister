@@ -198,7 +198,7 @@ The artifacts created by the backup action can be cleaned up using the
 following command:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action delete --from "backup-llfb8" --namespacenamespacetargets kasten-io
+$ kanctl --namespace kasten-io create actionset --action delete --from "backup-llfb8" --namespacetargets kasten-io
 actionset "delete-backup-llfb8-k9ncm" created
 
 # View the status of the ActionSet
