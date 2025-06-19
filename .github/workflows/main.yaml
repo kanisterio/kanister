@@ -101,7 +101,7 @@ jobs:
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
-    - run: make build BIN=${{ matrix.bin }} GOBORING=true
+    - run: make build BIN=${{ matrix.bin }}
   docs:
     runs-on: ubuntu-24.04
     steps:
