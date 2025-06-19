@@ -153,7 +153,7 @@ func (d *Directory) SupportsMultipleIterations() bool {
 func (d *Directory) Close() {}
 
 // AddFileWithStreamSource adds a virtual file with the specified name, permissions and source
-func AddFileWithStreamSource(d *Directory, filePath, sourceEndpoint string, dirPermissions, filePermissions os.FileMode) (*file, error) {
+func AddFileWithStreamSource(d *Directory, filePath, sourceEndpoint string, dirPermissions, filePermissions os.FileMode) (*File, error) {
 	dir, name := path.Split(filePath)
 	p, err := d.AddAllDirs(dir, dirPermissions)
 	if err != nil {
@@ -168,7 +168,7 @@ func AddFileWithStreamSource(d *Directory, filePath, sourceEndpoint string, dirP
 }
 
 // AddFileWithContent adds a virtual file with specified name, permissions and content
-func AddFileWithContent(d *Directory, filePath string, content []byte, dirPermissions, filePermissions os.FileMode) (*file, error) {
+func AddFileWithContent(d *Directory, filePath string, content []byte, dirPermissions, filePermissions os.FileMode) (*File, error) {
 	dir, name := path.Split(filePath)
 	p, err := d.AddAllDirs(dir, dirPermissions)
 	if err != nil {

@@ -30,8 +30,8 @@ func (s *FluentbitSuite) TestSendLogsServerRunning(c *check.C) {
 	// Assuming that it will minimize the number of the logs dropped.
 	_ = pushMultipleLogs(h, numMsgs, defaultEntryBufferCount, defaultPushTime, 0)
 
-	for range end {
-	}
+	// Wait for server to complete
+	<-end
 }
 
 func (s *FluentbitSuite) TestSendLogsServerFailedInTheMiddle(c *check.C) {
@@ -43,8 +43,8 @@ func (s *FluentbitSuite) TestSendLogsServerFailedInTheMiddle(c *check.C) {
 	h := NewFluentbitHook(fakeEndPoint)
 	_ = pushMultipleLogs(h, numMsgs, defaultEntryBufferCount, defaultPushTime, 0)
 
-	for range end {
-	}
+	// Wait for server to complete
+	<-end
 }
 
 func (s *FluentbitSuite) TestSendLogsServerUnavailableFromStart(c *check.C) {

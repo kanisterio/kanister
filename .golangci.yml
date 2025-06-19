@@ -18,6 +18,7 @@ linters:
     - nakedret
     - nestif
     - nolintlint
+    - revive
     - staticcheck
     - unparam
     - whitespace
@@ -60,6 +61,36 @@ linters-settings:
       - prefix(github.com/kanisterio/kanister)
       - blank
     skip-generated: true
+  revive:
+    min-confidence: 0.8
+    # Enable a conservative set of rules to start
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      # Disabled rules that require extensive code changes or are too opinionated for gradual adoption
+      - name: exported
+        disabled: true  # Disabled to avoid requiring documentation for all existing exported types
+      - name: package-comments
+        disabled: true  # Disabled to avoid requiring package comments for all packages
+      - name: if-return
+        disabled: true  # Disabled as it can be controversial and require extensive changes
+      - name: unused-parameter
+        disabled: true  # Disabled as it conflicts with test framework interfaces
 issues:
   exclude-use-default: false
   exclude-rules:
