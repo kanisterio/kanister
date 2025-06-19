@@ -17,5 +17,5 @@
 package cli
 
 import (
-	_ "github.com/kanisterio/safecli"
+	_ "github.com/kanisterio/safecli" // Import for safecli package side effects
 )

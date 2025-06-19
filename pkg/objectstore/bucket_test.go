@@ -100,21 +100,21 @@ func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *check.C) {
 	}()
 
 	// Check the bucket's region is r1
-	err = checkProviderWithBucket(c, ctx, p1, bn, r1)
+	err = checkProviderWithBucket(ctx, c, p1, bn, r1)
 	c.Assert(err, check.IsNil)
 
 	// We can read a bucket even though it our provider's does not match, as
 	// long as we don't specify an endpoint.
-	err = checkProviderWithBucket(c, ctx, p2, bn, r1)
+	err = checkProviderWithBucket(ctx, c, p2, bn, r1)
 	c.Assert(err, check.IsNil)
 
 	// Specifying an the wrong endpoint causes bucket ops to fail.
-	err = checkProviderWithBucket(c, ctx, p3, bn, r1)
+	err = checkProviderWithBucket(ctx, c, p3, bn, r1)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, ahmRe)
 }
 
-func checkProviderWithBucket(c *check.C, ctx context.Context, p Provider, bucketName, region string) error {
+func checkProviderWithBucket(ctx context.Context, c *check.C, p Provider, bucketName, region string) error {
 	bs, err := p.ListBuckets(ctx)
 	c.Assert(err, check.IsNil)
 	_, ok := bs[bucketName]
