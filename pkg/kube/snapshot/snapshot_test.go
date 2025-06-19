@@ -84,7 +84,7 @@ func (s *SnapshotTestSuite) SetUpSuite(c *check.C) {
 
 	s.snapshotter = snapshot.NewSnapshotter(cli, dynCli)
 
-	snapClass, driver := findSnapshotClassName(c, ctx, s.dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
+	snapClass, driver := findSnapshotClassName(ctx, c, s.dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
 	if snapClass != "" {
 		s.snapshotClass = &snapClass
 	}
@@ -856,7 +856,7 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *check.C, dynCli dynamic.Interf
 	}
 }
 
-func findSnapshotClassName(c *check.C, ctx context.Context, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
+func findSnapshotClassName(ctx context.Context, c *check.C, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
 	// Find alpha VolumeSnapshotClass name
 	us, err := dynCli.Resource(gvr).List(ctx, metav1.ListOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {

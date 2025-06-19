@@ -123,7 +123,7 @@ func (b *backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Temp
 		return nil, err
 	}
 
-	var tags []string = nil
+	var tags []string
 	if tagsStr != "" {
 		tags = strings.Split(tagsStr, ",")
 	}
