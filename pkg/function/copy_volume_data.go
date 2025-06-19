@@ -17,6 +17,7 @@ package function
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/kanisterio/errkit"
@@ -151,10 +152,18 @@ func copyVolumeDataPodFunc(
 		}
 		// Copy data to object store
 		backupTag := rand.String(10)
-		cmd, err := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey, insecureTLS)
+
+		// Change to mount point directory and use relative path to avoid
+		// absolute path issues during restore
+		backupCmd, err := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, ".", encryptionKey, insecureTLS)
 		if err != nil {
 			return nil, err
 		}
+
+		// Wrap the backup command to change to mount point directory first
+		cmdStr := fmt.Sprintf("cd %s && %s", mountPoint, strings.Join(backupCmd, " "))
+		cmd := []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", cmdStr}
+
 		ex, err := pc.GetCommandExecutor()
 		if err != nil {
 			return nil, err
