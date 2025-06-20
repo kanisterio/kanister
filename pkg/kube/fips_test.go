@@ -86,7 +86,7 @@ func (s *FIPSSuite) TearDownSuite(c *check.C) {
 	}
 }
 
-func (s *FIPSSuite) TestFIPSBoringEnabled(c *check.C) {
+func (s *FIPSSuite) TestFIPSPresent(c *check.C) {
 	for _, tool := range []string{
 		"/usr/local/bin/kopia",
 		"/usr/local/bin/kando",
@@ -98,16 +98,16 @@ func (s *FIPSSuite) TestFIPSBoringEnabled(c *check.C) {
 			c.Assert(err, check.IsNil)
 			c.Assert(stderr, check.Equals, "")
 			scanner := bufio.NewScanner(strings.NewReader(stdout))
-			fipsModeSet := false
+			fipsLibPresent := false
 			for scanner.Scan() {
-				if strings.Contains(scanner.Text(), "FIPS") {
+				if strings.Contains(scanner.Text(), "fips") {
 					c.Log(scanner.Text())
 				}
-				if strings.Contains(scanner.Text(), "FIPS_mode_set") {
-					fipsModeSet = true
+				if strings.Contains(scanner.Text(), "crypto/internal/fips140") {
+					fipsLibPresent = true
 				}
 			}
-			c.Assert(fipsModeSet, check.Equals, true)
+			c.Assert(fipsLibPresent, check.Equals, true)
 		}
 	}
 }
