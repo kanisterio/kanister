@@ -29,15 +29,24 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
-	"github.com/kanisterio/kanister/pkg/kopia/maintenance"
 	"github.com/kanisterio/kanister/pkg/kube"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	"github.com/kopia/kopia/repo/manifest"
 )
 
 const (
 	// DefaultServerStartTimeout is default time to create context for Kopia API server Status Command
 	DefaultServerStartTimeout = 600 * time.Second
 )
+
+// KopiaUserProfile is a duplicate of struct for Kopia user profiles since Profile struct is in internal/user package and could not be imported
+type KopiaUserProfile struct {
+	ManifestID manifest.ID `json:"-"`
+
+	Username            string `json:"username"`
+	PasswordHashVersion int    `json:"passwordHashVersion"`
+	PasswordHash        []byte `json:"passwordHash"`
+}
 
 func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error) {
 	repoServerAddress, serverAdminUserName, serverAdminPassword, err := h.getServerDetails(ctx)
@@ -137,7 +146,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 		return errkit.Wrap(err, "Failed to list users from the Kopia repository")
 	}
 
-	userProfiles := []maintenance.KopiaUserProfile{}
+	userProfiles := []KopiaUserProfile{}
 
 	err = json.Unmarshal([]byte(stdout), &userProfiles)
 	if err != nil {
