@@ -135,7 +135,7 @@ To restore the missing data, you should use the backup that you created before. 
 As a part of restore operation in MongoDB ReplicaSet, we are deleting data from the Secondary replicas to allow MongoDB to use `Initial Sync` for updating Secondaries as documented [here](https://docs.mongodb.com/manual/tutorial/restore-replica-set-from-backup/#update-secondaries-using-initial-sync)
 
 ```bash
-$ kanctl --namespace kanister create actionset --action restore --from "backup-llfb8"
+$ kanctl --namespace kanister create actionset --action restore --from "backup-llfb8" --profile mongo-test/s3-profile-sph7s
 actionset restore-backup-llfb8-64gqm created
 
 # View the status of the ActionSet

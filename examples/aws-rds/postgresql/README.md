@@ -227,7 +227,7 @@ $ kubectl --namespace kasten-io describe actionset restore-rds-backup-mrhmc
 The snapshot created by Actionset can be deleted by the following command
 
 ```bash
-$ kanctl create actionset --namespace kasten-io --action delete --from rds-backup
+$ kanctl create actionset --namespace kasten-io --action delete --from rds-backup --namespacetargets kasten-io
 actionset "delete-rds-backup-677tb" created
 
 ## Check status

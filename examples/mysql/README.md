@@ -50,7 +50,7 @@ Create Profile CR if not created already
 ```bash
 $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 	--secret-key <aws-secret-key> \
-	--bucket <s3-bucket-name> --region <region-name> \
+	--bucket <s3-bucket-name> --endpoint <endpoint> --region <region-name> \
 	--namespace mysql-test
 ```
 
@@ -175,7 +175,7 @@ To restore the missing data, you should use the backup that you created before. 
 
 ```bash
 # Make sure to use correct backup actionset name here
-$ kanctl --namespace kanister create actionset --action restore --from "backup-rslmb"
+$ kanctl --namespace kanister create actionset --action restore --from "backup-rslmb"  --profile mysql-test/s3-profile-drnw9
 actionset restore-backup-rslmb-2hdsz created
 
 # View the status of the ActionSet

@@ -303,7 +303,7 @@ id          name                                               quantity
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl create actionset --action delete --namespace kanister --from "backup-dzchc"
+$ kanctl create actionset --action delete --namespace kanister --from "backup-dzchc" --namespacetargets kanister
 actionset delete-backup-dzchc-kcvkg created
 
 # View the status of the ActionSet

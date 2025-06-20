@@ -119,7 +119,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from "mongo-backup-12046"
+$ kanctl --namespace kanister create actionset --action delete --from "mongo-backup-12046" --namespacetargets kanister
 actionset "delete-mongo-backup-12046-kf8mt" created
 
 # View the status of the ActionSet

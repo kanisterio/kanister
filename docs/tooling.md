@@ -110,7 +110,7 @@ $ kubectl --namespace kanister describe actionset restore-backup-9gtmp-4p6mc
 Delete the Backup we created
 
 ``` bash
-$ kanctl create actionset --action delete --from backup-9gtmp --namespace kanister
+$ kanctl create actionset --action delete --from backup-9gtmp --namespace kanister --namespacetargets kanister
 actionset delete-backup-9gtmp-fc857 created
 
 # View the progress of the ActionSet
