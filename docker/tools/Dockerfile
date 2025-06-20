@@ -1,11 +1,11 @@
 # Build Kopia binary
-FROM golang:1.24.3-bullseye@sha256:abe2e2bb9bc0342dd1ba2f719af5c6b3859ca9ad93a7d9bcdd21310bda0327e1 AS builder
+FROM golang:1.24.4-bullseye@sha256:12152217ef79f60fd71a64375d818b7be68c69c7611ca471c2e2c28324cbf4cd AS builder
 
 ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
 ARG restic_vsn=v0.16.5
 ARG gosu_vsn=1.17
-ENV CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GO_EXTLINK_ENABLED=0
+ENV CGO_ENABLED=1 GOFIPS140=latest GO_EXTLINK_ENABLED=0
 RUN apt-get install git
 
 # Build restic binary from source - released version
@@ -19,9 +19,8 @@ ENV GITHUB_REPOSITORY=https://github.com/restic/restic
 
 WORKDIR /restic
 
-RUN git checkout ${restic_vsn} && \
-    echo 'package main' > cmd/restic/fipsonly.go && \
-    echo 'import _ "crypto/tls/fipsonly"' >> cmd/restic/fipsonly.go
+RUN git checkout ${restic_vsn}
+
 # use debug flag to preserve symbols
 RUN go run build.go --tags debug
 
@@ -47,9 +46,7 @@ ENV GITHUB_REPOSITORY=https://github.com/${kopia_repo_org}/kopia
 
 WORKDIR /kopia
 
-RUN git checkout ${kopia_build_commit} && \
-    echo 'package main' > fipsonly.go && \
-    echo 'import _ "crypto/tls/fipsonly"' >> fipsonly.go
+RUN git checkout ${kopia_build_commit}
 
 RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
   -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
@@ -74,7 +71,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6@sha256:f172b3082a3d1bbe789a1057f03883c1113243564f01cd3020e27548b911d3f8
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \

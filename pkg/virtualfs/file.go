@@ -24,17 +24,17 @@ import (
 	"github.com/kopia/kopia/fs"
 )
 
-// file is an in-memory implementation of kopia's fs.File
-type file struct {
+// File is an in-memory implementation of kopia's fs.File
+type File struct {
 	dirEntry
 
 	source func() (ReaderSeekerCloser, error)
 }
 
-var _ fs.File = (*file)(nil)
+var _ fs.File = (*File)(nil)
 
 // Open opens the file for reading
-func (f *file) Open(ctx context.Context) (fs.Reader, error) {
+func (f *File) Open(ctx context.Context) (fs.Reader, error) {
 	r, err := f.source()
 	if err != nil {
 		return nil, err
@@ -47,8 +47,8 @@ func (f *file) Open(ctx context.Context) (fs.Reader, error) {
 }
 
 // FileWithSource returns a file with given name, permissions and source
-func FileWithSource(name string, permissions os.FileMode, source func() (ReaderSeekerCloser, error)) *file {
-	return &file{
+func FileWithSource(name string, permissions os.FileMode, source func() (ReaderSeekerCloser, error)) *File {
+	return &File{
 		dirEntry: dirEntry{
 			name: name,
 			mode: permissions,
@@ -59,7 +59,7 @@ func FileWithSource(name string, permissions os.FileMode, source func() (ReaderS
 }
 
 // FileWithContent returns a file with given content
-func FileWithContent(name string, permissions os.FileMode, content []byte) *file {
+func FileWithContent(name string, permissions os.FileMode, content []byte) *File {
 	s := func() (ReaderSeekerCloser, error) {
 		return readSeekerWrapper{bytes.NewReader(content)}, nil
 	}
@@ -68,7 +68,7 @@ func FileWithContent(name string, permissions os.FileMode, content []byte) *file
 }
 
 // FileFromEndpoint returns a file with contents from given source endpoint
-func FileFromEndpoint(name, sourceEndpoint string, permissions os.FileMode) *file {
+func FileFromEndpoint(name, sourceEndpoint string, permissions os.FileMode) *File {
 	s := func() (ReaderSeekerCloser, error) {
 		return httpStreamReader(sourceEndpoint)
 	}

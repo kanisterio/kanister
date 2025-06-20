@@ -21,19 +21,19 @@ import (
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
 )
 
-type s3Compliant struct {
+type S3Compliant struct {
 	storageLocation *corev1.Secret
 }
 
-func NewS3CompliantLocation(secret *corev1.Secret) *s3Compliant {
-	return &s3Compliant{
+func NewS3CompliantLocation(secret *corev1.Secret) *S3Compliant {
+	return &S3Compliant{
 		storageLocation: secret,
 	}
 }
 
-var _ Secret = &s3Compliant{}
+var _ Secret = &S3Compliant{}
 
-func (s s3Compliant) Validate() error {
+func (s S3Compliant) Validate() error {
 	if s.storageLocation == nil {
 		return errkit.Wrap(secerrors.ErrValidate, secerrors.NilSecretErrorMessage)
 	}

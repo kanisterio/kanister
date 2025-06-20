@@ -43,12 +43,12 @@ func (v *VulnerabilityParserSuite) TestValidJsonForLowVulerabilities(c *check.C)
 
 func (v *VulnerabilityParserSuite) TestValidJsonForMatchingVulerabilities(c *check.C) {
 	severityLevels := []string{"High", "Critical"}
-	expectedIds := []string{"CVE-2016-10228", "CVE-2016-10229"}
+	expectedIDs := []string{"CVE-2016-10228", "CVE-2016-10229"}
 	matchingVulnerabilities, err := parseVulerabilitiesReport("testdata/results_valid.json", severityLevels)
 	c.Assert(len(matchingVulnerabilities), check.Equals, 2)
 	c.Assert(err, check.IsNil)
 	for index, vulnerability := range matchingVulnerabilities {
-		c.Assert(vulnerability.Vulnerabilities.ID, check.Equals, expectedIds[index])
+		c.Assert(vulnerability.Vulnerabilities.ID, check.Equals, expectedIDs[index])
 		c.Assert(vulnerability.Vulnerabilities.Severity, check.Equals, severityLevels[index])
 	}
 }
