@@ -54,7 +54,7 @@ make build-controller
 
 To build kanister tools (kanctl and kando), use the following conmmand:
 ```sh
-make build GOBORING=true BIN=<kanctl|kando> ARCH=<arm64|amd64>
+make build BIN=<kanctl|kando> ARCH=<arm64|amd64>
 ```
 
 This will build a selected binary `BIN` for a selected architecture `ARCH`.
@@ -142,7 +142,7 @@ expected. They are located in the `pkg/testing` directory.
 
 Before running integration tests, ensure the following:
 
-* **MinIO:** Make sure MinIO is installed and running. Use the following 
+* **MinIO:** Make sure MinIO is installed and running. Use the following
   command to install it:
    ```bash
    make install-minio
@@ -161,14 +161,14 @@ Replace `[app-type]` with one of the following options:
 * **`all`:** Runs all integration tests.
 * **`short`:** Runs a quick subset of tests for common applications
   (PostgreSQL, MySQL, MongoDB, MSSQL).
-* **`openshift ocp_version=<ocp_version>`:** Runs tests specifically for a 
-  certain OpenShift version. Replace `<ocp_version>` with the version you 
-  want to test (e.g., `openshift ocp_version=4.13`). Currently supported 
+* **`openshift ocp_version=<ocp_version>`:** Runs tests specifically for a
+  certain OpenShift version. Replace `<ocp_version>` with the version you
+  want to test (e.g., `openshift ocp_version=4.13`). Currently supported
   versions are 3.11, 4.4, 4.5, 4.10, 4.11, 4.12, and 4.13.
 
 ### Test Selection
 
-You can also control which integration tests are run by setting the 
+You can also control which integration tests are run by setting the
 `TEST_APPS` environment variable.
 
 ### Examples
@@ -194,8 +194,8 @@ make integration-test openshift ocp_version=4.13
 ## Documentation
 
 We use [VitePress](https://vitepress.dev/) to generate Kanister documentation.
-This requires the documentation files to be written in 
-[Markdown](https://www.markdownguide.org/), along with some 
+This requires the documentation files to be written in
+[Markdown](https://www.markdownguide.org/), along with some
 [extensions](https://vitepress.dev/guide/markdown).
 
 This documentation system offers a live-dev server that will dynamically

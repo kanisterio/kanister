@@ -28,11 +28,8 @@ if [ -z "${VERSION}" ]; then
     exit 1
 fi
 
-if [ -n "${GOBORING}" ]; then
-    export CGO_ENABLED=1
-    export GO_EXTLINK_ENABLED=0
-    export GOEXPERIMENT=boringcrypto
-fi
+export CGO_ENABLED=1
+export GO_EXTLINK_ENABLED=0
 
 go build -v                                                      \
     -installsuffix "static"                                        \
