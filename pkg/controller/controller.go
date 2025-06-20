@@ -474,8 +474,11 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 		defer func() {
 			var deferErr error
 			if deferPhase != nil {
-				c.updateActionSetRunningPhase(ctx, aIDX, as, deferPhase.Name())
-				deferErr = c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
+				deferErr = param.InitDeferPhaseParams(ctx, c.clientset, tp, deferPhase.Objects())
+				if deferErr == nil {
+					c.updateActionSetRunningPhase(ctx, aIDX, as, deferPhase.Name())
+					deferErr = c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
+				}
 			}
 			// render artifacts only if all the phases are run successfully
 			if deferErr == nil && coreErr == nil {
