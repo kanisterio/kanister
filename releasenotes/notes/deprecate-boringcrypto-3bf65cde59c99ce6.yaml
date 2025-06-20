@@ -1,0 +1,3 @@
+---
+other:
+  - Build process changed from using GODEBUG=boringcrypto to Go1.24 native crypto libraries for FIPS-compliant use

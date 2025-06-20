@@ -18,11 +18,11 @@ builds:
   env: &env
   - GO111MODULE=on
   - CGO_ENABLED=1
-  - GOEXPERIMENT=boringcrypto
   - CC=gcc
   - CXX=g++
   - GO_EXTLINK_ENABLED=0
-  goos:
+  - GOFIPS140=latest
+  goos: &goos
   - linux
   goarch: &goarch
   - amd64
@@ -31,10 +31,7 @@ builds:
   main: ./cmd/kando
   ldflags: *ldflags
   env: *env
-  tags:
-  - fipsonly
-  goos: &goos
-  - linux
+  goos: *goos
   goarch: *goarch
 - id: controller
   binary: controller

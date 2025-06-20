@@ -5,7 +5,7 @@ ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
 ARG restic_vsn=v0.16.5
 ARG gosu_vsn=1.17
-ENV CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GO_EXTLINK_ENABLED=0
+ENV CGO_ENABLED=1 GOFIPS140=latest GO_EXTLINK_ENABLED=0
 RUN apt-get install git
 
 # Build restic binary from source - released version
@@ -19,9 +19,8 @@ ENV GITHUB_REPOSITORY=https://github.com/restic/restic
 
 WORKDIR /restic
 
-RUN git checkout ${restic_vsn} && \
-    echo 'package main' > cmd/restic/fipsonly.go && \
-    echo 'import _ "crypto/tls/fipsonly"' >> cmd/restic/fipsonly.go
+RUN git checkout ${restic_vsn}
+
 # use debug flag to preserve symbols
 RUN go run build.go --tags debug
 
@@ -47,9 +46,7 @@ ENV GITHUB_REPOSITORY=https://github.com/${kopia_repo_org}/kopia
 
 WORKDIR /kopia
 
-RUN git checkout ${kopia_build_commit} && \
-    echo 'package main' > fipsonly.go && \
-    echo 'import _ "crypto/tls/fipsonly"' >> fipsonly.go
+RUN git checkout ${kopia_build_commit}
 
 RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
   -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
