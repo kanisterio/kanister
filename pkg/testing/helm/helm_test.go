@@ -225,7 +225,7 @@ func (h *HelmTestSuite) TestPodRenderingFromHelmChart(c *check.C) {
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path: "/random_liveness",
-				Port: intstr.FromInt(9090),
+				Port: intstr.FromInt(9091),
 			},
 		},
 		InitialDelaySeconds: 5,
@@ -239,7 +239,7 @@ func (h *HelmTestSuite) TestPodRenderingFromHelmChart(c *check.C) {
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path: "/random_readiness",
-				Port: intstr.FromInt(7070),
+				Port: intstr.FromInt(9091),
 			},
 		},
 		InitialDelaySeconds: 5,
@@ -302,9 +302,9 @@ func (h *HelmTestSuite) TestPodRenderingFromHelmChart(c *check.C) {
 		{
 			testName: "Liveness and readiness probes is getting overwritten",
 			helmValues: map[string]string{
+				"healthCheckPort":                    "9091",
 				"livenessProbe.enabled":              "true",
 				"livenessProbe.httpGet.path":         "/random_liveness",
-				"livenessProbe.httpGet.port":         "9090",
 				"livenessProbe.initialDelaySeconds":  "5",
 				"livenessProbe.periodSeconds":        "5",
 				"livenessProbe.failureThreshold":     "5",
@@ -312,7 +312,6 @@ func (h *HelmTestSuite) TestPodRenderingFromHelmChart(c *check.C) {
 				"livenessProbe.timeoutSeconds":       "5",
 				"readinessProbe.enabled":             "true",
 				"readinessProbe.httpGet.path":        "/random_readiness",
-				"readinessProbe.httpGet.port":        "7070",
 				"readinessProbe.initialDelaySeconds": "5",
 				"readinessProbe.periodSeconds":       "5",
 				"readinessProbe.failureThreshold":    "5",
