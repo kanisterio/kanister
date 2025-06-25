@@ -17,17 +17,13 @@
 package handler
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/go-logr/logr"
 	"github.com/kanisterio/errkit"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -36,15 +32,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
-	"github.com/kanisterio/kanister/pkg/version"
 )
 
 const (
-	healthCheckAddr = ":8081"
-	livenessPath    = "/healthz"
-	readinessPath   = "/readyz"
-	metricsPath     = "/metrics"
-	whHandlePath    = "/validate/v1alpha1/blueprint"
+	metricsPath  = "/metrics"
+	whHandlePath = "/validate/v1alpha1/blueprint"
 )
 
 // Info provides information about kanister controller
@@ -53,58 +45,13 @@ type Info struct {
 	Version string `json:"version"`
 }
 
-var _ http.Handler = (*healthCheckHandler)(nil)
-
-type healthCheckHandler struct{}
-
-func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	version := version.Version
-	info := Info{true, version}
-	js, err := json.Marshal(info)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = io.Writer.Write(w, js)
-}
-
-type readinessCheckHandler struct {
-	mgr ctrl.Manager
-}
-
-func (rch *readinessCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := combinedReadinessCheck(rch.mgr)(r); err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, _ = io.WriteString(w, `{"status":"ready"}`)
-}
-
-func combinedReadinessCheck(mgr ctrl.Manager) healthz.Checker {
-	return func(_ *http.Request) error {
-		if mgr != nil && !mgr.GetCache().WaitForCacheSync(context.Background()) {
-			return fmt.Errorf("controller cache not synced")
-		}
-
-		// Do we need to check for leader election? as well for reposervercontroller I can see
-		// leader election is disabled.
-		// Can add more checks if any downstream dependency is there.
-
-		return nil
-	}
-}
-
 // RunWebhookServer starts the validating webhook resources for blueprint kanister resources
 func RunWebhookServer(c *rest.Config) error {
 	log.SetLogger(logr.New(log.NullLogSink{}))
 	mgr, err := manager.New(c, manager.Options{
-		HealthProbeBindAddress: healthCheckAddr,
-		LivenessEndpointName:   livenessPath,
-		ReadinessEndpointName:  readinessPath,
+		HealthProbeBindAddress: fmt.Sprintf(":%s", getHealthAddr()),
+		LivenessEndpointName:   getLivenessPath(),
+		ReadinessEndpointName:  getReadinessPath(),
 	})
 	if err != nil {
 		return errkit.Wrap(err, "Failed to create new webhook manager")
@@ -145,8 +92,8 @@ func RunWebhookServer(c *rest.Config) error {
 
 func NewServer() *http.Server {
 	m := &http.ServeMux{}
-	m.Handle(livenessPath, &healthCheckHandler{})
-	m.Handle(readinessPath, &readinessCheckHandler{})
+	m.Handle(getLivenessPath(), &healthCheckHandler{})
+	m.Handle(getReadinessPath(), &readinessCheckHandler{})
 	m.Handle(metricsPath, promhttp.Handler())
-	return &http.Server{Addr: healthCheckAddr, Handler: m}
+	return &http.Server{Addr: fmt.Sprintf(":%s", getHealthAddr()), Handler: m}
 }
