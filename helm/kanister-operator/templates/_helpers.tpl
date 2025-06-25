@@ -132,6 +132,25 @@ Define a security Context at Container level
     {{- end }}
 {{- end -}}
 
+
+{{/*
+Define a env variable for livenessProbe and readinessProbe
+*/}}
+{{- define "envVariableForProbes" -}}
+    {{- if .Values.livenessProbe.enabled }}
+    - name: LIVENESS_PATH
+      value: {{ .Values.livenessProbe.httpGet.path| quote }}
+    {{- end }}
+    {{- if .Values.readinessProbe.enabled }}
+    - name: READINESS_PATH
+      value: {{ .Values.readinessProbe.httpGet.path| quote }}
+    {{- end }}
+    {{- if or .Values.readinessProbe.enabled .Values.livenessProbe.enabled }}
+    - name: HEALTH_CHECK_PORT
+      value: {{ .Values.healthCheckPort| quote }}
+    {{- end }}
+{{- end -}}
+
 {{/*
 Define a livenessprobe
 */}}
@@ -140,7 +159,7 @@ Define a livenessprobe
     livenessProbe:
       httpGet:
         path: {{ .Values.livenessProbe.httpGet.path }}
-        port: {{ .Values.livenessProbe.httpGet.port }}
+        port: {{ .Values.healthCheckPort }}
       initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
       periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
       timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
@@ -157,7 +176,7 @@ Define a readinessprobe
     readinessProbe:
       httpGet:
         path: {{ .Values.readinessProbe.httpGet.path }}
-        port: {{ .Values.readinessProbe.httpGet.port }}
+        port: {{ .Values.healthCheckPort }}
       initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
       periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
       timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
