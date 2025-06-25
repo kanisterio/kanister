@@ -46,6 +46,7 @@ spec:
           value: {{ .Values.dataStore.parallelism.download | quote }}
         - name: KANISTER_METRICS_ENABLED
           value: {{ .Values.controller.metrics.enabled | quote }}
+        {{ include "envVariableForProbes" . | indent 4 }} 
 {{ include "containerSecurityContext" . | indent 4 }}
 {{ include "livenessProbe" . | indent 4 }}
 {{ include "readinessProbe" . | indent 4 }}
