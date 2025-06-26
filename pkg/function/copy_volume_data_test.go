@@ -47,15 +47,17 @@ func (s *CopyVolumeDataTestSuite) TestBackupCommandConstruction(c *check.C) {
 	}
 	targetPath := "/tmp/test-backup"
 	backupTag := "test-tag"
+	mountPoint := "/mnt/vol_data/test-pvc"
 	encryptionKey := "test-key"
 	insecureTLS := false
 
-	// Test the backup command generation with relative path
-	backupCmd, err := restic.BackupCommandByTag(profile, targetPath, backupTag, ".", encryptionKey, insecureTLS)
+	// Test the new backup command with CD functionality
+	backupCmd, err := restic.BackupCommandByTagWithCD(profile, targetPath, backupTag, mountPoint, encryptionKey, insecureTLS)
 	c.Assert(err, check.IsNil)
 
-	// Verify the command contains relative path "." instead of absolute path
+	// Verify the command contains directory change and relative path "." instead of absolute path
 	cmdStr := strings.Join(backupCmd, " ")
+	c.Assert(strings.Contains(cmdStr, "cd "+mountPoint), check.Equals, true)
 	c.Assert(strings.Contains(cmdStr, "backup --tag test-tag ."), check.Equals, true)
-	c.Assert(strings.Contains(cmdStr, "/mnt/vol_data"), check.Equals, false)
+	c.Assert(strings.Contains(cmdStr, "restic backup"), check.Equals, true)
 }

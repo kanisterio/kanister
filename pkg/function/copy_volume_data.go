@@ -17,7 +17,6 @@ package function
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/kanisterio/errkit"
@@ -27,16 +26,13 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/restic"
-	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
@@ -158,7 +154,7 @@ func copyVolumeDataPodFunc(
 
 		// Build backup command that changes to mount point directory first
 		// to avoid absolute path issues during restore
-		cmd, err := buildBackupCommandWithCD(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey, insecureTLS)
+		cmd, err := restic.BackupCommandByTagWithCD(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey, insecureTLS)
 		if err != nil {
 			return nil, err
 		}
@@ -266,109 +262,6 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		annotations,
 		labels,
 	)
-}
-
-// buildBackupCommandWithCD creates a backup command that changes to the mount directory first
-// to ensure relative paths in the backup, avoiding absolute path issues during restore
-func buildBackupCommandWithCD(profile *param.Profile, repository, backupTag, mountPoint, encryptionKey string, insecureTLS bool) ([]string, error) {
-	// Get the base restic command args - we need to duplicate this logic since resticArgs is not exported
-	var cmd []string
-	var err error
-	switch profile.Location.Type {
-	case crv1alpha1.LocationTypeS3Compliant:
-		cmd, err = buildS3Args(profile, repository)
-	case crv1alpha1.LocationTypeGCS:
-		cmd = buildGCSArgs(profile, repository)
-	case crv1alpha1.LocationTypeAzure:
-		cmd, err = buildAzureArgs(profile, repository)
-	default:
-		return nil, errkit.New(fmt.Sprintf("Unsupported type '%s' for the location", profile.Location.Type))
-	}
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to get arguments")
-	}
-
-	// Add password and restic command
-	cmd = append(cmd, fmt.Sprintf("export %s=%s", restic.ResticPassword, encryptionKey))
-
-	// Build backup command parts
-	backupArgs := []string{restic.ResticCommand, "backup", "--tag", backupTag, "."}
-	if insecureTLS {
-		backupArgs = append(backupArgs, "--insecure-tls")
-	}
-
-	// Combine everything: environment setup, cd to mount point, then run backup
-	cmd = append(cmd, fmt.Sprintf("cd %s", mountPoint), strings.Join(backupArgs, " "))
-	command := strings.Join(cmd, "\n")
-
-	// Return wrapped command
-	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}, nil
-}
-
-// Helper functions to build cloud provider args (simplified versions of restic internal functions)
-func buildS3Args(profile *param.Profile, repository string) ([]string, error) {
-	s3Endpoint := "s3.amazonaws.com"
-	if profile.Location.Endpoint != "" {
-		s3Endpoint = profile.Location.Endpoint
-	}
-	if strings.HasSuffix(s3Endpoint, "/") {
-		s3Endpoint = strings.TrimRight(s3Endpoint, "/")
-	}
-
-	var args []string
-	switch profile.Credential.Type {
-	case param.CredentialTypeKeyPair:
-		args = []string{
-			fmt.Sprintf("export %s=%s", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
-			fmt.Sprintf("export %s=%s", location.AWSSecretAccessKey, profile.Credential.KeyPair.Secret),
-		}
-	case param.CredentialTypeSecret:
-		creds, err := secrets.ExtractAWSCredentials(context.Background(), profile.Credential.Secret, aws.AssumeRoleDurationDefault)
-		if err != nil {
-			return nil, err
-		}
-		args = []string{
-			fmt.Sprintf("export %s=%s", location.AWSAccessKeyID, creds.AccessKeyID),
-			fmt.Sprintf("export %s=%s", location.AWSSecretAccessKey, creds.SecretAccessKey),
-		}
-		if creds.SessionToken != "" {
-			args = append(args, fmt.Sprintf("export %s=%s", location.AWSSessionToken, creds.SessionToken))
-		}
-	default:
-		return nil, errkit.New(fmt.Sprintf("Unsupported type '%s' for credentials", profile.Credential.Type))
-	}
-	args = append(args, fmt.Sprintf("export %s=s3:%s/%s", restic.ResticRepository, s3Endpoint, repository))
-	return args, nil
-}
-
-func buildGCSArgs(profile *param.Profile, repository string) []string {
-	return []string{
-		fmt.Sprintf("export %s=%s", location.GoogleProjectID, profile.Credential.KeyPair.ID),
-		fmt.Sprintf("export %s=%s", location.GoogleCloudCreds, consts.GoogleCloudCredsFilePath),
-		fmt.Sprintf("export %s=gs:%s/", restic.ResticRepository, strings.Replace(repository, "/", ":/", 1)),
-	}
-}
-
-func buildAzureArgs(profile *param.Profile, repository string) ([]string, error) {
-	var storageAccountID, storageAccountKey string
-	switch profile.Credential.Type {
-	case param.CredentialTypeKeyPair:
-		storageAccountID = profile.Credential.KeyPair.ID
-		storageAccountKey = profile.Credential.KeyPair.Secret
-	case param.CredentialTypeSecret:
-		creds, err := secrets.ExtractAzureCredentials(profile.Credential.Secret)
-		if err != nil {
-			return nil, err
-		}
-		storageAccountID = creds.StorageAccount
-		storageAccountKey = creds.StorageKey
-	}
-
-	return []string{
-		fmt.Sprintf("export %s=%s", location.AzureStorageAccount, storageAccountID),
-		fmt.Sprintf("export %s=%s", location.AzureStorageKey, storageAccountKey),
-		fmt.Sprintf("export %s=azure:%s/", restic.ResticRepository, strings.Replace(repository, "/", ":/", 1)),
-	}, nil
 }
 
 func (*copyVolumeDataFunc) RequiredArgs() []string {

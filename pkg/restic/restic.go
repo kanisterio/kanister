@@ -61,6 +61,28 @@ func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePa
 	return shCommand(command), nil
 }
 
+// BackupCommandByTagWithCD returns restic backup command with tag that changes directory first
+// This ensures relative paths in the backup, avoiding absolute path issues during restore
+func BackupCommandByTagWithCD(profile *param.Profile, repository, backupTag, mountPoint, encryptionKey string, insecureTLS bool) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build backup command parts
+	backupArgs := []string{ResticCommand, "backup", "--tag", backupTag, "."}
+	if insecureTLS {
+		backupArgs = append(backupArgs, "--insecure-tls")
+	}
+
+	// Combine everything: environment setup, cd to mount point, then run backup
+	cmd = append(cmd, fmt.Sprintf("cd %s", mountPoint), strings.Join(backupArgs, " "))
+	command := strings.Join(cmd, "\n")
+
+	// Return wrapped command
+	return shCommand(command), nil
+}
+
 // RestoreCommandByID returns restic restore command with snapshotID as the identifier
 func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
