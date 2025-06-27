@@ -5,7 +5,7 @@ ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
 ARG restic_vsn=v0.16.5
 ARG gosu_vsn=1.17
-ENV CGO_ENABLED=1 GOFIPS140=latest GO_EXTLINK_ENABLED=0
+ENV CGO_ENABLED=1 GO_EXTLINK_ENABLED=0
 RUN apt-get install git
 
 # Build restic binary from source - released version
