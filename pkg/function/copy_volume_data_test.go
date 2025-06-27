@@ -55,9 +55,28 @@ func (s *CopyVolumeDataTestSuite) TestBackupCommandConstruction(c *check.C) {
 	backupCmd, err := restic.BackupCommandByTagWithCD(profile, targetPath, backupTag, mountPoint, encryptionKey, insecureTLS)
 	c.Assert(err, check.IsNil)
 
-	// Verify the command contains directory change and relative path "." instead of absolute path
-	cmdStr := strings.Join(backupCmd, " ")
-	c.Assert(strings.Contains(cmdStr, "cd "+mountPoint), check.Equals, true)
-	c.Assert(strings.Contains(cmdStr, "backup --tag test-tag ."), check.Equals, true)
-	c.Assert(strings.Contains(cmdStr, "restic backup"), check.Equals, true)
+	// Verify the full command structure matches shCommand format
+	c.Assert(len(backupCmd), check.Equals, 7)
+	c.Assert(backupCmd[0], check.Equals, "bash")
+	c.Assert(backupCmd[1], check.Equals, "-o")
+	c.Assert(backupCmd[2], check.Equals, "errexit")
+	c.Assert(backupCmd[3], check.Equals, "-o")
+	c.Assert(backupCmd[4], check.Equals, "pipefail")
+	c.Assert(backupCmd[5], check.Equals, "-c")
+
+	// Check that the constructed command includes all required parts
+	fullCmd := backupCmd[6] // Get the actual command string (last element)
+	expectedParts := []string{
+		"export AWS_ACCESS_KEY_ID=test-id",
+		"export AWS_SECRET_ACCESS_KEY=test-secret",
+		"export RESTIC_REPOSITORY=s3:test-endpoint//tmp/test-backup", // Note: double slash is expected due to endpoint + path joining
+		"export RESTIC_PASSWORD=test-key",
+		"cd /mnt/vol_data/test-pvc",
+		"restic backup --tag test-tag .",
+	}
+
+	for _, part := range expectedParts {
+		c.Assert(strings.Contains(fullCmd, part), check.Equals, true,
+			check.Commentf("Command should contain: %s\nFull command: %s", part, fullCmd))
+	}
 }
