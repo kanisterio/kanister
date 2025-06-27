@@ -15,8 +15,6 @@
 package function
 
 import (
-	"strings"
-
 	"gopkg.in/check.v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -64,19 +62,12 @@ func (s *CopyVolumeDataTestSuite) TestBackupCommandConstruction(c *check.C) {
 	c.Assert(backupCmd[4], check.Equals, "pipefail")
 	c.Assert(backupCmd[5], check.Equals, "-c")
 
-	// Check that the constructed command includes all required parts
-	fullCmd := backupCmd[6] // Get the actual command string (last element)
-	expectedParts := []string{
-		"export AWS_ACCESS_KEY_ID=test-id",
-		"export AWS_SECRET_ACCESS_KEY=test-secret",
-		"export RESTIC_REPOSITORY=s3:test-endpoint//tmp/test-backup", // Note: double slash is expected due to endpoint + path joining
-		"export RESTIC_PASSWORD=test-key",
-		"cd /mnt/vol_data/test-pvc",
-		"restic backup --tag test-tag .",
-	}
+	// Verify the exact command structure and order of operations
+	actualCmd := backupCmd[6] // Get the actual command string (last element)
+	expectedCmd := "export AWS_ACCESS_KEY_ID=test-id\n export AWS_SECRET_ACCESS_KEY=test-secret\n " +
+		"export RESTIC_REPOSITORY=s3:test-endpoint//tmp/test-backup\n export RESTIC_PASSWORD=test-key\n " +
+		"cd /mnt/vol_data/test-pvc restic backup --tag test-tag ."
 
-	for _, part := range expectedParts {
-		c.Assert(strings.Contains(fullCmd, part), check.Equals, true,
-			check.Commentf("Command should contain: %s\nFull command: %s", part, fullCmd))
-	}
+	c.Assert(actualCmd, check.Equals, expectedCmd,
+		check.Commentf("Expected exact command match:\nExpected: %s\nActual:   %s", expectedCmd, actualCmd))
 }
