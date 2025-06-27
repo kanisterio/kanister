@@ -72,7 +72,7 @@ func BackupCommandByTagWithCD(profile *param.Profile, repository, backupTag, mou
 	// resticArgs returns [...environment exports..., "restic"]
 	// We need to insert the cd command before "restic" and then add backup args
 	baseCmd := cmd[:len(cmd)-1] // Remove the trailing "restic"
-	baseCmd = append(baseCmd, fmt.Sprintf("cd %s", mountPoint))
+	baseCmd = append(baseCmd, fmt.Sprintf("cd %s\n", mountPoint))
 	baseCmd = append(baseCmd, ResticCommand, "backup", "--tag", backupTag, ".")
 	if insecureTLS {
 		baseCmd = append(baseCmd, "--insecure-tls")

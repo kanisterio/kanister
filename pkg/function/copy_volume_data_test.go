@@ -66,7 +66,7 @@ func (s *CopyVolumeDataTestSuite) TestBackupCommandConstruction(c *check.C) {
 	actualCmd := backupCmd[6] // Get the actual command string (last element)
 	expectedCmd := "export AWS_ACCESS_KEY_ID=test-id\n export AWS_SECRET_ACCESS_KEY=test-secret\n " +
 		"export RESTIC_REPOSITORY=s3:test-endpoint//tmp/test-backup\n export RESTIC_PASSWORD=test-key\n " +
-		"cd /mnt/vol_data/test-pvc restic backup --tag test-tag ."
+		"cd /mnt/vol_data/test-pvc\n restic backup --tag test-tag ."
 
 	c.Assert(actualCmd, check.Equals, expectedCmd,
 		check.Commentf("Expected exact command match:\nExpected: %s\nActual:   %s", expectedCmd, actualCmd))
