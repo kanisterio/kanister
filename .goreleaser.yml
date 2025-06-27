@@ -21,7 +21,6 @@ builds:
   - CC=gcc
   - CXX=g++
   - GO_EXTLINK_ENABLED=0
-  - GOFIPS140=latest
   goos: &goos
   - linux
   goarch: &goarch
