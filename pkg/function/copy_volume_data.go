@@ -151,10 +151,14 @@ func copyVolumeDataPodFunc(
 		}
 		// Copy data to object store
 		backupTag := rand.String(10)
-		cmd, err := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey, insecureTLS)
+
+		// Build backup command that changes to mount point directory first
+		// to avoid absolute path issues during restore
+		cmd, err := restic.BackupCommandByTagWithCD(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey, insecureTLS)
 		if err != nil {
 			return nil, err
 		}
+
 		ex, err := pc.GetCommandExecutor()
 		if err != nil {
 			return nil, err
