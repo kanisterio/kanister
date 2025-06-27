@@ -64,6 +64,8 @@ data operations such as backup should go. This is stored as a `profiles.cr.kanis
 requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
 can be shared between Kanister-enabled application instances.
 
+The `--endpoint` flag is optional when connecting directly to AWS S3, as it defaults to the standard S3 endpoint if not specified.
+
 ### Create Blueprint
 
 **NOTE: v2 Blueprints are experimental and are not supported with standalone Kanister.**
