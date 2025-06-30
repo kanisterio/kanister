@@ -67,10 +67,11 @@ func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, bac
 	if err != nil {
 		return nil, err
 	}
-	cmd = append(cmd, "restore", id, "--target", restorePath)
+	snapshotID := id
 	if backupPath != "" {
-		cmd = append(cmd, "--include", backupPath)
+		snapshotID = id + ":" + backupPath
 	}
+	cmd = append(cmd, "restore", snapshotID, "--target", restorePath)
 	if insecureTLS {
 		cmd = append(cmd, "--insecure-tls")
 	}
@@ -84,10 +85,11 @@ func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, b
 	if err != nil {
 		return nil, err
 	}
-	cmd = append(cmd, "restore", "--tag", tag, "latest", "--target", restorePath)
+	snapshotID := "latest"
 	if backupPath != "" {
-		cmd = append(cmd, "--include", backupPath)
+		snapshotID = "latest:" + backupPath
 	}
+	cmd = append(cmd, "restore", "--tag", tag, snapshotID, "--target", restorePath)
 	if insecureTLS {
 		cmd = append(cmd, "--insecure-tls")
 	}
