@@ -61,35 +61,16 @@ func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePa
 	return shCommand(command), nil
 }
 
-// BackupCommandByTagWithCD returns restic backup command with tag that changes directory first
-// This ensures relative paths in the backup, avoiding absolute path issues during restore
-func BackupCommandByTagWithCD(profile *param.Profile, repository, backupTag, mountPoint, encryptionKey string, insecureTLS bool) ([]string, error) {
-	cmd, err := resticArgs(profile, repository, encryptionKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// resticArgs returns [...environment exports..., "restic"]
-	// We need to insert the cd command before "restic" and then add backup args
-	baseCmd := cmd[:len(cmd)-1] // Remove the trailing "restic"
-	baseCmd = append(baseCmd, fmt.Sprintf("cd %s\n", mountPoint))
-	baseCmd = append(baseCmd, ResticCommand, "backup", "--tag", backupTag, ".")
-	if insecureTLS {
-		baseCmd = append(baseCmd, "--insecure-tls")
-	}
-
-	// Join everything with spaces following the existing pattern
-	command := strings.Join(baseCmd, " ")
-	return shCommand(command), nil
-}
-
 // RestoreCommandByID returns restic restore command with snapshotID as the identifier
-func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, encryptionKey string, insecureTLS bool) ([]string, error) {
+func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, backupPath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "restore", id, "--target", restorePath)
+	if backupPath != "" {
+		cmd = append(cmd, "--include", backupPath)
+	}
 	if insecureTLS {
 		cmd = append(cmd, "--insecure-tls")
 	}
@@ -98,12 +79,15 @@ func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, enc
 }
 
 // RestoreCommandByTag returns restic restore command with tag as the identifier
-func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, encryptionKey string, insecureTLS bool) ([]string, error) {
+func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, backupPath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
 	cmd = append(cmd, "restore", "--tag", tag, "latest", "--target", restorePath)
+	if backupPath != "" {
+		cmd = append(cmd, "--include", backupPath)
+	}
 	if insecureTLS {
 		cmd = append(cmd, "--insecure-tls")
 	}

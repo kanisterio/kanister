@@ -569,6 +569,7 @@ func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
 							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
 							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
 							CopyVolumeDataArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}/{{ .PVC.Namespace }}/{{ .PVC.Name }}",
+							CopyVolumeDataMountPathArg:      "/mnt/source_data",
 						},
 					},
 				},
@@ -583,6 +584,7 @@ func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
 							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.113.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
+							RestoreDataBackupPathArg:           fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupRoot),
 							RestoreDataVolsArg: map[string]string{
 								"{{ .PVC.Name }}": "/mnt/target_data",
 							},
