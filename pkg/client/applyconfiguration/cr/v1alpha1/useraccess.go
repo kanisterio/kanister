@@ -21,14 +21,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// UserAccessApplyConfiguration represents an declarative configuration of the UserAccess type for use
+// UserAccessApplyConfiguration represents a declarative configuration of the UserAccess type for use
 // with apply.
 type UserAccessApplyConfiguration struct {
 	UserAccessSecretRef *v1.SecretReference `json:"userAccessSecretRef,omitempty"`
 	Username            *string             `json:"username,omitempty"`
 }
 
-// UserAccessApplyConfiguration constructs an declarative configuration of the UserAccess type for use with
+// UserAccessApplyConfiguration constructs a declarative configuration of the UserAccess type for use with
 // apply.
 func UserAccess() *UserAccessApplyConfiguration {
 	return &UserAccessApplyConfiguration{}

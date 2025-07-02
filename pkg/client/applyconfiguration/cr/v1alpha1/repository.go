@@ -21,7 +21,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// RepositoryApplyConfiguration represents an declarative configuration of the Repository type for use
+// RepositoryApplyConfiguration represents a declarative configuration of the Repository type for use
 // with apply.
 type RepositoryApplyConfiguration struct {
 	RootPath          *string                              `json:"rootPath,omitempty"`
@@ -32,7 +32,7 @@ type RepositoryApplyConfiguration struct {
 	Configuration     *ConfigurationApplyConfiguration     `json:"configuration,omitempty"`
 }
 
-// RepositoryApplyConfiguration constructs an declarative configuration of the Repository type for use with
+// RepositoryApplyConfiguration constructs a declarative configuration of the Repository type for use with
 // apply.
 func Repository() *RepositoryApplyConfiguration {
 	return &RepositoryApplyConfiguration{}

@@ -17,13 +17,13 @@ limitations under the License.
 
 package v1alpha1
 
-// ActionSetSpecApplyConfiguration represents an declarative configuration of the ActionSetSpec type for use
+// ActionSetSpecApplyConfiguration represents a declarative configuration of the ActionSetSpec type for use
 // with apply.
 type ActionSetSpecApplyConfiguration struct {
 	Actions []ActionSpecApplyConfiguration `json:"actions,omitempty"`
 }
 
-// ActionSetSpecApplyConfiguration constructs an declarative configuration of the ActionSetSpec type for use with
+// ActionSetSpecApplyConfiguration constructs a declarative configuration of the ActionSetSpec type for use with
 // apply.
 func ActionSetSpec() *ActionSetSpecApplyConfiguration {
 	return &ActionSetSpecApplyConfiguration{}
