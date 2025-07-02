@@ -488,7 +488,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 		Containers: []corev1.Container{
 			{
 				Name:            "container",
-				Image:           "ghcr.io/kanisterio/kanister-tools:0.113.0",
+				Image:           "ghcr.io/kanisterio/kanister-tools:0.114.0",
 				Command:         []string{"sh", "-c", "echo in default specs"},
 				ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 				VolumeMounts: []corev1.VolumeMount{
@@ -534,7 +534,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.113.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.114.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -574,7 +574,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.113.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.114.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -628,7 +628,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.113.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.114.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -689,7 +689,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.113.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.114.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -752,7 +752,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.113.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.114.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -792,7 +792,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.113.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.114.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{
@@ -835,7 +835,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *check.C) {
 				Containers: []corev1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.113.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.114.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: corev1.PullPolicy(corev1.PullIfNotPresent),
 						VolumeMounts: []corev1.VolumeMount{

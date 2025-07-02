@@ -1,40 +1,23 @@
 # Release Notes
 
-## 0.113.0
+## 0.114.0
 
 ## New Features
 
-<!-- releasenotes/notes/pre-release-0.113.0-591b9333c935aae6.yaml @ b'213b025c275a5eba8600b9f48942a851f85e8853' -->
-* Added gRPC call to support sending of UNIX signals to `kando` managed processes
+<!-- releasenotes/notes/nodename-podoptions-b76f6c68a6d646a0.yaml @ b'7047d008ef90baf4b69f31dbfe0b2ab6fbcc0cbd' -->
+* Type `PodOptions` can now be used to configure the node name of the pod that is going to be created.
 
-<!-- releasenotes/notes/pre-release-0.113.0-591b9333c935aae6.yaml @ b'213b025c275a5eba8600b9f48942a851f85e8853' -->
-* Added command line option to follow stdout/stderr of `kando` managed processes
+## Known Issues
 
-<!-- releasenotes/notes/rds-credentials-1fa9817a21a2d80a.yaml @ b'c4534cdbb7167c6f854c4d7915dd22483f9486f9' -->
-* Enable RDS functions to accept AWS credentials using a Secret or ServiceAccount.
-
-## Bug Fixes
-
-<!-- releasenotes/notes/pre-release-0.113.0-591b9333c935aae6.yaml @ b'213b025c275a5eba8600b9f48942a851f85e8853' -->
-* The Kopia snapshot command output parser now skips the ignored and fatal error counts
-
-<!-- releasenotes/notes/pre-release-0.113.0-591b9333c935aae6.yaml @ b'213b025c275a5eba8600b9f48942a851f85e8853' -->
-* Set default namespace and serviceaccount for MultiContainerRun pods
-
-## Upgrade Notes
-
-<!-- releasenotes/notes/pre-release-0.113.0-591b9333c935aae6.yaml @ b'213b025c275a5eba8600b9f48942a851f85e8853' -->
-* Upgrade to K8s 1.31 API
+<!-- releasenotes/notes/pre-release-0.114.0-cde047dfd4c5ad27.yaml @ b'f398e801e346d632a83feca6f49ec24f4552bfed' -->
+* Security Context of the Kanister operator pod can be configured using the helm fields  and .
 
 ## Deprecations
 
-<!-- releasenotes/notes/pre-release-0.113.0-591b9333c935aae6.yaml @ b'213b025c275a5eba8600b9f48942a851f85e8853' -->
-* K8s VolumeSnapshot is now GA, remove support for beta and alpha APIs
+<!-- releasenotes/notes/deprecate-volume-snapshot-9fdf5b18604bd734.yaml @ b'40006340a36663f73b8b89a221eaa2cd0187db08' -->
+* Volume snapshot function such as CreateVolumeSnapshot, WaitForSnapshotCompletion, CreateVolumeFromSnapshot and DeleteVolumeSnapshot in favour of CSI snapshot functions
 
 ## Other Notes
 
-<!-- releasenotes/notes/pre-release-0.113.0-591b9333c935aae6.yaml @ b'213b025c275a5eba8600b9f48942a851f85e8853' -->
-* Change `TIMEOUT_WORKER_POD_READY` environment variable to `KANISTER_POD_READY_WAIT_TIMEOUT`
-
-<!-- releasenotes/notes/pre-release-0.113.0-591b9333c935aae6.yaml @ b'213b025c275a5eba8600b9f48942a851f85e8853' -->
-* Errors are now handled with [https://github.com/kanisterio/errkit](https://github.com/kanisterio/errkit) across the board
+<!-- releasenotes/notes/deprecate-boringcrypto-3bf65cde59c99ce6.yaml @ b'ccab82b184a1988c9a5b6d369eeb9ebd31af7b3f' -->
+* Build process changed from using GODEBUG=boringcrypto to Go1.24 native crypto libraries for FIPS-compliant use
