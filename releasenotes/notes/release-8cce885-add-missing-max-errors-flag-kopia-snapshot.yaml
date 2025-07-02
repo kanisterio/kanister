@@ -1,0 +1,3 @@
+---
+issues:
+  - Added missing max-errors flag to kopia snapshot command builder for improved error handling.

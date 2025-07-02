@@ -1,0 +1,3 @@
+---
+issues:
+  - Added example to configure ServiceAccount for KubeTask pod to improve documentation and guidance.

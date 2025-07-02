@@ -1,0 +1,3 @@
+---
+issues:
+  - Pinned MySQL chart version to 12.2.4 for consistent deployments and stability.

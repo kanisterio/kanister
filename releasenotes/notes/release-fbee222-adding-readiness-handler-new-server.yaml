@@ -1,0 +1,3 @@
+---
+issues:
+  - Added readiness handler for new server to improve service health monitoring.

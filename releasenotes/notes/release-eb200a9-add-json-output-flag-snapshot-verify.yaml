@@ -1,0 +1,3 @@
+---
+issues:
+  - Added JSON output flag to snapshot verify command builder for improved automation and integration.

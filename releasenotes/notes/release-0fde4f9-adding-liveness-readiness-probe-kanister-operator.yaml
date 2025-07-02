@@ -1,0 +1,3 @@
+---
+issues:
+  - Added liveness and readiness probe for Kanister operator to improve service reliability and monitoring.

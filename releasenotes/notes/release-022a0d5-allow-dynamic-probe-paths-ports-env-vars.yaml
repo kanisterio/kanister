@@ -1,0 +1,3 @@
+---
+issues:
+  - Allow dynamic setting of probe paths and ports through environment variables for improved flexibility.

@@ -1,0 +1,3 @@
+---
+issues:
+  - Fixed gRPC buffer overflow bug with proper unit test coverage for improved reliability.

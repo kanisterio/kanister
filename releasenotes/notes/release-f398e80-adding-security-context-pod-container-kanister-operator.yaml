@@ -1,0 +1,3 @@
+---
+issues:
+  - Added security context at pod and container level for Kanister operator to enhance security posture.

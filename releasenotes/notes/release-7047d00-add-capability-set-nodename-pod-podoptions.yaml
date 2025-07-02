@@ -1,0 +1,3 @@
+---
+issues:
+  - Added capability to set nodeName of pod using PodOptions for improved pod scheduling control.
