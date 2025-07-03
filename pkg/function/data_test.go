@@ -588,6 +588,7 @@ func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
 							RestoreDataVolsArg: map[string]string{
 								"{{ .PVC.Name }}": "/mnt/target_data",
 							},
+							RestoreDataRestorePathArg: "/mnt/target_data",
 						},
 					},
 				},
@@ -603,7 +604,8 @@ func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
 								"sh", "-c",
 								"ls -la /mnt/target_data/ && cat /mnt/target_data/subdir/test.txt",
 							},
-							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/target_data"},
+							PrepareDataVolumes:        map[string]string{"{{ .PVC.Name }}": "/mnt/target_data"},
+							PrepareDataFailOnErrorArg: true,
 						},
 					},
 				},
