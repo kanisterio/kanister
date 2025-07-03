@@ -229,7 +229,7 @@ $ cqlsh> select * from restaurants.guests;
 The artifacts created by the backup action can be cleaned up using the following command.
 
 ```bash
-$ kanctl create actionset --action delete --from backup-swxnq -n kanister
+$ kanctl create actionset --action delete --from backup-swxnq -n kanister --namespacetargets kanister
 actionset delete-backup-swxnq-l5zc4 created
 
 

@@ -233,7 +233,7 @@ The artifacts created by the backup action can be cleaned up using the following
 
 ```bash
 # Replace kanister-op-ns with the namespace where your kanister operator is installed
-$ kanctl --namespace <kanister-op-ns> create actionset --action delete --from "backup-jx2d2"
+$ kanctl --namespace <kanister-op-ns> create actionset --action delete --from "backup-jx2d2" --namespacetargets <kanister-op-ns>
 actionset "<delete-actionset-name>" created
 
 # View the status of the ActionSet
