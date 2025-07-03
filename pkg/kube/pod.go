@@ -44,10 +44,11 @@ const (
 	// DefaultPodReadyWaitTimeout is the time to wait for pod to be ready
 	DefaultPodReadyWaitTimeout = 15 * time.Minute
 	// PodReadyWaitTimeoutEnv is the env var to get pod ready wait timeout
-	PodReadyWaitTimeoutEnv = "TIMEOUT_WORKER_POD_READY"
-	errAccessingNode       = "Failed to get node"
-	DefaultContainerName   = "container"
-	redactedValue          = "XXXXX"
+	PodReadyWaitTimeoutEnv    = "TIMEOUT_WORKER_POD_READY"
+	errAccessingNode          = "Failed to get node"
+	DefaultContainerName      = "container"
+	defaultServiceAccountName = "default"
+	redactedValue             = "XXXXX"
 )
 
 type VolumeMountOptions struct {
@@ -125,14 +126,11 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 		ns = cns
 	}
 
-	// If a ServiceAccount is not specified and we are in the controller's
-	// namespace, use the same service account as the controller.
+	// If a ServiceAccount is not specified then set it to the default
+	// service account in the pod namespace.
 	sa := opts.ServiceAccountName
 	if sa == "" && ns == cns {
-		sa, err = GetControllerServiceAccount(cli)
-		if err != nil {
-			return nil, errkit.Wrap(err, "Failed to get Controller Service Account")
-		}
+		sa = defaultServiceAccountName
 	}
 
 	if opts.RestartPolicy == "" {
@@ -167,6 +165,9 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
 		ServiceAccountName: sa,
+		// AutomountServiceAccountToken is set to false by default to avoid
+		// mounting the service account token in the pod.
+		AutomountServiceAccountToken: ptrToBool(false),
 	}
 
 	if len(opts.EnvironmentVariables) > 0 {
@@ -185,6 +186,10 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 	})
 
 	return createPodSpec(opts, patchedSpecs, ns), nil
+}
+
+func ptrToBool(val bool) *bool {
+	return &val
 }
 
 func createFilesystemModeVolumeSpecs(
