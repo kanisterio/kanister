@@ -57,6 +57,8 @@ const (
 	RestoreDataBackupTagArg = "backupTag"
 	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
 	RestoreDataPodOverrideArg = "podOverride"
+	// RestoreDataBackupPathArg provides the source path within the backup to restore from
+	RestoreDataBackupPathArg = "backupPath"
 )
 
 func init() {
@@ -73,48 +75,51 @@ func (*restoreDataFunc) Name() string {
 	return RestoreDataFuncName
 }
 
-func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, string, map[string]string, string, string, bool, crv1alpha1.JSONMap, error) {
-	var restorePath, encryptionKey, pod, tag, id string
+func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, string, map[string]string, string, string, string, bool, crv1alpha1.JSONMap, error) {
+	var restorePath, encryptionKey, pod, tag, id, backupPath string
 	var vols map[string]string
 	var podOverride crv1alpha1.JSONMap
 	var err error
 	var insecureTLS bool
 
 	if err = OptArg(args, RestoreDataRestorePathArg, &restorePath, "/"); err != nil {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataPodArg, &pod, ""); err != nil {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
 	if (pod != "") == (len(vols) > 0) {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride,
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride,
 			errkit.New(fmt.Sprintf("Require one argument: %s or %s", RestoreDataPodArg, RestoreDataVolsArg))
 	}
 	if err = OptArg(args, RestoreDataBackupTagArg, &tag, nil); err != nil {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataBackupIdentifierArg, &id, nil); err != nil {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
+	}
+	if err = OptArg(args, RestoreDataBackupPathArg, &backupPath, ""); err != nil {
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
 	if (tag != "") == (id != "") {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride,
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride,
 			errkit.New(fmt.Sprintf("Require one argument: %s or %s", RestoreDataBackupTagArg, RestoreDataBackupIdentifierArg))
 	}
 	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
 	if err != nil {
-		return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
 
-	return restorePath, encryptionKey, pod, vols, tag, id, insecureTLS, podOverride, err
+	return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 }
 
 func restoreData(
@@ -127,6 +132,7 @@ func restoreData(
 	restorePath,
 	backupTag,
 	backupID,
+	backupPath,
 	jobPrefix,
 	image string,
 	insecureTLS bool,
@@ -164,7 +170,7 @@ func restoreData(
 	ephemeral.PodOptions.Apply(options)
 
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, insecureTLS)
+	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, backupPath, insecureTLS)
 	return pr.Run(ctx, podFunc)
 }
 
@@ -174,7 +180,8 @@ func restoreDataPodFunc(
 	backupArtifactPrefix,
 	restorePath,
 	backupTag,
-	backupID string,
+	backupID,
+	backupPath string,
 	insecureTLS bool,
 ) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
@@ -196,9 +203,9 @@ func restoreDataPodFunc(
 		var cmd []string
 		// Generate restore command based on the identifier passed
 		if backupTag != "" {
-			cmd, err = restic.RestoreCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, restorePath, encryptionKey, insecureTLS)
+			cmd, err = restic.RestoreCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, restorePath, backupPath, encryptionKey, insecureTLS)
 		} else if backupID != "" {
-			cmd, err = restic.RestoreCommandByID(tp.Profile, backupArtifactPrefix, backupID, restorePath, encryptionKey, insecureTLS)
+			cmd, err = restic.RestoreCommandByID(tp.Profile, backupArtifactPrefix, backupID, restorePath, backupPath, encryptionKey, insecureTLS)
 		}
 		if err != nil {
 			return nil, err
@@ -257,7 +264,7 @@ func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	}
 
 	// Validate and get optional arguments
-	restorePath, encryptionKey, pod, vols, backupTag, backupID, insecureTLS, podOverride, err := validateAndGetOptArgs(args, tp)
+	restorePath, encryptionKey, pod, vols, backupTag, backupID, backupPath, insecureTLS, podOverride, err := validateAndGetOptArgs(args, tp)
 	if err != nil {
 		return nil, err
 	}
@@ -301,6 +308,7 @@ func (r *restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		restorePath,
 		backupTag,
 		backupID,
+		backupPath,
 		restoreDataJobPrefix,
 		image,
 		insecureTLS,
@@ -330,6 +338,7 @@ func (*restoreDataFunc) Arguments() []string {
 		RestoreDataVolsArg,
 		RestoreDataBackupTagArg,
 		RestoreDataBackupIdentifierArg,
+		RestoreDataBackupPathArg,
 		RestoreDataPodOverrideArg,
 		InsecureTLS,
 		PodAnnotationsArg,

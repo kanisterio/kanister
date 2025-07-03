@@ -53,6 +53,7 @@ const (
 	CopyVolumeDataOutputBackupFileCount        = "fileCount"
 	CopyVolumeDataOutputBackupSize             = "size"
 	CopyVolumeDataOutputPhysicalSize           = "phySize"
+	CopyVolumeDataMountPathArg                 = "mountPath"
 )
 
 func init() {
@@ -76,7 +77,8 @@ func copyVolumeData(
 	namespace,
 	pvcName,
 	targetPath,
-	encryptionKey string,
+	encryptionKey,
+	mountPath string,
 	insecureTLS bool,
 	podOverride map[string]interface{},
 	annotations,
@@ -89,7 +91,10 @@ func copyVolumeData(
 	}
 
 	// Create a pod with PVCs attached
-	mountPoint := fmt.Sprintf(CopyVolumeDataMountPoint, pvcName)
+	mountPoint := mountPath
+	if mountPoint == "" {
+		mountPoint = fmt.Sprintf(CopyVolumeDataMountPoint, pvcName)
+	}
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: CopyVolumeDataJobPrefix,
@@ -191,7 +196,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	c.progressPercent = progress.StartedPercent
 	defer func() { c.progressPercent = progress.CompletedPercent }()
 
-	var namespace, vol, targetPath, encryptionKey string
+	var namespace, vol, targetPath, encryptionKey, mountPath string
 	var err error
 	var bpAnnotations, bpLabels map[string]string
 	var insecureTLS bool
@@ -205,6 +210,9 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		return nil, err
 	}
 	if err = OptArg(args, CopyVolumeDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, CopyVolumeDataMountPathArg, &mountPath, ""); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
@@ -253,6 +261,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		vol,
 		targetPath,
 		encryptionKey,
+		mountPath,
 		insecureTLS,
 		podOverride,
 		annotations,
@@ -274,6 +283,7 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataVolumeArg,
 		CopyVolumeDataArtifactPrefixArg,
 		CopyVolumeDataEncryptionKeyArg,
+		CopyVolumeDataMountPathArg,
 		InsecureTLS,
 		PodAnnotationsArg,
 		PodLabelsArg,
