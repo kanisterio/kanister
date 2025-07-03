@@ -1,3 +1,0 @@
----
-issues:
-  - Security Context of the Kanister operator pod can be configured using the helm fields `podSecurityContext` and `containerSecurityContext`.

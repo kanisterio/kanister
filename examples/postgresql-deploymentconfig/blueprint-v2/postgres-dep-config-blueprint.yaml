@@ -23,7 +23,7 @@ actions:
         namespace: '{{ .DeploymentConfig.Namespace }}'
         sharedVolumeMedium: Memory
 
-        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
         backgroundImage: postgres:13-bullseye
@@ -40,7 +40,7 @@ actions:
           export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgresql_admin_password" | toString }}'
           pg_dumpall --clean -U $PGUSER > /tmp/data
 
-        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
         outputCommand:
           - bash
           - -o
@@ -70,10 +70,10 @@ actions:
         namespace: '{{ .DeploymentConfig.Namespace }}'
         sharedVolumeMedium: Memory
 
-        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
-        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
         backgroundCommand:
         - bash
         - -o
@@ -109,7 +109,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.113.0 {{- end}}'
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash
