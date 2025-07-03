@@ -60,7 +60,7 @@ check_dependencies() {
 check_dependencies
 
 echo "Running tests:"
-go test -v ${TARGETS} -list .
+# go test -v ${TARGETS} -list .
 go test -v -installsuffix "static" ${TARGETS} -check.v ${GOCHECK_FILTER}
 echo
 
