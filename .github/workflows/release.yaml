@@ -106,9 +106,7 @@ jobs:
   #     release_tag: ${{ needs.run_if.outputs.release_tag }}
 
   publish_charts:
-    permissions:
-      packages: write
-      contents: write
+    permissions: write-all
     runs-on: ubuntu-latest
     # needs: [run_if, release_packages]
     env:
@@ -127,7 +125,7 @@ jobs:
           make package-helm VERSION=${RELEASE_TAG}
       - name: Upload chart archives to release
         run: |
-          gh release upload ${RELEASE_TAG} helm_package/kanister-operator-*
+          GITHUB_TOKEN=${GH_TOKEN} gh release upload ${RELEASE_TAG} helm_package/kanister-operator-*
       - name: Clone charts pages repo
         run: |
           git clone https://kanister-bot:${GH_TOKEN}@github.com/kanisterio/kanister-charts
