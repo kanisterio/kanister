@@ -102,10 +102,11 @@ func getParamSecret(tp param.TemplateParams, secretName string) (*corev1.Secret,
 func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile, region string) (*awssdk.Config, string, error) {
 	// Validate profile secret
 	config := make(map[string]string)
-	if profile.Credential.Type == param.CredentialTypeKeyPair {
+	switch profile.Credential.Type {
+	case param.CredentialTypeKeyPair:
 		config[aws.AccessKeyID] = profile.Credential.KeyPair.ID
 		config[aws.SecretAccessKey] = profile.Credential.KeyPair.Secret
-	} else if profile.Credential.Type == param.CredentialTypeSecret {
+	case param.CredentialTypeSecret:
 		config[aws.AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
 		config[aws.SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
 		config[aws.ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
