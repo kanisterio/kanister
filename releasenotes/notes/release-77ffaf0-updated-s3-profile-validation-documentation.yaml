@@ -1,0 +1,3 @@
+---
+fixes:
+  - Improved S3 profile validation error messages.
