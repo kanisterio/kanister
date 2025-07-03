@@ -90,6 +90,7 @@ func (h *HelmTestSuite) TestUpgrade(c *check.C) {
 		"bpValidatingWebhook.enabled": "false",
 		"livenessProbe.enabled":       "true",
 		"readinessProbe.enabled":      "true",
+		"secureDefaultsForJobPods":    "true",
 	}
 
 	c.Assert(h.helmApp.Upgrade("../../../helm/kanister-operator", updatedValues), check.IsNil)
@@ -369,6 +370,65 @@ func (h *HelmTestSuite) TestPodRenderingFromHelmChart(c *check.C) {
 				c.Assert(obj.Spec.Template.Spec.Containers[0].ReadinessProbe, check.DeepEquals, tc.expectedReadinessProbe)
 			} else {
 				c.Assert(obj.Spec.Template.Spec.Containers[0].ReadinessProbe, check.IsNil)
+			}
+		}
+	}
+}
+
+func (h *HelmTestSuite) TestSecureDefaultsEnvVariable(c *check.C) {
+	var testCases = []struct {
+		testName               string
+		helmValues             map[string]string
+		expectedSecureDefaults bool
+		expectedEnvVar         corev1.EnvVar
+	}{
+		{
+			testName: "SecureDefaultsForJobPods enabled and environment variable set",
+			helmValues: map[string]string{
+				"secureDefaultsForJobPods": "true",
+			},
+			expectedEnvVar: corev1.EnvVar{
+				Name:  "SECURE_DEFAULTS_FOR_JOB_PODS",
+				Value: "true",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		c.Logf("Test name: %s", tc.testName)
+		defer func() {
+			h.helmApp.dryRun = false
+		}()
+
+		testApp, err := NewHelmApp(tc.helmValues, kanisterName, "../../../helm/kanister-operator", kanisterName, "", true)
+		c.Assert(err, check.IsNil)
+
+		out, err := testApp.Install()
+		c.Assert(err, check.IsNil)
+
+		resources := helm.ResourcesFromRenderedManifest(out, func(kind helm.K8sObjectType) bool {
+			return kind == helm.K8sObjectTypeDeployment
+		})
+		c.Assert(len(resources), check.Equals, 1)
+
+		deployments, err := helm.K8sObjectsFromRenderedResources[*appsv1.Deployment](resources)
+		c.Assert(err, check.IsNil)
+
+		var obj = deployments[h.deploymentName]
+		c.Assert(obj, check.NotNil)
+
+		// Verify secureDefaultsForJobPods flag when enable adds environment variable.
+		if enabled, ok := tc.helmValues["secureDefaultsForJobPods"]; ok {
+			if enabled == "true" {
+				listEnvs := obj.Spec.Template.Spec.Containers[0].Env
+				found := false
+				for _, env := range listEnvs {
+					if env.Name == tc.expectedEnvVar.Name && env.Value == tc.expectedEnvVar.Value {
+						found = true
+						break
+					}
+				}
+				c.Assert(found, check.Equals, true, check.Commentf("Environment variable %s with value %s not found", tc.expectedEnvVar.Name, tc.expectedEnvVar.Value))
 			}
 		}
 	}
