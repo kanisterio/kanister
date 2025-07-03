@@ -253,17 +253,15 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.Spec.Containers[0].Resources.Requests, check.DeepEquals, po.Resources.Requests)
 		}
 
-		switch {
-		case po.ContainerName != "":
+		if po.ContainerName != "" {
 			c.Assert(pod.Spec.Containers[0].Name, check.Equals, po.ContainerName)
-		default:
+		} else {
 			c.Assert(pod.Spec.Containers[0].Name, check.Equals, DefaultContainerName)
 		}
 
-		switch {
-		case po.RestartPolicy == "":
+		if po.RestartPolicy == "" {
 			c.Assert(pod.Spec.RestartPolicy, check.Equals, corev1.RestartPolicyNever)
-		default:
+		} else {
 			c.Assert(pod.Spec.RestartPolicy, check.Equals, po.RestartPolicy)
 		}
 
