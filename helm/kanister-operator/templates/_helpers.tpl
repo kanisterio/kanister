@@ -184,3 +184,13 @@ Define a readinessprobe
       successThreshold: {{ .Values.readinessProbe.successThreshold }}
     {{- end }}
 {{- end -}}
+
+{{/*
+Define a env variable for secureDefaultsForJobPods.
+*/}}
+{{- define "envVariableForSecureDefaults" -}}
+    {{- if .Values.secureDefaultsForJobPods }}
+    - name: SECURE_DEFAULTS_FOR_JOB_PODS
+      value: {{ .Values.secureDefaultsForJobPods | quote }}
+    {{- end }}
+{{- end -}}

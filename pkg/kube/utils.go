@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"os"
 
 	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
@@ -42,6 +43,8 @@ const (
 	// LocationSecretMountPath is the path where location secret would be mounted
 	LocationSecretMountPath = "/mnt/secrets/location"
 	locationSecretNameKey   = "location"
+
+	secureDefaultsForJobPodsEnvVar = "SECURE_DEFAULTS_FOR_JOB_PODS"
 )
 
 // GetPodContainerFromDeployment returns a pod and container running the deployment
@@ -206,5 +209,14 @@ func uidInOwnerRefs(ownerReferences []metav1.OwnerReference, uid types.UID) bool
 			return true
 		}
 	}
+	return false
+}
+
+// getSecureDefaultsForJobPods returns true if the environment variable is set to "true".
+func getSecureDefaultsForJobPods() bool {
+	if sd := os.Getenv(secureDefaultsForJobPodsEnvVar); sd != "" {
+		return sd == "true"
+	}
+
 	return false
 }

@@ -44,10 +44,11 @@ const (
 	// DefaultPodReadyWaitTimeout is the time to wait for pod to be ready
 	DefaultPodReadyWaitTimeout = 15 * time.Minute
 	// PodReadyWaitTimeoutEnv is the env var to get pod ready wait timeout
-	PodReadyWaitTimeoutEnv = "TIMEOUT_WORKER_POD_READY"
-	errAccessingNode       = "Failed to get node"
-	DefaultContainerName   = "container"
-	redactedValue          = "XXXXX"
+	PodReadyWaitTimeoutEnv    = "TIMEOUT_WORKER_POD_READY"
+	errAccessingNode          = "Failed to get node"
+	DefaultContainerName      = "container"
+	defaultServiceAccountName = "default"
+	redactedValue             = "XXXXX"
 )
 
 type VolumeMountOptions struct {
@@ -167,6 +168,14 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
 		ServiceAccountName: sa,
+	}
+
+	if getSecureDefaultsForJobPods() {
+		// If secure defaults for job pods are enabled, we set the automount service account to false and
+		// serviceAccountName to the default service account.
+		val := false
+		defaultSpecs.AutomountServiceAccountToken = &val
+		defaultSpecs.ServiceAccountName = defaultServiceAccountName
 	}
 
 	if len(opts.EnvironmentVariables) > 0 {

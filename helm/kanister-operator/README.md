@@ -56,6 +56,7 @@ Parameter | Description | Default
 `resources` | k8s pod resources | `None`
 `nodeSelector` | node labels for pod assignment. Evaluated as template | `{}` |
 `tolerations` | tolerations for pod assignment. Evaluated as a template | `[]` |
+`secureDefaultsForJobPods` | Enabling secure default configurations to kanister Job pods | `true`
 
 Specify each parameter you'd like to override using a YAML file as described above in the [installation](#installing-the-chart) section.
 
