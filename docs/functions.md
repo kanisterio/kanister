@@ -97,7 +97,7 @@ Example:
 KubeTask spins up a new container and executes a command via a Pod. This
 allows you to run a new Pod from a Blueprint. The ServiceAccount of the newly
 created Pod can configured using the `podOverride` function argument like shown
-below: 
+below:
 
   | Argument    | Required | Type                    | Description |
   | ----------- | :------: | ----------------------- | ----------- |
@@ -674,7 +674,7 @@ actions:
         namespace: "{{ .PVC.Namespace }}"
         volume: "{{ .PVC.Name }}"
         dataArtifactPrefix: s3-bucket-name/backup-path
-  
+
   restore:
     inputArtifactNames:
     - backupInfo
@@ -694,6 +694,8 @@ actions:
 
 This example shows how to backup data from one location and restore it to a different location. This is useful when you want to migrate data between different environments or restore to a different path structure.
 
+**NOTE:** both `backupPath` and `restorePath` arguments in `RestoreData` are required in this case
+
 ``` yaml
 actions:
   backup:
@@ -711,7 +713,7 @@ actions:
         volume: "{{ .PVC.Name }}"
         dataArtifactPrefix: s3-bucket-name/backup-path
         mountPath: "/mnt/source_data"
-  
+
   restore:
     inputArtifactNames:
     - backupInfo
@@ -724,6 +726,7 @@ actions:
         backupArtifactPrefix: s3-bucket-name/backup-path
         backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupTag }}"
         backupPath: "{{ .ArtifactsIn.backupInfo.KeyValue.backupRoot }}"
+        restorePath: "/mnt/target_data"
         volumes:
           "{{ .PVC.Name }}": "/mnt/target_data"
 ```
