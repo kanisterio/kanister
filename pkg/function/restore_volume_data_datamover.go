@@ -176,7 +176,7 @@ func (rvd *RestoreVolumeDataDM) RunPod(ctx context.Context) (map[string]interfac
 
 	pod, err := client.CreateClientPod(ctx, cli, dynCli, client.CreateClientArgs{
 		// FIXME: support tags??
-		Operation:       client.NewRestoreOperation(rvd.DataPath, rvd.BackupId, rvd.Volume),
+		Operation:       client.FileSystemRestoreOperation{Path: rvd.DataPath, BackupID: rvd.BackupId, PVC: rvd.Volume},
 		Namespace:       rvd.Namespace,
 		Image:           rvd.Image,
 		ServerNamespace: rvd.DataMoverServerRef.Namespace,
