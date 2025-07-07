@@ -68,7 +68,7 @@ type CopyVolumeDataDM struct {
 	Secrets            []string
 	ConfigMap          *string
 	Env                []corev1.EnvVar
-	PodOptions         *api.PodOptions
+	PodOptions         api.PodOptions
 	progressPercent    string
 }
 
@@ -166,7 +166,11 @@ func (cvd *CopyVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err = OptArg(args, CopyVolumeDataDMArgPodOptions, &podOptions, nil); err != nil {
 		return nil, err
 	}
-	cvd.PodOptions = podOptions
+	if podOptions == nil {
+		cvd.PodOptions = api.PodOptions{}
+	} else {
+		cvd.PodOptions = *podOptions
+	}
 
 	var env map[string]string
 	if err = OptArg(args, CopyVolumeDataDMArgEnv, &env, map[string]string{}); err != nil {
@@ -203,7 +207,7 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 
 	pod, err := client.CreateClientPod(ctx, cli, dynCli, client.CreateClientArgs{
 		// FIXME: read-only volume mount
-		Operation:       client.NewBackupOperation(cvd.DataPath, cvd.Tag, cvd.Volume),
+		Operation:       client.FileSystemBackupOperation{Path: cvd.DataPath, Tag: cvd.Tag, PVC: cvd.Volume},
 		Namespace:       cvd.Namespace,
 		Image:           cvd.Image,
 		ServerNamespace: cvd.DataMoverServerRef.Namespace,
@@ -211,7 +215,7 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 		ConfigMap:       cvd.ConfigMap,
 		Secrets:         cvd.Secrets,
 		Env:             cvd.Env,
-		PodOptions:      *cvd.PodOptions,
+		PodOptions:      cvd.PodOptions,
 		CredentialsConfig: client.ClientCredentialsConfig{
 			CredentialsMode: client.ClientCredentialsSecret,
 			SecretName:      &cvd.ClientSecret,
