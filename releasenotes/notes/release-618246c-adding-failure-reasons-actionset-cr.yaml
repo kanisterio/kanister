@@ -1,0 +1,3 @@
+---
+fixes:
+  - Added failure reasons in ActionSet CR.

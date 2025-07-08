@@ -1,0 +1,3 @@
+---
+features:
+  - Added liveness and readiness probe for Kanister operator.
