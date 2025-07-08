@@ -21,7 +21,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -223,7 +222,7 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create dynamic Kubernetes client")
 	}
-
+	// FIXME: set owner reference for created pod (actionset)
 	pod, err := client.CreateClientPod(ctx, cli, dynCli, client.CreateClientArgs{
 		// FIXME: read-only volume mount
 		Operation:       client.FileSystemBackupOperation{Path: cvd.DataPath, Tag: cvd.Tag, PVC: cvd.Volume},
@@ -260,6 +259,7 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 		return nil, errkit.Wrap(err, "Cannot parse kopia snapshot create output")
 	}
 
+	// FIXME: this needs to be checked. Some inconsistency in stats
 	var logSize, phySize, fileCount int64
 	if snapInfo.Stats != nil {
 		stats := snapInfo.Stats
@@ -270,8 +270,8 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 
 	output := map[string]any{
 		CopyVolumeDataOutputBackupID:        snapInfo.SnapshotID,
-		CopyVolumeDataOutputBackupSize:      humanize.Bytes(uint64(logSize)),
-		CopyVolumeDataOutputPhysicalSize:    humanize.Bytes(uint64(phySize)),
+		CopyVolumeDataOutputBackupSize:      logSize,
+		CopyVolumeDataOutputPhysicalSize:    phySize,
 		CopyVolumeDataOutputBackupFileCount: fileCount,
 	}
 	return output, nil
