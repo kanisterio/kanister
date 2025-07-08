@@ -14,6 +14,8 @@ kanisterToolsImage:
   override: false
   image: ghcr.io/kanisterio/kanister-tools
   tag: 0.114.0
+# secureDefaultsForJobPods is responsible for applying secure default configurations to kanister Job pods.
+secureDefaultsForJobPods: false
 rbac:
   create: true
 serviceAccount:
@@ -124,3 +126,5 @@ readinessProbe:
   timeoutSeconds: 2
   failureThreshold: 3
   successThreshold: 1
+
+
