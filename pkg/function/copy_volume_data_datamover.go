@@ -142,11 +142,18 @@ func (cvd *CopyVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParams, 
 	}
 
 	// TODO: we can validate that this secret is in datamover clients secret if we have access to datamover server secrets
-	var clientSecretName string
-	if err = Arg(args, CopyVolumeDataDMArgClientSecret, &clientSecretName); err != nil {
+	var actionClientSecretName string
+	if err = Arg(args, CopyVolumeDataDMArgClientSecret, &actionClientSecretName); err != nil {
 		return nil, err
 	}
-	cvd.ClientSecret = clientSecretName
+	clientSecretSpec, ok := tp.Secrets[actionClientSecretName]
+	if !ok {
+		return nil, errkit.New("Client secret not found in the actionset:", "secretName", actionClientSecretName)
+	}
+	if clientSecretSpec.Namespace != cvd.Namespace {
+		return nil, errkit.New("Client secret in the actionset is in the wrong namespace:", "secretName", actionClientSecretName, "secretNamespace", clientSecretSpec.Namespace, "namespace", cvd.Namespace)
+	}
+	cvd.ClientSecret = clientSecretSpec.Name
 
 	var configmap string
 	if err = OptArg(args, CopyVolumeDataDMArgConfig, &configmap, ""); err != nil {
@@ -156,9 +163,21 @@ func (cvd *CopyVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParams, 
 		cvd.ConfigMap = &configmap
 	}
 
-	var secretNames []string
-	if err = OptArg(args, CopyVolumeDataDMArgSecrets, &secretNames, []string{}); err != nil {
+	var actionSecrets []string
+	if err = OptArg(args, CopyVolumeDataDMArgSecrets, &actionSecrets, []string{}); err != nil {
 		return nil, err
+	}
+
+	secretNames := []string{}
+	for _, actionSecret := range actionSecrets {
+		secretSpec, ok := tp.Secrets[actionSecret]
+		if ok {
+			if secretSpec.Namespace == cvd.Namespace {
+				secretNames = append(secretNames, secretSpec.Name)
+			} else {
+				log.Info().Print("Secret reference from different namespace. Ignoring", field.M{"secretName": secretSpec.Name, "secretNamespace": secretSpec.Namespace})
+			}
+		}
 	}
 	cvd.Secrets = secretNames
 
