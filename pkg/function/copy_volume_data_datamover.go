@@ -256,10 +256,12 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 
 	log.Info().Print("Pod output", field.M{"PodOutput": podOutput})
 
-	snapInfo, err := kopiacmd.ParseSnapshotCreateOutput(podOutput, "")
+	snapInfo, err := kopiacmd.ParseSnapshotCreateOutput(podOutput, podOutput)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Cannot parse kopia snapshot create output")
 	}
+
+	log.Info().Print("Snapshot info", field.M{"info": snapInfo})
 
 	// FIXME: this needs to be checked. Some inconsistency in stats
 	var logSize, phySize, fileCount int64
