@@ -37,10 +37,10 @@ check_dependencies() {
     # Check if minio is already deployed. We suppress only `stdout` and not `stderr` to make sure we catch errors if `helm status` fails
     if helm status minio -n minio 1> /dev/null ; then
         # Setting env vars to access MinIO
-        export S3_COMPLIANT_AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
-        export S3_COMPLIANT_AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-        export S3_COMPLIANT_AWS_REGION="us-west-2"
-        export S3_COMPLIANT_LOCATION_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
+        export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+        export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        export AWS_REGION="us-west-2"
+        export LOCATION_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
         export TEST_REPOSITORY_ENCRYPTION_KEY="testKopiaRepoPassword"
     else
         echo "Please install MinIO using 'make install-minio' and try again."
@@ -59,6 +59,7 @@ check_dependencies() {
 
 check_dependencies
 
+echo "Environment Variables: {AwsAccessKeyId: ${AWS_ACCESS_KEY_ID}, AwsSecretAccessKey: ${AWS_SECRET_ACCESS_KEY}, AwsRegion: ${AWS_REGION}, LocationEndpoint: ${LOCATION_ENDPOINT}, TestRepositoryEncryptionKey: ${TEST_REPOSITORY_ENCRYPTION_KEY}}"
 echo "Running tests:"
 go test -v ${TARGETS} -list .
 go test -v -installsuffix "static" ${TARGETS} -check.v ${GOCHECK_FILTER}
