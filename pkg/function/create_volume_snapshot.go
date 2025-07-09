@@ -300,10 +300,11 @@ func getConfig(profile *param.Profile, sType blockstorage.Type) map[string]strin
 	config := make(map[string]string)
 	switch sType {
 	case blockstorage.TypeEBS:
-		if profile.Credential.Type == param.CredentialTypeKeyPair {
+		switch profile.Credential.Type {
+		case param.CredentialTypeKeyPair:
 			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
 			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
-		} else if profile.Credential.Type == param.CredentialTypeSecret {
+		case param.CredentialTypeSecret:
 			config[awsconfig.AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
 			config[awsconfig.SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
 			config[awsconfig.ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
