@@ -254,6 +254,8 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 		return nil, errkit.Wrap(err, "Cannot get pod logs")
 	}
 
+	log.Info().Print("Pod output", field.M{"PodOutput": podOutput})
+
 	snapInfo, err := kopiacmd.ParseSnapshotCreateOutput(podOutput, "")
 	if err != nil {
 		return nil, errkit.Wrap(err, "Cannot parse kopia snapshot create output")
