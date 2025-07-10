@@ -40,7 +40,7 @@ check_dependencies() {
         export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
         export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
         export AWS_REGION="us-west-2"
-        export LOCATION_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
+        export LOCATION_ENDPOINT="http://localhost:9000"
         export TEST_REPOSITORY_ENCRYPTION_KEY="testKopiaRepoPassword"
     else
         echo "Please install MinIO using 'make install-minio' and try again."
