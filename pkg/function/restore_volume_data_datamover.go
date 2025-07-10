@@ -133,11 +133,19 @@ func (rvd *RestoreVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParam
 	}
 
 	// TODO: we can validate that this secret is in datamover clients secret if we have access to datamover server secrets
-	var clientSecretName string
-	if err = Arg(args, RestoreVolumeDataDMArgClientSecret, &clientSecretName); err != nil {
+	var actionClientSecretName string
+	if err = Arg(args, RestoreVolumeDataDMArgClientSecret, &actionClientSecretName); err != nil {
 		return nil, err
 	}
-	rvd.ClientSecret = clientSecretName
+
+	clientSecretSpec, ok := tp.Secrets[actionClientSecretName]
+	if !ok {
+		return nil, errkit.New("Client secret not found in the actionset:", "secretName", actionClientSecretName)
+	}
+	if clientSecretSpec.Namespace != rvd.Namespace {
+		return nil, errkit.New("Client secret in the actionset is in the wrong namespace:", "secretName", actionClientSecretName, "secretNamespace", clientSecretSpec.Namespace, "namespace", rvd.Namespace)
+	}
+	rvd.ClientSecret = clientSecretSpec.Name
 
 	var configmap string
 	if err = OptArg(args, RestoreVolumeDataDMArgConfig, &configmap, ""); err != nil {
@@ -147,9 +155,21 @@ func (rvd *RestoreVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParam
 		rvd.ConfigMap = &configmap
 	}
 
-	var secretNames []string
-	if err = OptArg(args, RestoreVolumeDataDMArgSecrets, &secretNames, []string{}); err != nil {
+	var actionSecrets []string
+	if err = OptArg(args, RestoreVolumeDataDMArgSecrets, &actionSecrets, []string{}); err != nil {
 		return nil, err
+	}
+
+	secretNames := []string{}
+	for _, actionSecret := range actionSecrets {
+		secretSpec, ok := tp.Secrets[actionSecret]
+		if ok {
+			if secretSpec.Namespace == rvd.Namespace {
+				secretNames = append(secretNames, secretSpec.Name)
+			} else {
+				log.Info().Print("Secret reference from different namespace. Ignoring", field.M{"secretName": secretSpec.Name, "secretNamespace": secretSpec.Namespace})
+			}
+		}
 	}
 	rvd.Secrets = secretNames
 
