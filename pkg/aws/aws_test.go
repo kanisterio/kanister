@@ -19,11 +19,10 @@ import (
 	"errors"
 	"testing"
 
-	"gopkg.in/check.v1"
-
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
+	"gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -45,7 +44,6 @@ func (m *mockSTSClient) GetCallerIdentity(input *sts.GetCallerIdentityInput) (*s
 func (s AWSSuite) TestValidCreds(c *check.C) {
 	ctx := context.Background()
 	config := map[string]string{}
-
 	config[AccessKeyID] = envconfig.GetEnvOrSkip(c, AccessKeyID)
 	config[SecretAccessKey] = envconfig.GetEnvOrSkip(c, SecretAccessKey)
 	config[ConfigRegion] = "us-west-2"

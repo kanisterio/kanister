@@ -250,7 +250,8 @@ func IsAwsCredsValid(ctx context.Context, config map[string]string) (bool, error
 	return true, nil
 }
 
-// added for unit testing purposes
+// IsAwsCredsValidWithSTS uses the provided STS client to validate AWS credentials. with stsiface sdk.
+// Method solely for testing purposes, as it allows passing a mock STS client.
 func IsAwsCredsValidWithSTS(ctx context.Context, config map[string]string, stsCli stsiface.STSAPI) (bool, error) {
 	_, err := stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
