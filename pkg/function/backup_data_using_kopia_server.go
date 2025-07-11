@@ -238,9 +238,9 @@ func backupDataUsingKopiaServer(
 			ProgressUpdateInterval: 0,
 			Parallelism:            utils.GetEnvAsIntOrDefault(kankopia.DataStoreParallelUploadName, kankopia.DefaultDataStoreParallelUpload),
 		})
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to construct snapshot create command")
-	}
+	// if err != nil {
+	// 	return nil, errkit.Wrap(err, "Failed to construct snapshot create command")
+	// }
 	var stdout, stderr string
 	stdout, stderr, err = KubeExecAndLogNoCtx(ctx, cli, namespace, pod, container, cmd, nil)
 
