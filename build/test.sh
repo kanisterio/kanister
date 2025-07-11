@@ -42,6 +42,8 @@ check_dependencies() {
         export AWS_REGION="us-west-2"
         export LOCATION_ENDPOINT="http://localhost:9000"
         export TEST_REPOSITORY_ENCRYPTION_KEY="testKopiaRepoPassword"
+        unset AWS_SESSION_TOKEN
+        export role=""
     else
         echo "Please install MinIO using 'make install-minio' and try again."
         exit 1
