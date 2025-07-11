@@ -62,12 +62,16 @@ func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePa
 }
 
 // RestoreCommandByID returns restic restore command with snapshotID as the identifier
-func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, encryptionKey string, insecureTLS bool) ([]string, error) {
+func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, backupPath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
-	cmd = append(cmd, "restore", id, "--target", restorePath)
+	snapshotID := id
+	if backupPath != "" {
+		snapshotID = id + ":" + backupPath
+	}
+	cmd = append(cmd, "restore", snapshotID, "--target", restorePath)
 	if insecureTLS {
 		cmd = append(cmd, "--insecure-tls")
 	}
@@ -76,12 +80,16 @@ func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, enc
 }
 
 // RestoreCommandByTag returns restic restore command with tag as the identifier
-func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, encryptionKey string, insecureTLS bool) ([]string, error) {
+func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, backupPath, encryptionKey string, insecureTLS bool) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
-	cmd = append(cmd, "restore", "--tag", tag, "latest", "--target", restorePath)
+	snapshotID := "latest"
+	if backupPath != "" {
+		snapshotID = "latest:" + backupPath
+	}
+	cmd = append(cmd, "restore", "--tag", tag, snapshotID, "--target", restorePath)
 	if insecureTLS {
 		cmd = append(cmd, "--insecure-tls")
 	}
