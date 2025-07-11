@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-// KeyPairApplyConfiguration represents an declarative configuration of the KeyPair type for use
+// KeyPairApplyConfiguration represents a declarative configuration of the KeyPair type for use
 // with apply.
 type KeyPairApplyConfiguration struct {
 	IDField     *string                            `json:"idField,omitempty"`
@@ -25,7 +25,7 @@ type KeyPairApplyConfiguration struct {
 	Secret      *ObjectReferenceApplyConfiguration `json:"secret,omitempty"`
 }
 
-// KeyPairApplyConfiguration constructs an declarative configuration of the KeyPair type for use with
+// KeyPairApplyConfiguration constructs a declarative configuration of the KeyPair type for use with
 // apply.
 func KeyPair() *KeyPairApplyConfiguration {
 	return &KeyPairApplyConfiguration{}

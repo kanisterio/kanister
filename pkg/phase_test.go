@@ -62,7 +62,7 @@ func (tf *testFunc) RequiredArgs() []string {
 }
 
 func (tf *testFunc) Arguments() []string {
-	return nil
+	return []string{"testKey"}
 }
 
 func (tf *testFunc) Validate(args map[string]any) error {
@@ -93,6 +93,11 @@ func (s *PhaseSuite) TestExec(c *check.C) {
 			argument: "{{ .Options.test | lower}} world",
 			expected: "hello world",
 		},
+		{
+			artifact: "hello",
+			argument: "{{ .Options.test }} {{ index .PodOverride \"foo\" }}",
+			expected: "hello bar",
+		},
 	} {
 		var output string
 		tf := &testFunc{output: &output}
@@ -100,14 +105,32 @@ func (s *PhaseSuite) TestExec(c *check.C) {
 			Options: map[string]string{
 				"test": tc.artifact,
 			},
+			PhasePodOverrides: map[string]crv1alpha1.JSONMap{
+				"test_phase": {
+					"foo": "bar",
+				},
+			},
 		}
 		rawArgs := map[string]interface{}{
 			"testKey": tc.argument,
 		}
-		args, err := param.RenderArgs(rawArgs, tp)
+		_, err := param.RenderArgs(rawArgs, tp)
 		c.Assert(err, check.IsNil)
-		p := Phase{args: args, f: tf}
-		_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "", tp)
+		p := Phase{name: "test_phase", f: tf}
+		bp := crv1alpha1.Blueprint{
+			Actions: map[string]*crv1alpha1.BlueprintAction{
+				"": {
+					Phases: []crv1alpha1.BlueprintPhase{
+						{
+							Name: "test_phase",
+							Func: tf.Name(),
+							Args: rawArgs,
+						},
+					},
+				},
+			},
+		}
+		_, err = p.Exec(context.Background(), bp, "", tp)
 		c.Assert(err, check.IsNil)
 		c.Assert(output, check.Equals, tc.expected)
 	}
