@@ -16,21 +16,28 @@ package ephemeral
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 var (
-	Container  ApplierList[corev1.Container]
-	Pod        ApplierList[corev1.Pod]
-	PodOptions ApplierList[kube.PodOptions]
+	Container             ApplierList[corev1.Container]
+	PersistentVolumeClaim ApplierList[corev1.PersistentVolumeClaim]
+	Pod                   ApplierList[corev1.Pod]
+	Service               ApplierList[corev1.Service]
+	NetworkPolicy         ApplierList[networkingv1.NetworkPolicy]
+	PodOptions            ApplierList[kube.PodOptions]
 )
 
 // ApplierSet is a group of Appliers, typically returned by a constructor.
 type ApplierSet struct {
-	Container  Applier[corev1.Container]
-	Pod        Applier[corev1.Pod]
-	PodOptions Applier[kube.PodOptions]
+	Container             Applier[corev1.Container]
+	PersistentVolumeClaim Applier[corev1.PersistentVolumeClaim]
+	Pod                   Applier[corev1.Pod]
+	Service               Applier[corev1.Service]
+	NetworkPolicy         Applier[networkingv1.NetworkPolicy]
+	PodOptions            Applier[kube.PodOptions]
 }
 
 // Register generically registers an Applier.
@@ -38,8 +45,14 @@ func Register[T Constraint](applier Applier[T]) {
 	switch applier := any(applier).(type) {
 	case Applier[corev1.Container]:
 		Container.Register(applier)
+	case Applier[corev1.PersistentVolumeClaim]:
+		PersistentVolumeClaim.Register(applier)
 	case Applier[corev1.Pod]:
 		Pod.Register(applier)
+	case Applier[corev1.Service]:
+		Service.Register(applier)
+	case Applier[networkingv1.NetworkPolicy]:
+		NetworkPolicy.Register(applier)
 	case Applier[kube.PodOptions]:
 		PodOptions.Register(applier)
 	default:
@@ -53,8 +66,16 @@ func RegisterSet(set ApplierSet) {
 		Container.Register(set.Container)
 	}
 
+	if set.PersistentVolumeClaim != nil {
+		PersistentVolumeClaim.Register(set.PersistentVolumeClaim)
+	}
+
 	if set.Pod != nil {
 		Pod.Register(set.Pod)
+	}
+
+	if set.Service != nil {
+		Service.Register(set.Service)
 	}
 
 	if set.PodOptions != nil {
@@ -64,7 +85,7 @@ func RegisterSet(set ApplierSet) {
 
 // Constraint provides the set of types allowed for appliers and filterers.
 type Constraint interface {
-	kube.PodOptions | corev1.Container | corev1.Pod
+	kube.PodOptions | corev1.Container | corev1.PersistentVolumeClaim | corev1.Pod | corev1.Service | networkingv1.NetworkPolicy
 }
 
 // Applier is the interface which applies a manipulation to the PodOption to be
@@ -146,9 +167,30 @@ func (n ContainerNameFilter) Filter(container *corev1.Container) bool {
 	return string(n) == container.Name
 }
 
+// PVCNameFilter is a Filterer that filters based on the PersistentVolumeClaim.Name.
+type PVCNameFilter string
+
+func (n PVCNameFilter) Filter(pvc *corev1.PersistentVolumeClaim) bool {
+	return string(n) == pvc.Name
+}
+
 // PodNameFilter is a Filterer that filters based on the Pod.Name.
 type PodNameFilter string
 
 func (n PodNameFilter) Filter(pod *corev1.Pod) bool {
 	return string(n) == pod.Name
+}
+
+// ServiceNameFilter is a Filterer that filters based on the Service.Name.
+type ServiceNameFilter string
+
+func (n ServiceNameFilter) Filter(svc *corev1.Service) bool {
+	return string(n) == svc.Name
+}
+
+// NetworkPolicyNameFilter is a Filterer that filters based on the NetworkPolicy.Name.
+type NetworkPolicyNameFilter string
+
+func (n NetworkPolicyNameFilter) Filter(np *networkingv1.NetworkPolicy) bool {
+	return string(n) == np.Name
 }
