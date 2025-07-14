@@ -588,6 +588,7 @@ func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
 							RestoreDataVolsArg: map[string]string{
 								"{{ .PVC.Name }}": "/mnt/target_data",
 							},
+							RestoreDataRestorePathArg: "/mnt/target_data",
 						},
 					},
 				},
