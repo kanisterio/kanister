@@ -11,9 +11,11 @@ These are the current Kanister maintainers:
 * Tom Manville @tdmanv
 * Pavan Navarathna @pavannd1
 * Prasad Ghangal @PrasadG193
-* Vivek Singh @viveksinghggits
 * Daniil Fedotov @hairyhum
 * Mark Lavi @mlavi
+* Denis V @veeam-denis
+* Alka Chaudhary @alka-infracloud
+* Julio Lopez @julio-lopez
 
 ## Maintainer Responsibilities
 
