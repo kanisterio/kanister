@@ -60,7 +60,6 @@ check_dependencies() {
 
 check_dependencies
 
-echo "Environment Variables: {AwsAccessKeyId: ${AWS_ACCESS_KEY_ID}, AwsSecretAccessKey: ${AWS_SECRET_ACCESS_KEY}, AwsRegion: ${AWS_REGION}, LocationEndpoint: ${LOCATION_ENDPOINT}, TestRepositoryEncryptionKey: ${TEST_REPOSITORY_ENCRYPTION_KEY}}"
 echo "Running tests:"
 go test -v ${TARGETS} -list .
 go test -v -installsuffix "static" ${TARGETS} -check.v ${GOCHECK_FILTER}

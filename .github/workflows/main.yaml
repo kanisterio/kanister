@@ -88,11 +88,10 @@ jobs:
         make install-minio
       if: matrix.testSuite == 'test'
     - name: Port-forward MinIO to localhost
+      if: matrix.testSuite == 'test'
       run: |
         export POD_NAME=$(kubectl get pods --namespace minio -l "release=minio" -o jsonpath="{.items[0].metadata.name}")
-        kubectl port-forward $POD_NAME 9000 --namespace minio &
-        sleep 10 # Wait for port-forward to establish
-      if: matrix.testSuite == 'test'
+        kubectl port-forward $POD_NAME 9000 --namespace minio 
     - run: make ${{ matrix.testSuite }}
   build:
     runs-on: ubuntu-24.04
