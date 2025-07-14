@@ -14,7 +14,7 @@ cluster's DeploymentConfig resources.
 
 - Setup OpenShift, you can follow steps mentioned below
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.113.0 installed in your cluster in namespace `kanister`
+- Kanister controller version 0.114.0 installed in your cluster in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 **Note**
@@ -215,7 +215,7 @@ As you can see the data that we deleted in previous step, to imitate disaster, h
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-~ kanctl --namespace kanister create actionset --action delete --from "backup-hdrxr"
+~ kanctl --namespace kanister create actionset --action delete --from "backup-hdrxr" --namespacetargets kanister
 actionset delete-backup-hdrxr-fbllx created
 ```
 

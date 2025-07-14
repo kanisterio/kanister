@@ -77,7 +77,7 @@ $ kubectl get pods
 The snapshots created by backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from "pic-gal-pvc-snapshot-f4c4q"
+$ kanctl --namespace kanister create actionset --action delete --from "pic-gal-pvc-snapshot-f4c4q" --namespacetargets kanister
 actionset "delete-pic-gal-pvc-snapshot-hc7tt-6c6fk" created
 
 # View the status of the actionset

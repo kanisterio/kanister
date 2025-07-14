@@ -9,7 +9,7 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.113.0 installed in your cluster
+- Kanister controller version 0.114.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
@@ -227,7 +227,7 @@ $ kubectl --namespace kasten-io describe actionset restore-rds-backup-mrhmc
 The snapshot created by Actionset can be deleted by the following command
 
 ```bash
-$ kanctl create actionset --namespace kasten-io --action delete --from rds-backup
+$ kanctl create actionset --namespace kasten-io --action delete --from rds-backup --namespacetargets kasten-io
 actionset "delete-rds-backup-677tb" created
 
 ## Check status

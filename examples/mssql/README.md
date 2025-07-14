@@ -9,7 +9,7 @@ This document will cover how to install SQL Server and how to run backup/restore
 
 - Kubernetes 1.16+ with Beta APIs enabled
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.113.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanister controller version 0.114.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Installing Microsoft SQL Server
@@ -303,7 +303,7 @@ id          name                                               quantity
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl create actionset --action delete --namespace kanister --from "backup-dzchc"
+$ kanctl create actionset --action delete --namespace kanister --from "backup-dzchc" --namespacetargets kanister
 actionset delete-backup-dzchc-kcvkg created
 
 # View the status of the ActionSet

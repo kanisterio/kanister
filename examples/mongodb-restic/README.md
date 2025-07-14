@@ -7,7 +7,7 @@
 * Kubernetes 1.9+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.113.0 installed in your cluster
+* Kanister controller version 0.114.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Chart Details
@@ -28,7 +28,7 @@ $ kubectl create namespace mongo-test
 $ helm install my-release bitnami/mongodb --namespace mongo-test \
 	--set architecture="replicaset" \
 	--set image.repository=ghcr.io/kanisterio/mongodb \
-	--set image.tag=0.113.0
+	--set image.tag=0.114.0
 ```
 
 The command deploys MongoDB on the Kubernetes cluster in the mongo-test namespace
@@ -139,7 +139,7 @@ $ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD -
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action delete --from "backup-llfb8"
+$ kanctl --namespace kasten-io create actionset --action delete --from "backup-llfb8" --namespacetargets kasten-io
 actionset "delete-backup-llfb8-k9ncm" created
 
 # View the status of the ActionSet
