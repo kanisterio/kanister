@@ -49,7 +49,7 @@ type DataSuite struct {
 }
 
 const (
-	testBucketName = "kio-store-tests"
+	testBucketName = "tests.kanister.io"
 )
 
 var _ = check.Suite(&DataSuite{providerType: objectstore.ProviderTypeS3})

@@ -21,8 +21,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
-	envconfig "github.com/kanisterio/kanister/pkg/config"
 	"gopkg.in/check.v1"
+
+	envconfig "github.com/kanisterio/kanister/pkg/config"
 )
 
 // Hook up gocheck into the "go test" runner.

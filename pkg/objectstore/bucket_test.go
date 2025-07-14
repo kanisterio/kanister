@@ -3,6 +3,8 @@ package objectstore
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	"gopkg.in/check.v1"
 )
@@ -52,6 +54,11 @@ func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *check.C) {
 }
 
 func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *check.C) {
+	minioEndpoint := os.Getenv("LOCATION_ENDPOINT")
+	if minioEndpoint == "http://localhost:9000" || strings.Contains(strings.ToLower(minioEndpoint), "minio") {
+		c.Skip("Skipping region mismatch test because MinIO always returns the same region")
+	}
+
 	ctx := context.Background()
 	const pt = ProviderTypeS3
 	const bn = `kanister-test-bucket-us-west-1`
@@ -151,7 +158,7 @@ func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
 		Type:   pt,
 		Region: testRegionS3,
 		//Region:   "tom-minio-region",
-		//Endpoint: "http://127.0.0.1:9000",
+		Endpoint: os.Getenv("LOCATION_ENDPOINT"),
 	}
 	p, err := NewProvider(ctx, pc, secret)
 	c.Assert(err, check.IsNil)

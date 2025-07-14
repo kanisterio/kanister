@@ -86,7 +86,7 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 	var key, val string
 	switch osType {
 	case objectstore.ProviderTypeS3:
-		if region, ok := os.LookupEnv(awsconfig.Region); ok {
+		if region, ok := os.LookupEnv(awsconfig.Region); ok && location.Region == "" {
 			location.Region = region
 		}
 		if endpoint, ok := os.LookupEnv("LOCATION_ENDPOINT"); ok {
