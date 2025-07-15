@@ -32,7 +32,6 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -45,6 +44,7 @@ type DataSuite struct {
 	osCli        osversioned.Interface
 	namespace    string
 	profile      *param.Profile
+	profileNoPod *param.Profile
 	providerType objectstore.ProviderType
 }
 
@@ -81,30 +81,8 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.namespace = cns.GetName()
 
-	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, check.IsNil)
-
-	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, check.IsNil)
-
-	var location crv1alpha1.Location
-	switch s.providerType {
-	case objectstore.ProviderTypeS3:
-		location = crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeS3Compliant,
-		}
-	case objectstore.ProviderTypeGCS:
-		location = crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeGCS,
-		}
-	default:
-		c.Fatalf("Unrecognized objectstore '%s'", s.providerType)
-	}
-	location.Prefix = "testBackupRestoreLocDelete"
-	location.Bucket = testBucketName
-	s.profile = testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
+	s.profile = s.create_new_test_profile(c, testutil.TestProfileName, false)
+	s.profileNoPod = s.create_new_test_profile(c, "test-profile-loc", true)
 
 	err = os.Setenv("POD_NAMESPACE", s.namespace)
 	c.Assert(err, check.IsNil)
@@ -114,10 +92,6 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 
 func (s *DataSuite) TearDownSuite(c *check.C) {
 	ctx := context.Background()
-	if s.profile != nil {
-		err := location.Delete(ctx, *s.profile, "")
-		c.Assert(err, check.IsNil)
-	}
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
 	}
@@ -360,6 +334,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 		_ = runAction(c, bp, "restore", tp)
 
+		tp.Profile = s.profileNoPod
 		bp = *newLocationDeleteBlueprint()
 		_ = runAction(c, bp, "delete", tp)
 	}
@@ -626,4 +601,39 @@ func (s *DataSuite) TestCheckRepositoryRepoNotAvailable(c *check.C) {
 	out2 := runAction(c, bp2, "checkRepository", tp)
 	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), check.Equals, "true")
 	c.Assert(out2[FunctionOutputVersion].(string), check.Equals, kanister.DefaultVersion)
+}
+
+func (s *DataSuite) create_new_test_profile(c *check.C, profileName string, localEndpoint bool) *param.Profile {
+	var err error
+	ctx := context.Background()
+
+	sec := testutil.NewTestProfileSecret()
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	p := testutil.NewTestProfile(s.namespace, sec.GetName())
+	p.Name = profileName
+	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	var location crv1alpha1.Location
+	switch s.providerType {
+	case objectstore.ProviderTypeS3:
+		location = crv1alpha1.Location{
+			Type: crv1alpha1.LocationTypeS3Compliant,
+		}
+	case objectstore.ProviderTypeGCS:
+		location = crv1alpha1.Location{
+			Type: crv1alpha1.LocationTypeGCS,
+		}
+	default:
+		c.Fatalf("Unrecognized objectstore '%s'", s.providerType)
+	}
+	location.Prefix = "testBackupRestoreLocDelete"
+	location.Bucket = testBucketName
+	if endpoint, ok := os.LookupEnv("LOCATION_ENDPOINT_2"); ok && !localEndpoint {
+		location.Endpoint = endpoint
+	}
+	profile := testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
+	return profile
 }
