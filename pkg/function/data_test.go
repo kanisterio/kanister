@@ -81,8 +81,8 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.namespace = cns.GetName()
 
-	s.profile = s.create_new_test_profile(c, testutil.TestProfileName, false)
-	s.profileNoPod = s.create_new_test_profile(c, "test-profile-loc", true)
+	s.profile = s.createNewTestProfile(c, testutil.TestProfileName, false)
+	s.profileNoPod = s.createNewTestProfile(c, "test-profile-loc", true)
 
 	err = os.Setenv("POD_NAMESPACE", s.namespace)
 	c.Assert(err, check.IsNil)
@@ -603,7 +603,7 @@ func (s *DataSuite) TestCheckRepositoryRepoNotAvailable(c *check.C) {
 	c.Assert(out2[FunctionOutputVersion].(string), check.Equals, kanister.DefaultVersion)
 }
 
-func (s *DataSuite) create_new_test_profile(c *check.C, profileName string, localEndpoint bool) *param.Profile {
+func (s *DataSuite) createNewTestProfile(c *check.C, profileName string, localEndpoint bool) *param.Profile {
 	var err error
 	ctx := context.Background()
 
