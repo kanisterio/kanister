@@ -39,13 +39,13 @@ import (
 )
 
 type DataSuite struct {
-	cli          kubernetes.Interface
-	crCli        versioned.Interface
-	osCli        osversioned.Interface
-	namespace    string
-	profile      *param.Profile
-	profileNoPod *param.Profile
-	providerType objectstore.ProviderType
+	cli                  kubernetes.Interface
+	crCli                versioned.Interface
+	osCli                osversioned.Interface
+	namespace            string
+	profile              *param.Profile
+	profileLocalEndpoint *param.Profile
+	providerType         objectstore.ProviderType
 }
 
 const (
@@ -82,7 +82,7 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	s.namespace = cns.GetName()
 
 	s.profile = s.createNewTestProfile(c, testutil.TestProfileName, false)
-	s.profileNoPod = s.createNewTestProfile(c, "test-profile-loc", true)
+	s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
 
 	err = os.Setenv("POD_NAMESPACE", s.namespace)
 	c.Assert(err, check.IsNil)
@@ -334,7 +334,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 		_ = runAction(c, bp, "restore", tp)
 
-		tp.Profile = s.profileNoPod
+		tp.Profile = s.profileLocalEndpoint
 		bp = *newLocationDeleteBlueprint()
 		_ = runAction(c, bp, "delete", tp)
 	}
