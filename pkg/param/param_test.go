@@ -718,7 +718,6 @@ func (s *ParamsSuite) TestPhaseParams(c *check.C) {
 	}
 	tp, err := New(ctx, s.cli, dynCli, crCli, osCli, as)
 	c.Assert(err, check.IsNil)
-	c.Assert(tp.Phases, check.IsNil)
 	err = InitPhaseParams(ctx, s.cli, tp, "backup", nil)
 	c.Assert(err, check.IsNil)
 	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.75.0"})
@@ -743,16 +742,33 @@ func (s *ParamsSuite) TestRenderingPhaseParams(c *check.C) {
 			"myValue": "bar",
 		},
 	}
-	cli := fake.NewSimpleClientset(secret)
-	secretRef := map[string]crv1alpha1.ObjectReference{
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cm-dfss",
+			Namespace: "ns1",
+		},
+		Data: map[string]string{
+			"myKey":   "foo",
+			"myValue": "bar",
+		},
+	}
+	cli := fake.NewSimpleClientset(secret, configMap)
+	refs := map[string]crv1alpha1.ObjectReference{
 		"authSecret": {
 			Kind:      SecretKind,
 			Name:      secret.Name,
 			Namespace: secret.Namespace,
 		},
+		"config": {
+			Kind:      ConfigMapKind,
+			Name:      configMap.Name,
+			Namespace: configMap.Namespace,
+		},
 	}
-	tp := TemplateParams{}
-	err := InitPhaseParams(ctx, cli, &tp, "backup", secretRef)
+	tp := TemplateParams{
+		Phases: make(map[string]*Phase),
+	}
+	err := InitPhaseParams(ctx, cli, &tp, "backup", refs)
 	c.Assert(err, check.IsNil)
 	UpdatePhaseParams(ctx, &tp, "backup", map[string]interface{}{"replicas": 2})
 	for _, tc := range []struct {
@@ -769,6 +785,14 @@ func (s *ParamsSuite) TestRenderingPhaseParams(c *check.C) {
 		},
 		{
 			"{{ .Phases.backup.Secrets.authSecret.StringData.myValue }}",
+			"bar",
+		},
+		{
+			"{{ .Phases.backup.ConfigMaps.config.Namespace }}",
+			"ns1",
+		},
+		{
+			"{{ .Phases.backup.ConfigMaps.config.Data.myValue }}",
 			"bar",
 		},
 	} {

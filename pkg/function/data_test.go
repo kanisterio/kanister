@@ -145,7 +145,7 @@ func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alph
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.113.0",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.114.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
@@ -257,7 +257,7 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 						Func: RestoreDataAllFuncName,
 						Args: map[string]interface{}{
 							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataAllImageArg:                "ghcr.io/kanisterio/kanister-tools:0.113.0",
+							RestoreDataAllImageArg:                "ghcr.io/kanisterio/kanister-tools:0.114.0",
 							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							RestoreDataAllRestorePathArg:          "/mnt/data",
@@ -468,7 +468,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
-							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.113.0",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.114.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
 							RestoreDataVolsArg: map[string]string{
@@ -543,6 +543,131 @@ func (s *DataSuite) TestCopyData(c *check.C) {
 	// Restore data from copy
 	_ = runAction(c, bp, "restore", tp)
 	// Validate file exists on this new PVC
+	_ = runAction(c, bp, "checkfile", tp)
+	// Delete data from copy
+	_ = runAction(c, bp, "delete", tp)
+}
+
+func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
+	return crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"addfile": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "test1",
+						Func: PrepareDataFuncName,
+						Args: map[string]interface{}{
+							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"sh", "-c",
+								"mkdir -p /mnt/source_data/subdir && echo 'test content' > /mnt/source_data/subdir/test.txt",
+							},
+							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/source_data"},
+						},
+					},
+				},
+			},
+			"copy": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "testCopy",
+						Func: CopyVolumeDataFuncName,
+						Args: map[string]interface{}{
+							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
+							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
+							CopyVolumeDataArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}/{{ .PVC.Namespace }}/{{ .PVC.Name }}",
+							CopyVolumeDataMountPathArg:      "/mnt/source_data",
+						},
+					},
+				},
+			},
+			"restore": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "testRestore",
+						Func: RestoreDataFuncName,
+						Args: map[string]interface{}{
+							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.113.0",
+							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
+							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
+							RestoreDataBackupPathArg:           fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupRoot),
+							RestoreDataVolsArg: map[string]string{
+								"{{ .PVC.Name }}": "/mnt/target_data",
+							},
+							RestoreDataRestorePathArg: "/mnt/target_data",
+						},
+					},
+				},
+			},
+			"checkfile": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Func: PrepareDataFuncName,
+						Args: map[string]interface{}{
+							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"sh", "-c",
+								"ls -la /mnt/target_data/ && cat /mnt/target_data/subdir/test.txt",
+							},
+							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/target_data"},
+						},
+					},
+				},
+			},
+			"delete": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "testDelete",
+						Func: DeleteDataFuncName,
+						Args: map[string]interface{}{
+							DeleteDataNamespaceArg:            "{{ .PVC.Namespace }}",
+							DeleteDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
+							DeleteDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupID),
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (s *DataSuite) TestCopyDataDifferentPaths(c *check.C) {
+	pvcSpec := testutil.NewTestPVC()
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvcSpec, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	tp := s.initPVCTemplateParams(c, pvc, nil)
+	bp := newCopyDataDifferentPathsTestBlueprint()
+
+	// Add a file with subdirectory on the source PVC at /mnt/source_data
+	_ = runAction(c, bp, "addfile", tp)
+	// Copy PVC data
+	out := runAction(c, bp, "copy", tp)
+
+	// Validate outputs and setup as inputs for restore
+	c.Assert(out[CopyVolumeDataOutputBackupID].(string), check.Not(check.Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupRoot].(string), check.Not(check.Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupArtifactLocation].(string), check.Not(check.Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupTag].(string), check.Not(check.Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), check.Equals, kanister.DefaultVersion)
+	options := map[string]string{
+		CopyVolumeDataOutputBackupID:               out[CopyVolumeDataOutputBackupID].(string),
+		CopyVolumeDataOutputBackupRoot:             out[CopyVolumeDataOutputBackupRoot].(string),
+		CopyVolumeDataOutputBackupArtifactLocation: out[CopyVolumeDataOutputBackupArtifactLocation].(string),
+		CopyVolumeDataOutputBackupTag:              out[CopyVolumeDataOutputBackupTag].(string),
+	}
+
+	// Create a new PVC for restoration
+	pvc2, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvcSpec, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	tp = s.initPVCTemplateParams(c, pvc2, options)
+	// Restore data from copy to different path /mnt/target_data
+	_ = runAction(c, bp, "restore", tp)
+	// Validate file exists at the correct location in target path
+	// This proves the fix works - files restore to /mnt/target_data/subdir/test.txt
+	// instead of /mnt/target_data/mnt/vol_data/pvcname/subdir/test.txt (which would be wrong)
 	_ = runAction(c, bp, "checkfile", tp)
 	// Delete data from copy
 	_ = runAction(c, bp, "delete", tp)
