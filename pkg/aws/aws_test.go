@@ -16,8 +16,11 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"gopkg.in/check.v1"
 
 	envconfig "github.com/kanisterio/kanister/pkg/config"
@@ -30,20 +33,40 @@ type AWSSuite struct{}
 
 var _ = check.Suite(&AWSSuite{})
 
+type mockSTSClient struct {
+	stsiface.STSAPI
+	getCallerIdentityFunc func(*sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
+}
+
+func (m *mockSTSClient) GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
+	return m.getCallerIdentityFunc(input)
+}
+
 func (s AWSSuite) TestValidCreds(c *check.C) {
 	ctx := context.Background()
 	config := map[string]string{}
-
 	config[AccessKeyID] = envconfig.GetEnvOrSkip(c, AccessKeyID)
 	config[SecretAccessKey] = envconfig.GetEnvOrSkip(c, SecretAccessKey)
 	config[ConfigRegion] = "us-west-2"
 
-	res, err := IsAwsCredsValid(ctx, config)
+	mockSTS := &mockSTSClient{
+		getCallerIdentityFunc: func(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
+			return &sts.GetCallerIdentityOutput{}, nil
+		},
+	}
+	// Test with valid credentials
+	res, err := IsAwsCredsValidWithSTS(ctx, config, mockSTS)
 	c.Assert(err, check.IsNil)
 	c.Assert(res, check.Equals, true)
 
+	// Test with invalid credentials
+	mockSTS = &mockSTSClient{
+		getCallerIdentityFunc: func(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
+			return nil, errors.New("invalid credentials")
+		},
+	}
 	config[AccessKeyID] = "fake-access-id"
-	res, err = IsAwsCredsValid(ctx, config)
+	res, err = IsAwsCredsValidWithSTS(ctx, config, mockSTS)
 	c.Assert(err, check.NotNil)
 	c.Assert(res, check.Equals, false)
 }

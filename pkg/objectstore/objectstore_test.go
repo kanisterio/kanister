@@ -44,7 +44,7 @@ type ObjectStoreProviderSuite struct {
 	suiteDirPrefix string // directory name prefix for all tests in this suite
 	testDir        string // directory name for a given test
 	region         string // bucket region
-	endpoint       string // bucket region
+	endpoint       string // bucket endpoint
 }
 
 const (
@@ -61,6 +61,7 @@ func (s *ObjectStoreProviderSuite) SetUpSuite(c *check.C) {
 	case ProviderTypeS3:
 		getEnvOrSkip(c, "AWS_ACCESS_KEY_ID")
 		getEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")
+		s.endpoint = os.Getenv("LOCATION_ENDPOINT")
 	case ProviderTypeGCS:
 		// Google performs other checks as well..
 		getEnvOrSkip(c, "GOOGLE_APPLICATION_CREDENTIALS")
