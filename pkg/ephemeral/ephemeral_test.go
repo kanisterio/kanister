@@ -90,7 +90,7 @@ func (TestPodApplier) Apply(*corev1.Pod) error { return nil }
 func (s *EphemeralSuite) TestRegisterPodApplier(c *check.C) {
 	var applier TestPodApplier
 
-	c.Assert(len(ephemeral.Pod), check.Equals, 0)
+	c.Assert(ephemeral.Pod, check.HasLen, 0)
 	ephemeral.Register(applier)
 
 	if c.Check(len(ephemeral.Pod), check.Equals, 1) {
