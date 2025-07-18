@@ -9,10 +9,6 @@ import (
 	"strings"
 
 	"github.com/kanisterio/errkit"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
@@ -20,7 +16,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
-	"github.com/kanisterio/kanister/pkg/utils"
+	"github.com/kanisterio/kanister/pkg/validate"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -277,7 +276,7 @@ func ValidatePodLabelsAndAnnotations(funcName string, args map[string]any) error
 		return errkit.Wrap(err, "Kanister function validation failed, while getting pod labels from function args", "funcName", funcName)
 	}
 
-	if err = utils.ValidateLabels(labels); err != nil {
+	if err = validate.ValidateLabels(labels); err != nil {
 		return errkit.Wrap(err, "Kanister function validation failed, while validating labels", "funcName", funcName)
 	}
 
@@ -285,7 +284,7 @@ func ValidatePodLabelsAndAnnotations(funcName string, args map[string]any) error
 	if err != nil {
 		return errkit.Wrap(err, "Kanister function validation failed, while getting pod annotations from function args", "funcName", funcName)
 	}
-	if err = utils.ValidateAnnotations(annotations); err != nil {
+	if err = validate.ValidateAnnotations(annotations); err != nil {
 		return errkit.Wrap(err, "Kanister function validation failed, while validating annotations", "funcName", funcName)
 	}
 	return nil

@@ -25,12 +25,10 @@ import (
 	"time"
 
 	"github.com/kanisterio/errkit"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 type indicator string
@@ -137,28 +135,5 @@ func CheckSupportedArgs(supportedArgs []string, args map[string]interface{}) err
 			return errkit.New(fmt.Sprintf("argument %s is not supported", a))
 		}
 	}
-	return nil
-}
-
-func ValidateLabels(labels map[string]string) error {
-	for k, v := range labels {
-		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			return errkit.New(fmt.Sprintf("label key '%s' failed validation. %s", k, errs))
-		}
-
-		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
-			return errkit.New(fmt.Sprintf("label value '%s' failed validation. %s", v, errs))
-		}
-	}
-	return nil
-}
-
-func ValidateAnnotations(annotations map[string]string) error {
-	for k := range annotations {
-		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			return errkit.New(fmt.Sprintf("annotation key '%s' failed validation. %s", k, errs))
-		}
-	}
-	// annotation values don't actually have a strict format
 	return nil
 }
