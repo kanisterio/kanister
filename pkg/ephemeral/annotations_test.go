@@ -48,8 +48,7 @@ func (s *AnnotationsSuite) TestLabelsFromEnvVarKubePodOptions(c *check.C) {
 	c.Assert(options.Annotations, check.DeepEquals, map[string]string(nil))
 
 	// OS environment variable set
-	err = os.Setenv(annotationsEnvVar, annotationsEnvVarValues)
-	c.Assert(err, check.IsNil)
+	c.Setenv(annotationsEnvVar, annotationsEnvVarValues)
 	defer func() {
 		err := os.Unsetenv(annotationsEnvVar)
 		c.Assert(err, check.IsNil)
