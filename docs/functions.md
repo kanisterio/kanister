@@ -284,6 +284,7 @@ file system that supports concurrent access.
   | image          | Yes      | string                  | image to be used the command |
   | volumes        | No       | map[string]string       | Mapping of `pvcName` to `mountPath` under which the volume will be available |
   | command        | Yes      | []string                | command list to execute |
+  | failOnError    | No       | bool                    | whether the phase should fail if the pod fails (default is `false`) |
   | serviceaccount | No       | string                  | service account info |
   | podOverride    | No       | map[string]interface{} | specs to override default pod specs with |
   | podAnnotations | No       | map[string]string | custom annotations for the temporary pod that gets created |
@@ -326,6 +327,7 @@ Example:
       - -c
       - |
         cp /restore-data/file_to_replace.data /data/file.data
+    failOnError: true
 ```
 
 ### BackupData

@@ -92,8 +92,16 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	var location crv1alpha1.Location
 	switch s.providerType {
 	case objectstore.ProviderTypeS3:
+		s3Region := os.Getenv("AWS_REGION")
+		s3Endpoint := os.Getenv("LOCATION_ENDPOINT")
 		location = crv1alpha1.Location{
 			Type: crv1alpha1.LocationTypeS3Compliant,
+		}
+		if s3Region != "" {
+			location.Region = s3Region
+		}
+		if s3Endpoint != "" {
+			location.Endpoint = s3Endpoint
 		}
 	case objectstore.ProviderTypeGCS:
 		location = crv1alpha1.Location{
@@ -478,11 +486,11 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
 							PrepareDataImageArg:     "busybox",
 							PrepareDataCommandArg: []string{
-								"ls",
-								"-l",
-								"/mnt/datadir/foo.txt",
+								"sh", "-c",
+								fmt.Sprintf("ls -la {{ .Options.%s }} && cat {{ .Options.%s }}/foo.txt", CopyVolumeDataOutputBackupRoot, CopyVolumeDataOutputBackupRoot),
 							},
-							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/datadir"},
+							PrepareDataVolumes:        map[string]string{"{{ .PVC.Name }}": fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupRoot)},
+							PrepareDataFailOnErrorArg: true,
 						},
 					},
 				},
