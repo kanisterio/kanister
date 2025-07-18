@@ -153,6 +153,43 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 		},
 		{
 			f: func() []string {
+				args := SnapshotRestoreCommandArgs{
+					CommandArgs:  commandArgs,
+					SnapID:       "snapshot-id",
+					TargetPath:   "target/path",
+					SkipExisting: true,
+				}
+				return SnapshotRestore(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --no-ignore-permission-errors --skip-existing",
+		},
+		{
+			f: func() []string {
+				args := SnapshotRestoreCommandArgs{
+					CommandArgs: commandArgs,
+					SnapID:      "snapshot-id",
+					TargetPath:  "target/path",
+					DeleteExtra: true,
+				}
+				return SnapshotRestore(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --no-ignore-permission-errors --delete-extra",
+		},
+		{
+			f: func() []string {
+				args := SnapshotRestoreCommandArgs{
+					CommandArgs:  commandArgs,
+					SnapID:       "snapshot-id",
+					TargetPath:   "target/path",
+					SkipExisting: true,
+					DeleteExtra:  true,
+				}
+				return SnapshotRestore(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --no-ignore-permission-errors --skip-existing --delete-extra",
+		},
+		{
+			f: func() []string {
 				args := SnapshotDeleteCommandArgs{
 					CommandArgs: &CommandArgs{
 						RepoPassword:   "encr-key",

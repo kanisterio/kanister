@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
@@ -81,6 +82,8 @@ type SnapshotRestoreCommandArgs struct {
 	TargetPath             string
 	SparseRestore          bool
 	IgnorePermissionErrors bool
+	SkipExisting           bool
+	DeleteExtra            bool
 	Parallelism            int
 }
 
@@ -97,11 +100,22 @@ func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
 	} else {
 		args = args.AppendLoggable(noIgnorePermissionsError)
 	}
+	args = appendOptionalSnapshotRestoreFlags(args, cmdArgs)
+
+	return stringSliceCommand(args)
+}
+
+func appendOptionalSnapshotRestoreFlags(args logsafe.Cmd, cmdArgs SnapshotRestoreCommandArgs) logsafe.Cmd {
 	if cmdArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}
-
-	return stringSliceCommand(args)
+	if cmdArgs.SkipExisting {
+		args = args.AppendLoggable(skipExistingFlag)
+	}
+	if cmdArgs.DeleteExtra {
+		args = args.AppendLoggable(deleteExtraFlag)
+	}
+	return args
 }
 
 type SnapshotDeleteCommandArgs struct {
