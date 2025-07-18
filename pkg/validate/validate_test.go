@@ -495,7 +495,9 @@ func (s *ValidateSuite) TestProfileSchema(c *check.C) {
 		{
 			profile: &crv1alpha1.Profile{
 				Location: crv1alpha1.Location{
-					Type: crv1alpha1.LocationTypeS3Compliant,
+					Type:   crv1alpha1.LocationTypeS3Compliant,
+					Bucket: "bucket-name",
+					Region: "region",
 				},
 				Credential: crv1alpha1.Credential{
 					Type: crv1alpha1.CredentialTypeSecret,
@@ -510,7 +512,9 @@ func (s *ValidateSuite) TestProfileSchema(c *check.C) {
 		{
 			profile: &crv1alpha1.Profile{
 				Location: crv1alpha1.Location{
-					Type: crv1alpha1.LocationTypeS3Compliant,
+					Type:   crv1alpha1.LocationTypeS3Compliant,
+					Bucket: "bucket-name",
+					Region: "region",
 				},
 				Credential: crv1alpha1.Credential{
 					Type: crv1alpha1.CredentialTypeKeyPair,
@@ -530,7 +534,9 @@ func (s *ValidateSuite) TestProfileSchema(c *check.C) {
 		{
 			profile: &crv1alpha1.Profile{
 				Location: crv1alpha1.Location{
-					Type: crv1alpha1.LocationTypeS3Compliant,
+					Type:   crv1alpha1.LocationTypeS3Compliant,
+					Bucket: "bucket-name",
+					Region: "region",
 				},
 				Credential: crv1alpha1.Credential{
 					Type: crv1alpha1.CredentialTypeSecret,
@@ -545,7 +551,9 @@ func (s *ValidateSuite) TestProfileSchema(c *check.C) {
 		{
 			profile: &crv1alpha1.Profile{
 				Location: crv1alpha1.Location{
-					Type: crv1alpha1.LocationTypeS3Compliant,
+					Type:   crv1alpha1.LocationTypeS3Compliant,
+					Bucket: "bucket-name",
+					Region: "region",
 				},
 				Credential: crv1alpha1.Credential{
 					Type: crv1alpha1.CredentialTypeSecret,
@@ -560,7 +568,9 @@ func (s *ValidateSuite) TestProfileSchema(c *check.C) {
 		{
 			profile: &crv1alpha1.Profile{
 				Location: crv1alpha1.Location{
-					Type: crv1alpha1.LocationTypeS3Compliant,
+					Type:   crv1alpha1.LocationTypeS3Compliant,
+					Bucket: "bucket-name",
+					Region: "region",
 				},
 				Credential: crv1alpha1.Credential{
 					Type: crv1alpha1.CredentialTypeKeyPair,
@@ -579,7 +589,9 @@ func (s *ValidateSuite) TestProfileSchema(c *check.C) {
 		{
 			profile: &crv1alpha1.Profile{
 				Location: crv1alpha1.Location{
-					Type: crv1alpha1.LocationTypeS3Compliant,
+					Type:   crv1alpha1.LocationTypeS3Compliant,
+					Bucket: "bucket-name",
+					Region: "region",
 				},
 				Credential: crv1alpha1.Credential{
 					Type: crv1alpha1.CredentialTypeKeyPair,

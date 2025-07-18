@@ -523,7 +523,7 @@ func RepoSizeStatsFromBlobStatsRaw(blobStats string) (phySizeTotal int64, blobCo
 			}
 		}
 
-		if !(countStr == "" || sizeStr == "") {
+		if countStr != "" && sizeStr != "" {
 			// Both strings have been matched
 			break
 		}
