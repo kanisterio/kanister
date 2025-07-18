@@ -25,11 +25,10 @@ import (
 	"time"
 
 	"github.com/kanisterio/errkit"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 type indicator string
