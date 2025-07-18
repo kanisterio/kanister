@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/utils"
+	"github.com/kanisterio/kanister/pkg/validate"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -19,7 +19,7 @@ func AnnotationsFromEnvVar(name string) ApplierSet {
 					return err
 				}
 
-				if err := utils.ValidateAnnotations(annotations); err != nil {
+				if err := validate.ValidateAnnotations(annotations); err != nil {
 					return err
 				}
 
@@ -39,7 +39,7 @@ func AnnotationsFromEnvVar(name string) ApplierSet {
 					return err
 				}
 
-				if err := utils.ValidateAnnotations(annotations); err != nil {
+				if err := validate.ValidateAnnotations(annotations); err != nil {
 					return err
 				}
 

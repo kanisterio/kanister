@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/utils"
+	"github.com/kanisterio/kanister/pkg/validate"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -19,7 +19,7 @@ func LabelsFromEnvVar(name string) ApplierSet {
 					return err
 				}
 
-				if err := utils.ValidateLabels(labels); err != nil {
+				if err := validate.ValidateLabels(labels); err != nil {
 					return err
 				}
 
@@ -39,7 +39,7 @@ func LabelsFromEnvVar(name string) ApplierSet {
 					return err
 				}
 
-				if err := utils.ValidateLabels(labels); err != nil {
+				if err := validate.ValidateLabels(labels); err != nil {
 					return err
 				}
 
@@ -55,7 +55,8 @@ func LabelsFromEnvVar(name string) ApplierSet {
 	}
 }
 
-// StaticLabels creates an ApplierSet to set a static labels.
+// StaticLabels creates an ApplierSet that applies the passed labels
+// to PodOptions and Pods.
 func StaticLabels(labels map[string]string) ApplierSet {
 	return ApplierSet{
 		PodOptions: ApplierFunc[kube.PodOptions](func(options *kube.PodOptions) error {
@@ -75,7 +76,8 @@ func StaticLabels(labels map[string]string) ApplierSet {
 	}
 }
 
-// StaticLabels creates an ApplierSet to set a static labels.
+// StaticLabelsOSEnvVar creates an ApplierSet that applies a fixed set of labels
+// to PodOptions and Pods if the specified environment variables are set.
 func StaticLabelsOSEnvVar(labels map[string]string, envVars ...string) ApplierSet {
 	return ApplierSet{
 		PodOptions: ApplierFunc[kube.PodOptions](func(options *kube.PodOptions) error {

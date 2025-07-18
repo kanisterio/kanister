@@ -22,6 +22,12 @@ import (
 	"sync"
 
 	"github.com/kanisterio/errkit"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/poll"
+	"github.com/kanisterio/kanister/pkg/validate"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,13 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
-
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/poll"
-	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
@@ -354,12 +353,12 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	podAnnotations, _ := cmd.Flags().GetStringToString(podAnnotationsFlagName)
 	podLabels, _ := cmd.Flags().GetStringToString(podLabelsFlagName)
 
-	err = utils.ValidateAnnotations(podAnnotations)
+	err = validate.ValidateAnnotations(podAnnotations)
 	if err != nil {
 		return nil, err
 	}
 
-	err = utils.ValidateLabels(podLabels)
+	err = validate.ValidateLabels(podLabels)
 	if err != nil {
 		return nil, err
 	}

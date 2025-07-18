@@ -17,12 +17,11 @@ package ephemeral_test
 import (
 	"testing"
 
+	"github.com/kanisterio/kanister/pkg/ephemeral"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -105,18 +104,18 @@ func (s *EphemeralSuite) TestRegisterSet(c *check.C) {
 		PodOptions: TestPodOptionsApplier{},
 	}
 
-	c.Assert(len(ephemeral.Container), check.Equals, 0)
-	c.Assert(len(ephemeral.Pod), check.Equals, 0)
-	c.Assert(len(ephemeral.PodOptions), check.Equals, 0)
+	c.Assert(ephemeral.Container, check.HasLen, 0)
+	c.Assert(ephemeral.Pod, check.HasLen, 0)
+	c.Assert(ephemeral.PodOptions, check.HasLen, 0)
 	ephemeral.RegisterSet(set)
 
-	if c.Check(len(ephemeral.Container), check.Equals, 1) {
+	if c.Check(ephemeral.Container, check.HasLen, 1) {
 		c.Check(ephemeral.Container[0], check.Equals, set.Container)
 	}
-	if c.Check(len(ephemeral.Pod), check.Equals, 1) {
+	if c.Check(ephemeral.Pod, check.HasLen, 1) {
 		c.Check(ephemeral.Pod[0], check.Equals, set.Pod)
 	}
-	if c.Check(len(ephemeral.PodOptions), check.Equals, 1) {
+	if c.Check(ephemeral.PodOptions, check.HasLen, 1) {
 		c.Check(ephemeral.PodOptions[0], check.Equals, set.PodOptions)
 	}
 }
