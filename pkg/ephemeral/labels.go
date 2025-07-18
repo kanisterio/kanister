@@ -54,3 +54,23 @@ func LabelsFromEnvVar(name string) ApplierSet {
 		}),
 	}
 }
+
+// StaticLabels creates an ApplierSet to set a static labels.
+func StaticLabels(labels map[string]string) ApplierSet {
+	return ApplierSet{
+		PodOptions: ApplierFunc[kube.PodOptions](func(options *kube.PodOptions) error {
+			if options.Labels == nil {
+				options.Labels = make(map[string]string, len(labels))
+			}
+			maps.Copy(options.Labels, labels)
+			return nil
+		}),
+		Pod: ApplierFunc[corev1.Pod](func(options *corev1.Pod) error {
+			if options.Labels == nil {
+				options.Labels = make(map[string]string, len(labels))
+			}
+			maps.Copy(options.Labels, labels)
+			return nil
+		}),
+	}
+}
