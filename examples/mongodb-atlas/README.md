@@ -7,7 +7,7 @@ It deploys and scales a MongoDB cluster in the cloud.
 ## Prerequisites
 
 * Kubernetes 1.20+
-* Kanister controller version 0.113.0 installed in your cluster
+* Kanister controller version 0.114.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 * Already provisioned MongoDB Atlas cluster (https://www.mongodb.com/docs/atlas/getting-started)
 
@@ -19,7 +19,7 @@ to install.
 ```bash
 $ helm repo add kanister https://charts.kanister.io
 $ helm install kanister --namespace kanister --create-namespace \
-    kanister/kanister-operator --set image.tag=0.113.0
+    kanister/kanister-operator --set image.tag=0.114.0
 ```
 
 ### Create Blueprint
@@ -162,7 +162,7 @@ The artifacts created by the backup action can be cleaned up using the
 following command.
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from backup-tfjps
+$ kanctl --namespace kanister create actionset --action delete --from backup-tfjps --namespacetargets kanister
 actionset delete-backup-tfjps-gcjb2 created
 
 # View the status of the ActionSet

@@ -8,7 +8,7 @@ This example demonstrates Kanister's ability to protect an application called Ti
 
 - Helm 3 installed
 - Kubernetes 1.16+ with Beta APIs enabled
-- Kanister controller version 0.113.0 installed in the cluster, let's assume in namespace `kanister`
+- Kanister controller version 0.114.0 installed in the cluster, let's assume in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 - VolumeSnapshot CRDs, Snapshot Controller & a CSI Driver
 
@@ -116,7 +116,7 @@ The CSI VolumeSnapshot created by the backup action can be cleaned up using the 
 
 ```bash
 # Make sure to use correct backup actionset name here
-$ kanctl --namespace kanister create actionset --action delete --from backup-mlvcv
+$ kanctl --namespace kanister create actionset --action delete --from backup-mlvcv --namespacetargets kanister
 actionset delete-backup-mlvcv-cq6bw created
 
 # View the status of the ActionSet

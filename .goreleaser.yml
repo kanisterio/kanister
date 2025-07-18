@@ -21,7 +21,6 @@ builds:
   - CC=gcc
   - CXX=g++
   - GO_EXTLINK_ENABLED=0
-  - GOFIPS140=latest
   goos: &goos
   - linux
   goarch: &goarch
@@ -70,7 +69,7 @@ dockers:
   build_flag_templates:
   - "--pull"
   - "--build-arg=kan_tools_version={{ .Tag }}"
-  - "--build-arg=kopia_build_commit=aa96483aaded"
+  - "--build-arg=kopia_build_commit=692c1f465ba3"
   - "--build-arg=kopia_repo_org=kopia"
   extra_files:
   - 'LICENSE'

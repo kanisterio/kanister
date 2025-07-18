@@ -7,7 +7,7 @@ This is an example of using Kanister to backup and restore MongoDB. In this exam
 
 - Kubernetes 1.20+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.113.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanister controller version 0.114.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 
@@ -119,7 +119,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from "mongo-backup-12046"
+$ kanctl --namespace kanister create actionset --action delete --from "mongo-backup-12046" --namespacetargets kanister
 actionset "delete-mongo-backup-12046-kf8mt" created
 
 # View the status of the ActionSet

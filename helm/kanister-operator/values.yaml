@@ -3,17 +3,19 @@
 # Declare variables to be passed into your templates.
 image:
   repository: ghcr.io/kanisterio/controller
-  tag: 0.113.0
+  tag: 0.114.0
   pullPolicy: IfNotPresent
 repositoryServerControllerImage:
   registry: ghcr.io/kanisterio
   name: repo-server-controller
-  tag: 0.113.0
+  tag: 0.114.0
   pullPolicy: IfNotPresent
 kanisterToolsImage:
   override: false
   image: ghcr.io/kanisterio/kanister-tools
-  tag: 0.113.0
+  tag: 0.114.0
+# secureDefaultsForJobPods is responsible for applying secure default configurations to kanister Job pods.
+secureDefaultsForJobPods: false
 rbac:
   create: true
 serviceAccount:
@@ -104,11 +106,11 @@ containerSecurityContext:
     drop:
     - ALL
 
+healthCheckPort: 8081
 livenessProbe:
   enabled: true
   httpGet:
     path: /healthz
-    port: 8081
   initialDelaySeconds: 10
   periodSeconds: 20
   timeoutSeconds: 2
@@ -119,9 +121,10 @@ readinessProbe:
   enabled: true
   httpGet:
     path: /readyz
-    port: 8081
   initialDelaySeconds: 5
   periodSeconds: 10
   timeoutSeconds: 2
   failureThreshold: 3
   successThreshold: 1
+
+

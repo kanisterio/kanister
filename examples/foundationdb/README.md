@@ -24,7 +24,7 @@ cluster.
 on you cluster.
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.113.0 with `profiles.cr.kanister.io` CRD installed.
+* Kanister version 0.114.0 with `profiles.cr.kanister.io` CRD installed.
 * Docker CLI installed
 * A docker image containing the required tools to back up FoundationDB.
 The Dockerfile for the image can be found [here](https://raw.githubusercontent.com/kanisterio/kanister/master/docker/foundationdb/Dockerfile).
@@ -233,7 +233,7 @@ The artifacts created by the backup action can be cleaned up using the following
 
 ```bash
 # Replace kanister-op-ns with the namespace where your kanister operator is installed
-$ kanctl --namespace <kanister-op-ns> create actionset --action delete --from "backup-jx2d2"
+$ kanctl --namespace <kanister-op-ns> create actionset --action delete --from "backup-jx2d2" --namespacetargets <kanister-op-ns>
 actionset "<delete-actionset-name>" created
 
 # View the status of the ActionSet

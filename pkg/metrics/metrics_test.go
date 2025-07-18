@@ -140,9 +140,10 @@ func (m *MetricsSuite) TestInitCounterVec(c *check.C) {
 	expectedResolutionTypes := map[string]int{"success": 0, "failure": 0}
 	for _, metric := range metrics[0].Metric {
 		for _, label := range metric.Label {
-			if *label.Name == "operation_type" {
+			switch *label.Name {
+			case "operation_type":
 				expectedOperationTypes[*label.Value]++
-			} else if *label.Name == "resolution" {
+			case "resolution":
 				expectedResolutionTypes[*label.Value]++
 			}
 		}
