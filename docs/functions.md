@@ -97,7 +97,7 @@ Example:
 KubeTask spins up a new container and executes a command via a Pod. This
 allows you to run a new Pod from a Blueprint. The ServiceAccount of the newly
 created Pod can configured using the `podOverride` function argument like shown
-below: 
+below:
 
   | Argument    | Required | Type                    | Description |
   | ----------- | :------: | ----------------------- | ----------- |
@@ -284,6 +284,7 @@ file system that supports concurrent access.
   | image          | Yes      | string                  | image to be used the command |
   | volumes        | No       | map[string]string       | Mapping of `pvcName` to `mountPath` under which the volume will be available |
   | command        | Yes      | []string                | command list to execute |
+  | failOnError    | No       | bool                    | whether the phase should fail if the pod fails (default is `false`) |
   | serviceaccount | No       | string                  | service account info |
   | podOverride    | No       | map[string]interface{} | specs to override default pod specs with |
   | podAnnotations | No       | map[string]string | custom annotations for the temporary pod that gets created |
@@ -326,6 +327,7 @@ Example:
       - -c
       - |
         cp /restore-data/file_to_replace.data /data/file.data
+    failOnError: true
 ```
 
 ### BackupData
@@ -467,6 +469,7 @@ file system that supports concurrent access.
   | backupArtifactPrefix | Yes      | string                  | path to the backup on the object store |
   | backupIdentifier     | No       | string                  | (required if backupTag not provided) unique snapshot id generated during backup |
   | backupTag            | No       | string                  | (required if backupIdentifier not provided) unique tag added during the backup |
+  | backupPath           | No       | string                  | path within the backup to restore from (used for selective restore) |
   | restorePath          | No       | string                  | path where data is restored |
   | pod                  | No       | string                  | pod to which the volumes are attached |
   | volumes              | No       | map[string]string       | Mapping of [pvcName] to [mountPath] under which the volume will be available |
@@ -620,6 +623,7 @@ Arguments:
   | volume             | Yes      | string                  | name of the source PVC |
   | dataArtifactPrefix | Yes      | string                  | path on the object store to store the data in |
   | encryptionKey      | No       | string                  | encryption key to be used during backups |
+  | mountPath          | No       | string                  | custom mount path for the PVC (defaults to /mnt/vol_data/<pvc_name>) |
   | insecureTLS        | No       | bool                    | enables insecure connection for data mover |
   | podOverride        | No       | map[string]interface{} | specs to override default pod specs with |
   | podAnnotations       | No       | map[string]string       | custom annotations for the temporary pod that gets created |
@@ -648,6 +652,85 @@ If the ActionSet `Object` is a PersistentVolumeClaim:
       annKey: annValue
     podLabels:
       labelKey: labelValue
+```
+
+## CopyVolumeData and RestoreData Examples
+
+### Example 1: Using CopyVolumeData and RestoreData with Same Mount Path
+
+This example shows how to backup and restore data using the same mount paths. This is the typical scenario where you want to restore data to the same location it was backed up from.
+
+``` yaml
+actions:
+  backup:
+    outputArtifacts:
+      backupInfo:
+        keyValue:
+          backupID: "{{ .Phases.backupData.Output.backupID }}"
+          backupRoot: "{{ .Phases.backupData.Output.backupRoot }}"
+          backupTag: "{{ .Phases.backupData.Output.backupTag }}"
+    phases:
+    - func: CopyVolumeData
+      name: backupData
+      args:
+        namespace: "{{ .PVC.Namespace }}"
+        volume: "{{ .PVC.Name }}"
+        dataArtifactPrefix: s3-bucket-name/backup-path
+
+  restore:
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: RestoreData
+      name: restoreData
+      args:
+        namespace: "{{ .PVC.Namespace }}"
+        image: ghcr.io/kanisterio/kanister-tools:0.110.0
+        backupArtifactPrefix: s3-bucket-name/backup-path
+        backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupTag }}"
+        volumes:
+          "{{ .PVC.Name }}": "/mnt/vol_data/{{ .PVC.Name }}"
+```
+
+### Example 2: Using CopyVolumeData and RestoreData with Different Mount Paths
+
+This example shows how to backup data from one location and restore it to a different location. This is useful when you want to migrate data between different environments or restore to a different path structure.
+
+**NOTE:** both `backupPath` and `restorePath` arguments in `RestoreData` are required in this case
+
+``` yaml
+actions:
+  backup:
+    outputArtifacts:
+      backupInfo:
+        keyValue:
+          backupID: "{{ .Phases.backupData.Output.backupID }}"
+          backupRoot: "{{ .Phases.backupData.Output.backupRoot }}"
+          backupTag: "{{ .Phases.backupData.Output.backupTag }}"
+    phases:
+    - func: CopyVolumeData
+      name: backupData
+      args:
+        namespace: "{{ .PVC.Namespace }}"
+        volume: "{{ .PVC.Name }}"
+        dataArtifactPrefix: s3-bucket-name/backup-path
+        mountPath: "/mnt/source_data"
+
+  restore:
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: RestoreData
+      name: restoreData
+      args:
+        namespace: "{{ .PVC.Namespace }}"
+        image: ghcr.io/kanisterio/kanister-tools:0.110.0
+        backupArtifactPrefix: s3-bucket-name/backup-path
+        backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupTag }}"
+        backupPath: "{{ .ArtifactsIn.backupInfo.KeyValue.backupRoot }}"
+        restorePath: "/mnt/target_data"
+        volumes:
+          "{{ .PVC.Name }}": "/mnt/target_data"
 ```
 
 ### DeleteData

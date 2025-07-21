@@ -57,3 +57,6 @@ pull_request_rules:
         - label!="hold off merging"
     actions:
       queue:
+
+merge_queue:
+  max_parallel_checks: 1
