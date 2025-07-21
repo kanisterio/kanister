@@ -21,9 +21,10 @@ import (
 	"maps"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/validate"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func AnnotationsFromEnvVar(name string) ApplierSet {

@@ -17,11 +17,12 @@ package ephemeral_test
 import (
 	"testing"
 
-	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/kube"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kanisterio/kanister/pkg/ephemeral"
+	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -132,11 +133,13 @@ func (s *EphemeralSuite) TestFilter(c *check.C) {
 	var options kube.PodOptions
 
 	options.Name = "nomatch"
-	applier.Apply(&options)
+	err := applier.Apply(&options)
+	c.Check(err, check.IsNil)
 	c.Check(options.Image, check.Equals, "")
 
 	options.Name = "matches"
-	applier.Apply(&options)
+	err = applier.Apply(&options)
+	c.Check(err, check.IsNil)
 	c.Check(options.Image, check.Equals, "applied-image")
 }
 

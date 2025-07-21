@@ -19,10 +19,11 @@ package ephemeral_test
 import (
 	"os"
 
-	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/kube"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/ephemeral"
+	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 type LabelsSuite struct{}
@@ -76,7 +77,8 @@ func (s *LabelsSuite) TestLabelsFromEnvVarCoreV1PodEnvVarUnset(c *check.C) {
 	registeredAppliers.Register(set.Pod)
 
 	var options corev1.Pod
-	registeredAppliers.Apply(&options)
+	err := registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.Labels, check.DeepEquals, map[string]string(nil))
 }
 
@@ -99,7 +101,8 @@ func (s *LabelsSuite) TestLabelsFromEnvVarCoreV1PodEnvVarSet(c *check.C) {
 		c.Assert(err, check.IsNil)
 	}()
 	var options corev1.Pod
-	registeredAppliers.Apply(&options)
+	err = registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.Labels, check.DeepEquals, expected)
 }
 

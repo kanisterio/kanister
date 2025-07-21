@@ -17,8 +17,9 @@ limitations under the License.
 package ephemeral
 
 import (
-	"github.com/kanisterio/kanister/pkg/kube"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 var (

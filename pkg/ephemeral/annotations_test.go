@@ -19,10 +19,11 @@ package ephemeral_test
 import (
 	"os"
 
-	"github.com/kanisterio/kanister/pkg/ephemeral"
-	"github.com/kanisterio/kanister/pkg/kube"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/ephemeral"
+	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 type AnnotationsSuite struct{}
@@ -57,13 +58,14 @@ func (s *AnnotationsSuite) TestAnnotationsFromEnvVarKubePodOptionsEnvVarSet(c *c
 	registeredAppliers.Register(set.PodOptions)
 
 	// OS environment variable set
-	os.Setenv(annotationsEnvVar, annotationsEnvVarValues)
+	err := os.Setenv(annotationsEnvVar, annotationsEnvVarValues)
+	c.Assert(err, check.IsNil)
 	defer func() {
 		err := os.Unsetenv(annotationsEnvVar)
 		c.Assert(err, check.IsNil)
 	}()
 	var options kube.PodOptions
-	err := registeredAppliers.Apply(&options)
+	err = registeredAppliers.Apply(&options)
 	c.Assert(err, check.IsNil)
 	c.Assert(options.Annotations, check.DeepEquals, expected)
 }
@@ -75,7 +77,8 @@ func (s *AnnotationsSuite) TestAnnotationsFromEnvVarCoreV1PodEnvVarUnset(c *chec
 	registeredAppliers.Register(set.Pod)
 
 	var options corev1.Pod
-	registeredAppliers.Apply(&options)
+	err := registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.Annotations, check.DeepEquals, map[string]string(nil))
 }
 
@@ -95,7 +98,8 @@ func (s *AnnotationsSuite) TestAnnotationsFromEnvVarCoreV1PodEnvVarSet(c *check.
 		c.Assert(err, check.IsNil)
 	}()
 	var options corev1.Pod
-	registeredAppliers.Apply(&options)
+	err = registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.Annotations, check.DeepEquals, expected)
 }
 
