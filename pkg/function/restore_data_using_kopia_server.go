@@ -25,7 +25,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/ephemeral"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -234,7 +233,7 @@ func restoreDataFromServer(
 		userPassphrase,
 		sparseRestore,
 	)
-	return kube.PrepareAndRunPod(
+	return PrepareAndRunPod(
 		ctx,
 		cli,
 		namespace,
@@ -245,7 +244,6 @@ func restoreDataFromServer(
 		podOverride,
 		annotations,
 		labels,
-		ephemeral.PodOptions.Apply,
 		podFunc,
 	)
 }

@@ -25,7 +25,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
@@ -142,7 +141,7 @@ func restoreData(
 	labels map[string]string,
 ) (map[string]any, error) {
 	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, backupPath, insecureTLS)
-	return kube.PrepareAndRunPod(
+	return PrepareAndRunPod(
 		ctx,
 		cli,
 		namespace,
@@ -153,7 +152,6 @@ func restoreData(
 		podOverride,
 		annotations,
 		labels,
-		ephemeral.PodOptions.Apply,
 		podFunc,
 	)
 }

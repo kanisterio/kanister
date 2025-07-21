@@ -218,7 +218,10 @@ func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace s
 		return nil, nil, err
 	}
 
-	podOptions := getPodOptions(repoServerNamespace, svc, vols)
+	podOptions, err := getPodOptions(repoServerNamespace, svc, vols)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	podOverride, err := h.preparePodOverride(ctx, podOptions)
 	if err != nil {
