@@ -140,40 +140,22 @@ func restoreData(
 	podOverride crv1alpha1.JSONMap,
 	annotations,
 	labels map[string]string,
-) (map[string]interface{}, error) {
-	// Validate volumes
-	validatedVols := make(map[string]kube.VolumeMountOptions)
-	for pvcName, mountPoint := range vols {
-		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
-		if err != nil {
-			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
-		}
-
-		validatedVols[pvcName] = kube.VolumeMountOptions{
-			MountPath: mountPoint,
-			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
-		}
-	}
-
-	options := &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: jobPrefix,
-		Image:        image,
-		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-		Volumes:      validatedVols,
-		PodOverride:  podOverride,
-		Annotations:  annotations,
-		Labels:       labels,
-	}
-
-	// Apply the registered ephemeral pod changes.
-	if err := ephemeral.PodOptions.Apply(options); err != nil {
-		return nil, errkit.Wrap(err, "Failed to apply ephemeral pod options")
-	}
-
-	pr := kube.NewPodRunner(cli, options)
+) (map[string]any, error) {
 	podFunc := restoreDataPodFunc(tp, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, backupPath, insecureTLS)
-	return pr.Run(ctx, podFunc)
+	return kube.PrepareAndRunPod(
+		ctx,
+		cli,
+		namespace,
+		jobPrefix,
+		image,
+		[]string{"sh", "-c", "tail -f /dev/null"},
+		vols,
+		podOverride,
+		annotations,
+		labels,
+		ephemeral.PodOptions.Apply,
+		podFunc,
+	)
 }
 
 func restoreDataPodFunc(

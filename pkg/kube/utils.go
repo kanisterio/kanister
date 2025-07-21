@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
@@ -219,4 +220,51 @@ func getSecureDefaultsForJobPods() bool {
 	}
 
 	return false
+}
+
+func PrepareAndRunPod(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace, jobPrefix, image string,
+	command []string,
+	vols map[string]string,
+	podOverride crv1alpha1.JSONMap,
+	annotations, labels map[string]string,
+	applyEphemeral func(*PodOptions) error,
+	podFunc func(ctx context.Context, pc PodController) (map[string]interface{}, error),
+) (map[string]any, error) {
+	// Validate volumes
+	validatedVols := make(map[string]VolumeMountOptions)
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
+		}
+
+		validatedVols[pvcName] = VolumeMountOptions{
+			MountPath: mountPoint,
+			ReadOnly:  PVCContainsReadOnlyAccessMode(pvc),
+		}
+	}
+
+	// Create PodOptions
+	options := &PodOptions{
+		Namespace:    namespace,
+		GenerateName: jobPrefix,
+		Image:        image,
+		Command:      command,
+		Volumes:      validatedVols,
+		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
+	}
+
+	// Apply ephemeral pod changes
+	if err := applyEphemeral(options); err != nil {
+		return nil, errkit.Wrap(err, "Failed to apply ephemeral pod options")
+	}
+
+	// Create and run the pod
+	pr := NewPodRunner(cli, options)
+	return pr.Run(ctx, podFunc)
 }

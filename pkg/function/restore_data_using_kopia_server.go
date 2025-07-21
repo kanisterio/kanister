@@ -224,37 +224,6 @@ func restoreDataFromServer(
 	annotations,
 	labels map[string]string,
 ) (map[string]any, error) {
-	validatedVols := make(map[string]kube.VolumeMountOptions)
-	// Validate volumes
-	for pvcName, mountPoint := range vols {
-		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
-		if err != nil {
-			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
-		}
-
-		validatedVols[pvcName] = kube.VolumeMountOptions{
-			MountPath: mountPoint,
-			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
-		}
-	}
-
-	options := &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: jobPrefix,
-		Image:        image,
-		Command:      []string{"bash", "-c", "tail -f /dev/null"},
-		Volumes:      validatedVols,
-		PodOverride:  podOverride,
-		Annotations:  annotations,
-		Labels:       labels,
-	}
-
-	// Apply the registered ephemeral pod changes.
-	if err := ephemeral.PodOptions.Apply(options); err != nil {
-		return nil, errkit.Wrap(err, "Failed to apply ephemeral pod options")
-	}
-
-	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataFromServerPodFunc(
 		hostname,
 		restorePath,
@@ -265,7 +234,20 @@ func restoreDataFromServer(
 		userPassphrase,
 		sparseRestore,
 	)
-	return pr.Run(ctx, podFunc)
+	return kube.PrepareAndRunPod(
+		ctx,
+		cli,
+		namespace,
+		jobPrefix,
+		image,
+		[]string{"bash", "-c", "tail -f /dev/null"},
+		vols,
+		podOverride,
+		annotations,
+		labels,
+		ephemeral.PodOptions.Apply,
+		podFunc,
+	)
 }
 
 func restoreDataFromServerPodFunc(
