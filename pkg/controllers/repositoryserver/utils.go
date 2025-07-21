@@ -141,7 +141,9 @@ func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]inter
 			}
 
 			// Apply the registered ephemeral pod changes.
-			ephemeral.Container.Apply(ctr)
+			if err := ephemeral.Container.Apply(ctr); err != nil {
+				return "", false
+			}
 
 			podOverride["containers"] = []corev1.Container{*ctr}
 			return mount.Name, true
@@ -187,7 +189,9 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 		}
 
 		// Apply the registered ephemeral pod changes.
-		ephemeral.Container.Apply(&container)
+		if err := ephemeral.Container.Apply(&container); err != nil {
+			return errkit.Wrap(err, "Failed to apply ephemeral container options")
+		}
 
 		podOverrideSpec.Containers = append(podOverrideSpec.Containers, container)
 	}
@@ -227,7 +231,9 @@ func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.V
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.PodOptions.Apply(options)
+	if err := ephemeral.PodOptions.Apply(options); err != nil {
+		return nil
+	}
 
 	return options
 }
