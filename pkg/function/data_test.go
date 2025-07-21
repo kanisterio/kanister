@@ -756,7 +756,7 @@ func (s *DataSuite) createNewTestProfile(c *check.C, profileName string, localEn
 	}
 	location.Prefix = "testBackupRestoreLocDelete"
 	location.Bucket = testBucketName
-	if endpoint, ok := os.LookupEnv("LOCATION_ENDPOINT_2"); ok && !localEndpoint {
+	if endpoint, ok := os.LookupEnv("LOCATION_CLUSTER_ENDPOINT"); ok && !localEndpoint {
 		location.Endpoint = endpoint
 	}
 	profile := testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
