@@ -17,16 +17,18 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
+	"github.com/kanisterio/errkit"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/kubernetes"
 )
 
 // ActionSet function validates the ActionSet and returns an error if it is invalid.
@@ -371,4 +373,27 @@ func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p 
 		return nil, errorf(errValidate, "unknown or unsupported provider type '%s'", pType)
 	}
 	return secret, nil
+}
+
+func ValidateLabels(labels map[string]string) error {
+	for k, v := range labels {
+		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
+			return errkit.New(fmt.Sprintf("label key '%s' failed validation. %s", k, errs))
+		}
+
+		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
+			return errkit.New(fmt.Sprintf("label value '%s' failed validation. %s", v, errs))
+		}
+	}
+	return nil
+}
+
+func ValidateAnnotations(annotations map[string]string) error {
+	for k := range annotations {
+		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
+			return errkit.New(fmt.Sprintf("annotation key '%s' failed validation. %s", k, errs))
+		}
+	}
+	// annotation values don't actually have a strict format
+	return nil
 }
