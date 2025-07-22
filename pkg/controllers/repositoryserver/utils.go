@@ -132,9 +132,9 @@ func podOverrideSpecForCACertificate(podSpec corev1.PodSpec, podOverride map[str
 // volumeMountSpecForName adds a container spec to the override map
 // if the pod spec's volumeMount's SubPath matches with a given certificate name.
 // The container spec will include the matching volumeMount.
-func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]interface{}, certName string) (string, bool, error) {
+func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]interface{}, certName string) (volName string, proceed bool, err error) {
 	if certName == "" {
-		return "", false, nil
+		return volName, proceed, nil
 	}
 	for _, ctr := range podSpec.Containers {
 		for _, mount := range ctr.VolumeMounts {
@@ -148,15 +148,17 @@ func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]inter
 			}
 
 			// Apply the registered ephemeral pod changes.
-			if err := ephemeral.Container.Apply(ctr); err != nil {
-				return "", false, err
+			if err = ephemeral.Container.Apply(ctr); err != nil {
+				return volName, proceed, err
 			}
 
 			podOverride["containers"] = []corev1.Container{*ctr}
-			return mount.Name, true, nil
+			volName = mount.Name
+			proceed = true
+			return volName, proceed, nil
 		}
 	}
-	return "", false, nil
+	return volName, proceed, nil
 }
 
 // volumeSpecForName adds a pod's volume spec to the override map
