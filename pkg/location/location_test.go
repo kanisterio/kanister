@@ -90,8 +90,9 @@ func (s *LocationSuite) SetUpSuite(c *check.C) {
 
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	pc := objectstore.ProviderConfig{
-		Type:   s.osType,
-		Region: s.region,
+		Type:     s.osType,
+		Region:   s.region,
+		Endpoint: os.Getenv("LOCATION_ENDPOINT"),
 	}
 	secret, err := getOSSecret(ctx, s.osType, s.profile.Credential)
 	c.Check(err, check.IsNil)

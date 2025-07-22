@@ -192,6 +192,7 @@ func (r *restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 				restorePath,
 				"",
 				input[pod].BackupID,
+				"", // backupPath - empty for backward compatibility
 				restoreDataAllJobPrefix,
 				image,
 				insecureTLS,
