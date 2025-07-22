@@ -22,11 +22,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"gopkg.in/check.v1"
 
-	kaws "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	envconfig "github.com/kanisterio/kanister/pkg/config"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -35,6 +34,26 @@ func Test(t *testing.T) { check.TestingT(t) }
 type AWSEBSSuite struct{}
 
 var _ = check.Suite(&AWSEBSSuite{})
+
+type mockEC2 struct {
+	ec2iface.EC2API
+	DescribeAvailabilityZonesFunc func(*ec2.DescribeAvailabilityZonesInput) (*ec2.DescribeAvailabilityZonesOutput, error)
+	DescribeRegionsFunc           func(*ec2.DescribeRegionsInput) (*ec2.DescribeRegionsOutput, error)
+}
+
+func (m *mockEC2) DescribeAvailabilityZones(input *ec2.DescribeAvailabilityZonesInput) (*ec2.DescribeAvailabilityZonesOutput, error) {
+	if m.DescribeAvailabilityZonesFunc != nil {
+		return m.DescribeAvailabilityZonesFunc(input)
+	}
+	return nil, nil
+}
+
+func (m *mockEC2) DescribeRegions(input *ec2.DescribeRegionsInput) (*ec2.DescribeRegionsOutput, error) {
+	if m.DescribeRegionsFunc != nil {
+		return m.DescribeRegionsFunc(input)
+	}
+	return nil, nil
+}
 
 func (s AWSEBSSuite) TestVolumeParse(c *check.C) {
 	expected := blockstorage.Volume{
@@ -84,18 +103,26 @@ func (s AWSEBSSuite) TestVolumeParse(c *check.C) {
 	c.Check(volume.Attributes, check.DeepEquals, expected.Attributes)
 }
 
-func (s AWSEBSSuite) TestGetRegions(c *check.C) {
+func (s AWSEBSSuite) TestFromRegions(c *check.C) {
 	ctx := context.Background()
-	config := map[string]string{}
+	zone := "us-east-1"
 
-	config[kaws.AccessKeyID] = envconfig.GetEnvOrSkip(c, kaws.AccessKeyID)
-	config[kaws.SecretAccessKey] = envconfig.GetEnvOrSkip(c, kaws.SecretAccessKey)
-
-	// create provider with region
-	config[kaws.ConfigRegion] = "us-west-2"
-	bsp, err := NewProvider(ctx, config)
-	c.Assert(err, check.IsNil)
-	ebsp := bsp.(*EbsStorage)
+	ebsp := &EbsStorage{
+		config: &aws.Config{},
+		newEC2Func: func(region string, config *aws.Config) (*EC2, error) {
+			return &EC2{
+				EC2API: &mockEC2{
+					DescribeAvailabilityZonesFunc: func(input *ec2.DescribeAvailabilityZonesInput) (*ec2.DescribeAvailabilityZonesOutput, error) {
+						return &ec2.DescribeAvailabilityZonesOutput{
+							AvailabilityZones: []*ec2.AvailabilityZone{
+								{ZoneName: &zone},
+							},
+						}, nil
+					},
+				},
+			}, nil
+		},
+	}
 
 	// get zones with other region
 	zones, err := ebsp.FromRegion(ctx, "us-east-1")
@@ -103,6 +130,25 @@ func (s AWSEBSSuite) TestGetRegions(c *check.C) {
 	for _, zone := range zones {
 		c.Assert(strings.Contains(zone, "us-east-1"), check.Equals, true)
 		c.Assert(strings.Contains(zone, "us-west-2"), check.Equals, false)
+	}
+}
+
+func (s AWSEBSSuite) TestGetRegions(c *check.C) {
+	ctx := context.Background()
+	region := "us-east-1"
+
+	ebsp := &EbsStorage{
+		Ec2Cli: &EC2{
+			EC2API: &mockEC2{
+				DescribeRegionsFunc: func(input *ec2.DescribeRegionsInput) (*ec2.DescribeRegionsOutput, error) {
+					return &ec2.DescribeRegionsOutput{
+						Regions: []*ec2.Region{
+							{RegionName: &region},
+						},
+					}, nil
+				},
+			},
+		},
 	}
 
 	regions, err := ebsp.GetRegions(ctx)

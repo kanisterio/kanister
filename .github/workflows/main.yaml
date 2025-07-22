@@ -76,16 +76,16 @@ jobs:
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
-    - run: |
-        make install-csi-hostpath-driver
-        make install-minio
-      if: matrix.testSuite == 'integration-test' || matrix.testSuite == 'helm-test'
     # A test (CRDSuite) that runs as part of `make test` requies atleast one CRD to
     # be present on the cluster. That's why we are only installing csi-hostpath-driver
     # before running `make test`, to create some CRDs on the cluster.
     - run: |
         make install-csi-hostpath-driver
         make install-minio
+    - run: |
+        export POD_NAME=$(kubectl get pods --namespace minio -l "release=minio" -o jsonpath="{.items[0].metadata.name}")
+        nohup kubectl port-forward $POD_NAME 9000 --namespace minio &
+        sleep 5
       if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
   build:
