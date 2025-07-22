@@ -44,6 +44,7 @@ const (
 	PrepareDataNamespaceArg   = "namespace"
 	PrepareDataImageArg       = "image"
 	PrepareDataCommandArg     = "command"
+	PrepareDataFailOnErrorArg = "failOnError"
 	PrepareDataVolumes        = "volumes"
 	PrepareDataServiceAccount = "serviceaccount"
 	PrepareDataPodOverrideArg = "podOverride"
@@ -95,7 +96,8 @@ func prepareData(
 	podOverride crv1alpha1.JSONMap,
 	annotations,
 	labels map[string]string,
-	command ...string,
+	command []string,
+	failOnError bool,
 ) (map[string]interface{}, error) {
 	// Validate volumes
 	validatedVols := make(map[string]kube.VolumeMountOptions)
@@ -127,11 +129,11 @@ func prepareData(
 	ephemeral.PodOptions.Apply(options)
 
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := prepareDataPodFunc(cli)
+	podFunc := prepareDataPodFunc(failOnError)
 	return pr.Run(ctx, podFunc)
 }
 
-func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+func prepareDataPodFunc(failOnError bool) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		pod := pc.Pod()
 
@@ -156,7 +158,17 @@ func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pc k
 
 		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, logs)
 		out, err := parseLogAndCreateOutput(logs)
-		return out, errkit.Wrap(err, "Failed to parse phase output")
+		if err != nil {
+			return nil, errkit.Wrap(err, "Failed to parse phase output")
+		}
+
+		if failOnError {
+			// Wait for pod success, otherwise fail
+			if err := pc.WaitForPodCompletion(ctx); err != nil {
+				return nil, errkit.Wrap(err, "Failed while waiting for Pod to complete", "pod", pc.PodName())
+			}
+		}
+		return out, nil
 	}
 }
 
@@ -169,6 +181,7 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	var command []string
 	var vols map[string]string
 	var bpAnnotations, bpLabels map[string]string
+	var failOnError bool
 	var err error
 	if err = Arg(args, PrepareDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -189,6 +202,9 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return nil, err
 	}
 	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, PrepareDataFailOnErrorArg, &failOnError, false); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, PrepareDataPodOverrideArg)
@@ -229,7 +245,8 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		podOverride,
 		annotations,
 		labels,
-		command...,
+		command,
+		failOnError,
 	)
 }
 
@@ -251,6 +268,7 @@ func (*prepareDataFunc) Arguments() []string {
 		PrepareDataPodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
+		PrepareDataFailOnErrorArg,
 	}
 }
 

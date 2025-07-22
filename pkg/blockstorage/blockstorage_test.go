@@ -24,12 +24,12 @@ import (
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/testutil/mockblockstorage"
 )
 
 const (
@@ -59,7 +59,7 @@ func (s *BlockStorageProviderSuite) SetUpSuite(c *check.C) {
 	var err error
 	s.args = make(map[string]string)
 	config := s.getConfig(c, s.storageRegion)
-	s.provider, err = getter.New().Get(s.storageType, config)
+	s.provider, err = mockblockstorage.NewGetter().Get(s.storageType, config)
 	c.Assert(err, check.IsNil)
 }
 
@@ -122,7 +122,7 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *check.C) {
 
 	if s.provider.Type() != blockstorage.TypeAD {
 		// Also test creating a volume from this snapshot
-		tags = map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
+		tags = map[string]string{testTagKey: testTagValue, "kanister.io/testname": "mytest"}
 		vol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *snapshot, tags)
 		c.Assert(err, check.IsNil)
 		s.volumes = append(s.volumes, vol)
@@ -184,7 +184,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *check.C) {
 	log.Print("Snapshot copied", field.M{"FromSnapshotID": srcSnapshot.ID, "ToSnapshotID": snap.ID})
 
 	config := s.getConfig(c, dstSnapshot.Region)
-	provider, err := getter.New().Get(s.storageType, config)
+	provider, err := mockblockstorage.NewGetter().Get(s.storageType, config)
 	c.Assert(err, check.IsNil)
 
 	snapDetails, err := provider.SnapshotGet(context.TODO(), snap.ID)
@@ -228,10 +228,10 @@ func (s *BlockStorageProviderSuite) TestSnapshotsList(c *check.C) {
 func (s *BlockStorageProviderSuite) createVolume(c *check.C) *blockstorage.Volume {
 	tags := []*blockstorage.KeyValue{
 		{Key: testTagKey, Value: testTagValue},
-		{Key: "kanister.io/testname", Value: c.TestName()},
+		{Key: "kanister.io/testname", Value: "mytest"},
 	}
 	vol := blockstorage.Volume{
-		SizeInBytes: 1 * blockstorage.BytesInGi,
+		SizeInBytes: 1024,
 		Tags:        tags,
 	}
 	size := vol.SizeInBytes
@@ -253,7 +253,7 @@ func (s *BlockStorageProviderSuite) createVolume(c *check.C) *blockstorage.Volum
 
 func (s *BlockStorageProviderSuite) createSnapshot(c *check.C) *blockstorage.Snapshot {
 	vol := s.createVolume(c)
-	tags := map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
+	tags := map[string]string{testTagKey: testTagValue, "kanister.io/testname": "mytest"}
 	ret, err := s.provider.SnapshotCreate(context.Background(), *vol, tags)
 	c.Assert(err, check.IsNil)
 	s.snapshots = append(s.snapshots, ret)

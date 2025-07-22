@@ -32,7 +32,6 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -40,16 +39,17 @@ import (
 )
 
 type DataSuite struct {
-	cli          kubernetes.Interface
-	crCli        versioned.Interface
-	osCli        osversioned.Interface
-	namespace    string
-	profile      *param.Profile
-	providerType objectstore.ProviderType
+	cli                  kubernetes.Interface
+	crCli                versioned.Interface
+	osCli                osversioned.Interface
+	namespace            string
+	profile              *param.Profile
+	profileLocalEndpoint *param.Profile
+	providerType         objectstore.ProviderType
 }
 
 const (
-	testBucketName = "kio-store-tests"
+	testBucketName = "tests.kanister.io"
 )
 
 var _ = check.Suite(&DataSuite{providerType: objectstore.ProviderTypeS3})
@@ -81,30 +81,8 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.namespace = cns.GetName()
 
-	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
-	c.Assert(err, check.IsNil)
-
-	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
-	c.Assert(err, check.IsNil)
-
-	var location crv1alpha1.Location
-	switch s.providerType {
-	case objectstore.ProviderTypeS3:
-		location = crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeS3Compliant,
-		}
-	case objectstore.ProviderTypeGCS:
-		location = crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeGCS,
-		}
-	default:
-		c.Fatalf("Unrecognized objectstore '%s'", s.providerType)
-	}
-	location.Prefix = "testBackupRestoreLocDelete"
-	location.Bucket = testBucketName
-	s.profile = testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
+	s.profile = s.createNewTestProfile(c, testutil.TestProfileName, false)
+	s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
 
 	err = os.Setenv("POD_NAMESPACE", s.namespace)
 	c.Assert(err, check.IsNil)
@@ -114,10 +92,6 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 
 func (s *DataSuite) TearDownSuite(c *check.C) {
 	ctx := context.Background()
-	if s.profile != nil {
-		err := location.Delete(ctx, *s.profile, "")
-		c.Assert(err, check.IsNil)
-	}
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
 	}
@@ -360,6 +334,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 		_ = runAction(c, bp, "restore", tp)
 
+		tp.Profile = s.profileLocalEndpoint
 		bp = *newLocationDeleteBlueprint()
 		_ = runAction(c, bp, "delete", tp)
 	}
@@ -478,11 +453,11 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
 							PrepareDataImageArg:     "busybox",
 							PrepareDataCommandArg: []string{
-								"ls",
-								"-l",
-								"/mnt/datadir/foo.txt",
+								"sh", "-c",
+								fmt.Sprintf("ls -la {{ .Options.%s }} && cat {{ .Options.%s }}/foo.txt", CopyVolumeDataOutputBackupRoot, CopyVolumeDataOutputBackupRoot),
 							},
-							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/datadir"},
+							PrepareDataVolumes:        map[string]string{"{{ .PVC.Name }}": fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupRoot)},
+							PrepareDataFailOnErrorArg: true,
 						},
 					},
 				},
@@ -535,6 +510,131 @@ func (s *DataSuite) TestCopyData(c *check.C) {
 	// Restore data from copy
 	_ = runAction(c, bp, "restore", tp)
 	// Validate file exists on this new PVC
+	_ = runAction(c, bp, "checkfile", tp)
+	// Delete data from copy
+	_ = runAction(c, bp, "delete", tp)
+}
+
+func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
+	return crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"addfile": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "test1",
+						Func: PrepareDataFuncName,
+						Args: map[string]interface{}{
+							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"sh", "-c",
+								"mkdir -p /mnt/source_data/subdir && echo 'test content' > /mnt/source_data/subdir/test.txt",
+							},
+							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/source_data"},
+						},
+					},
+				},
+			},
+			"copy": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "testCopy",
+						Func: CopyVolumeDataFuncName,
+						Args: map[string]interface{}{
+							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
+							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
+							CopyVolumeDataArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}/{{ .PVC.Namespace }}/{{ .PVC.Name }}",
+							CopyVolumeDataMountPathArg:      "/mnt/source_data",
+						},
+					},
+				},
+			},
+			"restore": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "testRestore",
+						Func: RestoreDataFuncName,
+						Args: map[string]interface{}{
+							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.113.0",
+							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
+							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
+							RestoreDataBackupPathArg:           fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupRoot),
+							RestoreDataVolsArg: map[string]string{
+								"{{ .PVC.Name }}": "/mnt/target_data",
+							},
+							RestoreDataRestorePathArg: "/mnt/target_data",
+						},
+					},
+				},
+			},
+			"checkfile": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Func: PrepareDataFuncName,
+						Args: map[string]interface{}{
+							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"sh", "-c",
+								"ls -la /mnt/target_data/ && cat /mnt/target_data/subdir/test.txt",
+							},
+							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/target_data"},
+						},
+					},
+				},
+			},
+			"delete": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "testDelete",
+						Func: DeleteDataFuncName,
+						Args: map[string]interface{}{
+							DeleteDataNamespaceArg:            "{{ .PVC.Namespace }}",
+							DeleteDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
+							DeleteDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupID),
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (s *DataSuite) TestCopyDataDifferentPaths(c *check.C) {
+	pvcSpec := testutil.NewTestPVC()
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvcSpec, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	tp := s.initPVCTemplateParams(c, pvc, nil)
+	bp := newCopyDataDifferentPathsTestBlueprint()
+
+	// Add a file with subdirectory on the source PVC at /mnt/source_data
+	_ = runAction(c, bp, "addfile", tp)
+	// Copy PVC data
+	out := runAction(c, bp, "copy", tp)
+
+	// Validate outputs and setup as inputs for restore
+	c.Assert(out[CopyVolumeDataOutputBackupID].(string), check.Not(check.Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupRoot].(string), check.Not(check.Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupArtifactLocation].(string), check.Not(check.Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupTag].(string), check.Not(check.Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), check.Equals, kanister.DefaultVersion)
+	options := map[string]string{
+		CopyVolumeDataOutputBackupID:               out[CopyVolumeDataOutputBackupID].(string),
+		CopyVolumeDataOutputBackupRoot:             out[CopyVolumeDataOutputBackupRoot].(string),
+		CopyVolumeDataOutputBackupArtifactLocation: out[CopyVolumeDataOutputBackupArtifactLocation].(string),
+		CopyVolumeDataOutputBackupTag:              out[CopyVolumeDataOutputBackupTag].(string),
+	}
+
+	// Create a new PVC for restoration
+	pvc2, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvcSpec, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	tp = s.initPVCTemplateParams(c, pvc2, options)
+	// Restore data from copy to different path /mnt/target_data
+	_ = runAction(c, bp, "restore", tp)
+	// Validate file exists at the correct location in target path
+	// This proves the fix works - files restore to /mnt/target_data/subdir/test.txt
+	// instead of /mnt/target_data/mnt/vol_data/pvcname/subdir/test.txt (which would be wrong)
 	_ = runAction(c, bp, "checkfile", tp)
 	// Delete data from copy
 	_ = runAction(c, bp, "delete", tp)
@@ -626,4 +726,39 @@ func (s *DataSuite) TestCheckRepositoryRepoNotAvailable(c *check.C) {
 	out2 := runAction(c, bp2, "checkRepository", tp)
 	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), check.Equals, "true")
 	c.Assert(out2[FunctionOutputVersion].(string), check.Equals, kanister.DefaultVersion)
+}
+
+func (s *DataSuite) createNewTestProfile(c *check.C, profileName string, localEndpoint bool) *param.Profile {
+	var err error
+	ctx := context.Background()
+
+	sec := testutil.NewTestProfileSecret()
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	p := testutil.NewTestProfile(s.namespace, sec.GetName())
+	p.Name = profileName
+	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	var location crv1alpha1.Location
+	switch s.providerType {
+	case objectstore.ProviderTypeS3:
+		location = crv1alpha1.Location{
+			Type: crv1alpha1.LocationTypeS3Compliant,
+		}
+	case objectstore.ProviderTypeGCS:
+		location = crv1alpha1.Location{
+			Type: crv1alpha1.LocationTypeGCS,
+		}
+	default:
+		c.Fatalf("Unrecognized objectstore '%s'", s.providerType)
+	}
+	location.Prefix = "testBackupRestoreLocDelete"
+	location.Bucket = testBucketName
+	if endpoint, ok := os.LookupEnv("LOCATION_CLUSTER_ENDPOINT"); ok && !localEndpoint {
+		location.Endpoint = endpoint
+	}
+	profile := testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
+	return profile
 }

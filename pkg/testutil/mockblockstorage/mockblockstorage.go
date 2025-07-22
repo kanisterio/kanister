@@ -80,6 +80,9 @@ func Get(storageType blockstorage.Type) (*Provider, error) {
 		Tags: []*blockstorage.KeyValue{
 			{Key: "kanister.io/jobid", Value: "unittest"},
 			{Key: "kanister.io/volid", Value: "vol"},
+			{Key: "testtag", Value: "testtagvalue"},
+			{Key: "kanister.io/testid", Value: "unittest"},
+			{Key: "kanister.io/testname", Value: "mytest"},
 		},
 		CreationTime: blockstorage.TimeStamp(time.Time{}),
 	}
@@ -95,9 +98,13 @@ func Get(storageType blockstorage.Type) (*Provider, error) {
 		Tags: []*blockstorage.KeyValue{
 			{Key: "kanister.io/jobid", Value: "unittest"},
 			{Key: "kanister.io/snapid", Value: "snap"},
+			{Key: "kanister.io/testid", Value: "unittest"},
+			{Key: "kanister.io/testname", Value: "mytest"},
+			{Key: "testtag", Value: "testtagvalue"},
 		},
 		Volume:       &snapVol,
 		CreationTime: blockstorage.TimeStamp(time.Time{}),
+		Region:       "us-east-1",
 	}
 	return &Provider{
 		storageType:       storageType,
@@ -137,6 +144,9 @@ func (p *Provider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blocks
 		Tags: []*blockstorage.KeyValue{
 			{Key: "kanister.io/jobid", Value: "unittest"},
 			{Key: "kanister.io/volid", Value: "vol"},
+			{Key: "kanister.io/testid", Value: "unittest"},
+			{Key: "kanister.io/testname", Value: "mytest"},
+			{Key: "testtag", Value: "testtagvalue"},
 		},
 		CreationTime: blockstorage.TimeStamp(time.Time{}),
 	}
@@ -185,6 +195,9 @@ func (p *Provider) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Sn
 
 // SnapshotGet mock
 func (p *Provider) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
+	if CheckID(id, p.DeletedSnapIDList) {
+		return nil, fmt.Errorf(blockstorage.SnapshotDoesNotExistError)
+	}
 	ret := p.snapshot
 	ret.ID = id
 	p.AddSnapID(id)
