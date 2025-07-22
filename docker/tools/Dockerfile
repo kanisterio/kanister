@@ -1,5 +1,5 @@
 # Build Kopia binary
-FROM golang:1.24.4-bullseye@sha256:0dcdc5b3a99a9d999d52061c8a0b4eafbb3c7bc81a81b1789d81a2eca9a2c7ab AS builder
+FROM --platform=linux/amd64 golang:1.24.4-bullseye@sha256:0dcdc5b3a99a9d999d52061c8a0b4eafbb3c7bc81a81b1789d81a2eca9a2c7ab AS builder
 
 ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
@@ -24,8 +24,7 @@ RUN git checkout ${restic_vsn}
 # use debug flag to preserve symbols
 RUN go run build.go --tags debug
 
-# Build restic binary from source - released version
-# This will allow us to bring in security fixes more up to date then apt repos
+# Build gosu binary from source - released version
 WORKDIR /
 
 RUN git clone https://github.com/tianon/gosu.git
@@ -87,6 +86,7 @@ COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 
 ADD kando /usr/local/bin/
+ADD kanctl /usr/local/bin/
 RUN microdnf -y update && microdnf -y install shadow-utils gzip && \
   adduser -U kanister -u 1000 && \
   microdnf -y remove shadow-utils && \
