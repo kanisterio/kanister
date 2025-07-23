@@ -286,7 +286,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		return nil, errkit.New(fmt.Sprintf("Snapshot %v destination ID must be empty", to))
 	}
 	// Copy operation must be initiated from the destination region.
-	ec2Cli, err := newEC2Client(to.Region, s.config.Copy())
+	ec2Cli, err := newEC2Client(to.Region, &s.Ec2Cli.EC2API.(*ec2.EC2).Config)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Could not get EC2 client")
 	}
@@ -322,7 +322,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		Description:       aws.String("Copy of " + from.ID),
 		SourceSnapshotId:  aws.String(from.ID),
 		SourceRegion:      aws.String(from.Region),
-		DestinationRegion: s.config.Region,
+		DestinationRegion: s.Ec2Cli.EC2API.(*ec2.EC2).Config.Region,
 		Encrypted:         encrypted,
 		PresignedUrl:      presignedURL,
 	}
