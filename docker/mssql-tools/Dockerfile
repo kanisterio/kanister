@@ -6,8 +6,6 @@ ENV kubectl_version="v1.18.0"
 
 # Install kando
 COPY --from=TOOLS_IMAGE /usr/local/bin/kando /usr/local/bin/kando
-# Install kanctl
-COPY --from=TOOLS_IMAGE /usr/local/bin/kanctl /usr/local/bin/kanctl
 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/${kubectl_version}/bin/linux/amd64/kubectl \
     && chmod +x ./kubectl \

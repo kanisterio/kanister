@@ -12,6 +12,3 @@ COPY --from=TOOLS_IMAGE /usr/local/bin/gosu /usr/local/bin/gosu
 
 # Install kando
 COPY --from=TOOLS_IMAGE /usr/local/bin/kando /usr/local/bin/kando
-
-# Install kanctl
-COPY --from=TOOLS_IMAGE /usr/local/bin/kanctl /usr/local/bin/kanctl
