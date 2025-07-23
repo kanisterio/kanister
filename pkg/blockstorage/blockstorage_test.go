@@ -83,6 +83,7 @@ func (s *BlockStorageProviderSuite) TestCreateVolume(c *check.C) {
 	c.Assert(err, check.IsNil)
 	volUpdated, err := s.provider.VolumeGet(context.Background(), vol.ID, vol.Az)
 	c.Assert(err, check.IsNil)
+	log.Print("Volume updated", field.M{"VolumeID": volUpdated.ID, "Tags": volUpdated.Tags})
 	// Check previously set tags still exist
 	s.checkTagsExist(c, blockstorage.KeyValueToMap(volUpdated.Tags), blockstorage.KeyValueToMap(vol.Tags))
 	// Check new tags were set
@@ -109,6 +110,7 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *check.C) {
 	c.Assert(err, check.IsNil)
 	snap, err := s.provider.SnapshotGet(context.Background(), snapshot.ID)
 	c.Assert(err, check.IsNil)
+	log.Print("Snapshot updated", field.M{"SnapshotID": snap.ID, "Tags": snap.Tags})
 	// Check previously set tags still exist
 	s.checkTagsExist(c, blockstorage.KeyValueToMap(snap.Tags), blockstorage.KeyValueToMap(snapshot.Tags))
 	// Check new tags were set
