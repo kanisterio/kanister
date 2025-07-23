@@ -82,7 +82,9 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	s.namespace = cns.GetName()
 
 	s.profile = s.createNewTestProfile(c, testutil.TestProfileName, false)
-	s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
+	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "1" {
+		s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
+	}
 
 	err = os.Setenv("POD_NAMESPACE", s.namespace)
 	c.Assert(err, check.IsNil)
