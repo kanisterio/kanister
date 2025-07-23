@@ -206,11 +206,9 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *check.C) {
 	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
 		provider, err = mockblockstorage.NewGetter().Get(s.storageType, config)
 		c.Assert(err, check.IsNil)
-
 	} else {
 		provider, err = getter.New().Get(s.storageType, config)
 		c.Assert(err, check.IsNil)
-
 	}
 
 	snapDetails, err := provider.SnapshotGet(context.TODO(), snap.ID)
