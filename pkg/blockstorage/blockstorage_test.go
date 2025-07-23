@@ -196,6 +196,9 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *check.C) {
 		c.Assert(err, check.IsNil)
 	}
 
+	log.Print("Source Snapshot", field.M{"SnapshotID": srcSnapshot.ID, "Region": srcSnapshot.Region})
+	log.Print("Destination Snapshot", field.M{"SnapshotID": snap.ID, "Region": snap.Region})
+
 	if s.storageType != blockstorage.TypeAD {
 		snap, err = s.provider.SnapshotCopy(context.TODO(), *srcSnapshot, *dstSnapshot)
 		c.Assert(err, check.IsNil)
