@@ -77,6 +77,7 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, errkit.Wrap(err, "Could not get EC2 client")
 	}
+
 	return &EbsStorage{
 		Ec2Cli:     ec2Cli,
 		Role:       config[awsconfig.ConfigRole],
@@ -238,6 +239,7 @@ func (s *EbsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blo
 		Type: s.Type(),
 		ID:   aws.StringValue(snap.VolumeId),
 	}
+
 	// TODO: fix getting region from zone
 	return &blockstorage.Snapshot{
 		ID:           aws.StringValue(snap.SnapshotId),
@@ -245,7 +247,7 @@ func (s *EbsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blo
 		Type:         s.Type(),
 		Encrypted:    aws.BoolValue(snap.Encrypted),
 		SizeInBytes:  aws.Int64Value(snap.VolumeSize) * blockstorage.BytesInGi,
-		Region:       aws.StringValue(s.config.Region),
+		Region:       aws.StringValue(s.Ec2Cli.EC2API.(*ec2.EC2).Config.Region),
 		Volume:       vol,
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(snap.StartTime)),
 	}
@@ -295,7 +297,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		si := ec2.CopySnapshotInput{
 			SourceSnapshotId:  aws.String(from.ID),
 			SourceRegion:      aws.String(from.Region),
-			DestinationRegion: s.config.Region,
+			DestinationRegion: s.Ec2Cli.EC2API.(*ec2.EC2).Config.Region,
 		}
 		rq, _ := ec2Cli.CopySnapshotRequest(&si)
 		su, err2 := rq.Presign(120 * time.Minute)
