@@ -63,7 +63,7 @@ func (s *BlockStorageProviderSuite) SetUpSuite(c *check.C) {
 	var err error
 	s.args = make(map[string]string)
 	config := s.getConfig(c, s.storageRegion)
-	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "1" {
+	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
 		s.provider, err = mockblockstorage.NewGetter().Get(s.storageType, config)
 		s.testData = map[string]any{
 			"testtag":     "testtagvalue",
@@ -202,11 +202,16 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *check.C) {
 	log.Print("Snapshot copied", field.M{"FromSnapshotID": srcSnapshot.ID, "ToSnapshotID": snap.ID})
 
 	config := s.getConfig(c, dstSnapshot.Region)
-	provider, err := getter.New().Get(s.storageType, config)
-	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "1" {
+	var provider blockstorage.Provider
+	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
 		provider, err = mockblockstorage.NewGetter().Get(s.storageType, config)
+		c.Assert(err, check.IsNil)
+
+	} else {
+		provider, err = getter.New().Get(s.storageType, config)
+		c.Assert(err, check.IsNil)
+
 	}
-	c.Assert(err, check.IsNil)
 
 	snapDetails, err := provider.SnapshotGet(context.TODO(), snap.ID)
 	c.Assert(err, check.IsNil)

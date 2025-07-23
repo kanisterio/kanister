@@ -44,7 +44,7 @@ check_dependencies() {
         export LOCATION_CLUSTER_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
         export TEST_REPOSITORY_ENCRYPTION_KEY="testKopiaRepoPassword"
         unset AWS_SESSION_TOKEN
-        export USE_MINIO=1
+        export USE_MINIO="true"
     else
         echo "Please install MinIO using 'make install-minio' and try again."
         exit 1

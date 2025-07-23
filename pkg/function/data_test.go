@@ -82,7 +82,7 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	s.namespace = cns.GetName()
 
 	s.profile = s.createNewTestProfile(c, testutil.TestProfileName, false)
-	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "1" {
+	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
 		s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
 	}
 
@@ -336,7 +336,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 		_ = runAction(c, bp, "restore", tp)
 
-		if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "1" {
+		if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
 			tp.Profile = s.profileLocalEndpoint
 		}
 		bp = *newLocationDeleteBlueprint()
