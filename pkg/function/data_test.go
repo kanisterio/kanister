@@ -334,7 +334,9 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 		_ = runAction(c, bp, "restore", tp)
 
-		tp.Profile = s.profileLocalEndpoint
+		if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "1" {
+			tp.Profile = s.profileLocalEndpoint
+		}
 		bp = *newLocationDeleteBlueprint()
 		_ = runAction(c, bp, "delete", tp)
 	}
