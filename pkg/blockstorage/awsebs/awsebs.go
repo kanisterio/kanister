@@ -278,7 +278,6 @@ func (s *EbsStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 // SnapshotCopy copies snapshot 'from' to 'to'. Follows aws restrictions regarding encryption;
 // i.e., copying unencrypted to encrypted snapshot is allowed but not vice versa.
 func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
-	log.Print("Regions", field.M{"FromRegion": from.Region, "ToRegion": to.Region})
 	if to.Region == "" {
 		return nil, errkit.New("Destination snapshot AvailabilityZone must be specified")
 	}
@@ -377,7 +376,6 @@ func (s *EbsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 	if err != nil {
 		return nil, err
 	}
-	log.Print("Region for snapshot", field.M{"Region": region, "VolumeID": volume.ID})
 	ms := s.snapshotParse(ctx, snap)
 	ms.Region = region
 	for _, tag := range snap.Tags {

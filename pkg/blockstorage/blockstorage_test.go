@@ -79,8 +79,6 @@ func (s *BlockStorageProviderSuite) SetUpSuite(c *check.C) {
 		}
 	}
 	c.Assert(err, check.IsNil)
-	c.Log()
-	log.Print("Using mock blockstorage provider", field.M{"provider": s.provider})
 }
 
 func (s *BlockStorageProviderSuite) TearDownTest(c *check.C) {
@@ -195,9 +193,6 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *check.C) {
 		snap, err = s.provider.SnapshotCopyWithArgs(context.TODO(), *srcSnapshot, *dstSnapshot, s.args)
 		c.Assert(err, check.IsNil)
 	}
-
-	log.Print("Source Snapshot", field.M{"SnapshotID": srcSnapshot.ID, "Region": srcSnapshot.Region})
-	log.Print("Destination Snapshot", field.M{"SnapshotID": dstSnapshot.ID, "Region": dstSnapshot.Region})
 
 	if s.storageType != blockstorage.TypeAD {
 		snap, err = s.provider.SnapshotCopy(context.TODO(), *srcSnapshot, *dstSnapshot)
