@@ -61,6 +61,7 @@ func (s *BlockStorageProviderSuite) SetUpSuite(c *check.C) {
 	config := s.getConfig(c, s.storageRegion)
 	s.provider, err = mockblockstorage.NewGetter().Get(s.storageType, config)
 	c.Assert(err, check.IsNil)
+	log.Print("Using mock blockstorage provider", field.M{"Type": s.provider.Type(), "Region": s.storageRegion, "AZ": s.storageAZ})
 }
 
 func (s *BlockStorageProviderSuite) TearDownTest(c *check.C) {
@@ -248,6 +249,7 @@ func (s *BlockStorageProviderSuite) createVolume(c *check.C) *blockstorage.Volum
 	c.Assert(err, check.IsNil)
 	s.volumes = append(s.volumes, ret)
 	c.Assert(ret.SizeInBytes, check.Equals, int64(size))
+	log.Print("Volume updated", field.M{"VolumeID": ret.ID, "Tags": ret.Tags})
 	s.checkTagsExist(c, blockstorage.KeyValueToMap(ret.Tags), blockstorage.KeyValueToMap(tags))
 	s.checkStdTagsExist(c, blockstorage.KeyValueToMap(ret.Tags))
 	return ret
@@ -259,6 +261,7 @@ func (s *BlockStorageProviderSuite) createSnapshot(c *check.C) *blockstorage.Sna
 	ret, err := s.provider.SnapshotCreate(context.Background(), *vol, tags)
 	c.Assert(err, check.IsNil)
 	s.snapshots = append(s.snapshots, ret)
+	log.Print("Snapshot updated", field.M{"SnapshotID": ret.ID, "Tags": ret.Tags})
 	s.checkTagsExist(c, blockstorage.KeyValueToMap(ret.Tags), tags)
 	c.Assert(s.provider.SnapshotCreateWaitForCompletion(context.Background(), ret), check.IsNil)
 	c.Assert(ret.Volume, check.NotNil)
