@@ -204,7 +204,10 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *check.C) {
 	log.Print("Snapshot copied", field.M{"FromSnapshotID": srcSnapshot.ID, "ToSnapshotID": snap.ID})
 
 	config := s.getConfig(c, dstSnapshot.Region)
-	provider, err := mockblockstorage.NewGetter().Get(s.storageType, config)
+	provider, err := getter.New().Get(s.storageType, config)
+	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "1" {
+		provider, err = mockblockstorage.NewGetter().Get(s.storageType, config)
+	}
 	c.Assert(err, check.IsNil)
 
 	snapDetails, err := provider.SnapshotGet(context.TODO(), snap.ID)
