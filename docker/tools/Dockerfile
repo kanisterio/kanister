@@ -24,7 +24,7 @@ RUN git checkout ${restic_vsn}
 # use debug flag to preserve symbols
 RUN go run build.go --tags debug
 
-# Build gosu binary from source - released version
+# Build restic binary from source - released version
 WORKDIR /
 
 RUN git clone https://github.com/tianon/gosu.git
