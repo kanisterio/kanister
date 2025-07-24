@@ -398,6 +398,8 @@ github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20250930185039-ccb63ada4a21 h1:NeSbLA0HG59ocJTfA4U8d6XIKuYK+D8os3Y6XkTolRo=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20250930185039-ccb63ada4a21/go.mod h1:5xCHhjpJfKyCTQVEuXmZd22+aKokRg01e0Y4GTswYlQ=
+github.com/kastenhq/datamover v0.0.0-20250724191744-12c90a235bbb h1:M/U7hv+sIRK/cAR1YQ/OuKxeg43lmW2FOdC1e3+I6uo=
+github.com/kastenhq/datamover v0.0.0-20250724191744-12c90a235bbb/go.mod h1:NVMuIHpXtpktBbDeG+UJrmlMMFjr/Ol94EU51ReMdbA=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
@@ -940,5 +942,3 @@ sigs.k8s.io/yaml v1.1.0/go.mod h1:UJmg0vDUVViEyp3mgSv9WPwZCDxu4rQW1olrI1uml+o=
 sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
 sigs.k8s.io/yaml v1.4.0 h1:Mk1wCc2gy/F0THH0TAp1QYyJNzRm2KCLy3o5ASXVI5E=
 sigs.k8s.io/yaml v1.4.0/go.mod h1:Ejl7/uTz7PSA4eKMyQCUTnhZYNmLIl+5c2lQPGR2BPY=
-github.com/kastenhq/datamover v0.0.0-20250704200940-80224e387e93 h1:uQva5ZxtplwYN6qB9rkOxMsAhu6aAXEJ9G0OJJLC9vQ=
-github.com/kastenhq/datamover v0.0.0-20250704200940-80224e387e93/go.mod h1:NVMuIHpXtpktBbDeG+UJrmlMMFjr/Ol94EU51ReMdbA=

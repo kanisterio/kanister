@@ -34,7 +34,6 @@ require (
 	github.com/kanisterio/errkit v0.0.3
 	github.com/kanisterio/safecli v0.0.10
 	github.com/kopia/kopia v0.20.2-0.20250717071305-692c1f465ba3
-	github.com/kastenhq/datamover v0.0.0-20250704200940-80224e387e93
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
@@ -258,3 +257,32 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.2 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.1 // indirect
 )
+
+require github.com/kastenhq/datamover v0.0.0-20250724191744-12c90a235bbb
+
+require (
+	al.essio.dev/pkg/shellescape v1.6.0 // indirect
+	cel.dev/expr v0.24.0 // indirect
+	cloud.google.com/go/monitoring v1.24.2 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.53.0 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
+	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
+	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
+	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
+	github.com/minio/crc64nvme v1.0.2 // indirect
+	github.com/petar/GoLLRB v0.0.0-20210522233825-ae3b015fd3e9 // indirect
+	github.com/philhofer/fwd v1.2.0 // indirect
+	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
+	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
+	github.com/tinylib/msgp v1.3.0 // indirect
+	github.com/zeebo/errs v1.4.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/contrib/detectors/gcp v1.37.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.37.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.2 // indirect
+)
+
