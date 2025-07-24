@@ -25,6 +25,7 @@ RUN git checkout ${restic_vsn}
 RUN go run build.go --tags debug
 
 # Build restic binary from source - released version
+# This will allow us to bring in security fixes more up to date then apt repos
 WORKDIR /
 
 RUN git clone https://github.com/tianon/gosu.git
