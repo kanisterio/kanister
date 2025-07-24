@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/jpillora/backoff"
 	"github.com/kanisterio/errkit"
 
@@ -46,15 +45,14 @@ var _ zone.Mapper = (*EbsStorage)(nil)
 
 // EbsStorage implements blockstorage.Provider
 type EbsStorage struct {
-	Ec2Cli     *EC2
-	Role       string
-	config     *aws.Config
-	newEC2Func func(string, *aws.Config) (*EC2, error)
+	Ec2Cli *EC2
+	Role   string
+	config *aws.Config
 }
 
 // EC2 is kasten's wrapper around ec2.EC2 structs
 type EC2 struct {
-	ec2iface.EC2API
+	*ec2.EC2
 	DryRun bool
 }
 
@@ -79,10 +77,9 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	}
 
 	return &EbsStorage{
-		Ec2Cli:     ec2Cli,
-		Role:       config[awsconfig.ConfigRole],
-		config:     awsConfig,
-		newEC2Func: newEC2Client,
+		Ec2Cli: ec2Cli,
+		Role:   config[awsconfig.ConfigRole],
+		config: awsConfig,
 	}, nil
 }
 
@@ -96,7 +93,7 @@ func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
 		return nil, errkit.Wrap(err, "Failed to create session for EBS")
 	}
 	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(config.Credentials)
-	return &EC2{EC2API: ec2.New(s, conf)}, nil
+	return &EC2{EC2: ec2.New(s, conf)}, nil
 }
 
 // VolumeCreate is part of blockstorage.Provider
@@ -247,7 +244,7 @@ func (s *EbsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blo
 		Type:         s.Type(),
 		Encrypted:    aws.BoolValue(snap.Encrypted),
 		SizeInBytes:  aws.Int64Value(snap.VolumeSize) * blockstorage.BytesInGi,
-		Region:       aws.StringValue(s.Ec2Cli.EC2API.(*ec2.EC2).Config.Region),
+		Region:       aws.StringValue(s.Ec2Cli.Config.Region),
 		Volume:       vol,
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(snap.StartTime)),
 	}
@@ -285,7 +282,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		return nil, errkit.New(fmt.Sprintf("Snapshot %v destination ID must be empty", to))
 	}
 	// Copy operation must be initiated from the destination region.
-	ec2Cli, err := newEC2Client(to.Region, &s.Ec2Cli.EC2API.(*ec2.EC2).Config)
+	ec2Cli, err := newEC2Client(to.Region, &s.Ec2Cli.Config)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Could not get EC2 client")
 	}
@@ -296,7 +293,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		si := ec2.CopySnapshotInput{
 			SourceSnapshotId:  aws.String(from.ID),
 			SourceRegion:      aws.String(from.Region),
-			DestinationRegion: s.Ec2Cli.EC2API.(*ec2.EC2).Config.Region,
+			DestinationRegion: s.Ec2Cli.Config.Region,
 		}
 		rq, _ := ec2Cli.CopySnapshotRequest(&si)
 		su, err2 := rq.Presign(120 * time.Minute)
@@ -321,7 +318,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		Description:       aws.String("Copy of " + from.ID),
 		SourceSnapshotId:  aws.String(from.ID),
 		SourceRegion:      aws.String(from.Region),
-		DestinationRegion: s.Ec2Cli.EC2API.(*ec2.EC2).Config.Region,
+		DestinationRegion: s.Ec2Cli.Config.Region,
 		Encrypted:         encrypted,
 		PresignedUrl:      presignedURL,
 	}
@@ -659,7 +656,7 @@ func GetRegionFromEC2Metadata() (string, error) {
 
 // FromRegion is part of zone.Mapper
 func (s *EbsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := s.newEC2Func(region, s.config)
+	ec2Cli, err := newEC2Client(region, s.config)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Could not get EC2 client while fetching zones FromRegion", "region", region)
 	}
