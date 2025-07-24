@@ -18,50 +18,34 @@ package function
 
 import (
 	"context"
-	"io"
 	"time"
 
 	"github.com/kanisterio/errkit"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/datamover/pkg/client"
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/utils"
-	"github.com/kastenhq/datamover/client"
 )
 
 const (
-	RestoreVolumeDataDMFuncName           = "RestoreVolumeDataDM"
-	RestoreVolumeDataDMArgNamespace       = "namespace"
-	RestoreVolumeDataDMArgImage           = "image"
-	RestoreVolumeDataDMArgVolume          = "volume" // TODO: PVC???
-	RestoreVolumeDataDMArgDatamoverServer = "datamoverServer"
-	RestoreVolumeDataDMArgDataPath        = "dataPath"     // TODO: dataPathPrefix???
-	RestoreVolumeDataDMArgBackupId        = "backupID"     // Backup id
-	RestoreVolumeDataDMArgClientSecret    = "clientSecret" // TODO: clientSecretVolume???
-	RestoreVolumeDataDMArgConfig          = "config"
-	RestoreVolumeDataDMArgSecrets         = "secrets"
+	RestoreVolumeDataDMFuncName    = "RestoreVolumeDataDM"
+	RestoreVolumeDataDMArgVolume   = "volume"   // TODO: PVC???
+	RestoreVolumeDataDMArgDataPath = "dataPath" // TODO: dataPathPrefix???
+	RestoreVolumeDataDMArgBackupId = "backupID" // Backup id
 )
 
 type RestoreVolumeDataDM struct {
-	Namespace          string
-	Image              string
-	Volume             string // PVC??
-	DataMoverServerRef DataMoverServerRef
-	DataPath           string
-	BackupId           string
-	ClientSecret       string
-	Secrets            []string
-	ConfigMap          *string
-	progressPercent    string
+	Volume          string // PVC??
+	DataPath        string
+	BackupId        string
+	dmArgs          datamoverArgs
+	progressPercent string
 }
 
 func init() {
@@ -82,13 +66,13 @@ func (rvd *RestoreVolumeDataDM) Name() string {
 
 func (rvd *RestoreVolumeDataDM) RequiredArgs() []string {
 	return []string{
-		RestoreVolumeDataDMArgNamespace,
-		RestoreVolumeDataDMArgImage,
+		DMArgNamespace,
+		DMArgImage,
 		RestoreVolumeDataDMArgVolume,
-		RestoreVolumeDataDMArgDatamoverServer,
+		DMArgDatamoverSession,
 		RestoreVolumeDataDMArgDataPath,
 		RestoreVolumeDataDMArgBackupId,
-		RestoreVolumeDataDMArgClientSecret,
+		DMArgClientSecret,
 		// TODO: implementation specific secrets
 		// TLS fingerprint secret
 	}
@@ -96,8 +80,10 @@ func (rvd *RestoreVolumeDataDM) RequiredArgs() []string {
 
 func (rvd *RestoreVolumeDataDM) Arguments() []string {
 	return append(rvd.RequiredArgs(), []string{
-		RestoreVolumeDataDMArgConfig,
-		RestoreVolumeDataDMArgSecrets,
+		DMArgConfig,
+		DMArgSecrets,
+		DMArgEnv,
+		DMArgPodOptions,
 	}...)
 }
 
@@ -115,12 +101,6 @@ func (rvd *RestoreVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParam
 	defer func() { rvd.progressPercent = progress.CompletedPercent }()
 
 	var err error
-	if err = Arg(args, RestoreVolumeDataDMArgNamespace, &rvd.Namespace); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, RestoreVolumeDataDMArgImage, &rvd.Image); err != nil {
-		return nil, err
-	}
 	if err = Arg(args, RestoreVolumeDataDMArgVolume, &rvd.Volume); err != nil {
 		return nil, err
 	}
@@ -132,53 +112,11 @@ func (rvd *RestoreVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParam
 		return nil, err
 	}
 
-	// TODO: we can validate that this secret is in datamover clients secret if we have access to datamover server secrets
-	var actionClientSecretName string
-	if err = Arg(args, RestoreVolumeDataDMArgClientSecret, &actionClientSecretName); err != nil {
+	dmArgs, err := getDatamoverArgs(tp, args)
+	if err != nil {
 		return nil, err
 	}
-
-	clientSecretSpec, ok := tp.Secrets[actionClientSecretName]
-	if !ok {
-		return nil, errkit.New("Client secret not found in the actionset:", "secretName", actionClientSecretName)
-	}
-	if clientSecretSpec.Namespace != rvd.Namespace {
-		return nil, errkit.New("Client secret in the actionset is in the wrong namespace:", "secretName", actionClientSecretName, "secretNamespace", clientSecretSpec.Namespace, "namespace", rvd.Namespace)
-	}
-	rvd.ClientSecret = clientSecretSpec.Name
-
-	var configmap string
-	if err = OptArg(args, RestoreVolumeDataDMArgConfig, &configmap, ""); err != nil {
-		return nil, err
-	}
-	if configmap != "" {
-		rvd.ConfigMap = &configmap
-	}
-
-	var actionSecrets []string
-	if err = OptArg(args, RestoreVolumeDataDMArgSecrets, &actionSecrets, []string{}); err != nil {
-		return nil, err
-	}
-
-	secretNames := []string{}
-	for _, actionSecret := range actionSecrets {
-		secretSpec, ok := tp.Secrets[actionSecret]
-		if ok {
-			if secretSpec.Namespace == rvd.Namespace {
-				secretNames = append(secretNames, secretSpec.Name)
-			} else {
-				log.Info().Print("Secret reference from different namespace. Ignoring", field.M{"secretName": secretSpec.Name, "secretNamespace": secretSpec.Namespace})
-			}
-		}
-	}
-	rvd.Secrets = secretNames
-
-	var serverRef DataMoverServerRef
-	if err = Arg(args, RestoreVolumeDataDMArgDatamoverServer, &serverRef); err != nil {
-		return nil, err
-	}
-
-	rvd.DataMoverServerRef = serverRef
+	rvd.dmArgs = *dmArgs
 
 	return rvd.RunPod(ctx)
 }
@@ -194,83 +132,31 @@ func (rvd *RestoreVolumeDataDM) RunPod(ctx context.Context) (map[string]interfac
 		return nil, errkit.Wrap(err, "Failed to create dynamic Kubernetes client")
 	}
 
-	pod, err := client.CreateClientPod(ctx, cli, dynCli, client.CreateClientArgs{
-		// FIXME: support tags??
-		Operation:       client.FileSystemRestoreOperation{Path: rvd.DataPath, BackupID: rvd.BackupId, PVC: rvd.Volume},
-		Namespace:       rvd.Namespace,
-		Image:           rvd.Image,
-		ServerNamespace: rvd.DataMoverServerRef.Namespace,
-		ServerName:      rvd.DataMoverServerRef.Name,
-		ConfigMap:       rvd.ConfigMap,
-		Secrets:         rvd.Secrets,
-		CredentialsConfig: client.ClientCredentialsConfig{
-			CredentialsMode: client.ClientCredentialsSecret,
-			SecretName:      &rvd.ClientSecret,
-		},
-	})
+	operation := client.FileSystemRestoreOperation{Path: rvd.DataPath, BackupID: rvd.BackupId, PVC: rvd.Volume}
+	clientArgs := makeCreateClientArgs(rvd.dmArgs, operation)
+
+	pod, err := client.CreateClientPod(ctx, cli, dynCli, clientArgs)
 
 	if err != nil {
 		return nil, errkit.Wrap(err, "Unable to create pod")
 	}
 
-	pc, err := rvd.runPod(ctx, cli, pod)
+	err = monitorDatamoverPod(ctx, cli, pod)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Pod run error")
 	}
 
-	podOutput, err := rvd.getPodLogs(ctx, pc)
+	podOutputReader, err := streamPodLogs(ctx, cli, *pod, client.MainContainerName)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Cannot get pod logs")
 	}
 
-	// FIXME: parse output from restore
-	// FIXME: update progress percent
-	output := map[string]any{
-		"output": podOutput,
-	}
-	return output, nil
-}
-
-func (rvd *RestoreVolumeDataDM) runPod(ctx context.Context, cli kubernetes.Interface, pod *corev1.Pod) (kube.PodController, error) {
-	pc, err := kube.NewPodControllerForExistingPod(cli, pod)
+	out, err := output.LogAndParse(ctx, podOutputReader)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
-	ctx = field.Context(ctx, consts.ContainerNameKey, pod.Spec.Containers[0].Name)
-	go func() {
-		<-ctx.Done()
-		err := pc.StopPod(context.Background(), kube.PodControllerInfiniteStopTime, int64(0))
-		if err != nil {
-			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
-		}
-	}()
-
-	if err := pc.WaitForPodReady(ctx); err != nil {
-		return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
-	}
-
-	// Wait for pod completion
-	if err := pc.WaitForPodCompletion(ctx); err != nil {
-		return nil, errkit.Wrap(err, "Failed while waiting for Pod to complete", "pod", pc.PodName())
-	}
-	return pc, nil
-}
-
-func (rvd *RestoreVolumeDataDM) getPodLogs(ctx context.Context, pc kube.PodController) (string, error) {
-	ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
-	// Fetch logs from the pod
-	r, err := pc.StreamPodLogs(ctx)
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to fetch logs from the pod")
-	}
-	// FIXME: k8s logs stdout and stderro together. Do we need to separate them here?
-	stdout, err := io.ReadAll(r)
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to read logs stream from the pod")
-	}
-	return string(stdout), nil
+	return out, nil
 }
 
 func (rvd *RestoreVolumeDataDM) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {

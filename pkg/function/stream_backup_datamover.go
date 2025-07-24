@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/kanisterio/errkit"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kanisterio/datamover/pkg/client"
@@ -32,29 +33,28 @@ import (
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
-// FIXME: arg to mount PVC as read-only
 const (
-	CopyVolumeDataDMFuncName      = "CopyVolumeDataDM"
-	CopyVolumeDataDMArgVolume     = "volume"   // TODO: PVC???
-	CopyVolumeDataDMArgDataPath   = "dataPath" // TODO: dataPathPrefix???
-	CopyVolumeDataDMArgTag        = "tag"      // Backup tag
-	CopyVolumeDataDMArgEnv        = "env"
-	CopyVolumeDataDMArgPodOptions = "podOptions"
+	StreamBackupDMFuncName            = "StreamBackupDM"
+	StreamBackupDMArgGenerator        = "streamGenerator"
+	StreamBackupDMArgBackupObjectName = "backupObjectName"
+	StreamBackupDMArgTag              = "tag" // Backup tag
+	StreamBackupDMArgInitImage        = "initImage"
 )
 
-type CopyVolumeDataDM struct {
-	Volume          string // PVC??
-	DataPath        string
-	Tag             string
-	dmArgs          datamoverArgs
-	progressPercent string
+type StreamBackupDM struct {
+	StreamGenerator  corev1.Container
+	BackupObjectName string
+	Tag              string
+	InitImage        string
+	dmArgs           datamoverArgs
+	progressPercent  string
 }
 
 func init() {
-	_ = kanister.Register(&CopyVolumeDataDM{})
+	_ = kanister.Register(&StreamBackupDM{})
 }
 
-var _ kanister.Func = (*CopyVolumeDataDM)(nil)
+var _ kanister.Func = (*StreamBackupDM)(nil)
 
 // NOTE: since PVCs and secrets are namespaced, we need to have client secret in
 // the same namespace as the PVC (and consequently the one for the pod)
@@ -62,50 +62,64 @@ var _ kanister.Func = (*CopyVolumeDataDM)(nil)
 // better to keep only relevant client secret in app namespace, which makes
 // creation of server secrets FROM client secrets more attractive than other way around
 
-func (cvd *CopyVolumeDataDM) Name() string {
-	return CopyVolumeDataDMFuncName
+func (streamBackup *StreamBackupDM) Name() string {
+	return StreamBackupDMFuncName
 }
 
-func (cvd *CopyVolumeDataDM) RequiredArgs() []string {
+func (streamBackup *StreamBackupDM) RequiredArgs() []string {
 	return []string{
 		DMArgNamespace,
 		DMArgImage,
-		CopyVolumeDataDMArgVolume,
 		DMArgDatamoverSession,
-		CopyVolumeDataDMArgDataPath,
+		StreamBackupDMArgGenerator,
 		DMArgClientSecret,
+		// TODO: implementation specific secrets
+		// TLS fingerprint secret
 	}
 }
 
-func (cvd *CopyVolumeDataDM) Arguments() []string {
-	return append(cvd.RequiredArgs(), []string{
-		CopyVolumeDataDMArgTag,
+func (streamBackup *StreamBackupDM) Arguments() []string {
+	return append(streamBackup.RequiredArgs(), []string{
+		StreamBackupDMArgTag,
+		StreamBackupDMArgBackupObjectName,
+		StreamBackupDMArgInitImage,
 		DMArgConfig,
 		DMArgSecrets,
-		CopyVolumeDataDMArgEnv,
-		CopyVolumeDataDMArgPodOptions,
+		DMArgEnv,
+		DMArgPodOptions,
 	}...)
 }
 
-func (cvd *CopyVolumeDataDM) Validate(args map[string]any) error {
-	if err := utils.CheckSupportedArgs(cvd.Arguments(), args); err != nil {
+func (streamBackup *StreamBackupDM) Validate(args map[string]any) error {
+	if err := utils.CheckSupportedArgs(streamBackup.Arguments(), args); err != nil {
 		return err
 	}
 
-	return utils.CheckRequiredArgs(cvd.RequiredArgs(), args)
+	return utils.CheckRequiredArgs(streamBackup.RequiredArgs(), args)
+	// TODO: validate that generator is a container and datamover session
 }
 
-func (cvd *CopyVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (streamBackup *StreamBackupDM) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+
+	streamBackup.progressPercent = progress.StartedPercent
+	defer func() { streamBackup.progressPercent = progress.CompletedPercent }()
 
 	var err error
-	if err = Arg(args, CopyVolumeDataDMArgVolume, &cvd.Volume); err != nil {
+	var generatorContainer corev1.Container
+	if err = Arg(args, StreamBackupDMArgGenerator, &generatorContainer); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, CopyVolumeDataDMArgDataPath, &cvd.DataPath); err != nil {
+	streamBackup.StreamGenerator = generatorContainer
+
+	if err = OptArg(args, StreamBackupDMArgTag, &streamBackup.Tag, ""); err != nil {
 		return nil, err
 	}
 
-	if err = OptArg(args, CopyVolumeDataDMArgTag, &cvd.Tag, ""); err != nil {
+	if err = OptArg(args, StreamBackupDMArgBackupObjectName, &streamBackup.BackupObjectName, "data"); err != nil {
+		return nil, err
+	}
+
+	if err = OptArg(args, StreamBackupDMArgInitImage, &streamBackup.InitImage, ""); err != nil {
 		return nil, err
 	}
 
@@ -113,15 +127,12 @@ func (cvd *CopyVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err != nil {
 		return nil, err
 	}
-	cvd.dmArgs = *dmArgs
+	streamBackup.dmArgs = *dmArgs
 
-	return cvd.RunPod(ctx)
+	return streamBackup.RunPod(ctx)
 }
 
-func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}, error) {
-	cvd.progressPercent = progress.StartedPercent
-	defer func() { cvd.progressPercent = progress.CompletedPercent }()
-
+func (streamBackup *StreamBackupDM) RunPod(ctx context.Context) (map[string]interface{}, error) {
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
@@ -131,21 +142,13 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create dynamic Kubernetes client")
 	}
+	operation := client.StreamBackupOperation{
+		Tag:              streamBackup.Tag,
+		StreamGenerator:  streamBackup.StreamGenerator,
+		BackupObjectName: streamBackup.BackupObjectName,
+		InitImage:        streamBackup.InitImage}
 
-	// Validate PVC exists
-	pvc, err := cli.CoreV1().PersistentVolumeClaims(cvd.dmArgs.namespace).Get(ctx, cvd.Volume, metav1.GetOptions{})
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", cvd.dmArgs.namespace, "name", cvd.Volume)
-	}
-
-	// FIXME: set owner reference for created pod (actionset)
-	operation := client.FileSystemBackupOperation{
-		Path:          cvd.DataPath,
-		Tag:           cvd.Tag,
-		PVC:           cvd.Volume,
-		ReadOnlyMount: kube.PVCContainsReadOnlyAccessMode(pvc),
-	}
-	clientArgs := makeCreateClientArgs(cvd.dmArgs, operation)
+	clientArgs := makeCreateClientArgs(streamBackup.dmArgs, operation)
 
 	pod, err := client.CreateClientPod(ctx, cli, dynCli, clientArgs)
 
@@ -173,10 +176,10 @@ func (cvd *CopyVolumeDataDM) RunPod(ctx context.Context) (map[string]interface{}
 	return kopiaOutput, nil
 }
 
-func (cvd *CopyVolumeDataDM) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
+func (streamBackup *StreamBackupDM) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	metav1Time := metav1.NewTime(time.Now())
 	return crv1alpha1.PhaseProgress{
-		ProgressPercent:    cvd.progressPercent,
+		ProgressPercent:    streamBackup.progressPercent,
 		LastTransitionTime: &metav1Time,
 	}, nil
 }

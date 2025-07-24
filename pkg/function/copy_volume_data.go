@@ -45,6 +45,7 @@ const (
 	CopyVolumeDataImageArg                     = "image"
 	CopyVolumeDataVolumeArg                    = "volume"
 	CopyVolumeDataArtifactPrefixArg            = "dataArtifactPrefix"
+	CopyVolumeDataOutputRootID                 = "rootID"
 	CopyVolumeDataOutputBackupID               = "backupID"
 	CopyVolumeDataOutputBackupRoot             = "backupRoot"
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
