@@ -196,16 +196,15 @@ func (rvd *RestoreVolumeDataDM) RunPod(ctx context.Context) (map[string]interfac
 
 	pod, err := client.CreateClientPod(ctx, cli, dynCli, client.CreateClientArgs{
 		// FIXME: support tags??
-		Operation:       client.FileSystemRestoreOperation{Path: rvd.DataPath, BackupID: rvd.BackupId, PVC: rvd.Volume},
-		Namespace:       rvd.Namespace,
-		Image:           rvd.Image,
-		ServerNamespace: rvd.DataMoverServerRef.Namespace,
-		ServerName:      rvd.DataMoverServerRef.Name,
-		ConfigMap:       rvd.ConfigMap,
-		Secrets:         rvd.Secrets,
-		CredentialsConfig: client.ClientCredentialsConfig{
-			CredentialsMode: client.ClientCredentialsSecret,
-			SecretName:      &rvd.ClientSecret,
+		Operation:        client.FileSystemRestoreOperation{Path: rvd.DataPath, BackupID: rvd.BackupId, PVC: rvd.Volume},
+		Namespace:        rvd.Namespace,
+		Image:            rvd.Image,
+		SessionNamespace: rvd.DataMoverServerRef.Namespace,
+		SessionName:      rvd.DataMoverServerRef.Name,
+		ConfigMap:        rvd.ConfigMap,
+		Secrets:          rvd.Secrets,
+		CredentialsConfig: client.ClientCredentialsSecret{
+			SecretName: rvd.ClientSecret,
 		},
 	})
 
@@ -231,6 +230,7 @@ func (rvd *RestoreVolumeDataDM) RunPod(ctx context.Context) (map[string]interfac
 	return output, nil
 }
 
+// FIXME: reuse these for all datamover functions
 func (rvd *RestoreVolumeDataDM) runPod(ctx context.Context, cli kubernetes.Interface, pod *corev1.Pod) (kube.PodController, error) {
 	pc, err := kube.NewPodControllerForExistingPod(cli, pod)
 	if err != nil {
@@ -250,6 +250,8 @@ func (rvd *RestoreVolumeDataDM) runPod(ctx context.Context, cli kubernetes.Inter
 	if err := pc.WaitForPodReady(ctx); err != nil {
 		return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
 	}
+
+	// FIXME: update progress percent
 
 	// Wait for pod completion
 	if err := pc.WaitForPodCompletion(ctx); err != nil {
