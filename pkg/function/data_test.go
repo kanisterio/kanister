@@ -49,7 +49,7 @@ type DataSuite struct {
 }
 
 const (
-	testBucketName = "tests.kanister.io"
+	testBucketName = "kio-store-tests"
 )
 
 var _ = check.Suite(&DataSuite{providerType: objectstore.ProviderTypeS3})
@@ -82,7 +82,9 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	s.namespace = cns.GetName()
 
 	s.profile = s.createNewTestProfile(c, testutil.TestProfileName, false)
-	s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
+	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
+		s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
+	}
 
 	err = os.Setenv("POD_NAMESPACE", s.namespace)
 	c.Assert(err, check.IsNil)
@@ -334,7 +336,9 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 		_ = runAction(c, bp, "restore", tp)
 
-		tp.Profile = s.profileLocalEndpoint
+		if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
+			tp.Profile = s.profileLocalEndpoint
+		}
 		bp = *newLocationDeleteBlueprint()
 		_ = runAction(c, bp, "delete", tp)
 	}

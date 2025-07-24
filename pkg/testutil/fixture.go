@@ -86,11 +86,13 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 	var key, val string
 	switch osType {
 	case objectstore.ProviderTypeS3:
-		if region, ok := os.LookupEnv(awsconfig.Region); ok && location.Region == "" {
-			location.Region = region
-		}
-		if endpoint, ok := os.LookupEnv("LOCATION_ENDPOINT"); ok && location.Endpoint == "" {
-			location.Endpoint = endpoint
+		if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
+			if region, ok := os.LookupEnv(awsconfig.Region); ok && location.Region == "" {
+				location.Region = region
+			}
+			if endpoint, ok := os.LookupEnv("LOCATION_ENDPOINT"); ok && location.Endpoint == "" {
+				location.Endpoint = endpoint
+			}
 		}
 
 		key = GetEnvOrSkip(c, awsconfig.AccessKeyID)
