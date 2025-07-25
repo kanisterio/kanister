@@ -262,7 +262,6 @@ func (streamBackup *StreamBackupDM) RunPod(ctx context.Context) (map[string]inte
 		CopyVolumeDataOutputBackupSize:      logSize,
 		CopyVolumeDataOutputPhysicalSize:    phySize,
 		CopyVolumeDataOutputBackupFileCount: fileCount,
-		CopyVolumeDataOutputPodName:         pod.Name,
 	}
 	return output, nil
 }

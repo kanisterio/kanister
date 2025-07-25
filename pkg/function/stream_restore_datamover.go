@@ -278,7 +278,7 @@ func (streamRestore *StreamRestoreDM) getPodLogs(ctx context.Context, cli kubern
 	ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 	// Fetch logs from the pod
 	// FIXME default value for injestor container name??
-	reader, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name, streamRestore.StreamIngestor.Name)
+	reader, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name, streamRestore.StreamIngestor.Name, nil)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to fetch logs from the pod")
 	}

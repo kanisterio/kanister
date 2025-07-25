@@ -35,7 +35,6 @@ require (
 	github.com/kanisterio/errkit v0.0.3
 	github.com/kanisterio/safecli v0.0.10
 	github.com/kopia/kopia v0.20.2-0.20250717071305-692c1f465ba3
-	github.com/kopia/kopia v0.18.3-0.20250113233333-aa96483aaded
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
@@ -234,6 +233,8 @@ require (
 	sigs.k8s.io/kustomize/api v0.17.2 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.1 // indirect
 )
+
+require github.com/kastenhq/datamover v0.0.0-20250724191744-12c90a235bbb
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect
