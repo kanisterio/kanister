@@ -19,15 +19,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/kanisterio/kanister/pkg/helm"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/helm"
-	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 var _ = check.Suite(&HelmTestSuite{})
