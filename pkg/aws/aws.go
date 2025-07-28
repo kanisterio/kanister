@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/kanisterio/errkit"
 
 	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
@@ -245,6 +246,16 @@ func IsAwsCredsValid(ctx context.Context, config map[string]string) (bool, error
 	_, err = stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return false, errkit.Wrap(err, "Failed to get user with provided creds")
+	}
+	return true, nil
+}
+
+// IsAwsCredsValidWithSTS uses the provided STS client to validate AWS credentials. with stsiface sdk.
+// Method solely for testing purposes, as it allows passing a mock STS client.
+func IsAwsCredsValidWithSTS(ctx context.Context, config map[string]string, stsCli stsiface.STSAPI) (bool, error) {
+	_, err := stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }

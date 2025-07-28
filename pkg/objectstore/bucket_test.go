@@ -3,6 +3,7 @@ package objectstore
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"gopkg.in/check.v1"
 )
@@ -52,6 +53,10 @@ func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *check.C) {
 }
 
 func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *check.C) {
+	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
+		c.Skip("Skipping region mismatch test because MinIO always returns the same region")
+	}
+
 	ctx := context.Background()
 	const pt = ProviderTypeS3
 	const bn = `kanister-test-bucket-us-west-1`
@@ -140,6 +145,10 @@ func checkProviderWithBucket(ctx context.Context, c *check.C, p Provider, bucket
 }
 
 func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
+	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
+		c.Skip("Skipping region mismatch test because MinIO always returns the same region")
+	}
+
 	ctx := context.Background()
 	const pt = ProviderTypeS3
 	secret := getSecret(ctx, c, pt)
@@ -147,11 +156,12 @@ func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
 	// Ensure existingBucket exists and non-existing bucket does not
 	const existingBucket = testBucketName
 	const nonExistentBucket = "kanister-test-should-not-exist"
+	minioEnpoint := os.Getenv("LOCATION_ENDPOINT")
 	pc := ProviderConfig{
 		Type:   pt,
 		Region: testRegionS3,
 		//Region:   "tom-minio-region",
-		//Endpoint: "http://127.0.0.1:9000",
+		Endpoint: minioEnpoint,
 	}
 	p, err := NewProvider(ctx, pc, secret)
 	c.Assert(err, check.IsNil)
@@ -216,14 +226,14 @@ func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
 		// used for manual tests
 		{
 			bucketName:   existingBucket,
-			endpoint:     "http://127.0.0.1:9000",
+			endpoint:     minioEnpoint,
 			clientRegion: "tom-minio-region",
 			bucketRegion: "tom-minio-region",
 			valid:        false,
 		},
 		{
 			bucketName:   existingBucket,
-			endpoint:     "http://127.0.0.1:9000",
+			endpoint:     minioEnpoint,
 			clientRegion: "asdf",
 			bucketRegion: "tom-minio-region",
 			valid:        false,

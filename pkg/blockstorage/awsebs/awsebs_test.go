@@ -85,6 +85,9 @@ func (s AWSEBSSuite) TestVolumeParse(c *check.C) {
 }
 
 func (s AWSEBSSuite) TestGetRegions(c *check.C) {
+	if useMinio := envconfig.GetEnvOrSkip(c, "USE_MINIO"); useMinio == "true" {
+		c.Skip("Skipping test in minio environment")
+	}
 	ctx := context.Background()
 	config := map[string]string{}
 

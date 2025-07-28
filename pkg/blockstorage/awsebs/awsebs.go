@@ -75,7 +75,12 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, errkit.Wrap(err, "Could not get EC2 client")
 	}
-	return &EbsStorage{Ec2Cli: ec2Cli, Role: config[awsconfig.ConfigRole], config: awsConfig}, nil
+
+	return &EbsStorage{
+		Ec2Cli: ec2Cli,
+		Role:   config[awsconfig.ConfigRole],
+		config: awsConfig,
+	}, nil
 }
 
 // newEC2Client returns ec2 client struct.
@@ -231,6 +236,7 @@ func (s *EbsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blo
 		Type: s.Type(),
 		ID:   aws.StringValue(snap.VolumeId),
 	}
+
 	// TODO: fix getting region from zone
 	return &blockstorage.Snapshot{
 		ID:           aws.StringValue(snap.SnapshotId),
@@ -276,7 +282,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		return nil, errkit.New(fmt.Sprintf("Snapshot %v destination ID must be empty", to))
 	}
 	// Copy operation must be initiated from the destination region.
-	ec2Cli, err := newEC2Client(to.Region, s.Ec2Cli.Config.Copy())
+	ec2Cli, err := newEC2Client(to.Region, &s.Ec2Cli.Config)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Could not get EC2 client")
 	}
@@ -287,7 +293,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		si := ec2.CopySnapshotInput{
 			SourceSnapshotId:  aws.String(from.ID),
 			SourceRegion:      aws.String(from.Region),
-			DestinationRegion: ec2Cli.Config.Region,
+			DestinationRegion: s.Ec2Cli.Config.Region,
 		}
 		rq, _ := ec2Cli.CopySnapshotRequest(&si)
 		su, err2 := rq.Presign(120 * time.Minute)
@@ -312,7 +318,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		Description:       aws.String("Copy of " + from.ID),
 		SourceSnapshotId:  aws.String(from.ID),
 		SourceRegion:      aws.String(from.Region),
-		DestinationRegion: ec2Cli.Config.Region,
+		DestinationRegion: s.Ec2Cli.Config.Region,
 		Encrypted:         encrypted,
 		PresignedUrl:      presignedURL,
 	}
@@ -367,7 +373,6 @@ func (s *EbsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 	if err != nil {
 		return nil, err
 	}
-
 	ms := s.snapshotParse(ctx, snap)
 	ms.Region = region
 	for _, tag := range snap.Tags {
