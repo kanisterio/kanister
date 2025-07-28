@@ -21,54 +21,38 @@ import (
 	"maps"
 	"os"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/validate"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 )
 
 func LabelsFromEnvVar(name string) ApplierSet {
 	return ApplierSet{
-		PodOptions: ApplierFunc[kube.PodOptions](func(options *kube.PodOptions) error {
-			if val, present := os.LookupEnv(name); present {
-				var labels map[string]string
-				if err := json.Unmarshal([]byte(val), &labels); err != nil {
-					return err
-				}
-
-				if err := validate.ValidateLabels(labels); err != nil {
-					return err
-				}
-
-				if options.Labels == nil {
-					options.Labels = make(map[string]string)
-				}
-
-				maps.Insert(options.Labels, maps.All(labels))
+		PodOptions:            ApplierFunc[kube.PodOptions](applyLabelsFromEnv(name, func(podOptions *kube.PodOptions) *map[string]string { return &podOptions.Labels })),
+		PersistentVolumeClaim: ApplierFunc[corev1.PersistentVolumeClaim](applyLabelsFromEnv(name, func(pvc *corev1.PersistentVolumeClaim) *map[string]string { return &pvc.Labels })),
+		Pod:                   ApplierFunc[corev1.Pod](applyLabelsFromEnv(name, func(pod *corev1.Pod) *map[string]string { return &pod.Labels })),
+		Service:               ApplierFunc[corev1.Service](applyLabelsFromEnv(name, func(svc *corev1.Service) *map[string]string { return &svc.Labels })),
+		NetworkPolicy:         ApplierFunc[networkingv1.NetworkPolicy](applyLabelsFromEnv(name, func(np *networkingv1.NetworkPolicy) *map[string]string { return &np.Labels })),
+	}
+}
+func applyLabelsFromEnv[T any](name string, getLabels func(*T) *map[string]string) func(*T) error {
+	return func(obj *T) error {
+		if val, present := os.LookupEnv(name); present {
+			var labels map[string]string
+			if err := json.Unmarshal([]byte(val), &labels); err != nil {
+				return err
 			}
-
-			return nil
-		}),
-		Pod: ApplierFunc[corev1.Pod](func(options *corev1.Pod) error {
-			if val, present := os.LookupEnv(name); present {
-				var labels map[string]string
-				if err := json.Unmarshal([]byte(val), &labels); err != nil {
-					return err
-				}
-
-				if err := validate.ValidateLabels(labels); err != nil {
-					return err
-				}
-
-				if options.Labels == nil {
-					options.Labels = make(map[string]string)
-				}
-
-				maps.Insert(options.Labels, maps.All(labels))
+			if err := validate.ValidateLabels(labels); err != nil {
+				return err
 			}
-
-			return nil
-		}),
+			objLabels := getLabels(obj)
+			if *objLabels == nil {
+				*objLabels = make(map[string]string)
+			}
+			maps.Insert(*objLabels, maps.All(labels))
+		}
+		return nil
 	}
 }
 
