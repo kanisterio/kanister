@@ -831,157 +831,6 @@ Example:
     artifact: s3://bucket/path/artifact
 ```
 
-### CreateVolumeSnapshot
-
-This function is used to create snapshots of one or more PVCs associated
-with an application. It takes individual snapshot of each PVC which can
-be then restored later. It generates an output that contains the
-Snapshot info required for restoring PVCs.
-
-::: tip WARNING
-
-The *CreateVolumeSnapshot* will be deprecated soon. We recommend using [CreateCSISnapshot](#createcsisnapshot) instead.
-CSI snapshotting should have better support for underlying storage providers.
-:::
-
-::: tip NOTE
-
-Currently we only support PVC snapshots on AWS EBS. Support for more
-storage providers is coming soon!
-:::
-
-Arguments:
-
-  | Argument  | Required | Type       | Description |
-  | --------- | :------: | ---------- | ----------- |
-  | namespace | Yes      | string     | namespace in which to execute |
-  | pvcs      | No       | []string   | list of names of PVCs to be backed up |
-  | skipWait  | No       | bool       | initiate but do not wait for the snapshot operation to complete |
-
-When no PVCs are specified in the `pvcs` argument above, all PVCs in use
-by a Deployment or StatefulSet will be backed up.
-
-Outputs:
-
-  | Output              | Type   | Description |
-  | ------------------- | ------ | ----------- |
-  | volumeSnapshotInfo  | string | Snapshot info required while restoring the PVCs |
-
-Example:
-
-Consider a scenario where you wish to backup all PVCs of a deployment.
-The output of this phase is saved to an Artifact named `backupInfo`,
-shown below:
-
-``` yaml
-actions:
-  backup:
-    outputArtifacts:
-      backupInfo:
-        keyValue:
-          manifest: "{{ .Phases.backupVolume.Output.volumeSnapshotInfo }}"
-    phases:
-    - func: CreateVolumeSnapshot
-      name: backupVolume
-      args:
-        namespace: "{{ .Deployment.Namespace }}"
-```
-
-### WaitForSnapshotCompletion
-
-This function is used to wait for completion of snapshot operations
-initiated using the [CreateVolumeSnapshot](#createvolumesnapshot) function.
-function.
-
-::: tip WARNING
-
-   The *WaitForSnapshotCompletion* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot).
-   We recommend using [CreateCSISnapshot](#createcsisnapshot) instead, which will wait for completion by default.
-:::
-
-Arguments:
-
-  | Argument  | Required | Type   | Description |
-  | --------- | :------: | ------ | ----------- |
-  | snapshots | Yes      | string | snapshot info generated as output in CreateVolumeSnapshot function |
-
-### CreateVolumeFromSnapshot
-
-This function is used to restore one or more PVCs of an application from
-the snapshots taken using the [CreateVolumeSnapshot](#createvolumesnapshot) function.
-It deletes old PVCs, if present and creates new PVCs from the snapshots taken earlier.
-
-::: tip WARNING
-
-   The *CreateVolumeFromSnapshot* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot). We recommend using CSI snapshotting functions ([CreateCSISnapshot](#createcsisnapshot) and [RestoreCSISnapshot](#restorecsisnapshot)) instead.
-   CSI snapshotting should have better support for underlying storage providers.
-:::
-
-Arguments:
-
-  | Argument  | Required | Type   | Description |
-  | --------- | :------: | ------ | ----------- |
-  | namespace | Yes      | string | namespace in which to execute |
-  | snapshots | Yes      | string | snapshot info generated as output in CreateVolumeSnapshot function |
-
-Example:
-
-Consider a scenario where you wish to restore all PVCs of a deployment.
-We will first scale down the application, restore PVCs and then scale
-up. For this phase, we will make use of the backupInfo Artifact provided
-by the [CreateVolumeSnapshot](#createvolumesnapshot) function.
-
-``` yaml
-- func: ScaleWorkload
-  name: shutdownPod
-  args:
-    namespace: "{{ .Deployment.Namespace }}"
-    name: "{{ .Deployment.Name }}"
-    kind: Deployment
-    replicas: 0
-- func: CreateVolumeFromSnapshot
-  name: restoreVolume
-  args:
-    namespace: "{{ .Deployment.Namespace }}"
-    snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"
-- func: ScaleWorkload
-  name: bringupPod
-  args:
-    namespace: "{{ .Deployment.Namespace }}"
-    name: "{{ .Deployment.Name }}"
-    kind: Deployment
-    replicas: 1
-```
-
-### DeleteVolumeSnapshot
-
-This function is used to delete snapshots of PVCs taken using the
-[CreateVolumeSnapshot](#createvolumesnapshot) function.
-
-
-::: tip WARNING
-
-   The *DeleteVolumeSnapshot* will be deprecated soon together with [CreateVolumeSnapshot](#createvolumesnapshot). We recommend using CSI snapshotting functions ([CreateCSISnapshot](#createcsisnapshot) and [DeleteCSISnapshot](#deletecsisnapshot)) instead.
-   CSI snapshotting should have better support for underlying storage providers.
-:::
-
-Arguments:
-
-  | Argument  | Required | Type   | Description |
-  | --------- | :------: | ------ | ----------- |
-  | namespace | Yes      | string | namespace in which to execute |
-  | snapshots | Yes      | string | snapshot info generated as output in CreateVolumeSnapshot function |
-
-Example:
-
-``` yaml
-- func: DeleteVolumeSnapshot
-  name: deleteVolumeSnapshot
-  args:
-    namespace: "{{ .Deployment.Namespace }}"
-    snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"
-```
-
 ### BackupDataStats
 
 This function get stats for the backed up data from the object store
@@ -1501,6 +1350,16 @@ Example:
             resource: namespaces
             name: "{{ .Namespace.Name }}"
 ```
+
+::: info NOTE
+
+
+The following volume snapshot functions have been deprecated and removed in favor of CSI snapshot functions:
+`CreateVolumeSnapshot`, `WaitForSnapshotCompletion`, `CreateVolumeFromSnapshot`, and `DeleteVolumeSnapshot`.
+
+Please use CSI snapshot functions to benefit from improved compatibility and enhanced features.
+
+:::
 
 ### CreateCSISnapshot
 
