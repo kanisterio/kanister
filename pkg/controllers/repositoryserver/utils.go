@@ -112,22 +112,29 @@ func getPodOverride(ctx context.Context, reconciler *RepositoryServerReconciler,
 	if pod.Spec.Tolerations != nil {
 		podOverride["tolerations"] = pod.Spec.Tolerations
 	}
-	podOverrideSpecForCACertificate(pod.Spec, podOverride)
+	if err := podOverrideSpecForCACertificate(pod.Spec, podOverride); err != nil {
+		return nil, err
+	}
 	return podOverride, nil
 }
 
-func podOverrideSpecForCACertificate(podSpec corev1.PodSpec, podOverride map[string]interface{}) {
-	if volName, proceed := volumeMountSpecForName(podSpec, podOverride, customCACertName); proceed {
+func podOverrideSpecForCACertificate(podSpec corev1.PodSpec, podOverride map[string]interface{}) error {
+	volName, found, err := volumeMountSpecForName(podSpec, podOverride, customCACertName)
+	if err != nil {
+		return err
+	}
+	if found {
 		volumeSpecForName(podSpec, podOverride, volName)
 	}
+	return nil
 }
 
 // volumeMountSpecForName adds a container spec to the override map
 // if the pod spec's volumeMount's SubPath matches with a given certificate name.
 // The container spec will include the matching volumeMount.
-func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]interface{}, certName string) (string, bool) {
+func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]interface{}, certName string) (volName string, found bool, err error) {
 	if certName == "" {
-		return "", false
+		return volName, found, nil
 	}
 	for _, ctr := range podSpec.Containers {
 		for _, mount := range ctr.VolumeMounts {
@@ -141,13 +148,17 @@ func volumeMountSpecForName(podSpec corev1.PodSpec, podOverride map[string]inter
 			}
 
 			// Apply the registered ephemeral pod changes.
-			ephemeral.Container.Apply(ctr)
+			if err = ephemeral.Container.Apply(ctr); err != nil {
+				return volName, found, err
+			}
 
 			podOverride["containers"] = []corev1.Container{*ctr}
-			return mount.Name, true
+			volName = mount.Name
+			found = true
+			return volName, found, nil
 		}
 	}
-	return "", false
+	return volName, found, nil
 }
 
 // volumeSpecForName adds a pod's volume spec to the override map
@@ -187,7 +198,9 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 		}
 
 		// Apply the registered ephemeral pod changes.
-		ephemeral.Container.Apply(&container)
+		if err := ephemeral.Container.Apply(&container); err != nil {
+			return errkit.Wrap(err, "Failed to apply ephemeral container options")
+		}
 
 		podOverrideSpec.Containers = append(podOverrideSpec.Containers, container)
 	}
@@ -209,7 +222,7 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	return nil
 }
 
-func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.VolumeMountOptions) *kube.PodOptions {
+func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.VolumeMountOptions) (*kube.PodOptions, error) {
 	uidguid := int64(0)
 	nonRootBool := false
 	options := &kube.PodOptions{
@@ -227,9 +240,11 @@ func getPodOptions(namespace string, svc *corev1.Service, vols map[string]kube.V
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.PodOptions.Apply(options)
+	if err := ephemeral.PodOptions.Apply(options); err != nil {
+		return nil, errkit.Wrap(err, "Failed to apply ephemeral pod options")
+	}
 
-	return options
+	return options, nil
 }
 
 func getPodAddress(ctx context.Context, cli kubernetes.Interface, namespace, podName string) (string, error) {
