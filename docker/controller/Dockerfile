@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6@sha256:11db23b63f9476e721f8d0b8a2de5c858571f76d5a0dae2ec28adf08cbaf3652
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6@sha256:aaf57d07d6e192bcb72190f9841f41501b8b3dffdc5e60db2f7a668c2513ab6b
 
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
