@@ -26,10 +26,10 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
 )
 
 const (
@@ -51,7 +51,7 @@ func GetObjectstoreLocation() (objectstore.ProviderType, crv1alpha1.Location) {
 	}
 
 	// Check if provider is GCP
-	if os.Getenv(blockstorage.GoogleCloudCreds) != "" {
+	if os.Getenv(volumesnapshot.GoogleCloudCreds) != "" {
 		location = crv1alpha1.Location{
 			Type: crv1alpha1.LocationTypeGCS,
 		}
@@ -59,7 +59,7 @@ func GetObjectstoreLocation() (objectstore.ProviderType, crv1alpha1.Location) {
 	}
 
 	// Check if provider is Azure
-	if os.Getenv(blockstorage.AzureStorageAccount) != "" {
+	if os.Getenv(volumesnapshot.AzureStorageAccount) != "" {
 		location = crv1alpha1.Location{
 			Type: crv1alpha1.LocationTypeAzure,
 		}
@@ -101,14 +101,14 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 			return s3ProfileWithSecretCredential(location, key, val, role)
 		}
 	case objectstore.ProviderTypeGCS:
-		GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
+		GetEnvOrSkip(c, volumesnapshot.GoogleCloudCreds)
 		creds, err := google.FindDefaultCredentials(context.Background(), compute.ComputeScope)
 		c.Check(err, check.IsNil)
 		key = creds.ProjectID
 		val = string(creds.JSON)
 	case objectstore.ProviderTypeAzure:
-		key = GetEnvOrSkip(c, blockstorage.AzureStorageAccount)
-		val = GetEnvOrSkip(c, blockstorage.AzureStorageKey)
+		key = GetEnvOrSkip(c, volumesnapshot.AzureStorageAccount)
+		val = GetEnvOrSkip(c, volumesnapshot.AzureStorageKey)
 	}
 	return &param.Profile{
 		Location: location,
