@@ -1357,7 +1357,7 @@ Example:
 The following volume snapshot functions have been deprecated and removed in favor of CSI snapshot functions:
 `CreateVolumeSnapshot`, `WaitForSnapshotCompletion`, `CreateVolumeFromSnapshot`, and `DeleteVolumeSnapshot`.
 
-Please use CSI snapshot functions to benefit from improved compatibility and enhanced features.
+Please use [CSI snapshot functions](https://docs.kanister.io/functions.html#createcsisnapshot) to benefit from improved compatibility and enhanced features.
 
 :::
 
