@@ -70,10 +70,10 @@ func (s *PodSuite) SetUpSuite(c *check.C) {
 	err = os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
 	c.Assert(err, check.IsNil)
 
-	err = s.createServiceAccount(testSAName, s.namespace)
+	err = createServiceAccount(s.cli, testSAName, s.namespace)
 	c.Assert(err, check.IsNil)
 
-	err = s.createServiceAccount(controllerSA, s.namespace)
+	err = createServiceAccount(s.cli, controllerSA, s.namespace)
 	c.Assert(err, check.IsNil)
 }
 
@@ -293,19 +293,6 @@ func (s *PodSuite) createTestSecret(c *check.C) *corev1.Secret {
 	testSecret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), testSecret, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 	return testSecret
-}
-
-func (s *PodSuite) createServiceAccount(name, ns string) error {
-	sa := corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-		},
-	}
-	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(context.TODO(), &sa, metav1.CreateOptions{}); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *check.C) {
