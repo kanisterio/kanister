@@ -18,53 +18,36 @@ package function
 
 import (
 	"context"
-	"io"
 	"time"
 
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/datamover/pkg/client"
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/field"
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/utils"
-	"github.com/kastenhq/datamover/client"
 )
 
 const (
 	StreamBackupDMFuncName            = "StreamBackupDM"
-	StreamBackupDMArgNamespace        = "namespace"
-	StreamBackupDMArgImage            = "image"
-	StreamBackupDMArgDatamoverServer  = "datamoverServer"
 	StreamBackupDMArgGenerator        = "streamGenerator"
 	StreamBackupDMArgBackupObjectName = "backupObjectName"
 	StreamBackupDMArgTag              = "tag" // Backup tag
 	StreamBackupDMArgInitImage        = "initImage"
-	StreamBackupDMArgClientSecret     = "clientSecret" // TODO: clientSecretVolume???
-	StreamBackupDMArgConfig           = "config"
-	StreamBackupDMArgSecrets          = "secrets"
 )
 
 type StreamBackupDM struct {
-	Namespace          string
-	Image              string
-	DataMoverServerRef DataMoverServerRef
-	StreamGenerator    corev1.Container
-	BackupObjectName   string
-	Tag                string
-	InitImage          string
-	ClientSecret       string
-	Secrets            []string
-	ConfigMap          *string
-	progressPercent    string
+	StreamGenerator  corev1.Container
+	BackupObjectName string
+	Tag              string
+	InitImage        string
+	dmArgs           datamoverArgs
+	progressPercent  string
 }
 
 func init() {
@@ -85,11 +68,11 @@ func (streamBackup *StreamBackupDM) Name() string {
 
 func (streamBackup *StreamBackupDM) RequiredArgs() []string {
 	return []string{
-		StreamBackupDMArgNamespace,
-		StreamBackupDMArgImage,
-		StreamBackupDMArgDatamoverServer,
+		DMArgNamespace,
+		DMArgImage,
+		DMArgDatamoverSession,
 		StreamBackupDMArgGenerator,
-		StreamBackupDMArgClientSecret,
+		DMArgClientSecret,
 		// TODO: implementation specific secrets
 		// TLS fingerprint secret
 	}
@@ -100,8 +83,10 @@ func (streamBackup *StreamBackupDM) Arguments() []string {
 		StreamBackupDMArgTag,
 		StreamBackupDMArgBackupObjectName,
 		StreamBackupDMArgInitImage,
-		StreamBackupDMArgConfig,
-		StreamBackupDMArgSecrets,
+		DMArgConfig,
+		DMArgSecrets,
+		DMArgEnv,
+		DMArgPodOptions,
 	}...)
 }
 
@@ -120,43 +105,15 @@ func (streamBackup *StreamBackupDM) Exec(ctx context.Context, tp param.TemplateP
 	defer func() { streamBackup.progressPercent = progress.CompletedPercent }()
 
 	var err error
-	if err = Arg(args, StreamBackupDMArgNamespace, &streamBackup.Namespace); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, StreamBackupDMArgImage, &streamBackup.Image); err != nil {
-		return nil, err
-	}
-
-	var serverRef DataMoverServerRef
-	if err = Arg(args, StreamBackupDMArgDatamoverServer, &serverRef); err != nil {
-		return nil, err
-	}
-	streamBackup.DataMoverServerRef = serverRef
-
 	var generatorContainer corev1.Container
 	if err = Arg(args, StreamBackupDMArgGenerator, &generatorContainer); err != nil {
 		return nil, err
 	}
 	streamBackup.StreamGenerator = generatorContainer
 
-	// TODO: we can validate that this secret is in datamover clients secret if we have access to datamover server secrets
-	var actionClientSecretName string
-	if err = Arg(args, StreamBackupDMArgClientSecret, &actionClientSecretName); err != nil {
-		return nil, err
-	}
-
 	if err = OptArg(args, StreamBackupDMArgTag, &streamBackup.Tag, ""); err != nil {
 		return nil, err
 	}
-
-	clientSecretSpec, ok := tp.Secrets[actionClientSecretName]
-	if !ok {
-		return nil, errkit.New("Client secret not found in the actionset:", "secretName", actionClientSecretName)
-	}
-	if clientSecretSpec.Namespace != streamBackup.Namespace {
-		return nil, errkit.New("Client secret in the actionset is in the wrong namespace:", "secretName", actionClientSecretName, "secretNamespace", clientSecretSpec.Namespace, "namespace", streamBackup.Namespace)
-	}
-	streamBackup.ClientSecret = clientSecretSpec.Name
 
 	if err = OptArg(args, StreamBackupDMArgBackupObjectName, &streamBackup.BackupObjectName, "data"); err != nil {
 		return nil, err
@@ -166,32 +123,11 @@ func (streamBackup *StreamBackupDM) Exec(ctx context.Context, tp param.TemplateP
 		return nil, err
 	}
 
-	// FIXME: configmap from actionset
-	var configmap string
-	if err = OptArg(args, StreamBackupDMArgConfig, &configmap, ""); err != nil {
+	dmArgs, err := getDatamoverArgs(tp, args)
+	if err != nil {
 		return nil, err
 	}
-	if configmap != "" {
-		streamBackup.ConfigMap = &configmap
-	}
-
-	var actionSecrets []string
-	if err = OptArg(args, StreamBackupDMArgSecrets, &actionSecrets, []string{}); err != nil {
-		return nil, err
-	}
-
-	secretNames := []string{}
-	for _, actionSecret := range actionSecrets {
-		secretSpec, ok := tp.Secrets[actionSecret]
-		if ok {
-			if secretSpec.Namespace == streamBackup.Namespace {
-				secretNames = append(secretNames, secretSpec.Name)
-			} else {
-				log.Info().Print("Secret reference from different namespace. Ignoring", field.M{"secretName": secretSpec.Name, "secretNamespace": secretSpec.Namespace})
-			}
-		}
-	}
-	streamBackup.Secrets = secretNames
+	streamBackup.dmArgs = *dmArgs
 
 	return streamBackup.RunPod(ctx)
 }
@@ -206,107 +142,38 @@ func (streamBackup *StreamBackupDM) RunPod(ctx context.Context) (map[string]inte
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create dynamic Kubernetes client")
 	}
+	operation := client.StreamBackupOperation{
+		Tag:              streamBackup.Tag,
+		StreamGenerator:  streamBackup.StreamGenerator,
+		BackupObjectName: streamBackup.BackupObjectName,
+		InitImage:        streamBackup.InitImage}
 
-	pod, err := client.CreateClientPod(ctx, cli, dynCli, client.CreateClientArgs{
-		Operation: client.StreamBackupOperation{
-			Tag:              streamBackup.Tag,
-			StreamGenerator:  streamBackup.StreamGenerator,
-			BackupObjectName: streamBackup.BackupObjectName,
-			InitImage:        streamBackup.InitImage},
-		Namespace:        streamBackup.Namespace,
-		Image:            streamBackup.Image,
-		SessionNamespace: streamBackup.DataMoverServerRef.Namespace,
-		SessionName:      streamBackup.DataMoverServerRef.Name,
-		ConfigMap:        streamBackup.ConfigMap,
-		Secrets:          streamBackup.Secrets,
-		CredentialsConfig: client.ClientCredentialsSecret{
-			SecretName: streamBackup.ClientSecret,
-		},
-	})
+	clientArgs := makeCreateClientArgs(streamBackup.dmArgs, operation)
+
+	pod, err := client.CreateClientPod(ctx, cli, dynCli, clientArgs)
 
 	if err != nil {
 		return nil, errkit.Wrap(err, "Unable to create pod")
 	}
 
-	pc, err := streamBackup.runPod(ctx, cli, pod)
+	err = monitorDatamoverPod(ctx, cli, pod)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Pod run error")
 	}
 
-	podOutput, err := streamBackup.getPodLogs(ctx, pc)
+	podOutputReader, err := streamPodLogs(ctx, cli, *pod, client.MainContainerName)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Cannot get pod logs")
 	}
 
-	log.Info().Print("Pod output", field.M{"PodOutput": podOutput})
-
-	snapInfo, err := kopiacmd.ParseSnapshotCreateOutput(podOutput, podOutput)
+	// FIXME: this parsing is kopia specific
+	// Implementation should output information in generic format instead
+	kopiaOutput, err := parseKopiaOutput(podOutputReader)
 	if err != nil {
-		return nil, errkit.Wrap(err, "Cannot parse kopia snapshot create output")
+		return nil, errkit.Wrap(err, "Failed to read kopia output from the pod")
 	}
 
-	log.Info().Print("Snapshot info", field.M{"info": snapInfo})
-
-	// FIXME: this needs to be checked. Some inconsistency in stats
-	var logSize, phySize, fileCount int64
-	if snapInfo.Stats != nil {
-		stats := snapInfo.Stats
-		logSize = stats.SizeHashedB + stats.SizeCachedB
-		phySize = stats.SizeUploadedB
-		fileCount = stats.FilesHashed + stats.FilesCached
-	}
-
-	output := map[string]any{
-		CopyVolumeDataOutputRootID:          snapInfo.RootID,
-		CopyVolumeDataOutputBackupID:        snapInfo.SnapshotID,
-		CopyVolumeDataOutputBackupSize:      logSize,
-		CopyVolumeDataOutputPhysicalSize:    phySize,
-		CopyVolumeDataOutputBackupFileCount: fileCount,
-	}
-	return output, nil
-}
-
-func (streamBackup *StreamBackupDM) runPod(ctx context.Context, cli kubernetes.Interface, pod *corev1.Pod) (kube.PodController, error) {
-	pc, err := kube.NewPodControllerForExistingPod(cli, pod)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
-	ctx = field.Context(ctx, consts.ContainerNameKey, pod.Spec.Containers[0].Name)
-	go func() {
-		<-ctx.Done()
-		err := pc.StopPod(context.Background(), kube.PodControllerInfiniteStopTime, int64(0))
-		if err != nil {
-			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
-		}
-	}()
-
-	if err := pc.WaitForPodReady(ctx); err != nil {
-		return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
-	}
-
-	// Wait for pod completion
-	if err := pc.WaitForPodCompletion(ctx); err != nil {
-		return nil, errkit.Wrap(err, "Failed while waiting for Pod to complete", "pod", pc.PodName())
-	}
-	return pc, nil
-}
-
-// FIXME: specify a container to get logs from (client.MainContainerName)
-func (streamBackup *StreamBackupDM) getPodLogs(ctx context.Context, pc kube.PodController) (string, error) {
-	ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
-	// Fetch logs from the pod
-	r, err := pc.StreamPodLogs(ctx)
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to fetch logs from the pod")
-	}
-	// TODO: k8s logs stdout and stderro together. Do we need to separate them here?
-	stdout, err := io.ReadAll(r)
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to read logs stream from the pod")
-	}
-	return string(stdout), nil
+	return kopiaOutput, nil
 }
 
 func (streamBackup *StreamBackupDM) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
