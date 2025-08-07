@@ -12,6 +12,8 @@ replace (
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
+// replace github.com/kanisterio/datamover => ../datamover_kanister
+
 // Direct and indirect dependencies are in separate require sections.
 // Keep *all* direct dependencies in this section; and all indirect
 // dependencies in the require block following this one.
@@ -236,7 +238,7 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.17.1 // indirect
 )
 
-require github.com/kastenhq/datamover v0.0.0-20250724191744-12c90a235bbb
+require github.com/kanisterio/datamover v0.0.0-20250807203908-4054a01902a5
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect
