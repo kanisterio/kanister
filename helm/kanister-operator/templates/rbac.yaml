@@ -7,6 +7,12 @@ metadata:
   name: {{ template "kanister-operator.fullname" . }}-cluster-role
 rules:
 - apiGroups:
+  - dm.cr.kanister.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
   - cr.kanister.io
   resources:
   - "*"
