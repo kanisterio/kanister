@@ -181,11 +181,9 @@ func (ktpf *multiContainerRunFunc) run(ctx context.Context) (map[string]interfac
 		Spec: podSpec,
 	}
 
-	log.Info().WithContext(ctx).Print("Applying pod labels", field.M{"Pod": pod})
 	if err = ephemeral.Pod.Apply(pod); err != nil {
 		return nil, errkit.Wrap(err, "Failed to add pod labels")
 	}
-	log.Info().WithContext(ctx).Print("Applied pod labels", field.M{"Pod": pod})
 
 	pod, err = cli.CoreV1().Pods(ktpf.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
