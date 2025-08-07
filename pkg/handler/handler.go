@@ -17,6 +17,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -27,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -46,7 +46,7 @@ type Info struct {
 }
 
 // RunWebhookServer starts the validating webhook resources for blueprint kanister resources
-func RunWebhookServer(c *rest.Config) error {
+func RunWebhookServer(ctx context.Context, c *rest.Config) error {
 	log.SetLogger(logr.New(log.NullLogSink{}))
 	mgr, err := manager.New(c, manager.Options{
 		HealthProbeBindAddress: fmt.Sprintf(":%s", getHealthAddr()),
@@ -83,7 +83,7 @@ func RunWebhookServer(c *rest.Config) error {
 		return errkit.Wrap(err, "Failed to add new webhook server")
 	}
 
-	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		return err
 	}
 
