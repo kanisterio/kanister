@@ -28,6 +28,9 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/consts"
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
+
+	dmapi "github.com/kanisterio/datamover/api/v1alpha1"
+	dmsession "github.com/kanisterio/datamover/pkg/session"
 )
 
 // These variables are exported to help hook into this package's schemes.
@@ -74,6 +77,15 @@ var RepositoryServerResource = customresource.CustomResource{
 	Version: SchemeVersion,
 	Scope:   apiextensionsv1.NamespaceScoped,
 	Kind:    reflect.TypeOf(RepositoryServer{}).Name(),
+}
+
+var DatamoverSessionResource = customresource.CustomResource{
+	Name:    dmsession.ResourceName,
+	Plural:  dmsession.ResourceNamePlural,
+	Group:   dmapi.GroupVersion.Group,
+	Version: dmapi.GroupVersion.Version,
+	Scope:   apiextensionsv1.NamespaceScoped,
+	Kind:    dmapi.DatamoverSessionKind,
 }
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind

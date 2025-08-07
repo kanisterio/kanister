@@ -390,6 +390,8 @@ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223 h1:MVWkn/tqlQgrwkHGLTT/zk29IfdLo1o7DOxLm8hwjIA=
 github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223/go.mod h1:z+9bB5j8pRC7ml1WYajW1syhpSfT1phQ8j+b0UBEx7w=
+github.com/kanisterio/datamover v0.0.0-20250807203908-4054a01902a5 h1:qKww3W7jGylcV4LOYW//AMXClP3kTcjWBYLVb+7jDR4=
+github.com/kanisterio/datamover v0.0.0-20250807203908-4054a01902a5/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
 github.com/kanisterio/errkit v0.0.3 h1:1wHaTqV4DZE0XrN+Nq7Q2M8kyKnV8NhhEF3OB7A/Pd8=
 github.com/kanisterio/errkit v0.0.3/go.mod h1:0xesKaif6++1IXFdhb6fywa40J07odjwWq3IKzxWC3A=
 github.com/kanisterio/safecli v0.0.10 h1:oS3XMYUkzutKatV50cI0IGgPrdHnOuKpFkVv6rpS0mQ=
@@ -398,8 +400,6 @@ github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20250930185039-ccb63ada4a21 h1:NeSbLA0HG59ocJTfA4U8d6XIKuYK+D8os3Y6XkTolRo=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20250930185039-ccb63ada4a21/go.mod h1:5xCHhjpJfKyCTQVEuXmZd22+aKokRg01e0Y4GTswYlQ=
-github.com/kastenhq/datamover v0.0.0-20250724191744-12c90a235bbb h1:M/U7hv+sIRK/cAR1YQ/OuKxeg43lmW2FOdC1e3+I6uo=
-github.com/kastenhq/datamover v0.0.0-20250724191744-12c90a235bbb/go.mod h1:NVMuIHpXtpktBbDeG+UJrmlMMFjr/Ol94EU51ReMdbA=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=

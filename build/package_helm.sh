@@ -24,6 +24,12 @@ HELM_RELEASE_REPO_URL=${HELM_RELEASE_REPO_URL:?"HELM_RELEASE_REPO_URL not specif
 HELM_RELEASE_REPO_INDEX=${HELM_RELEASE_REPO_INDEX:?"HELM_RELEASE_REPO_INDEX not specified"}
 
 main() {
+    datamover_dep_dir=$(go list -m -f '{{.Dir}}' github.com/kanisterio/datamover)
+
+    datamover_crd=${datamover_dep_dir}/config/crd/bases/dm.cr.kanister.io_datamoversessions.yaml
+
+    ln -sf ${datamover_crd} helm/kanister-operator/crds/datamover.yaml
+
     version=${1:?"chart version not specified"}
 
     ## Cleanup old package folder

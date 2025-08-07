@@ -26,19 +26,24 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/signal"
+	// "os/signal"
 	"strconv"
-	"syscall"
+	// "syscall"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
+	dmcontroller "github.com/kanisterio/datamover/pkg/controller"
 	"github.com/kanisterio/kanister/pkg/controller"
 	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	_ "github.com/kanisterio/kanister/pkg/function" // Import for side effects - registers functions
 )
@@ -65,7 +70,7 @@ func metricsEnabled() bool {
 }
 
 func Execute() {
-	ctx := context.Background()
+	ctx := signals.SetupSignalHandler()
 	logLevel, exists := os.LookupEnv(log.LevelEnvName)
 	if exists {
 		log.Print(fmt.Sprintf("Controller log level: %s", logLevel))
@@ -82,7 +87,7 @@ func Execute() {
 	// otherwise normal HTTP server for health and prom endpoints
 	if validatingwebhook.IsCACertMounted() {
 		go func(config *rest.Config) {
-			err := handler.RunWebhookServer(config)
+			err := handler.RunWebhookServer(ctx, config)
 			if err != nil {
 				log.WithError(err).Print("Failed to start validating webhook server")
 				return
@@ -118,6 +123,7 @@ func Execute() {
 
 	// Create and start the watcher.
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	var c *controller.Controller
 
@@ -135,12 +141,30 @@ func Execute() {
 		return
 	}
 
-	// create signals to stop watching the resources
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	err = runDatamoverController(ctx, config, ns)
+	if err != nil {
+		log.WithError(err).Print("Failed to setup datamover controller")
+		cancel()
+		return
+	}
 
-	// Wait for shutdown signal
-	<-signalChan
+	<-ctx.Done()
 	log.Print("shutdown signal received, exiting...")
-	cancel()
+}
+
+func runDatamoverController(ctx context.Context, config *rest.Config, namespace string) error {
+	noMetricsServer := metricsserver.Options{BindAddress: "0"}
+	mgr, err := dmcontroller.MakeControllerManager(config, ctrl.Options{
+		Metrics: noMetricsServer,
+		Cache:   cache.Options{DefaultNamespaces: map[string]cache.Config{namespace: {}}},
+	})
+	if err != nil {
+		return err
+	}
+	// TODO: we don't set any readiness and liveness for the manager
+	// It's not necessary at this point, but might be needed later
+	if err := mgr.Start(ctx); err != nil {
+		return err
+	}
+	return nil
 }
