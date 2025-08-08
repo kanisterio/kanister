@@ -107,6 +107,37 @@ func Exec(
 	return strings.TrimSpace(outbuf.String()), strings.TrimSpace(errbuf.String()), err
 }
 
+func ExecWithCustomConfig(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace,
+	pod,
+	container string,
+	command []string,
+	stdin io.Reader,
+	config *restclient.Config,
+) (string, string, error) {
+	outbuf := &bytes.Buffer{}
+	errbuf := &bytes.Buffer{}
+	opts := ExecOptions{
+		Command:       command,
+		Namespace:     namespace,
+		PodName:       pod,
+		ContainerName: container,
+		Stdin:         stdin,
+		Stdout:        outbuf,
+		Stderr:        errbuf,
+	}
+
+	errCh := execStream(ctx, cli, config, opts)
+	err := <-errCh
+	if err != nil {
+		return "", "", errkit.Wrap(err, "Failed to exec command in pod")
+	}
+
+	return strings.TrimSpace(outbuf.String()), strings.TrimSpace(errbuf.String()), nil
+}
+
 // ExecOutput is similar to Exec, except that inbound outputs are written to the
 // provided stdout and stderr. Unlike Exec, the outputs are not returned to the
 // caller.
