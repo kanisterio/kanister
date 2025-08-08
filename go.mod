@@ -259,4 +259,7 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.17.1 // indirect
 )
 
-require github.com/kanisterio/datamover v0.0.0-20250807203908-4054a01902a5
+require (
+	github.com/bombsimon/logrusr/v4 v4.1.0
+	github.com/kanisterio/datamover v0.0.0-20250808184429-d91532f2439f
+)

@@ -13,9 +13,11 @@ import (
 	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
 
+	logrusr "github.com/bombsimon/logrusr/v4"
 	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // Level describes the current log level.
@@ -101,6 +103,11 @@ func SetFluentbitOutput(url *url.URL) error {
 	hook := NewFluentbitHook(url.Host)
 	log.AddHook(hook)
 	return nil
+}
+
+func SetupControllerRuntimeLogger() {
+	logrusrLog := logrusr.New(log)
+	ctrl.SetLogger(logrusrLog)
 }
 
 var envVarFields field.Fields
