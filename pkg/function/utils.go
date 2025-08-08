@@ -11,16 +11,17 @@ import (
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/validate"
 )
 
 const (
@@ -277,7 +278,7 @@ func ValidatePodLabelsAndAnnotations(funcName string, args map[string]any) error
 		return errkit.Wrap(err, "Kanister function validation failed, while getting pod labels from function args", "funcName", funcName)
 	}
 
-	if err = ValidateLabels(labels); err != nil {
+	if err = validate.ValidateLabels(labels); err != nil {
 		return errkit.Wrap(err, "Kanister function validation failed, while validating labels", "funcName", funcName)
 	}
 
@@ -285,7 +286,7 @@ func ValidatePodLabelsAndAnnotations(funcName string, args map[string]any) error
 	if err != nil {
 		return errkit.Wrap(err, "Kanister function validation failed, while getting pod annotations from function args", "funcName", funcName)
 	}
-	if err = ValidateAnnotations(annotations); err != nil {
+	if err = validate.ValidateAnnotations(annotations); err != nil {
 		return errkit.Wrap(err, "Kanister function validation failed, while validating annotations", "funcName", funcName)
 	}
 	return nil
@@ -333,29 +334,6 @@ func PodAnnotationsFromFunctionArgs(args map[string]any) (map[string]string, err
 	return nil, nil
 }
 
-func ValidateLabels(labels map[string]string) error {
-	for k, v := range labels {
-		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			return errkit.New(fmt.Sprintf("label key '%s' failed validation. %s", k, errs))
-		}
-
-		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
-			return errkit.New(fmt.Sprintf("label value '%s' failed validation. %s", v, errs))
-		}
-	}
-	return nil
-}
-
-func ValidateAnnotations(annotations map[string]string) error {
-	for k := range annotations {
-		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			return errkit.New(fmt.Sprintf("annotation key '%s' failed validation. %s", k, errs))
-		}
-	}
-	// annotation values don't actually have a strict format
-	return nil
-}
-
 type ActionSetAnnotations map[string]string
 
 // MergeBPAnnotations merges the annotations provided in the blueprint with the annotations
@@ -388,4 +366,50 @@ func (a ActionSetLabels) MergeBPLabels(bpLabels map[string]string) map[string]st
 	}
 
 	return labels
+}
+
+func PrepareAndRunPod(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace, jobPrefix, image string,
+	command []string,
+	vols map[string]string,
+	podOverride crv1alpha1.JSONMap,
+	annotations, labels map[string]string,
+	podFunc func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error),
+) (map[string]any, error) {
+	// Validate volumes
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	for pvcName, mountPoint := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
+		}
+
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPath: mountPoint,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
+		}
+	}
+
+	// Create PodOptions
+	options := &kube.PodOptions{
+		Namespace:    namespace,
+		GenerateName: jobPrefix,
+		Image:        image,
+		Command:      command,
+		Volumes:      validatedVols,
+		PodOverride:  podOverride,
+		Annotations:  annotations,
+		Labels:       labels,
+	}
+
+	// Apply ephemeral pod changes
+	if err := ephemeral.PodOptions.Apply(options); err != nil {
+		return nil, errkit.Wrap(err, "Failed to apply ephemeral pod options")
+	}
+
+	// Create and run the pod
+	pr := kube.NewPodRunner(cli, options)
+	return pr.Run(ctx, podFunc)
 }

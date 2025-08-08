@@ -34,10 +34,10 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
+	"github.com/kanisterio/kanister/pkg/validate"
 )
 
 const (
@@ -354,12 +354,12 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	podAnnotations, _ := cmd.Flags().GetStringToString(podAnnotationsFlagName)
 	podLabels, _ := cmd.Flags().GetStringToString(podLabelsFlagName)
 
-	err = function.ValidateAnnotations(podAnnotations)
+	err = validate.ValidateAnnotations(podAnnotations)
 	if err != nil {
 		return nil, err
 	}
 
-	err = function.ValidateLabels(podLabels)
+	err = validate.ValidateLabels(podLabels)
 	if err != nil {
 		return nil, err
 	}

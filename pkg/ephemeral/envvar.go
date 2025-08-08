@@ -28,7 +28,7 @@ import (
 // in the current environment.
 func OSEnvVar(name string) ApplierSet {
 	return ApplierSet{
-		Container: ApplierFunc[corev1.Container](func(container *corev1.Container) {
+		Container: ApplierFunc[corev1.Container](func(container *corev1.Container) error {
 			if val, present := os.LookupEnv(name); present {
 				container.Env = append(
 					container.Env,
@@ -38,8 +38,9 @@ func OSEnvVar(name string) ApplierSet {
 					},
 				)
 			}
+			return nil
 		}),
-		PodOptions: ApplierFunc[kube.PodOptions](func(options *kube.PodOptions) {
+		PodOptions: ApplierFunc[kube.PodOptions](func(options *kube.PodOptions) error {
 			if val, present := os.LookupEnv(name); present {
 				options.EnvironmentVariables = append(
 					options.EnvironmentVariables,
@@ -49,6 +50,7 @@ func OSEnvVar(name string) ApplierSet {
 					},
 				)
 			}
+			return nil
 		}),
 	}
 }
@@ -56,7 +58,7 @@ func OSEnvVar(name string) ApplierSet {
 // StaticEnvVar creates an ApplierSet to set a static environment variable.
 func StaticEnvVar(name, value string) ApplierSet {
 	return ApplierSet{
-		Container: ApplierFunc[corev1.Container](func(container *corev1.Container) {
+		Container: ApplierFunc[corev1.Container](func(container *corev1.Container) error {
 			container.Env = append(
 				container.Env,
 				corev1.EnvVar{
@@ -64,8 +66,9 @@ func StaticEnvVar(name, value string) ApplierSet {
 					Value: value,
 				},
 			)
+			return nil
 		}),
-		PodOptions: ApplierFunc[kube.PodOptions](func(options *kube.PodOptions) {
+		PodOptions: ApplierFunc[kube.PodOptions](func(options *kube.PodOptions) error {
 			options.EnvironmentVariables = append(
 				options.EnvironmentVariables,
 				corev1.EnvVar{
@@ -73,6 +76,7 @@ func StaticEnvVar(name, value string) ApplierSet {
 					Value: value,
 				},
 			)
+			return nil
 		}),
 	}
 }
