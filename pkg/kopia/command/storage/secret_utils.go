@@ -23,9 +23,9 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
-	"github.com/kanisterio/kanister/pkg/blockstorage/azure"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
 )
 
 const (
@@ -109,7 +109,7 @@ func getEnvSpecForAzureCredentialSecret(s *corev1.Secret) ([]corev1.EnvVar, erro
 	}
 	storageEnv := azureSecret.EnvironmentName
 	if storageEnv != "" {
-		env, err := azure.EnvironmentFromName(storageEnv)
+		env, err := volumesnapshot.EnvironmentFromName(storageEnv)
 		if err != nil {
 			return nil, errkit.Wrap(err, "Failed to get azure environment from name", "storageEnv", storageEnv)
 		}

@@ -1,4 +1,4 @@
-package tags
+package volumesnapshot
 
 import (
 	"testing"

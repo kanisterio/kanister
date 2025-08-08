@@ -33,10 +33,10 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/poll"
+	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
 )
 
 const (
@@ -233,8 +233,8 @@ func getPVCRestoreSize(ctx context.Context, args *CreatePVCFromSnapshotArgs) (*r
 func CreatePV(
 	ctx context.Context,
 	kubeCli kubernetes.Interface,
-	vol *blockstorage.Volume,
-	volType blockstorage.Type,
+	vol *volumesnapshot.Volume,
+	volType volumesnapshot.Type,
 	annotations map[string]string,
 	accessmodes []corev1.PersistentVolumeAccessMode,
 	volumemode *corev1.PersistentVolumeMode,
@@ -274,13 +274,13 @@ func CreatePV(
 		},
 	}
 	switch volType {
-	case blockstorage.TypeEBS:
+	case volumesnapshot.TypeEBS:
 		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &corev1.AWSElasticBlockStoreVolumeSource{
 			VolumeID: vol.ID,
 		}
 		pv.ObjectMeta.Labels[kube.TopologyZoneLabelName] = vol.Az
 		pv.ObjectMeta.Labels[kube.TopologyRegionLabelName] = zoneToRegion(vol.Az)
-	case blockstorage.TypeGPD:
+	case volumesnapshot.TypeGPD:
 		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &corev1.GCEPersistentDiskVolumeSource{
 			PDName: vol.ID,
 		}
