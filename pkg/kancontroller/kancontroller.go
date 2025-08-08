@@ -26,6 +26,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+
 	// "os/signal"
 	"strconv"
 	// "syscall"
@@ -153,6 +154,7 @@ func Execute() {
 }
 
 func runDatamoverController(ctx context.Context, config *rest.Config, namespace string) error {
+	log.SetupControllerRuntimeLogger()
 	noMetricsServer := metricsserver.Options{BindAddress: "0"}
 	mgr, err := dmcontroller.MakeControllerManager(config, ctrl.Options{
 		Metrics: noMetricsServer,
