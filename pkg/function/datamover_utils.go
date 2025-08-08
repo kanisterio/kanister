@@ -116,22 +116,21 @@ func getDatamoverArgs(tp param.TemplateParams, args map[string]interface{}) (*da
 	}
 
 	var podOptions *api.PodOptions
-	if err := OptArg(args, DMArgPodOptions, &podOptions, nil); err != nil {
+	if err := OptArg(args, DMArgPodOptions, &podOptions, &api.PodOptions{}); err != nil {
 		return nil, err
 	}
 
-	podOverride := crv1alpha1.JSONMap(podOptions.PodOverride)
+	podOverride := crv1alpha1.JSONMap{}
+	if podOptions != nil && podOptions.PodOverride != nil {
+		podOverride = crv1alpha1.JSONMap(podOptions.PodOverride)
+	}
 	podOverride, err := getPodOverride(podOverride, tp)
 	if err != nil {
 		return nil, err
 	}
 	podOptions.PodOverride = api.PodOverride(podOverride)
 
-	if podOptions == nil {
-		dmArgs.podOptions = api.PodOptions{}
-	} else {
-		dmArgs.podOptions = *podOptions
-	}
+	dmArgs.podOptions = *podOptions
 
 	return &dmArgs, nil
 
