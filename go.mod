@@ -43,7 +43,7 @@ require (
 	github.com/openshift/api v0.0.0-20231222123017-053aee22b4b4
 	github.com/openshift/client-go v0.0.0-20231221125933-2aa81c72f992
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_golang v1.23.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
