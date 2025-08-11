@@ -24,6 +24,10 @@ import (
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
+const (
+	DataMoverClientSecretType = "secrets.kanister.io/datamoverclient"
+)
+
 // ValidateCredentials returns error if secret is failed at validation.
 // Currently supports following:
 // - AWS typed secret with required AWS secret fields.
