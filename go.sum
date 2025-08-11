@@ -394,6 +394,16 @@ github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223 h1:MVWkn/tql
 github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223/go.mod h1:z+9bB5j8pRC7ml1WYajW1syhpSfT1phQ8j+b0UBEx7w=
 github.com/kanisterio/datamover v0.0.0-20250808184429-d91532f2439f h1:1IgUF52gGJlM7UbLlW8JanUl+Huo3zBe6CI+sh8ygcQ=
 github.com/kanisterio/datamover v0.0.0-20250808184429-d91532f2439f/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
+github.com/kanisterio/datamover v0.0.0-20250822200532-d9de6c6593fe h1:S8H5ovMEizuXWO5HzHNFBlcKp6PZMtjikb7prUh+Ti8=
+github.com/kanisterio/datamover v0.0.0-20250822200532-d9de6c6593fe/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
+github.com/kanisterio/datamover v0.0.0-20250822204501-9b9a77bf04f0 h1:CycmeBXQ1jQ+qILlo3637xUIIZ4spsZZaaTSrRAh6zg=
+github.com/kanisterio/datamover v0.0.0-20250822204501-9b9a77bf04f0/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
+github.com/kanisterio/datamover v0.0.0-20250902205737-56f69220917e h1:/jl+atLsKEwiAbgjlfsw1Aczegd7MOj2JfrefHK9who=
+github.com/kanisterio/datamover v0.0.0-20250902205737-56f69220917e/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
+github.com/kanisterio/datamover v0.0.0-20250903201652-02cd8f4bc386 h1:1kjIJuLA+CkcDLTon/sR/L9CnTYyzUDIGhuV5oXFr24=
+github.com/kanisterio/datamover v0.0.0-20250903201652-02cd8f4bc386/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
+github.com/kanisterio/datamover v0.0.0-20250908175248-9c9ae0396edc h1:bIFSaQ+xG4d4BiZsIm+Le+XD3fqeqc6rXq6oHSzUYNI=
+github.com/kanisterio/datamover v0.0.0-20250908175248-9c9ae0396edc/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
 github.com/kanisterio/errkit v0.0.3 h1:1wHaTqV4DZE0XrN+Nq7Q2M8kyKnV8NhhEF3OB7A/Pd8=
 github.com/kanisterio/errkit v0.0.3/go.mod h1:0xesKaif6++1IXFdhb6fywa40J07odjwWq3IKzxWC3A=
 github.com/kanisterio/safecli v0.0.10 h1:oS3XMYUkzutKatV50cI0IGgPrdHnOuKpFkVv6rpS0mQ=
