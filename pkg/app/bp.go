@@ -21,8 +21,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/rand"
 
+	bp "github.com/kanisterio/blueprints"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	bp "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -60,10 +60,12 @@ func NewBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter
 }
 
 func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
-	bpr, err := bp.ReadFromFile(b.Path)
+	bpr, err := bp.ReadFromFile(b.App)
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
+
+	log.Info().Print("Successfully read Blueprint", field.M{"blueprint": bpr.ObjectMeta.Name})
 
 	// set the name to a dynamically generated value
 	// so that the name wont conflict with the same application
