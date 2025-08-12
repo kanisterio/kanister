@@ -15,9 +15,9 @@
 package kanctl
 
 import (
+	"github.com/kanisterio/blueprints"
 	"github.com/kanisterio/errkit"
 
-	"github.com/kanisterio/blueprints"
 	"github.com/kanisterio/kanister/pkg/blueprint/validate"
 )
 
