@@ -28,11 +28,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -75,8 +75,8 @@ func (s *LocationSuite) SetUpSuite(c *check.C) {
 			Type: crv1alpha1.LocationTypeGCS,
 		}
 	case objectstore.ProviderTypeAzure:
-		testutil.GetEnvOrSkip(c, blockstorage.AzureStorageAccount)
-		testutil.GetEnvOrSkip(c, blockstorage.AzureStorageKey)
+		testutil.GetEnvOrSkip(c, volumesnapshot.AzureStorageAccount)
+		testutil.GetEnvOrSkip(c, volumesnapshot.AzureStorageKey)
 		location = crv1alpha1.Location{
 			Type: crv1alpha1.LocationTypeAzure,
 		}

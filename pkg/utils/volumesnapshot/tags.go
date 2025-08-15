@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package tags provides utilities for managing and manipulating tags
+// Package volumesnapshot (tags) provides utilities for managing and manipulating tags
 // that are used to label and identify resources.
-package tags
+package volumesnapshot
 
 import (
-	"os"
 	"regexp"
 	"strings"
-
-	"github.com/kanisterio/kanister/pkg/config"
-	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
@@ -34,45 +29,6 @@ const (
 	// AppNameTag is used to tag volumes with the app they belong to
 	AppNameTag = "kanister.io/appname"
 )
-
-// GetTags returns the tags to set on a resource
-func GetTags(inputTags map[string]string) map[string]string {
-	tags := GetStdTags()
-
-	// inputTags could've be derived from an existing object so only add tags that are
-	// missing (ignore ones that already exist)
-	return AddMissingTags(tags, inputTags)
-}
-
-// GetStdTags returns a set of standard tags to use for tagging resources
-func GetStdTags() map[string]string {
-	version := os.Getenv("VERSION")
-	clustername, _ := config.GetClusterName(nil)
-
-	stdTags := map[string]string{
-		ClusterTagKey: clustername,
-		VersionTagKey: version,
-	}
-	return stdTags
-}
-
-// AddMissingTags returns a new map which contains 'existing' + any tags
-// in 'tagsToAdd' that did not exist
-func AddMissingTags(existingTags map[string]string, tagsToAdd map[string]string) map[string]string {
-	ret := make(map[string]string, len(existingTags))
-	for k, v := range existingTags {
-		ret[k] = v
-	}
-	// Add missing tags
-	for k, v := range tagsToAdd {
-		if val, ok := ret[k]; ok {
-			log.Print("Ignoring duplicate tag", field.M{k: v, "RetainedValue": val})
-		} else {
-			ret[k] = v
-		}
-	}
-	return ret
-}
 
 // SanitizeValueForGCP shrink value if needed and change prohibited chars
 func SanitizeValueForGCP(value string) string {
