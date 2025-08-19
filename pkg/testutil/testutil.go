@@ -39,12 +39,12 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
 )
 
 const (
@@ -198,7 +198,7 @@ func NewSecretProfileFromLocation(location crv1alpha1.Location) (*corev1.Secret,
 			data[awsconfig.ConfigRole] = role
 		}
 	case crv1alpha1.LocationTypeGCS:
-		os.Getenv(blockstorage.GoogleCloudCreds)
+		os.Getenv(volumesnapshot.GoogleCloudCreds)
 		creds, err := google.FindDefaultCredentials(context.Background(), compute.ComputeScope)
 		if err != nil {
 			return nil, nil, err
@@ -206,8 +206,8 @@ func NewSecretProfileFromLocation(location crv1alpha1.Location) (*corev1.Secret,
 		key = creds.ProjectID
 		val = string(creds.JSON)
 	case crv1alpha1.LocationTypeAzure:
-		key = os.Getenv(blockstorage.AzureStorageAccount)
-		val = os.Getenv(blockstorage.AzureStorageKey)
+		key = os.Getenv(volumesnapshot.AzureStorageAccount)
+		val = os.Getenv(volumesnapshot.AzureStorageKey)
 	default:
 		return nil, nil, fmt.Errorf("Invalid location type '%s'", location.Type)
 	}
