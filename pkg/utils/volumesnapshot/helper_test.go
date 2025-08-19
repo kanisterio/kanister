@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package blockstorage
+package volumesnapshot
 
 import (
 	"gopkg.in/check.v1"
