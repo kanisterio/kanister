@@ -13,7 +13,7 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /
 RUN apt update && apt install -y docker-ce docker-ce-cli containerd.io \
     && apt-get clean
 
-COPY --from=bitnami/kubectl:1.26 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
+COPY --from=bitnamilegacy/kubectl:1.26 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
 
 COPY --from=goreleaser/goreleaser:v1.26.2 /usr/bin/goreleaser /usr/local/bin/
 
@@ -22,7 +22,7 @@ COPY --from=alpine/helm:3.12.2 /usr/bin/helm /usr/local/bin/
 COPY --from=golangci/golangci-lint:v2.1.6 /usr/bin/golangci-lint /usr/local/bin/
 
 RUN wget -O /usr/local/bin/kind \
-      https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -) \
+    https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -) \
     && chmod +x /usr/local/bin/kind
 
 RUN git config --global --add safe.directory /go/src/github.com/kanisterio/kanister

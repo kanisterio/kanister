@@ -66,6 +66,7 @@ func NewMongoDB(name string) HelmApp {
 			Values: map[string]string{
 				"architecture":     "replicaset",
 				"image.pullPolicy": "Always",
+				"image.repository": "bitnamilegacy/mongodb",
 			},
 		},
 	}

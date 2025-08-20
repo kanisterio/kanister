@@ -57,6 +57,7 @@ func NewMysqlDB(name string) HelmApp {
 				"auth.usePasswordFiles": "false",
 				"auth.rootPassword":     "mysecretpassword",
 				"image.pullPolicy":      "Always",
+				"image.repository":      "bitnamilegacy/mysql",
 			},
 		},
 	}

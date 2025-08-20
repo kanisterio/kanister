@@ -56,6 +56,7 @@ func NewMariaDB(name string) App {
 				"auth.usePasswordFiles": "false",
 				"auth.rootPassword":     "mysecretpassword",
 				"image.pullPolicy":      "Always",
+				"image.repository":      "bitnamilegacy/mariadb",
 			},
 		},
 	}

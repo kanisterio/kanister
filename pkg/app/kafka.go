@@ -100,6 +100,9 @@ func NewKafkaCluster(name, pathToYaml string) App {
 			RepoURL:  helm.KafkaOperatorRepoURL,
 			Chart:    chart,
 			RepoName: helm.KafkaOperatorRepoName,
+			Values: map[string]string{
+				"image.repository": "bitnamilegacy/kafka",
+			},
 		},
 	}
 }
