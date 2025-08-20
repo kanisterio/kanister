@@ -25,7 +25,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/ephemeral"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -224,35 +223,6 @@ func restoreDataFromServer(
 	annotations,
 	labels map[string]string,
 ) (map[string]any, error) {
-	validatedVols := make(map[string]kube.VolumeMountOptions)
-	// Validate volumes
-	for pvcName, mountPoint := range vols {
-		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
-		if err != nil {
-			return nil, errkit.Wrap(err, "Failed to retrieve PVC.", "namespace", namespace, "name", pvcName)
-		}
-
-		validatedVols[pvcName] = kube.VolumeMountOptions{
-			MountPath: mountPoint,
-			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
-		}
-	}
-
-	options := &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: jobPrefix,
-		Image:        image,
-		Command:      []string{"bash", "-c", "tail -f /dev/null"},
-		Volumes:      validatedVols,
-		PodOverride:  podOverride,
-		Annotations:  annotations,
-		Labels:       labels,
-	}
-
-	// Apply the registered ephemeral pod changes.
-	ephemeral.PodOptions.Apply(options)
-
-	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataFromServerPodFunc(
 		hostname,
 		restorePath,
@@ -263,7 +233,19 @@ func restoreDataFromServer(
 		userPassphrase,
 		sparseRestore,
 	)
-	return pr.Run(ctx, podFunc)
+	return PrepareAndRunPod(
+		ctx,
+		cli,
+		namespace,
+		jobPrefix,
+		image,
+		[]string{"bash", "-c", "tail -f /dev/null"},
+		vols,
+		podOverride,
+		annotations,
+		labels,
+		podFunc,
+	)
 }
 
 func restoreDataFromServerPodFunc(
