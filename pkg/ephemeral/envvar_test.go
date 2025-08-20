@@ -42,17 +42,19 @@ func (s *EnvVarSuite) TestOSEnvVarKubePodOptions(c *check.C) {
 	registeredAppliers.Register(set.PodOptions)
 
 	var options kube.PodOptions
-	registeredAppliers.Apply(&options)
+	err := registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.EnvironmentVariables, check.DeepEquals, []corev1.EnvVar(nil))
 
 	// OS environment variable set
-	err := os.Setenv(expected[0].Name, expected[0].Value)
+	err = os.Setenv(expected[0].Name, expected[0].Value)
 	c.Assert(err, check.IsNil)
 	defer func() {
 		err := os.Unsetenv(expected[0].Name)
 		c.Assert(err, check.IsNil)
 	}()
-	registeredAppliers.Apply(&options)
+	err = registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.EnvironmentVariables, check.DeepEquals, expected)
 }
 
@@ -70,18 +72,20 @@ func (s *EnvVarSuite) TestOSEnvVarCoreV1Container(c *check.C) {
 	registeredAppliers.Register(set.Container)
 
 	var options corev1.Container
-	registeredAppliers.Apply(&options)
+	err := registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.Env, check.DeepEquals, []corev1.EnvVar(nil))
 
 	// OS environment variable set
-	err := os.Setenv(expected[0].Name, expected[0].Value)
+	err = os.Setenv(expected[0].Name, expected[0].Value)
 	c.Assert(err, check.IsNil)
 
 	defer func() {
 		err := os.Unsetenv(expected[0].Name)
 		c.Assert(err, check.IsNil)
 	}()
-	registeredAppliers.Apply(&options)
+	err = registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.Env, check.DeepEquals, expected)
 }
 
@@ -98,7 +102,8 @@ func (s *EnvVarSuite) TestStaticEnvVarKubePodOptions(c *check.C) {
 	registeredAppliers.Register(set.PodOptions)
 
 	var options kube.PodOptions
-	registeredAppliers.Apply(&options)
+	err := registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.EnvironmentVariables, check.DeepEquals, expected)
 }
 
@@ -115,6 +120,7 @@ func (s *EnvVarSuite) TestRegisteringStaticEnvVarCoreV1Container(c *check.C) {
 	registeredAppliers.Register(set.Container)
 
 	var options corev1.Container
-	registeredAppliers.Apply(&options)
+	err := registeredAppliers.Apply(&options)
+	c.Assert(err, check.IsNil)
 	c.Assert(options.Env, check.DeepEquals, expected)
 }
