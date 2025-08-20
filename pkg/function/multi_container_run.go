@@ -29,6 +29,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -178,6 +179,10 @@ func (ktpf *multiContainerRunFunc) run(ctx context.Context) (map[string]interfac
 			Annotations:  ktpf.annotations,
 		},
 		Spec: podSpec,
+	}
+
+	if err = ephemeral.Pod.Apply(pod); err != nil {
+		return nil, errkit.Wrap(err, "Failed to add pod labels")
 	}
 
 	pod, err = cli.CoreV1().Pods(ktpf.namespace).Create(ctx, pod, metav1.CreateOptions{})
