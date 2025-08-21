@@ -65,6 +65,7 @@ func NewPostgresDB(name string, subPath string) App {
 				// Update manually whenever a new version is release.
 				// TODO: Automate the update process for the image tag.
 				"image.repository": "bitnamilegacy/postgresql",
+				"image.tag":        "latest",
 			},
 		},
 	}
