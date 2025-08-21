@@ -53,10 +53,12 @@ func NewMariaDB(name string) App {
 			Chart:    "mariadb",
 			RepoName: helm.BitnamiRepoName,
 			Values: map[string]string{
-				"auth.usePasswordFiles": "false",
-				"auth.rootPassword":     "mysecretpassword",
-				"image.pullPolicy":      "Always",
-				"image.repository":      "bitnamilegacy/mariadb",
+				"auth.usePasswordFiles":               "false",
+				"auth.rootPassword":                   "mysecretpassword",
+				"image.pullPolicy":                    "Always",
+				"image.repository":                    "bitnamilegacy/mariadb",
+				"global.security.allowInsecureImages": "true",
+				"volumePermissions.image.repository":  "bitnamilegacy/os-shell",
 			},
 		},
 	}

@@ -64,8 +64,10 @@ func NewPostgresDB(name string, subPath string) App {
 				"primary.containerSecurityContext.readOnlyRootFilesystem": "false",
 				// Update manually whenever a new version is release.
 				// TODO: Automate the update process for the image tag.
-				"image.repository": "bitnamilegacy/postgresql",
-				"image.tag":        "latest",
+				"image.repository":                    "bitnamilegacy/postgresql",
+				"image.tag":                           "latest",
+				"global.security.allowInsecureImages": "true",
+				"volumePermissions.image.repository":  "bitnamilegacy/os-shell",
 			},
 		},
 	}
