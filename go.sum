@@ -404,6 +404,10 @@ github.com/kanisterio/datamover v0.0.0-20250807203908-4054a01902a5 h1:qKww3W7jGy
 github.com/kanisterio/datamover v0.0.0-20250807203908-4054a01902a5/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
 github.com/kanisterio/datamover v0.0.0-20250808184429-d91532f2439f h1:1IgUF52gGJlM7UbLlW8JanUl+Huo3zBe6CI+sh8ygcQ=
 github.com/kanisterio/datamover v0.0.0-20250808184429-d91532f2439f/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
+github.com/kanisterio/datamover v0.0.0-20250822200532-d9de6c6593fe h1:S8H5ovMEizuXWO5HzHNFBlcKp6PZMtjikb7prUh+Ti8=
+github.com/kanisterio/datamover v0.0.0-20250822200532-d9de6c6593fe/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
+github.com/kanisterio/datamover v0.0.0-20250822204501-9b9a77bf04f0 h1:CycmeBXQ1jQ+qILlo3637xUIIZ4spsZZaaTSrRAh6zg=
+github.com/kanisterio/datamover v0.0.0-20250822204501-9b9a77bf04f0/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
 github.com/kanisterio/errkit v0.0.3 h1:1wHaTqV4DZE0XrN+Nq7Q2M8kyKnV8NhhEF3OB7A/Pd8=
 github.com/kanisterio/errkit v0.0.3/go.mod h1:0xesKaif6++1IXFdhb6fywa40J07odjwWq3IKzxWC3A=
 github.com/kanisterio/safecli v0.0.10 h1:oS3XMYUkzutKatV50cI0IGgPrdHnOuKpFkVv6rpS0mQ=

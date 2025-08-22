@@ -240,7 +240,7 @@ require (
 
 require (
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/kanisterio/datamover v0.0.0-20250808184429-d91532f2439f
+	github.com/kanisterio/datamover v0.0.0-20250822204501-9b9a77bf04f0
 )
 
 require (
