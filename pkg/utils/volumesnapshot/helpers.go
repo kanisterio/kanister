@@ -12,36 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package blockstorage
+package volumesnapshot
 
 import (
 	"bytes"
 
 	azto "github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-
-	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
-)
-
-// Google Cloud environment variable names
-const (
-	GoogleCloudZone            = "CLOUDSDK_COMPUTE_ZONE"
-	GoogleCloudCreds           = "GOOGLE_APPLICATION_CREDENTIALS"
-	GoogleProjectID            = "projectID"
-	GoogleServiceKey           = "serviceKey"
-	AzureStorageAccount        = "AZURE_STORAGE_ACCOUNT_NAME"
-	AzureStorageKey            = "AZURE_STORAGE_ACCOUNT_KEY"
-	AzureSubscriptionID        = "AZURE_SUBSCRIPTION_ID"
-	AzureTenantID              = "AZURE_TENANT_ID"
-	AzureClientID              = "AZURE_CLIENT_ID"
-	AzureClientSecret          = "AZURE_CLIENT_SECRET"
-	AzureResurceGroup          = "AZURE_RESOURCE_GROUP"
-	AzureResurceMgrEndpoint    = "AZURE_RESOURCE_MANAGER_ENDPOINT"
-	AzureMigrateStorageAccount = "AZURE_MIGRATE_STORAGE_ACCOUNT_NAME"
-	AzureMigrateStorageKey     = "AZURE_MIGRATE_STORAGE_ACCOUNT_KEY"
-	AzureMigrateResourceGroup  = "AZURE_MIGRATE_RESOURCE_GROUP"
-	AzureActiveDirEndpoint     = "AZURE_AD_ENDPOINT"
-	AzureActiveDirResourceID   = "AZURE_AD_RESOURCE"
-	AzureCloudEnvironmentID    = "AZURE_CLOUD_ENV_ID"
 )
 
 // SanitizeTags are used to sanitize the tags
@@ -55,7 +31,7 @@ func SanitizeTags(tags map[string]string) map[string]string {
 	//   characters are allowed.
 	fixedTags := make(map[string]string)
 	for k, v := range tags {
-		fixedTags[ktags.SanitizeValueForGCP(k)] = ktags.SanitizeValueForGCP(v)
+		fixedTags[SanitizeValueForGCP(k)] = SanitizeValueForGCP(v)
 	}
 	return fixedTags
 }
@@ -101,7 +77,7 @@ func FilterSnapshotsWithTags(snapshots []*Snapshot, tags map[string]string) []*S
 	}
 	result := make([]*Snapshot, 0)
 	for i, snap := range snapshots {
-		if ktags.IsSubset(KeyValueToMap(snap.Tags), tags) {
+		if IsSubset(KeyValueToMap(snap.Tags), tags) {
 			result = append(result, snapshots[i])
 		}
 	}

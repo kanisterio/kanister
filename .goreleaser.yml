@@ -63,6 +63,7 @@ dockers:
   - "--pull"
 - ids:
   - kando
+  - kanctl
   image_templates:
   - 'ghcr.io/kanisterio/kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/tools/Dockerfile'
