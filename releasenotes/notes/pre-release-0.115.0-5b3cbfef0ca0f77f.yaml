@@ -5,6 +5,7 @@ features:
   - Add kanctl binary to kanister-tools Docker Image https://github.com/kanisterio/kanister/pull/3578
   - Support configmaps as phase objects https://github.com/kanisterio/kanister/pull/3500
   - Harden Job Pod Service Account RBAC Settings https://github.com/kanisterio/kanister/pull/3542
+  - Support container image override for BackupDataStats, CopyVolumeData, DeleteData and DeleteDataAll functions
 upgrade:
   - Volume snapshot functions CreateVolumeSnapshot, WaitForSnapshotCompletion, CreateVolumeFromSnapshot and DeleteVolumeSnapshot were deleted. Use CSI snapshot functions.
 fixes:
