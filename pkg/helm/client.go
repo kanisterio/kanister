@@ -147,6 +147,7 @@ func (h CliClient) Install(
 	}
 
 	cmd := []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--create-namespace"}
+	log.Info().Print("Command args to execute", field.M{"args": cmd}) // added just for testing purpose
 	if wait {
 		cmd = append(cmd, "--wait")
 	}

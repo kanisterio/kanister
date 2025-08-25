@@ -3,7 +3,7 @@
 ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
-FROM bitnami/mongodb:7.0-debian-12
+FROM bitnamilegacy/mongodb:7.0-debian-12
 
 LABEL maintainer="Kanister maintainers <kanister.maintainers@veeam.com>"
 
