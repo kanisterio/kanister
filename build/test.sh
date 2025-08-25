@@ -45,6 +45,7 @@ check_dependencies() {
         export TEST_REPOSITORY_ENCRYPTION_KEY="testKopiaRepoPassword"
         unset AWS_SESSION_TOKEN
         export USE_MINIO="true"
+        export LOCAL_MINIO="${LOCAL_MINIO:-false}"
     else
         echo "Please install MinIO using 'make install-minio' and try again."
         exit 1
@@ -62,9 +63,33 @@ check_dependencies() {
 
 check_dependencies
 
+## make pod ready timeout shorter for tests
+export TIMEOUT_WORKER_POD_READY="5"
+
+## Split function and controller tests
+base_packages=$(go list ${TARGETS} | grep -v pkg/function | grep -v pkg/controller | xargs echo);
+controller_packages=$(go list ${TARGETS}  | grep pkg/controller | xargs echo);
+functions_packages=$(go list ${TARGETS}  | grep pkg/function | xargs echo);
+
+TEST_CONTROLLER="${TEST_CONTROLLER:-true}"
+TEST_FUNCTIONS="${TEST_FUNCTIONS:-true}"
+TEST_BASE="${TEST_BASE:-true}"
+
+test_packages=""
+if [ ${TEST_CONTROLLER} == "true" ]; then
+    test_packages="${test_packages} ${controller_packages}"
+fi
+if [ ${TEST_FUNCTIONS} == "true" ]; then
+    test_packages="${test_packages} ${functions_packages}"
+fi
+if [ ${TEST_BASE} == "true" ]; then
+    test_packages="${test_packages} ${base_packages}"
+fi
+
 echo "Running tests:"
-go test -v ${TARGETS} -list .
-go test -v -installsuffix "static" ${TARGETS} -check.v ${GOCHECK_FILTER}
+echo "Test packages: '${test_packages}'"
+
+go test -v -timeout 30m -installsuffix "static" ${test_packages} -check.v ${GOCHECK_FILTER}
 echo
 
 echo "PASS"

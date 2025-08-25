@@ -42,6 +42,7 @@ const (
 	CopyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
 	CopyVolumeDataJobPrefix                    = "copy-vol-data-"
 	CopyVolumeDataNamespaceArg                 = "namespace"
+	CopyVolumeDataImageArg                     = "image"
 	CopyVolumeDataVolumeArg                    = "volume"
 	CopyVolumeDataArtifactPrefixArg            = "dataArtifactPrefix"
 	CopyVolumeDataOutputBackupID               = "backupID"
@@ -81,6 +82,7 @@ func copyVolumeData(
 	mountPath string,
 	insecureTLS bool,
 	podOverride map[string]interface{},
+	image string,
 	annotations,
 	labels map[string]string,
 ) (map[string]interface{}, error) {
@@ -98,7 +100,7 @@ func copyVolumeData(
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: CopyVolumeDataJobPrefix,
-		Image:        consts.GetKanisterToolsImage(),
+		Image:        image,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes: map[string]kube.VolumeMountOptions{pvcName: {
 			MountPath: mountPoint,
@@ -198,7 +200,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	c.progressPercent = progress.StartedPercent
 	defer func() { c.progressPercent = progress.CompletedPercent }()
 
-	var namespace, vol, targetPath, encryptionKey, mountPath string
+	var namespace, vol, targetPath, encryptionKey, mountPath, image string
 	var err error
 	var bpAnnotations, bpLabels map[string]string
 	var insecureTLS bool
@@ -226,6 +228,10 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, CopyVolumeDataImageArg, &image, consts.GetKanisterToolsImage()); err != nil {
+		return nil, err
+	}
+
 	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
 	if err != nil {
 		return nil, err
@@ -266,6 +272,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		mountPath,
 		insecureTLS,
 		podOverride,
+		image,
 		annotations,
 		labels,
 	)
@@ -282,6 +289,7 @@ func (*copyVolumeDataFunc) RequiredArgs() []string {
 func (*copyVolumeDataFunc) Arguments() []string {
 	return []string{
 		CopyVolumeDataNamespaceArg,
+		CopyVolumeDataImageArg,
 		CopyVolumeDataVolumeArg,
 		CopyVolumeDataArtifactPrefixArg,
 		CopyVolumeDataEncryptionKeyArg,

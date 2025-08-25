@@ -161,7 +161,7 @@ format-vet: build-dirs
 	@$(MAKE) run CMD="./build/format-vet.sh $(SRC_DIRS)"
 
 go-test: build-dirs
-	@$(MAKE) run CMD="TEST_FILTER=$(TEST_FILTER) ./build/test.sh $(SRC_DIRS)"
+	@$(MAKE) run CMD="TEST_FILTER=$(TEST_FILTER) TEST_BASE=$(TEST_BASE) TEST_CONTROLLER=$(TEST_CONTROLLER) TEST_FUNCTIONS=$(TEST_FUNCTIONS) LOCAL_MINIO=$(LOCAL_MINIO) ./build/test.sh $(SRC_DIRS)"
 
 test: format-vet go-test
 

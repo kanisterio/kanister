@@ -620,6 +620,7 @@ Arguments:
   | Argument           | Required | Type                    | Description |
   | ------------------ | :------: | ----------------------- | ----------- |
   | namespace          | Yes      | string                  | namespace the source PVC is in |
+  | image              | No       | string                  | override for container image running the operation |
   | volume             | Yes      | string                  | name of the source PVC |
   | dataArtifactPrefix | Yes      | string                  | path on the object store to store the data in |
   | encryptionKey      | No       | string                  | encryption key to be used during backups |
@@ -741,6 +742,7 @@ This function deletes the snapshot data backed up by the
   | Argument             | Required | Type                    | Description |
   | -------------------- | :------: | ----------------------- | ----------- |
   | namespace            | Yes      | string                  | namespace in which to execute |
+  | image                | No       | string                  | override for container image running the operation |
   | backupArtifactPrefix | Yes      | string                  | path to the backup on the object store |
   | backupID             | No       | string                  | (required if backupTag not provided) unique snapshot id generated during backup |
   | backupTag            | No       | string                  | (required if backupID not provided) unique tag added during the backup |
@@ -777,6 +779,7 @@ BackupDataAll function.
   | Argument             | Required | Type                    | Description |
   | -------------------- | :------: | ----------------------- | ----------- |
   | namespace            | Yes      | string                  | namespace in which to execute |
+  | image                | No       | string                  | override for container image running the operation |
   | backupArtifactPrefix | Yes      | string                  | path to the backup on the object store |
   | backupInfo           | Yes      | string                  | snapshot info generated as output in BackupDataAll function |
   | encryptionKey        | No       | string                  | encryption key to be used during backups |
@@ -848,6 +851,7 @@ Arguments:
   | Argument             | Required | Type   | Description |
   | -------------------- | :------: | ------ | ----------- |
   | namespace            | Yes      | string | namespace in which to execute |
+  | image                | No       | string | override for container image running the operation |
   | backupArtifactPrefix | Yes      | string | path to the object store location |
   | backupID             | Yes      | string | unique snapshot id generated during backup |
   | mode                 | No       | string | mode in which stats are expected |

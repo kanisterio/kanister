@@ -2,6 +2,8 @@ name: Pre release
 permissions:
   contents: read
 
+run-name: Pre-release ${{ inputs.release_tag }}
+
 on:
   workflow_dispatch:
     inputs:

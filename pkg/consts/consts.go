@@ -55,7 +55,7 @@ const (
 
 const (
 	LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
-	KanisterToolsImage       = "ghcr.io/kanisterio/kanister-tools:0.114.0"
+	KanisterToolsImage       = "ghcr.io/kanisterio/kanister-tools:0.115.0"
 )
 
 // KanisterToolsImageEnvName is used to set up a custom kanister-tools image

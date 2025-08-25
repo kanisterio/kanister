@@ -82,7 +82,7 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	s.namespace = cns.GetName()
 
 	s.profile = s.createNewTestProfile(c, testutil.TestProfileName, false)
-	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
+	if localMinio, ok := os.LookupEnv("LOCAL_MINIO"); ok && localMinio == "true" {
 		s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
 	}
 
@@ -113,7 +113,7 @@ func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alph
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.114.0",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
@@ -163,6 +163,7 @@ func newCheckRepositoryBlueprint() *crv1alpha1.Blueprint {
 						Name: "testCheckRepository",
 						Func: CheckRepositoryFuncName,
 						Args: map[string]interface{}{
+							CheckRepositoryImageArg:          "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							CheckRepositoryArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							CheckRepositoryEncryptionKeyArg:  "{{ .Secrets.backupKey.Data.password | toString }}",
 						},
@@ -225,7 +226,7 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 						Func: RestoreDataAllFuncName,
 						Args: map[string]interface{}{
 							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataAllImageArg:                "ghcr.io/kanisterio/kanister-tools:0.114.0",
+							RestoreDataAllImageArg:                "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							RestoreDataAllRestorePathArg:          "/mnt/data",
@@ -248,6 +249,7 @@ func newDeleteDataAllBlueprint() *crv1alpha1.Blueprint {
 						Func: DeleteDataAllFuncName,
 						Args: map[string]interface{}{
 							DeleteDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
+							DeleteDataAllImageArg:                "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							DeleteDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							DeleteDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							DeleteDataAllReclaimSpace:            true,
@@ -336,7 +338,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 		_ = runAction(c, bp, "restore", tp)
 
-		if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
+		if localMinio, ok := os.LookupEnv("LOCAL_MINIO"); ok && localMinio == "true" {
 			tp.Profile = s.profileLocalEndpoint
 		}
 		bp = *newLocationDeleteBlueprint()
@@ -426,6 +428,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Func: CopyVolumeDataFuncName,
 						Args: map[string]interface{}{
 							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
+							CopyVolumeDataImageArg:          "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
 							CopyVolumeDataArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}/{{ .PVC.Namespace }}/{{ .PVC.Name }}",
 						},
@@ -439,7 +442,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
-							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.114.0",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
 							RestoreDataVolsArg: map[string]string{
@@ -473,6 +476,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Func: DeleteDataFuncName,
 						Args: map[string]interface{}{
 							DeleteDataNamespaceArg:            "{{ .PVC.Namespace }}",
+							DeleteDataImageArg:                "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							DeleteDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							DeleteDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupID),
 						},
@@ -546,6 +550,7 @@ func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
 						Func: CopyVolumeDataFuncName,
 						Args: map[string]interface{}{
 							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
+							CopyVolumeDataImageArg:          "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
 							CopyVolumeDataArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}/{{ .PVC.Namespace }}/{{ .PVC.Name }}",
 							CopyVolumeDataMountPathArg:      "/mnt/source_data",
@@ -595,6 +600,7 @@ func newCopyDataDifferentPathsTestBlueprint() crv1alpha1.Blueprint {
 						Func: DeleteDataFuncName,
 						Args: map[string]interface{}{
 							DeleteDataNamespaceArg:            "{{ .PVC.Namespace }}",
+							DeleteDataImageArg:                "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 							DeleteDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							DeleteDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupID),
 						},
