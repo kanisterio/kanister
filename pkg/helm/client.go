@@ -141,13 +141,13 @@ func (h CliClient) Install(
 	wait,
 	dryRun bool) (string, error) {
 	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
-	var setVals []string
+	var setVals string
 	for k, v := range values {
-		setVals = append(setVals, fmt.Sprintf("--set %s=%s", k, v))
+		setVals += fmt.Sprintf("%s=%s,", k, v)
 	}
 
-	cmd := []string{"install", release, "--version", version, "--namespace", namespace, chart, "--create-namespace"}
-	cmd = append(cmd, setVals...)
+	cmd := []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--create-namespace"}
+	log.Info().Print("Command args to execute", field.M{"args": cmd}) // added just for testing purpose
 	if wait {
 		cmd = append(cmd, "--wait")
 	}
