@@ -193,9 +193,15 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 
 // Initialize is used to initialize the database or create schema
 func (pdb PostgresDB) Initialize(ctx context.Context) error {
+	pwCmd := "export POSTGRES_PASSWORD=$(kubectl get secret --namespace postgres-test my-release-postgresql -o jsonpath=\"{.data.postgres-password}\" | base64 -d)"
+	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", pwCmd})
+	if err != nil {
+		return errkit.Wrap(err, "Failed to set PGPASSWORD", "stderr", stderr)
+	}
+
 	// Create database
 	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -c 'CREATE DATABASE test;'"
-	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
+	_, stderr, err = pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errkit.Wrap(err, "Failed to create db in postgresql", "stderr", stderr)
 	}
