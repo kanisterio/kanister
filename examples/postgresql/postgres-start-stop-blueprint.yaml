@@ -43,7 +43,7 @@ actions:
             restartPolicy: Never
             containers:
               - name: container
-                image: bitnami/postgresql:16
+                image: bitnamilegacy/postgresql:16
                 command:
                 - bash
                 - -o
