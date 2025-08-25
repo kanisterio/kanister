@@ -32,7 +32,6 @@ $ helm install my-release bitnami/postgresql  \
 	--set postgresqlExtendedConf.archiveTimeout=60 \
 	--set postgresqlExtendedConf.walLevel=archive \
   --set image.repository=bitnamilegacy/postgresql \
-  --set image.tag=latest \
   --set global.security.allowInsecureImages=true \
   --set volumePermissions.image.repository=bitnamilegacy/os-shell
 ```

@@ -64,7 +64,7 @@ func NewPostgresDB(name string, subPath string) App {
 				"primary.containerSecurityContext.capabilities.add[2]":    "DAC_OVERRIDE",
 				"primary.containerSecurityContext.readOnlyRootFilesystem": "false",
 				"image.repository":                    "bitnamilegacy/postgresql",
-				"image.tag":                           "latest",
+				"image.tag":                           "17",
 				"global.security.allowInsecureImages": "true",
 				"volumePermissions.image.repository":  "bitnamilegacy/os-shell",
 			},
