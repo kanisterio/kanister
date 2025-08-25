@@ -31,7 +31,10 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
 $ kubectl create ns postgres-ha-test
-$ helm install my-release --namespace postgres-ha-test bitnami/postgresql-ha
+$ helm install my-release --namespace postgres-ha-test bitnami/postgresql-ha \
+  --set image.repository=bitnamilegacy/postgresql-ha \
+  --set global.security.allowInsecureImages=true \
+  --set volumePermissions.image.repository=bitnamilegacy/os-shell
 ```
 
 The command deploys PostgreSQL HA on the Kubernetes cluster in the default configuration.

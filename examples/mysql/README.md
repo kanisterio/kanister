@@ -27,7 +27,10 @@ $ helm repo update
 # Install the MySQL database
 $ kubectl create namespace mysql-test
 $ helm install mysql-release bitnami/mysql --namespace mysql-test \
-    --set auth.rootPassword='<mysql-root-password>'
+    --set auth.rootPassword='<mysql-root-password>' \
+	--set image.repository=bitnamilegacy/mysql \
+	--set global.security.allowInsecureImages=true \
+	--set volumePermissions.image.repository=bitnamilegacy/os-shell
 ```
 
 The command deploys a MySQL instance in the `mysql-test` namespace.
