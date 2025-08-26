@@ -25,6 +25,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
@@ -37,6 +38,8 @@ const (
 	DeleteDataAllFuncName = "DeleteDataAll"
 	// DeleteDataAllNamespaceArg provides the namespace
 	DeleteDataAllNamespaceArg = "namespace"
+	// DeleteDataAllNamespaceArg provides the kanister tools image override
+	DeleteDataAllImageArg = "image"
 	// DeleteDataAllBackupArtifactPrefixArg provides the path to restore backed up data
 	DeleteDataAllBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// DeleteDataAllEncryptionKeyArg provides the encryption key to be used for deletes
@@ -69,7 +72,7 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	d.progressPercent = progress.StartedPercent
 	defer func() { d.progressPercent = progress.CompletedPercent }()
 
-	var namespace, deleteArtifactPrefix, backupInfo, encryptionKey string
+	var namespace, deleteArtifactPrefix, backupInfo, encryptionKey, image string
 	var reclaimSpace bool
 	var err error
 	var insecureTLS bool
@@ -96,6 +99,9 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		return nil, err
 	}
 	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, DeleteDataAllImageArg, &image, consts.GetKanisterToolsImage()); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
@@ -142,6 +148,7 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		tp,
 		reclaimSpace,
 		namespace,
+		image,
 		encryptionKey,
 		insecureTLS,
 		targetPaths,
@@ -165,6 +172,7 @@ func (*deleteDataAllFunc) RequiredArgs() []string {
 func (*deleteDataAllFunc) Arguments() []string {
 	return []string{
 		DeleteDataAllNamespaceArg,
+		DeleteDataAllImageArg,
 		DeleteDataAllBackupArtifactPrefixArg,
 		DeleteDataAllBackupInfo,
 		DeleteDataAllEncryptionKeyArg,

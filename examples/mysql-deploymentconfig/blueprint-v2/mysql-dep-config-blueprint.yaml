@@ -21,7 +21,7 @@ actions:
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
         sharedVolumeMedium: Memory
-        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.115.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
         ## FIXME: do we want to use mysql 9?
@@ -38,7 +38,7 @@ actions:
           dump_cmd="mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ .DeploymentConfig.Name }} --single-transaction --all-databases"
           ${dump_cmd} > /tmp/data
 
-        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
+        outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.115.0 {{- end}}'
         outputCommand:
         - bash
         - -o
@@ -67,11 +67,11 @@ actions:
         namespace: "{{ .DeploymentConfig.Namespace }}"
         sharedVolumeMedium: Memory
 
-        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
+        initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.115.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
 
-        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
+        backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.115.0 {{- end}}'
         backgroundCommand:
         - bash
         - -o
@@ -107,7 +107,7 @@ actions:
     - func: KubeTask
       name: deleteFromStore
       args:
-        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
+        image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.115.0 {{- end}}'
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
