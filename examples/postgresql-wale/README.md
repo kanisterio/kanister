@@ -27,10 +27,13 @@ $ helm install my-release bitnami/postgresql  \
 	--set image.repository=ghcr.io/kanisterio/postgresql \
 	--set image.tag=0.115.0 \
 	--set postgresqlPassword=postgres-12345 \
-	--set postgresqlExtendedConf.archiveCommand="'envdir /bitnami/postgresql/data/env wal-e wal-push %p'" \
+	--set postgresqlExtendedConf.archiveCommand="'envdir /bitnamilegay/postgresql/data/env wal-e wal-push %p'" \
 	--set postgresqlExtendedConf.archiveMode=true \
 	--set postgresqlExtendedConf.archiveTimeout=60 \
-	--set postgresqlExtendedConf.walLevel=archive
+	--set postgresqlExtendedConf.walLevel=archive \
+  --set image.repository=bitnamilegacy/postgresql \
+  --set global.security.allowInsecureImages=true \
+  --set volumePermissions.image.repository=bitnamilegacy/os-shell
 ```
 
 The command deploys PostgreSQL on the Kubernetes cluster in the default configuration.
