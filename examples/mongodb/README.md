@@ -23,7 +23,10 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
 $ helm install my-release bitnami/mongodb --namespace mongo-test --create-namespace \
-	--set architecture="replicaset"
+	--set architecture="replicaset" \
+  --set image.repository=bitnamilegacy/mongodb \
+  --set global.security.allowInsecureImages=true \
+  --set volumePermissions.image.repository=bitnamilegacy/os-shell
 ```
 
 The command deploys MongoDB on the Kubernetes cluster in the mongo-test namespace

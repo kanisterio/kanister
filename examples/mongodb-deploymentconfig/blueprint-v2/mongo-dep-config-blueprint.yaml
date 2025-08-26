@@ -25,7 +25,7 @@ actions:
         initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.114.0 {{- end}}'
         initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
-        backgroundImage: bitnami/mongodb:7.0-debian-12
+        backgroundImage: bitnamilegacy/mongodb:7.0-debian-12
         backgroundCommand:
           - bash
           - -o
@@ -84,7 +84,7 @@ actions:
             kopia_snap='{{ .ArtifactsIn.mongoBackup.KopiaSnapshot }}'
             kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - > /tmp/data
 
-        outputImage: bitnami/mongodb:7.0-debian-12
+        outputImage: bitnamilegacy/mongodb:7.0-debian-12
         outputCommand:
           - bash
           - -o

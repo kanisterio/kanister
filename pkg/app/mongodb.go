@@ -64,8 +64,11 @@ func NewMongoDB(name string) HelmApp {
 			Chart:    "mongodb",
 			Version:  "14.11.1",
 			Values: map[string]string{
-				"architecture":     "replicaset",
-				"image.pullPolicy": "Always",
+				"architecture":                        "replicaset",
+				"image.pullPolicy":                    "Always",
+				"image.repository":                    "bitnamilegacy/mongodb",
+				"global.security.allowInsecureImages": "true",
+				"volumePermissions.image.repository":  "bitnamilegacy/os-shell",
 			},
 		},
 	}
