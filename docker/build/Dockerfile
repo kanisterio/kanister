@@ -13,7 +13,7 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /
 RUN apt update && apt install -y docker-ce docker-ce-cli containerd.io \
     && apt-get clean
 
-COPY --from=bitnami/kubectl:1.26 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
+COPY --from=bitnamilegacy/kubectl:1.26 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
 
 COPY --from=goreleaser/goreleaser:v1.26.2 /usr/bin/goreleaser /usr/local/bin/
 
