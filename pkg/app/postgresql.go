@@ -32,6 +32,7 @@ import (
 )
 
 const pgReadyTimeout = 1 * time.Minute
+const pgPASSWORD string = "test@54321"
 
 type PostgresDB struct {
 	name      string
@@ -41,7 +42,7 @@ type PostgresDB struct {
 }
 
 // NewPostgresDB initialises an instance of Postgres DB
-// Last tested chart version "15.5.38". Also, we are using postgres version 16
+// Last tested chart version "17.6.0". Also, we are using postgres version 17
 func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
@@ -52,7 +53,7 @@ func NewPostgresDB(name string, subPath string) App {
 			Chart:    "postgresql",
 			Values: map[string]string{
 				"image.pullPolicy":      "Always",
-				"auth.postgresPassword": "test@54321",
+				"auth.postgresPassword": pgPASSWORD,
 				"persistence.subPath":   subPath,
 				// The following values are customized to allow snapshot/restore operations.
 				"volumePermissions.enabled":                               "true",
@@ -62,10 +63,10 @@ func NewPostgresDB(name string, subPath string) App {
 				"primary.containerSecurityContext.capabilities.add[1]":    "FOWNER",
 				"primary.containerSecurityContext.capabilities.add[2]":    "DAC_OVERRIDE",
 				"primary.containerSecurityContext.readOnlyRootFilesystem": "false",
-				// Update manually whenever a new version is release.
-				// TODO: Automate the update process for the image tag.
-				"image.repository": "postgres",
-				"image.tag":        "16-bullseye",
+				"image.repository":                    "bitnamilegacy/postgresql",
+				"image.tag":                           "17.6.0",
+				"global.security.allowInsecureImages": "true",
+				"volumePermissions.image.repository":  "bitnamilegacy/os-shell",
 			},
 		},
 	}
@@ -149,7 +150,7 @@ func (pdb *PostgresDB) Ping(ctx context.Context) error {
 }
 
 func (pdb PostgresDB) Insert(ctx context.Context) error {
-	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\""
+	cmd := fmt.Sprintf("PGPASSWORD=%s psql -U postgres -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\"", pgPASSWORD)
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errkit.Wrap(err, "Failed to create db in postgresql", "stderr", stderr)
@@ -159,7 +160,7 @@ func (pdb PostgresDB) Insert(ctx context.Context) error {
 }
 
 func (pdb PostgresDB) Count(ctx context.Context) (int, error) {
-	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c 'SELECT COUNT(*) FROM company;'"
+	cmd := fmt.Sprintf("PGPASSWORD=%s psql -U postgres -d test -c 'SELECT COUNT(*) FROM company;'", pgPASSWORD)
 	stdout, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return 0, errkit.Wrap(err, "Failed to count db entries in postgresql", "stderr", stderr)
@@ -179,7 +180,7 @@ func (pdb PostgresDB) Count(ctx context.Context) (int, error) {
 
 func (pdb PostgresDB) Reset(ctx context.Context) error {
 	// Delete database if exists
-	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -c 'DROP DATABASE IF EXISTS test;'"
+	cmd := fmt.Sprintf("PGPASSWORD=%s psql -U postgres -c 'DROP DATABASE IF EXISTS test;'", pgPASSWORD)
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errkit.Wrap(err, "Failed to drop db from postgresql", "stderr", stderr)
@@ -192,14 +193,14 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 // Initialize is used to initialize the database or create schema
 func (pdb PostgresDB) Initialize(ctx context.Context) error {
 	// Create database
-	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -c 'CREATE DATABASE test;'"
+	cmd := fmt.Sprintf("PGPASSWORD=%s psql -U postgres -c 'CREATE DATABASE test;'", pgPASSWORD)
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errkit.Wrap(err, "Failed to create db in postgresql", "stderr", stderr)
 	}
 
 	// Create table
-	cmd = "PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres -d test -c 'CREATE TABLE COMPANY(ID SERIAL PRIMARY KEY NOT NULL, NAME TEXT NOT NULL, AGE INT NOT NULL, CREATED_AT TIMESTAMP);'"
+	cmd = fmt.Sprintf("PGPASSWORD=%s psql -U postgres -d test -c 'CREATE TABLE COMPANY(ID SERIAL PRIMARY KEY NOT NULL, NAME TEXT NOT NULL, AGE INT NOT NULL, CREATED_AT TIMESTAMP);'", pgPASSWORD)
 	_, stderr, err = pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errkit.Wrap(err, "Failed to create table in postgresql", "stderr", stderr)

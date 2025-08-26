@@ -1,3 +1,3 @@
 ---
 features:
-  - Added new argument to PrepareData to enable command failure propagation
+  - Added new argument to PrepareData to enable command failure propagation https://github.com/kanisterio/kanister/pull/3533

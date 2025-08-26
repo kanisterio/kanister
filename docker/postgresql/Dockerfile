@@ -1,9 +1,9 @@
-FROM bitnami/postgresql:16
+FROM bitnamilegacy/postgresql:17
 
 USER root
 
 # Explicitly set user/group IDs
-RUN useradd -r --gid=0 --uid=1001 postgres
+RUN id -u postgres || useradd -r --gid=0 --uid=1001 postgres
 
 # Install required components for backup
 COPY docker/postgresql/requirements.txt requirements.txt

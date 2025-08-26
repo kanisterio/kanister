@@ -41,6 +41,8 @@ const (
 	DeleteDataFuncName = "DeleteData"
 	// DeleteDataNamespaceArg provides the namespace
 	DeleteDataNamespaceArg = "namespace"
+	// DeleteDataNamespaceArg provides the namespace
+	DeleteDataImageArg = "image"
 	// DeleteDataBackupArtifactPrefixArg provides the path to restore backed up data
 	DeleteDataBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// DeleteDataBackupIdentifierArg provides a unique ID added to the backed up artifacts
@@ -78,6 +80,7 @@ func deleteData(
 	tp param.TemplateParams,
 	reclaimSpace bool,
 	namespace,
+	image,
 	encryptionKey string,
 	insecureTLS bool,
 	targetPaths,
@@ -95,7 +98,7 @@ func deleteData(
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        consts.GetKanisterToolsImage(),
+		Image:        image,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 		Annotations:  annotations,
@@ -103,7 +106,9 @@ func deleteData(
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.PodOptions.Apply(options)
+	if err := ephemeral.PodOptions.Apply(options); err != nil {
+		return nil, errkit.Wrap(err, "Failed to apply ephemeral pod options")
+	}
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataPodFunc(tp, reclaimSpace, encryptionKey, insecureTLS, targetPaths, deleteTags, deleteIdentifiers)
@@ -208,7 +213,7 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	d.progressPercent = progress.StartedPercent
 	defer func() { d.progressPercent = progress.CompletedPercent }()
 
-	var namespace, deleteArtifactPrefix, deleteIdentifier, deleteTag, encryptionKey string
+	var namespace, deleteArtifactPrefix, deleteIdentifier, deleteTag, encryptionKey, image string
 	var reclaimSpace bool
 	var err error
 	var insecureTLS bool
@@ -238,6 +243,9 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, DeleteDataImageArg, &image, consts.GetKanisterToolsImage()); err != nil {
 		return nil, err
 	}
 
@@ -276,6 +284,7 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		tp,
 		reclaimSpace,
 		namespace,
+		image,
 		encryptionKey,
 		insecureTLS,
 		strings.Fields(deleteArtifactPrefix),
@@ -298,6 +307,7 @@ func (*deleteDataFunc) RequiredArgs() []string {
 func (*deleteDataFunc) Arguments() []string {
 	return []string{
 		DeleteDataNamespaceArg,
+		DeleteDataImageArg,
 		DeleteDataBackupArtifactPrefixArg,
 		DeleteDataBackupIdentifierArg,
 		DeleteDataBackupTagArg,

@@ -39,6 +39,8 @@ const (
 	BackupDataStatsFuncName = "BackupDataStats"
 	// BackupDataStatsNamespaceArg provides the namespace
 	BackupDataStatsNamespaceArg = "namespace"
+	// BackupDataStatsNamespaceArg provides the kanister tools image
+	BackupDataStatsImageArg = "image"
 	// BackupDataStatsBackupArtifactPrefixArg provides the path to store artifacts on the object store
 	BackupDataStatsBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// BackupDataStatsEncryptionKeyArg provides the encryption key to be used for backups
@@ -78,13 +80,14 @@ func backupDataStats(
 	mode,
 	jobPrefix string,
 	podOverride crv1alpha1.JSONMap,
+	image string,
 	annotations,
 	labels map[string]string,
 ) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        consts.GetKanisterToolsImage(),
+		Image:        image,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 		Annotations:  annotations,
@@ -92,7 +95,9 @@ func backupDataStats(
 	}
 
 	// Apply the registered ephemeral pod changes.
-	ephemeral.PodOptions.Apply(options)
+	if err := ephemeral.PodOptions.Apply(options); err != nil {
+		return nil, errkit.Wrap(err, "Failed to apply ephemeral pod options")
+	}
 
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := backupDataStatsPodFunc(tp, encryptionKey, backupArtifactPrefix, backupID, mode)
@@ -156,7 +161,7 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	b.progressPercent = progress.StartedPercent
 	defer func() { b.progressPercent = progress.CompletedPercent }()
 
-	var namespace, backupArtifactPrefix, backupID, mode, encryptionKey string
+	var namespace, backupArtifactPrefix, backupID, mode, encryptionKey, image string
 	var err error
 	var bpAnnotations, bpLabels map[string]string
 	if err = Arg(args, BackupDataStatsNamespaceArg, &namespace); err != nil {
@@ -178,6 +183,9 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 	if err = OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, BackupDataStatsImageArg, &image, consts.GetKanisterToolsImage()); err != nil {
 		return nil, err
 	}
 
@@ -221,6 +229,7 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		mode,
 		backupDataStatsJobPrefix,
 		podOverride,
+		image,
 		annotations,
 		labels,
 	)
@@ -237,6 +246,7 @@ func (*BackupDataStatsFunc) RequiredArgs() []string {
 func (*BackupDataStatsFunc) Arguments() []string {
 	return []string{
 		BackupDataStatsNamespaceArg,
+		BackupDataStatsImageArg,
 		BackupDataStatsBackupArtifactPrefixArg,
 		BackupDataStatsBackupIdentifierArg,
 		BackupDataStatsMode,
