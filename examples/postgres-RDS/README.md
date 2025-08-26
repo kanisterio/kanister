@@ -98,7 +98,10 @@ To install the PostgreSQL chart with the release name `my-release` and default c
 $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
-$ helm install my-release --create-namespace --namespace postgres-test bitnami/postgresql
+$ helm install my-release --create-namespace --namespace postgres-test bitnami/postgresql \
+  --set image.repository=bitnamilegacy/postgresql \
+  --set global.security.allowInsecureImages=true \
+  --set volumePermissions.image.repository=bitnamilegacy/os-shell
 ```
 
 > **Tip**: List all releases using `helm list`
