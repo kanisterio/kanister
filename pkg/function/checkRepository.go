@@ -23,6 +23,8 @@ import (
 const (
 	// CheckRepositoryFuncName gives the name of the function
 	CheckRepositoryFuncName = "CheckRepository"
+	// CheckRepositoryImageArg provides the kanister tools image
+	CheckRepositoryImageArg = "image"
 	// CheckRepositoryArtifactPrefixArg provides the path to restore backed up data
 	CheckRepositoryArtifactPrefixArg = "backupArtifactPrefix"
 	// CheckRepositoryEncryptionKeyArg provides the encryption key to be used for deletes
@@ -57,6 +59,7 @@ func CheckRepository(
 	jobPrefix string,
 	insecureTLS bool,
 	podOverride crv1alpha1.JSONMap,
+	image string,
 	annotations,
 	labels map[string]string,
 ) (map[string]interface{}, error) {
@@ -67,7 +70,7 @@ func CheckRepository(
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        consts.GetKanisterToolsImage(),
+		Image:        image,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 		Annotations:  annotations,
@@ -149,7 +152,7 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	c.progressPercent = progress.StartedPercent
 	defer func() { c.progressPercent = progress.CompletedPercent }()
 
-	var checkRepositoryArtifactPrefix, encryptionKey string
+	var checkRepositoryArtifactPrefix, encryptionKey, image string
 	var insecureTLS bool
 	var bpAnnotations, bpLabels map[string]string
 	if err := Arg(args, CheckRepositoryArtifactPrefixArg, &checkRepositoryArtifactPrefix); err != nil {
@@ -165,6 +168,10 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 	if err := OptArg(args, PodLabelsArg, &bpLabels, nil); err != nil {
+		return nil, err
+	}
+
+	if err := OptArg(args, CheckRepositoryImageArg, &image, consts.GetKanisterToolsImage()); err != nil {
 		return nil, err
 	}
 
@@ -206,6 +213,7 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		CheckRepositoryJobPrefix,
 		insecureTLS,
 		podOverride,
+		image,
 		annotations,
 		labels,
 	)
@@ -217,6 +225,7 @@ func (*CheckRepositoryFunc) RequiredArgs() []string {
 
 func (*CheckRepositoryFunc) Arguments() []string {
 	return []string{
+		CheckRepositoryImageArg,
 		CheckRepositoryArtifactPrefixArg,
 		CheckRepositoryEncryptionKeyArg,
 		InsecureTLS,
