@@ -26,7 +26,10 @@ $ helm repo update
 
 # Install the maria database
 $ kubectl create namespace maria-db
-$ helm install my-release bitnami/mariadb -n maria-db
+$ helm install my-release bitnami/mariadb -n maria-db \
+	--set image.repository=bitnamilegacy/mariadb \	
+	--set global.security.allowInsecureImages=true \
+	--set volumePermissions.image.repository=bitnamilegacy/os-shell
 
 ```
 
