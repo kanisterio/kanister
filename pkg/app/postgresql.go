@@ -42,7 +42,7 @@ type PostgresDB struct {
 }
 
 // NewPostgresDB initialises an instance of Postgres DB
-// Last tested chart version "15.5.38". Also, we are using postgres version 16
+// Last tested chart version "17.6.0". Also, we are using postgres version 17
 func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,

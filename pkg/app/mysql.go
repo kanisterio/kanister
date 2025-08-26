@@ -44,7 +44,7 @@ type MysqlDB struct {
 
 var _ HelmApp = &MysqlDB{}
 
-// NewMysqlDB was last tested with working version "6.14.11"
+// NewMysqlDB was last tested with working version "9.4.0"
 func NewMysqlDB(name string) HelmApp {
 	return &MysqlDB{
 		name: name,
@@ -58,6 +58,7 @@ func NewMysqlDB(name string) HelmApp {
 				"auth.rootPassword":                   "mysecretpassword",
 				"image.pullPolicy":                    "Always",
 				"image.repository":                    "bitnamilegacy/mysql",
+				"image.tag":                           "9.4.0",
 				"global.security.allowInsecureImages": "true",
 				"volumePermissions.image.repository":  "bitnamilegacy/os-shell",
 			},
