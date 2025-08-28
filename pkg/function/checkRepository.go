@@ -28,9 +28,7 @@ const (
 	// CheckRepositoryArtifactPrefixArg provides the path to restore backed up data
 	CheckRepositoryArtifactPrefixArg = "backupArtifactPrefix"
 	// CheckRepositoryEncryptionKeyArg provides the encryption key to be used for deletes
-	CheckRepositoryEncryptionKeyArg = "encryptionKey"
-	// CheckRepositoryPodOverrideArg contains pod specs to override default pod specs
-	CheckRepositoryPodOverrideArg    = "podOverride"
+	CheckRepositoryEncryptionKeyArg  = "encryptionKey"
 	CheckRepositoryJobPrefix         = "check-repository-"
 	CheckRepositoryPasswordIncorrect = "passwordIncorrect"
 	CheckRepositoryRepoDoesNotExist  = "repoUnavailable"
@@ -175,7 +173,7 @@ func (c *CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 
-	podOverride, err := GetPodSpecOverride(tp, args, CheckRepositoryPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -229,6 +227,7 @@ func (*CheckRepositoryFunc) Arguments() []string {
 		CheckRepositoryArtifactPrefixArg,
 		CheckRepositoryEncryptionKeyArg,
 		InsecureTLS,
+		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
 	}

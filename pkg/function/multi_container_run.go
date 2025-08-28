@@ -50,7 +50,6 @@ const (
 	MultiContainerRunVolumeMediumArg      = "sharedVolumeMedium"
 	MultiContainerRunVolumeSizeLimitArg   = "sharedVolumeSizeLimit"
 	MultiContainerRunSharedDirArg         = "sharedVolumeDir"
-	MultiContainerRunPodOverrideArg       = "podOverride"
 	MultiContainerRunInitImageArg         = "initImage"
 	MultiContainerRunInitCommandArg       = "initCommand"
 )
@@ -313,7 +312,7 @@ func (ktpf *multiContainerRunFunc) Exec(ctx context.Context, tp param.TemplatePa
 		return nil, errkit.Wrap(err, "Unable to process podOverride from ActionSet spec")
 	}
 
-	ktpf.podOverride, err = GetAndMergePodSpecOverride(actionSetOverride, args, MultiContainerRunPodOverrideArg)
+	ktpf.podOverride, err = GetAndMergePodSpecOverride(actionSetOverride, args, PodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +424,7 @@ func (*multiContainerRunFunc) Arguments() []string {
 		MultiContainerRunVolumeMediumArg,
 		MultiContainerRunVolumeSizeLimitArg,
 		MultiContainerRunSharedDirArg,
-		MultiContainerRunPodOverrideArg,
+		PodOverrideArg,
 		PodLabelsArg,
 		PodAnnotationsArg,
 	}

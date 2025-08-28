@@ -92,7 +92,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *check.C) {
 			args: map[string]interface{}{
 				RestoreDataPodArg:              "some-pod",
 				RestoreDataBackupIdentifierArg: "backup123",
-				RestoreDataPodOverrideArg: crv1alpha1.JSONMap{
+				PodOverrideArg: crv1alpha1.JSONMap{
 					"containers": []map[string]interface{}{
 						{
 							"name":    "container",

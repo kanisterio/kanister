@@ -39,11 +39,10 @@ const (
 	jobPrefix = "kanister-job-"
 
 	// KubeTaskFuncName gives the function name
-	KubeTaskFuncName       = "KubeTask"
-	KubeTaskNamespaceArg   = "namespace"
-	KubeTaskImageArg       = "image"
-	KubeTaskCommandArg     = "command"
-	KubeTaskPodOverrideArg = "podOverride"
+	KubeTaskFuncName     = "KubeTask"
+	KubeTaskNamespaceArg = "namespace"
+	KubeTaskImageArg     = "image"
+	KubeTaskCommandArg   = "command"
 )
 
 func init() {
@@ -140,7 +139,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 
-	podOverride, err := GetPodSpecOverride(tp, args, KubeTaskPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +186,7 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskImageArg,
 		KubeTaskCommandArg,
 		KubeTaskNamespaceArg,
-		KubeTaskPodOverrideArg,
+		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
 	}

@@ -53,9 +53,7 @@ const (
 	DeleteDataEncryptionKeyArg = "encryptionKey"
 	// DeleteDataReclaimSpace provides a way to specify if space should be reclaimed
 	DeleteDataReclaimSpace = "reclaimSpace"
-	// DeleteDataPodOverrideArg contains pod specs to override default pod specs
-	DeleteDataPodOverrideArg = "podOverride"
-	deleteDataJobPrefix      = "delete-data-"
+	deleteDataJobPrefix    = "delete-data-"
 	// DeleteDataOutputSpaceFreed is the key for the output reporting the space freed
 	DeleteDataOutputSpaceFreed = "spaceFreed"
 )
@@ -249,7 +247,7 @@ func (d *deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 
-	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -314,6 +312,7 @@ func (*deleteDataFunc) Arguments() []string {
 		DeleteDataEncryptionKeyArg,
 		DeleteDataReclaimSpace,
 		InsecureTLS,
+		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
 	}
