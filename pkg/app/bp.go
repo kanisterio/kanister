@@ -19,16 +19,15 @@ import (
 	"strings"
 	"time"
 
+	bp "github.com/kanisterio/blueprints"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	bp "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
-	blueprintsRepo = "./blueprints"
 	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
@@ -38,7 +37,6 @@ const (
 // Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 type AppBlueprint struct {
 	App          string
-	Path         string
 	UseDevImages bool
 }
 
@@ -48,19 +46,15 @@ type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
-	if bpReposPath == "" {
-		bpReposPath = blueprintsRepo
-	}
+func NewBlueprint(app string, useDevImages bool) Blueprinter {
 	return &AppBlueprint{
 		App:          app,
-		Path:         fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
 		UseDevImages: useDevImages,
 	}
 }
 
 func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
-	bpr, err := bp.ReadFromFile(b.Path)
+	bpr, err := bp.ReadFromFile(b.App)
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
@@ -110,14 +104,13 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 }
 
 // NewPITRBlueprint returns blueprint placed at ./blueprints/{app-name}-blueprint.yaml
-func NewPITRBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
-	if bpReposPath == "" {
-		bpReposPath = blueprintsRepo
+func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
+	if blueprintName != "" {
+		app = blueprintName
 	}
 	return &PITRBlueprint{
 		AppBlueprint{
 			App:          app,
-			Path:         fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
 			UseDevImages: useDevImages,
 		},
 	}

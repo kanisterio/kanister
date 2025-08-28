@@ -235,6 +235,8 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.17.1 // indirect
 )
 
+require github.com/kanisterio/blueprints v0.0.0-20250813102752-368c9912151a
+
 require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect
 	cel.dev/expr v0.24.0 // indirect
