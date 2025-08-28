@@ -50,7 +50,6 @@ const (
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
 	CopyVolumeDataEncryptionKeyArg             = "encryptionKey"
 	CopyVolumeDataOutputBackupTag              = "backupTag"
-	CopyVolumeDataPodOverrideArg               = "podOverride"
 	CopyVolumeDataOutputBackupFileCount        = "fileCount"
 	CopyVolumeDataOutputBackupSize             = "size"
 	CopyVolumeDataOutputPhysicalSize           = "phySize"
@@ -232,7 +231,7 @@ func (c *copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, 
 		return nil, err
 	}
 
-	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -295,6 +294,7 @@ func (*copyVolumeDataFunc) Arguments() []string {
 		CopyVolumeDataEncryptionKeyArg,
 		CopyVolumeDataMountPathArg,
 		InsecureTLS,
+		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
 	}

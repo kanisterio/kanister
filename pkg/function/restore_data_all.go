@@ -51,8 +51,6 @@ const (
 	RestoreDataAllEncryptionKeyArg = "encryptionKey"
 	// RestoreDataAllBackupInfo provides backup info required for restore
 	RestoreDataAllBackupInfo = "backupInfo"
-	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
-	RestoreDataAllPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -88,7 +86,7 @@ func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.Templ
 	if err = OptArg(args, InsecureTLS, &insecureTLS, false); err != nil {
 		return restorePath, encryptionKey, ps, insecureTLS, podOverride, err
 	}
-	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataAllPodOverrideArg)
+	podOverride, err = GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return restorePath, encryptionKey, ps, insecureTLS, podOverride, err
 	}
@@ -241,7 +239,7 @@ func (*restoreDataAllFunc) Arguments() []string {
 		RestoreDataAllRestorePathArg,
 		RestoreDataAllEncryptionKeyArg,
 		RestoreDataAllPodsArg,
-		RestoreDataAllPodOverrideArg,
+		PodOverrideArg,
 		InsecureTLS,
 		PodAnnotationsArg,
 		PodLabelsArg,

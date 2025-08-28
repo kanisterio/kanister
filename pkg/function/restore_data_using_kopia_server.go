@@ -69,7 +69,7 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 		RestoreDataRestorePathArg,
 		RestoreDataPodArg,
 		RestoreDataVolsArg,
-		RestoreDataPodOverrideArg,
+		PodOverrideArg,
 		RestoreDataImageArg,
 		KopiaRepositoryServerUserHostname,
 		PodAnnotationsArg,
@@ -325,7 +325,7 @@ func validateAndGetOptArgsForRestore(tp param.TemplateParams, args map[string]an
 	if (pod != "") && (len(vols) > 0) {
 		return pod, vols, podOverride, errkit.New(fmt.Sprintf("Exactly one of the %s or %s arguments are required, but both are provided", RestoreDataPodArg, RestoreDataVolsArg))
 	}
-	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
+	podOverride, err = GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return pod, vols, podOverride, errkit.Wrap(err, "Failed to get Pod Override Specs")
 	}

@@ -48,9 +48,7 @@ const (
 	DeleteDataAllReclaimSpace = "reclaimSpace"
 	// DeleteDataAllBackupInfo provides backup info required for delete
 	DeleteDataAllBackupInfo = "backupInfo"
-	// DeleteDataAllPodOverrideArg contains pod specs to override default pod specs
-	DeleteDataAllPodOverrideArg = "podOverride"
-	deleteDataAllJobPrefix      = "delete-data-all-"
+	deleteDataAllJobPrefix  = "delete-data-all-"
 )
 
 func init() {
@@ -104,7 +102,7 @@ func (d *deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = OptArg(args, DeleteDataAllImageArg, &image, consts.GetKanisterToolsImage()); err != nil {
 		return nil, err
 	}
-	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -178,6 +176,7 @@ func (*deleteDataAllFunc) Arguments() []string {
 		DeleteDataAllEncryptionKeyArg,
 		DeleteDataAllReclaimSpace,
 		InsecureTLS,
+		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
 	}
