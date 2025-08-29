@@ -8,13 +8,11 @@ USER root
 RUN microdnf install -y lsof platform-python python3-libs
 
 # TODO: maybe use builder image for that
-RUN microdnf install -y \
-   java-1.8.0-openjdk \
-   java-1.8.0-openjdk-devel
+RUN microdnf install -y java-11-openjdk-headless
+ENV JAVA_HOME /usr/lib/jvm/jre-11-openjdk
 
-ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk/
 RUN microdnf install git -y
-RUN java -version
+
 RUN git clone https://github.com/adobe/kafka-connect-s3.git
 # Temp patch until vulnerable deps are fixed
 RUN sed -i "s/versions.awsSdkS3 = '1.11.803'/versions.awsSdkS3 = '1.12.261'/g" kafka-connect-s3/dependencies.gradle
