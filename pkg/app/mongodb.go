@@ -52,7 +52,7 @@ type MongoDB struct {
 }
 
 // NewMongoDB initialises an instance of Mongo DB
-// Last tested working version "9.0.0"
+// Last tested working version "8.0.13"
 func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
 		username: "root",
@@ -66,6 +66,7 @@ func NewMongoDB(name string) HelmApp {
 				"architecture":                        "replicaset",
 				"image.pullPolicy":                    "Always",
 				"image.repository":                    "bitnamilegacy/mongodb",
+				"image.tag":                           "8.0.13",
 				"global.security.allowInsecureImages": "true",
 				"volumePermissions.image.repository":  "bitnamilegacy/os-shell",
 			},
