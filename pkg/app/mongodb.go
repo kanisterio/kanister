@@ -62,7 +62,6 @@ func NewMongoDB(name string) HelmApp {
 			RepoURL:  helm.BitnamiRepoURL,
 			RepoName: helm.BitnamiRepoName,
 			Chart:    "mongodb",
-			Version:  "14.11.1",
 			Values: map[string]string{
 				"architecture":                        "replicaset",
 				"image.pullPolicy":                    "Always",
@@ -108,6 +107,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
 	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values, true, false)
 	if err != nil {
+		log.Print("Error installing application.", field.M{"app": mongo.name, "error": err})
 		return err
 	}
 	log.Print("Application was installed successfully.", field.M{"app": mongo.name})
