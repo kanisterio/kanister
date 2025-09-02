@@ -36,8 +36,9 @@ const (
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
 // Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 type AppBlueprint struct {
-	App          string
-	UseDevImages bool
+	App           string
+	BlueprintName string
+	UseDevImages  bool
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
@@ -46,15 +47,19 @@ type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, useDevImages bool) Blueprinter {
+func NewBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
+	if blueprintName == "" {
+		blueprintName = app
+	}
 	return &AppBlueprint{
-		App:          app,
-		UseDevImages: useDevImages,
+		App:           app,
+		BlueprintName: blueprintName,
+		UseDevImages:  useDevImages,
 	}
 }
 
 func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
-	bpr, err := bp.ReadFromFile(b.App)
+	bpr, err := bp.ReadFromFile(b.BlueprintName)
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
@@ -105,13 +110,11 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 
 // NewPITRBlueprint returns blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
-	if blueprintName != "" {
-		app = blueprintName
-	}
 	return &PITRBlueprint{
 		AppBlueprint{
-			App:          app,
-			UseDevImages: useDevImages,
+			App:           app,
+			BlueprintName: blueprintName,
+			UseDevImages:  useDevImages,
 		},
 	}
 }

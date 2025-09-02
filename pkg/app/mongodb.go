@@ -102,6 +102,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Adding repo for the application.", field.M{"app": mongo.name})
 	err = cli.AddRepo(ctx, mongo.chart.RepoName, mongo.chart.RepoURL)
 	if err != nil {
+		log.Print("Error adding repo.", field.M{"app": mongo.chart.RepoName, "error": err})
 		return err
 	}
 
