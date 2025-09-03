@@ -32,8 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
@@ -80,7 +78,6 @@ func CreateStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace 
 func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, string, error) {
 	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		log.Print("Error getting StatefulSet.", field.M{"namespace": namespace, "name": name, "error": err.Error()})
 		return false, "", errkit.Wrap(err, "could not get StatefulSet", "namespace", namespace, "name", name)
 	}
 	if ss.Status.ReadyReplicas != *ss.Spec.Replicas {
@@ -125,7 +122,6 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, n
 		return ok, err
 	})
 	if err != nil && status != "" {
-		log.Print("Error in statefulsets.", field.M{"error": err.Error()})
 		return errkit.Wrap(err, status)
 	}
 	return err

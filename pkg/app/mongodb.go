@@ -105,14 +105,12 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Adding repo for the application.", field.M{"app": mongo.name})
 	err = cli.AddRepo(ctx, mongo.chart.RepoName, mongo.chart.RepoURL)
 	if err != nil {
-		log.Print("Error adding repo.", field.M{"app": mongo.chart.RepoName, "error": err})
 		return err
 	}
 
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
 	_, err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values, true, false)
 	if err != nil {
-		log.Print("Error installing application.", field.M{"app": mongo.name, "error": err})
 		return err
 	}
 	log.Print("Application was installed successfully.", field.M{"app": mongo.name})
