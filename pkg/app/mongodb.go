@@ -233,7 +233,7 @@ func (mongo *MongoDB) Initialize(ctx context.Context) error {
 func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb", mongo.chart.Release))
 	if err != nil || podName == "" {
-		log.Debug().Print("Error getting pod/container from statefulset.", field.M{"app": mongo.name, "error": err, "podName": podName, "containerName": containerName})
+		log.Print("Error getting pod/container from statefulset.", field.M{"app": mongo.name, "error": err, "podName": podName, "containerName": containerName})
 		return "", "", err
 	}
 	return kube.Exec(ctx, mongo.cli, mongo.namespace, podName, containerName, command, nil)
