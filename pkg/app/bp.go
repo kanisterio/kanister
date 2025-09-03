@@ -64,6 +64,8 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
 
+	log.Debug().Print("Blueprint read successfully.", field.M{"app": bpr.ObjectMeta.Name, "namespace": bpr.ObjectMeta.Namespace})
+
 	// set the name to a dynamically generated value
 	// so that the name wont conflict with the same application
 	// installed using other ways
