@@ -36,7 +36,7 @@ var _ = check.Suite(&PITRPostgreSQL{
 		name:      "pitr-postgres",
 		namespace: "pitr-postgres-test",
 		app:       app.NewPostgresDB("pitr-postgres", ""),
-		bp:        app.NewPITRBlueprint("pitr-postgres", "", true),
+		bp:        app.NewPITRBlueprint("pitr-postgres", "postgresql-wale", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -141,7 +141,7 @@ var _ = check.Suite(&MongoDB{
 		name:      "mongo",
 		namespace: "mongo-test",
 		app:       app.NewMongoDB("mongo"),
-		bp:        app.NewBlueprint("mongo", "", true),
+		bp:        app.NewBlueprint("mongo", "mongodb", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -185,7 +185,7 @@ var _ = check.Suite(&RDSPostgreSQL{
 		name:      "rds-postgres",
 		namespace: "rds-postgres-test",
 		app:       app.NewRDSPostgresDB("rds-postgres", ""),
-		bp:        app.NewBlueprint("rds-postgres", "", true),
+		bp:        app.NewBlueprint("rds-postgres", "aws-rds-postgres", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -205,21 +205,6 @@ var _ = check.Suite(&FoundationDB{
 	},
 })
 
-// RDSAuroraMySQL type is an app for mysql database for integration test.
-type RDSAuroraMySQL struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&RDSAuroraMySQL{
-	IntegrationSuite{
-		name:      "rds-aurora-mysql",
-		namespace: "rds-aurora-mysql-test",
-		app:       app.NewRDSAuroraMySQLDB("rds-aurora-dump", ""),
-		bp:        app.NewBlueprint("rds-aurora-snap", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
 // RDSPostgreSQLDump type is an app for postgres dump for integration test.
 // It creates snapshot, export data and restore from dump.
 type RDSPostgreSQLDump struct {
@@ -231,7 +216,7 @@ var _ = check.Suite(&RDSPostgreSQLDump{
 		name:      "rds-postgres-dump",
 		namespace: "rds-postgres-dump-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-dump", ""),
-		bp:        app.NewBlueprint("rds-postgres-dump", "", true),
+		bp:        app.NewBlueprint("rds-postgres-dump", "aws-rds-postgres-pgdump", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -247,7 +232,7 @@ var _ = check.Suite(&RDSPostgreSQLSnap{
 		name:      "rds-postgres-snap",
 		namespace: "rds-postgres-snap-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-snap", ""),
-		bp:        app.NewBlueprint("rds-postgres-snap", "", true),
+		bp:        app.NewBlueprint("rds-postgres-snap", "aws-rds-postgres-snap", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -293,7 +278,7 @@ var _ = check.Suite(&MongoDBDepConfig{
 		name:      "mongodb",
 		namespace: "mongodb-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", "", true),
+		bp:        app.NewBlueprint("mongo-dep-config", "mongodb-dep-config", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -339,7 +324,7 @@ var _ = check.Suite(&MongoDBDepConfig4_4{
 		name:      "mongodb",
 		namespace: "mongodb4-4-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", "", true),
+		bp:        app.NewBlueprint("mongo-dep-config", "mongodb-dep-config", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -385,7 +370,7 @@ var _ = check.Suite(&MongoDBDepConfig4_5{
 		name:      "mongodb",
 		namespace: "mongodb4-5-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", "", true),
+		bp:        app.NewBlueprint("mongo-dep-config", "mongodb-dep-config", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -401,21 +386,6 @@ var _ = check.Suite(&PostgreSQLDepConfig4_5{
 		namespace: "postgresdepconf4-5-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_5, app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// Kafka type is an app for kafka for integration test on kubernetes cluster
-type Kafka struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&Kafka{
-	IntegrationSuite{
-		name:      "kafka",
-		namespace: "kafka-test",
-		app:       app.NewKafkaCluster("kafka", ""),
-		bp:        app.NewBlueprint("kafka", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -445,7 +415,7 @@ var _ = check.Suite(&MongoDBDepConfig4_10{
 		name:      "mongodb",
 		namespace: "mongodb4-10-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", "", true),
+		bp:        app.NewBlueprint("mongo-dep-config", "mongodb-dep-config", true),
 		profile:   newSecretProfile(),
 	},
 })
