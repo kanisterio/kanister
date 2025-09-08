@@ -18,7 +18,7 @@ import (
 	"github.com/kanisterio/blueprints"
 	"github.com/kanisterio/errkit"
 
-	validate "github.com/kanisterio/kanister/pkg/blueprintvalidate"
+	validate "github.com/kanisterio/kanister/pkg/blueprint/validate"
 )
 
 func performBlueprintValidation(p *validateParams) error {

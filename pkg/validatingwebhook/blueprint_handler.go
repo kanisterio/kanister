@@ -11,7 +11,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	validate "github.com/kanisterio/kanister/pkg/blueprintvalidate"
+	validate "github.com/kanisterio/kanister/pkg/blueprint/validate"
 )
 
 type BlueprintValidator struct {
