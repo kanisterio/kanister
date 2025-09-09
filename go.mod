@@ -46,7 +46,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.30.0
 	gonum.org/v1/gonum v0.16.0
@@ -187,7 +187,7 @@ require (
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/studio-b12/gowebdav v0.10.0 // indirect
 	github.com/tg123/go-htpasswd v1.2.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
