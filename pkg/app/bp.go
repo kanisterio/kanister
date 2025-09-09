@@ -36,9 +36,10 @@ const (
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
 // Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 type AppBlueprint struct {
-	App           string
-	BlueprintName string
-	UseDevImages  bool
+	App          string
+	Path         string
+	UseDevImages bool
+	IsEmbedded   bool
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
@@ -47,19 +48,30 @@ type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
-	if blueprintName == "" {
-		blueprintName = app
+func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool) Blueprinter {
+	isEmbedded := false
+	if blueprintPath == "" {
+		blueprintPath = getBlueprintPath(app, blueprintName)
+		isEmbedded = true
 	}
+
 	return &AppBlueprint{
-		App:           app,
-		BlueprintName: blueprintName,
-		UseDevImages:  useDevImages,
+		App:          app,
+		Path:         blueprintPath,
+		IsEmbedded:   isEmbedded,
+		UseDevImages: useDevImages,
 	}
 }
 
 func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
-	bpr, err := bp.ReadFromFile(b.BlueprintName)
+	var bpr *crv1alpha1.Blueprint
+	var err error
+
+	if b.IsEmbedded {
+		bpr, err = bp.ReadFromEmbeddedFile(b.Path)
+	} else {
+		bpr, err = bp.ReadFromFile(b.Path)
+	}
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
@@ -112,13 +124,21 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
 	return &PITRBlueprint{
 		AppBlueprint{
-			App:           app,
-			BlueprintName: blueprintName,
-			UseDevImages:  useDevImages,
+			App:          app,
+			Path:         getBlueprintPath(app, blueprintName),
+			UseDevImages: useDevImages,
+			IsEmbedded:   true,
 		},
 	}
 }
 
 func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
 	return pitr.UTC().Format("2006-01-02T15:04:05Z")
+}
+
+func getBlueprintPath(app string, blueprintName string) string {
+	if blueprintName == "" {
+		blueprintName = app
+	}
+	return fmt.Sprintf("%s/%s-blueprint.yaml", blueprintName, blueprintName)
 }
