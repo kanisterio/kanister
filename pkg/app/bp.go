@@ -19,16 +19,15 @@ import (
 	"strings"
 	"time"
 
+	bp "github.com/kanisterio/blueprints"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	bp "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
-	blueprintsRepo = "./blueprints"
 	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
@@ -40,6 +39,7 @@ type AppBlueprint struct {
 	App          string
 	Path         string
 	UseDevImages bool
+	IsEmbedded   bool
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
@@ -48,19 +48,30 @@ type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
-	if bpReposPath == "" {
-		bpReposPath = blueprintsRepo
+func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool) Blueprinter {
+	isEmbedded := false
+	if blueprintPath == "" {
+		blueprintPath = getBlueprintPath(app, blueprintName)
+		isEmbedded = true
 	}
+
 	return &AppBlueprint{
 		App:          app,
-		Path:         fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
+		Path:         blueprintPath,
+		IsEmbedded:   isEmbedded,
 		UseDevImages: useDevImages,
 	}
 }
 
 func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
-	bpr, err := bp.ReadFromFile(b.Path)
+	var bpr *crv1alpha1.Blueprint
+	var err error
+
+	if b.IsEmbedded {
+		bpr, err = bp.ReadFromEmbeddedFile(b.Path)
+	} else {
+		bpr, err = bp.ReadFromFile(b.Path)
+	}
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
@@ -110,19 +121,24 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 }
 
 // NewPITRBlueprint returns blueprint placed at ./blueprints/{app-name}-blueprint.yaml
-func NewPITRBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
-	if bpReposPath == "" {
-		bpReposPath = blueprintsRepo
-	}
+func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
 	return &PITRBlueprint{
 		AppBlueprint{
 			App:          app,
-			Path:         fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
+			Path:         getBlueprintPath(app, blueprintName),
 			UseDevImages: useDevImages,
+			IsEmbedded:   true,
 		},
 	}
 }
 
 func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
 	return pitr.UTC().Format("2006-01-02T15:04:05Z")
+}
+
+func getBlueprintPath(app string, blueprintName string) string {
+	if blueprintName == "" {
+		blueprintName = app
+	}
+	return fmt.Sprintf("%s/%s-blueprint.yaml", blueprintName, blueprintName)
 }

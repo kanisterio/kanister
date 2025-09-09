@@ -32,6 +32,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
+	github.com/kanisterio/blueprints v0.0.0-20250909080539-38daa1e3fc57
 	github.com/kanisterio/errkit v0.0.3
 	github.com/kanisterio/safecli v0.0.10
 	github.com/kopia/kopia v0.20.2-0.20250717071305-692c1f465ba3
