@@ -34,7 +34,7 @@ const (
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
-// Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
+// Blueprint() returns the Blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
 type AppBlueprint struct {
 	App          string
 	Path         string
@@ -42,8 +42,8 @@ type AppBlueprint struct {
 	IsEmbedded   bool
 }
 
-// PITRBlueprint implements Blueprint() to return Blueprint with PITR
-// Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
+// PITRBlueprint embeds AppBlueprint and provides Blueprint functionality with PITR support.
+// Blueprint() returns the Blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
 type PITRBlueprint struct {
 	AppBlueprint
 }
@@ -68,8 +68,10 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	var err error
 
 	if b.IsEmbedded {
+		// reads from embedded blueprints in blueprint repository
 		bpr, err = bp.ReadFromEmbeddedFile(b.Path)
 	} else {
+		// reads from local file system
 		bpr, err = bp.ReadFromFile(b.Path)
 	}
 	if err != nil {
@@ -120,7 +122,7 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 	}
 }
 
-// NewPITRBlueprint returns blueprint placed at ./blueprints/{app-name}-blueprint.yaml
+// NewPITRBlueprint returns blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
 func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
 	return &PITRBlueprint{
 		AppBlueprint{
