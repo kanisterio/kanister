@@ -58,7 +58,7 @@ USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-FROM debian:bullseye@sha256:25c0cab214b810db1b3c8adef5a12a92596979abddf86bb364e8d9c9d111df9f
+FROM debian:bullseye@sha256:f58b816c2acc96e3e1dfe6b6c166c3d52b5541571ac4fa72a64a0bb5beaf25a3
 
 WORKDIR /kopia
 
