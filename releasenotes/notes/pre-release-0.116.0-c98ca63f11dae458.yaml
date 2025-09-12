@@ -1,0 +1,5 @@
+---
+features:
+  - Switched to bitnamilegacy image repository for mysql, postgres, maria, mongo & cassandra example apps https://github.com/kanisterio/kanister/pull/3616 https://github.com/kanisterio/kanister/pull/3617
+fixes:
+  - Fixed unit test TestContextTimeout to work on GKE clusters https://github.com/kanisterio/kanister/pull/3632
