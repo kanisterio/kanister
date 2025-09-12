@@ -21,10 +21,15 @@ import (
 	"fmt"
 	"path"
 
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws"
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/request"
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/session"
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/service/s3"
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
 	"github.com/kanisterio/errkit"
