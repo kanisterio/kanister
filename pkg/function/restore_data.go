@@ -54,8 +54,6 @@ const (
 	RestoreDataEncryptionKeyArg = "encryptionKey"
 	// RestoreDataBackupTagArg provides a unique tag added to the backup artifacts
 	RestoreDataBackupTagArg = "backupTag"
-	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
-	RestoreDataPodOverrideArg = "podOverride"
 	// RestoreDataBackupPathArg provides the source path within the backup to restore from
 	RestoreDataBackupPathArg = "backupPath"
 )
@@ -113,7 +111,7 @@ func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams)
 		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride,
 			errkit.New(fmt.Sprintf("Require one argument: %s or %s", RestoreDataBackupTagArg, RestoreDataBackupIdentifierArg))
 	}
-	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
+	podOverride, err = GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return restorePath, encryptionKey, pod, vols, tag, id, backupPath, insecureTLS, podOverride, err
 	}
@@ -321,7 +319,7 @@ func (*restoreDataFunc) Arguments() []string {
 		RestoreDataBackupTagArg,
 		RestoreDataBackupIdentifierArg,
 		RestoreDataBackupPathArg,
-		RestoreDataPodOverrideArg,
+		PodOverrideArg,
 		InsecureTLS,
 		PodAnnotationsArg,
 		PodLabelsArg,
