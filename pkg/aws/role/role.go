@@ -19,9 +19,12 @@ import (
 	"context"
 	"time"
 
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws"
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/kanisterio/errkit"
 )
