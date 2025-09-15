@@ -189,7 +189,7 @@ func (b *BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 
-	podOverride, err := GetPodSpecOverride(tp, args, CheckRepositoryPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +251,7 @@ func (*BackupDataStatsFunc) Arguments() []string {
 		BackupDataStatsBackupIdentifierArg,
 		BackupDataStatsMode,
 		BackupDataStatsEncryptionKeyArg,
+		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
 	}

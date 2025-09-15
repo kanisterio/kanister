@@ -20,8 +20,11 @@ import (
 	"os"
 	"strconv"
 
+	//nolint:staticcheck // SA1019
 	awssdk "github.com/aws/aws-sdk-go/aws"
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	//nolint:staticcheck // SA1019
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"

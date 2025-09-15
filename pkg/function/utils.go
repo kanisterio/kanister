@@ -33,6 +33,7 @@ const (
 	// of creating these for the functions, it's better to have a const here.
 	PodLabelsArg      = "podLabels"
 	PodAnnotationsArg = "podAnnotations"
+	PodOverrideArg    = "podOverride"
 )
 
 const (

@@ -17,6 +17,7 @@ package secrets
 import (
 	"context"
 
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"

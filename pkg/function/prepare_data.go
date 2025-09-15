@@ -47,7 +47,6 @@ const (
 	PrepareDataFailOnErrorArg = "failOnError"
 	PrepareDataVolumes        = "volumes"
 	PrepareDataServiceAccount = "serviceaccount"
-	PrepareDataPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -209,7 +208,7 @@ func (p *prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, PrepareDataFailOnErrorArg, &failOnError, false); err != nil {
 		return nil, err
 	}
-	podOverride, err := GetPodSpecOverride(tp, args, PrepareDataPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, PodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +266,7 @@ func (*prepareDataFunc) Arguments() []string {
 		PrepareDataCommandArg,
 		PrepareDataVolumes,
 		PrepareDataServiceAccount,
-		PrepareDataPodOverrideArg,
+		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
 		PrepareDataFailOnErrorArg,

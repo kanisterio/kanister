@@ -19,6 +19,7 @@ import (
 	"context"
 	"time"
 
+	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
