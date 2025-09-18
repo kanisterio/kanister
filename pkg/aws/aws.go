@@ -21,14 +21,10 @@ import (
 	"os"
 	"time"
 
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/session"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/kanisterio/errkit"

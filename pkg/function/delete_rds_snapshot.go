@@ -18,9 +18,7 @@ import (
 	"context"
 	"time"
 
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	//nolint:staticcheck // SA1019
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
