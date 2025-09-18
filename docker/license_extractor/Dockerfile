@@ -1,4 +1,4 @@
-FROM node:22-alpine@sha256:9bef0ef1e268f60627da9ba7d7605e8831d5b56ad07487d24d1aa386336d1944
+FROM node:24-alpine@sha256:3e843c608bb5232f39ecb2b25e41214b958b0795914707374c8acc28487dea17
 RUN npm i -g license-extractor
 RUN mkdir /repo
 
