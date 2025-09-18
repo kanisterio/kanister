@@ -19,11 +19,8 @@ package ec2
 import (
 	"context"
 
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/session"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/kanisterio/errkit"
 )

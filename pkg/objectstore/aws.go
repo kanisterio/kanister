@@ -20,11 +20,8 @@ import (
 	"net/http"
 	"strings"
 
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/kanisterio/errkit"
 
