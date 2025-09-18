@@ -4,7 +4,7 @@ ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
 # Actual image base
-FROM bitnamilegacy/cassandra:5.0.0
+FROM bitnamilegacy/cassandra:5.0.4
 
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
