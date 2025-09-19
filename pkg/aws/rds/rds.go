@@ -21,13 +21,9 @@ import (
 	"fmt"
 	"time"
 
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/session"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/kanisterio/errkit"
 

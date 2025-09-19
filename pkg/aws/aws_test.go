@@ -19,7 +19,6 @@ import (
 	"errors"
 	"testing"
 
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"gopkg.in/check.v1"

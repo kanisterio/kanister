@@ -20,11 +20,8 @@ import (
 	"strconv"
 	"time"
 
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws"
-	//nolint:staticcheck // SA1019
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	//nolint:staticcheck // SA1019
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/hashicorp/go-version"
 	"github.com/kanisterio/errkit"
