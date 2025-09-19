@@ -39,7 +39,7 @@ VERSION ?= $(shell git describe --tags --always --dirty)
 PWD := $$(pwd)
 
 # Whether to build inside a containerized build environment
-DOCKER_BUILD ?= "true"
+DOCKER_BUILD ?= "false"
 
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"

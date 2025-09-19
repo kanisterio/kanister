@@ -139,8 +139,21 @@ func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
 }
 
 func getBlueprintPath(app string, blueprintName string) string {
+	var blueprintFolder string
+
+	// If blueprintName is not provided, use app name as blueprint name
 	if blueprintName == "" {
 		blueprintName = app
 	}
-	return fmt.Sprintf("%s/%s-blueprint.yaml", blueprintName, blueprintName)
+
+	switch app {
+	case "rds-aurora-snap":
+		blueprintFolder = "aws-rds-aurora-mysql"
+	case "kafka":
+		blueprintFolder = "kafka-adobe-s3-connector"
+	default:
+		blueprintFolder = blueprintName
+	}
+
+	return fmt.Sprintf("%s/%s-blueprint.yaml", blueprintFolder, blueprintName)
 }

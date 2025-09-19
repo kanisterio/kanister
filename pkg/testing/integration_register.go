@@ -554,3 +554,33 @@ var _ = check.Suite(&PostgreSQLDepConfig4_14{
 		profile:   newSecretProfile(),
 	},
 })
+
+// Kafka type is an app for kafka for integration test on kubernetes cluster
+type Kafka struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&Kafka{
+	IntegrationSuite{
+		name:      "kafka",
+		namespace: "kafka-test",
+		app:       app.NewKafkaCluster("kafka", ""),
+		bp:        app.NewBlueprint("kafka", "", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// RDSAuroraMySQL type is an app for mysql database for integration test.
+type RDSAuroraMySQL struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&RDSAuroraMySQL{
+	IntegrationSuite{
+		name:      "rds-aurora-mysql",
+		namespace: "rds-aurora-mysql-test",
+		app:       app.NewRDSAuroraMySQLDB("rds-aurora-dump", ""),
+		bp:        app.NewBlueprint("rds-aurora-snap", "aws-rds-aurora-snap", "", true),
+		profile:   newSecretProfile(),
+	},
+})
