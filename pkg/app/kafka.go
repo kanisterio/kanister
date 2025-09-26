@@ -45,7 +45,7 @@ const consumeTimeout = 5 * time.Minute
 
 const (
 	kafkaClusterWaitTimeout    = 5 * time.Minute
-	s3ConnectorYamlFileRepo    = "../../examples/kafka/adobe-s3-connector"
+	s3ConnectorYamlFileRepo    = "https://raw.githubusercontent.com/kanisterio/blueprints/refs/heads/main/kafka-adobe-s3-connector"
 	configMapName              = "s3config"
 	s3SinkConfigPath           = "adobe-s3-sink.properties"
 	s3SourceConfigPath         = "adobe-s3-source.properties"
@@ -129,6 +129,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	log.Print("Adding repo.", field.M{"app": kc.name})
 	err = cli.AddRepo(ctx, kc.chart.RepoName, kc.chart.RepoURL)
 	if err != nil {
+		log.Error().Print("Error adding helm repo for app.", field.M{"app": kc.name, "error": err.Error()})
 		return errkit.Wrap(err, "Error adding helm repo for app.", "app", kc.name)
 	}
 	log.Print("Installing kafka operator using helm.", field.M{"app": kc.name})
@@ -156,7 +157,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	}
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createConfig)
 	if err != nil {
-		return errkit.Wrap(err, "Error creating ConfigMap", "app", kc.name, "out", out)
+		return errkit.Wrap(err, "Error creating ConfigMap", "app", kc.name, "out", string(out))
 	}
 	createKafkaBridge := []string{
 		"create",
@@ -166,7 +167,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createKafkaBridge)
 
 	if err != nil {
-		return errkit.Wrap(err, "Error installing the application", "app", kc.name, "out", out)
+		return errkit.Wrap(err, "Error installing the application", "app", kc.name, "out", string(out))
 	}
 	log.Print("Application was installed successfully.", field.M{"app": kc.name})
 	return nil
