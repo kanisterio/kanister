@@ -151,6 +151,8 @@ func getBlueprintPath(app string, blueprintName string) string {
 		blueprintFolder = "aws-rds-aurora-mysql"
 	case "kafka":
 		blueprintFolder = "kafka-adobe-s3-connector"
+	case "rds-postgres-snap", "rds-postgres", "rds-postgres-dump":
+		blueprintFolder = "aws-rds-postgres"
 	default:
 		blueprintFolder = blueprintName
 	}
