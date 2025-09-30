@@ -84,7 +84,8 @@ jobs:
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - name: export_master_sha
       run: |
-        echo "MASTER_SHA=${{ needs.gomod.outputs.master_sha }}" >> $GITHUB_ENV
+        export MASTER_SHA=${{ needs.gomod.outputs.master_sha }}
+        echo "MASTER_SHA=${MASTER_SHA}" >> $GITHUB_ENV
         echo "Using master SHA: ${{ needs.gomod.outputs.master_sha }}"
     - uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
     # A test (CRDSuite) that runs as part of `make test` requies atleast one CRD to
