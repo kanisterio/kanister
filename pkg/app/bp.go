@@ -16,6 +16,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -93,6 +94,12 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 	if bp == nil {
 		return
 	}
+
+	tag := "v9.99.9-dev"
+	if shortCommit, ok := os.LookupEnv("MASTER_SHA"); ok && shortCommit != "" {
+		tag = fmt.Sprintf("short-commit-%s", shortCommit)
+	}
+
 	for _, a := range bp.Actions {
 		for _, phase := range a.Phases {
 			image, ok := phase.Args["image"]
@@ -105,8 +112,10 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 			}
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
-				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
-				phase.Args["image"] = fmt.Sprintf("%s:v9.99.9-dev", strings.Split(imageStr, ":")[0])
+				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:short-commit-xxxxxxxx
+				image := fmt.Sprintf("%s:%s", strings.Split(imageStr, ":")[0], tag)
+				log.Info().Print("Updating image to use dev image", field.M{"image": image})
+				phase.Args["image"] = image
 			}
 
 			// Change imagePullPolicy to Always using podOverride config
