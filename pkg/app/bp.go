@@ -16,7 +16,7 @@ package app
 
 import (
 	"fmt"
-	"os/exec"
+	"os"
 	"strings"
 	"time"
 
@@ -95,7 +95,11 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 		return
 	}
 
-	shortCommit := getShortCommitSHA()
+	tag := "v9.99.9-dev"
+	if shortCommit, ok := os.LookupEnv("MASTER_SHA"); ok && shortCommit != "" {
+		tag = fmt.Sprintf("short-commit-%s", shortCommit)
+	}
+
 	for _, a := range bp.Actions {
 		for _, phase := range a.Phases {
 			image, ok := phase.Args["image"]
@@ -109,7 +113,7 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
 				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:short-commit-xxxxxxxx
-				image := fmt.Sprintf("%s:short-commit-%s", strings.Split(imageStr, ":")[0], shortCommit)
+				image := fmt.Sprintf("%s:%s", strings.Split(imageStr, ":")[0], tag)
 				log.Info().Print("Updating image to use dev image", field.M{"image": image})
 				phase.Args["image"] = image
 			}
@@ -163,14 +167,4 @@ func getBlueprintPath(app string, blueprintName string) string {
 	}
 
 	return fmt.Sprintf("%s/%s-blueprint.yaml", blueprintFolder, blueprintName)
-}
-
-func getShortCommitSHA() string {
-	cmd := exec.Command("git", "rev-parse", "--short=12", "origin/master")
-	out, err := cmd.Output()
-	if err != nil {
-		log.Error().WithError(err).Print("Failed to get git commit SHA")
-		return "unknown"
-	}
-	return strings.TrimSpace(string(out))
 }

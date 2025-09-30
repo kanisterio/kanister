@@ -16,6 +16,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -148,7 +149,11 @@ func validateImageTags(c *check.C, bp *crv1alpha1.Blueprint) {
 		},
 	}
 
-	shortCommit := getShortCommitSHA()
+	tag := "v9.99.9-dev"
+	if shortCommit, ok := os.LookupEnv("MASTER_SHA"); ok && shortCommit != "" {
+		tag = fmt.Sprintf("short-commit-%s", shortCommit)
+	}
+
 	for _, a := range bp.Actions {
 		for _, phase := range a.Phases {
 			image, ok := phase.Args["image"]
@@ -158,7 +163,7 @@ func validateImageTags(c *check.C, bp *crv1alpha1.Blueprint) {
 			// Verify if image with prefix "ghcr.io/kanisterio" is tagged "v9.99.9-dev"
 			c.Log(fmt.Sprintf("phase:%s, image:%s", phase.Name, image.(string)))
 			if strings.HasPrefix(image.(string), imagePrefix) {
-				c.Assert(strings.Split(image.(string), ":")[1], check.Equals, fmt.Sprintf("short-commit-%s", shortCommit))
+				c.Assert(strings.Split(image.(string), ":")[1], check.Equals, tag)
 			}
 			c.Assert(phase.Args["podOverride"], check.DeepEquals, podOverride)
 		}

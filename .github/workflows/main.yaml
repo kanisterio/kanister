@@ -75,6 +75,11 @@ jobs:
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
+    - name: export_master_sha
+      run: |
+        export MASTER_SHA=$(git rev-parse --short=12 master)
+        echo "MASTER_SHA=$MASTER_SHA" >> $GITHUB_ENV
+        echo "Using master SHA: ${MASTER_SHA}"
     - uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
     # A test (CRDSuite) that runs as part of `make test` requies atleast one CRD to
     # be present on the cluster. That's why we are only installing csi-hostpath-driver
