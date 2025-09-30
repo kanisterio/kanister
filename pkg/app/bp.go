@@ -112,7 +112,6 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 				image := fmt.Sprintf("%s:short-commit-%s", strings.Split(imageStr, ":")[0], shortCommit)
 				log.Info().Print("Updating image to use dev image", field.M{"image": image})
 				phase.Args["image"] = image
-				//fmt.Sprintf("%s:short-commit-%s", strings.Split(imageStr, ":")[0], shortCommit)
 			}
 
 			// Change imagePullPolicy to Always using podOverride config
@@ -167,7 +166,7 @@ func getBlueprintPath(app string, blueprintName string) string {
 }
 
 func getShortCommitSHA() string {
-	cmd := exec.Command("git", "rev-parse", "--short=12", "HEAD")
+	cmd := exec.Command("git", "rev-parse", "--short=12", "origin/master")
 	out, err := cmd.Output()
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to get git commit SHA")
