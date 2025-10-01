@@ -15,7 +15,7 @@ get_consumer_lag() {
         echo "Failed to fetch consumer groups"
         return 1
     fi
-    awk 'BEGIN{maxLag=   0}{if ($6>0+maxLag) maxLag=$6} END{print maxLag}' <<< $consumer_groups
+    awk 'BEGIN{maxLag=   0} FNR > 2 {if ($6>0+maxLag) maxLag=$6} END{print maxLag}' <<< $consumer_groups
 }
 
 cleanup() {
@@ -46,6 +46,7 @@ fi
 while [[ "$LAG" -gt "$MAXLAG"  && "$ELAPSEDTIME" -lt "$TIMEINSECONDS" ]]
 do
 
+sleep 5
 if ! LAG="$(get_consumer_lag)"; then
     echo "Error getting lag."
     cleanup
@@ -54,7 +55,6 @@ fi
 
 ELAPSEDTIME="$(ps -e -o "pid,etimes,command" |awk -v processid=$PID '{if($1==processid) print $2}')"
 echo "========================== LAG = $LAG , ELAPSEDTIME = $ELAPSEDTIME ======================================="
-sleep 2
 done
 
 if [ -z "$ELAPSEDTIME" ]
