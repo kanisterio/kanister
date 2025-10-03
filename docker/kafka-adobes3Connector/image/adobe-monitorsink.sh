@@ -4,7 +4,10 @@ set -o errexit
 echo "Monitoring process ${PID}"
 
 get_consumer_lag() {
-    consumer_groups=$(/bin/kafka-consumer-groups  --command-config /tmp/config/kafkaConfig.properties --bootstrap-server "$BOOTSTRAPSERVER" --describe --group "$GROUP")
+    consumer_groups=$(/bin/kafka-consumer-groups  --command-config /tmp/config/kafkaConfig.properties --bootstrap-server "$BOOTSTRAPSERVER" --describe --group "$GROUP" | grep -v LAG)
+
+    echo "$consumer_groups" 1>&2
+
     if grep -q 'does not exist' <<< $consumer_groups
     then
         echo "Connector consumer group ${GROUP} does not exist"
@@ -15,7 +18,7 @@ get_consumer_lag() {
         echo "Failed to fetch consumer groups"
         return 1
     fi
-    awk 'BEGIN{maxLag=   0} FNR > 2 {if ($6>0+maxLag) maxLag=$6} END{print maxLag}' <<< $consumer_groups
+    awk 'BEGIN{maxLag=   0} {if ($6>0+maxLag) maxLag=$6} END{print maxLag}' <<< $consumer_groups
 }
 
 cleanup() {
