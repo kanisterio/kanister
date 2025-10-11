@@ -131,4 +131,8 @@ We welcome contributions to Kanister! If you're interested in getting involved, 
 
 ## License
 
+## Update
+Added extra details for testing changes.
+
+
 Apache License 2.0, see [LICENSE](https://github.com/kanisterio/kanister/blob/master/LICENSE).
