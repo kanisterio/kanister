@@ -1,0 +1,26 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: pg-restore-
+spec:
+  actions:
+  - artifacts:
+      cloudObject:
+        path: <RESTORE PATH FROM BACKUP ACTIONSET STATUS FIELD>
+    blueprint: postgres-task
+    configMaps:
+      location:
+        name: postgres-s3-location
+        namespace: kanister
+    name: restore
+    object:
+      kind: statefulset
+      name: my-release-patroni
+      namespace: kanister
+    secrets:
+      aws:
+        name: aws-creds
+        namespace: kanister
+      postgres:
+        name: patroni-creds
+        namespace: kanister

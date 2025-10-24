@@ -324,7 +324,7 @@ function version.
 ``` bash
 
 \# Download mysql blueprint locally \$ curl -O
-<https://raw.githubusercontent.com/kanisterio/blueprints/refs/heads/main/mysql/mysql-blueprint.yaml>
+<https://raw.githubusercontent.com/kanisterio/kanister/%7Cversion%7C/examples/mysql/mysql-blueprint.yaml>
 
 \# Run blueprint validator \$ kanctl validate blueprint -f
 mysql-blueprint.yaml Passed the \'validation of phase dumpToObjectStore
