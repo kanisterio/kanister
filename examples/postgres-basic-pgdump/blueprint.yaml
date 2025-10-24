@@ -1,0 +1,59 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: postgres-task
+actions:
+  backup:
+    configMapNames:
+      - location
+    secretNames:
+      - aws
+      - postgres
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          path: '{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/pg_backup.tar'
+    phases:
+    - func: KubeTask
+      name: takeBackup
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: ghcr.io/kanisterio/postgres-task:9.6
+        command:
+          - bash
+          - -o
+          - errexit
+          - -c
+          - |
+            export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+            export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+            export PGHOST=${{ .StatefulSet.Name | upper | replace "-" "_" }}_SERVICE_HOST
+            export PGPORT=${{ .StatefulSet.Name | upper | replace "-" "_" }}_PORT_5432_TCP_PORT
+            export PGPASSWORD={{ .Secrets.postgres.Data.password_superuser | toString }}
+            pg_dumpall -U postgres -c -f backup.tar
+            aws s3 cp backup.tar "{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/pg_backup.tar"
+  restore:
+    secretNames:
+      - aws
+      - postgres
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: KubeTask
+      name: restoreBackup
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: ghcr.io/kanisterio/postgres-task:262fc0cbc8f0
+        command:
+          - bash
+          - -o
+          - errexit
+          - -c
+          - |
+            export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+            export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+            export PGHOST=${{ .StatefulSet.Name | upper | replace "-" "_" }}_SERVICE_HOST
+            export PGPORT=${{ .StatefulSet.Name | upper | replace "-" "_" }}_PORT_5432_TCP_PORT
+            export PGPASSWORD={{ .Secrets.postgres.Data.password_superuser | toString }}
+            aws s3 cp {{ .ArtifactsIn.cloudObject.KeyValue.path }} backup.tar
+            psql -U postgres -f backup.tar postgres
