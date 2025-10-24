@@ -1,0 +1,57 @@
+apiVersion: apps.foundationdb.org/v1beta1
+kind: FoundationDBCluster
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: foundationdbcluster-sample
+spec:
+  version: 6.2.20
+  databaseConfiguration:
+    redundancy_mode: double
+  volumeSize: "16G"
+  faultDomain:
+    key: foundationdb.org/none
+  processCounts:
+    stateless: -1
+  customParameters:
+    - "knob_disable_posix_kernel_aio=1"
+  volumes:
+    - name: fdb-certs
+      secret:
+        secretName: fdb-kubernetes-operator-secrets
+  mainContainer:
+    imageName: <registry>/<repository>/foundationdb:<tag_name>
+    enableTls: true
+    env:
+      - name: FDB_TLS_CERTIFICATE_FILE
+        value: /tmp/fdb-certs/cert.pem
+      - name: FDB_TLS_CA_FILE
+        value: /tmp/fdb-certs/cert.pem
+      - name: FDB_TLS_KEY_FILE
+        value: /tmp/fdb-certs/key.pem
+    volumeMounts:
+      - name: fdb-certs
+        mountPath: /tmp/fdb-certs
+    securityContext:
+      runAsUser: 0
+  sidecarContainer:
+    enableTls: true
+    env:
+      - name: FDB_TLS_CERTIFICATE_FILE
+        value: /tmp/fdb-certs/cert.pem
+      - name: FDB_TLS_CA_FILE
+        value: /tmp/fdb-certs/cert.pem
+      - name: FDB_TLS_KEY_FILE
+        value: /tmp/fdb-certs/key.pem
+    volumeMounts:
+      - name: fdb-certs
+        mountPath: /tmp/fdb-certs
+    securityContext:
+      runAsUser: 0
+  securityContext:
+    fsGroup: 0
+  automountServiceAccountToken: false
+  resources:
+    requests:
+      cpu: 250m
+      memory: 128Mi
