@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafdrop
+spec:
+  containers:
+  - image: obsidiandynamics/kafdrop
+    imagePullPolicy: IfNotPresent
+    name: kafdrop
+    ports:
+    - containerPort: 9000
+      name: port
+      protocol: TCP
+    env:
+    - name: KAFKA_BROKERCONNECT
+      value: PLAINTEXT://my-cluster-kafka-bootstrap:9092
