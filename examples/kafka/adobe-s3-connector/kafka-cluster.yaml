@@ -1,0 +1,56 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: my-cluster
+spec:
+  kafka:
+    version: 3.2.0
+    replicas: 1
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+    logging:
+      type: inline
+      loggers:
+        kafka.root.logger.level: "INFO"
+    template:
+      pod:
+        securityContext:
+          runAsUser: 0
+          fsGroup: 0
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      inter.broker.protocol.version: "3.1"
+    storage:
+      type: jbod
+      volumes:
+      - id: 0
+        type: persistent-claim
+        size: 100Gi
+        deleteClaim: false
+  zookeeper:
+    replicas: 1
+    template:
+      pod:
+        securityContext:
+          runAsUser: 0
+          fsGroup: 0
+    logging:
+      type: inline
+      loggers:
+        zookeeper.root.logger.level: "INFO"
+    storage:
+      type: persistent-claim
+      size: 100Gi
+      deleteClaim: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
