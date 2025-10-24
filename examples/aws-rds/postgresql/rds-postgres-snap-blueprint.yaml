@@ -1,0 +1,38 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: rds-postgres-snapshot-bp
+actions:
+  backup:
+    outputArtifacts:
+      backupInfo:
+        keyValue:
+          snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+          instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+          securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+          allocatedStorage: "{{ .Phases.createSnapshot.Output.allocatedStorage }}"
+          dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
+    phases:
+    - func: CreateRDSSnapshot
+      name: createSnapshot
+      args:
+        instanceID: '{{ index .Object.data "postgres.instanceid" }}'
+  restore:
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: RestoreRDSSnapshot
+      name: restoreSnapshots
+      args:
+        instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
+        snapshotID:  "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
+        securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
+        dbSubnetGroup: "{{ .ArtifactsIn.backupInfo.KeyValue.dbSubnetGroup }}"
+  delete:
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: DeleteRDSSnapshot
+      name: deleteSnapshot
+      args:
+        snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
