@@ -19,61 +19,48 @@ import (
 	"strings"
 	"time"
 
-	bp "github.com/kanisterio/blueprints"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	bp "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
+	blueprintsRepo = "./blueprints"
 	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
-// Blueprint() returns the Blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
+// Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 type AppBlueprint struct {
 	App          string
 	Path         string
 	UseDevImages bool
-	IsEmbedded   bool
 }
 
-// PITRBlueprint embeds AppBlueprint and provides Blueprint functionality with PITR support.
-// Blueprint() returns the Blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
+// PITRBlueprint implements Blueprint() to return Blueprint with PITR
+// Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool) Blueprinter {
-	isEmbedded := false
-	if blueprintPath == "" {
-		blueprintPath = getBlueprintPath(app, blueprintName)
-		isEmbedded = true
+func NewBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
+	if bpReposPath == "" {
+		bpReposPath = blueprintsRepo
 	}
-
 	return &AppBlueprint{
 		App:          app,
-		Path:         blueprintPath,
-		IsEmbedded:   isEmbedded,
+		Path:         fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
 		UseDevImages: useDevImages,
 	}
 }
 
 func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
-	var bpr *crv1alpha1.Blueprint
-	var err error
-
-	if b.IsEmbedded {
-		// reads from embedded blueprints in blueprint repository
-		bpr, err = bp.ReadFromEmbeddedFile(b.Path)
-	} else {
-		// reads from local file system
-		bpr, err = bp.ReadFromFile(b.Path)
-	}
+	bpr, err := bp.ReadFromFile(b.Path)
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
@@ -122,40 +109,20 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 	}
 }
 
-// NewPITRBlueprint returns blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
-func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
+// NewPITRBlueprint returns blueprint placed at ./blueprints/{app-name}-blueprint.yaml
+func NewPITRBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
+	if bpReposPath == "" {
+		bpReposPath = blueprintsRepo
+	}
 	return &PITRBlueprint{
 		AppBlueprint{
 			App:          app,
-			Path:         getBlueprintPath(app, blueprintName),
+			Path:         fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
 			UseDevImages: useDevImages,
-			IsEmbedded:   true,
 		},
 	}
 }
 
 func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
 	return pitr.UTC().Format("2006-01-02T15:04:05Z")
-}
-
-func getBlueprintPath(app string, blueprintName string) string {
-	var blueprintFolder string
-
-	// If blueprintName is not provided, use app name as blueprint name
-	if blueprintName == "" {
-		blueprintName = app
-	}
-
-	switch app {
-	case "rds-aurora-snap":
-		blueprintFolder = "aws-rds-aurora-mysql"
-	case "kafka":
-		blueprintFolder = "kafka-adobe-s3-connector"
-	case "rds-postgres-snap", "rds-postgres", "rds-postgres-dump":
-		blueprintFolder = "aws-rds-postgres"
-	default:
-		blueprintFolder = blueprintName
-	}
-
-	return fmt.Sprintf("%s/%s-blueprint.yaml", blueprintFolder, blueprintName)
 }

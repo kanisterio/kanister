@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgtestapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgtestapp
+  template:
+    metadata:
+      labels:
+        app: pgtestapp
+    spec:
+      containers:
+      - name: pgtestapp
+        image: ghcr.io/kanisterio/pgtest-amd64:0.1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+          - name: PG_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: dbconfig
+                key: postgres.host
+          - name: PG_DBNAME
+            valueFrom:
+              configMapKeyRef:
+                name: dbconfig
+                key: postgres.databases
+          - name: PG_USER
+            valueFrom:
+              secretKeyRef:
+                name: dbcreds
+                key: username
+          - name: PG_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: dbcreds
+                key: password

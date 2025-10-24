@@ -1,0 +1,21 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: mongo-backup-
+  namespace: kanister
+spec:
+  actions:
+    - name: backup
+      blueprint: mongo-sidecar
+      object:
+        kind: StatefulSet
+        name: mongo-cluster
+        namespace: default
+      configMaps:
+        location:
+          namespace: kanister
+          name: mongo-s3-location
+      secrets:
+        aws:
+          name: aws-creds
+          namespace: kanister
