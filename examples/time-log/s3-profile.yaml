@@ -1,0 +1,23 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Profile
+metadata:
+  name: s3-profile
+  namespace: kanister
+# Note: Add details of an existing S3 compliant bucket below
+location:
+  type: s3Compliant
+  bucket: XXXX
+  endpoint: XXXX
+  prefix: XXXX
+  region: XXXX
+credential:
+  type: keyPair
+  keyPair:
+    idField: aws_access_key_id
+    secretField: aws_secret_access_key
+    secret:
+      apiVersion: v1
+      kind: Secret
+      name: aws-creds
+      namespace: kanister
+skipSSLVerify: false
