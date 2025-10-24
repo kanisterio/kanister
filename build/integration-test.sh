@@ -38,6 +38,15 @@ OC_APPS4_11="MysqlDBDepConfig4_11|PostgreSQLDepConfig4_11"
 OC_APPS4_12="MysqlDBDepConfig4_12|PostgreSQLDepConfig4_12"
 OC_APPS4_13="MysqlDBDepConfig4_13|PostgreSQLDepConfig4_13"
 
+setup_environment() {
+    # If MASTER_SHA is not already set
+    if [[ -z "${MASTER_SHA:-}" && -z "${GITHUB_ACTIONS:-}" ]]; then
+        # Get the current commit SHA
+        export MASTER_SHA=$(git rev-parse --short=12 master)
+        echo "Using master SHA: ${MASTER_SHA}"
+    fi
+}
+
 check_dependencies() {
     # Check if minio is already deployed
     if helm status minio -n minio > /dev/null 2>&1 ; then
@@ -120,7 +129,7 @@ else
     TEST_APPS="${TEST_APPS}|^E2ESuite$"
 fi
 
-
+setup_environment
 check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
