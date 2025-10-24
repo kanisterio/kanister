@@ -1,0 +1,115 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: k8ssandra-blueprint
+actions:
+  backup:
+    outputArtifacts:
+      backupInfo:
+        keyValue:
+          apiVersion: '{{ .Phases.createCassandraBackup.Output.apiVersion }}'
+          group: '{{ .Phases.createCassandraBackup.Output.group }}'
+          name: '{{ .Phases.createCassandraBackup.Output.name }}'
+          namespace: '{{ .Phases.createCassandraBackup.Output.namespace }}'
+          resource: '{{ .Phases.createCassandraBackup.Output.resource }}'
+    phases:
+    # Create CassandraBackup CR
+    - func: KubeOps
+      name: createCassandraBackup
+      args:
+        operation: create
+        namespace: '{{ .Object.metadata.namespace }}'
+        spec: |-
+          apiVersion: cassandra.k8ssandra.io/v1alpha1
+          kind: CassandraBackup
+          metadata:
+            name: kanister-{{ .Object.spec.clusterName }}-{{ .Object.metadata.name }}-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02t15-04-05" }}
+          spec:
+            name: kanister-{{ .Object.spec.clusterName }}-{{ .Object.metadata.name }}-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02t15-04-05" }}
+            cassandraDatacenter: "{{ .Object.metadata.name }}"
+    - func: Wait
+      name: waitCassandraBackupComplete
+      args:
+        timeout: 45m
+        conditions:
+          anyOf:
+          - condition: |-
+              {{ if "{$.status.finishTime}" }}
+                {{ if "{$.status.finished[]}" }}
+                  true
+                {{ end }}
+              {{ else }}
+                false
+              {{ end }}
+            objectReference:
+              apiVersion: '{{ .Phases.createCassandraBackup.Output.apiVersion }}'
+              group: '{{ .Phases.createCassandraBackup.Output.group }}'
+              name: '{{ .Phases.createCassandraBackup.Output.name }}'
+              namespace: '{{ .Phases.createCassandraBackup.Output.namespace }}'
+              resource: '{{ .Phases.createCassandraBackup.Output.resource }}'
+  restore:
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    # Create CassandraRestore CR
+    - func: KubeOps
+      name: createCassandraRestore
+      args:
+        namespace: '{{ .Object.metadata.namespace }}'
+        operation: create
+        spec: |-
+          apiVersion: cassandra.k8ssandra.io/v1alpha1
+          kind: CassandraRestore
+          metadata:
+            name: restore-{{ .ArtifactsIn.backupInfo.KeyValue.name }}
+          spec:
+            backup: {{ .ArtifactsIn.backupInfo.KeyValue.name }}
+            inPlace: true
+            shutdown: true
+            cassandraDatacenter:
+              name: "{{ .Object.metadata.name }}"
+              clusterName: "{{ .Object.spec.clusterName }}"
+    - func: Wait
+      name: waitCassandraRestoreComplete
+      args:
+        timeout: 600m
+        conditions:
+          anyOf:
+          - condition: |-
+              {{ if "{$.status.finishTime}" }}
+                {{ if "{$.status.restoreKey}" }}
+                  true
+                {{ end }}
+              {{ else }}
+                false
+              {{ end }}
+            objectReference:
+              apiVersion: '{{ .Phases.createCassandraRestore.Output.apiVersion }}'
+              group: '{{ .Phases.createCassandraRestore.Output.group }}'
+              name: '{{ .Phases.createCassandraRestore.Output.name }}'
+              namespace: '{{ .Phases.createCassandraRestore.Output.namespace }}'
+              resource: '{{ .Phases.createCassandraRestore.Output.resource }}'
+    - func: KubeOps
+      name: cassandraRestoreDelete
+      args:
+        operation: delete
+        objectReference:
+          apiVersion: '{{ .Phases.createCassandraRestore.Output.apiVersion }}'
+          group: '{{ .Phases.createCassandraRestore.Output.group }}'
+          name: '{{ .Phases.createCassandraRestore.Output.name }}'
+          namespace: '{{ .Phases.createCassandraRestore.Output.namespace }}'
+          resource: '{{ .Phases.createCassandraRestore.Output.resource }}'
+  delete:
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: KubeOps
+      name: cassandraBackupDelete
+      args:
+        operation: delete
+        objectReference:
+          apiVersion: '{{ .ArtifactsIn.backupInfo.KeyValue.apiVersion }}'
+          group: '{{ .ArtifactsIn.backupInfo.KeyValue.group }}'
+          name: '{{ .ArtifactsIn.backupInfo.KeyValue.name }}'
+          namespace: '{{ .ArtifactsIn.backupInfo.KeyValue.namespace }}'
+          resource: '{{ .ArtifactsIn.backupInfo.KeyValue.resource }}'

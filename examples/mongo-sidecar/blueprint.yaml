@@ -1,0 +1,99 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mongo-sidecar
+  namespace: kanister
+actions:
+  backup:
+    configMapNames:
+      - "location"
+    secretNames:
+      - aws
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          path: '{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs0.tar'
+    phases:
+    - func: KubeExec
+      name: takeConsistentBackup
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: mongo-tools-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -c
+          - |
+            host="{{ index .StatefulSet.Pods 0 }}.{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+            primary=$(mongo --host ${host} --eval "db.isMaster()['primary']" | tail -n1 | cut -d ':' -f1)
+            mongodb-consistent-backup -H ${primary} -P 27017 -n mongo-backup \
+              -l /var/lib/mongodb-consistent-backup 2> /var/log/kanister.log
+            file="/var/lib/mongodb-consistent-backup/mongo-backup/latest/rs0.tar"
+            export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+            export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+            cmd=(aws s3 cp)
+            if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
+            then
+                cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
+            fi
+            ${cmd[@]} ${file} "{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs0.tar"
+  restore:
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: KubeExec
+      name: pullFromBlobStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: mongo-tools-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -c
+          - |
+            pushd $(mktemp -d)
+            export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+            export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+            cmd=(aws s3 cp)
+            if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
+            then
+                cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
+            fi
+            ${cmd[@]} {{ .ArtifactsIn.cloudObject.KeyValue.path }} .
+            tar xvf rs0.tar
+            find . -name "*.gz" -exec gunzip {} \+ 2>> /var/log/kanister.log
+            host="{{ index .StatefulSet.Pods 0 }}.{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+            primary=$(mongo --host ${host} --eval "db.isMaster()['primary']" | tail -n1 | cut -f 1 -d ':')
+            mongorestore             \
+                --host ${primary}    \
+                --port 27017         \
+                --drop --oplogReplay \
+                --dir ./rs0/dump
+  delete:
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: KubeExec
+      name: deleteFromBlobStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: mongo-tools-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -c
+          - |
+            export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+            export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+            cmd=(aws s3 rm)
+            if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
+            then
+                cmd=(aws --endpoint https://storage.googleapis.com s3 rm)
+            fi
+            ${cmd[@]} "{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
