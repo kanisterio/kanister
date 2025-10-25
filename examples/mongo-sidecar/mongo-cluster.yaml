@@ -1,0 +1,169 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: mongo-cluster
+  name: mongo-cluster
+  namespace: default
+data:
+  mongod.conf: |
+    net:
+      port: 27017
+    replication:
+      replSetName: rs0
+    storage:
+      dbPath: /data/db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  labels:
+    app: mongo-cluster
+  name: mongo-cluster
+  namespace: default
+spec:
+  clusterIP: None
+  ports:
+  - name: peer
+    port: 27017
+    protocol: TCP
+    targetPort: 27017
+  selector:
+    app: mongo-cluster
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: mongo-cluster
+  name: mongo-cluster
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongo-cluster
+  serviceName: mongo-cluster
+  template:
+    metadata:
+      labels:
+        app: mongo-cluster
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: mongo-cluster
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - args:
+        - date >> /var/log/kanister.log; tail -F /var/log/kanister.log
+        command:
+        - bash
+        - -c
+        env:
+        image: <registry>/<repository>/mongo-sidecar:<tag_name>
+        name: mongo-tools-sidecar
+      - command:
+        - mongod
+        - --config=/config/mongod.conf
+        image: mongo:3.4
+        livenessProbe:
+          exec:
+            command:
+            - mongo
+            - --eval
+            - db.adminCommand('ping')
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: mongo-cluster
+        ports:
+        - containerPort: 27017
+          name: peer
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - mongo
+            - --eval
+            - db.adminCommand('ping')
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /data/db
+          name: datadir
+        - mountPath: /config
+          name: config
+        - mountPath: /work-dir
+          name: workdir
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - args:
+        - --work-dir=/work-dir
+        image: gcr.io/google_containers/mongodb-install:0.5
+        name: install
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /work-dir
+          name: workdir
+        - mountPath: /config
+          name: config
+      - args:
+        - -on-start=/work-dir/on-start.sh
+        - -service=mongo-cluster
+        command:
+        - /work-dir/peer-finder
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: REPLICA_SET
+          value: rs0
+        image: mongo:3.4
+        name: bootstrap
+        volumeMounts:
+        - mountPath: /work-dir
+          name: workdir
+        - mountPath: /config
+          name: config
+        - mountPath: /data/db
+          name: datadir
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: mongo-cluster
+        name: config
+      - emptyDir: {}
+        name: workdir
+  updateStrategy:
+    type: OnDelete
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+    status:
+      phase: Pending
