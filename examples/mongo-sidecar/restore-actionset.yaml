@@ -1,0 +1,16 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: mongo-restore-
+  namespace: kanister
+spec:
+  actions:
+    - name: restore
+      blueprint: mongo-sidecar
+      object:
+        kind: StatefulSet
+        name: mongo-cluster
+        namespace: default
+      artifacts:
+        cloudObject:
+          path: s3://mongo.kanister.io/backups/mongodb-cluster/2017-11-20T02-22-43/rs0.tar

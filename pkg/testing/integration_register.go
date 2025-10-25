@@ -36,7 +36,7 @@ var _ = check.Suite(&PITRPostgreSQL{
 		name:      "pitr-postgres",
 		namespace: "pitr-postgres-test",
 		app:       app.NewPostgresDB("pitr-postgres", ""),
-		bp:        app.NewPITRBlueprint("pitr-postgres", "postgresql-wale", true),
+		bp:        app.NewPITRBlueprint("pitr-postgres", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -51,7 +51,7 @@ var _ = check.Suite(&PostgreSQL{
 		name:      "postgres",
 		namespace: "postgres-test",
 		app:       app.NewPostgresDB("postgres", ""),
-		bp:        app.NewBlueprint("postgres", "", "", true),
+		bp:        app.NewBlueprint("postgres", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -66,7 +66,7 @@ var _ = check.Suite(&MySQL{
 		name:      "mysql",
 		namespace: "mysql-test",
 		app:       app.NewMysqlDB("mysql"),
-		bp:        app.NewBlueprint("mysql", "", "", true),
+		bp:        app.NewBlueprint("mysql", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -81,7 +81,7 @@ var _ = check.Suite(&CockroachDB{
 		name:      "cockroachdb",
 		namespace: "cockroachdb-test",
 		app:       app.NewCockroachDB("cockroachdb"),
-		bp:        app.NewBlueprint("cockroachdb", "", "", false),
+		bp:        app.NewBlueprint("cockroachdb", "", false),
 		profile:   newSecretProfile(),
 	},
 })
@@ -96,7 +96,7 @@ var _ = check.Suite(&TimeLogCSI{
 		name:      "time-logger",
 		namespace: "time-log",
 		app:       app.NewTimeLogCSI("time-logger"),
-		bp:        app.NewBlueprint("csi-snapshot", "", "", true),
+		bp:        app.NewBlueprint("csi-snapshot", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -111,7 +111,7 @@ var _ = check.Suite(&Maria{
 		name:      "mariadb",
 		namespace: "mariadb-test",
 		app:       app.NewMariaDB("maria"),
-		bp:        app.NewBlueprint("maria", "", "", true),
+		bp:        app.NewBlueprint("maria", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -126,7 +126,7 @@ var _ = check.Suite(&Elasticsearch{
 		name:      "elasticsearch",
 		namespace: "es-test",
 		app:       app.NewElasticsearchInstance("elasticsearch"),
-		bp:        app.NewBlueprint("elasticsearch", "", "", true),
+		bp:        app.NewBlueprint("elasticsearch", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -141,7 +141,7 @@ var _ = check.Suite(&MongoDB{
 		name:      "mongo",
 		namespace: "mongo-test",
 		app:       app.NewMongoDB("mongo"),
-		bp:        app.NewBlueprint("mongo", "mongodb", "", true),
+		bp:        app.NewBlueprint("mongo", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -155,7 +155,7 @@ var _ = check.Suite(&Cassandra{IntegrationSuite{
 	name:      "cassandra",
 	namespace: "cassandra-test",
 	app:       app.NewCassandraInstance("cassandra"),
-	bp:        app.NewBlueprint("cassandra", "", "", true),
+	bp:        app.NewBlueprint("cassandra", "", true),
 	profile:   newSecretProfile(),
 },
 })
@@ -170,7 +170,7 @@ var _ = check.Suite(&Couchbase{
 		name:      "couchbase",
 		namespace: "couchbase-test",
 		app:       app.NewCouchbaseDB("couchbase"),
-		bp:        app.NewBlueprint("couchbase", "", "", true),
+		bp:        app.NewBlueprint("couchbase", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -185,7 +185,7 @@ var _ = check.Suite(&RDSPostgreSQL{
 		name:      "rds-postgres",
 		namespace: "rds-postgres-test",
 		app:       app.NewRDSPostgresDB("rds-postgres", ""),
-		bp:        app.NewBlueprint("rds-postgres", "aws-rds-postgres", "", true),
+		bp:        app.NewBlueprint("rds-postgres", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -200,7 +200,22 @@ var _ = check.Suite(&FoundationDB{
 		name:      "foundationdb",
 		namespace: "fdb-test",
 		app:       app.NewFoundationDB("foundationdb"),
-		bp:        app.NewBlueprint("foundationdb", "", "", true),
+		bp:        app.NewBlueprint("foundationdb", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// RDSAuroraMySQL type is an app for mysql database for integration test.
+type RDSAuroraMySQL struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&RDSAuroraMySQL{
+	IntegrationSuite{
+		name:      "rds-aurora-mysql",
+		namespace: "rds-aurora-mysql-test",
+		app:       app.NewRDSAuroraMySQLDB("rds-aurora-dump", ""),
+		bp:        app.NewBlueprint("rds-aurora-snap", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -216,7 +231,7 @@ var _ = check.Suite(&RDSPostgreSQLDump{
 		name:      "rds-postgres-dump",
 		namespace: "rds-postgres-dump-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-dump", ""),
-		bp:        app.NewBlueprint("rds-postgres-dump", "aws-rds-postgres-pgdump", "", true),
+		bp:        app.NewBlueprint("rds-postgres-dump", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -232,7 +247,7 @@ var _ = check.Suite(&RDSPostgreSQLSnap{
 		name:      "rds-postgres-snap",
 		namespace: "rds-postgres-snap-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-snap", ""),
-		bp:        app.NewBlueprint("rds-postgres-snap", "aws-rds-postgres-snap", "", true),
+		bp:        app.NewBlueprint("rds-postgres-snap", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -247,7 +262,7 @@ var _ = check.Suite(&MSSQL{
 		name:      "mssql",
 		namespace: "mssql-test",
 		app:       app.NewMssqlDB("mssql"),
-		bp:        app.NewBlueprint("mssql", "", "", true),
+		bp:        app.NewBlueprint("mssql", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -263,7 +278,7 @@ var _ = check.Suite(&MysqlDBDepConfig{
 		name:      "mysqldc",
 		namespace: "mysqldc-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage, "5.7"),
-		bp:        app.NewBlueprint("mysql-dep-config", "", "", true),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -278,7 +293,7 @@ var _ = check.Suite(&MongoDBDepConfig{
 		name:      "mongodb",
 		namespace: "mongodb-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", "mongodb-dep-config", "", true),
+		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -293,7 +308,7 @@ var _ = check.Suite(&PostgreSQLDepConfig{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP3_11, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", true),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -309,7 +324,7 @@ var _ = check.Suite(&MysqlDBDepConfig4_4{
 		name:      "mysqldc",
 		namespace: "mysqldc4-4-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage, "5.7"),
-		bp:        app.NewBlueprint("mysql-dep-config", "", "", true),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -324,7 +339,7 @@ var _ = check.Suite(&MongoDBDepConfig4_4{
 		name:      "mongodb",
 		namespace: "mongodb4-4-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", "mongodb-dep-config", "", true),
+		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -339,7 +354,7 @@ var _ = check.Suite(&PostgreSQLDepConfig4_4{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-4-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_4, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", true),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -355,7 +370,7 @@ var _ = check.Suite(&MysqlDBDepConfig4_5{
 		name:      "mysqldc",
 		namespace: "mysqldc4-5-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage, "5.7"),
-		bp:        app.NewBlueprint("mysql-dep-config", "", "", true),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -370,7 +385,7 @@ var _ = check.Suite(&MongoDBDepConfig4_5{
 		name:      "mongodb",
 		namespace: "mongodb4-5-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", "mongodb-dep-config", "", true),
+		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -385,172 +400,7 @@ var _ = check.Suite(&PostgreSQLDepConfig4_5{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-5-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_5, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// MysqlDBDepConfig4_10 type is an app for mysql database for integration test on OpenShift cluster
-type MysqlDBDepConfig4_10 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&MysqlDBDepConfig4_10{
-	IntegrationSuite{
-		name:      "mysqldc",
-		namespace: "mysqldc4-10-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage, "8.0"),
-		bp:        app.NewBlueprint("mysql-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// MongoDBDepConfig4_10 type is an app for mongo database for integration test on OpenShift cluster
-type MongoDBDepConfig4_10 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&MongoDBDepConfig4_10{
-	IntegrationSuite{
-		name:      "mongodb",
-		namespace: "mongodb4-10-test",
-		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", "mongodb-dep-config", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// PostgreSQLDepConfig4_10 type is an app for postgres database for integration test on OpenShift cluster
-type PostgreSQLDepConfig4_10 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&PostgreSQLDepConfig4_10{
-	IntegrationSuite{
-		name:      "postgresdepconf",
-		namespace: "postgresdepconf4-10-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_10, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// MysqlDBDepConfig4_11 type is an app for mysql database for integration test through DeploymentConfig on OpenShift cluster
-type MysqlDBDepConfig4_11 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&MysqlDBDepConfig4_11{
-	IntegrationSuite{
-		name:      "mysqldc",
-		namespace: "mysqldc4-11-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_11, app.EphemeralStorage, "8.0"),
-		bp:        app.NewBlueprint("mysql-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// PostgreSQLDepConfig4_11 type is an app for postgres database for integration test on openshift cluster
-type PostgreSQLDepConfig4_11 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&PostgreSQLDepConfig4_11{
-	IntegrationSuite{
-		name:      "postgresdepconf",
-		namespace: "postgresdepconf4-11-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_11, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// MysqlDBDepConfig4_12 type is an app for mysql database for integration test on openshift cluster
-type MysqlDBDepConfig4_12 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&MysqlDBDepConfig4_12{
-	IntegrationSuite{
-		name:      "mysqldc",
-		namespace: "mysqldc4-12-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_12, app.EphemeralStorage, "8.0"),
-		bp:        app.NewBlueprint("mysql-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// PostgreSQLDepConfig4_12 type is an app for postgres database for integration test on openshift cluster
-type PostgreSQLDepConfig4_12 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&PostgreSQLDepConfig4_12{
-	IntegrationSuite{
-		name:      "postgresdepconf",
-		namespace: "postgresdepconf4-12-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_12, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// MysqlDBDepConfig4_13 type is an app for mysql database for integration test on openshift cluster
-type MysqlDBDepConfig4_13 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&MysqlDBDepConfig4_13{
-	IntegrationSuite{
-		name:      "mysqldc",
-		namespace: "mysqldc4-13-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_13, app.EphemeralStorage, "8.0"),
-		bp:        app.NewBlueprint("mysql-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// PostgreSQLDepConfig4_13 type is an app for postgres database for integration test on openshift cluster
-type PostgreSQLDepConfig4_13 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&PostgreSQLDepConfig4_13{
-	IntegrationSuite{
-		name:      "postgresdepconf",
-		namespace: "postgresdepconf4-13-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_13, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// MysqlDBDepConfig4_14 type is an app for mysql database for integration test on openshift cluster
-type MysqlDBDepConfig4_14 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&MysqlDBDepConfig4_14{
-	IntegrationSuite{
-		name:      "mysqldc",
-		namespace: "mysqldc4-14-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_14, app.EphemeralStorage, "8.0"),
-		bp:        app.NewBlueprint("mysql-dep-config", "", "", true),
-		profile:   newSecretProfile(),
-	},
-})
-
-// PostgreSQLDepConfig4_14 type is an app for postgres database for integration test on openshift cluster
-type PostgreSQLDepConfig4_14 struct {
-	IntegrationSuite
-}
-
-var _ = check.Suite(&PostgreSQLDepConfig4_14{
-	IntegrationSuite{
-		name:      "postgresdepconf",
-		namespace: "postgresdepconf4-14-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_14, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", true),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -565,22 +415,172 @@ var _ = check.Suite(&Kafka{
 		name:      "kafka",
 		namespace: "kafka-test",
 		app:       app.NewKafkaCluster("kafka", ""),
-		bp:        app.NewBlueprint("kafka", "", "", true),
+		bp:        app.NewBlueprint("kafka", "", true),
 		profile:   newSecretProfile(),
 	},
 })
 
-// RDSAuroraMySQL type is an app for mysql database for integration test.
-type RDSAuroraMySQL struct {
+// MysqlDBDepConfig4_10 type is an app for mysql database for integration test on OpenShift cluster
+type MysqlDBDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = check.Suite(&RDSAuroraMySQL{
+var _ = check.Suite(&MysqlDBDepConfig4_10{
 	IntegrationSuite{
-		name:      "rds-aurora-mysql",
-		namespace: "rds-aurora-mysql-test",
-		app:       app.NewRDSAuroraMySQLDB("rds-aurora-dump", ""),
-		bp:        app.NewBlueprint("rds-aurora-snap", "aws-rds-aurora-snap", "", true),
+		name:      "mysqldc",
+		namespace: "mysqldc4-10-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage, "8.0"),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// MongoDBDepConfig4_10 type is an app for mongo database for integration test on OpenShift cluster
+type MongoDBDepConfig4_10 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&MongoDBDepConfig4_10{
+	IntegrationSuite{
+		name:      "mongodb",
+		namespace: "mongodb4-10-test",
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage),
+		bp:        app.NewBlueprint("mongo-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQLDepConfig4_10 type is an app for postgres database for integration test on OpenShift cluster
+type PostgreSQLDepConfig4_10 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&PostgreSQLDepConfig4_10{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-10-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_10, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// MysqlDBDepConfig4_11 type is an app for mysql database for integration test through DeploymentConfig on OpenShift cluster
+type MysqlDBDepConfig4_11 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&MysqlDBDepConfig4_11{
+	IntegrationSuite{
+		name:      "mysqldc",
+		namespace: "mysqldc4-11-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_11, app.EphemeralStorage, "8.0"),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQLDepConfig4_11 type is an app for postgres database for integration test on openshift cluster
+type PostgreSQLDepConfig4_11 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&PostgreSQLDepConfig4_11{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-11-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_11, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// MysqlDBDepConfig4_12 type is an app for mysql database for integration test on openshift cluster
+type MysqlDBDepConfig4_12 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&MysqlDBDepConfig4_12{
+	IntegrationSuite{
+		name:      "mysqldc",
+		namespace: "mysqldc4-12-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_12, app.EphemeralStorage, "8.0"),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQLDepConfig4_12 type is an app for postgres database for integration test on openshift cluster
+type PostgreSQLDepConfig4_12 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&PostgreSQLDepConfig4_12{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-12-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_12, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// MysqlDBDepConfig4_13 type is an app for mysql database for integration test on openshift cluster
+type MysqlDBDepConfig4_13 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&MysqlDBDepConfig4_13{
+	IntegrationSuite{
+		name:      "mysqldc",
+		namespace: "mysqldc4-13-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_13, app.EphemeralStorage, "8.0"),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQLDepConfig4_13 type is an app for postgres database for integration test on openshift cluster
+type PostgreSQLDepConfig4_13 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&PostgreSQLDepConfig4_13{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-13-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_13, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// MysqlDBDepConfig4_14 type is an app for mysql database for integration test on openshift cluster
+type MysqlDBDepConfig4_14 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&MysqlDBDepConfig4_14{
+	IntegrationSuite{
+		name:      "mysqldc",
+		namespace: "mysqldc4-14-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_14, app.EphemeralStorage, "8.0"),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQLDepConfig4_14 type is an app for postgres database for integration test on openshift cluster
+type PostgreSQLDepConfig4_14 struct {
+	IntegrationSuite
+}
+
+var _ = check.Suite(&PostgreSQLDepConfig4_14{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-14-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_14, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
