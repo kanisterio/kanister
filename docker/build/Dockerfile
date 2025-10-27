@@ -1,4 +1,4 @@
-FROM golang:1.24.6-bullseye@sha256:2cdc80dc25edcb96ada1654f73092f2928045d037581fa4aa7c40d18af7dd85a
+FROM golang:1.25.3-bookworm@sha256:ee420c17fa013f71eca6b35c3547b854c838d4f26056a34eb6171bba5bf8ece4
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 ARG TARGETPLATFORM
@@ -30,10 +30,17 @@ RUN git config --global --add safe.directory /go/src/github.com/kanisterio/kanis
 # Adding CRD documentation generation tool.
 RUN GOBIN=/usr/local/bin go install github.com/ahmetb/gen-crd-api-reference-docs@v0.3.0
 
-RUN apt-get update && apt-get install -y pip
+RUN apt-get update && apt-get install -y python3-pip python3-venv
 
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+
+# Create and activate a virtual environment, then install requirements
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
+    && /opt/venv/bin/pip install -r requirements.txt
+
+# Make sure the venv Python is used by default
+ENV PATH="/opt/venv/bin:$PATH"
 
 RUN apt-get install -y vim
 
