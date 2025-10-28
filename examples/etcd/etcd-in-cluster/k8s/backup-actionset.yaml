@@ -1,0 +1,28 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  creationTimestamp: null
+  generateName: backup-
+  namespace: kanister
+spec:
+  actions:
+  - blueprint: "<blueprint-name>"
+    configMaps: {}
+    name: backup
+    object:
+      apiVersion: v1
+      group: ""
+      kind: ""
+      name: "<secret-name>"
+      namespace: "<secret-namespace>"
+      resource: secrets
+    options: {}
+    preferredVersion: ""
+    profile:
+      apiVersion: ""
+      group: ""
+      kind: ""
+      name: "<profile-name>"
+      namespace: kanister
+      resource: ""
+    secrets: {}
