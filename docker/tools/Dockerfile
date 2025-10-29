@@ -53,7 +53,7 @@ RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
             -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopia_build_commit} \
             -X github.com/kopia/kopia/repo.BuildGitHubRepo=${kopia_repo_org}" .
 
-RUN adduser kopia && addgroup kopia kopia
+RUN adduser --disabled-password --gecos "" kopia
 USER kopia:kopia
 
 COPY --chown=kopia . /kopia
