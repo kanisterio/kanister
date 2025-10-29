@@ -32,35 +32,35 @@ builds:
   env: *env
   goos: *goos
   goarch: *goarch
-- id: controller
-  binary: controller
-  main: cmd/controller/main.go
-  ldflags: *ldflags
-  env: *env
-  goos: *goos
-  goarch: *goarch
-- id: repo-server-controller
-  binary: repo-server-controller
-  main: cmd/reposervercontroller/main.go
-  ldflags: *ldflags
-  env: *env
-  goos: *goos
-  goarch: *goarch
+#- id: controller
+#  binary: controller
+#  main: cmd/controller/main.go
+#  ldflags: *ldflags
+#  env: *env
+#  goos: *goos
+#  goarch: *goarch
+#- id: repo-server-controller
+#  binary: repo-server-controller
+#  main: cmd/reposervercontroller/main.go
+#  ldflags: *ldflags
+#  env: *env
+#  goos: *goos
+#  goarch: *goarch
 dockers:
-- ids:
-  - controller
-  image_templates:
-  - 'ghcr.io/kanisterio/controller:{{ .Tag }}'
-  dockerfile: 'docker/controller/Dockerfile'
-  build_flag_templates:
-  - "--pull"
-- ids:
-  - repo-server-controller
-  image_templates:
-  - 'ghcr.io/kanisterio/repo-server-controller:{{ .Tag }}'
-  dockerfile: 'docker/repo-server-controller/Dockerfile'
-  build_flag_templates:
-  - "--pull"
+#- ids:
+#  - controller
+#  image_templates:
+#  - 'ghcr.io/kanisterio/controller:{{ .Tag }}'
+#  dockerfile: 'docker/controller/Dockerfile'
+#  build_flag_templates:
+#  - "--pull"
+#- ids:
+#  - repo-server-controller
+#  image_templates:
+#  - 'ghcr.io/kanisterio/repo-server-controller:{{ .Tag }}'
+#  dockerfile: 'docker/repo-server-controller/Dockerfile'
+#  build_flag_templates:
+#  - "--pull"
 - ids:
   - kando
   - kanctl
@@ -74,11 +74,11 @@ dockers:
   - "--build-arg=kopia_repo_org=kopia"
   extra_files:
   - 'LICENSE'
-- image_templates:
-  - 'ghcr.io/kanisterio/kanister-kubectl-1.18:{{ .Tag }}'
-  dockerfile: 'docker/kanister-kubectl/Dockerfile'
-  build_flag_templates:
-  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
+#- image_templates:
+#  - 'ghcr.io/kanisterio/kanister-kubectl-1.18:{{ .Tag }}'
+#  dockerfile: 'docker/kanister-kubectl/Dockerfile'
+#  build_flag_templates:
+#  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 snapshot:
   name_template: '{{ .Tag }}'
 checksum:
