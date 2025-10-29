@@ -24,6 +24,7 @@ import (
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
@@ -764,7 +765,7 @@ func (s *DataSuite) createNewTestProfile(c *check.C, profileName string, localEn
 	default:
 		c.Fatalf("Unrecognized objectstore '%s'", s.providerType)
 	}
-	location.Prefix = "testBackupRestoreLocDelete"
+	location.Prefix = fmt.Sprintf("DataSuite-%s", rand.String(8))
 	location.Bucket = testBucketName
 	if endpoint, ok := os.LookupEnv("LOCATION_CLUSTER_ENDPOINT"); ok && !localEndpoint {
 		location.Endpoint = endpoint
