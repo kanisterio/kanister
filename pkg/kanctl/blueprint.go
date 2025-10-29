@@ -15,9 +15,10 @@
 package kanctl
 
 import (
+	"github.com/kanisterio/blueprints"
 	"github.com/kanisterio/errkit"
 
-	"github.com/kanisterio/kanister/pkg/blueprint"
+	"github.com/kanisterio/kanister/pkg/app"
 	"github.com/kanisterio/kanister/pkg/blueprint/validate"
 )
 
@@ -27,10 +28,13 @@ func performBlueprintValidation(p *validateParams) error {
 	}
 
 	// read blueprint from specified file
-	bp, err := blueprint.ReadFromFile(p.filename)
+	bpr, err := blueprints.ReadFromFile(p.filename)
 	if err != nil {
 		return err
 	}
-
+	bp, err := app.ParseBlueprint(bpr)
+	if err != nil {
+		return err
+	}
 	return validate.Do(bp, p.functionVersion)
 }
