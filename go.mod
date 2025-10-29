@@ -12,6 +12,8 @@ replace (
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
+// replace github.com/kanisterio/datamover => ../datamover_kanister
+
 // Direct and indirect dependencies are in separate require sections.
 // Keep *all* direct dependencies in this section; and all indirect
 // dependencies in the require block following this one.
@@ -103,7 +105,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/edsrzf/mmap-go v1.2.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
-	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/color v1.18.0 // indirect
@@ -233,6 +234,11 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.17.2 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.17.1 // indirect
+)
+
+require (
+	github.com/bombsimon/logrusr/v4 v4.1.0
+	github.com/kanisterio/datamover v0.0.0-20250908175248-9c9ae0396edc
 )
 
 require (
