@@ -30,14 +30,14 @@ func Switch(ctx context.Context, creds aws.CredentialsProvider, role string, dur
 	cfg := aws.Config{
 		Credentials: creds,
 	}
-	
+
 	// Create an STS client with the current credentials
 	stsClient := sts.NewFromConfig(cfg)
-	
+
 	// Create an assume role provider
 	roleProvider := stscreds.NewAssumeRoleProvider(stsClient, role, func(o *stscreds.AssumeRoleOptions) {
 		o.Duration = duration
 	})
-	
+
 	return roleProvider, nil
 }
