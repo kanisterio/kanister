@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package aws provides utilities for interacting with AWS services, including
+// Package awsv2 provides utilities for interacting with AWS services, including
 // credential management, role switching, and configuration setup.
 package awsv2
 
