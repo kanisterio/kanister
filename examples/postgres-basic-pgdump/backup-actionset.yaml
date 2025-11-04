@@ -1,0 +1,23 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: pg-backup-
+spec:
+  actions:
+    - name: backup
+      blueprint: postgres-task
+      object:
+        kind: StatefulSet
+        name: my-release-patroni
+        namespace: kanister
+      configMaps:
+        location:
+          name: postgres-s3-location
+          namespace: kanister
+      secrets:
+        aws:
+          name: aws-creds
+          namespace: kanister
+        postgres:
+          name: my-release-patroni
+          namespace: kanister

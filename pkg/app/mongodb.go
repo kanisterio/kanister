@@ -33,8 +33,7 @@ import (
 )
 
 const (
-	mongoWaitTimeout        = 5 * time.Minute
-	mongoPassword    string = "test@54321"
+	mongoWaitTimeout = 5 * time.Minute
 )
 
 // IsMasterOutput struct gets mapped to the output of the mongo command that checks if node is master or not.
@@ -53,7 +52,7 @@ type MongoDB struct {
 }
 
 // NewMongoDB initialises an instance of Mongo DB
-// Last tested working version "8.0.13"
+// Last tested working version "9.0.0"
 func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
 		username: "root",
@@ -63,15 +62,13 @@ func NewMongoDB(name string) HelmApp {
 			RepoURL:  helm.BitnamiRepoURL,
 			RepoName: helm.BitnamiRepoName,
 			Chart:    "mongodb",
-			Version:  "16.5.45",
+			Version:  "14.11.1",
 			Values: map[string]string{
 				"architecture":                        "replicaset",
 				"image.pullPolicy":                    "Always",
 				"image.repository":                    "bitnamilegacy/mongodb",
-				"image.tag":                           "8.0.13",
 				"global.security.allowInsecureImages": "true",
 				"volumePermissions.image.repository":  "bitnamilegacy/os-shell",
-				"auth.rootPassword":                   mongoPassword,
 			},
 		},
 	}
@@ -158,7 +155,7 @@ func (mongo *MongoDB) GetClusterScopedResources(ctx context.Context) []crv1alpha
 
 func (mongo *MongoDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": mongo.name})
-	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p %s --quiet --eval \"db\"", mongo.username, mongoPassword)}
+	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db\"", mongo.username)}
 	_, stderr, err := mongo.execCommand(ctx, pingCMD)
 	if err != nil {
 		return errkit.Wrap(err, "Error while pinging the mongodb application", "stderr", stderr)
@@ -166,7 +163,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 
 	// even after ping is successful, it takes some time for primary pod to becomd the master
 	// we will have to wait for that so that the write subsequent write requests wont fail.
-	isMasterCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p %s --quiet --eval \"JSON.stringify(db.isMaster())\"", mongo.username, mongoPassword)}
+	isMasterCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"JSON.stringify(db.isMaster())\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, isMasterCMD)
 	if err != nil {
 		return errkit.Wrap(err, "Error checking if the pod is master.", "stderr", stderr)
@@ -189,8 +186,8 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 func (mongo *MongoDB) Insert(ctx context.Context) error {
 	log.Print("Inserting documents into collection.", field.M{"app": mongo.name})
 	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p "+
-		"%s --quiet --eval \"db.restaurants.insertOne({'_id': '%s','name' : 'Tom', "+
-		"'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username, mongoPassword, uuid.New())}
+		"$MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.insertOne({'_id': '%s','name' : 'Tom', "+
+		"'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errkit.Wrap(err, "Error while inserting data data into mongodb collection.", "stderr", stderr)
@@ -202,7 +199,7 @@ func (mongo *MongoDB) Insert(ctx context.Context) error {
 
 func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting documents of collection.", field.M{"app": mongo.name})
-	countCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p %s --quiet --eval \"db.restaurants.countDocuments()\"", mongo.username, mongoPassword)}
+	countCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.countDocuments()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, countCMD)
 	if err != nil {
 		return 0, errkit.Wrap(err, "Error while counting the data in mongodb collection.", "stderr", stderr)
@@ -221,7 +218,7 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 	// delete all the entries from the restaurants collection
 	// we are not deleting the database because we are dealing with admin database here
 	// and deletion admin database is prohibited
-	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p %s --quiet --eval \"db.restaurants.drop()\"", mongo.username, mongoPassword)}
+	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
 	return errkit.Wrap(err, "Error resetting the mongodb application.", "stdout", stdout, "stderr", stderr)
 }
@@ -234,7 +231,6 @@ func (mongo *MongoDB) Initialize(ctx context.Context) error {
 func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb", mongo.chart.Release))
 	if err != nil || podName == "" {
-		log.Print("Error getting pod/container from statefulset.", field.M{"app": mongo.name, "error": err, "podName": podName, "containerName": containerName})
 		return "", "", err
 	}
 	return kube.Exec(ctx, mongo.cli, mongo.namespace, podName, containerName, command, nil)
