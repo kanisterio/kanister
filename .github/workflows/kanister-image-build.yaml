@@ -20,7 +20,14 @@ on:
         options:
         - latest
         - dev_latest
-
+  push:
+    branches:
+      - master
+    paths:
+      - 'docker/build/Dockerfile'
+      - 'docker/tools/Dockerfile'
+      - 'docker/license_extractor/Dockerfile'
+      
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: kanisterio/build
