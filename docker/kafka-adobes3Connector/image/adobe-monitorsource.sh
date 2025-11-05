@@ -1,4 +1,8 @@
 #!/bin/sh
+set -o errexit
+
+echo "Monitoring process ${PID}"
+
 echo "===========================Monitoring started==================================="
 sleep 60
 export ELAPSEDTIME="$(ps -e -o "pid,etimes,command" |awk -v processid=$PID '{if($1==processid) print $2}')"
@@ -18,16 +22,16 @@ do
     then
 
         echo "======================Start Restore process for topic $TOPIC with messagecount = $FINAL_MESSAGE_COUNT ============================="
-        export START_OFFSET="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$BOOTSTRAPSERVER" --topic "$TOPIC" --time -1 | grep -e ':[[:digit:]]*:' | awk -F  ":" '{sum += $3} END {print sum}')"
-        export END_OFFSET="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$BOOTSTRAPSERVER" --topic "$TOPIC" --time -2 | grep -e ':[[:digit:]]*:' | awk -F  ":" '{sum += $3} END {print sum}')"
+        export START_OFFSET="$(/bin/kafka-get-offsets --command-config /tmp/config/kafkaConfig.properties --bootstrap-server "$BOOTSTRAPSERVER" --topic "$TOPIC" --time -1 | grep -e ':[[:digit:]]*:' | awk -F  ":" '{sum += $3} END {print sum}')"
+        export END_OFFSET="$(/bin/kafka-get-offsets --command-config /tmp/config/kafkaConfig.properties --bootstrap-server "$BOOTSTRAPSERVER" --topic "$TOPIC" --time -2 | grep -e ':[[:digit:]]*:' | awk -F  ":" '{sum += $3} END {print sum}')"
         export CURRENT_MESSAGE_COUNT=$((START_OFFSET - END_OFFSET))
         echo "======================Start offset = $START_OFFSET , endoffset = $END_OFFSET , message count = $CURRENT_MESSAGE_COUNT ============================="
 
         until [ "$CURRENT_MESSAGE_COUNT" = "$FINAL_MESSAGE_COUNT" ]
         do
         echo "======================Restore in process for $TOPIC ============================="
-        START_OFFSET="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$BOOTSTRAPSERVER" --topic "$TOPIC" --time -1 | grep -e ':[[:digit:]]*:' | awk -F  ":" '{sum += $3} END {print sum}')"
-        END_OFFSET="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$BOOTSTRAPSERVER" --topic "$TOPIC" --time -2 | grep -e ':[[:digit:]]*:' | awk -F  ":" '{sum += $3} END {print sum}')"
+        START_OFFSET="$(/bin/kafka-get-offsets --command-config /tmp/config/kafkaConfig.properties --bootstrap-server "$BOOTSTRAPSERVER" --topic "$TOPIC" --time -1 | grep -e ':[[:digit:]]*:' | awk -F  ":" '{sum += $3} END {print sum}')"
+        END_OFFSET="$(/bin/kafka-get-offsets --command-config /tmp/config/kafkaConfig.properties --bootstrap-server "$BOOTSTRAPSERVER" --topic "$TOPIC" --time -2 | grep -e ':[[:digit:]]*:' | awk -F  ":" '{sum += $3} END {print sum}')"
         CURRENT_MESSAGE_COUNT=$((START_OFFSET - END_OFFSET))
         echo "======================Start offset = $START_OFFSET , endoffset = $END_OFFSET , message count = $CURRENT_MESSAGE_COUNT ============================="
         sleep 3
@@ -42,5 +46,5 @@ done
 echo "=========================== All topic restored as per backup details ==================================="
 curl -X DELETE http://localhost:8083/connectors/$CONNECTORNAME
 echo "================Connector Deleted======================"
-kill -INT $PID
+kill $PID
 exit 0
