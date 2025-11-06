@@ -22,7 +22,7 @@ set -o nounset
 
 PWD="${PWD:-$(pwd)}"
 
-BUILD_IMAGE="${BUILD_IMAGE:-ghcr.io/kanisterio/build:latest}"
+BUILD_IMAGE="${BUILD_IMAGE:-ghcr.io/kanisterio/build:dev_latest}"
 PKG="${PKG:-github.com/kanisterio/kanister}"
 
 ARCH="${ARCH:-amd64}"
