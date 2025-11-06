@@ -20,7 +20,7 @@ set -o xtrace
 
 
 usage() {
-    echo ./build/bump_version.sh previous_version release_version
+    echo ./build/bump_version.sh previous_versions release_version
     exit 1
 }
 
@@ -32,9 +32,15 @@ main() {
         else
             pkgs=( "$@" )
     fi
-    # -F matches for exact words, not regular expression (-E), that is what required here
-    grep -F "${prev}" -Ir  "${pkgs[@]}" --exclude-dir={mod,bin,html,frontend} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev}/${next//./\\.}/g"
+
+    for ((i=${#prev[@]}-1; i>=0; i--)); do
+        # -F matches for exact words, not regular expression (-E), that is what required here
+        grep -F "${prev[$i]}" -Ir  "${pkgs[@]}" --exclude-dir={docs,mod,bin,html,frontend} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev[$i]}/${next//./\\.}/g"
+    done
+
+    if [[ " ${pkgs[@]} " == *"k10"* ]]; then
+        sed -i "0,/'kanister_tools_version': *,/s/'kanister_tools_version': '${next//./\\.}',/" "${pkgs[@]}/docs/constants.ts"
+    fi
 }
 
 main $@
-
