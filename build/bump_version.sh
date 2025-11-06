@@ -38,6 +38,7 @@ main() {
         grep -F "${prev[$i]}" -Ir  "${pkgs[@]}" --exclude-dir={docs,mod,bin,html,frontend} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev[$i]}/${next//./\\.}/g"
     done
 
+    # Modify the first instabnce of kanister_tools_version in docs/constants.ts
     if [[ " ${pkgs[@]} " == *"k10"* ]]; then
         sed -i "0,/'kanister_tools_version': *,/s/'kanister_tools_version': '${next//./\\.}',/" "${pkgs[@]}/docs/constants.ts"
     fi
