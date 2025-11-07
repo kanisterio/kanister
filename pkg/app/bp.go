@@ -37,32 +37,33 @@ const (
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
-// Blueprint() returns the Blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
+// Blueprint() returns the blueprint from the blueprint repository or the given path.
+// An empty path defaults to {app-name}/{app-name}-blueprint.yaml in the repository.
 type AppBlueprint struct {
-	App           string
-	Path          string
-	UseDevImages  bool
-	isKanisterApp bool
+	App            string
+	Path           string
+	UseDevImages   bool
+	readFromBPRepo bool
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
-// Blueprint() returns Blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
+// Blueprint() returns the blueprint from the blueprint repository located at {app-name}/{app-name}-blueprint.yaml.
 type PITRBlueprint struct {
 	AppBlueprint
 }
 
 func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool) Blueprinter {
-	isKanisterApp := false
+	isEmbeddedBlueprint := false
 
 	if blueprintPath == "" {
 		blueprintPath = bpPathUtil.GetBlueprintPathByName(app, blueprintName)
-		isKanisterApp = true
+		isEmbeddedBlueprint = true
 	}
 	return &AppBlueprint{
-		App:           app,
-		Path:          blueprintPath,
-		UseDevImages:  useDevImages,
-		isKanisterApp: isKanisterApp,
+		App:            app,
+		Path:           blueprintPath,
+		UseDevImages:   useDevImages,
+		readFromBPRepo: isEmbeddedBlueprint,
 	}
 }
 
@@ -70,7 +71,7 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	var bpData []byte
 	var err error
 
-	if b.isKanisterApp {
+	if b.readFromBPRepo {
 		bpData, err = blueprints.ReadFromEmbeddedFile(b.Path)
 	} else {
 		bpData, err = blueprints.ReadFromFile(b.Path)
