@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/kanisterio/blueprints"
+	bpPathUtil "github.com/kanisterio/blueprints/utils"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
@@ -54,7 +55,7 @@ func NewBlueprint(app string, blueprintName string, blueprintPath string, useDev
 	isKanisterApp := false
 
 	if blueprintPath == "" {
-		blueprintPath = getBlueprintPath(app, blueprintName)
+		blueprintPath = bpPathUtil.GetBlueprintPathByName(app, blueprintName)
 		isKanisterApp = true
 	}
 	return &AppBlueprint{
@@ -134,7 +135,7 @@ func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Bluep
 	return &PITRBlueprint{
 		AppBlueprint{
 			App:          app,
-			Path:         getBlueprintPath(app, blueprintName),
+			Path:         bpPathUtil.GetBlueprintPathByName(app, blueprintName),
 			UseDevImages: useDevImages,
 		},
 	}
@@ -142,26 +143,6 @@ func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Bluep
 
 func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
 	return pitr.UTC().Format("2006-01-02T15:04:05Z")
-}
-
-func getBlueprintPath(app string, blueprintName string) string {
-	var blueprintFolder string
-	// If blueprintName is not provided, use app name as blueprint name
-	if blueprintName == "" {
-		blueprintName = app
-	}
-	switch app {
-	case "rds-aurora-snap":
-		blueprintFolder = "aws-rds-aurora-mysql"
-	case "rds-postgres-snap", "rds-postgres", "rds-postgres-dump":
-		blueprintFolder = "aws-rds-postgres"
-	case "kafka":
-		blueprintFolder = "kafka-adobe-s3-connector"
-	default:
-		blueprintFolder = blueprintName
-	}
-
-	return fmt.Sprintf("%s/%s-blueprint.yaml", blueprintFolder, blueprintName)
 }
 
 // ParseBlueprint parses YAML data into a Blueprint struct
