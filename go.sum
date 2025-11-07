@@ -388,10 +388,6 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
-github.com/kanisterio/blueprints v0.0.0-20251107071925-42d14463df80 h1:TPcY9unOnyhDN7cXWUV0RD+BZ+ouofUHQMAxR1JSOOw=
-github.com/kanisterio/blueprints v0.0.0-20251107071925-42d14463df80/go.mod h1:z+9bB5j8pRC7ml1WYajW1syhpSfT1phQ8j+b0UBEx7w=
-github.com/kanisterio/blueprints v0.0.0-20251107073744-dd8a1e84ff41 h1:Uvml9TBGyjibzaNNXmyEcro6771fSIsbtLj0jv8ly0s=
-github.com/kanisterio/blueprints v0.0.0-20251107073744-dd8a1e84ff41/go.mod h1:z+9bB5j8pRC7ml1WYajW1syhpSfT1phQ8j+b0UBEx7w=
 github.com/kanisterio/blueprints v0.0.0-20251107075133-48bffcb9d570 h1:LjzExS/fe3T2AoSW5BgxLN0HARpp9iUJUGbU8Zublp4=
 github.com/kanisterio/blueprints v0.0.0-20251107075133-48bffcb9d570/go.mod h1:z+9bB5j8pRC7ml1WYajW1syhpSfT1phQ8j+b0UBEx7w=
 github.com/kanisterio/errkit v0.0.3 h1:1wHaTqV4DZE0XrN+Nq7Q2M8kyKnV8NhhEF3OB7A/Pd8=
