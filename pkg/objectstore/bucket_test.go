@@ -17,7 +17,11 @@ func (s *BucketSuite) SetUpSuite(c *check.C) {
 	getEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")
 }
 
-const ahmRe = `[\w\W]*AuthorizationHeaderMalformed[\w\W]*`
+const (
+	ahmRe             = `[\w\W]*AuthorizationHeaderMalformed[\w\W]*`
+	badRequestRegex   = `[\w\W]*BadRequest[\w\W]*`
+	bucketRegionRegex = `[\w\W]*BucketRegionError[\w\W]*`
+)
 
 func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *check.C) {
 	ctx := context.Background()
@@ -40,11 +44,11 @@ func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *check.C) {
 
 	// Get Bucket will use the region's correct endpoint.
 	_, err = p.GetBucket(ctx, bn)
-	c.Assert(err, check.ErrorMatches, ahmRe)
+	c.Assert(err, check.ErrorMatches, badRequestRegex)
 	c.Assert(err, check.NotNil)
 
 	_, err = p.CreateBucket(ctx, bn)
-	c.Assert(err, check.ErrorMatches, ahmRe)
+	c.Assert(err, check.ErrorMatches, bucketRegionRegex)
 	c.Assert(err, check.NotNil)
 
 	err = p.DeleteBucket(ctx, bn)
@@ -158,9 +162,8 @@ func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
 	const nonExistentBucket = "kanister-test-should-not-exist"
 	minioEnpoint := os.Getenv("LOCATION_ENDPOINT")
 	pc := ProviderConfig{
-		Type:   pt,
-		Region: testRegionS3,
-		//Region:   "tom-minio-region",
+		Type:     pt,
+		Region:   testRegionS3,
 		Endpoint: minioEnpoint,
 	}
 	p, err := NewProvider(ctx, pc, secret)
