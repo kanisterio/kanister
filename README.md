@@ -57,23 +57,23 @@ Walk through the [tutorial](https://docs.kanister.io/tutorial.html) to define,
 curate and run your first data protection workflow using Kanister blueprints,
 actionsets and profiles.
 
-The [`examples`](./examples) directory contains many sample blueprints that you
+The [`blueprints`](https://github.com/kanisterio/blueprints/tree/main) repository contains many sample blueprints that you
 can use to define data operations for:
 
-- [AWS RDS](./examples/aws-rds)
-- [Cassandra](./examples/cassandra)
-- [Couchbase](./examples/couchbase)
-- [Elasticsearch](./examples/elasticsearch)
-- [etcd](./examples/etcd/etcd-in-cluster)
-- [FoundationDB](./examples/foundationdb)
-- [K8ssandra](./examples/k8ssandra)
-- [MongoDB](./examples/mongodb)
-- [MongoDB on OpenShift using DeploymentConfig](./examples/mongodb-deploymentconfig)
-- [MySQL](./examples/mysql)
-- [MySQL on OpenShift using DeploymentConfig](./examples/mysql-deploymentconfig)
-- [PostgreSQL](./examples/postgresql)
-- [PostgreSQL on OpenShift using DeploymentConfig](./examples/postgresql-deploymentconfig)
-- [Redis](./examples/redis)
+- [AWS RDS](https://github.com/kanisterio/blueprints/tree/main/aws-rds-postgres)
+- [Cassandra](https://github.com/kanisterio/blueprints/tree/main/cassandra)
+- [Couchbase](https://github.com/kanisterio/blueprints/tree/main/couchbase)
+- [Elasticsearch](https://github.com/kanisterio/blueprints/tree/main/elasticsearch)
+- [etcd](https://github.com/kanisterio/blueprints/tree/main/etcd/etcd-incluster-ocp)
+- [FoundationDB](https://github.com/kanisterio/blueprints/tree/main/foundationdb)
+- [K8ssandra](https://github.com/kanisterio/blueprints/tree/main/k8ssandra)
+- [MongoDB](https://github.com/kanisterio/blueprints/tree/main/mongodb)
+- [MongoDB on OpenShift using DeploymentConfig](https://github.com/kanisterio/blueprints/tree/main/mongodb-dep-config)
+- [MySQL](https://github.com/kanisterio/blueprints/tree/main/mysql)
+- [MySQL on OpenShift using DeploymentConfig](https://github.com/kanisterio/blueprints/tree/main/mysql-dep-config)
+- [PostgreSQL](https://github.com/kanisterio/blueprints/tree/main/postgresql)
+- [PostgreSQL on OpenShift using DeploymentConfig](https://github.com/kanisterio/blueprints/tree/main/postgresql-dep-config)
+- [Redis](https://github.com/kanisterio/blueprints/tree/main/redis)
 
 The Kanister architecture is documented
 [here](https://docs.kanister.io/architecture.html).

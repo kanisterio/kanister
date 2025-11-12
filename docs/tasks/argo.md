@@ -64,7 +64,7 @@ Open a web browser and navigate to `localhost:2746`
 ### Step 2 - Setting up a sample application to backup
 
 Here, you will reference the
-[MySQL](https://github.com/kanisterio/kanister/tree/master/examples/mysql)
+[MySQL](https://github.com/kanisterio/blueprints/tree/main/mysql)
 example from Kanister.
 
 1. Install the chart and set up MySQL in the `mysql-test` namespace.
