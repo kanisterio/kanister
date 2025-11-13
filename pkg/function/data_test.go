@@ -31,7 +31,9 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -96,6 +98,18 @@ func (s *DataSuite) TearDownSuite(c *check.C) {
 	ctx := context.Background()
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
+	}
+}
+
+func (s *DataSuite) ObjStoreDataCleanUp(c *check.C) {
+	if c.Failed() {
+		ctx := context.Background()
+		profile := s.profile
+		if localMinio, ok := os.LookupEnv("LOCAL_MINIO"); ok && localMinio == "true" {
+			profile = s.profileLocalEndpoint
+		}
+		c.Log("Started cleaning data from location", field.M{"endpoint": profile.Location.Endpoint, "bucket": profile.Location.Bucket})
+		_ = location.Delete(ctx, *profile, "")
 	}
 }
 
@@ -318,6 +332,9 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *check.C, replicas int32) (*pa
 func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, 1)
 
+	// cleanup in case of test failure
+	defer s.ObjStoreDataCleanUp(c)
+
 	for _, pvc := range pvcs {
 		// Test backup
 		bp := *newBackupDataBlueprint()
@@ -373,6 +390,9 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *check.C) {
 func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *check.C) {
 	replicas := int32(2)
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, replicas)
+
+	// cleanup in case of test failure
+	defer s.ObjStoreDataCleanUp(c)
 
 	// Test backup
 	bp := *newBackupDataAllBlueprint()
