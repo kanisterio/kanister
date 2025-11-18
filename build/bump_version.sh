@@ -20,12 +20,12 @@ set -o xtrace
 
 
 usage() {
-    echo ./build/bump_version.sh previous_versions release_version
+    echo ./build/bump_version.sh previous_versions[2] release_version
     exit 1
 }
 
 main() {
-    local prev=${1:?"$(usage)"}; shift
+    local prev=( $1 $2 ); shift 2
     local next=${1:?"$(usage)"}; shift
     echo $prev
     echo $next
@@ -34,6 +34,8 @@ main() {
         else
             pkgs=( "$@" )
     fi
+    echo $pkgs
+  
     
     for ((i=${#prev[@]}-1; i>=0; i--)); do
         # -F matches for exact words, not regular expression (-E), that is what required here
