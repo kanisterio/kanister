@@ -25,22 +25,26 @@ usage() {
 }
 
 main() {
-    local prev=${1:?"$(usage)"}; shift
-    local next=${1:?"$(usage)"}; shift
+    # local prev=${1:?"$(usage)"}; shift
+    # local next=${1:?"$(usage)"}; shift
     if [ "$#" -eq 0 ]; then
             pkgs=( docker/ scripts/ examples/ pkg/ helm/ )
         else
             pkgs=( "$@" )
     fi
-
+    
     for ((i=${#prev[@]}-1; i>=0; i--)); do
         # -F matches for exact words, not regular expression (-E), that is what required here
         grep -F "${prev[$i]}" -Ir  "${pkgs[@]}" --exclude-dir={docs,mod,bin,html,frontend} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev[$i]}/${next//./\\.}/g"
     done
 
     # Modify the first instabnce of kanister_tools_version in docs/constants.ts
-    if [[ " ${pkgs[@]} " == *"k10"* ]]; then
-        sed -i "0,/'kanister_tools_version': *,/s/'kanister_tools_version': '${next//./\\.}',/" "${pkgs[@]}/docs/constants.ts"
+    array_size=${#pkgs[@]}
+    if [ $array_size -eq 1 ]; then
+      file_count=$(find "${pkgs[@]}/docs" -maxdepth 1 -name "constants.ts" | wc -l)
+      if [ $file_count -eq 1 ]; then
+          sed -i "0,/'kanister_tools_version': *,/s/'kanister_tools_version': '${next//./\\.}',/" "${pkgs[@]}/docs/constants.ts"
+      fi
     fi
 }
 
