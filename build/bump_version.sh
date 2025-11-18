@@ -25,8 +25,10 @@ usage() {
 }
 
 main() {
-    # local prev=${1:?"$(usage)"}; shift
-    # local next=${1:?"$(usage)"}; shift
+    local prev=${1:?"$(usage)"}; shift
+    local next=${1:?"$(usage)"}; shift
+    echo $prev
+    echo $next
     if [ "$#" -eq 0 ]; then
             pkgs=( docker/ scripts/ examples/ pkg/ helm/ )
         else
