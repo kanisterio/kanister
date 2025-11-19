@@ -35,7 +35,7 @@ type SnapshotCreateCommandArgs struct {
 	Parallelism                int
 	EstimationType             string
 	EstimationThreshold        int
-	overrideIgnoreRuleFilePath string
+	OverrideIgnoreRuleFilePath string
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
@@ -53,9 +53,9 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 
-	if cmdArgs.overrideIgnoreRuleFilePath != "" {
+	if cmdArgs.OverrideIgnoreRuleFilePath != "" {
 		// Pass the override ignore rule file path if specified
-		args = args.AppendLoggableKV(overrideIgnoreRuleFilePathFlag, cmdArgs.overrideIgnoreRuleFilePath)
+		args = args.AppendLoggableKV(overrideIgnoreRuleFilePathFlag, cmdArgs.OverrideIgnoreRuleFilePath)
 	}
 
 	if cmdArgs.EstimationType != "" {
