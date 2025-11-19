@@ -232,7 +232,7 @@ Let's say someone accidentally deleted the test database using the following com
 # Connect to SQL Sever by running a shell inside mssql pod
 $ kubectl exec -it -n sqlserver $(kubectl get pods --selector=app=mssql -o=jsonpath='{.items[0].metadata.name}' -n sqlserver) -- bash
 
-$ /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "MyC0m9l&xP@ssw0rd"
+$ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "MyC0m9l&xP@ssw0rd"
 
 1> SELECT Name from sys.Databases
 2> GO
