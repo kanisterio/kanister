@@ -24,7 +24,7 @@ const (
 	mssqlWaitTimeout = 5 * time.Minute
 	dbUserName       = "sa"
 	dbPass           = "MyC0m9l&xP@ssw0rd"
-	connString       = "/opt/mssql-tools/bin/sqlcmd -S localhost -U %s -P \"%s\" -Q "
+	connString       = "/opt/mssql-tools18/bin/sqlcmd -S localhost -U %s -P \"%s\" -Q "
 )
 
 type MssqlDB struct {
