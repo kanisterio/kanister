@@ -1,13 +1,13 @@
 # We get tools from tools image
 # Tools are not up to date in debian repos
 ARG TOOLS_IMAGE
-FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
+FROM ${TOOLS_IMAGE} AS tools_image
 
-FROM debian:bullseye
-COPY --from=TOOLS_IMAGE /usr/local/bin/restic /usr/local/bin/restic
-COPY --from=TOOLS_IMAGE /usr/local/bin/kopia /usr/local/bin/kopia
+FROM debian:bookworm@sha256:6337ad82d5c764a8b6a16cde86b157fdce353e36d8ca06fc1b16d4f34d29960e
+COPY --from=tools_image /usr/local/bin/restic /usr/local/bin/restic
+COPY --from=tools_image /usr/local/bin/kopia /usr/local/bin/kopia
 # Install kando
-COPY --from=TOOLS_IMAGE /usr/local/bin/kando /usr/local/bin/kando
+COPY --from=tools_image /usr/local/bin/kando /usr/local/bin/kando
 
 
 RUN apt update
