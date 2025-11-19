@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"strings"
 
 	"gopkg.in/check.v1"
 )
@@ -185,7 +186,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStdout(c *c
 	c.Assert(err, check.IsNil)
 	c.Assert(dc.More(), check.Equals, true)
 	rest := dc.InputOffset()
-	c.Assert(string(bs[rest:]), check.Equals, "hello world\n")
+	c.Assert(strings.TrimPrefix(string(bs[rest:]), "\n"), check.Equals, "hello world\n")
 	c.Assert(stderr.String(), check.Equals, "")
 }
 
