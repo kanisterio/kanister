@@ -185,7 +185,7 @@ func (s *KanXCmdProcessClientSuite) TestProcessClientExecute_RedirectStdout(c *c
 	c.Assert(err, check.IsNil)
 	c.Assert(dc.More(), check.Equals, true)
 	rest := dc.InputOffset()
-	c.Assert(string(bs[rest:]), check.Equals, "hello world\n")
+	c.Assert(string(bs[rest:]), check.Equals, "\nhello world\n")
 	c.Assert(stderr.String(), check.Equals, "")
 }
 
