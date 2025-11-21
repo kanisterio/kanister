@@ -101,15 +101,22 @@ func (s *DataSuite) TearDownSuite(c *check.C) {
 	}
 }
 
-func (s *DataSuite) ObjStoreDataCleanUp(c *check.C) {
+func (s *DataSuite) cleanupObjectStoreData(c *check.C) {
 	if c.Failed() {
 		ctx := context.Background()
 		profile := s.profile
 		if localMinio, ok := os.LookupEnv("LOCAL_MINIO"); ok && localMinio == "true" {
 			profile = s.profileLocalEndpoint
 		}
-		c.Log("Started cleaning data from location", field.M{"endpoint": profile.Location.Endpoint, "bucket": profile.Location.Bucket})
-		_ = location.Delete(ctx, *profile, "")
+		c.Logf("Cleaning up object store data after test failure from location", field.M{
+			"test":     c.TestName(),
+			"endpoint": profile.Location.Endpoint,
+			"bucket":   profile.Location.Bucket,
+		})
+		err := location.Delete(ctx, *profile, "")
+		if err != nil {
+			c.Log("Failed to clean data from location:", err)
+		}
 	}
 }
 
@@ -333,7 +340,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, 1)
 
 	// cleanup in case of test failure
-	defer s.ObjStoreDataCleanUp(c)
+	defer s.cleanupObjectStoreData(c)
 
 	for _, pvc := range pvcs {
 		// Test backup
@@ -392,7 +399,7 @@ func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *check.C) {
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, replicas)
 
 	// cleanup in case of test failure
-	defer s.ObjStoreDataCleanUp(c)
+	defer s.cleanupObjectStoreData(c)
 
 	// Test backup
 	bp := *newBackupDataAllBlueprint()
