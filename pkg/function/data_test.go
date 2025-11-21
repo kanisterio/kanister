@@ -105,7 +105,7 @@ func (s *DataSuite) cleanupObjectStoreData(c *check.C) {
 	if c.Failed() {
 		ctx := context.Background()
 		profile := s.profile
-		if localMinio, ok := os.LookupEnv("LOCAL_MINIO"); ok && localMinio == "true" {
+		if s.profileLocalEndpoint != nil {
 			profile = s.profileLocalEndpoint
 		}
 		c.Logf("Cleaning up object store data after test failure from location", field.M{
