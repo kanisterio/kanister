@@ -74,6 +74,9 @@ CONTROLLER_TOOLS_VERSION ?= "v0.12.0"
 
 CHANGELOG_FILE ?= ./CHANGELOG_CURRENT.md
 
+GIT_COMMIT := $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
+
+
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
 # If you want to build AND push all containers, see the 'all-push' rule.
@@ -161,7 +164,7 @@ format-vet: build-dirs
 	@$(MAKE) run CMD="./build/format-vet.sh $(SRC_DIRS)"
 
 go-test: build-dirs
-	@$(MAKE) run CMD="TEST_FILTER=$(TEST_FILTER) TEST_BASE=$(TEST_BASE) TEST_CONTROLLER=$(TEST_CONTROLLER) TEST_FUNCTIONS=$(TEST_FUNCTIONS) LOCAL_MINIO=$(LOCAL_MINIO) ./build/test.sh $(SRC_DIRS)"
+	@$(MAKE) run CMD="GIT_COMMIT=$(GIT_COMMIT) TEST_FILTER=$(TEST_FILTER) TEST_BASE=$(TEST_BASE) TEST_CONTROLLER=$(TEST_CONTROLLER) TEST_FUNCTIONS=$(TEST_FUNCTIONS) LOCAL_MINIO=$(LOCAL_MINIO) ./build/test.sh $(SRC_DIRS)"
 
 test: format-vet go-test
 
@@ -169,7 +172,7 @@ helm-test: build-dirs
 	@$(MAKE) run CMD="./build/helm-test.sh $(SRC_DIRS)"
 
 integration-test: build-dirs
-	@$(MAKE) run CMD="./build/integration-test.sh short"
+	@$(MAKE) run CMD="GIT_COMMIT=$(GIT_COMMIT) ./build/integration-test.sh short"
 
 openshift-test:
 	@/bin/bash ./build/integration-test.sh openshift $(ocp_version)
