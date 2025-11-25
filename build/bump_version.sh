@@ -20,7 +20,7 @@ set -o xtrace
 
 
 usage() {
-    echo ./build/bump_version.sh array_length previous_versions[2] release_version
+    echo ./build/bump_version.sh array_length previous_versions release_version
     exit 1
 }
 
@@ -39,17 +39,17 @@ main() {
             pkgs=( "$@" )
     fi
 
-    for ((i=${#prev[@]}-1; i>=0; i--)); do
+    for ((i=${array_size}-1; i>=0; i--)); do
         echo "Processing version: ${prev[$i]}"
         # -F matches for exact words, not regular expression (-E), that is what required here
-        grep -F "${prev[$i]}" -Ir  "${pkgs[@]}" --exclude-dir={docs,mod,bin,html,frontend} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev[$i]}/${next//./\\.}/g"
+        grep -F "${prev[$i]}" -Ir  "${pkgs[@]}" --exclude-dir={docs,mod,bin,html,frontend,tmp} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs -r sed -ri "s/${prev[$i]}/${next//./\\.}/g" || continue
     done
 
     # Modify the first instabnce of kanister_tools_version in docs/constants.ts
     if [ ${#pkgs[@]} -eq 1 ]; then
       file_count=$(find "${pkgs[@]}/docs" -maxdepth 1 -name "constants.ts" | wc -l)
       if [ $file_count -eq 1 ]; then
-          sed -i "0,/'kanister_tools_version': *,/s/'kanister_tools_version': '${next//./\\.}',/" "${pkgs[@]}/docs/constants.ts"
+          sed -i "0,/'kanister_tools_version': .*/s//'kanister_tools_version': '${next//./\\.}',/" "${pkgs[@]}/docs/constants.ts"
       fi
     fi
 }
