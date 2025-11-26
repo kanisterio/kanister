@@ -74,7 +74,7 @@ CONTROLLER_TOOLS_VERSION ?= "v0.12.0"
 
 CHANGELOG_FILE ?= ./CHANGELOG_CURRENT.md
 
-GIT_COMMIT := $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
+GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
 
 
 # If you want to build all binaries, see the 'all-build' rule.
