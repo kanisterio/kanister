@@ -88,7 +88,7 @@ jobs:
         sleep 5
       if: matrix.testSuite == 'test'
     ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
-    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true
+    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true GIT_COMMIT=${{ github.sha }}
   build:
     runs-on: ubuntu-24.04
     needs: gomod
