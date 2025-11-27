@@ -16,7 +16,7 @@ package app
 
 import (
 	"fmt"
-	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -133,11 +133,16 @@ func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
 }
 
 func getImageTag() string {
-	if gitCommit, ok := os.LookupEnv("GIT_COMMIT"); ok && gitCommit != "" && gitCommit != "unknown" {
-		shortCommit := gitCommit[:11]
-		log.Debug().Print("Using GIT_COMMIT for image tag", field.M{"gitCommit": gitCommit, "shortCommit": shortCommit})
-		return fmt.Sprintf("short-commit-%s", shortCommit)
+	cmd := exec.Command("sh", "-c", "git rev-parse HEAD 2>/dev/null || echo \"unknown\"")
+	output, err := cmd.Output()
+	if err == nil {
+		gitCommit := strings.TrimSpace(string(output))
+		if gitCommit != "" && gitCommit != "unknown" {
+			shortCommit := gitCommit[:12]
+			log.Debug().Print("Using commit for image tag", field.M{"gitCommit": gitCommit, "shortCommit": shortCommit})
+			return fmt.Sprintf("short-commit-%s", shortCommit)
+		}
 	}
-	log.Debug().Print("GIT_COMMIT env var not set, using default dev image tag")
+	log.Debug().Print("Git commit not available, using default dev image tag")
 	return "v9.99.9-dev"
 }

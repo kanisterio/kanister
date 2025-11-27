@@ -23,9 +23,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 export CGO_ENABLED=0
 export GO111MODULE=on
-echo "Git commit present: ${COMMIT_SHA}"
-echo "Git commit used: ${GIT_COMMIT}"
-export GIT_COMMIT="${GIT_COMMIT}"
 
 TEST_FILTER="${TEST_FILTER:-}"
 GOCHECK_FILTER=""

@@ -120,8 +120,6 @@ else
     TEST_APPS="${TEST_APPS}|^E2ESuite$"
 fi
 
-echo "Git commit used: ${GIT_COMMIT}"
-export GIT_COMMIT="${GIT_COMMIT}"
 
 check_dependencies
 echo "Running integration tests:"
