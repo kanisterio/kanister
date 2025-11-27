@@ -115,7 +115,7 @@ func (s *DataSuite) cleanupObjectStoreData(c *check.C) {
 		})
 		err := location.Delete(ctx, *profile, "")
 		if err != nil {
-			c.Log("Failed to clean data from location:", err)
+			c.Log("Failed to clean data from location", field.M{"error": err, "bucket": profile.Location.Bucket})
 		}
 	}
 }
