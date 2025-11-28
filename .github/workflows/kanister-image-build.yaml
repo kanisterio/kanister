@@ -59,8 +59,6 @@ jobs:
           type=raw,value=v9.99.9-dev,enable={{github.event_name != 'workflow_dispatch'}}
           ${{ inputs.tag }},enable={{github.event_name == 'workflow_dispatch'}}
           ${{ inputs.latest_tag }},enable={{github.event_name == 'workflow_dispatch'}}
-
-
     - name: Login to GHCR
       uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
       with:
