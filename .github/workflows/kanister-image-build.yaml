@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Image tag in the format vx.x.x'
+        description: 'Image tag in the format short-commit-<sha>'
         required: true
         type: string
       latest_tag:
@@ -20,7 +20,12 @@ on:
         options:
         - latest
         - dev_latest
-
+  push:
+    branches:
+      - master
+    paths:
+      - 'docker/build/Dockerfile'
+      
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: kanisterio/build
@@ -47,10 +52,13 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
-          type=sha
           {{date 'YYYY.MM.DD-HHmm'}}
-          ${{ inputs.tag }}
-          ${{ inputs.latest_tag }}
+          type=sha,prefix=commit-,format=full
+          type=sha,prefix=short-commit-,format=short,length=12,enable={{github.event_name != 'workflow_dispatch'}}
+          type=raw,value=latest,enable={{github.event_name != 'workflow_dispatch'}}
+          type=raw,value=v9.99.9-dev,enable={{github.event_name != 'workflow_dispatch'}}
+          ${{ inputs.tag }},enable={{github.event_name == 'workflow_dispatch'}}
+          ${{ inputs.latest_tag }},enable={{github.event_name == 'workflow_dispatch'}}
     - name: Login to GHCR
       uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
       with:
