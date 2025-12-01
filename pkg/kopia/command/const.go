@@ -68,6 +68,7 @@ const (
 	noIgnorePermissionsError        = "--no-ignore-permission-errors"
 	skipExistingFlag                = "--skip-existing"
 	deleteExtraFlag                 = "--delete-extra"
+	overrideIgnoreRuleFilePathFlag  = "--override-ignore-rules-file"
 
 	// Server specific
 	addSubCommand             = "add"
