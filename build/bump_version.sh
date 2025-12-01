@@ -20,17 +20,15 @@ set -o xtrace
 
 
 usage() {
-    echo ./build/bump_version.sh array_length previous_versions release_version
+    echo "./build/bump_version.sh previous_versions(comma separated string) release_version; e.g. ./build/bump_version.sh '0.116.0,0.115.0' 0.117.0"
     exit 1
 }
 
 main() {
-    local array_size=${1:?"$(usage)"}; shift
     local prev=${1:?"$(usage)"}; shift
-    for (( j=1; j<${array_size}; j++ )); do
-        prev+=( $1 ); shift
-    done
-    echo "${prev[@]}"
+    # Get the number of versions by analysing array size
+    IFS=', ' read -r -a prev_array <<< "${prev}"
+    local array_size="${#prev_array[*]}"
 
     local next=${1:?"$(usage)"}; shift
     if [ "$#" -eq 0 ]; then
@@ -40,9 +38,9 @@ main() {
     fi
 
     for ((i=${array_size}-1; i>=0; i--)); do
-        echo "Processing version: ${prev[$i]}"
+        echo "Processing version: ${prev_array[$i]}"
         # -F matches for exact words, not regular expression (-E), that is what required here
-        grep -F "${prev[$i]}" -Ir  "${pkgs[@]}" --exclude-dir={docs,mod,bin,html,frontend,tmp} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs -r sed -ri "s/${prev[$i]}/${next//./\\.}/g" || continue
+        grep -F "${prev_array[$i]}" -Ir  "${pkgs[@]}" --exclude-dir={docs,mod,bin,html,frontend,tmp} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs -r sed -ri "s/${prev_array[$i]}/${next//./\\.}/g" || continue
     done
 
     # Modify the first instance of kanister_tools_version in docs/constants.ts as only the latest version of k10 uses the latest version of kanister
