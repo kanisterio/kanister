@@ -43,7 +43,7 @@ const (
 type RestoreVolumeDataDM struct {
 	Volume          string // PVC??
 	DataPath        string
-	BackupId        string
+	BackupID        string
 	dmArgs          datamoverArgs
 	progressPercent string
 }
@@ -107,7 +107,7 @@ func (rvd *RestoreVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParam
 		return nil, err
 	}
 
-	if err = OptArg(args, RestoreVolumeDataDMArgBackupID, &rvd.BackupId, ""); err != nil {
+	if err = OptArg(args, RestoreVolumeDataDMArgBackupID, &rvd.BackupID, ""); err != nil {
 		return nil, err
 	}
 
@@ -131,7 +131,7 @@ func (rvd *RestoreVolumeDataDM) RunPod(ctx context.Context) (map[string]interfac
 		return nil, errkit.Wrap(err, "Failed to create dynamic Kubernetes client")
 	}
 
-	operation := client.FileSystemRestoreOperation{Path: rvd.DataPath, BackupID: rvd.BackupId, PVC: rvd.Volume}
+	operation := client.FileSystemRestoreOperation{Path: rvd.DataPath, BackupID: rvd.BackupID, PVC: rvd.Volume}
 	clientArgs := makeCreateClientArgs(rvd.dmArgs, operation)
 
 	pod, err := client.CreateClientPod(ctx, cli, dynCli, clientArgs)
