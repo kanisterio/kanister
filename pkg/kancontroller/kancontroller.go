@@ -26,25 +26,23 @@ import (
 	"context"
 	"fmt"
 	"os"
-
 	// "os/signal"
 	"strconv"
-	// "syscall"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	dmcontroller "github.com/kanisterio/datamover/pkg/controller"
+	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	"github.com/kanisterio/kanister/pkg/controller"
 	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	_ "github.com/kanisterio/kanister/pkg/function" // Import for side effects - registers functions
 )

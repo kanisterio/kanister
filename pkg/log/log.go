@@ -10,14 +10,14 @@ import (
 	"strings"
 	"time"
 
+	logrusr "github.com/bombsimon/logrusr/v4"
 	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
+	ctrl "sigs.k8s.io/controller-runtime"
 
-	logrusr "github.com/bombsimon/logrusr/v4"
 	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // Level describes the current log level.

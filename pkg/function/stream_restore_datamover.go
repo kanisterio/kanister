@@ -20,11 +20,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/kanisterio/datamover/pkg/client"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kanisterio/datamover/pkg/client"
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"

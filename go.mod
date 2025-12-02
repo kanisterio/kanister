@@ -261,5 +261,5 @@ require (
 
 require (
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/kanisterio/datamover v0.0.0-20250908175248-9c9ae0396edc
+	github.com/kanisterio/datamover v0.0.0-20251002184714-23bc4685456a
 )

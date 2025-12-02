@@ -20,10 +20,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/kanisterio/datamover/pkg/client"
 	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kanisterio/datamover/pkg/client"
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -37,7 +37,7 @@ const (
 	RestoreVolumeDataDMFuncName    = "RestoreVolumeDataDM"
 	RestoreVolumeDataDMArgVolume   = "volume"   // TODO: PVC???
 	RestoreVolumeDataDMArgDataPath = "dataPath" // TODO: dataPathPrefix???
-	RestoreVolumeDataDMArgBackupId = "backupID" // Backup id
+	RestoreVolumeDataDMArgBackupID = "backupID" // Backup id
 )
 
 type RestoreVolumeDataDM struct {
@@ -71,7 +71,7 @@ func (rvd *RestoreVolumeDataDM) RequiredArgs() []string {
 		RestoreVolumeDataDMArgVolume,
 		DMArgDatamoverSession,
 		RestoreVolumeDataDMArgDataPath,
-		RestoreVolumeDataDMArgBackupId,
+		RestoreVolumeDataDMArgBackupID,
 		DMArgClientSecret,
 		// TODO: implementation specific secrets
 		// TLS fingerprint secret
@@ -96,7 +96,6 @@ func (rvd *RestoreVolumeDataDM) Validate(args map[string]any) error {
 }
 
 func (rvd *RestoreVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-
 	rvd.progressPercent = progress.StartedPercent
 	defer func() { rvd.progressPercent = progress.CompletedPercent }()
 
@@ -108,7 +107,7 @@ func (rvd *RestoreVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParam
 		return nil, err
 	}
 
-	if err = OptArg(args, RestoreVolumeDataDMArgBackupId, &rvd.BackupId, ""); err != nil {
+	if err = OptArg(args, RestoreVolumeDataDMArgBackupID, &rvd.BackupId, ""); err != nil {
 		return nil, err
 	}
 

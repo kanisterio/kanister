@@ -21,6 +21,8 @@ package v1alpha1
 import (
 	"reflect"
 
+	dmapi "github.com/kanisterio/datamover/api/v1alpha1"
+	dmsession "github.com/kanisterio/datamover/pkg/session"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,9 +30,6 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/consts"
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
-
-	dmapi "github.com/kanisterio/datamover/api/v1alpha1"
-	dmsession "github.com/kanisterio/datamover/pkg/session"
 )
 
 // These variables are exported to help hook into this package's schemes.
