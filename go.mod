@@ -114,7 +114,6 @@ require (
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.35.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
-	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/color v1.18.0 // indirect
@@ -261,32 +260,5 @@ require (
 
 require (
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/kanisterio/datamover v0.0.0-20250908175248-9c9ae0396edc
+	github.com/kanisterio/datamover v0.0.0-20251002184714-23bc4685456a
 )
-
-require (
-	al.essio.dev/pkg/shellescape v1.6.0 // indirect
-	cel.dev/expr v0.24.0 // indirect
-	cloud.google.com/go/monitoring v1.24.2 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.53.0 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
-	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
-	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
-	github.com/minio/crc64nvme v1.0.2 // indirect
-	github.com/petar/GoLLRB v0.0.0-20210522233825-ae3b015fd3e9 // indirect
-	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
-	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
-	github.com/tinylib/msgp v1.3.0 // indirect
-	github.com/zeebo/errs v1.4.0 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/contrib/detectors/gcp v1.37.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.37.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
-)
-

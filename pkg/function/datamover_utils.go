@@ -7,6 +7,9 @@ import (
 	api "github.com/kanisterio/datamover/api/v1alpha1"
 	"github.com/kanisterio/datamover/pkg/client"
 	"github.com/kanisterio/errkit"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -14,8 +17,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -133,7 +134,6 @@ func getDatamoverArgs(tp param.TemplateParams, args map[string]interface{}) (*da
 	dmArgs.podOptions = *podOptions
 
 	return &dmArgs, nil
-
 }
 
 func getPodOverride(podOverride crv1alpha1.JSONMap, tp param.TemplateParams) (crv1alpha1.JSONMap, error) {
@@ -144,7 +144,6 @@ func getPodOverride(podOverride crv1alpha1.JSONMap, tp param.TemplateParams) (cr
 		if err != nil {
 			return nil, err
 		}
-
 	}
 	return podOverride, nil
 }

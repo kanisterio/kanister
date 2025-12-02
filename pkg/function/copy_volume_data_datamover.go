@@ -20,10 +20,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/kanisterio/datamover/pkg/client"
 	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kanisterio/datamover/pkg/client"
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -96,7 +96,6 @@ func (cvd *CopyVolumeDataDM) Validate(args map[string]any) error {
 }
 
 func (cvd *CopyVolumeDataDM) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-
 	var err error
 	if err = Arg(args, CopyVolumeDataDMArgVolume, &cvd.Volume); err != nil {
 		return nil, err
