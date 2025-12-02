@@ -39,7 +39,7 @@ const (
 	StreamRestoreDMArgDatamoverSession = "datamoverSession"
 	StreamRestoreDMArgIngestor         = "streamIngestor"
 	StreamRestoreDMArgBackupObjectName = "backupObjectName"
-	StreamRestoreDMArgBackupId         = "backupId" // Backup tag // FIXME: make optional?
+	StreamRestoreDMArgBackupID         = "backupId" // Backup tag // FIXME: make optional?
 	StreamRestoreDMArgInitImage        = "initImage"
 	StreamRestoreDMArgClientSecret     = "clientSecret" // TODO: clientSecretVolume???
 	StreamRestoreDMArgConfig           = "config"
@@ -49,7 +49,7 @@ const (
 type StreamRestoreDM struct {
 	StreamIngestor   corev1.Container
 	BackupObjectName string
-	BackupId         string
+	BackupID         string
 	InitImage        string
 	dmArgs           datamoverArgs
 	progressPercent  string
@@ -77,7 +77,7 @@ func (streamRestore *StreamRestoreDM) RequiredArgs() []string {
 		DMArgImage,
 		DMArgDatamoverSession,
 		StreamRestoreDMArgIngestor,
-		StreamRestoreDMArgBackupId,
+		StreamRestoreDMArgBackupID,
 		DMArgClientSecret,
 		// TODO: implementation specific secrets
 		// TLS fingerprint secret
@@ -116,7 +116,7 @@ func (streamRestore *StreamRestoreDM) Exec(ctx context.Context, tp param.Templat
 	}
 	streamRestore.StreamIngestor = generatorContainer
 
-	if err = OptArg(args, StreamRestoreDMArgBackupId, &streamRestore.BackupId, ""); err != nil {
+	if err = OptArg(args, StreamRestoreDMArgBackupID, &streamRestore.BackupID, ""); err != nil {
 		return nil, err
 	}
 
@@ -149,7 +149,7 @@ func (streamRestore *StreamRestoreDM) RunPod(ctx context.Context) (map[string]in
 	}
 
 	operation := client.StreamRestoreOperation{
-		BackupID:         streamRestore.BackupId,
+		BackupID:         streamRestore.BackupID,
 		BackupObjectName: streamRestore.BackupObjectName,
 		InitImage:        streamRestore.InitImage,
 		StreamIngestor:   streamRestore.StreamIngestor,
