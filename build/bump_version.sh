@@ -43,7 +43,7 @@ main() {
         grep -F "${prev_array[$i]}" -Ir  "${pkgs[@]}" --exclude-dir={docs,mod,bin,html,frontend,tmp} --exclude=\*.sum --exclude=\*.mod | cut -d ':' -f 1 | uniq | xargs -r sed -ri "s/${prev_array[$i]}/${next//./\\.}/g" || continue
     done
 
-    # Modify the first instance of kanister_tools_version in docs/constants.ts as only the latest version of k10 uses the latest version of kanister
+    # Modify the first instance of kanister_tools_version in docs/constants.ts
     if [ ${#pkgs[@]} -eq 1 ]; then
       file_count=$(find "${pkgs[@]}/docs" -maxdepth 1 -name "constants.ts" | wc -l)
       if [ $file_count -eq 1 ]; then
