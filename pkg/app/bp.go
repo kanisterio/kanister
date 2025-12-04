@@ -15,54 +15,76 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/kanisterio/blueprints"
+	bpPathUtil "github.com/kanisterio/blueprints/utils"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	bp "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
-	blueprintsRepo = "./blueprints"
 	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
-// Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
+// Blueprint() returns the blueprint from the blueprint repository or the given path.
+// An empty path defaults to {app-name}/{app-name}-blueprint.yaml in the repository.
 type AppBlueprint struct {
-	App          string
-	Path         string
-	UseDevImages bool
+	App            string
+	Path           string
+	UseDevImages   bool
+	readFromBPRepo bool
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
-// Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
+// Blueprint() returns the blueprint from the blueprint repository located at {app-name}/{app-name}-blueprint.yaml.
 type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
-	if bpReposPath == "" {
-		bpReposPath = blueprintsRepo
+func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool) Blueprinter {
+	isEmbeddedBlueprint := false
+
+	if blueprintPath == "" {
+		blueprintPath = bpPathUtil.GetBlueprintPathByName(app, blueprintName)
+		isEmbeddedBlueprint = true
 	}
 	return &AppBlueprint{
-		App:          app,
-		Path:         fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
-		UseDevImages: useDevImages,
+		App:            app,
+		Path:           blueprintPath,
+		UseDevImages:   useDevImages,
+		readFromBPRepo: isEmbeddedBlueprint,
 	}
 }
 
 func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
-	bpr, err := bp.ReadFromFile(b.Path)
+	var bpData []byte
+	var err error
+
+	if b.readFromBPRepo {
+		bpData, err = blueprints.ReadFromEmbeddedFile(b.Path)
+	} else {
+		bpData, err = blueprints.ReadFromFile(b.Path)
+	}
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
+		return nil
+	}
+
+	bpr, err := ParseBlueprint(bpData)
+	if err != nil {
+		log.Error().WithError(err).Print("Failed to parse Blueprint", field.M{"app": b.App})
+		return nil
 	}
 
 	// set the name to a dynamically generated value
@@ -109,15 +131,12 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 	}
 }
 
-// NewPITRBlueprint returns blueprint placed at ./blueprints/{app-name}-blueprint.yaml
-func NewPITRBlueprint(app string, bpReposPath string, useDevImages bool) Blueprinter {
-	if bpReposPath == "" {
-		bpReposPath = blueprintsRepo
-	}
+// NewPITRBlueprint returns blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
+func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
 	return &PITRBlueprint{
 		AppBlueprint{
 			App:          app,
-			Path:         fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
+			Path:         bpPathUtil.GetBlueprintPathByName(app, blueprintName),
 			UseDevImages: useDevImages,
 		},
 	}
@@ -125,4 +144,14 @@ func NewPITRBlueprint(app string, bpReposPath string, useDevImages bool) Bluepri
 
 func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
 	return pitr.UTC().Format("2006-01-02T15:04:05Z")
+}
+
+// ParseBlueprint parses YAML data into a Blueprint struct
+func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
+	var bp crv1alpha1.Blueprint
+	dec := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 1000)
+	if err := dec.Decode(&bp); err != nil {
+		return nil, err
+	}
+	return &bp, nil
 }
