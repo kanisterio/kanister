@@ -108,7 +108,7 @@ func (s *DataSuite) cleanupObjectStoreData(c *check.C) {
 		if s.profileLocalEndpoint != nil {
 			profile = s.profileLocalEndpoint
 		}
-		c.Logf("Cleaning up object store data after test failure from location", field.M{
+		c.Log("Cleaning up object store data after test failure from location", field.M{
 			"test":     c.TestName(),
 			"endpoint": profile.Location.Endpoint,
 			"bucket":   profile.Location.Bucket,
