@@ -16,6 +16,7 @@ package app
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -80,6 +81,9 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 	if bp == nil {
 		return
 	}
+
+	imageTag := getImageTag()
+
 	for _, a := range bp.Actions {
 		for _, phase := range a.Phases {
 			image, ok := phase.Args["image"]
@@ -92,8 +96,9 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 			}
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
-				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
-				phase.Args["image"] = fmt.Sprintf("%s:v9.99.9-dev", strings.Split(imageStr, ":")[0])
+				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:short-commit-xxxxxxx
+				phase.Args["image"] = fmt.Sprintf("%s:%s", strings.Split(imageStr, ":")[0], imageTag)
+				log.Debug().Print("Updated image", field.M{"image": phase.Args["image"]})
 			}
 
 			// Change imagePullPolicy to Always using podOverride config
@@ -125,4 +130,19 @@ func NewPITRBlueprint(app string, bpReposPath string, useDevImages bool) Bluepri
 
 func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
 	return pitr.UTC().Format("2006-01-02T15:04:05Z")
+}
+
+func getImageTag() string {
+	cmd := exec.Command("sh", "-c", "git rev-parse HEAD 2>/dev/null || echo \"unknown\"")
+	output, err := cmd.Output()
+	if err == nil {
+		gitCommit := strings.TrimSpace(string(output))
+		if gitCommit != "" && gitCommit != "unknown" {
+			shortCommit := gitCommit[:12]
+			log.Debug().Print("Using commit for image tag", field.M{"gitCommit": gitCommit, "shortCommit": shortCommit})
+			return fmt.Sprintf("short-commit-%s", shortCommit)
+		}
+	}
+	log.Debug().Print("Git commit not available, using default dev image tag")
+	return "v9.99.9-dev"
 }
