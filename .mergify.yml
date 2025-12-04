@@ -30,7 +30,7 @@ queue_rules:
           - label=kueue
           - label!="hold off merging"
     merge_method: squash
-    branch_protection_injection_mode: none
+    branch_protection_injection_mode: queue
 pull_request_rules:
   - name: delete head branch after merge
     conditions:
