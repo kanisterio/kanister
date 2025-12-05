@@ -40,6 +40,8 @@ install_minio ()
     --set rootUser=AKIAIOSFODNN7EXAMPLE,rootPassword=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
     minio/minio --wait --timeout 3m
 
+    kubectl get pvc -n minio
+
     # export default creds for minio
     # https://github.com/helm/charts/tree/master/stable/minio
     echo
