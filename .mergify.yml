@@ -29,9 +29,8 @@ queue_rules:
           - check-success=docs
           - label=kueue
           - label!="hold off merging"
-
     merge_method: squash
-
+    branch_protection_injection_mode: queue
 pull_request_rules:
   - name: delete head branch after merge
     conditions:
@@ -42,21 +41,20 @@ pull_request_rules:
   - name: Automatic merge
     conditions:
       - and:
-        - base=master
-        - "#approved-reviews-by>=1"
-        - check-success=gomod
-        - check-success=lint
-        - check-success=test (test)
-        - check-success=test (integration-test)
-        - check-success=test (helm-test)
-        - check-success=build (controller)
-        - check-success=build (kanctl)
-        - check-success=build (kando)
-        - check-success=docs
-        - label=kueue
-        - label!="hold off merging"
+          - base=master
+          - "#approved-reviews-by>=1"
+          - check-success=gomod
+          - check-success=lint
+          - check-success=test (test)
+          - check-success=test (integration-test)
+          - check-success=test (helm-test)
+          - check-success=build (controller)
+          - check-success=build (kanctl)
+          - check-success=build (kando)
+          - check-success=docs
+          - label=kueue
+          - label!="hold off merging"
     actions:
       queue:
-
 merge_queue:
   max_parallel_checks: 1
