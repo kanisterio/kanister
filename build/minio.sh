@@ -19,7 +19,7 @@ set -o nounset
 
 # Default bucket name
 S3_BUCKET="tests.kanister.io"
-MINIO_CHART_VERSION="5.0.14"
+MINIO_CHART_VERSION="5.4.0"
 
 install_minio ()
 {
@@ -39,6 +39,9 @@ install_minio ()
     --set buckets[0].name=${S3_BUCKET} \
     --set rootUser=AKIAIOSFODNN7EXAMPLE,rootPassword=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
     minio/minio --wait --timeout 3m
+
+    kubectl get storageclasses
+    kubectl get pvc -n minio
 
     # export default creds for minio
     # https://github.com/helm/charts/tree/master/stable/minio
