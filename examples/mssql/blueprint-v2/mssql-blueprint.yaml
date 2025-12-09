@@ -18,10 +18,10 @@ actions:
         args:
           sharedVolumeMedium: Memory
 
-          initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.116.0 {{- end}}'
+          initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.117.0 {{- end}}'
           initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
-          backgroundImage: ghcr.io/kanisterio/mssql-tools:0.116.0
+          backgroundImage: ghcr.io/kanisterio/mssql-tools:0.117.0
           backgroundCommand:
             - bash
             - -o
@@ -40,7 +40,7 @@ actions:
               tar zcvf - -C /tmp/ backup > /tmp/data
               kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
 
-          outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.116.0 {{- end}}'
+          outputImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.117.0 {{- end}}'
           outputCommand:
             - bash
             - -o
@@ -66,10 +66,10 @@ actions:
         args:
           sharedVolumeMedium: Memory
 
-          initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.116.0 {{- end}}'
+          initImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.117.0 {{- end}}'
           initCommand: ["bash", "-o", "errexit", "-o", "pipefail", "-c", "mkfifo /tmp/data; chmod 666 /tmp/data"]
 
-          backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.116.0 {{- end}}'
+          backgroundImage: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.117.0 {{- end}}'
           backgroundCommand:
             - bash
             - -o
@@ -82,7 +82,7 @@ actions:
               kopia_snap='{{ .ArtifactsIn.mssqlCloudDump.KopiaSnapshot }}'
               kando location pull --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --kopia-snapshot ${kopia_snap} - > /tmp/data
 
-          outputImage: ghcr.io/kanisterio/mssql-tools:0.116.0
+          outputImage: ghcr.io/kanisterio/mssql-tools:0.117.0
           outputCommand:
             - bash
             - -o
@@ -108,7 +108,7 @@ actions:
       - func: KubeTask
         name: deleteFromBlobStore
         args:
-          image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.116.0 {{- end}}'
+          image: '{{if index .Options "kanisterImage" }} {{- .Options.kanisterImage -}} {{else -}} ghcr.io/kanisterio/kanister-tools:0.117.0 {{- end}}'
           command:
             - bash
             - -o
