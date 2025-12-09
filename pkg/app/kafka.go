@@ -45,7 +45,7 @@ const consumeTimeout = 5 * time.Minute
 
 const (
 	kafkaClusterWaitTimeout    = 5 * time.Minute
-	s3ConnectorYamlFileRepo    = "../../examples/kafka/adobe-s3-connector"
+	s3ConnectorYamlFileRepo    = "https://raw.githubusercontent.com/kanisterio/blueprints/refs/heads/main/kafka-adobe-s3-connector"
 	configMapName              = "s3config"
 	s3SinkConfigPath           = "adobe-s3-sink.properties"
 	s3SourceConfigPath         = "adobe-s3-source.properties"

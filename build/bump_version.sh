@@ -28,7 +28,7 @@ main() {
     local prev=${1:?"$(usage)"}; shift
     local next=${1:?"$(usage)"}; shift
     if [ "$#" -eq 0 ]; then
-            pkgs=( docker/ scripts/ examples/ pkg/ helm/ )
+            pkgs=( docker/ scripts/ pkg/ helm/ )
         else
             pkgs=( "$@" )
     fi
