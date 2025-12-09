@@ -654,7 +654,7 @@ Congratulations! You have reached the end of this long tutorial!
 
 Don\'t stop here. There are many more example blueprints on the Kanister
 GitHub
-[repository](https://github.com/kanisterio/kanister/tree/master/examples)
+[repository](https://github.com/kanisterio/blueprints)
 to explore. Use them to help you define your next blueprint.
 
 We would love to hear from you. If you have any feedback or questions,
