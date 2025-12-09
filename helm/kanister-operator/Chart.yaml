@@ -7,5 +7,5 @@ maintainers:
   - email: kanister.maintainers@veeam.com
     name: Kanister Maintainers
 icon: https://kasten.io/assets/img/kanister-logo.png
-appVersion: 0.116.0
+appVersion: 0.117.0
 source: https://github.com/kanisterio/kanister

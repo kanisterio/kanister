@@ -1,0 +1,6 @@
+---
+upgrade:
+  - Upgraded the base images for all tooling containers to Go 1.25–based images https://github.com/kanisterio/kanister/pull/3720
+fixes:
+  - Updated MSSQL blueprint to use the correct ``sqlcmd`` binary path in the updated tools image https://github.com/kanisterio/kanister/pull/3732
+  - Added a cleanup step in DataSuite unit tests to remove leftover bucket objects after test failures https://github.com/kanisterio/kanister/pull/3752
