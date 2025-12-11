@@ -161,7 +161,7 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 }
 
 func getImageTag() string {
-	cmd := exec.Command("sh", "-c", "git rev-parse HEAD 2>/dev/null || echo \"unknown\"")
+	cmd := exec.Command("sh", "-c", "echo ${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo \"unknown\")}")
 	output, err := cmd.Output()
 	if err == nil {
 		gitCommit := strings.TrimSpace(string(output))
