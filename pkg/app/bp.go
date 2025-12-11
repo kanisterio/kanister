@@ -163,7 +163,7 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 
 func getImageTag() string {
 	// Fetch SOURCE_SHA from CI (PR SHA or push SHA)
-	gitCommit, ok := os.LookupEnv("GIT_COMMIT")
+	gitCommit, ok := os.LookupEnv("SOURCE_SHA")
 	// fallback to git command if not set in env
 	if !ok || gitCommit == "" {
 		gitCommitBytes, err := exec.Command("git", "rev-parse", "HEAD").Output()
@@ -172,7 +172,7 @@ func getImageTag() string {
 		}
 	}
 	// Default to dev tag if git commit is not available
-	if gitCommit == "" || gitCommit == "unknown" {
+	if gitCommit == "unknown" {
 		log.Info().Print("Git commit not available, using default dev image tag")
 		return "v9.99.9-dev"
 	}
