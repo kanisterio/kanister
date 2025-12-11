@@ -119,7 +119,7 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 			if strings.HasPrefix(imageStr, imagePrefix) {
 				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:short-commit-xxxxxxx
 				phase.Args["image"] = fmt.Sprintf("%s:%s", strings.Split(imageStr, ":")[0], imageTag)
-				log.Debug().Print("Updated image", field.M{"image": phase.Args["image"]})
+				log.Info().Print("Updated image", field.M{"image": phase.Args["image"]})
 			}
 
 			// Change imagePullPolicy to Always using podOverride config
@@ -167,10 +167,10 @@ func getImageTag() string {
 		gitCommit := strings.TrimSpace(string(output))
 		if gitCommit != "" && gitCommit != "unknown" {
 			shortCommit := gitCommit[:12]
-			log.Debug().Print("Using commit for image tag", field.M{"gitCommit": gitCommit, "shortCommit": shortCommit})
+			log.Info().Print("Using commit for image tag", field.M{"gitCommit": gitCommit, "shortCommit": shortCommit})
 			return fmt.Sprintf("short-commit-%s", shortCommit)
 		}
 	}
-	log.Debug().Print("Git commit not available, using default dev image tag")
+	log.Info().Print("Git commit not available, using default dev image tag")
 	return "v9.99.9-dev"
 }
