@@ -30,7 +30,7 @@ TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # TODO (#3779): Temporary disable the MSSQL tests will we fix minio storage issue.
 # See for more details https://github.com/kanisterio/kanister/issues/3779
 #SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$"
-SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$"
+SHORT_APPS="^PostgreSQL$"
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"

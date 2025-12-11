@@ -87,6 +87,11 @@ jobs:
         nohup kubectl port-forward $POD_NAME 9000 --namespace minio &
         sleep 5
       if: matrix.testSuite == 'test'
+      ## Just for testing purpose
+    - run: echo "PR_GIT_SHA=$PR_GIT_SHA"
+      env:
+        PR_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
     ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
     - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true
       env:
