@@ -124,7 +124,8 @@ else
     TEST_APPS="${TEST_APPS}|^E2ESuite$"
 fi
 
-
+export SOURCE_SHA=${SOURCE_SHA:-"unknown"}
+echo "Source git commit: ${SOURCE_SHA}"
 check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
