@@ -17,6 +17,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -44,6 +45,7 @@ type AppBlueprint struct {
 	Path           string
 	UseDevImages   bool
 	readFromBPRepo bool
+	ImageTag       string
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
@@ -52,7 +54,7 @@ type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool) Blueprinter {
+func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool, imageTag string) Blueprinter {
 	isEmbeddedBlueprint := false
 
 	if blueprintPath == "" {
@@ -64,6 +66,7 @@ func NewBlueprint(app string, blueprintName string, blueprintPath string, useDev
 		Path:           blueprintPath,
 		UseDevImages:   useDevImages,
 		readFromBPRepo: isEmbeddedBlueprint,
+		ImageTag:       imageTag,
 	}
 }
 
@@ -93,12 +96,12 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	bpr.ObjectMeta.Name = fmt.Sprintf("%s-%s", bpr.ObjectMeta.Name, rand.String(5))
 
 	if b.UseDevImages {
-		updateImageTags(bpr)
+		updateImageTags(bpr, b.ImageTag)
 	}
 	return bpr
 }
 
-func updateImageTags(bp *crv1alpha1.Blueprint) {
+func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 	if bp == nil {
 		return
 	}
@@ -115,7 +118,18 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
 				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
-				phase.Args["image"] = fmt.Sprintf("%s:v9.99.9-dev", strings.Split(imageStr, ":")[0])
+				baseImage := strings.Split(imageStr, ":")[0]
+				if imageTag == "" {
+					imageTag = "v9.99.9-dev"
+				}
+
+				updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
+				if imageTag != "v9.99.9-dev" && !imageExists(updatedImage) {
+					log.Debug().Print("Image does not exist", field.M{"image": updatedImage})
+					updatedImage = fmt.Sprintf("%s:v9.99.9-dev", baseImage)
+				}
+				phase.Args["image"] = updatedImage
+				log.Debug().Print("Using updated image", field.M{"image": updatedImage})
 			}
 
 			// Change imagePullPolicy to Always using podOverride config
@@ -132,12 +146,13 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 }
 
 // NewPITRBlueprint returns blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
-func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
+func NewPITRBlueprint(app string, blueprintName string, useDevImages bool, imageTag string) Blueprinter {
 	return &PITRBlueprint{
 		AppBlueprint{
 			App:          app,
 			Path:         bpPathUtil.GetBlueprintPathByName(app, blueprintName),
 			UseDevImages: useDevImages,
+			ImageTag:     imageTag,
 		},
 	}
 }
@@ -154,4 +169,10 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 		return nil, err
 	}
 	return &bp, nil
+}
+
+func imageExists(image string) bool {
+	cmd := exec.Command("docker", "manifest", "inspect", image)
+	err := cmd.Run()
+	return err == nil
 }
