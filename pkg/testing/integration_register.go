@@ -81,7 +81,7 @@ var _ = check.Suite(&CockroachDB{
 		name:      "cockroachdb",
 		namespace: "cockroachdb-test",
 		app:       app.NewCockroachDB("cockroachdb"),
-		bp:        app.NewBlueprint("cockroachdb", "", "", false),
+		bp:        app.NewBlueprint("cockroachdb", "", "", false, ""),
 		profile:   newSecretProfile(),
 	},
 })
