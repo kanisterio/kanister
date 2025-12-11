@@ -17,6 +17,14 @@
 set -o errexit
 set -o nounset
 
+# Export SOURCE_SHA if set (from GitHub Actions)
+if [ -n "${SOURCE_SHA:-}" ]; then
+    export SOURCE_SHA
+    echo "SOURCE_SHA is set to: $SOURCE_SHA"
+else
+    echo "SOURCE_SHA is not set"
+fi
+
 # Default bucket name
 INTEGRATION_TEST_DIR=pkg/testing
 # Degree of parallelism for integration tests
@@ -124,8 +132,7 @@ else
     TEST_APPS="${TEST_APPS}|^E2ESuite$"
 fi
 
-export SOURCE_SHA=${SOURCE_SHA:-"unknown"}
-echo "Source git commit: ${SOURCE_SHA}"
+
 check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
