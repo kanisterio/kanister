@@ -89,6 +89,8 @@ jobs:
       if: matrix.testSuite == 'test'
     ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
     - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true
+      env:
+        PR_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   build:
     runs-on: ubuntu-24.04
     needs: gomod
