@@ -17,6 +17,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -161,16 +162,25 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 }
 
 func getImageTag() string {
-	cmd := exec.Command("sh", "-c", "echo ${PR_GIT_SHA:-$(git rev-parse HEAD 2>/dev/null || echo \"unknown\")}")
-	output, err := cmd.Output()
-	if err == nil {
-		gitCommit := strings.TrimSpace(string(output))
-		if gitCommit != "" && gitCommit != "unknown" {
-			shortCommit := gitCommit[:12]
-			log.Info().Print("Using commit for image tag", field.M{"gitCommit": gitCommit, "shortCommit": shortCommit})
-			return fmt.Sprintf("short-commit-%s", shortCommit)
+	// Fetch SOURCE_SHA from CI (PR SHA or push SHA)
+	gitCommit, ok := os.LookupEnv("GIT_COMMIT")
+	// fallback to git command if not set in env
+	if !ok || gitCommit == "" {
+		gitCommitBytes, err := exec.Command("git", "rev-parse", "HEAD").Output()
+		if err == nil {
+			gitCommit = strings.TrimSpace(string(gitCommitBytes))
 		}
 	}
-	log.Info().Print("Git commit not available, using default dev image tag")
-	return "v9.99.9-dev"
+	// Default to dev tag if git commit is not available
+	if gitCommit == "" || gitCommit == "unknown" {
+		log.Info().Print("Git commit not available, using default dev image tag")
+		return "v9.99.9-dev"
+	}
+	shortCommit := gitCommit[:12]
+
+	log.Info().Print("Using commit for image tag", field.M{
+		"gitCommit":   gitCommit,
+		"shortCommit": shortCommit,
+	})
+	return fmt.Sprintf("short-commit-%s", shortCommit)
 }

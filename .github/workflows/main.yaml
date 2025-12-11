@@ -4,7 +4,7 @@ permissions:
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
 
 jobs:
@@ -16,50 +16,50 @@ jobs:
       gomod: ${{ steps.gomod.outputs.gomod }}
       gosum: ${{ steps.gosum.outputs.gosum }}
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    - run: make go-mod-tidy
-    - id: gomod
-      run: |
-        {
-          echo 'gomod<<FILE'
-          cat go.mod
-          echo
-          echo FILE
-        } >> "$GITHUB_OUTPUT"
-    - id: gosum
-      run: |
-        {
-          echo 'gosum<<FILE'
-          cat go.sum
-          echo
-          echo FILE
-        } >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - run: make go-mod-tidy
+      - id: gomod
+        run: |
+          {
+            echo 'gomod<<FILE'
+            cat go.mod
+            echo
+            echo FILE
+          } >> "$GITHUB_OUTPUT"
+      - id: gosum
+        run: |
+          {
+            echo 'gosum<<FILE'
+            cat go.sum
+            echo
+            echo FILE
+          } >> "$GITHUB_OUTPUT"
   lint:
     runs-on: ubuntu-24.04
     needs: gomod
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    ## Sync go.mod and go.sum files from gomod job
-    - name: restore_gomod
-      run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
-    - name: restore_gosum
-      run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
-    - run: make golint
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      ## Sync go.mod and go.sum files from gomod job
+      - name: restore_gomod
+        run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
+      - name: restore_gosum
+        run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
+      - run: make golint
 
   reno_lint:
     runs-on: ubuntu-24.04
     needs: gomod
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      with:
-        fetch-depth: 0
-    # - name: reset_git_extension
-    #   run: git config --unset-all extensions.worktreeconfig
-    - name: reno_lint
-      run: make reno-lint
-    ## Reno lint does not catch some errors which make reno report fail
-    - name: reno_report_check
-      run: make reno-report
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+      # - name: reset_git_extension
+      #   run: git config --unset-all extensions.worktreeconfig
+      - name: reno_lint
+        run: make reno-lint
+      ## Reno lint does not catch some errors which make reno report fail
+      - name: reno_report_check
+        run: make reno-report
 
   test:
     runs-on: ubuntu-24.04
@@ -69,33 +69,33 @@ jobs:
       matrix:
         testSuite: [test, integration-test, helm-test]
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    ## Sync go.mod and go.sum files from gomod job
-    - name: restore_gomod
-      run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
-    - name: restore_gosum
-      run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
-    - uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
-    # A test (CRDSuite) that runs as part of `make test` requies atleast one CRD to
-    # be present on the cluster. That's why we are only installing csi-hostpath-driver
-    # before running `make test`, to create some CRDs on the cluster.
-    - run: |
-        make install-csi-hostpath-driver
-        make install-minio
-    - run: |
-        export POD_NAME=$(kubectl get pods --namespace minio -l "release=minio" -o jsonpath="{.items[0].metadata.name}")
-        nohup kubectl port-forward $POD_NAME 9000 --namespace minio &
-        sleep 5
-      if: matrix.testSuite == 'test'
-      ## Just for testing purpose
-    - run: echo "PR_GIT_SHA=$PR_GIT_SHA"
-      env:
-        PR_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      ## Sync go.mod and go.sum files from gomod job
+      - name: restore_gomod
+        run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
+      - name: restore_gosum
+        run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
+      - uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
+      # A test (CRDSuite) that runs as part of `make test` requies atleast one CRD to
+      # be present on the cluster. That's why we are only installing csi-hostpath-driver
+      # before running `make test`, to create some CRDs on the cluster.
+      - run: |
+          make install-csi-hostpath-driver
+          make install-minio
+      - run: |
+          export POD_NAME=$(kubectl get pods --namespace minio -l "release=minio" -o jsonpath="{.items[0].metadata.name}")
+          nohup kubectl port-forward $POD_NAME 9000 --namespace minio &
+          sleep 5
+        if: matrix.testSuite == 'test'
+        ## Just for testing purpose
+      - run: echo "SOURCE_SHA=$SOURCE_SHA"
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
-    ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
-    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true
-      env:
-        PR_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
+      - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   build:
     runs-on: ubuntu-24.04
     needs: gomod
@@ -103,18 +103,18 @@ jobs:
       matrix:
         bin: [controller, kanctl, kando]
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    ## Sync go.mod and go.sum files from gomod job
-    - name: restore_gomod
-      run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
-    - name: restore_gosum
-      run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
-    - run: make build BIN=${{ matrix.bin }}
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      ## Sync go.mod and go.sum files from gomod job
+      - name: restore_gomod
+        run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
+      - name: restore_gosum
+        run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
+      - run: make build BIN=${{ matrix.bin }}
   docs:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    - run: make docs
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - run: make docs
   release:
     runs-on: ubuntu-24.04
     needs: [lint, test, build, docs]
@@ -122,31 +122,31 @@ jobs:
     permissions:
       packages: write
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    - run: make go-mod-tidy
-    - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - run: sudo rm -rf /usr/share/dotnet
-    - run: sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-    - run: docker image prune -af
-    - run: docker builder prune -af
-    - run: make release-snapshot
-    - run: COMMIT_SHA=${{ github.sha }} ./build/push_images.sh
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - run: make go-mod-tidy
+      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: sudo rm -rf /usr/share/dotnet
+      - run: sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - run: docker image prune -af
+      - run: docker builder prune -af
+      - run: make release-snapshot
+      - run: COMMIT_SHA=${{ github.sha }} ./build/push_images.sh
   image_tags:
     runs-on: ubuntu-latest
     outputs:
       tag_short: ${{ steps.image_tags.outputs.tag_short }}
       tag_long: ${{ steps.image_tags.outputs.tag_long }}
     steps:
-    - id: image_tags
-      env:
-        COMMIT_SHA: ${{ github.sha }}
-      run: |
-        echo "tag_short=short-commit-${COMMIT_SHA::12}" >> $GITHUB_OUTPUT
-        echo "tag_long=commit-${COMMIT_SHA}" >> $GITHUB_OUTPUT
+      - id: image_tags
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          echo "tag_short=short-commit-${COMMIT_SHA::12}" >> $GITHUB_OUTPUT
+          echo "tag_long=commit-${COMMIT_SHA}" >> $GITHUB_OUTPUT
   release_example_docker_images:
     needs: [release, image_tags]
     permissions:
