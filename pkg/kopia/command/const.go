@@ -104,6 +104,10 @@ const (
 	readOnlyFlag              = "--readonly"
 	retentionModeFlag         = "--retention-mode"
 	retentionPeriodFlag       = "--retention-period"
+
+	// Cache specific
+	cacheSubCommand = "cache"
+	clearSubCommand = "clear"
 )
 
 // List of possible modifications to a policy, expressed as the kopia flag that will modify it
