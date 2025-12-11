@@ -39,3 +39,14 @@ func (c CacheArgs) kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string) logsa
 	args = args.AppendLoggableKV(metadataCacheSizeLimitMBFlag, strconv.Itoa(c.MetadataCacheLimitMB))
 	return args
 }
+
+type CacheClearCommandArgs struct {
+	*CommandArgs
+}
+
+// CacheClearCommand returns the kopia command for clearing the cache.
+func CacheClearCommand(cmdArgs CacheClearCommandArgs) []string {
+	args := commonArgs(cmdArgs.CommandArgs)
+	args = args.AppendLoggable(cacheSubCommand, clearSubCommand)
+	return stringSliceCommand(args)
+}
