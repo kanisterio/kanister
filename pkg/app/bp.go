@@ -17,7 +17,6 @@ package app
 import (
 	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -35,6 +34,9 @@ const (
 	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
+
+	// default dev tag for kanister images
+	defaultImageTag = "v9.99.9-dev"
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
@@ -120,14 +122,10 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
 				baseImage := strings.Split(imageStr, ":")[0]
 				if imageTag == "" {
-					imageTag = "v9.99.9-dev"
+					imageTag = defaultImageTag
 				}
 
 				updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
-				if imageTag != "v9.99.9-dev" && !imageExists(updatedImage) {
-					log.Debug().Print("Image does not exist", field.M{"image": updatedImage})
-					updatedImage = fmt.Sprintf("%s:v9.99.9-dev", baseImage)
-				}
 				phase.Args["image"] = updatedImage
 				log.Debug().Print("Using updated image", field.M{"image": updatedImage})
 			}
@@ -169,10 +167,4 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 		return nil, err
 	}
 	return &bp, nil
-}
-
-func imageExists(image string) bool {
-	cmd := exec.Command("docker", "manifest", "inspect", image)
-	err := cmd.Run()
-	return err == nil
 }
