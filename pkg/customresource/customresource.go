@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
+	"github.com/kanisterio/datamover/pkg/crds"
 	"github.com/kanisterio/errkit"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -73,6 +74,14 @@ type Context struct {
 // The resource is of kind CRD if the Kubernetes server is 1.7.0 and above.
 // The resource is of kind TPR if the Kubernetes server is below 1.7.0.
 func CreateCustomResources(context Context, resources []CustomResource) error {
+	return createCustomResources(context, resources, fetchCRD)
+}
+
+func CreateDMCustomResources(context Context, resources []CustomResource) error {
+	return createCustomResources(context, resources, fetchDMCRD)
+}
+
+func createCustomResources(context Context, resources []CustomResource, fetchContentFunc func(res CustomResource) ([]byte, error)) error {
 	// CRD is available on v1.7.0 and above. TPR became deprecated on v1.7.0
 	serverVersion, err := context.Clientset.Discovery().ServerVersion()
 	if err != nil {
@@ -85,7 +94,7 @@ func CreateCustomResources(context Context, resources []CustomResource) error {
 	}
 	var lastErr error
 	for _, resource := range resources {
-		err = createCRD(context, resource)
+		err = createCRD(context, resource, fetchContentFunc)
 		if err != nil {
 			lastErr = err
 		}
@@ -115,8 +124,8 @@ func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
 	return nil
 }
 
-func createCRD(context Context, resource CustomResource) error {
-	c, err := rawCRDFromFile(fmt.Sprintf("%s.yaml", resource.Name))
+func createCRD(context Context, resource CustomResource, fetchContentFunc func(res CustomResource) ([]byte, error)) error {
+	c, err := fetchContentFunc(resource)
 	if err != nil {
 		return errkit.Wrap(err, "Getting raw CRD from CRD manifests")
 	}
@@ -153,9 +162,13 @@ func createCRD(context Context, resource CustomResource) error {
 	return nil
 }
 
-func rawCRDFromFile(path string) ([]byte, error) {
-	// yamls is the variable that has embedded custom resource manifest. More at `embed.go`
+func fetchCRD(resource CustomResource) ([]byte, error) {
+	path := fmt.Sprintf("%s.yaml", resource.Name)
 	return yamls.ReadFile(path)
+}
+
+func fetchDMCRD(resource CustomResource) ([]byte, error) {
+	return crds.ReadCRD(resource.Name)
 }
 
 func waitForCRDInit(context Context, resource CustomResource) error {

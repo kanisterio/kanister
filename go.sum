@@ -121,6 +121,8 @@ github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
+github.com/bombsimon/logrusr/v4 v4.1.0 h1:uZNPbwusB0eUXlO8hIUwStE6Lr5bLN6IgYgG+75kuh4=
+github.com/bombsimon/logrusr/v4 v4.1.0/go.mod h1:pjfHC5e59CvjTBIU3V3sGhFWFAnsnhOR03TRc6im0l8=
 github.com/cenkalti/backoff/v5 v5.0.2 h1:rIfFVxEf1QsI7E1ZHfp/B4DF/6QBAUhmgkxc0H7Zss8=
 github.com/cenkalti/backoff/v5 v5.0.2/go.mod h1:rkhZdG3JZukswDf7f0cwqPNk4K0sa+F97BxZthm/crw=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
@@ -390,6 +392,8 @@ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223 h1:MVWkn/tqlQgrwkHGLTT/zk29IfdLo1o7DOxLm8hwjIA=
 github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223/go.mod h1:z+9bB5j8pRC7ml1WYajW1syhpSfT1phQ8j+b0UBEx7w=
+github.com/kanisterio/datamover v0.0.0-20251212210936-6777fe2aec8a h1:AjNLjLChQRmZrcZon22RfmYoEreOpc8+GbSRuurtWB0=
+github.com/kanisterio/datamover v0.0.0-20251212210936-6777fe2aec8a/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
 github.com/kanisterio/errkit v0.0.3 h1:1wHaTqV4DZE0XrN+Nq7Q2M8kyKnV8NhhEF3OB7A/Pd8=
 github.com/kanisterio/errkit v0.0.3/go.mod h1:0xesKaif6++1IXFdhb6fywa40J07odjwWq3IKzxWC3A=
 github.com/kanisterio/safecli v0.0.10 h1:oS3XMYUkzutKatV50cI0IGgPrdHnOuKpFkVv6rpS0mQ=
