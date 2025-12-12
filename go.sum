@@ -392,8 +392,8 @@ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223 h1:MVWkn/tqlQgrwkHGLTT/zk29IfdLo1o7DOxLm8hwjIA=
 github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223/go.mod h1:z+9bB5j8pRC7ml1WYajW1syhpSfT1phQ8j+b0UBEx7w=
-github.com/kanisterio/datamover v0.0.0-20251002184714-23bc4685456a h1:AsDOP7fgNlGykaLnle1awq2dN907qbt8T0OOvUwvtF0=
-github.com/kanisterio/datamover v0.0.0-20251002184714-23bc4685456a/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
+github.com/kanisterio/datamover v0.0.0-20251212210936-6777fe2aec8a h1:AjNLjLChQRmZrcZon22RfmYoEreOpc8+GbSRuurtWB0=
+github.com/kanisterio/datamover v0.0.0-20251212210936-6777fe2aec8a/go.mod h1:8TULDs86PvvZdps8Rew8154Ezm6l2LDtFc02y6eEW/s=
 github.com/kanisterio/errkit v0.0.3 h1:1wHaTqV4DZE0XrN+Nq7Q2M8kyKnV8NhhEF3OB7A/Pd8=
 github.com/kanisterio/errkit v0.0.3/go.mod h1:0xesKaif6++1IXFdhb6fywa40J07odjwWq3IKzxWC3A=
 github.com/kanisterio/safecli v0.0.10 h1:oS3XMYUkzutKatV50cI0IGgPrdHnOuKpFkVv6rpS0mQ=
