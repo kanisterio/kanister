@@ -133,7 +133,7 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *check.C) {
 			},
 		},
 	} {
-		updateImageTags(bp)
+		updateImageTags(bp, "")
 		validateImageTags(c, bp)
 	}
 }
