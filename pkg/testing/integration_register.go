@@ -550,7 +550,7 @@ var _ = check.Suite(&PostgreSQLDepConfig4_13{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-13-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_13, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", "", "", app.De),
+		bp:        app.NewBlueprint("postgres-dep-config", "", "", app.DefaultImageTag),
 		profile:   newSecretProfile(),
 	},
 })
