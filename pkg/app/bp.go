@@ -36,7 +36,7 @@ const (
 	imagePrefix = "ghcr.io/kanisterio"
 
 	// default dev tag for kanister images
-	defaultImageTag = "v9.99.9-dev"
+	DefaultImageTag = "v9.99.9-dev"
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
@@ -45,9 +45,8 @@ const (
 type AppBlueprint struct {
 	App            string
 	Path           string
-	UseDevImages   bool
 	readFromBPRepo bool
-	ImageTag       string
+	devImageTag    string
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
@@ -56,7 +55,7 @@ type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool, imageTag string) Blueprinter {
+func NewBlueprint(app string, blueprintName string, blueprintPath string, devImageTag string) Blueprinter {
 	isEmbeddedBlueprint := false
 
 	if blueprintPath == "" {
@@ -66,9 +65,8 @@ func NewBlueprint(app string, blueprintName string, blueprintPath string, useDev
 	return &AppBlueprint{
 		App:            app,
 		Path:           blueprintPath,
-		UseDevImages:   useDevImages,
 		readFromBPRepo: isEmbeddedBlueprint,
-		ImageTag:       imageTag,
+		devImageTag:    devImageTag,
 	}
 }
 
@@ -97,8 +95,8 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	// installed using other ways
 	bpr.ObjectMeta.Name = fmt.Sprintf("%s-%s", bpr.ObjectMeta.Name, rand.String(5))
 
-	if b.UseDevImages {
-		updateImageTags(bpr, b.ImageTag)
+	if b.devImageTag != "" {
+		updateImageTags(bpr, b.devImageTag)
 	}
 	return bpr
 }
@@ -121,10 +119,6 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 			if strings.HasPrefix(imageStr, imagePrefix) {
 				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
 				baseImage := strings.Split(imageStr, ":")[0]
-				if imageTag == "" {
-					imageTag = defaultImageTag
-				}
-
 				updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
 				phase.Args["image"] = updatedImage
 				log.Debug().Print("Using updated image", field.M{"image": updatedImage})
@@ -144,13 +138,12 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 }
 
 // NewPITRBlueprint returns blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
-func NewPITRBlueprint(app string, blueprintName string, useDevImages bool, imageTag string) Blueprinter {
+func NewPITRBlueprint(app string, blueprintName string, devImageTag string) Blueprinter {
 	return &PITRBlueprint{
 		AppBlueprint{
-			App:          app,
-			Path:         bpPathUtil.GetBlueprintPathByName(app, blueprintName),
-			UseDevImages: useDevImages,
-			ImageTag:     imageTag,
+			App:         app,
+			Path:        bpPathUtil.GetBlueprintPathByName(app, blueprintName),
+			devImageTag: devImageTag,
 		},
 	}
 }
