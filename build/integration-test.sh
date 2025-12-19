@@ -27,10 +27,8 @@ TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
 # Temporary disable ES test. Issue to track https://github.com/kanisterio/kanister/issues/1920
 
-# TODO (#3779): Temporary disable the MSSQL tests will we fix minio storage issue.
-# See for more details https://github.com/kanisterio/kanister/issues/3779
-#SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$"
-SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$"
+SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$"
+
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
