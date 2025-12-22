@@ -28,9 +28,11 @@ import (
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/app"
@@ -51,7 +53,6 @@ import (
 func Test(t *test.T) {
 	integrationSetup(t)
 	check.TestingT(t)
-	integrationCleanup(t)
 }
 
 // Global variables shared across Suite instances
@@ -68,6 +69,7 @@ type kanisterKontroller struct {
 var kontroller kanisterKontroller
 
 func integrationSetup(t *test.T) {
+	t.Helper()
 	ns := "integration-test-controller-" + rand.String(5)
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -79,6 +81,9 @@ func integrationSetup(t *test.T) {
 	if err != nil {
 		t.Fatalf("Integration test setup failure: Error creating kubeCli; err=%v", err)
 	}
+	t.Cleanup(func() {
+		integrationCleanup(t, cfg)
+	})
 	if err = createNamespace(cli, ns); err != nil {
 		t.Fatalf("Integration test setup failure: Error creating namespace; err=%v", err)
 	}
@@ -119,18 +124,29 @@ func integrationSetup(t *test.T) {
 	kontroller.clusterRoleBinding = crb
 }
 
-func integrationCleanup(t *test.T) {
+func integrationCleanup(t *test.T, cfg *rest.Config) {
+	t.Helper()
+
 	ctx, cancel := context.WithTimeout(context.Background(), contextWaitTimeout)
 	defer cancel()
 
 	if kontroller.cancel != nil {
 		kontroller.cancel()
 	}
-	if kontroller.namespace != "" {
-		if err := kontroller.kubeCli.CoreV1().Namespaces().Delete(ctx, kontroller.namespace, metav1.DeleteOptions{}); err != nil {
-			t.Fatalf("Error %v deleting namespaces %s", err, kontroller.namespace)
+
+	if kontroller.kubeCli != nil && kontroller.namespace != "" {
+		pvcs, err := kontroller.kubeCli.CoreV1().
+			PersistentVolumeClaims(kontroller.namespace).
+			List(ctx, metav1.ListOptions{})
+		if err == nil {
+			for _, pvc := range pvcs.Items {
+				_ = kontroller.kubeCli.CoreV1().
+					PersistentVolumeClaims(kontroller.namespace).
+					Delete(ctx, pvc.Name, metav1.DeleteOptions{})
+			}
 		}
 	}
+
 	if kontroller.clusterRoleBinding != nil && kontroller.clusterRoleBinding.Name != "" {
 		if err := kontroller.kubeCli.RbacV1().ClusterRoleBindings().Delete(ctx, kontroller.clusterRoleBinding.Name, metav1.DeleteOptions{}); err != nil {
 			t.Fatalf("Error %v deleting clusterrolebinding %s", err, kontroller.clusterRoleBinding)
@@ -140,6 +156,41 @@ func integrationCleanup(t *test.T) {
 		if err := kontroller.kubeCli.RbacV1().ClusterRoles().Delete(ctx, kontroller.clusterRole.Name, metav1.DeleteOptions{}); err != nil {
 			t.Fatalf("Error %v deleting clusterrole %s", err, kontroller.clusterRole)
 		}
+	}
+
+	if err := resource.DeleteCustomResources(ctx, cfg); err != nil {
+		t.Fatalf("Error deleting custom resources: %v", err)
+	}
+
+	if kontroller.namespace != "" {
+		if err := kontroller.kubeCli.CoreV1().Namespaces().Delete(ctx, kontroller.namespace, metav1.DeleteOptions{}); err != nil {
+			t.Fatalf("Error %v deleting namespaces %s", err, kontroller.namespace)
+		}
+
+		if err := waitForNamespaceDeletion(ctx, kontroller.kubeCli, kontroller.namespace); err != nil {
+			t.Fatalf("Namespace %s not fully deleted: %v", kontroller.namespace, err)
+		}
+	}
+
+	kontroller.namespace = ""
+	kontroller.context = nil
+	kontroller.cancel = nil
+	kontroller.kubeCli = nil
+	kontroller.serviceAccount = nil
+	kontroller.clusterRole = nil
+	kontroller.clusterRoleBinding = nil
+}
+
+func waitForNamespaceDeletion(ctx context.Context, cli kubernetes.Interface, ns string) error {
+	for {
+		_, err := cli.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		time.Sleep(2 * time.Second)
 	}
 }
 

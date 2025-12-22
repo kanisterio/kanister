@@ -50,6 +50,22 @@ func CreateCustomResources(ctx context.Context, config *rest.Config) error {
 	return customresource.CreateCustomResources(*crCTX, resources)
 }
 
+// DeleteCustomResources deletes the given custom resources
+func DeleteCustomResources(ctx context.Context, config *rest.Config) error {
+	crCTX, err := newOpKitContext(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	resources := []customresource.CustomResource{
+		crv1alpha1.ActionSetResource,
+		crv1alpha1.BlueprintResource,
+		crv1alpha1.ProfileResource,
+	}
+
+	return customresource.DeleteCustomResources(*crCTX, resources)
+}
+
 func newOpKitContext(ctx context.Context, config *rest.Config) (*customresource.Context, error) {
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {

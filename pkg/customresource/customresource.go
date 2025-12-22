@@ -99,6 +99,71 @@ func CreateCustomResources(context Context, resources []CustomResource) error {
 	return lastErr
 }
 
+func DeleteCustomResources(context Context, resources []CustomResource) error {
+	serverVersion, err := context.Clientset.Discovery().ServerVersion()
+	if err != nil {
+		return fmt.Errorf("Error getting server version: %v", err)
+	}
+	kubeVersion := semver.MustParse(serverVersion.GitVersion)
+
+	if kubeVersion.LessThan(semver.MustParse(serverVersionV170)) {
+		return fmt.Errorf("Kubernetes versions less than 1.7.0 not supported")
+	}
+
+	var lastErr error
+	for _, resource := range resources {
+		err = deleteCRD(context, resource)
+		if err != nil {
+			lastErr = err
+		}
+	}
+
+	for _, resource := range resources {
+		if err := waitForCRDDeletion(context, resource); err != nil {
+			lastErr = err
+		}
+	}
+
+	return lastErr
+}
+
+func deleteCRD(context Context, resource CustomResource) error {
+	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
+
+	err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Delete(context.Context, crdName, metav1.DeleteOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return errkit.New(
+			fmt.Sprintf("Failed to delete %s CRD. %+v", resource.Name, err),
+		)
+	}
+
+	return nil
+}
+
+func waitForCRDDeletion(context Context, resource CustomResource) error {
+	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
+
+	return wait.PollUntilContextTimeout(
+		context.Context,
+		context.Interval,
+		context.Timeout,
+		false,
+		func(contextpkg.Context) (bool, error) {
+			_, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(context.Context, crdName, metav1.GetOptions{})
+			if apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			if err != nil {
+				return false, err
+			}
+			return false, nil
+		},
+	)
+}
+
 func getCRDFromSpec(spec []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	if err := decodeSpecIntoObject(spec, crd); err != nil {
