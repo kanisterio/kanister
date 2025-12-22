@@ -34,6 +34,9 @@ const (
 	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
+
+	// default dev tag for kanister images
+	DefaultImageTag = "v9.99.9-dev"
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
@@ -42,8 +45,8 @@ const (
 type AppBlueprint struct {
 	App            string
 	Path           string
-	UseDevImages   bool
 	readFromBPRepo bool
+	devImageTag    string
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
@@ -52,7 +55,7 @@ type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string, blueprintName string, blueprintPath string, useDevImages bool) Blueprinter {
+func NewBlueprint(app string, blueprintName string, blueprintPath string, devImageTag string) Blueprinter {
 	isEmbeddedBlueprint := false
 
 	if blueprintPath == "" {
@@ -62,8 +65,8 @@ func NewBlueprint(app string, blueprintName string, blueprintPath string, useDev
 	return &AppBlueprint{
 		App:            app,
 		Path:           blueprintPath,
-		UseDevImages:   useDevImages,
 		readFromBPRepo: isEmbeddedBlueprint,
+		devImageTag:    devImageTag,
 	}
 }
 
@@ -92,13 +95,13 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	// installed using other ways
 	bpr.ObjectMeta.Name = fmt.Sprintf("%s-%s", bpr.ObjectMeta.Name, rand.String(5))
 
-	if b.UseDevImages {
-		updateImageTags(bpr)
+	if b.devImageTag != "" {
+		updateImageTags(bpr, b.devImageTag)
 	}
 	return bpr
 }
 
-func updateImageTags(bp *crv1alpha1.Blueprint) {
+func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 	if bp == nil {
 		return
 	}
@@ -115,7 +118,10 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
 				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
-				phase.Args["image"] = fmt.Sprintf("%s:v9.99.9-dev", strings.Split(imageStr, ":")[0])
+				baseImage := strings.Split(imageStr, ":")[0]
+				updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
+				phase.Args["image"] = updatedImage
+				log.Debug().Print("Using updated image", field.M{"image": updatedImage})
 			}
 
 			// Change imagePullPolicy to Always using podOverride config
@@ -132,12 +138,12 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 }
 
 // NewPITRBlueprint returns blueprint located at {app-name}/{app-name}-blueprint.yaml in blueprint repository
-func NewPITRBlueprint(app string, blueprintName string, useDevImages bool) Blueprinter {
+func NewPITRBlueprint(app string, blueprintName string, devImageTag string) Blueprinter {
 	return &PITRBlueprint{
 		AppBlueprint{
-			App:          app,
-			Path:         bpPathUtil.GetBlueprintPathByName(app, blueprintName),
-			UseDevImages: useDevImages,
+			App:         app,
+			Path:        bpPathUtil.GetBlueprintPathByName(app, blueprintName),
+			devImageTag: devImageTag,
 		},
 	}
 }
