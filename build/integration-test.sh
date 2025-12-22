@@ -138,10 +138,8 @@ while true; do
     [ -z "$CONCURRENT_TEST_APPS" ] && exit 0
 
     echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
-
     go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
     
-
     INDEX=$((INDEX + DOP))
 done
 popd
