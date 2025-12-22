@@ -34,7 +34,8 @@ install_minio ()
     # deploy minio
     helm install minio --version ${MINIO_CHART_VERSION} --namespace minio \
     --set resources.requests.memory=512Mi --set replicas=1 \
-    --set persistence.enabled=false --set mode=standalone \
+    --set persistence.enabled=true --set persistence.storageClass="csi-hostpath-sc" \
+    --set persistence.size="10Gi" --set mode=standalone \
     --set buckets[0].name=${S3_BUCKET} \
     --set rootUser=AKIAIOSFODNN7EXAMPLE,rootPassword=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
     minio/minio --wait --timeout 3m
