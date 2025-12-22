@@ -128,18 +128,22 @@ echo "Running integration tests:"
 BATCH_SIZE=3
 RUN_INDEX=${RUN_INDEX:-0}
 
-TEST_APPS="$(
-  echo "$SHORT_APPS" \
-  | tr '|' '\n' \
-  | tail -n +$((RUN_INDEX * BATCH_SIZE + 1)) \
-  | head -n $BATCH_SIZE \
-  | paste -sd'|' -
-)"
+if [ "$TEST_APPS" = ".*" ]; then
+  CONCURRENT_TEST_APPS="$TEST_APPS"
+else
+  CONCURRENT_TEST_APPS="$(
+    echo "$TEST_APPS" \
+    | tr '|' '\n' \
+    | tail -n +$((RUN_INDEX * BATCH_SIZE + 1)) \
+    | head -n $BATCH_SIZE \
+    | paste -sd'|' -
+  )"
+fi
 
 [ -z "$TEST_APPS" ] && exit 0
 
-echo "TEST_APPS=${TEST_APPS}"
+echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
 
 pushd ${INTEGRATION_TEST_DIR}
-go test -v ${TEST_OPTIONS} -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
+go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
 popd
