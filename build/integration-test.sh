@@ -125,6 +125,7 @@ fi
 check_dependencies
 echo "Running integration tests:"
 
+pushd ${INTEGRATION_TEST_DIR}
 INDEX=0
 while true; do
     CONCURRENT_TEST_APPS="$(
@@ -138,12 +139,11 @@ while true; do
 
     echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
 
-    pushd ${INTEGRATION_TEST_DIR}
     go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
-    popd
+    
 
     INDEX=$((INDEX + DOP))
 done
-
+popd
 echo "All integration test batches completed successfully."
 
