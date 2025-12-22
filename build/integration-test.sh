@@ -20,7 +20,7 @@ set -o nounset
 # Default bucket name
 INTEGRATION_TEST_DIR=pkg/testing
 # Degree of parallelism for integration tests
-DOP="1"
+DOP="3"
 TEST_TIMEOUT="30m"
 # Set default options
 TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
@@ -122,9 +122,24 @@ else
     TEST_APPS="${TEST_APPS}|^E2ESuite$"
 fi
 
-
 check_dependencies
 echo "Running integration tests:"
+
+BATCH_SIZE=3
+RUN_INDEX=${RUN_INDEX:-0}
+
+TEST_APPS="$(
+  echo "$SHORT_APPS" \
+  | tr '|' '\n' \
+  | tail -n +$((RUN_INDEX * BATCH_SIZE + 1)) \
+  | head -n $BATCH_SIZE \
+  | paste -sd'|' -
+)"
+
+[ -z "$TEST_APPS" ] && exit 0
+
+echo "TEST_APPS=${TEST_APPS}"
+
 pushd ${INTEGRATION_TEST_DIR}
 go test -v ${TEST_OPTIONS} -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
 popd
