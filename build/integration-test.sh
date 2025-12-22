@@ -125,25 +125,25 @@ fi
 check_dependencies
 echo "Running integration tests:"
 
-BATCH_SIZE=3
-RUN_INDEX=${RUN_INDEX:-0}
+INDEX=0
+while true; do
+    CONCURRENT_TEST_APPS="$(
+        echo "$TEST_APPS" \
+        | tr '|' '\n' \
+        | tail -n +$((INDEX * DOP + 1)) \
+        | head -n $DOP \
+        | paste -sd'|' -
+        )"
+    [ -z "$CONCURRENT_TEST_APPS" ] && exit 0
 
-if [ "$TEST_APPS" = ".*" ]; then
-  CONCURRENT_TEST_APPS="$TEST_APPS"
-else
-  CONCURRENT_TEST_APPS="$(
-    echo "$TEST_APPS" \
-    | tr '|' '\n' \
-    | tail -n +$((RUN_INDEX * BATCH_SIZE + 1)) \
-    | head -n $BATCH_SIZE \
-    | paste -sd'|' -
-  )"
-fi
+    echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
 
-[ -z "$TEST_APPS" ] && exit 0
+    pushd ${INTEGRATION_TEST_DIR}
+    go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
+    popd
 
-echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
+    INDEX=$((INDEX + DOP))
+done
 
-pushd ${INTEGRATION_TEST_DIR}
-go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
-popd
+echo "All integration test batches completed successfully."
+
