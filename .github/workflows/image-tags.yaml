@@ -1,5 +1,9 @@
 name: Compute Image Tags
 
+permissions:
+  contents: read
+  packages: read
+
 on:
   workflow_call:
     outputs:
@@ -12,10 +16,6 @@ on:
 
 jobs:
   image_tags:
-    permissions:
-      contents: read
-      packages: read
-
     runs-on: ubuntu-latest
     outputs:
       tag_short: ${{ steps.image_tags.outputs.tag_short }}
