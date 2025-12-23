@@ -2,7 +2,6 @@ name: Compute Image Tags
 
 permissions:
   contents: read
-  packages: read
 
 on:
   workflow_call:
