@@ -1,0 +1,66 @@
+name: Docker Image Smoke Tests
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile.in
+      - docker/**
+      - build/package.sh
+      - .github/workflows/**
+
+jobs:
+
+  image_tags:
+    uses: ./.github/workflows/image-tags.yaml
+
+  smoke_test:
+    runs-on: ubuntu-latest
+    needs: image_tags
+
+    permissions:
+      contents: read
+      packages: read
+
+    env:
+      IMAGE_TAG: ${{ needs.image_tags.outputs.tag_short }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Smoke test kando image
+        run: |
+          docker run --rm --platform linux/amd64 \
+            ghcr.io/kanisterio/kando:${IMAGE_TAG} \
+            kando --help
+
+      - name: Smoke test kanctl image
+        run: |
+          docker run --rm --platform linux/amd64 \
+            ghcr.io/kanisterio/kanctl:${IMAGE_TAG} \
+            kanctl --help
+
+      # controller is long-running; only validate startup
+      - name: Smoke test controller image
+        run: |
+          timeout 5 docker run --rm --platform linux/amd64 \
+            ghcr.io/kanisterio/controller:${IMAGE_TAG}
+
+      - name: Validate shared libraries (kando)
+        run: |
+          docker run --rm \
+            ghcr.io/kanisterio/kando:${IMAGE_TAG} \
+            sh -c 'ldd $(which kando) | grep "not found" && exit 1 || exit 0'
+
+      - name: Validate shared libraries (kanctl)
+        run: |
+          docker run --rm \
+            ghcr.io/kanisterio/kanctl:${IMAGE_TAG} \
+            sh -c 'ldd $(which kanctl) | grep "not found" && exit 1 || exit 0'
