@@ -8,6 +8,10 @@ on:
       - build/package.sh
       - .github/workflows/**
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
 
   image_tags:
@@ -16,10 +20,6 @@ jobs:
   smoke_test:
     runs-on: ubuntu-latest
     needs: image_tags
-
-    permissions:
-      contents: read
-      packages: read
 
     env:
       IMAGE_TAG: ${{ needs.image_tags.outputs.tag_short }}
