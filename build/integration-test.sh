@@ -27,10 +27,8 @@ TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
 # Temporary disable ES test. Issue to track https://github.com/kanisterio/kanister/issues/1920
 
-# TODO (#3779): Temporary disable the MSSQL tests will we fix minio storage issue.
-# See for more details https://github.com/kanisterio/kanister/issues/3779
-#SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$"
-SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$"
+SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$"
+
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
@@ -124,9 +122,25 @@ else
     TEST_APPS="${TEST_APPS}|^E2ESuite$"
 fi
 
-
 check_dependencies
 echo "Running integration tests:"
+
 pushd ${INTEGRATION_TEST_DIR}
-go test -v ${TEST_OPTIONS} -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
+INDEX=0
+while true; do
+    CONCURRENT_TEST_APPS="$(
+        echo "$TEST_APPS" \
+        | tr '|' '\n' \
+        | tail -n +$((INDEX * DOP + 1)) \
+        | head -n "$DOP" \
+        | paste -sd'|' -
+    )"
+
+    [ -z "$CONCURRENT_TEST_APPS" ] && exit 0
+
+    echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
+    go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
+    INDEX=$((INDEX + 1))
+done
 popd
+echo "All integration test batches completed successfully."
