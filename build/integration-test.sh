@@ -132,16 +132,15 @@ while true; do
         echo "$TEST_APPS" \
         | tr '|' '\n' \
         | tail -n +$((INDEX * DOP + 1)) \
-        | head -n $DOP \
+        | head -n "$DOP" \
         | paste -sd'|' -
-        )"
+    )"
+
     [ -z "$CONCURRENT_TEST_APPS" ] && exit 0
 
     echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
     go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
-    
-    INDEX=$((INDEX + DOP))
+    INDEX=$((INDEX + 1))
 done
 popd
 echo "All integration test batches completed successfully."
-
