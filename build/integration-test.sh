@@ -136,7 +136,7 @@ while true; do
         | paste -sd'|' -
     )"
 
-    [ -z "$CONCURRENT_TEST_APPS" ] && exit 0
+    [ -z "$CONCURRENT_TEST_APPS" ] && break
 
     echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
     go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
