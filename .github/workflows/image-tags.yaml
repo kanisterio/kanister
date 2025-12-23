@@ -12,6 +12,10 @@ on:
 
 jobs:
   image_tags:
+    permissions:
+      contents: read
+      packages: read
+
     runs-on: ubuntu-latest
     outputs:
       tag_short: ${{ steps.image_tags.outputs.tag_short }}
