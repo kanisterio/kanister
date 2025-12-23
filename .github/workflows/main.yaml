@@ -129,17 +129,7 @@ jobs:
     - run: make release-snapshot
     - run: COMMIT_SHA=${{ github.sha }} ./build/push_images.sh
   image_tags:
-    runs-on: ubuntu-latest
-    outputs:
-      tag_short: ${{ steps.image_tags.outputs.tag_short }}
-      tag_long: ${{ steps.image_tags.outputs.tag_long }}
-    steps:
-    - id: image_tags
-      env:
-        COMMIT_SHA: ${{ github.sha }}
-      run: |
-        echo "tag_short=short-commit-${COMMIT_SHA::12}" >> $GITHUB_OUTPUT
-        echo "tag_long=commit-${COMMIT_SHA}" >> $GITHUB_OUTPUT
+    uses: ./.github/workflows/image-tags.yaml
   release_example_docker_images:
     needs: [release, image_tags]
     permissions:
@@ -153,4 +143,3 @@ jobs:
       extra_tags: |
         ${{ needs.image_tags.outputs.tag_short }}
         ${{ needs.image_tags.outputs.tag_long }}
-
