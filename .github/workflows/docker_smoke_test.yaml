@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  REGISTRY: ghcr.io
+  
 jobs:
 
   image_tags:
