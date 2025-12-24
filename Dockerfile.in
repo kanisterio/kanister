@@ -12,6 +12,8 @@ LABEL name=ARG_BIN \
       maintainer="Kanister maintainers<kanister.maintainers@veeam.com>" \
       description="Frameworks and utilities for application-specific data management, has updated openssl-libs."
 
+RUN echo "===== CI DEBUG: Docker build has started ====="
+
 RUN microdnf -y update openssl-libs cyrus-sasl-lib && \
     microdnf -y install git && \
     microdnf clean all
