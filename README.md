@@ -132,3 +132,6 @@ We welcome contributions to Kanister! If you're interested in getting involved, 
 ## License
 
 Apache License 2.0, see [LICENSE](https://github.com/kanisterio/kanister/blob/master/LICENSE).
+
+Testing CI Smoke Test 
+It should not be executed if no dockerfile is changed
