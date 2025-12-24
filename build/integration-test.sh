@@ -125,6 +125,22 @@ fi
 check_dependencies
 echo "Running integration tests:"
 
+# This loop uses standard Unix utilities to process a pipe separated
+# TEST_APPS list (for example: ^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$).
+#
+# On each loop iteration, it selects the next batch of apps based on the
+# current INDEX. The batch size is controlled by DOP (DOP=3), and tests
+# are run in parallel only for that batch.
+#
+# Since this logic runs inside a loop, all apps are processed sequentially
+# in controlled parallel batches.
+#
+# Example:
+#   TEST_APPS = A|B|C|D|E|F|G, DOP = 3
+#
+#   INDEX = 0 → runs A|B|C
+#   INDEX = 1 → runs D|E|F
+#   INDEX = 2 → runs G
 pushd ${INTEGRATION_TEST_DIR}
 INDEX=0
 while true; do
