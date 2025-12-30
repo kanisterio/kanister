@@ -57,10 +57,17 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
+      - name: Build local kanister-tools image
+        run: |
+          docker build \
+            -f docker/build/Dockerfile \
+            -t kanister-tools:ci \
+            docker/build
+
       - name: Build Docker image
         run: |
           docker build \
-            --build-arg TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ github.sha }} \
+            --build-arg TOOLS_IMAGE=kanister-tools:ci \
             -f ${{ matrix.image.dockerfile }} \
             -t test/${{ matrix.image.name }}:ci \
             ${{ matrix.image.context }}
