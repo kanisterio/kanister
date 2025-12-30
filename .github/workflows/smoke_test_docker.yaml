@@ -7,6 +7,9 @@ on:
       - docker/**
       - .github/workflows/**
 
+permissions:
+  contents: read
+
 jobs:
   docker-correctness:
     runs-on: ubuntu-latest
