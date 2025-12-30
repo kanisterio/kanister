@@ -11,9 +11,17 @@ permissions:
   contents: read
 
 jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        bin: [ kanctl, kando ]
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - run: make build BIN=${{ matrix.bin }}
+        
   docker-correctness:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         image:
