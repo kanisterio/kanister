@@ -1,0 +1,86 @@
+name: Docker Image Correctness Tests
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile.in
+      - docker/**
+      - .github/workflows/**
+
+jobs:
+  docker-correctness:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        image:
+          - name: couchbase-tools
+            dockerfile: docker/couchbase-tools/Dockerfile
+            context: docker/couchbase-tools
+            binaries:
+              - kando
+              - kanctl
+          - name: mssql-tools
+            dockerfile: docker/mssql-tools/Dockerfile
+            context: docker/mssql-tools
+            binaries:
+              - kubectl
+              - kando
+          - name: redis-tools
+            dockerfile: docker/redis-tools/Dockerfile
+            context: docker/redis-tools
+            binaries:
+              - kando
+              - kanctl
+          - name: postgres-kanister-tools
+            dockerfile: docker/postgres-kanister-tools/Dockerfile
+            context: docker/postgres-kanister-tools
+            binaries:
+              - restic
+              - gosu
+              - kando
+          - name: tools
+            dockerfile: docker/tools/Dockerfile
+            context: docker/tools
+            binaries:
+              - restic
+              - gosu
+              - kopia
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f ${{ matrix.image.dockerfile }} \
+            -t test/${{ matrix.image.name }}:ci \
+            ${{ matrix.image.context }}
+
+      - name: Container starts
+        run: |
+          docker run --rm test/${{ matrix.image.name }}:ci true
+
+      - name: Validate binaries
+        run: |
+          docker run --rm test/${{ matrix.image.name }}:ci sh -eu << 'EOF'
+          for bin in ${{ join(matrix.image.binaries, ' ') }}; do
+            echo "Validating binary: $bin"
+
+            # Binary should exist
+            command -v "$bin" >/dev/null
+
+            # Binary should execute
+            "$bin" --help >/dev/null 2>&1 || true
+
+            # No missing shared libraries
+            if command -v ldd >/dev/null 2>&1; then
+              ldd "$(command -v "$bin")" | grep "not found" && exit 1 || true
+            fi
+
+            echo "✔ $bin OK"
+          done
+          EOF
