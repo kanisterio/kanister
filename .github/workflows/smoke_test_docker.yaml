@@ -27,25 +27,21 @@ jobs:
         image:
           - name: couchbase-tools
             dockerfile: docker/couchbase-tools/Dockerfile
-            context: docker/couchbase-tools
             binaries:
               - kando
               - kanctl
           - name: mssql-tools
             dockerfile: docker/mssql-tools/Dockerfile
-            context: docker/mssql-tools
             binaries:
               - kubectl
               - kando
           - name: redis-tools
             dockerfile: docker/redis-tools/Dockerfile
-            context: docker/redis-tools
             binaries:
               - kando
               - kanctl
           - name: postgres-kanister-tools
             dockerfile: docker/postgres-kanister-tools/Dockerfile
-            context: docker/postgres-kanister-tools
             binaries:
               - restic
               - gosu
@@ -64,12 +60,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
-      - name: Build local kanister-tools image
+      - name: Build Kanister Tools image
         run: |
           docker build \
             -f docker/tools/Dockerfile \
-            -t kanister-tools:ci \
-            docker/build
+            -t kanister-tools:ci
 
       - name: Build Docker image
         run: |
