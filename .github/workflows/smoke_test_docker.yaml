@@ -64,11 +64,16 @@ jobs:
         run: |
           docker build \
             -f docker/tools/Dockerfile \
-            -t kanister-tools:ci
+            -t kanister-tools:ci \
+            .
 
       - name: Build Docker image
         run: |
-          docker build -f ${{ matrix.image.dockerfile }} -t test/${{ matrix.image.name }}:ci .
+          docker build \
+            --build-arg TOOLS_IMAGE=kanister-tools:ci \
+            -f ${{ matrix.image.dockerfile }} \
+            -t test/${{ matrix.image.name }}:ci \
+            .
 
       - name: Container starts
         run: |
