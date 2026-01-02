@@ -52,7 +52,6 @@ jobs:
               - kando
           - name: tools
             dockerfile: docker/tools/Dockerfile
-            context: docker/tools
             binaries:
               - restic
               - gosu
@@ -77,8 +76,7 @@ jobs:
           docker build \
             --build-arg TOOLS_IMAGE=kanister-tools:ci \
             -f ${{ matrix.image.dockerfile }} \
-            -t test/${{ matrix.image.name }}:ci \
-            ${{ matrix.image.context }}
+            -t test/${{ matrix.image.name }}:ci
 
       - name: Container starts
         run: |
