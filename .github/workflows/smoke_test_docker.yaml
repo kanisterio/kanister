@@ -71,7 +71,8 @@ jobs:
           docker build \
             --build-arg TOOLS_IMAGE=kanister-tools:ci \
             -f ${{ matrix.image.dockerfile }} \
-            -t test/${{ matrix.image.name }}:ci
+            -t test/${{ matrix.image.name }}:ci \
+            .
 
       - name: Container starts
         run: |
