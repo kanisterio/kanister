@@ -21,28 +21,28 @@ jobs:
             binaries:
               - kando
               - kanctl
-          - name: mssql-tools
-            dockerfile: docker/mssql-tools/Dockerfile
-            binaries:
-              - kubectl
-              - kando
-          - name: redis-tools
-            dockerfile: docker/redis-tools/Dockerfile
-            binaries:
-              - kando
-              - kanctl
-          - name: postgres-kanister-tools
-            dockerfile: docker/postgres-kanister-tools/Dockerfile
-            binaries:
-              - restic
-              - gosu
-              - kando
-          - name: tools
-            dockerfile: docker/tools/Dockerfile
-            binaries:
-              - restic
-              - gosu
-              - kopia
+#          - name: mssql-tools
+#            dockerfile: docker/mssql-tools/Dockerfile
+#            binaries:
+#              - kubectl
+#              - kando
+#          - name: redis-tools
+#            dockerfile: docker/redis-tools/Dockerfile
+#            binaries:
+#              - kando
+#              - kanctl
+#          - name: postgres-kanister-tools
+#            dockerfile: docker/postgres-kanister-tools/Dockerfile
+#            binaries:
+#              - restic
+#              - gosu
+#              - kando
+#          - name: tools
+#            dockerfile: docker/tools/Dockerfile
+#            binaries:
+#              - restic
+#              - gosu
+#              - kopia
 
     steps:
       - name: Checkout repository
