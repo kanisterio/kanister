@@ -1,49 +1,15 @@
 name: Docker Image Correctness Tests
-
 on:
   pull_request:
     paths:
       - Dockerfile.in
       - docker/**
       - .github/workflows/**
-
 permissions:
   contents: read
-
 jobs:
-  docker-correctness:
+  couchbase-tools:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        image:
-          - name: couchbase-tools
-            dockerfile: docker/couchbase-tools/Dockerfile
-            binaries:
-              - kando
-              - kanctl
-#          - name: mssql-tools
-#            dockerfile: docker/mssql-tools/Dockerfile
-#            binaries:
-#              - kubectl
-#              - kando
-#          - name: redis-tools
-#            dockerfile: docker/redis-tools/Dockerfile
-#            binaries:
-#              - kando
-#              - kanctl
-#          - name: postgres-kanister-tools
-#            dockerfile: docker/postgres-kanister-tools/Dockerfile
-#            binaries:
-#              - restic
-#              - gosu
-#              - kando
-#          - name: tools
-#            dockerfile: docker/tools/Dockerfile
-#            binaries:
-#              - restic
-#              - gosu
-#              - kopia
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -51,71 +17,37 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
-      # ------------------------------------------------------------
-      # Build ALL binaries needed by ANY image (single filesystem)
-      # ------------------------------------------------------------
-      - name: Build required binaries
+      - name: Build binaries
         run: |
-          set -eux
+          make build BIN=kando
+          make build BIN=kanctl
+          cp bin/amd64/kando .
+          cp bin/amd64/kanctl .
 
-          BINS="kando kanctl kubectl restic gosu kopia"
-
-          for bin in $BINS; do
-            make build BIN=$bin || true
-          done
-
-          # Copy binaries into Docker build context (repo root)
-          for bin in $BINS; do
-            if [ -f "bin/amd64/$bin" ]; then
-              cp "bin/amd64/$bin" .
-            fi
-          done
-
-      # ------------------------------------------------------------
-      # Build base tools image once
-      # ------------------------------------------------------------
-      - name: Build Kanister tools base image
+      - name: Build tools base image
         run: |
-          docker build \
+          docker build --no-cache \
             -f docker/tools/Dockerfile \
-            -t kanister-tools:ci \
-            .
+            -t kanister-tools:ci .
 
-      # ------------------------------------------------------------
-      # Build target image under test
-      # ------------------------------------------------------------
-      - name: Build Docker image
+      - name: Build image
         run: |
-          docker build \
+          docker build --no-cache \
             --build-arg TOOLS_IMAGE=kanister-tools:ci \
-            -f ${{ matrix.image.dockerfile }} \
-            -t test/${{ matrix.image.name }}:ci \
-            .
+            -f docker/couchbase-tools/Dockerfile \
+            -t test/couchbase-tools:ci .
 
-      # ------------------------------------------------------------
-      # Container startup validation
-      # ------------------------------------------------------------
       - name: Container starts
         run: |
           docker run --rm test/${{ matrix.image.name }}:ci true
 
-      # ------------------------------------------------------------
-      # Binary validation
-      # ------------------------------------------------------------
-      - name: Validate binaries
+      - name: Validate
         run: |
-          docker run --rm test/${{ matrix.image.name }}:ci sh -eu << 'EOF'
-          for bin in ${{ join(matrix.image.binaries, ' ') }}; do
-            echo "Validating binary: $bin"
+          docker run --rm test/couchbase-tools:ci sh -c \
+            "kando --help && kanctl --help"
 
-            command -v "$bin" >/dev/null
-
-            "$bin" --help >/dev/null 2>&1 || true
-
-            if command -v ldd >/dev/null 2>&1; then
-              ldd "$(command -v "$bin")" | grep "not found" && exit 1 || true
-            fi
-
-            echo "✔ $bin OK"
-          done
-          EOF
+      - name: Cleanup
+        if: always()
+        run: |
+          docker system prune -af
+          docker builder prune -af
