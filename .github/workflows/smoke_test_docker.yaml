@@ -68,7 +68,7 @@ jobs:
       - name: Build local kanister-tools image
         run: |
           docker build \
-            -f docker/build/Dockerfile \
+            -f docker/tools/Dockerfile \
             -t kanister-tools:ci \
             docker/build
 
