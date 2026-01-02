@@ -11,15 +11,6 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        bin: [ kanctl, kando ]
-    steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - run: make build BIN=${{ matrix.bin }}
-        
   docker-correctness:
     runs-on: ubuntu-latest
     strategy:
@@ -60,13 +51,39 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
-      - name: Build Kanister Tools image
+      # ------------------------------------------------------------
+      # Build ALL binaries needed by ANY image (single filesystem)
+      # ------------------------------------------------------------
+      - name: Build required binaries
+        run: |
+          set -eux
+
+          BINS="kando kanctl kubectl restic gosu kopia"
+
+          for bin in $BINS; do
+            make build BIN=$bin || true
+          done
+
+          # Copy binaries into Docker build context (repo root)
+          for bin in $BINS; do
+            if [ -f "bin/amd64/$bin" ]; then
+              cp "bin/amd64/$bin" .
+            fi
+          done
+
+      # ------------------------------------------------------------
+      # Build base tools image once
+      # ------------------------------------------------------------
+      - name: Build Kanister tools base image
         run: |
           docker build \
             -f docker/tools/Dockerfile \
             -t kanister-tools:ci \
             .
 
+      # ------------------------------------------------------------
+      # Build target image under test
+      # ------------------------------------------------------------
       - name: Build Docker image
         run: |
           docker build \
@@ -75,23 +92,26 @@ jobs:
             -t test/${{ matrix.image.name }}:ci \
             .
 
+      # ------------------------------------------------------------
+      # Container startup validation
+      # ------------------------------------------------------------
       - name: Container starts
         run: |
           docker run --rm test/${{ matrix.image.name }}:ci true
 
+      # ------------------------------------------------------------
+      # Binary validation
+      # ------------------------------------------------------------
       - name: Validate binaries
         run: |
           docker run --rm test/${{ matrix.image.name }}:ci sh -eu << 'EOF'
           for bin in ${{ join(matrix.image.binaries, ' ') }}; do
             echo "Validating binary: $bin"
 
-            # Binary should exist
             command -v "$bin" >/dev/null
 
-            # Binary should execute
             "$bin" --help >/dev/null 2>&1 || true
 
-            # No missing shared libraries
             if command -v ldd >/dev/null 2>&1; then
               ldd "$(command -v "$bin")" | grep "not found" && exit 1 || true
             fi
