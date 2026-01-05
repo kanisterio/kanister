@@ -1,4 +1,4 @@
-FROM golang:1.24.6-bullseye@sha256:2cdc80dc25edcb96ada1654f73092f2928045d037581fa4aa7c40d18af7dd85a
+FROM golang:1.25.5-bookworm@sha256:5117d68695f57faa6c2b3a49a6f3187ec1f66c75d5b080e4360bfe4c1ada398c
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
 ARG TARGETPLATFORM
@@ -19,7 +19,7 @@ COPY --from=goreleaser/goreleaser:v1.26.2 /usr/bin/goreleaser /usr/local/bin/
 
 COPY --from=alpine/helm:3.12.2 /usr/bin/helm /usr/local/bin/
 
-COPY --from=golangci/golangci-lint:v2.1.6 /usr/bin/golangci-lint /usr/local/bin/
+COPY --from=golangci/golangci-lint:v2.5.0 /usr/bin/golangci-lint /usr/local/bin/
 
 RUN wget -O /usr/local/bin/kind \
       https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -) \
@@ -30,10 +30,17 @@ RUN git config --global --add safe.directory /go/src/github.com/kanisterio/kanis
 # Adding CRD documentation generation tool.
 RUN GOBIN=/usr/local/bin go install github.com/ahmetb/gen-crd-api-reference-docs@v0.3.0
 
-RUN apt-get update && apt-get install -y pip
+RUN apt-get update && apt-get install -y python3-pip python3-venv
 
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+
+# Create and activate a virtual environment, then install requirements
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
+    && /opt/venv/bin/pip install -r requirements.txt
+
+# Make sure the venv Python is used by default
+ENV PATH="/opt/venv/bin:$PATH"
 
 RUN apt-get install -y vim
 

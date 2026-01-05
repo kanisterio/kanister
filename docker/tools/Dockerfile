@@ -1,5 +1,5 @@
 # Build Kopia binary
-FROM golang:1.24.6-bullseye@sha256:2cdc80dc25edcb96ada1654f73092f2928045d037581fa4aa7c40d18af7dd85a AS builder
+FROM golang:1.25.4-bookworm@sha256:e17419604b6d1f9bc245694425f0ec9b1b53685c80850900a376fb10cb0f70cb AS builder
 
 ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
@@ -53,12 +53,12 @@ RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
             -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopia_build_commit} \
             -X github.com/kopia/kopia/repo.BuildGitHubRepo=${kopia_repo_org}" .
 
-RUN adduser kopia && addgroup kopia kopia
+RUN adduser --disabled-password --gecos "" kopia
 USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-FROM debian:bullseye@sha256:5e2b4654ea0dc0bc22434199dace15adf9799f292857679fa79f9395e6d4dafd
+FROM debian:bullseye@sha256:ee239c601913c0d3962208299eef70dcffcb7aac1787f7a02f6d3e2b518755e6
 
 WORKDIR /kopia
 
@@ -71,7 +71,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.6@sha256:34880b64c07f28f64d95737f82f891516de9a3b43583f39970f7bf8e4cfa48b7
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:61d5ad475048c2e655cd46d0a55dfeaec182cc3faa6348cb85989a7c9e196483
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
