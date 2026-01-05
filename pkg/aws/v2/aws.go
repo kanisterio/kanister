@@ -27,14 +27,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/kanisterio/errkit"
-
+	
 	awsrole "github.com/kanisterio/kanister/pkg/aws/v2/role"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
-	// ConfigRegion represents region key required in the map "config"
+	// ConfigRegion represents region key required in the map "config".
 	ConfigRegion = "region"
 	// ConfigRole represents the key for the ARN of the role which can be assumed.
 	// It is optional.
@@ -44,23 +44,23 @@ const (
 	// "config". It is optional.
 	ConfigEFSVaultName = "efsVaultName"
 
-	// ConfigWebIdentityToken represents the key for AWS Web Identity token
+	// ConfigWebIdentityToken represents the key for AWS Web Identity token.
 	ConfigWebIdentityToken = "webIdentityToken"
 
-	// AccessKeyID represents AWS Access key ID
+	// AccessKeyID represents AWS Access key ID.
 	AccessKeyID = "AWS_ACCESS_KEY_ID"
-	// SecretAccessKey represents AWS Secret Access Key
+	// SecretAccessKey represents AWS Secret Access Key.
 	SecretAccessKey = "AWS_SECRET_ACCESS_KEY"
-	// SessionToken represents AWS Session Key
+	// SessionToken represents AWS Session Key.
 	SessionToken = "AWS_SESSION_TOKEN"
-	// Region represents AWS region
+	// Region represents AWS region.
 	Region = "AWS_REGION"
 
-	// From AWS SDK "aws/session/env_config.go"
+	// From AWS SDK "aws/session/env_config.go".
 	WebIdentityTokenFilePathEnvKey = "AWS_WEB_IDENTITY_TOKEN_FILE"
 	RoleARNEnvKey                  = "AWS_ROLE_ARN"
 
-	// TODO: Make this configurable via `config`
+	// TODO: Make this configurable via `config`.
 	AssumeRoleDurationDefault = 60 * time.Minute
 	AssumeRoleDuration        = "assumeRoleDuration"
 )
@@ -68,7 +68,7 @@ const (
 var _ stscreds.IdentityTokenRetriever = (*staticTokenRetriever)(nil)
 
 // staticTokenRetriever implements the stscreds.IdentityTokenRetriever interface for retrieval of
-// plaintext web identity token
+// plaintext web identity token.
 type staticTokenRetriever string
 
 // GetIdentityToken returns a plaintext web identity token as is.
@@ -77,7 +77,7 @@ func (f staticTokenRetriever) GetIdentityToken() ([]byte, error) {
 }
 
 // fileTokenRetriever implements the stscreds.IdentityTokenRetriever interface for retrieval of
-// web identity token from file
+// web identity token from file.
 type fileTokenRetriever struct {
 	filePath string
 }
@@ -104,13 +104,13 @@ func authenticateAWSCredentials(
 	config map[string]string,
 	assumeRoleDuration time.Duration,
 ) (aws.CredentialsProvider, string, error) {
-	// If AccessKeys were provided - use those
+	// If AccessKeys were provided - use those.
 	creds := fetchStaticAWSCredentials(config)
 	if creds != nil {
 		return creds, "", nil
 	}
 
-	// If Web Identity token and role were provided - use them
+	// If Web Identity token and role were provided - use them.
 	var err error
 	creds, err = fetchWebIdentityTokenFromConfig(ctx, config, assumeRoleDuration)
 	if err != nil {
@@ -120,7 +120,7 @@ func authenticateAWSCredentials(
 		return creds, config[ConfigRole], nil
 	}
 
-	// Otherwise use Web Identity token file and role provided via ENV
+	// Otherwise use Web Identity token file and role provided via ENV.
 	creds, err = fetchWebIdentityTokenFromFile(ctx, assumeRoleDuration)
 	if err != nil {
 		return nil, "", err
@@ -145,7 +145,7 @@ func fetchWebIdentityTokenFromConfig(ctx context.Context, config map[string]stri
 		return nil, nil
 	}
 
-	cfg, err := awsconfig.LoadDefaultConfig(ctx)
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(config[ConfigRegion]))
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to load default config for web identity token from config")
 	}
@@ -167,6 +167,7 @@ func fetchWebIdentityTokenFromFile(ctx context.Context, assumeRoleDuration time.
 		return nil, nil
 	}
 
+	// LoadDefaultConfig will use AWS_REGION or AWS_DEFAULT_REGION from environment if set
 	cfg, err := awsconfig.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to load default config for web identity token")
@@ -186,8 +187,8 @@ func fetchWebIdentityTokenFromFile(ctx context.Context, assumeRoleDuration time.
 
 // switchAWSRole checks if the caller wants to assume a different role
 // return as is if ConfigRole is empty, or already same as assumedRole
-// otherwise proceed to switch role
-func switchAWSRole(ctx context.Context, creds aws.CredentialsProvider, targetRole string, currentRole string, assumeRoleDuration time.Duration) (aws.CredentialsProvider, error) {
+// otherwise proceed to switch role.
+func switchAWSRole(ctx context.Context, creds aws.CredentialsProvider, region string, targetRole string, currentRole string, assumeRoleDuration time.Duration) (aws.CredentialsProvider, error) {
 	if targetRole == "" || targetRole == currentRole {
 		return creds, nil
 	}
@@ -197,13 +198,14 @@ func switchAWSRole(ctx context.Context, creds aws.CredentialsProvider, targetRol
 		assumeRoleDuration = 60 * time.Minute
 	}
 	// If the caller wants to use a specific role, use the credentials initialized above to assume that
-	// role and return those credentials instead
-	creds, err := awsrole.Switch(ctx, creds, targetRole, assumeRoleDuration)
+	// role and return those credentials instead.
+	creds, err := awsrole.Switch(ctx, creds, region, targetRole, assumeRoleDuration)
 	return creds, errkit.Wrap(err, "Failed to switch roles")
 }
 
-// GetCredentials returns credentials provider to use for AWS operations
+// GetCredentials returns credentials provider to use for AWS operations.
 func GetCredentials(ctx context.Context, config map[string]string) (aws.CredentialsProvider, error) {
+	region := config[ConfigRegion]
 	assumeRoleDuration, err := durationFromString(config)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to get assume role duration")
@@ -214,8 +216,8 @@ func GetCredentials(ctx context.Context, config map[string]string) (aws.Credenti
 	if err != nil {
 		return nil, err
 	}
-	// Check if role switching is needed, then return creds
-	return switchAWSRole(ctx, creds, config[ConfigRole], assumedRole, assumeRoleDuration)
+	// Check if role switching is needed, then return creds.
+	return switchAWSRole(ctx, creds, region, config[ConfigRole], assumedRole, assumeRoleDuration)
 }
 
 // GetConfig returns a configuration to establish AWS connection and connected region name.
@@ -249,7 +251,7 @@ func IsAwsCredsValid(ctx context.Context, config map[string]string) (bool, error
 	return true, nil
 }
 
-// stsAPI defines the interface for STS operations, used for testing
+// stsAPI defines the interface for STS operations, used for testing.
 type stsAPI interface {
 	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 }

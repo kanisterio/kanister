@@ -25,16 +25,17 @@ import (
 )
 
 // Switch func uses credentials provider to automatically generates New Credentials provider for a given role.
-func Switch(ctx context.Context, creds aws.CredentialsProvider, role string, duration time.Duration) (aws.CredentialsProvider, error) {
-	// Create a temporary config with the provided credentials
+func Switch(ctx context.Context, creds aws.CredentialsProvider, region string, role string, duration time.Duration) (aws.CredentialsProvider, error) {
+	// Create a temporary config with the provided credentials and region.
 	cfg := aws.Config{
 		Credentials: creds,
+		Region:      region,
 	}
 
-	// Create an STS client with the current credentials
+	// Create an STS client with the current credentials.
 	stsClient := sts.NewFromConfig(cfg)
 
-	// Create an assume role provider
+	// Create an assume role provider.
 	roleProvider := stscreds.NewAssumeRoleProvider(stsClient, role, func(o *stscreds.AssumeRoleOptions) {
 		o.Duration = duration
 	})
