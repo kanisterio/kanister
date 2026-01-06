@@ -43,10 +43,11 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 					PathToBackup:           "path/to/backup",
 					ProgressUpdateInterval: 0,
 					Parallelism:            8,
+					IgnoreRuleFilePath:     "path/to/ignorefile",
 				}
 				return SnapshotCreate(args)
 			},
-			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-update-interval=1h",
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --ignore-rules-file=path/to/ignorefile --progress-update-interval=1h",
 		},
 		{
 			f: func() []string {
@@ -63,14 +64,15 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *check.C) {
 		{
 			f: func() []string {
 				args := SnapshotCreateCommandArgs{
-					CommandArgs:    commandArgs,
-					PathToBackup:   "path/to/backup",
-					Parallelism:    8,
-					EstimationType: "rough",
+					CommandArgs:        commandArgs,
+					PathToBackup:       "path/to/backup",
+					Parallelism:        8,
+					EstimationType:     "rough",
+					IgnoreRuleFilePath: "path/to/ignorefile",
 				}
 				return SnapshotCreate(args)
 			},
-			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-estimation-type=rough --progress-update-interval=1h",
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --ignore-rules-file=path/to/ignorefile --progress-estimation-type=rough --progress-update-interval=1h",
 		},
 		{
 			f: func() []string {
