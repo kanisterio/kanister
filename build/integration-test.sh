@@ -123,8 +123,19 @@ else
 fi
 
 check_dependencies
-echo "Running integration tests:"
+echo "Build Kanister Tools Image from Current PR"
 
+if [ -n "${GITHUB_SHA:-}" ]; then
+  VERSION="${GITHUB_SHA}"
+elif git rev-parse --git-dir >/dev/null 2>&1; then
+  VERSION="$(git rev-parse --short HEAD)"
+else
+  VERSION="dev"
+fi
+
+make tools-image VERSION="$VERSION"
+
+echo "Running integration tests:"
 # This loop uses standard Unix utilities to process a pipe separated
 # TEST_APPS list (for example: ^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$).
 #
@@ -155,7 +166,14 @@ while true; do
     [ -z "$CONCURRENT_TEST_APPS" ] && break
 
     echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
-    go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
+
+    go test -v ${TEST_OPTIONS} \
+      -ldflags "-X github.com/kanisterio/kanister/pkg/app.DefaultImageTag=${VERSION}" \
+      -check.f "${CONCURRENT_TEST_APPS}" \
+      -installsuffix "static" \
+      . \
+      -check.v
+
     INDEX=$((INDEX + 1))
 done
 popd

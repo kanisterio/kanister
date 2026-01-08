@@ -277,3 +277,11 @@ reno-report:
 
 reno-lint:
 	@$(MAKE) run CMD="reno lint"
+
+tools-image:
+	docker buildx build \
+	  --load \
+	  --pull \
+	  -t kanister-tools:$(VERSION) \
+	  -f docker/tools/Dockerfile \
+	  .
