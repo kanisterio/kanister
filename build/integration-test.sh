@@ -54,6 +54,24 @@ check_dependencies() {
     fi
 }
 
+build_local_kanister_tools_image() {
+  echo "Build Kanister Tools Image from Current PR"
+
+  if [ -n "${GITHUB_SHA:-}" ]; then
+    VERSION="${GITHUB_SHA}"
+  elif git rev-parse --git-dir >/dev/null 2>&1; then
+    VERSION="$(git rev-parse --short HEAD)"
+  else
+    VERSION="dev"
+  fi
+
+  make build BIN=kando
+  make build BIN=kanctl
+  cp bin/amd64/kando .
+  cp bin/amd64/kanctl .
+  make tools-image VERSION="$VERSION"
+}
+
 usage() {
     cat <<EOM
 Usage: ${0} <app-type>
@@ -123,17 +141,7 @@ else
 fi
 
 check_dependencies
-echo "Build Kanister Tools Image from Current PR"
-
-if [ -n "${GITHUB_SHA:-}" ]; then
-  VERSION="${GITHUB_SHA}"
-elif git rev-parse --git-dir >/dev/null 2>&1; then
-  VERSION="$(git rev-parse --short HEAD)"
-else
-  VERSION="dev"
-fi
-
-make tools-image VERSION="$VERSION"
+build_local_kanister_tools_image
 
 echo "Running integration tests:"
 # This loop uses standard Unix utilities to process a pipe separated
