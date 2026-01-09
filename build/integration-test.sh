@@ -29,6 +29,19 @@ TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 
 SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$"
 
+# Determine the tools image version used for integration tests.
+# The image is built from the current PR:
+#   - In CI, use GITHUB_SHA so tests run against the exact PR commit image
+#   - Locally, fall back to the current git HEAD commit
+#   - If git metadata is unavailable, use "dev" as a safe default
+if [[ -n "${GITHUB_SHA:-}" ]]; then
+  TOOLS_IMAGE_VERSION="commit-${GITHUB_SHA}"
+elif git rev-parse --git-dir >/dev/null 2>&1; then
+  TOOLS_IMAGE_VERSION="short-commit-$(git rev-parse --short HEAD)"
+else
+  TOOLS_IMAGE_VERSION="commit-dev"
+fi
+
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
@@ -155,7 +168,17 @@ while true; do
     [ -z "$CONCURRENT_TEST_APPS" ] && break
 
     echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
-    go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
+
+    # Run tests with the tools image tag injected at build time. DefaultImageTag is set to TOOLS_IMAGE_VERSION so
+    # integration tests reference the tools image built from the current PR commit, ensuring tests execute against the
+    # exact image under test rather than a stale or pre-published image.
+    go test -v ${TEST_OPTIONS} \
+      -ldflags "-X github.com/kanisterio/kanister/pkg/app.DefaultImageTag=${TOOLS_IMAGE_VERSION}" \
+      -check.f "${CONCURRENT_TEST_APPS}" \
+      -installsuffix static \
+      . \
+      -check.v
+
     INDEX=$((INDEX + 1))
 done
 popd

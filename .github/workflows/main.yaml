@@ -61,6 +61,62 @@ jobs:
     - name: reno_report_check
       run: make reno-report
 
+  # Builds a Kanister tools container image from the current pull request commit.
+  # The image is tagged using the PR commit SHA and pushed to GHCR so that
+  # integration tests can consume the exact code under review.
+  build_test_tools_image:
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: kanisterio/test_tools_image
+    runs-on: ubuntu-24.04
+    needs: image_tags
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=raw,value=integration-test
+            {{date 'YYYY.MM.DD-HHmm'}}
+            ${{ needs.image_tags.outputs.tag_short }}
+            ${{ needs.image_tags.outputs.tag_long }}
+      - name: Login to GHCR
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # Deletes the Kanister tools Docker image created for this pull request
+  # from GitHub Container Registry (GHCR) after integration tests complete.
+  cleanup_test_tools_image:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    needs: test
+    if: always()
+    steps:
+      - name: Delete PR tools image
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: test_tools_image
+          package-type: container
+
   test:
     runs-on: ubuntu-24.04
     needs: gomod
