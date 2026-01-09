@@ -36,6 +36,17 @@ VERSION ?= $(shell git describe --tags --always --dirty)
 # This version-strategy uses a manual value to set the version string
 #VERSION := 1.2.3
 
+# version strategy: use CI SHA, otherwise git HEAD short SHA, otherwise dev
+# it is mostly used in integration test for building kanister tools image
+# from current PR
+TOOLS_VERSION ?= dev
+
+ifneq ($(strip $(GITHUB_SHA)),)
+  TOOLS_VERSION := $(GITHUB_SHA)
+else ifneq ($(shell git rev-parse --git-dir >/dev/null 2>&1 && echo yes),)
+  TOOLS_VERSION := $(shell git rev-parse --short HEAD)
+endif
+
 PWD := $$(pwd)
 
 # Whether to build inside a containerized build environment
@@ -169,6 +180,9 @@ helm-test: build-dirs
 	@$(MAKE) run CMD="./build/helm-test.sh $(SRC_DIRS)"
 
 integration-test: build-dirs
+	@$(MAKE) build BIN=kando
+	@$(MAKE) build BIN=kanctl
+	@$(MAKE) tools-image TOOLS_VERSION=$(TOOLS_VERSION)
 	@$(MAKE) run CMD="./build/integration-test.sh short"
 
 openshift-test:
@@ -282,6 +296,6 @@ tools-image:
 	docker buildx build \
 	  --load \
 	  --pull \
-	  -t kanister-tools:$(VERSION) \
+	  -t kanister-tools:$(TOOLS_VERSION) \
 	  -f docker/tools/Dockerfile \
 	  .
