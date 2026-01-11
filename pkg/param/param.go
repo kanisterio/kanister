@@ -177,6 +177,7 @@ const (
 	NamespaceKind        = "namespace"
 	SecretKind           = "secret"
 	ConfigMapKind        = "configmap"
+	UnstructuredKind     = "unstructured"
 )
 
 // New function fetches and returns the desired params
