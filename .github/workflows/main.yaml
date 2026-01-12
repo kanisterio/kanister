@@ -72,7 +72,10 @@ jobs:
       REGISTRY: ghcr.io
       IMAGE_NAME: kanisterio/test_tools_image
     runs-on: ubuntu-24.04
-    needs: image_tags
+    needs: [image_tags, gomod]
+    strategy:
+      matrix:
+        bin: [ kanctl, kando ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
@@ -95,6 +98,8 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Tools
+        run: make build BIN=${{ matrix.bin }}
       - name: Build and push
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
@@ -111,19 +116,14 @@ jobs:
       contents: read
       packages: write
     runs-on: ubuntu-24.04
-    needs: [gomod, test]
+    needs: test
     if: always()
-    strategy:
-      matrix:
-        bin: [ kanctl, kando ]
     steps:
       - name: Delete PR tools image
         uses: actions/delete-package-versions@v5
         with:
           package-name: test_tools_image
           package-type: container
-      - name: Build Tools
-        run: make build BIN=${{ matrix.bin }}
   test:
     runs-on: ubuntu-24.04
     needs: gomod
