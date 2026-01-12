@@ -107,19 +107,23 @@ jobs:
   # Deletes the Kanister tools Docker image created for this pull request
   # from GitHub Container Registry (GHCR) after integration tests complete.
   cleanup_test_tools_image:
-    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
-    needs: test
+    runs-on: ubuntu-24.04
+    needs: [gomod, test]
     if: always()
+    strategy:
+      matrix:
+        bin: [ kanctl, kando ]
     steps:
       - name: Delete PR tools image
         uses: actions/delete-package-versions@v5
         with:
           package-name: test_tools_image
           package-type: container
-
+      - name: Build Tools
+        run: make build BIN=${{ matrix.bin }}
   test:
     runs-on: ubuntu-24.04
     needs: gomod
