@@ -100,10 +100,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Tools
         run: make build BIN=${{ matrix.bin }}
-      - name: list /bin
+      - name: list bin/
         run: ls -lah bin/
       - name: list amd64
-        run: ls -lah /bin/amd64
+        run: ls -lah bin/amd64/
       - name: list root
         run: ls -lah /
       - name: list current
