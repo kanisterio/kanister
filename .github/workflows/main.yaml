@@ -100,6 +100,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Tools
         run: make build BIN=${{ matrix.bin }}
+      - name: Copy built binary to repo root
+        run: |
+          echo "Copying binary: ${{ matrix.bin }}"
+          cp bin/amd64/${{ matrix.bin }} ./
+          chmod +x ./${{ matrix.bin }}
       - name: Build and push
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
