@@ -73,9 +73,6 @@ jobs:
       IMAGE_NAME: kanisterio/test_tools_image
     runs-on: ubuntu-24.04
     needs: [image_tags, gomod]
-    strategy:
-      matrix:
-        bin: [ kanctl, kando ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
@@ -99,7 +96,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Tools
-        run: make build BIN=${{ matrix.bin }}
+        run: |
+          make build BIN=kanctl
+          make build BIN=kando
       - name: list amd64
         run: ls -lah bin/amd64/
       - name: list current
