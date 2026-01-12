@@ -104,6 +104,8 @@ jobs:
         run: ls -lah bin/
       - name: list root
         run: ls -lah /
+      - name: list current
+        run: ls -lah .
       - name: Copy built binary to repo root
         run: |
           echo "Copying binary: ${{ matrix.bin }}"
