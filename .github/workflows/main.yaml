@@ -102,6 +102,8 @@ jobs:
         run: make build BIN=${{ matrix.bin }}
       - name: list /bin
         run: ls -lah bin/
+      - name: list amd64
+        run: ls -lah /bin/amd64
       - name: list root
         run: ls -lah /
       - name: list current
@@ -127,7 +129,7 @@ jobs:
       contents: read
       packages: write
     runs-on: ubuntu-24.04
-    needs: test
+    needs: [test]
     if: always()
     steps:
       - name: Delete PR tools image
@@ -137,7 +139,7 @@ jobs:
           package-type: container
   test:
     runs-on: ubuntu-24.04
-    needs: gomod
+    needs: [gomod, build_test_tools_image]
     strategy:
       fail-fast: false
       matrix:
