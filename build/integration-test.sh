@@ -37,9 +37,9 @@ SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|^MSSQL$"
 if [[ -n "${GITHUB_SHA:-}" ]]; then
   TOOLS_IMAGE_VERSION="commit-${GITHUB_SHA}"
 elif git rev-parse --git-dir >/dev/null 2>&1; then
-  TOOLS_IMAGE_VERSION="short-commit-$(git rev-parse --short HEAD)"
+  TOOLS_IMAGE_VERSION="short-commit-$(git rev-parse --short=12 HEAD)"
 else
-  TOOLS_IMAGE_VERSION="commit-dev"
+  TOOLS_IMAGE_VERSION="integration-test"
 fi
 
 # OCAPPS has all the apps that are to be tested against openshift cluster

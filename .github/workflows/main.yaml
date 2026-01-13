@@ -119,14 +119,35 @@ jobs:
       contents: read
       packages: write
     runs-on: ubuntu-24.04
-    needs: [test]
+    needs: [ test ]
     if: always()
     steps:
-      - name: Delete PR tools image
-        uses: actions/delete-package-versions@v5
-        with:
-          package-name: test_tools_image
-          package-type: container
+      - name: Delete PR tools image using GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: kanisterio
+          PACKAGE_NAME: test_tools_image
+        run: |
+          set -euo pipefail
+          echo "Fetching package versions..."
+          VERSION_IDS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /orgs/${OWNER}/packages/container/${PACKAGE_NAME}/versions \
+            --paginate \
+            --jq '.[].id')
+          if [[ -z "${VERSION_IDS}" ]]; then
+            echo "No package versions found. Nothing to delete."
+            exit 0
+          fi
+          for ID in ${VERSION_IDS}; do
+            echo "Deleting package version ID=${ID}"
+            gh api \
+              --method DELETE \
+              -H "Accept: application/vnd.github+json" \
+              /orgs/${OWNER}/packages/container/${PACKAGE_NAME}/versions/${ID} \
+              || echo "Skipping protected version ${ID}"
+          done
+          echo "Cleanup completed."
   test:
     runs-on: ubuntu-24.04
     needs: [gomod, build_test_tools_image]
