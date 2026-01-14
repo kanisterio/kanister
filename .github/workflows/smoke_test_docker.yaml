@@ -107,12 +107,14 @@ jobs:
 
       - name: Container starts
         run: |
-          docker run --rm ${{ matrix.image }} true
+          docker run --rm --entrypoint sh \
+          ${{ matrix.image }} \
+          -c 'echo true'
 
       - name: Validate image
         run: |
           docker run --rm ${{ matrix.image }} sh -c \
-            "${{ matrix.validate_cmd }}"
+          "${{ matrix.validate_cmd }}"
 
       - name: Validate shared libraries
         run: |
