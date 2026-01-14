@@ -9,6 +9,6 @@ enabled=1
 gpgkey=https://pgp.mongodb.com/server-6.0.asc
 EOL
 RUN microdnf install yum -y && yum -y update && \
-	yum install -y mongodb-atlas perl-Digest-SHA gzip tar curl bash jq && microdnf clean all
+	yum install -y mongodb-atlas perl-Digest-SHA gzip tar jq && microdnf clean all
 RUN curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
 RUN mkdir -p /root/.config/atlascli/
