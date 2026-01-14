@@ -1,0 +1,139 @@
+name: Docker Images Smoke Test
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile.in
+      - docker/**
+      - .github/workflows/**
+
+permissions:
+  contents: read
+
+jobs:
+  tools-images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: cassandra
+            dockerfile: docker/cassandra/Dockerfile
+            image: test/cassandra:ci
+            validate_cmd: "kando --help && gosu --help && restic --help"
+            binaries: "kando gosu restic"
+
+          - name: couchbase
+            dockerfile: docker/couchbase-tools/Dockerfile
+            image: test/couchbase-tools:ci
+            validate_cmd: "kando --help && kanctl --help"
+            binaries: "kando kanctl"
+
+          - name: foundationdb
+            dockerfile: docker/foundationdb/Dockerfile
+            image: test/foundationdb:ci
+            validate_cmd: "kando --help && kanctl --help"
+            binaries: "kando kanctl"
+
+          - name: adobe sink
+            dockerfile: docker/kafka-adobes3Connector/image/adobeSink.Dockerfile
+            image: test/adobesink
+            validate_cmd: "kando --help"
+            binaries: "kando"
+
+          - name: elastic search
+            dockerfile: docker/kanister-elasticsearch/image/Dockerfile
+            image: test/elasticsearch
+            validate_cmd: "kando --help && restic --help && kopia --help"
+            binaries: "kando restic kopia"
+
+          - name: mongodb
+            dockerfile: docker/mongodb/Dockerfile
+            image: test/mongodb
+            validate_cmd: "kando --help && gosu --help"
+            binaries: "kando gosu"
+
+          - name: mongodb-atlas
+            dockerfile: docker/mongodb-atlas/Dockerfile
+            image: test/mongodb-atlas
+            validate_cmd: "kando --help && kanctl --help"
+            binaries: "kando kanctl"
+
+          - name: mssql
+            dockerfile: docker/mssql-tools/Dockerfile
+            image: test/mssql-tools:ci
+            validate_cmd: "kando --help && kubectl --help"
+            binaries: "kando kubectl"
+
+          - name: postgres-kanister-tools
+            dockerfile: docker/postgres-kanister-tools/Dockerfile
+            image: test/postgres-kanister-tools
+            validate_cmd: "kando --help && gosu --help && restic --help"
+            binaries: "kando gosu restic"
+
+          - name: redis-tools
+            dockerfile: docker/redis-tools/Dockerfile
+            image: test/redis-tools
+            validate_cmd: "kando --help && kanctl --help"
+            binaries: "kando kanctl"
+
+    name: Build & validate ${{ matrix.name }} tools image
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Build tools base image
+        run: |
+          make build BIN=kanctl
+          make build BIN=kando
+          mkdir -p docker/tools
+          cp kanctl docker/tools/kanctl
+          cp kando docker/tools/kando
+          cp LICENSE docker/tools/LICENSE
+          chmod +x docker/tools/kanctl docker/tools/kando
+          docker build --no-cache \
+            -f docker/tools/Dockerfile \
+            -t kanister-tools:ci docker/tools
+
+      - name: Build ${{ matrix.name }} image
+        run: |
+          docker build --no-cache \
+            --build-arg TOOLS_IMAGE=kanister-tools:ci \
+            -f ${{ matrix.dockerfile }} \
+            -t ${{ matrix.image }} .
+
+      - name: Container starts
+        run: |
+          docker run --rm ${{ matrix.image }} true
+
+      - name: Validate image
+        run: |
+          docker run --rm ${{ matrix.image }} sh -c \
+            "${{ matrix.validate_cmd }}"
+
+      - name: Validate shared libraries
+        run: |
+          docker run --rm \
+            ${{ matrix.image }} \
+            sh -c '
+              set -e
+              for BIN in ${{ matrix.binaries }}; do
+                echo "Checking shared libraries for ${BIN}"
+                command -v "${BIN}" >/dev/null || {
+                  echo "ERROR: ${BIN} not found"
+                  exit 1
+                }
+                if ldd "$(command -v ${BIN})" 2>&1 | tee /tmp/ldd.out; then
+                  if grep -q "not found" /tmp/ldd.out; then
+                    echo "ERROR: missing shared libraries detected for ${BIN}"
+                    exit 1
+                  fi
+                else
+                  echo "${BIN} is static (OK)"
+                fi
+                echo "OK: ${BIN}"
+              done
+            '
