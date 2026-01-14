@@ -183,6 +183,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	ctx := context.Background()
 	_, s.cancel = context.WithCancel(ctx)
 
+	log.Info().Print("Starting integration test suite", field.M{"TOOLS_IMAGE_VERSION": app.DefaultImageTag})
 	// Instantiate Client SDKs
 	cfg, err := kube.LoadConfig()
 	c.Assert(err, check.IsNil)

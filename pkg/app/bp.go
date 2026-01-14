@@ -34,10 +34,11 @@ const (
 	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
-
-	// default dev tag for kanister images
-	DefaultImageTag = "v9.99.9-dev"
 )
+
+// DefaultImageTag defines the default development tag for Kanister images
+// This value is overridden during integration tests via ldflags
+var DefaultImageTag = "v9.99.9-dev"
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
 // Blueprint() returns the blueprint from the blueprint repository or the given path.
