@@ -117,9 +117,9 @@ jobs:
 
       - name: Validate shared libraries
         run: |
-          docker run --rm \
+          docker run --rm --entrypoint sh \
             ${{ matrix.image }} \
-            sh -c '
+            -c '
               set -e
               for BIN in ${{ matrix.binaries }}; do
                 echo "Checking shared libraries for ${BIN}"
