@@ -1,4 +1,4 @@
-FROM foundationdb/foundationdb:6.3.22
+FROM foundationdb/foundationdb:7.4.5
 
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
