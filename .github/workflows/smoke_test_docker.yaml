@@ -113,8 +113,7 @@ jobs:
 
       - name: Validate image
         run: |
-          docker run --rm ${{ matrix.image }} sh -c \
-          "${{ matrix.validate_cmd }}"
+          docker run --rm --entrypoint sh ${{ matrix.image }} -c "${{ matrix.validate_cmd }}"
 
       - name: Validate shared libraries
         run: |
