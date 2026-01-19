@@ -421,3 +421,133 @@ func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *check.C)
 	c.Assert(err, check.IsNil)
 	c.Assert(podOverride, check.DeepEquals, expectedOverride)
 }
+
+func (s *MultiContainerRunSuite) TestInitContainerGenericOverride(c *check.C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	// Define a phase with an init container that checks for the user ID
+	phase := crv1alpha1.BlueprintPhase{
+		Name: "testInitContainerGenericOverride",
+		Func: MultiContainerRunFuncName,
+		Args: map[string]interface{}{
+			MultiContainerRunNamespaceArg: s.namespace,
+			MultiContainerRunInitImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunInitCommandArg: []string{
+				"sh",
+				"-c",
+				"if [ \"$(id -u)\" != \"1000\" ]; then echo 'User ID is not 1000'; exit 1; fi",
+			},
+			MultiContainerRunBackgroundImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunBackgroundCommandArg: []string{
+				"sh",
+				"-c",
+				"while [ ! -f /tmp/done ]; do sleep 1; done",
+			},
+			MultiContainerRunOutputImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunOutputCommandArg: []string{
+				"sh",
+				"-c",
+				"echo 'success' && touch /tmp/done",
+			},
+		},
+	}
+
+	// Define a generic override that sets the securityContext on "container"
+	tp := param.TemplateParams{
+		StatefulSet: &param.StatefulSetParams{
+			Namespace: s.namespace,
+		},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []map[string]interface{}{
+				{
+					"name": "container",
+					"securityContext": map[string]interface{}{
+						"runAsUser": 1000,
+					},
+				},
+			},
+		},
+	}
+
+	bp := newTaskBlueprint(phase)
+	action := "test"
+
+	phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, tp)
+	c.Assert(err, check.IsNil)
+	c.Assert(phases, check.HasLen, 1)
+
+	for _, p := range phases {
+		_, err := p.Exec(ctx, *bp, action, tp)
+		c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
+	}
+}
+
+func (s *MultiContainerRunSuite) TestInitContainerGenericOverrideWithExtraInit(c *check.C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	// Define a phase with an init container that checks for the user ID
+	phase := crv1alpha1.BlueprintPhase{
+		Name: "testInitContainerGenericOverrideWithExtraInit",
+		Func: MultiContainerRunFuncName,
+		Args: map[string]interface{}{
+			MultiContainerRunNamespaceArg: s.namespace,
+			MultiContainerRunInitImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunInitCommandArg: []string{
+				"sh",
+				"-c",
+				"if [ \"$(id -u)\" != \"1000\" ]; then echo 'User ID is not 1000'; exit 1; fi",
+			},
+			MultiContainerRunBackgroundImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunBackgroundCommandArg: []string{
+				"sh",
+				"-c",
+				"while [ ! -f /tmp/done ]; do sleep 1; done",
+			},
+			MultiContainerRunOutputImageArg: consts.LatestKanisterToolsImage,
+			MultiContainerRunOutputCommandArg: []string{
+				"sh",
+				"-c",
+				"echo 'success' && touch /tmp/done",
+			},
+		},
+	}
+
+	// Define a generic override that sets the securityContext on "container"
+	// AND adds an extra init container
+	tp := param.TemplateParams{
+		StatefulSet: &param.StatefulSetParams{
+			Namespace: s.namespace,
+		},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []map[string]interface{}{
+				{
+					"name": "container",
+					"securityContext": map[string]interface{}{
+						"runAsUser": 1000,
+					},
+				},
+			},
+			"initContainers": []map[string]interface{}{
+				{
+					"name":    "extra-init",
+					"image":   consts.LatestKanisterToolsImage,
+					"command": []string{"sh", "-c", "echo extra"},
+				},
+			},
+		},
+	}
+
+	bp := newTaskBlueprint(phase)
+	action := "test"
+
+	phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, tp)
+	c.Assert(err, check.IsNil)
+	c.Assert(phases, check.HasLen, 1)
+
+	for _, p := range phases {
+		_, err := p.Exec(ctx, *bp, action, tp)
+		c.Assert(err, check.IsNil, check.Commentf("Phase %s failed", p.Name()))
+	}
+}
