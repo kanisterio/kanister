@@ -337,6 +337,7 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 
 	var containerOverride corev1.Container
 	resultContainers := []corev1.Container{}
+	var backgroundOverride, outputOverride *corev1.Container
 
 	for _, container := range containers {
 		switch container.Name {
@@ -345,8 +346,12 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 			containerOverride = container
 		case "background":
 			hasBackgroundOrOutput = true
+			c := container
+			backgroundOverride = &c
 		case "output":
 			hasBackgroundOrOutput = true
+			c := container
+			outputOverride = &c
 		default:
 			resultContainers = append(resultContainers, container)
 		}
@@ -354,14 +359,58 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 
 	// "container" override is defined, but not specific overrides
 	// Assume the intention was to override "worker containers"
-	if hasContainer && !hasBackgroundOrOutput {
-		backgroundContainer := containerOverride
-		backgroundContainer.Name = "background"
-		outputContainer := containerOverride
-		outputContainer.Name = "output"
-		resultContainers := append(resultContainers, backgroundContainer, outputContainer)
-		podOverride["containers"] = nil
-		return kube.CreateAndMergeJSONPatch(podOverride, crv1alpha1.JSONMap{"containers": resultContainers})
+	if hasContainer {
+		// Apply the generic "container" override to the "init" container as well,
+		// unless the user has explicitly overridden the "init" container.
+		initContainer := containerOverride
+		initContainer.Name = "init"
+
+		// Check if initContainers are already overridden
+		initContainers, ok := getInitContainersFromOverride(podOverride)
+		if !ok {
+			initContainers = []corev1.Container{initContainer}
+		} else {
+			// Check if "init" is explicitly overridden
+			hasInit := false
+			for _, c := range initContainers {
+				if c.Name == "init" {
+					hasInit = true
+					break
+				}
+			}
+
+			if !hasInit {
+				initContainers = append(initContainers, initContainer)
+			}
+		}
+
+		if !hasBackgroundOrOutput {
+			backgroundContainer := containerOverride
+			backgroundContainer.Name = "background"
+			outputContainer := containerOverride
+			outputContainer.Name = "output"
+			resultContainers = append(resultContainers, backgroundContainer, outputContainer)
+		} else {
+			// If specific overrides exist, we keep them
+			if backgroundOverride != nil {
+				resultContainers = append(resultContainers, *backgroundOverride)
+			}
+			if outputOverride != nil {
+				resultContainers = append(resultContainers, *outputOverride)
+			}
+		}
+
+		// We need to remove the original "containers" and "initContainers" from the map
+		// because CreateAndMergeJSONPatch merges lists by key, so "container" would remain
+		// if we didn't remove it. We have rebuilt the complete lists in resultContainers
+		// and initContainers.
+		delete(podOverride, "containers")
+		delete(podOverride, "initContainers")
+
+		return kube.CreateAndMergeJSONPatch(podOverride, crv1alpha1.JSONMap{
+			"containers":     resultContainers,
+			"initContainers": initContainers,
+		})
 	}
 
 	// If "container" override is not defined, nothing to do
@@ -373,7 +422,15 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 }
 
 func getContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Container, bool) {
-	containersRaw, ok := podOverride["containers"]
+	return getContainersFromMap(podOverride, "containers")
+}
+
+func getInitContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Container, bool) {
+	return getContainersFromMap(podOverride, "initContainers")
+}
+
+func getContainersFromMap(podOverride crv1alpha1.JSONMap, key string) ([]corev1.Container, bool) {
+	containersRaw, ok := podOverride[key]
 	if !ok {
 		return nil, false
 	}
