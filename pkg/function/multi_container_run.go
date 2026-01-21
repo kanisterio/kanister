@@ -336,7 +336,7 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 	hasBackgroundOrOutput := false
 
 	var containerOverride corev1.Container
-	resultContainers := []corev1.Container{}
+	var resultContainers []corev1.Container
 	var backgroundOverride, outputOverride *corev1.Container
 
 	for _, container := range containers {
@@ -346,79 +346,87 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 			containerOverride = container
 		case "background":
 			hasBackgroundOrOutput = true
-			c := container
-			backgroundOverride = &c
+			backgroundOverride = &container
 		case "output":
 			hasBackgroundOrOutput = true
-			c := container
-			outputOverride = &c
+			outputOverride = &container
 		default:
 			resultContainers = append(resultContainers, container)
 		}
 	}
 
-	// "container" override is defined, but not specific overrides
-	// Assume the intention was to override "worker containers"
-	if hasContainer {
-		// Apply the generic "container" override to the "init" container as well,
-		// unless the user has explicitly overridden the "init" container.
-		initContainer := containerOverride
-		initContainer.Name = "init"
-
-		// Check if initContainers are already overridden
-		initContainers, ok := getInitContainersFromOverride(podOverride)
-		if !ok {
-			initContainers = []corev1.Container{initContainer}
-		} else {
-			// Check if "init" is explicitly overridden
-			hasInit := false
-			for _, c := range initContainers {
-				if c.Name == "init" {
-					hasInit = true
-					break
-				}
-			}
-
-			if !hasInit {
-				initContainers = append(initContainers, initContainer)
-			}
-		}
-
-		if !hasBackgroundOrOutput {
-			backgroundContainer := containerOverride
-			backgroundContainer.Name = "background"
-			outputContainer := containerOverride
-			outputContainer.Name = "output"
-			resultContainers = append(resultContainers, backgroundContainer, outputContainer)
-		} else {
-			// If specific overrides exist, we keep them
-			if backgroundOverride != nil {
-				resultContainers = append(resultContainers, *backgroundOverride)
-			}
-			if outputOverride != nil {
-				resultContainers = append(resultContainers, *outputOverride)
-			}
-		}
-
-		// We need to remove the original "containers" and "initContainers" from the map
-		// because CreateAndMergeJSONPatch merges lists by key, so "container" would remain
-		// if we didn't remove it. We have rebuilt the complete lists in resultContainers
-		// and initContainers.
-		delete(podOverride, "containers")
-		delete(podOverride, "initContainers")
-
-		return kube.CreateAndMergeJSONPatch(podOverride, crv1alpha1.JSONMap{
-			"containers":     resultContainers,
-			"initContainers": initContainers,
-		})
+	// "container" is a generic alias that should apply to all worker containers.
+	// Expand it to init, background, and output containers (unless explicitly overridden).
+	if !hasContainer {
+		// If "container" override is not defined, nothing to do
+		return podOverride, nil
 	}
 
-	// If "container" override is not defined, nothing to do
+	// Build init containers list
+	initContainers := buildInitContainers(podOverride, containerOverride)
 
-	// If both "container" and either "background" or "output" overrides are defined
-	// Assume user knows what they're doing and keep override as is
+	// Build regular containers list
+	resultContainers = buildRegularContainers(
+		resultContainers,
+		containerOverride,
+		backgroundOverride,
+		outputOverride,
+		hasBackgroundOrOutput,
+	)
 
-	return podOverride, nil
+	// We need to remove the original "containers" and "initContainers" from the map
+	// because CreateAndMergeJSONPatch merges lists by key, so "container" would remain
+	// if we didn't remove it. We have rebuilt the complete lists in resultContainers
+	// and initContainers.
+	delete(podOverride, "containers")
+	delete(podOverride, "initContainers")
+
+	return kube.CreateAndMergeJSONPatch(podOverride, crv1alpha1.JSONMap{
+		"containers":     resultContainers,
+		"initContainers": initContainers,
+	})
+}
+
+// buildInitContainers creates the init containers list, applying the generic container
+// override to the "init" container unless it's explicitly overridden.
+func buildInitContainers(podOverride crv1alpha1.JSONMap, containerOverride corev1.Container) []corev1.Container {
+	initContainer := containerOverride
+	initContainer.Name = "init"
+
+	initContainers, ok := getInitContainersFromOverride(podOverride)
+	if !ok {
+		return []corev1.Container{initContainer}
+	}
+	if !hasContainerNamed(initContainers, "init") {
+		initContainers = append(initContainers, initContainer)
+	}
+	return initContainers
+}
+
+// buildRegularContainers creates the regular containers list, expanding the generic
+// container override to background and output unless explicitly overridden.
+func buildRegularContainers(
+	existing []corev1.Container,
+	containerOverride corev1.Container,
+	backgroundOverride, outputOverride *corev1.Container,
+	hasBackgroundOrOutput bool,
+) []corev1.Container {
+	if !hasBackgroundOrOutput {
+		backgroundContainer := containerOverride
+		backgroundContainer.Name = "background"
+		outputContainer := containerOverride
+		outputContainer.Name = "output"
+		return append(existing, backgroundContainer, outputContainer)
+	}
+
+	// Keep explicit overrides
+	if backgroundOverride != nil {
+		existing = append(existing, *backgroundOverride)
+	}
+	if outputOverride != nil {
+		existing = append(existing, *outputOverride)
+	}
+	return existing
 }
 
 func getContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Container, bool) {
@@ -442,6 +450,16 @@ func getContainersFromMap(podOverride crv1alpha1.JSONMap, key string) ([]corev1.
 	var containers []corev1.Container
 	err = json.Unmarshal(jsonString, &containers)
 	return containers, err == nil
+}
+
+// hasContainerNamed checks if a slice of containers contains one with the given name.
+func hasContainerNamed(containers []corev1.Container, name string) bool {
+	for _, c := range containers {
+		if c.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 func (ktpf *multiContainerRunFunc) setLabelsAndAnnotations(tp param.TemplateParams, labels, annotation map[string]string) {

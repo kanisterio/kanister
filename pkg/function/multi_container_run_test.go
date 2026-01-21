@@ -270,156 +270,325 @@ func (s *MultiContainerRunSuite) TestMultiContainerRunWithoutNamespace(c *check.
 }
 
 func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *check.C) {
-	originalOverride := crv1alpha1.JSONMap{
-		"containers": []interface{}{
-			map[string]interface{}{
-				"name":            "background",
-				"imagePullPolicy": "Always",
-				"resources":       map[string]interface{}{},
+	testCases := []struct {
+		name     string
+		input    crv1alpha1.JSONMap
+		expected crv1alpha1.JSONMap
+	}{
+		{
+			name: "explicit_background_and_output_pass_through_unchanged",
+			input: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name":            "background",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+					map[string]interface{}{
+						"name":            "output",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+				},
 			},
-			map[string]interface{}{
-				"name":            "output",
-				"imagePullPolicy": "Always",
-				"resources":       map[string]interface{}{},
-			},
-		},
-	}
-	podOverride, err := prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, check.IsNil)
-	c.Assert(podOverride, check.DeepEquals, originalOverride)
-
-	originalOverride = crv1alpha1.JSONMap{
-		"containers": []interface{}{
-			map[string]interface{}{
-				"name":            "other_container",
-				"imagePullPolicy": "Always",
-				"resources":       map[string]interface{}{},
-			},
-		},
-	}
-	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, check.IsNil)
-	c.Assert(podOverride, check.DeepEquals, originalOverride)
-
-	originalOverride = crv1alpha1.JSONMap{
-		"containers": []interface{}{
-			map[string]interface{}{
-				"name":            "container",
-				"imagePullPolicy": "Always",
-				"resources":       map[string]interface{}{},
-			},
-			map[string]interface{}{
-				"name":            "other_container",
-				"imagePullPolicy": "Never",
-				"resources":       map[string]interface{}{},
+			expected: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name":            "background",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+					map[string]interface{}{
+						"name":            "output",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+				},
 			},
 		},
-	}
-
-	expectedOverride := crv1alpha1.JSONMap{
-		"containers": []interface{}{
-			map[string]interface{}{
-				"name":            "other_container",
-				"imagePullPolicy": "Never",
-				"resources":       map[string]interface{}{},
+		{
+			name: "unknown_container_name_pass_through_unchanged",
+			input: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name":            "other_container",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+				},
 			},
-			map[string]interface{}{
-				"name":            "background",
-				"imagePullPolicy": "Always",
-				"resources":       map[string]interface{}{},
-			},
-			map[string]interface{}{
-				"name":            "output",
-				"imagePullPolicy": "Always",
-				"resources":       map[string]interface{}{},
+			expected: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name":            "other_container",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+				},
 			},
 		},
-	}
-	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, check.IsNil)
-	c.Assert(podOverride, check.DeepEquals, expectedOverride)
-
-	originalOverride = crv1alpha1.JSONMap{
-		"containers": []interface{}{
-			map[string]interface{}{
-				"name": "container",
-				"resources": map[string]interface{}{
-					"limits": map[string]interface{}{
-						"memory": "128Mi",
+		{
+			name: "container_alias_expands_to_init_background_output",
+			input: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name":            "container",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+					map[string]interface{}{
+						"name":            "other_container",
+						"imagePullPolicy": "Never",
+						"resources":       map[string]interface{}{},
+					},
+				},
+			},
+			expected: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name":            "other_container",
+						"imagePullPolicy": "Never",
+						"resources":       map[string]interface{}{},
+					},
+					map[string]interface{}{
+						"name":            "background",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+					map[string]interface{}{
+						"name":            "output",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+				},
+				"initContainers": []interface{}{
+					map[string]interface{}{
+						"name":            "init",
+						"imagePullPolicy": "Always",
+						"resources":       map[string]interface{}{},
+					},
+				},
+			},
+		},
+		{
+			name: "container_alias_with_resources_expands_to_all",
+			input: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "container",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+				},
+			},
+			expected: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "background",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+					map[string]interface{}{
+						"name": "output",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+				},
+				"initContainers": []interface{}{
+					map[string]interface{}{
+						"name": "init",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "container_alias_with_explicit_background_keeps_explicit",
+			input: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "container",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+					map[string]interface{}{
+						"name": "background",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "256Mi",
+							},
+						},
+					},
+				},
+			},
+			expected: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "background",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "256Mi",
+							},
+						},
+					},
+				},
+				"initContainers": []interface{}{
+					map[string]interface{}{
+						"name": "init",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "explicit_init_override_preserved_not_duplicated",
+			input: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "container",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+				},
+				"initContainers": []interface{}{
+					map[string]interface{}{
+						"name": "init",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "512Mi",
+							},
+						},
+					},
+				},
+			},
+			expected: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "background",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+					map[string]interface{}{
+						"name": "output",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+				},
+				"initContainers": []interface{}{
+					map[string]interface{}{
+						"name": "init",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "512Mi",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:     "nil_input_returns_nil",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "empty_map_returns_empty",
+			input:    crv1alpha1.JSONMap{},
+			expected: crv1alpha1.JSONMap{},
+		},
+		{
+			name: "no_containers_key_pass_through",
+			input: crv1alpha1.JSONMap{
+				"serviceAccountName": "custom-sa",
+			},
+			expected: crv1alpha1.JSONMap{
+				"serviceAccountName": "custom-sa",
+			},
+		},
+		{
+			name: "container_alias_with_explicit_output_only",
+			input: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "container",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
+					map[string]interface{}{
+						"name": "output",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "512Mi",
+							},
+						},
+					},
+				},
+			},
+			expected: crv1alpha1.JSONMap{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "output",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "512Mi",
+							},
+						},
+					},
+				},
+				"initContainers": []interface{}{
+					map[string]interface{}{
+						"name": "init",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
 					},
 				},
 			},
 		},
 	}
 
-	expectedOverride = crv1alpha1.JSONMap{
-		"containers": []interface{}{
-			map[string]interface{}{
-				"name": "background",
-				"resources": map[string]interface{}{
-					"limits": map[string]interface{}{
-						"memory": "128Mi",
-					},
-				},
-			},
-			map[string]interface{}{
-				"name": "output",
-				"resources": map[string]interface{}{
-					"limits": map[string]interface{}{
-						"memory": "128Mi",
-					},
-				},
-			},
-		},
-	}
-	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, check.IsNil)
-	c.Assert(podOverride, check.DeepEquals, expectedOverride)
+	for _, tc := range testCases {
+		c.Log("Running test case:", tc.name)
 
-	originalOverride = crv1alpha1.JSONMap{
-		"containers": []interface{}{
-			map[string]interface{}{
-				"name": "container",
-				"resources": map[string]interface{}{
-					"limits": map[string]interface{}{
-						"memory": "128Mi",
-					},
-				},
-			},
-			map[string]interface{}{
-				"name": "background",
-				"resources": map[string]interface{}{
-					"limits": map[string]interface{}{
-						"memory": "128Mi",
-					},
-				},
-			},
-		},
-	}
+		result, err := prepareActionSetPodSpecOverride(tc.input)
 
-	expectedOverride = crv1alpha1.JSONMap{
-		"containers": []interface{}{
-			map[string]interface{}{
-				"name": "container",
-				"resources": map[string]interface{}{
-					"limits": map[string]interface{}{
-						"memory": "128Mi",
-					},
-				},
-			},
-			map[string]interface{}{
-				"name": "background",
-				"resources": map[string]interface{}{
-					"limits": map[string]interface{}{
-						"memory": "128Mi",
-					},
-				},
-			},
-		},
+		c.Assert(err, check.IsNil, check.Commentf("Test case %q: unexpected error", tc.name))
+		c.Assert(result, check.DeepEquals, tc.expected, check.Commentf("Test case %q: result mismatch", tc.name))
 	}
-	podOverride, err = prepareActionSetPodSpecOverride(originalOverride)
-	c.Assert(err, check.IsNil)
-	c.Assert(podOverride, check.DeepEquals, expectedOverride)
 }
 
 func (s *MultiContainerRunSuite) TestInitContainerGenericOverride(c *check.C) {
@@ -503,7 +672,7 @@ func (s *MultiContainerRunSuite) TestInitContainerGenericOverrideWithExtraInit(c
 			MultiContainerRunBackgroundCommandArg: []string{
 				"sh",
 				"-c",
-				"while [ ! -f /tmp/done ]; do sleep 1; done",
+				"while [ ! -f /tmp/done ]; do sleep 0.1; done",
 			},
 			MultiContainerRunOutputImageArg: consts.LatestKanisterToolsImage,
 			MultiContainerRunOutputCommandArg: []string{
