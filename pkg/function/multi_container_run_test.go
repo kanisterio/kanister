@@ -447,6 +447,14 @@ func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *check.C)
 							},
 						},
 					},
+					map[string]interface{}{
+						"name": "output",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
 				},
 				"initContainers": []interface{}{
 					map[string]interface{}{
@@ -558,6 +566,14 @@ func (s *MultiContainerRunSuite) TestPrepareActionSetPodSpecOverride(c *check.C)
 			},
 			expected: crv1alpha1.JSONMap{
 				"containers": []interface{}{
+					map[string]interface{}{
+						"name": "background",
+						"resources": map[string]interface{}{
+							"limits": map[string]interface{}{
+								"memory": "128Mi",
+							},
+						},
+					},
 					map[string]interface{}{
 						"name": "output",
 						"resources": map[string]interface{}{
