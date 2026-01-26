@@ -419,12 +419,22 @@ func buildRegularContainers(
 		return append(existing, backgroundContainer, outputContainer)
 	}
 
-	// Keep explicit overrides
+	// Keep explicit overrides, but apply generic override to non-overridden containers
 	if backgroundOverride != nil {
 		existing = append(existing, *backgroundOverride)
+	} else {
+		// Apply generic container override to background
+		backgroundContainer := containerOverride
+		backgroundContainer.Name = "background"
+		existing = append(existing, backgroundContainer)
 	}
 	if outputOverride != nil {
 		existing = append(existing, *outputOverride)
+	} else {
+		// Apply generic container override to output
+		outputContainer := containerOverride
+		outputContainer.Name = "output"
+		existing = append(existing, outputContainer)
 	}
 	return existing
 }
