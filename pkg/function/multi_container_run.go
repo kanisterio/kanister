@@ -55,10 +55,14 @@ const (
 )
 
 const (
+	ktpInitContainer       = "init"
 	ktpBackgroundContainer = "background"
 	ktpOutputContainer     = "output"
+	ktpGenericContainer    = "container"
 	ktpSharedVolumeName    = "shared"
 	ktpDefaultSharedDir    = "/tmp/"
+	ktpContainersKey       = "containers"
+	ktpInitContainersKey   = "initContainers"
 )
 
 func init() {
@@ -106,7 +110,7 @@ func (ktpf *multiContainerRunFunc) run(ctx context.Context) (map[string]interfac
 	if ktpf.initImage != "" {
 		initContainers = []corev1.Container{
 			{
-				Name:         "init",
+				Name:         ktpInitContainer,
 				Image:        ktpf.initImage,
 				Command:      ktpf.initCommand,
 				VolumeMounts: volumeMounts,
@@ -341,13 +345,13 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 
 	for _, container := range containers {
 		switch container.Name {
-		case "container":
+		case ktpGenericContainer:
 			hasContainer = true
 			containerOverride = container
-		case "background":
+		case ktpBackgroundContainer:
 			hasBackgroundOrOutput = true
 			backgroundOverride = &container
-		case "output":
+		case ktpOutputContainer:
 			hasBackgroundOrOutput = true
 			outputOverride = &container
 		default:
@@ -378,12 +382,12 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 	// because CreateAndMergeJSONPatch merges lists by key, so "container" would remain
 	// if we didn't remove it. We have rebuilt the complete lists in resultContainers
 	// and initContainers.
-	delete(podOverride, "containers")
-	delete(podOverride, "initContainers")
+	delete(podOverride, ktpContainersKey)
+	delete(podOverride, ktpInitContainersKey)
 
 	return kube.CreateAndMergeJSONPatch(podOverride, crv1alpha1.JSONMap{
-		"containers":     resultContainers,
-		"initContainers": initContainers,
+		ktpContainersKey:     resultContainers,
+		ktpInitContainersKey: initContainers,
 	})
 }
 
@@ -391,13 +395,13 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 // override to the "init" container unless it's explicitly overridden.
 func buildInitContainers(podOverride crv1alpha1.JSONMap, containerOverride corev1.Container) []corev1.Container {
 	initContainer := containerOverride
-	initContainer.Name = "init"
+	initContainer.Name = ktpInitContainer
 
 	initContainers, ok := getInitContainersFromOverride(podOverride)
 	if !ok {
 		return []corev1.Container{initContainer}
 	}
-	if !hasContainerNamed(initContainers, "init") {
+	if !hasContainerNamed(initContainers, ktpInitContainer) {
 		initContainers = append(initContainers, initContainer)
 	}
 	return initContainers
@@ -413,9 +417,9 @@ func buildRegularContainers(
 ) []corev1.Container {
 	if !hasBackgroundOrOutput {
 		backgroundContainer := containerOverride
-		backgroundContainer.Name = "background"
+		backgroundContainer.Name = ktpBackgroundContainer
 		outputContainer := containerOverride
-		outputContainer.Name = "output"
+		outputContainer.Name = ktpOutputContainer
 		return append(existing, backgroundContainer, outputContainer)
 	}
 
@@ -425,7 +429,7 @@ func buildRegularContainers(
 	} else {
 		// Apply generic container override to background
 		backgroundContainer := containerOverride
-		backgroundContainer.Name = "background"
+		backgroundContainer.Name = ktpBackgroundContainer
 		existing = append(existing, backgroundContainer)
 	}
 	if outputOverride != nil {
@@ -433,18 +437,18 @@ func buildRegularContainers(
 	} else {
 		// Apply generic container override to output
 		outputContainer := containerOverride
-		outputContainer.Name = "output"
+		outputContainer.Name = ktpOutputContainer
 		existing = append(existing, outputContainer)
 	}
 	return existing
 }
 
 func getContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Container, bool) {
-	return getContainersFromMap(podOverride, "containers")
+	return getContainersFromMap(podOverride, ktpContainersKey)
 }
 
 func getInitContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Container, bool) {
-	return getContainersFromMap(podOverride, "initContainers")
+	return getContainersFromMap(podOverride, ktpInitContainersKey)
 }
 
 func getContainersFromMap(podOverride crv1alpha1.JSONMap, key string) ([]corev1.Container, bool) {
