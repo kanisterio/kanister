@@ -55,10 +55,14 @@ const (
 )
 
 const (
+	ktpInitContainer       = "init"
 	ktpBackgroundContainer = "background"
 	ktpOutputContainer     = "output"
+	ktpGenericContainer    = "container"
 	ktpSharedVolumeName    = "shared"
 	ktpDefaultSharedDir    = "/tmp/"
+	ktpContainersKey       = "containers"
+	ktpInitContainersKey   = "initContainers"
 )
 
 func init() {
@@ -106,7 +110,7 @@ func (ktpf *multiContainerRunFunc) run(ctx context.Context) (map[string]interfac
 	if ktpf.initImage != "" {
 		initContainers = []corev1.Container{
 			{
-				Name:         "init",
+				Name:         ktpInitContainer,
 				Image:        ktpf.initImage,
 				Command:      ktpf.initCommand,
 				VolumeMounts: volumeMounts,
@@ -336,44 +340,119 @@ func prepareActionSetPodSpecOverride(podOverride crv1alpha1.JSONMap) (crv1alpha1
 	hasBackgroundOrOutput := false
 
 	var containerOverride corev1.Container
-	resultContainers := []corev1.Container{}
+	var resultContainers []corev1.Container
+	var backgroundOverride, outputOverride *corev1.Container
 
 	for _, container := range containers {
 		switch container.Name {
-		case "container":
+		case ktpGenericContainer:
 			hasContainer = true
 			containerOverride = container
-		case "background":
+		case ktpBackgroundContainer:
 			hasBackgroundOrOutput = true
-		case "output":
+			backgroundOverride = &container
+		case ktpOutputContainer:
 			hasBackgroundOrOutput = true
+			outputOverride = &container
 		default:
 			resultContainers = append(resultContainers, container)
 		}
 	}
 
-	// "container" override is defined, but not specific overrides
-	// Assume the intention was to override "worker containers"
-	if hasContainer && !hasBackgroundOrOutput {
-		backgroundContainer := containerOverride
-		backgroundContainer.Name = "background"
-		outputContainer := containerOverride
-		outputContainer.Name = "output"
-		resultContainers := append(resultContainers, backgroundContainer, outputContainer)
-		podOverride["containers"] = nil
-		return kube.CreateAndMergeJSONPatch(podOverride, crv1alpha1.JSONMap{"containers": resultContainers})
+	// "container" is a generic alias that should apply to all worker containers.
+	// Expand it to init, background, and output containers (unless explicitly overridden).
+	if !hasContainer {
+		// If "container" override is not defined, nothing to do
+		return podOverride, nil
 	}
 
-	// If "container" override is not defined, nothing to do
+	// Build init containers list
+	initContainers := buildInitContainers(podOverride, containerOverride)
 
-	// If both "container" and either "background" or "output" overrides are defined
-	// Assume user knows what they're doing and keep override as is
+	// Build regular containers list
+	resultContainers = buildRegularContainers(
+		resultContainers,
+		containerOverride,
+		backgroundOverride,
+		outputOverride,
+		hasBackgroundOrOutput,
+	)
 
-	return podOverride, nil
+	// We need to remove the original "containers" and "initContainers" from the map
+	// because CreateAndMergeJSONPatch merges lists by key, so "container" would remain
+	// if we didn't remove it. We have rebuilt the complete lists in resultContainers
+	// and initContainers.
+	delete(podOverride, ktpContainersKey)
+	delete(podOverride, ktpInitContainersKey)
+
+	return kube.CreateAndMergeJSONPatch(podOverride, crv1alpha1.JSONMap{
+		ktpContainersKey:     resultContainers,
+		ktpInitContainersKey: initContainers,
+	})
+}
+
+// buildInitContainers creates the init containers list, applying the generic container
+// override to the "init" container unless it's explicitly overridden.
+func buildInitContainers(podOverride crv1alpha1.JSONMap, containerOverride corev1.Container) []corev1.Container {
+	initContainer := containerOverride
+	initContainer.Name = ktpInitContainer
+
+	initContainers, ok := getInitContainersFromOverride(podOverride)
+	if !ok {
+		return []corev1.Container{initContainer}
+	}
+	if !hasContainerNamed(initContainers, ktpInitContainer) {
+		initContainers = append(initContainers, initContainer)
+	}
+	return initContainers
+}
+
+// buildRegularContainers creates the regular containers list, expanding the generic
+// container override to background and output unless explicitly overridden.
+func buildRegularContainers(
+	existing []corev1.Container,
+	containerOverride corev1.Container,
+	backgroundOverride, outputOverride *corev1.Container,
+	hasBackgroundOrOutput bool,
+) []corev1.Container {
+	if !hasBackgroundOrOutput {
+		backgroundContainer := containerOverride
+		backgroundContainer.Name = ktpBackgroundContainer
+		outputContainer := containerOverride
+		outputContainer.Name = ktpOutputContainer
+		return append(existing, backgroundContainer, outputContainer)
+	}
+
+	// Keep explicit overrides, but apply generic override to non-overridden containers
+	if backgroundOverride != nil {
+		existing = append(existing, *backgroundOverride)
+	} else {
+		// Apply generic container override to background
+		backgroundContainer := containerOverride
+		backgroundContainer.Name = ktpBackgroundContainer
+		existing = append(existing, backgroundContainer)
+	}
+	if outputOverride != nil {
+		existing = append(existing, *outputOverride)
+	} else {
+		// Apply generic container override to output
+		outputContainer := containerOverride
+		outputContainer.Name = ktpOutputContainer
+		existing = append(existing, outputContainer)
+	}
+	return existing
 }
 
 func getContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Container, bool) {
-	containersRaw, ok := podOverride["containers"]
+	return getContainersFromMap(podOverride, ktpContainersKey)
+}
+
+func getInitContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Container, bool) {
+	return getContainersFromMap(podOverride, ktpInitContainersKey)
+}
+
+func getContainersFromMap(podOverride crv1alpha1.JSONMap, key string) ([]corev1.Container, bool) {
+	containersRaw, ok := podOverride[key]
 	if !ok {
 		return nil, false
 	}
@@ -385,6 +464,16 @@ func getContainersFromOverride(podOverride crv1alpha1.JSONMap) ([]corev1.Contain
 	var containers []corev1.Container
 	err = json.Unmarshal(jsonString, &containers)
 	return containers, err == nil
+}
+
+// hasContainerNamed checks if a slice of containers contains one with the given name.
+func hasContainerNamed(containers []corev1.Container, name string) bool {
+	for _, c := range containers {
+		if c.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 func (ktpf *multiContainerRunFunc) setLabelsAndAnnotations(tp param.TemplateParams, labels, annotation map[string]string) {
