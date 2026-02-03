@@ -2,4 +2,4 @@
 features:
   - Added support for overriding default `initContainer` specifications in the `MultiContainerRun` function https://github.com/kanisterio/kanister/pull/3824
 deprecations:
-  - Moved example Blueprints to a separate repository: https://github.com/kanisterio/blueprints https://github.com/kanisterio/kanister/pull/3788
+  - Moved example Blueprints to a separate repository https://github.com/kanisterio/blueprints https://github.com/kanisterio/kanister/pull/3788
