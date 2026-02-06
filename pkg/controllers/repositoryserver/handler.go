@@ -24,6 +24,7 @@ import (
 	"github.com/jpillora/backoff"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -140,7 +141,7 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 		Min:    100 * time.Millisecond,
 		Max:    15 * time.Second,
 	}, func(ctx context.Context) (bool, error) {
-		endpt := corev1.Endpoints{}
+		endpt := discoveryv1.EndpointSlice{}
 		err := h.Reconciler.Get(ctx, types.NamespacedName{Name: svc.Name, Namespace: repoServerNamespace}, &endpt)
 		switch {
 		case apierrors.IsNotFound(err):

@@ -733,19 +733,19 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *check.C) {
 	ctlr.logAndErrorEvent(ctx, msg, reason, errkit.New("Testing Event Logs"), as, nilAs, bp)
 
 	// Test ActionSet error event logging
-	events, err := s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, as)
+	events, err := s.cli.CoreV1().Events(as.Namespace).SearchWithContext(context.Background(), scheme.Scheme, as)
 	c.Assert(err, check.IsNil)
 	c.Assert(events, check.NotNil)
 	c.Assert(len(events.Items) > 0, check.Equals, true)
 	c.Assert(events.Items[0].Message, check.Equals, msg)
 
 	// Testing nil ActionSet error event logging
-	events, err = s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, nilAs)
+	events, err = s.cli.CoreV1().Events(as.Namespace).SearchWithContext(context.Background(), scheme.Scheme, nilAs)
 	c.Assert(err, check.NotNil)
 	c.Assert(len(events.Items), check.Equals, 0)
 
 	// Testing Blueprint error event logging
-	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, bp)
+	events, err = s.cli.CoreV1().Events(bp.Namespace).SearchWithContext(context.Background(), scheme.Scheme, bp)
 	c.Assert(err, check.IsNil)
 	c.Assert(events, check.NotNil)
 	c.Assert(len(events.Items) > 0, check.Equals, true)
@@ -754,7 +754,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *check.C) {
 	// Testing empty Blueprint
 	testbp := &crv1alpha1.Blueprint{}
 	ctlr.logAndErrorEvent(ctx, msg, reason, errkit.New("Testing Event Logs"), testbp)
-	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, testbp)
+	events, err = s.cli.CoreV1().Events(bp.Namespace).SearchWithContext(context.Background(), scheme.Scheme, testbp)
 	c.Assert(err, check.NotNil)
 	c.Assert(len(events.Items), check.Equals, 0)
 }
