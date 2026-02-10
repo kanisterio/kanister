@@ -155,7 +155,18 @@ while true; do
     [ -z "$CONCURRENT_TEST_APPS" ] && break
 
     echo "CONCURRENT_TEST_APPS=${CONCURRENT_TEST_APPS}"
-    go test -v ${TEST_OPTIONS} -check.f "${CONCURRENT_TEST_APPS}" -installsuffix "static" . -check.v
+
+    # Run integration tests using the tools image built from this PR when applicable.
+    # If the Dockerfile is modified, DefaultImageTag is overridden to TOOLS_IMAGE_VERSION so integration
+    # tests execute against the freshly built image from the current commit.
+    # Otherwise, the default dev image tag is used.
+    go test -v ${TEST_OPTIONS} \
+      -ldflags "-X github.com/kanisterio/kanister/pkg/app.DefaultImageTag=${TEST_IMAGE_TAG}" \
+      -check.f "${CONCURRENT_TEST_APPS}" \
+      -installsuffix static \
+      . \
+      -check.v
+
     INDEX=$((INDEX + 1))
 done
 popd

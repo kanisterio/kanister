@@ -34,8 +34,11 @@ const (
 	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
+)
 
-	// default dev tag for kanister images
+var (
+	// DefaultImageTag default dev tag for kanister images
+	// it can be updated using ldflags at build time
 	DefaultImageTag = "v9.99.9-dev"
 )
 
