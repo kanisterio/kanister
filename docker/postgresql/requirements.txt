@@ -1,5 +1,5 @@
-awscli==1.44.30
+awscli==1.44.35
 wal-e==1.1.1
-pip==26.0
-setuptools==80.10.2
+pip==26.0.1
+setuptools==82.0.0
 wheel==0.46.3
