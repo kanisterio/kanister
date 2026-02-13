@@ -1,0 +1,6 @@
+apiVersion: v2
+name: local-registry
+description: Lightweight local Docker Registry v2 for dev and CI
+type: application
+version: 0.1.0
+appVersion: "2"
