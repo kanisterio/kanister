@@ -16,6 +16,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -161,4 +162,43 @@ func validateImageTags(c *check.C, bp *crv1alpha1.Blueprint) {
 			c.Assert(phase.Args["podOverride"], check.DeepEquals, podOverride)
 		}
 	}
+}
+
+func (bs *BlueprintSuite) TestUpdateImageTagsWithLocalRegistry(c *check.C) {
+	// Enable local image mode for this test
+	os.Setenv("KANISTER_USE_LOCAL_IMAGES", "true")
+	os.Setenv("KANISTER_LOCAL_REGISTRY", "localhost:5000")
+
+	bp := &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-local-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"test": {
+				Kind: "Deployment",
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Func: function.KubeTaskFuncName,
+						Name: "test-kube-task",
+						Args: map[string]interface{}{
+							"namespace": "{{ .Deployment.Namespace }}",
+							"image":     "ghcr.io/kanisterio/tools:v0.95.0",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	updateImageTags(bp, "v9.99.9-dev")
+
+	image := bp.Actions["test"].Phases[0].Args["image"].(string)
+
+	c.Logf("updated image: %s", image)
+
+	c.Assert(
+		image,
+		check.Equals,
+		localRegistry+"/kanisterio/tools:"+localDevTag,
+	)
 }
