@@ -1,0 +1,16 @@
+replicaCount: 1
+image:
+  repository: registry
+  tag: "latest"
+  pullPolicy: Always
+service:
+  type: ClusterIP
+  port: 5000
+persistence:
+  enabled: false
+  size: 8Gi
+  storageClass: csi-hostpath-sc
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
