@@ -166,8 +166,10 @@ func validateImageTags(c *check.C, bp *crv1alpha1.Blueprint) {
 
 func (bs *BlueprintSuite) TestUpdateImageTagsWithLocalRegistry(c *check.C) {
 	// Enable local image mode for this test
-	os.Setenv("KANISTER_USE_LOCAL_IMAGES", "true")
-	os.Setenv("KANISTER_LOCAL_REGISTRY", "localhost:5000")
+	err := os.Setenv("KANISTER_USE_LOCAL_IMAGES", "true")
+	c.Assert(err, check.IsNil)
+	err = os.Setenv("KANISTER_LOCAL_REGISTRY", "localhost:5000")
+	c.Assert(err, check.IsNil)
 
 	bp := &crv1alpha1.Blueprint{
 		ObjectMeta: metav1.ObjectMeta{
