@@ -277,3 +277,22 @@ reno-report:
 
 reno-lint:
 	@$(MAKE) run CMD="reno lint"
+
+.PHONY: install-registry expose-registry uninstall-registry build-apps-images push-local-apps-images
+
+install-registry:
+	@$(MAKE) run CMD="./build/registry-deploy.sh"
+
+expose-registry:
+	nohup kubectl -n registry port-forward svc/local-registry 5000:5000 > registry.log 2>&1 &
+
+uninstall-registry:
+	helm uninstall local-registry -n registry || true
+
+build-local-apps-images: build-dirs
+	@$(MAKE) run CMD="make build BIN=kando"
+	@$(MAKE) run CMD="make build BIN=kanctl"
+	@$(MAKE) run CMD="./build/local-apps-images.sh build_local_apps_images"
+
+push-local-apps-images:
+	@$(MAKE) run CMD="./build/local-apps-images.sh push_local_apps_images"

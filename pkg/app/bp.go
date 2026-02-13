@@ -17,6 +17,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -35,7 +36,13 @@ const (
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
 
-	// default dev tag for kanister images
+	// local registry address for docker images
+	localRegistry = "localhost:5000"
+
+	// local image tag for dev env
+	localDevTag = "dev"
+
+	// DefaultImageTag default dev tag for kanister images
 	DefaultImageTag = "v9.99.9-dev"
 )
 
@@ -124,6 +131,11 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 				log.Debug().Print("Using updated image", field.M{"image": updatedImage})
 			}
 
+			if useLocalImages() {
+				log.Info().Print("using local image", field.M{"image": image})
+				phase.Args["image"] = rewriteToLocalImage(imageStr, localDevTag)
+			}
+
 			// Change imagePullPolicy to Always using podOverride config
 			phase.Args["podOverride"] = crv1alpha1.JSONMap{
 				"containers": []map[string]interface{}{
@@ -160,4 +172,31 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 		return nil, err
 	}
 	return &bp, nil
+}
+
+func useLocalImages() bool {
+	return strings.EqualFold(os.Getenv("KANISTER_USE_LOCAL_IMAGES"), "true")
+}
+
+func rewriteToLocalImage(image, newTag string) string {
+	repo, _ := splitImage(image)
+
+	// strip registry (ghcr.io)
+	parts := strings.Split(repo, "/")
+	repoPath := strings.Join(parts[1:], "/")
+
+	return fmt.Sprintf("%s/%s:%s", localRegistry, repoPath, newTag)
+}
+
+func splitImage(image string) (repo string, tag string) {
+	image = strings.Split(image, "@")[0] // drop digest if present
+
+	lastColon := strings.LastIndex(image, ":")
+	lastSlash := strings.LastIndex(image, "/")
+
+	if lastColon > lastSlash {
+		return image[:lastColon], image[lastColon+1:]
+	}
+
+	return image, "" // no tag
 }
