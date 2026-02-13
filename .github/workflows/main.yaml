@@ -87,8 +87,14 @@ jobs:
         nohup kubectl port-forward $POD_NAME 9000 --namespace minio &
         sleep 5
       if: matrix.testSuite == 'test'
+    - run: |
+        make install-registry
+        make expose-registry
+        make build-local-apps-images
+        make push-local-apps-images
+      if: matrix.testSuite == 'integration-test'
     ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
-    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true
+    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true KANISTER_USE_LOCAL_IMAGES=true
   build:
     runs-on: ubuntu-24.04
     needs: gomod
