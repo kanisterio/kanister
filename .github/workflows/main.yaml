@@ -92,9 +92,10 @@ jobs:
         make expose-registry
         make build-local-apps-images
         make push-local-apps-images
-      if: matrix.testSuite == 'integration-test'
+      if: |
+        matrix.testSuite == 'integration-test'
     ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
-    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true KANISTER_USE_LOCAL_IMAGES=true
+    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true KANISTER_USE_LOCAL_IMAGES=${{ needs.detect_dockerfile_changes.outputs.changed }}
   build:
     runs-on: ubuntu-24.04
     needs: gomod
@@ -159,4 +160,14 @@ jobs:
       extra_tags: |
         ${{ needs.image_tags.outputs.tag_short }}
         ${{ needs.image_tags.outputs.tag_long }}
-
+  detect_dockerfile_changes:
+    runs-on: ubuntu-24.04
+    steps:
+      - id: dockerfile_changed
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+            | grep -q '^docker/.*/Dockerfile$'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
