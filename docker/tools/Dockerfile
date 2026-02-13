@@ -48,7 +48,7 @@ WORKDIR /kopia
 
 RUN git checkout ${kopia_build_commit}
 
-RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
+RUN CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
   -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
             -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopia_build_commit} \
             -X github.com/kopia/kopia/repo.BuildGitHubRepo=${kopia_repo_org}" .
