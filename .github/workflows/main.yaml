@@ -165,7 +165,7 @@ jobs:
     steps:
       - id: dockerfile_changed
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD \
             | grep -q '^docker/.*/Dockerfile$'; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
