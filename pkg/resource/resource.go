@@ -47,7 +47,20 @@ func CreateCustomResources(ctx context.Context, config *rest.Config) error {
 		crv1alpha1.BlueprintResource,
 		crv1alpha1.ProfileResource,
 	}
-	return customresource.CreateCustomResources(*crCTX, resources)
+	err = customresource.CreateCustomResources(*crCTX, resources)
+	if err != nil {
+		return err
+	}
+
+	return createDMCustomResource(*crCTX)
+}
+
+func createDMCustomResource(crCTX customresource.Context) error {
+	resources := []customresource.CustomResource{
+		crv1alpha1.DatamoverSessionResource,
+	}
+
+	return customresource.CreateDMCustomResources(crCTX, resources)
 }
 
 func newOpKitContext(ctx context.Context, config *rest.Config) (*customresource.Context, error) {

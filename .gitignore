@@ -4,6 +4,7 @@
 /.go
 /.push-*
 /.vendor
+vendor
 /bin
 /dist
 **/*.swp

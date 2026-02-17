@@ -580,9 +580,10 @@ func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to fetch the secret", "namespace", ks.UserPassphrase.Secret.Namespace, "name", ks.UserPassphrase.Secret.Name)
 	}
-	password, ok := passSecret.Data[ks.UserPassphrase.Key]
-	if !ok {
-		return nil, errkit.New("Failed to fetch user passphrase from secret")
+
+	password, err := getPasswordFromSecret(passSecret, ks.UserPassphrase.Key)
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to fetch user passphrase from secret")
 	}
 
 	if ks.TLSCert == nil || ks.TLSCert.Secret == nil {
@@ -606,6 +607,27 @@ func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv
 			ConnectOptions: ks.ConnectOptions,
 		},
 	}, nil
+}
+
+// FIXME: create test for that
+func getPasswordFromSecret(passSecret *corev1.Secret, key string) (string, error) {
+	data, ok := passSecret.Data[key]
+	if !ok {
+		return "", errkit.New("Cannot find key in secret data", "key", key)
+	}
+	strData := string(data)
+	// This credential type also contains other information, we need to extract password
+	if passSecret.Type == secrets.DataMoverClientSecretType {
+		substrings := strings.Split(strData, ":")
+		length := len(substrings)
+		if length != 2 {
+			// Invalid credential format
+			return "", errkit.New("Invalid credential format, expected user@host:password")
+		}
+		return substrings[1], nil
+	}
+	// If no special type use full value
+	return strData, nil
 }
 
 // UpdatePhaseParams updates the TemplateParams with Phase information

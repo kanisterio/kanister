@@ -10,8 +10,10 @@ import (
 	"strings"
 	"time"
 
+	logrusr "github.com/bombsimon/logrusr/v4"
 	"github.com/kanisterio/errkit"
 	"github.com/sirupsen/logrus"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/config"
@@ -101,6 +103,11 @@ func SetFluentbitOutput(url *url.URL) error {
 	hook := NewFluentbitHook(url.Host)
 	log.AddHook(hook)
 	return nil
+}
+
+func SetupControllerRuntimeLogger() {
+	logrusrLog := logrusr.New(log)
+	ctrl.SetLogger(logrusrLog)
 }
 
 var envVarFields field.Fields

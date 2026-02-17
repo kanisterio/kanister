@@ -21,6 +21,8 @@ package v1alpha1
 import (
 	"reflect"
 
+	dmapi "github.com/kanisterio/datamover/api/v1alpha1"
+	dmsession "github.com/kanisterio/datamover/pkg/session"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -74,6 +76,15 @@ var RepositoryServerResource = customresource.CustomResource{
 	Version: SchemeVersion,
 	Scope:   apiextensionsv1.NamespaceScoped,
 	Kind:    reflect.TypeOf(RepositoryServer{}).Name(),
+}
+
+var DatamoverSessionResource = customresource.CustomResource{
+	Name:    dmsession.ResourceName,
+	Plural:  dmsession.ResourceNamePlural,
+	Group:   dmapi.GroupVersion.Group,
+	Version: dmapi.GroupVersion.Version,
+	Scope:   apiextensionsv1.NamespaceScoped,
+	Kind:    dmapi.DatamoverSessionKind,
 }
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
