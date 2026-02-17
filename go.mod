@@ -35,7 +35,7 @@ require (
 	github.com/kanisterio/safecli v0.0.10
 	github.com/kopia/kopia v0.20.2-0.20250717071305-692c1f465ba3
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.1
 	github.com/mitchellh/mapstructure v1.5.0
 
 	//pinned openshift to release-4.5 branch
@@ -44,11 +44,11 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	go.uber.org/zap v1.27.1
 	golang.org/x/oauth2 v0.33.0
-	gonum.org/v1/gonum v0.16.0
+	gonum.org/v1/gonum v0.17.0
 	google.golang.org/api v0.256.0
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
