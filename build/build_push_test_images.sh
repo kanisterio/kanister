@@ -58,7 +58,7 @@ build_image() {
 main() {
   echo "Determining environment..."
 
-  if [[ -n "${CI:-}" ]]; then
+  if [[ "$MODE" == "ci" ]]; then
     if [[ -z "${PR_NUMBER:-}" ]]; then
       echo "❌ PR_NUMBER env variable not set"
       exit 1
