@@ -63,7 +63,7 @@ jobs:
 
   test:
     runs-on: ubuntu-24.04
-    needs: gomod
+    needs: [gomod, detect_dockerfile_changes]
     strategy:
       fail-fast: false
       matrix:
