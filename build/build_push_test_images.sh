@@ -32,7 +32,7 @@ kanisterio/kafka-adobe-s3-sink-connector|docker/kafka-adobes3Connector/image/ado
 kanisterio/kafka-adobe-s3-source-connector|docker/kafka-adobes3Connector/image/adobeSource.Dockerfile
 "
 
-GITHUB_REPOSITORY_OWNER="abdul-saqib"
+GITHUB_REPOSITORY_OWNER="kanisterio"
 REPOSITORY="test_tools_image"
 IMAGE_TAG="${IMAGE_TAG:-dev}"
 
