@@ -33,7 +33,7 @@ kanisterio/kafka-adobe-s3-source-connector|docker/kafka-adobes3Connector/image/a
 "
 
 GITHUB_REPOSITORY_OWNER="kanisterio"
-REPOSITORY="test_app_images"
+REPOSITORY="test_tools_image"
 IMAGE_TAG="${IMAGE_TAG:-dev}"
 
 build_image() {

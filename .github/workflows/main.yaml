@@ -104,6 +104,7 @@ jobs:
       env:
         MODE: 'ci'
         PR_NUMBER: ${{ github.event.pull_request.number }}
+        DOCKER_BUILD: "false"
       if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
     ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
     - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true KANISTER_USE_LOCAL_IMAGES=${{ needs.detect_dockerfile_changes.outputs.changed }}
