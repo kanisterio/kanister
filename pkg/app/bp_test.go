@@ -165,10 +165,13 @@ func validateImageTags(c *check.C, bp *crv1alpha1.Blueprint) {
 }
 
 func (bs *BlueprintSuite) TestUpdateImageTagsWithLocalRegistry(c *check.C) {
-	// Enable local image mode for this test
 	err := os.Setenv("KANISTER_USE_LOCAL_IMAGES", "true")
 	c.Assert(err, check.IsNil)
+
 	err = os.Setenv("KANISTER_LOCAL_REGISTRY", "localhost:5000")
+	c.Assert(err, check.IsNil)
+
+	err = os.Setenv("PR_NUMBER", "42")
 	c.Assert(err, check.IsNil)
 
 	bp := &crv1alpha1.Blueprint{
@@ -198,9 +201,12 @@ func (bs *BlueprintSuite) TestUpdateImageTagsWithLocalRegistry(c *check.C) {
 
 	c.Logf("updated image: %s", image)
 
-	c.Assert(
-		image,
-		check.Equals,
-		localRegistry+"/kanisterio/tools:"+localDevTag,
+	expected := fmt.Sprintf(
+		"%s/%s:%s",
+		localRegistry,
+		"test_tools_image",
+		"pr-42-tools",
 	)
+
+	c.Assert(image, check.Equals, expected)
 }

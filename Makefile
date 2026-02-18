@@ -278,7 +278,7 @@ reno-report:
 reno-lint:
 	@$(MAKE) run CMD="reno lint"
 
-.PHONY: install-registry expose-registry uninstall-registry build-apps-images push-local-apps-images
+.PHONY: install-registry expose-registry uninstall-registry build-push-apps-images
 
 install-registry:
 	@$(MAKE) run CMD="./build/registry-deploy.sh"
@@ -289,10 +289,7 @@ expose-registry:
 uninstall-registry:
 	helm uninstall local-registry -n registry || true
 
-build-local-apps-images: build-dirs
+build-push-apps-images: build-dirs
 	@$(MAKE) run CMD="make build BIN=kando"
 	@$(MAKE) run CMD="make build BIN=kanctl"
-	@$(MAKE) run CMD="./build/local-apps-images.sh build_local_apps_images"
-
-push-local-apps-images:
-	@$(MAKE) run CMD="./build/local-apps-images.sh push_local_apps_images"
+	@$(MAKE) run CMD="MODE=$(MODE) PR_NUMBER=$(PR_NUMBER) ./build/build_push_test_images.sh"

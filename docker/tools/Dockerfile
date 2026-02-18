@@ -88,7 +88,7 @@ COPY LICENSE /licenses/LICENSE
 
 ADD kando /usr/local/bin/
 ADD kanctl /usr/local/bin/
-RUN microdnf -y update && microdnf -y install shadow-utils gzip && \
+RUN microdnf -y install shadow-utils gzip && \
   adduser -U kanister -u 1000 && \
   microdnf -y remove shadow-utils && \
   microdnf clean all
