@@ -292,4 +292,4 @@ uninstall-registry:
 build-push-apps-images: build-dirs
 	@$(MAKE) run CMD="make build BIN=kando"
 	@$(MAKE) run CMD="make build BIN=kanctl"
-	@$(MAKE) run CMD="./build/build_push_test_images.sh"
+	@$(MAKE) run CMD="./build/build_push_test_images.sh" MODE=$(MODE)
