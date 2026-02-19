@@ -26,16 +26,8 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"strings"
 	"time"
-
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/compute/v1"
-	"gopkg.in/check.v1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
@@ -45,6 +37,14 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/compute/v1"
+	"gopkg.in/check.v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -505,11 +505,25 @@ func GetDefaultS3StorageCreds(c *check.C) map[string][]byte {
 }
 
 func GetDefaultS3CompliantStorageLocation() map[string][]byte {
+	bucket := TestS3BucketName
+	region := TestS3Region
+
+	if b, ok := os.LookupEnv("LOCATION_BUCKET"); ok {
+		if trimmed := strings.TrimSpace(b); trimmed != "" {
+			bucket = trimmed
+		}
+	}
+	if r, ok := os.LookupEnv("AWS_REGION"); ok {
+		if trimmed := strings.TrimSpace(r); trimmed != "" {
+			region = trimmed
+		}
+	}
+
 	return map[string][]byte{
 		reposerver.TypeKey:     []byte(crv1alpha1.LocationTypeS3Compliant),
-		reposerver.BucketKey:   []byte(TestS3BucketName),
+		reposerver.BucketKey:   []byte(bucket),
 		reposerver.PrefixKey:   []byte(KopiaRepositoryPath),
-		reposerver.RegionKey:   []byte(TestS3Region),
+		reposerver.RegionKey:   []byte(region),
 		reposerver.EndpointKey: []byte(os.Getenv(s3CompliantLocationEndpointEnv)),
 	}
 }
