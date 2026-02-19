@@ -29,14 +29,6 @@ import (
 	"strings"
 	"time"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	awsconfig "github.com/kanisterio/kanister/pkg/aws"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/kopia/command"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
-	"github.com/kanisterio/kanister/pkg/secrets"
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
-	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	"gopkg.in/check.v1"
@@ -45,6 +37,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/secrets"
+	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
 )
 
 const (
