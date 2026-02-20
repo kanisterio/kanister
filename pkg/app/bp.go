@@ -39,9 +39,6 @@ const (
 	// local registry address for docker images
 	localRegistry = "localhost:5000"
 
-	// image repository for test images
-	repository = "test_tools_image"
-
 	// DefaultImageTag default dev tag for kanister images
 	DefaultImageTag = "v9.99.9-dev"
 )
@@ -123,17 +120,18 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 				continue
 			}
 
-			if strings.HasPrefix(imageStr, imagePrefix) {
+			if useLocalImages() {
+				// rewrite to use images provided by user
+				// mostly local or based on current changes
+				updatedImage := rewriteToLocalImage(imageStr)
+				phase.Args["image"] = updatedImage
+				log.Debug().Print("using local pull request image", field.M{"image": updatedImage})
+			} else if strings.HasPrefix(imageStr, imagePrefix) {
 				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
 				baseImage := strings.Split(imageStr, ":")[0]
 				updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
 				phase.Args["image"] = updatedImage
-				log.Debug().Print("Using updated image", field.M{"image": updatedImage})
-			}
-
-			if useLocalImages() {
-				log.Info().Print("using local image", field.M{"image": image})
-				phase.Args["image"] = rewriteToLocalImage(imageStr)
+				log.Debug().Print("using dev image", field.M{"image": updatedImage})
 			}
 
 			// Change imagePullPolicy to Always using podOverride config
@@ -181,12 +179,25 @@ func useLocalImages() bool {
 func rewriteToLocalImage(image string) string {
 	repo, _ := splitImage(image)
 
-	// extract app name (last segment after '/')
 	parts := strings.Split(repo, "/")
 	appName := parts[len(parts)-1]
 
+	localRegistry := "localhost:5000"
+	localOrg := "kanstenio"
+	localRepository := "test_tools_image"
+
+	if v := os.Getenv("LOCAL_IMAGE_REGISTRY"); v != "" {
+		localRegistry = v
+	}
+	if v := os.Getenv("LOCAL_IMAGE_ORG"); v != "" {
+		localOrg = v
+	}
+	if v := os.Getenv("LOCAL_IMAGE_REPOSITORY"); v != "" {
+		localRepository = v
+	}
+
 	tag := fmt.Sprintf("pr-%s-%s", getPRNumber(), appName)
-	return fmt.Sprintf("%s/%s:%s", localRegistry, repository, tag)
+	return fmt.Sprintf("%s/%s/%s:%s", localRegistry, localOrg, localRepository, tag)
 }
 
 func splitImage(image string) (repo string, tag string) {

@@ -71,6 +71,14 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      DOCKER_BUILD: "false"
+      LOCAL_REGISTRY: "ghcr.io"
+      LOCAL_IMAGE_ORG: "kanisterio"
+      LOCAL_IMAGE_REPOSITORY: "test_tools_image"
+      LOCAL_MINIO: "true"
+      KANISTER_USE_LOCAL_IMAGES: "true"
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     ## Sync go.mod and go.sum files from gomod job
@@ -101,13 +109,9 @@ jobs:
       if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
     - run: |
         make build-push-apps-images
-      env:
-        MODE: 'ci'
-        PR_NUMBER: ${{ github.event.pull_request.number }}
-        DOCKER_BUILD: "false"
       if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
     ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
-    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true KANISTER_USE_LOCAL_IMAGES=${{ needs.detect_dockerfile_changes.outputs.changed }}
+    - run: make ${{ matrix.testSuite }}
   build:
     runs-on: ubuntu-24.04
     needs: gomod

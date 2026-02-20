@@ -169,7 +169,7 @@ helm-test: build-dirs
 	@$(MAKE) run CMD="./build/helm-test.sh $(SRC_DIRS)"
 
 integration-test: build-dirs
-	@$(MAKE) run CMD="./build/integration-test.sh short"
+	@$(MAKE) run CMD="KANISTER_USE_LOCAL_IMAGES=$(KANISTER_USE_LOCAL_IMAGES) LOCAL_IMAGE_REGISTRY=$(LOCAL_IMAGE_REGISTRY) LOCAL_IMAGE_ORG=$(LOCAL_IMAGE_ORG) LOCAL_IMAGE_REPOSITORY=$(LOCAL_IMAGE_REPOSITORY) ./build/integration-test.sh short"
 
 openshift-test:
 	@/bin/bash ./build/integration-test.sh openshift $(ocp_version)
@@ -292,4 +292,4 @@ uninstall-registry:
 build-push-apps-images: build-dirs
 	@$(MAKE) run CMD="make build BIN=kando"
 	@$(MAKE) run CMD="make build BIN=kanctl"
-	@$(MAKE) run CMD="MODE=$(MODE) PR_NUMBER=$(PR_NUMBER) ./build/build_push_test_images.sh"
+	@$(MAKE) run CMD="PR_NUMBER=$(PR_NUMBER) KANISTER_USE_LOCAL_IMAGES=$(KANISTER_USE_LOCAL_IMAGES) LOCAL_IMAGE_REGISTRY=$(LOCAL_IMAGE_REGISTRY) LOCAL_IMAGE_ORG=$(LOCAL_IMAGE_ORG) LOCAL_IMAGE_REPOSITORY=$(LOCAL_IMAGE_REPOSITORY) ./build/build_push_test_images.sh"

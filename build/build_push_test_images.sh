@@ -18,7 +18,19 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REGISTRY_ADDR="localhost:5000"
+########################################
+# Environment (override externally if needed)
+########################################
+
+ORG=${LOCAL_IMAGE_ORG:-"kanisterio"}
+REGISTRY_ADDR=${LOCAL_IMAGE_REGISTRY:-"localhost:5000"}
+REPOSITORY=${LOCAL_IMAGE_REPOSITORY:-"test_tools_image"}
+IMAGE_TAG=${IMAGE_TAG:-"dev"}
+PR_NUMBER=${PR_NUMBER:-"001"}
+
+########################################
+# Image matrix
+########################################
 
 IMAGES_AND_DOCKERFILES="
 kanisterio/mongodb|docker/mongodb/Dockerfile
@@ -32,17 +44,16 @@ kanisterio/kafka-adobe-s3-sink-connector|docker/kafka-adobes3Connector/image/ado
 kanisterio/kafka-adobe-s3-source-connector|docker/kafka-adobes3Connector/image/adobeSource.Dockerfile
 "
 
-GITHUB_REPOSITORY_OWNER="kanisterio"
-REPOSITORY="test_tools_image"
-IMAGE_TAG="${IMAGE_TAG:-dev}"
+########################################
+# Build helpers
+########################################
 
 build_image() {
   local app_name="$1"
   local dockerfile="$2"
 
-  local pr_number="${PR_NUMBER:-001}"
-  local tag="pr-${pr_number}-${app_name}"
-  local target_image="${REGISTRY_ADDR}/${REPOSITORY}:${tag}"
+  local tag="pr-${PR_NUMBER}-${app_name}"
+  local target_image="${REGISTRY_ADDR}/${ORG}/${REPOSITORY}:${tag}"
 
   echo "→ Building and pushing ${target_image}"
 
@@ -56,48 +67,35 @@ build_image() {
     . 2>&1 | sed "s|^|[${app_name}] |"
 }
 
+########################################
+# Main
+########################################
+
 main() {
-  echo "Determining environment..."
-
-  if [[ "$MODE" == "ci" ]]; then
-    if [[ -z "${PR_NUMBER:-}" ]]; then
-      echo "❌ PR_NUMBER env variable not set"
-      exit 1
-    fi
-
-    ORG="${GITHUB_REPOSITORY_OWNER}"
-    REGISTRY_ADDR="ghcr.io/${ORG}"
-  else
-    REGISTRY_ADDR="localhost:5000"
-
-    if ! curl -sf "http://${REGISTRY_ADDR}/v2/" >/dev/null; then
-      echo "❌ Local registry not reachable at ${REGISTRY_ADDR}"
-      exit 1
-    fi
-  fi
-
-  echo "Registry: ${REGISTRY_ADDR}"
+  echo "Using registry: ${REGISTRY_ADDR}"
+  echo "Registry Org: " ${ORG}
+  echo "Repository: ${REPOSITORY}"
+  echo "PR Number: ${PR_NUMBER}"
 
   ########################################
   # 1️⃣ Build tools image first
   ########################################
 
-  TOOLS_APP="kanister-tools"
-  TOOLS_DOCKERFILE="docker/tools/Dockerfile"
+  local tools_app="kanister-tools"
+  local tools_dockerfile="docker/tools/Dockerfile"
+  local tools_tag="pr-${PR_NUMBER}-${tools_app}"
 
-  pr_number="${PR_NUMBER:-001}"
-  tools_tag="pr-${pr_number}-${TOOLS_APP}"
-  TOOLS_IMAGE="${REGISTRY_ADDR}/${REPOSITORY}:${tools_tag}"
+  TOOLS_IMAGE="${REGISTRY_ADDR}/${ORG}/${REPOSITORY}:${tools_tag}"
 
-  echo "→ Building tools image first: ${TOOLS_IMAGE}"
+  echo "→ Building tools image: ${TOOLS_IMAGE}"
 
- docker buildx build \
-  --platform=linux/amd64 \
-  --push \
-  --no-cache \
-  -f "${TOOLS_DOCKERFILE}" \
-  -t "${TOOLS_IMAGE}" \
-  . 2>&1 | sed "s|^|[kanister-tools] |"
+  docker buildx build \
+    --platform=linux/amd64 \
+    --push \
+    --no-cache \
+    -f "${tools_dockerfile}" \
+    -t "${TOOLS_IMAGE}" \
+    . 2>&1 | sed "s|^|[kanister-tools] |"
 
   ########################################
   # 2️⃣ Build remaining images
@@ -106,13 +104,12 @@ main() {
   echo "Building remaining images..."
 
   while IFS='|' read -r image dockerfile; do
-    [[ -n "$image" ]] || continue
+    [[ -n "${image}" ]] || continue
 
     app_name="${image##*/}"
+    build_image "${app_name}" "${dockerfile}"
 
-    build_image "$app_name" "$dockerfile"
-
-  done <<< "$IMAGES_AND_DOCKERFILES"
+  done <<< "${IMAGES_AND_DOCKERFILES}"
 
   echo "All images pushed successfully."
 }
