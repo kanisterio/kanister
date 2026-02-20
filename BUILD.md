@@ -117,7 +117,7 @@ It's recommended to write new tests using this library for consistency.
 It's possible to run a specific test with `TEST_FILTER` environment variable:
 
 ```
-make tests TEST_FILTER=OutputTestSuite
+make test TEST_FILTER=OutputTestSuite
 ```
 
 This variable will be passed to `-check.f` flag and supports regex filters.
