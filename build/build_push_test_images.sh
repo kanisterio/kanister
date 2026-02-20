@@ -34,14 +34,10 @@ PR_NUMBER=${PR_NUMBER:-"001"}
 
 IMAGES_AND_DOCKERFILES="
 kanisterio/mongodb|docker/mongodb/Dockerfile
-kanisterio/cassandra|docker/cassandra/Dockerfile
 kanisterio/postgresql|docker/postgresql/Dockerfile
 kanisterio/mssql-tools|docker/mssql-tools/Dockerfile
 kanisterio/mysql-sidecar|docker/kanister-mysql/image/Dockerfile
-kanisterio/es-sidecar|docker/kanister-elasticsearch/image/Dockerfile
 kanisterio/postgres-kanister-tools|docker/postgres-kanister-tools/Dockerfile
-kanisterio/kafka-adobe-s3-sink-connector|docker/kafka-adobes3Connector/image/adobeSink.Dockerfile
-kanisterio/kafka-adobe-s3-source-connector|docker/kafka-adobes3Connector/image/adobeSource.Dockerfile
 "
 
 ########################################
