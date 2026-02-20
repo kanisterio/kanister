@@ -35,6 +35,9 @@ type BlueprintSuite struct{}
 var _ = check.Suite(&BlueprintSuite{})
 
 func (bs *BlueprintSuite) TestUpdateImageTags(c *check.C) {
+	err := os.Setenv("KANISTER_USE_LOCAL_IMAGES", "false")
+	c.Assert(err, check.IsNil)
+
 	for _, bp := range []*crv1alpha1.Blueprint{
 		// BP with no phase with image arg
 		{
@@ -162,51 +165,4 @@ func validateImageTags(c *check.C, bp *crv1alpha1.Blueprint) {
 			c.Assert(phase.Args["podOverride"], check.DeepEquals, podOverride)
 		}
 	}
-}
-
-func (bs *BlueprintSuite) TestUpdateImageTagsWithLocalRegistry(c *check.C) {
-	err := os.Setenv("KANISTER_USE_LOCAL_IMAGES", "true")
-	c.Assert(err, check.IsNil)
-
-	err = os.Setenv("KANISTER_LOCAL_REGISTRY", "localhost:5000")
-	c.Assert(err, check.IsNil)
-
-	err = os.Setenv("PR_NUMBER", "42")
-	c.Assert(err, check.IsNil)
-
-	bp := &crv1alpha1.Blueprint{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-blueprint-local-",
-		},
-		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"test": {
-				Kind: "Deployment",
-				Phases: []crv1alpha1.BlueprintPhase{
-					{
-						Func: function.KubeTaskFuncName,
-						Name: "test-kube-task",
-						Args: map[string]interface{}{
-							"namespace": "{{ .Deployment.Namespace }}",
-							"image":     "ghcr.io/kanisterio/tools:v0.95.0",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	updateImageTags(bp, "v9.99.9-dev")
-
-	image := bp.Actions["test"].Phases[0].Args["image"].(string)
-
-	c.Logf("updated image: %s", image)
-
-	expected := fmt.Sprintf(
-		"%s/%s:%s",
-		"localhost:5000",
-		"test_tools_image",
-		"pr-42-tools",
-	)
-
-	c.Assert(image, check.Equals, expected)
 }

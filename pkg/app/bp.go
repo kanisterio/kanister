@@ -179,20 +179,7 @@ func rewriteToLocalImage(image string) string {
 	parts := strings.Split(repo, "/")
 	appName := parts[len(parts)-1]
 
-	localRegistry := "localhost:5000"
-	localOrg := "kanstenio"
-	localRepository := "test_tools_image"
-
-	if v := os.Getenv("LOCAL_IMAGE_REGISTRY"); v != "" {
-		localRegistry = v
-	}
-	if v := os.Getenv("LOCAL_IMAGE_ORG"); v != "" {
-		localOrg = v
-	}
-	if v := os.Getenv("LOCAL_IMAGE_REPOSITORY"); v != "" {
-		localRepository = v
-	}
-
+	localRegistry, localOrg, localRepository := getRegistryParams()
 	tag := fmt.Sprintf("pr-%s-%s", getPRNumber(), appName)
 	return fmt.Sprintf("%s/%s/%s:%s", localRegistry, localOrg, localRepository, tag)
 }
@@ -216,4 +203,21 @@ func getPRNumber() string {
 		return "001"
 	}
 	return pr
+}
+
+func getRegistryParams() (registry string, org string, repository string) {
+	localRegistry := "localhost:5000"
+	localOrg := "kanstenio"
+	localRepository := "test_tools_image"
+
+	if v := os.Getenv("LOCAL_IMAGE_REGISTRY"); v != "" {
+		localRegistry = v
+	}
+	if v := os.Getenv("LOCAL_IMAGE_ORG"); v != "" {
+		localOrg = v
+	}
+	if v := os.Getenv("LOCAL_IMAGE_REPOSITORY"); v != "" {
+		localRepository = v
+	}
+	return localRegistry, localOrg, localRepository
 }
