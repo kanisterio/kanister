@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"strings"
 	"time"
 
 	"golang.org/x/oauth2/google"
@@ -506,25 +505,11 @@ func GetDefaultS3StorageCreds(c *check.C) map[string][]byte {
 }
 
 func GetDefaultS3CompliantStorageLocation() map[string][]byte {
-	bucket := TestS3BucketName
-	region := TestS3Region
-
-	if b, ok := os.LookupEnv("LOCATION_BUCKET"); ok {
-		if trimmed := strings.TrimSpace(b); trimmed != "" {
-			bucket = trimmed
-		}
-	}
-	if r, ok := os.LookupEnv("AWS_REGION"); ok {
-		if trimmed := strings.TrimSpace(r); trimmed != "" {
-			region = trimmed
-		}
-	}
-
 	return map[string][]byte{
 		reposerver.TypeKey:     []byte(crv1alpha1.LocationTypeS3Compliant),
-		reposerver.BucketKey:   []byte(bucket),
+		reposerver.BucketKey:   []byte(TestS3BucketName),
 		reposerver.PrefixKey:   []byte(KopiaRepositoryPath),
-		reposerver.RegionKey:   []byte(region),
+		reposerver.RegionKey:   []byte(TestS3Region),
 		reposerver.EndpointKey: []byte(os.Getenv(s3CompliantLocationEndpointEnv)),
 	}
 }
