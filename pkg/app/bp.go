@@ -36,9 +36,6 @@ const (
 	// kanister's ghcr registry
 	imagePrefix = "ghcr.io/kanisterio"
 
-	// local registry address for docker images
-	localRegistry = "localhost:5000"
-
 	// DefaultImageTag default dev tag for kanister images
 	DefaultImageTag = "v9.99.9-dev"
 )

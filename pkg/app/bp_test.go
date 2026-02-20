@@ -203,7 +203,7 @@ func (bs *BlueprintSuite) TestUpdateImageTagsWithLocalRegistry(c *check.C) {
 
 	expected := fmt.Sprintf(
 		"%s/%s:%s",
-		localRegistry,
+		"localhost:5000",
 		"test_tools_image",
 		"pr-42-tools",
 	)
