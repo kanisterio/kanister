@@ -74,7 +74,7 @@ jobs:
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       DOCKER_BUILD: "false"
-      LOCAL_REGISTRY: "ghcr.io"
+      LOCAL_IMAGE_REGISTRY: "ghcr.io"
       LOCAL_IMAGE_ORG: "kanisterio"
       LOCAL_IMAGE_REPOSITORY: "test_tools_image"
       LOCAL_MINIO: "true"
