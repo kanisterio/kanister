@@ -191,6 +191,29 @@ make integration-test short  # Or simply 'make integration-test'
 make integration-test openshift ocp_version=4.13
 ```
 
+### Running Tests with Local Images
+
+Integration tests can be configured to build, push, and pull images from a custom registry instead of using pre-built remote images.
+
+You can control this behavior using the following environment variables:
+
+```
+export KANISTER_USE_LOCAL_IMAGES=true
+export LOCAL_IMAGE_REGISTRY=<your-registry>
+export LOCAL_IMAGE_ORG=<your-org>
+export LOCAL_IMAGE_REPOSITORY=<your-repository>
+```
+
+This allows you to:
+
+- Push test images to your own registry.
+
+- Pull images from a custom repository.
+
+- Fully control image isolation during integration testing.
+
+You may choose any registry and repository that you have access to, making it suitable for local development, CI environments, or private registries.
+
 ## Documentation
 
 We use [VitePress](https://vitepress.dev/) to generate Kanister documentation.
