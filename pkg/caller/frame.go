@@ -22,7 +22,7 @@ type Frame struct {
 // For example:
 // /home/mark/src/kanister/pkg/kanister.go
 // /home/mark/go/pkg/mod/github.com/kanisterio/kanister@v0.0.0-20200629181100-0dabf5150ea3/pkg/kanister.go
-var kanisterPathRe = regexp.MustCompile(`/?kanister(@v[^/]+)?/`)
+var kanisterPathRe = regexp.MustCompile(`/kanister(@v[^/]+)?/`)
 
 // GetFrame returns information about a caller function at the specified depth
 // above this function in the the call stack.
@@ -32,6 +32,10 @@ func GetFrame(depth int) Frame {
 
 	// Skip depth + 1 frames to get to the desired caller.
 	num := runtime.Callers(depth+1, fpcs)
+	if num != 1 {
+		// Failure potentially due to wrongly specified depth
+		return Frame{Function: "Unknown", File: "Unknown", Line: 0}
+	}
 	if num != 1 {
 		// Failure potentially due to wrongly specified depth
 		return Frame{Function: "Unknown", File: "Unknown", Line: 0}
