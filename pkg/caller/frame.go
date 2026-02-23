@@ -36,10 +36,6 @@ func GetFrame(depth int) Frame {
 		// Failure potentially due to wrongly specified depth
 		return Frame{Function: "Unknown", File: "Unknown", Line: 0}
 	}
-	if num != 1 {
-		// Failure potentially due to wrongly specified depth
-		return Frame{Function: "Unknown", File: "Unknown", Line: 0}
-	}
 	frames := runtime.CallersFrames(fpcs[:num])
 
 	var frame runtime.Frame

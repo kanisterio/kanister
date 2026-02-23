@@ -27,13 +27,13 @@ func (s *CallerSuite) TestCallerFields(c *check.C) {
 	// Check against the indirectCall() function
 	c.Assert(frame.Function, check.Equals, "github.com/kanisterio/kanister/pkg/caller.indirectCall")
 	// This breaks if the function is relocated or the file is renamed
-	c.Assert(strings.HasSuffix(frame.File, "pkg/caller/frame.go"), check.Equals, true)
+	c.Assert(strings.HasSuffix(frame.File, "pkg/caller/caller_test.go"), check.Equals, true)
 
 	frame = indirectCall(2)
 	// Check against this function
 	c.Assert(frame.Function, check.Equals, "github.com/kanisterio/kanister/pkg/caller.(*CallerSuite).TestCallerFields")
 	// This breaks if the function is relocated or the file is renamed
-	c.Assert(strings.HasSuffix(frame.File, "pkg/caller/frame.go"), check.Equals, true)
+	c.Assert(strings.HasSuffix(frame.File, "pkg/caller/caller_test.go"), check.Equals, true)
 }
 
 func indirectCall(depth int) Frame {
