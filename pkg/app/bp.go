@@ -207,7 +207,7 @@ func getPRNumber() string {
 
 func getRegistryParams() (registry string, org string, repository string) {
 	localRegistry := "localhost:5000"
-	localOrg := "kanstenio"
+	localOrg := "kanisterio"
 	localRepository := "test_tools_image"
 
 	if v := os.Getenv("LOCAL_IMAGE_REGISTRY"); v != "" {

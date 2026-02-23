@@ -78,7 +78,6 @@ jobs:
       LOCAL_IMAGE_ORG: "kanisterio"
       LOCAL_IMAGE_REPOSITORY: "test_tools_image"
       LOCAL_MINIO: "true"
-      KANISTER_USE_LOCAL_IMAGES: "true"
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     ## Sync go.mod and go.sum files from gomod job
@@ -110,8 +109,17 @@ jobs:
     - run: |
         make build-push-apps-images
       if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
-    ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
-    - run: make ${{ matrix.testSuite }}
+    - run: |
+        if [[ "${{ matrix.testSuite }}" == "integration-test" && \
+          "${{ needs.detect_dockerfile_changes.outputs.changed }}" == "true" ]]; then
+          export KANISTER_USE_LOCAL_IMAGES=true
+          echo "using local PR images"
+        else
+          export KANISTER_USE_LOCAL_IMAGES=false
+          echo "using released dev images"
+        fi
+        make ${{ matrix.testSuite }}
+
   build:
     runs-on: ubuntu-24.04
     needs: gomod
