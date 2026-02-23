@@ -1,18 +1,30 @@
 # Release Notes
 
+## 0.118.0
+
+### New Features
+
+<!-- releasenotes/notes/pre-release-0.118.0-8816fe190614713e.yaml @ b'67f7f71e6279bc632763a40935f95f0e02324cf9' -->
+* Added support for overriding default `initContainer` specifications in the `MultiContainerRun` function [https://github.com/kanisterio/kanister/pull/3824](https://github.com/kanisterio/kanister/pull/3824)
+
+### Deprecations
+
+<!-- releasenotes/notes/pre-release-0.118.0-8816fe190614713e.yaml @ b'67f7f71e6279bc632763a40935f95f0e02324cf9' -->
+* Moved example Blueprints to a separate repository [https://github.com/kanisterio/blueprints](https://github.com/kanisterio/blueprints) [https://github.com/kanisterio/kanister/pull/3788](https://github.com/kanisterio/kanister/pull/3788)
+
 ## 0.117.0
 
 ### Bug Fixes
 
-<!-- releasenotes/notes/pre-release-0.117.0-fef5a26613c8c0e2.yaml @ b'90fb9810676ebc63acf1138d6965e83255dd4400' -->
+<!-- releasenotes/notes/pre-release-0.117.0-fef5a26613c8c0e2.yaml @ b'0637f3682f9d2618a8b8fa000271cfd46c750fdf' -->
 * Updated MSSQL blueprint to use the correct `sqlcmd` binary path in the updated tools image [https://github.com/kanisterio/kanister/pull/3732](https://github.com/kanisterio/kanister/pull/3732)
 
-<!-- releasenotes/notes/pre-release-0.117.0-fef5a26613c8c0e2.yaml @ b'90fb9810676ebc63acf1138d6965e83255dd4400' -->
+<!-- releasenotes/notes/pre-release-0.117.0-fef5a26613c8c0e2.yaml @ b'0637f3682f9d2618a8b8fa000271cfd46c750fdf' -->
 * Added a cleanup step in DataSuite unit tests to remove leftover bucket objects after test failures [https://github.com/kanisterio/kanister/pull/3752](https://github.com/kanisterio/kanister/pull/3752)
 
 ### Upgrade Notes
 
-<!-- releasenotes/notes/pre-release-0.117.0-fef5a26613c8c0e2.yaml @ b'90fb9810676ebc63acf1138d6965e83255dd4400' -->
+<!-- releasenotes/notes/pre-release-0.117.0-fef5a26613c8c0e2.yaml @ b'0637f3682f9d2618a8b8fa000271cfd46c750fdf' -->
 * Upgraded the base images for all tooling containers to Go 1.25–based images [https://github.com/kanisterio/kanister/pull/3720](https://github.com/kanisterio/kanister/pull/3720)
 
 ## 0.116.0

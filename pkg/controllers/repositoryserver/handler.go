@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/jpillora/backoff"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,7 +35,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 type RepoServerHandler struct {
@@ -62,6 +60,7 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 	if err != nil {
 		return errkit.Wrap(err, "Failed to reconcile Kopia API server pod")
 	}
+
 	if err := h.waitForPodReady(ctx, pod); err != nil {
 		return errkit.Wrap(err, "Kopia API server pod not in ready state")
 	}
@@ -133,24 +132,7 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create RepositoryServer service")
 	}
-
-	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
-		Factor: 2,
-		Jitter: false,
-		Min:    100 * time.Millisecond,
-		Max:    15 * time.Second,
-	}, func(ctx context.Context) (bool, error) {
-		endpt := corev1.Endpoints{}
-		err := h.Reconciler.Get(ctx, types.NamespacedName{Name: svc.Name, Namespace: repoServerNamespace}, &endpt)
-		switch {
-		case apierrors.IsNotFound(err):
-			return false, nil
-		case err != nil:
-			return false, err
-		}
-		return true, nil
-	})
-	return &svc, err
+	return &svc, nil
 }
 
 func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Service) ([]corev1.EnvVar, *corev1.Pod, error) {
