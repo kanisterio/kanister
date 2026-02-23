@@ -117,18 +117,17 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 				continue
 			}
 
-			if useLocalImages() {
-				// rewrite to use images provided by user
-				// mostly local or based on current changes
-				updatedImage := rewriteToLocalImage(imageStr)
-				phase.Args["image"] = updatedImage
-				log.Debug().Print("using local pull request image", field.M{"image": updatedImage})
-			} else if strings.HasPrefix(imageStr, imagePrefix) {
-				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
-				baseImage := strings.Split(imageStr, ":")[0]
-				updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
-				phase.Args["image"] = updatedImage
-				log.Debug().Print("using dev image", field.M{"image": updatedImage})
+			if strings.HasPrefix(imageStr, imagePrefix) {
+				if useLocalImages() {
+					updatedImage := rewriteToLocalImage(imageStr)
+					phase.Args["image"] = updatedImage
+					log.Debug().Print("using local pull request image", field.M{"image": updatedImage})
+				} else {
+					baseImage := strings.Split(imageStr, ":")[0]
+					updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
+					phase.Args["image"] = updatedImage
+					log.Debug().Print("using dev image", field.M{"image": updatedImage})
+				}
 			}
 
 			// Change imagePullPolicy to Always using podOverride config
