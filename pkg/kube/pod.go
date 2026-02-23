@@ -51,7 +51,7 @@ const (
 	redactedValue             = "XXXXX"
 )
 
-// VolumeMountOptions provide options for volume mount
+// VolumeMountOptions provides options for a volume mount
 // +k8s:deepcopy-gen=true
 type VolumeMountOptions struct {
 	MountPath string
