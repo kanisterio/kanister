@@ -7,7 +7,7 @@ Release process:
 - Review and validate created PR that it doesn't have any unintended changes
 - Make sure to validate that all merged PRs in the release have [release notes](#release-notes)
 	- Make sure that CHANGELOG.md and CHANGELOG_CURRENT.md contain release notes for the release version
-	- **NOTE** While we establish the new process of release notes, it may be required to add notes in pre-release step by commiting them into pre-release branch
+	- **NOTE** While we establish the new process of release notes, it may be required to add notes in pre-release step by committing them into pre-release branch
 - Approve and merge the pre-release PR (it will be merged by `kueue` when approved)
 - Merging of pre-release PR will trigger the `release.yaml` pipeline, which will create a github release and publish the images
 - The Kanister release job will publish a new tag, update documentation, build all the docker images, and push them to the [ghcr.io](https://github.com/orgs/kanisterio/packages) registry
