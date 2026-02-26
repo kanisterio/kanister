@@ -58,6 +58,14 @@ jobs:
         run: |
           git push origin "kan-pre-release-${RELEASE_TAG}" --force
 
+      - name: create_pr_body
+        run: |
+          echo "Update version to ${RELEASE_TAG}" > PR_BODY_FILE
+          echo "" >> PR_BODY_FILE
+          echo "Please check the changelog for the following merges:" >> PR_BODY_FILE
+          export CURRENT_TAG=$(git describe --abbrev=0 --tags)
+          git log ${CURRENT_TAG}..kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG} --pretty="- %h: %s"  | grep -v ': test' | grep -v ': doc' | grep -v ': build' | grep -v ': deps'  >> PR_BODY_FILE
+
       - name: Create PR
         run: |
           gh pr create \
