@@ -18,6 +18,9 @@ kanisterToolsImage:
 secureDefaultsForJobPods: false
 rbac:
   create: true
+
+podAnnotations: {}
+
 serviceAccount:
   create: true
   name:
