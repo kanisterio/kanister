@@ -34,6 +34,7 @@ jobs:
       - name: fetch_tags
         run: git fetch --tags origin
       - name: bump_version
+        id: bump_version
         run: |
           export CURRENT_TAG=$(git describe --abbrev=0 --tags)
           echo "current_tag=${CURRENT_TAG}" >> $GITHUB_OUTPUT
