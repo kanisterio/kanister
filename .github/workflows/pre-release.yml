@@ -23,6 +23,8 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
+    outputs:
+      current_tag: ${{ steps.bump_version.outputs.current_tag }}
     steps:
       - name: checkout_repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -34,6 +36,7 @@ jobs:
       - name: bump_version
         run: |
           export CURRENT_TAG=$(git describe --abbrev=0 --tags)
+          echo "current_tag=${CURRENT_TAG}" >> $GITHUB_OUTPUT
           echo ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
           ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
           make reno-report VERSION="${RELEASE_TAG}"
@@ -60,23 +63,23 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   bump_blueprint:
     runs-on: ubuntu-latest
+    needs: bump_kanister
     permissions:
       pull-requests: write
       contents: write
     steps:
       - name: checkout_repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           repository: kanisterio/blueprints
-          fetch-tags: true
-          fetch-depth: 0 # necessary for CURRENT_TAG tracing
-      - name: fetch_tags
-        run: git fetch --tags origin
+          fetch-depth: 0
+
       - name: bump_version
         run: |
-          export CURRENT_TAG=$(git describe --abbrev=0 --tags)
+          CURRENT_TAG="${{ needs.bump_kanister.outputs.current_tag }}"
           echo ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
           ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
+
       - name: commit_changes
         run: |
           git config --global user.name 'Kasten Production'
@@ -84,17 +87,24 @@ jobs:
           git checkout -B "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
           git add -A
           git commit -s -m "pre-release: Update version to ${RELEASE_TAG}"
+
       - name: push_changes
-        run: git push origin "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
+        run: |
+          git push origin "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
+
       - name: create_pr_body
         run: |
           echo "Update version to ${RELEASE_TAG}" > PR_BODY_FILE
           echo "" >> PR_BODY_FILE
-          echo "Please check the changelog for the following merges:" >> PR_BODY_FILE
-          export CURRENT_TAG=$(git describe --abbrev=0 --tags)
-          git log ${CURRENT_TAG}..kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG} --pretty="- %h: %s"  | grep -v ': test' | grep -v ': doc' | grep -v ': build' | grep -v ': deps'  >> PR_BODY_FILE
+          echo "Based on Kanister current tag: ${{ needs.bump_kanister.outputs.current_tag }}" >> PR_BODY_FILE
+
       - name: create_pr
         run: |
-          gh pr create --title "pre-release: Update version to ${RELEASE_TAG}" -F PR_BODY_FILE --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" --base master --reviewer pavannd1,viveksinghggits,hairyhum --label kueue
+          gh pr create \
+            --title "pre-release: Update version to ${RELEASE_TAG}" \
+            -F PR_BODY_FILE \
+            --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" \
+            --base master \
+            --reviewer pavannd1,viveksinghggits,hairyhum
         env:
           GH_TOKEN: ${{ secrets.KANISTER_BOT_GH_TOKEN }}
