@@ -14,97 +14,100 @@ env:
   PRERELEASE_DOCS_BRANCH: 'dg8d45z'
 
 jobs:
-
-  ############################################################
-  # 1️⃣ Bump version in kanister repository
-  ############################################################
-  bump_kanister:
+  bump_release:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: write
-    outputs:
-      current_tag: ${{ steps.bump_version.outputs.current_tag }}
-    steps:
-      - name: checkout_repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-tags: true
-          fetch-depth: 0 # necessary for CURRENT_TAG tracing
-      - name: fetch_tags
-        run: git fetch --tags origin
-      - name: bump_version
-        run: |
-          export CURRENT_TAG=$(git describe --abbrev=0 --tags)
-          echo "current_tag=${CURRENT_TAG}" >> $GITHUB_OUTPUT
-          echo ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
-          ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
-          make reno-report VERSION="${RELEASE_TAG}"
-      - name: commit_changes
-        run: |
-          git config --global user.name 'Kasten Production'
-          git config --global user.email 'infra@kasten.io'
-          git checkout -B "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
-          git add -A
-          git commit -s -m "pre-release: Update version to ${RELEASE_TAG}"
-      - name: push_changes
-        run: git push origin "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
-      - name: create_pr_body
-        run: |
-          echo "Update version to ${RELEASE_TAG}" > PR_BODY_FILE
-          echo "" >> PR_BODY_FILE
-          echo "Please check the changelog for the following merges:" >> PR_BODY_FILE
-          export CURRENT_TAG=$(git describe --abbrev=0 --tags)
-          git log ${CURRENT_TAG}..kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG} --pretty="- %h: %s"  | grep -v ': test' | grep -v ': doc' | grep -v ': build' | grep -v ': deps'  >> PR_BODY_FILE
-      - name: create_pr
-        run: |
-          gh pr create --title "pre-release: Update version to ${RELEASE_TAG}" -F PR_BODY_FILE --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" --base master --reviewer pavannd1,viveksinghggits,hairyhum --label kueue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      matrix:
+        repo:
+          - name: kanister
+            repository: kanisterio/kanister
+            branch_prefix: kan-docs
+          - name: blueprints
+            repository: kanisterio/blueprints
+            branch_prefix: blueprints-pre-release
 
-  ############################################################
-  # 2️⃣ Bump version in blueprints repository
-  ############################################################
-  bump_blueprints:
-    runs-on: ubuntu-latest
-    needs: bump_kanister
     permissions:
       contents: write
       pull-requests: write
 
     steps:
-      - name: Checkout blueprints repo
+      - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          repository: kanisterio/blueprints
+          repository: ${{ matrix.repo.repository }}
           token: ${{ secrets.KANISTER_BOT_GH_TOKEN }}
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Fetch tags
         run: git fetch --tags origin
 
-      - name: Bump version in blueprints
+      - name: Detect current tag
+        id: current_tag
         run: |
-          ./bump_version.sh "${{ needs.bump_kanister.outputs.current_tag }}" "${RELEASE_TAG}"
+          CURRENT_TAG=$(git describe --abbrev=0 --tags)
+          echo "current_tag=${CURRENT_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        run: |
+          ./build/bump_version.sh \
+            "${{ steps.current_tag.outputs.current_tag }}" \
+            "${RELEASE_TAG}"
+
+      - name: reno report
+        if: matrix.repo.name == 'kanister'
+        run: make reno-report VERSION="${RELEASE_TAG}"
 
       - name: Commit changes
         run: |
           git config --global user.name 'Kasten Production'
           git config --global user.email 'infra@kasten.io'
-          git checkout -B "blueprints-pre-release-${RELEASE_TAG}"
+
+          BRANCH_NAME="${{ matrix.repo.branch_prefix }}-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
+
+          git checkout -B "${BRANCH_NAME}"
           git add -A
           git commit -s -m "pre-release: Update version to ${RELEASE_TAG}" || echo "No changes to commit"
 
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_ENV
+
       - name: Push branch
         run: |
-          git push origin "blueprints-pre-release-${RELEASE_TAG}" --force
+          git push origin "${branch_name}" --force
+
+      - name: Generate PR body (kanister only)
+        if: matrix.repo.name == 'kanister'
+        run: |
+          echo "Update version to ${RELEASE_TAG}" > PR_BODY_FILE
+          echo "" >> PR_BODY_FILE
+          echo "Please check the changelog for the following merges:" >> PR_BODY_FILE
+
+          git log \
+            ${{ steps.current_tag.outputs.current_tag }}..${branch_name} \
+            --pretty="- %h: %s" \
+            | grep -v ': test' \
+            | grep -v ': doc' \
+            | grep -v ': build' \
+            | grep -v ': deps' \
+            >> PR_BODY_FILE
 
       - name: Create PR
         run: |
-          gh pr create \
-            --title "pre-release: Update version to ${RELEASE_TAG}" \
-            --body "Automated version bump to ${RELEASE_TAG}" \
-            --head "blueprints-pre-release-${RELEASE_TAG}" \
-            --base master
+          if [ "${{ matrix.repo.name }}" = "kanister" ]; then
+            gh pr create \
+              --title "pre-release: Update version to ${RELEASE_TAG}" \
+              -F PR_BODY_FILE \
+              --head "${branch_name}" \
+              --base master \
+              --reviewer pavannd1,viveksinghggits,hairyhum \
+              --label kueue
+          else
+            gh pr create \
+              --title "pre-release: Update version to ${RELEASE_TAG}" \
+              --body "Automated version bump to ${RELEASE_TAG}" \
+              --head "${branch_name}" \
+              --base master
+          fi
         env:
           GH_TOKEN: ${{ secrets.KANISTER_BOT_GH_TOKEN }}
+
