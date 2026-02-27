@@ -77,8 +77,8 @@ jobs:
       - name: bump_version
         run: |
           CURRENT_TAG="${{ needs.bump_kanister.outputs.current_tag }}"
-          echo ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
-          ./build/bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
+          echo ./bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
+          ./bump_version.sh "${CURRENT_TAG}" "${RELEASE_TAG}"
 
       - name: commit_changes
         run: |
