@@ -1,0 +1,72 @@
+name: Cleanup PR Images
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Delete PR images from GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG: ${{ github.repository_owner }}
+          REPOSITORY: test_tools_image
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          PREFIX="pr-${PR_NUMBER}-"
+
+          echo "Deleting images with tag prefix: ${PREFIX}"
+          echo "Also deleting untagged versions..."
+
+          page=1
+          while true; do
+            echo "Fetching page ${page}..."
+
+            response=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/orgs/${ORG}/packages/container/${REPOSITORY}/versions?per_page=100&page=${page}")
+
+            count=$(echo "$response" | jq length)
+
+            if [ "$count" -eq 0 ]; then
+              echo "No more versions found."
+              break
+            fi
+
+            ids=$(echo "$response" | jq -r \
+              --arg PREFIX "$PREFIX" \
+              '.[] |
+               select(
+                 (
+                   .metadata.container.tags[]? | startswith($PREFIX)
+                 )
+                 or
+                 (
+                   (.metadata.container.tags == null)
+                   or
+                   (.metadata.container.tags | length == 0)
+                 )
+               ) |
+               .id')
+
+            for id in $ids; do
+              echo "Deleting version ID: $id"
+              gh api \
+                -X DELETE \
+                -H "Accept: application/vnd.github+json" \
+                "/orgs/${ORG}/packages/container/${REPOSITORY}/versions/$id"
+            done
+
+            page=$((page + 1))
+          done
+
+          echo "Cleanup complete."
