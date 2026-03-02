@@ -16,6 +16,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -34,6 +35,9 @@ type BlueprintSuite struct{}
 var _ = check.Suite(&BlueprintSuite{})
 
 func (bs *BlueprintSuite) TestUpdateImageTags(c *check.C) {
+	err := os.Setenv("KANISTER_USE_LOCAL_IMAGES", "false")
+	c.Assert(err, check.IsNil)
+
 	for _, bp := range []*crv1alpha1.Blueprint{
 		// BP with no phase with image arg
 		{

@@ -75,7 +75,9 @@ install_csi_hostpath_driver() {
 
     # Deploy the CSI Hostpath Driver
     pushd /tmp
-      git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+      if [ ! -d "csi-driver-host-path" ]; then
+        git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+      fi
       pushd csi-driver-host-path
         git checkout ${HOSTPATH_DRIVER_VERSION}
         sed -i 's/mountPropagation: Bidirectional/\#mountPropagation: Bidirectional/g' deploy/kubernetes-latest/hostpath/csi-hostpath-plugin.yaml
@@ -103,7 +105,9 @@ check_csi_hostpath_driver_installed() {
 
     # Deploy the CSI Hostpath Driver
     pushd /tmp
-      git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+      if [ ! -d "csi-driver-host-path" ]; then
+        git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+      fi
       pushd csi-driver-host-path
         # Check StorageClass created
         if ! kubectl diff -f ./examples/csi-storageclass.yaml 2>&1 > /dev/null ; then

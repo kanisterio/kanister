@@ -63,11 +63,21 @@ jobs:
 
   test:
     runs-on: ubuntu-24.04
-    needs: gomod
+    needs: [gomod, detect_dockerfile_changes]
     strategy:
       fail-fast: false
       matrix:
         testSuite: [test, integration-test, helm-test]
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      DOCKER_BUILD: "false"
+      LOCAL_IMAGE_REGISTRY: "ghcr.io"
+      LOCAL_IMAGE_ORG: "kanisterio"
+      LOCAL_IMAGE_REPOSITORY: "test_tools_image"
+      LOCAL_MINIO: "true"
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     ## Sync go.mod and go.sum files from gomod job
@@ -87,8 +97,29 @@ jobs:
         nohup kubectl port-forward $POD_NAME 9000 --namespace minio &
         sleep 5
       if: matrix.testSuite == 'test'
-    ## We set LOCAL_MINIO to avoid issues with DNS in github action runniers
-    - run: make ${{ matrix.testSuite }} LOCAL_MINIO=true
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+    - name: Login to GHCR
+      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
+    - run: |
+        make build-push-apps-images
+      if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
+    - run: |
+        if [[ "${{ matrix.testSuite }}" == "integration-test" && \
+          "${{ needs.detect_dockerfile_changes.outputs.changed }}" == "true" ]]; then
+          export KANISTER_USE_LOCAL_IMAGES=true
+          echo "using local PR images"
+        else
+          export KANISTER_USE_LOCAL_IMAGES=false
+          echo "using released dev images"
+        fi
+        make ${{ matrix.testSuite }}
+
   build:
     runs-on: ubuntu-24.04
     needs: gomod
@@ -153,4 +184,38 @@ jobs:
       extra_tags: |
         ${{ needs.image_tags.outputs.tag_short }}
         ${{ needs.image_tags.outputs.tag_long }}
+  detect_dockerfile_changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      changed: ${{ steps.dockerfile_changed.outputs.changed }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - id: dockerfile_changed
+        run: |
+          set -euo pipefail
 
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+            echo "Event: Pull Request"
+          else
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+            echo "Event: Push"
+          fi
+
+          echo "Base SHA: $BASE"
+          echo "Head SHA: $HEAD"
+
+          echo "Changed files:"
+          git diff --name-only "$BASE" "$HEAD" | tee changed_files.txt
+
+          if grep -q '^docker/.*/Dockerfile$' changed_files.txt; then
+            echo "Dockerfile changes detected."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Dockerfile changes detected."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
