@@ -277,3 +277,14 @@ reno-report:
 
 reno-lint:
 	@$(MAKE) run CMD="reno lint"
+
+.PHONY: install-registry expose-registry uninstall-registry
+
+install-registry:
+	@$(MAKE) run CMD="./build/registry-deploy.sh"
+
+expose-registry:
+	nohup kubectl -n registry port-forward svc/local-registry 5000:5000 > registry.log 2>&1 &
+
+uninstall-registry:
+	helm uninstall local-registry -n registry || true
