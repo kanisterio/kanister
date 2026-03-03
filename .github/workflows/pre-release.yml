@@ -69,11 +69,9 @@ jobs:
       pull-requests: write
       contents: write
     steps:
-      - name: checkout_repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          repository: kanisterio/blueprints
-          fetch-depth: 0
+      - name: Clone blueprint repository
+        run: |
+          git clone https://kanister-bot:${KANISTER_BOT_GH_TOKEN}@github.com/kanisterio/blueprint
 
       - name: bump_version
         run: |
@@ -83,8 +81,8 @@ jobs:
 
       - name: commit_changes
         run: |
-          git config --global user.name 'Kasten Production'
-          git config --global user.email 'infra@kasten.io'
+          git config --global user.name 'Kasten Bot'
+          git config --global user.email 'kanister.maintainers@veeam.com'
           git checkout -B "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}"
           git add -A
           git commit -s -m "pre-release: Update version to ${RELEASE_TAG}"
