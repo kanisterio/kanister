@@ -277,3 +277,10 @@ reno-report:
 
 reno-lint:
 	@$(MAKE) run CMD="reno lint"
+
+.PHONY: build-push-apps-images
+
+build-push-apps-images: build-dirs
+	@$(MAKE) run CMD="make build BIN=kando"
+	@$(MAKE) run CMD="make build BIN=kanctl"
+	@$(MAKE) run CMD="PR_NUMBER=$(PR_NUMBER) KANISTER_USE_LOCAL_IMAGES=$(KANISTER_USE_LOCAL_IMAGES) LOCAL_IMAGE_REGISTRY=$(LOCAL_IMAGE_REGISTRY) LOCAL_IMAGE_ORG=$(LOCAL_IMAGE_ORG) LOCAL_IMAGE_REPOSITORY=$(LOCAL_IMAGE_REPOSITORY) ./build/build_push_test_images.sh"
