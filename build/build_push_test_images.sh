@@ -68,7 +68,7 @@ build_image() {
 
 main() {
   echo "Using registry: ${REGISTRY_ADDR}"
-  echo "Registry Org: " ${ORG}
+  echo "Registry Org: ${ORG}"
   echo "Repository: ${REPOSITORY}"
   echo "PR Number: ${PR_NUMBER}"
 
