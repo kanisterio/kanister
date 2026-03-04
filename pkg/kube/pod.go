@@ -51,12 +51,15 @@ const (
 	redactedValue             = "XXXXX"
 )
 
+// VolumeMountOptions provides options for a volume mount
+// +k8s:deepcopy-gen=true
 type VolumeMountOptions struct {
 	MountPath string
 	ReadOnly  bool
 }
 
 // PodOptions specifies options for `CreatePod`
+// +k8s:deepcopy-gen=true
 type PodOptions struct {
 	Annotations        map[string]string
 	Command            []string
