@@ -103,6 +103,7 @@ jobs:
       - name: create_pr
         run: |
           gh pr create \
+            --repo kanisterio/blueprints \
             --title "pre-release: Update version to ${RELEASE_TAG}" \
             -F PR_BODY_FILE \
             --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" \
