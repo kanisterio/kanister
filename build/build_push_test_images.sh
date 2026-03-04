@@ -25,7 +25,6 @@ set -o pipefail
 ORG=${LOCAL_IMAGE_ORG:-"kanisterio"}
 REGISTRY_ADDR=${LOCAL_IMAGE_REGISTRY:-"localhost:5000"}
 REPOSITORY=${LOCAL_IMAGE_REPOSITORY:-"test_tools_image"}
-IMAGE_TAG=${IMAGE_TAG:-"dev"}
 PR_NUMBER=${PR_NUMBER:-"001"}
 
 ########################################
