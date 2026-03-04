@@ -72,6 +72,7 @@ jobs:
       - name: checkout_repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
+          token: ${{ secrets.KANISTER_BOT_GH_TOKEN }}
           repository: kanisterio/blueprints
           fetch-depth: 0
 
