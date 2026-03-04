@@ -107,7 +107,7 @@ jobs:
             --title "pre-release: Update version to ${RELEASE_TAG}" \
             -F PR_BODY_FILE \
             --head "kan-docs-${PRERELEASE_DOCS_BRANCH}-${RELEASE_TAG}" \
-            --base master \
+            --base main \
             --reviewer pavannd1,viveksinghggits
         env:
           GH_TOKEN: ${{ secrets.KANISTER_BOT_GH_TOKEN }}
