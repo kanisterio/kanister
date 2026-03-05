@@ -23,11 +23,10 @@ jobs:
           set -euo pipefail
 
           PREFIX="pr-${PR_NUMBER}-"
+          ids_file=$(mktemp)
 
           echo "Collecting images with tag prefix: ${PREFIX}"
           echo "Also collecting untagged versions..."
-
-          ids_to_delete=()
 
           page=1
           while true; do
@@ -44,37 +43,51 @@ jobs:
               break
             fi
 
-            matches=$(echo "$response" | jq -r \
-              --arg PREFIX "$PREFIX" \
-              '.[] |
-               select(
-                 (
-                   .metadata.container.tags[]? | startswith($PREFIX)
-                 )
-                 or
-                 (
-                   (.metadata.container.tags == null)
-                   or
-                   (.metadata.container.tags | length == 0)
-                 )
-               ) |
-               .id')
-
-            for id in $matches; do
-              ids_to_delete+=("$id")
-            done
+            echo "$response" | jq -r \
+              --arg PREFIX "$PREFIX" '
+              .[] |
+              select(
+                (
+                  (.metadata.container.tags // []) 
+                  | any(startswith($PREFIX))
+                )
+                or
+                (
+                  (
+                    (.metadata.container.tags == null) 
+                    or 
+                    (.metadata.container.tags | length == 0)
+                  )
+                  and
+                  (
+                    (.created_at | fromdateiso8601) < (now - 7*24*60*60)
+                  )
+                )
+              ) |
+              .id
+              ' >> "$ids_file"
 
             page=$((page + 1))
           done
 
-          echo "Found ${#ids_to_delete[@]} versions to delete."
+          if [ ! -s "$ids_file" ]; then
+            echo "No matching versions found."
+            exit 0
+          fi
 
-          for id in "${ids_to_delete[@]}"; do
+          sort -u "$ids_file" -o "$ids_file"
+
+          total=$(wc -l < "$ids_file")
+          echo "Found $total versions to delete."
+
+          while read -r id; do
             echo "Deleting version ID: $id"
             gh api \
               -X DELETE \
               -H "Accept: application/vnd.github+json" \
-              "/orgs/${ORG}/packages/container/${REPOSITORY}/versions/$id"
-          done
+              "/orgs/${ORG}/packages/container/${REPOSITORY}/versions/$id" \
+              || echo "Warning: Failed to delete version $id"
+          done < "$ids_file"
 
           echo "Cleanup complete."
+          echo "Deleted $total images."
