@@ -24,8 +24,10 @@ jobs:
 
           PREFIX="pr-${PR_NUMBER}-"
 
-          echo "Deleting images with tag prefix: ${PREFIX}"
-          echo "Also deleting untagged versions..."
+          echo "Collecting images with tag prefix: ${PREFIX}"
+          echo "Also collecting untagged versions..."
+
+          ids_to_delete=()
 
           page=1
           while true; do
@@ -42,7 +44,7 @@ jobs:
               break
             fi
 
-            ids=$(echo "$response" | jq -r \
+            matches=$(echo "$response" | jq -r \
               --arg PREFIX "$PREFIX" \
               '.[] |
                select(
@@ -58,15 +60,21 @@ jobs:
                ) |
                .id')
 
-            for id in $ids; do
-              echo "Deleting version ID: $id"
-              gh api \
-                -X DELETE \
-                -H "Accept: application/vnd.github+json" \
-                "/orgs/${ORG}/packages/container/${REPOSITORY}/versions/$id"
+            for id in $matches; do
+              ids_to_delete+=("$id")
             done
 
             page=$((page + 1))
+          done
+
+          echo "Found ${#ids_to_delete[@]} versions to delete."
+
+          for id in "${ids_to_delete[@]}"; do
+            echo "Deleting version ID: $id"
+            gh api \
+              -X DELETE \
+              -H "Accept: application/vnd.github+json" \
+              "/orgs/${ORG}/packages/container/${REPOSITORY}/versions/$id"
           done
 
           echo "Cleanup complete."
