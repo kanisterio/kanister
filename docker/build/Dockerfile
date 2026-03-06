@@ -25,11 +25,6 @@ RUN wget -O /usr/local/bin/kind \
       https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -) \
     && chmod +x /usr/local/bin/kind
 
-RUN wget -O /tmp/kind.sha256sum \
-      https://github.com/kubernetes-sigs/kind/releases/download/v0.18.0/kind-$(echo $TARGETPLATFORM | tr / -).sha256sum \
-    && echo "$(cut -d ' ' -f1 /tmp/kind.sha256sum)  /usr/local/bin/kind" | sha256sum -c - \
-    && rm -f /tmp/kind.sha256sum
-
 RUN git config --global --add safe.directory /go/src/github.com/kanisterio/kanister
 
 # Adding CRD documentation generation tool.
