@@ -19,8 +19,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/aws/aws-sdk-go/service/sts/stsiface"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"gopkg.in/check.v1"
 
 	envconfig "github.com/kanisterio/kanister/pkg/config"
@@ -34,12 +33,11 @@ type AWSSuite struct{}
 var _ = check.Suite(&AWSSuite{})
 
 type mockSTSClient struct {
-	stsiface.STSAPI
-	getCallerIdentityFunc func(*sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
+	getCallerIdentityFunc func(context.Context, *sts.GetCallerIdentityInput, ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 }
 
-func (m *mockSTSClient) GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
-	return m.getCallerIdentityFunc(input)
+func (m *mockSTSClient) GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+	return m.getCallerIdentityFunc(ctx, params, optFns...)
 }
 
 func (s AWSSuite) TestValidCreds(c *check.C) {
@@ -50,7 +48,7 @@ func (s AWSSuite) TestValidCreds(c *check.C) {
 	config[ConfigRegion] = "us-west-2"
 
 	mockSTS := &mockSTSClient{
-		getCallerIdentityFunc: func(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
+		getCallerIdentityFunc: func(ctx context.Context, input *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 			return &sts.GetCallerIdentityOutput{}, nil
 		},
 	}
@@ -61,7 +59,7 @@ func (s AWSSuite) TestValidCreds(c *check.C) {
 
 	// Test with invalid credentials
 	mockSTS = &mockSTSClient{
-		getCallerIdentityFunc: func(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
+		getCallerIdentityFunc: func(ctx context.Context, input *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 			return nil, errors.New("invalid credentials")
 		},
 	}

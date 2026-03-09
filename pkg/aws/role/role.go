@@ -19,20 +19,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/kanisterio/errkit"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 // Switch func uses credentials API to automatically generates New Credentials for a given role.
-func Switch(ctx context.Context, creds *credentials.Credentials, role string, duration time.Duration) (*credentials.Credentials, error) {
-	sess, err := session.NewSession(aws.NewConfig().WithCredentials((creds)))
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to create session")
-	}
-	return stscreds.NewCredentials(sess, role, func(p *stscreds.AssumeRoleProvider) {
-		p.Duration = duration
-	}), nil
+func Switch(ctx context.Context, creds aws.CredentialsProvider, role string, duration time.Duration) (aws.CredentialsProvider, error) {
+	stsCli := sts.NewFromConfig(aws.Config{Credentials: creds})
+	p := stscreds.NewAssumeRoleProvider(stsCli, role, func(o *stscreds.AssumeRoleOptions) {
+		o.Duration = duration
+	})
+	return p, nil
 }
