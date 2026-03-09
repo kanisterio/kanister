@@ -21,12 +21,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/aws/aws-sdk-go/service/sts/stsiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/kanisterio/errkit"
 
 	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
@@ -66,14 +64,14 @@ const (
 	AssumeRoleDuration        = "assumeRoleDuration"
 )
 
-var _ stscreds.TokenFetcher = (*staticToken)(nil)
+var _ stscreds.IdentityTokenRetriever = (*staticToken)(nil)
 
-// staticToken implements stscreds.TokenFetcher interface for retrieval of plaintext web
+// staticToken implements stscreds.IdentityTokenRetriever interface for retrieval of plaintext web
 // identity token
 type staticToken string
 
-// FetchToken returns a plaintext web identity token as is.
-func (f staticToken) FetchToken(ctx credentials.Context) ([]byte, error) {
+// GetIdentityToken returns a plaintext web identity token as is.
+func (f staticToken) GetIdentityToken() ([]byte, error) {
 	return []byte(f), nil
 }
 
@@ -88,7 +86,7 @@ func durationFromString(config map[string]string) (time.Duration, error) {
 func authenticateAWSCredentials(
 	config map[string]string,
 	assumeRoleDuration time.Duration,
-) (*credentials.Credentials, string, error) {
+) (aws.CredentialsProvider, string, error) {
 	// If AccessKeys were provided - use those
 	creds := fetchStaticAWSCredentials(config)
 	if creds != nil {
@@ -97,35 +95,36 @@ func authenticateAWSCredentials(
 
 	// If Web Identity token and role were provided - use them
 	var err error
-	creds, err = fetchWebIdentityTokenFromConfig(config, assumeRoleDuration)
+	var credsProvider aws.CredentialsProvider
+	credsProvider, err = fetchWebIdentityTokenFromConfig(config, assumeRoleDuration)
 	if err != nil {
 		return nil, "", err
 	}
-	if creds != nil {
-		return creds, config[ConfigRole], nil
+	if credsProvider != nil {
+		return credsProvider, config[ConfigRole], nil
 	}
 
 	// Otherwise use Web Identity token file and role provided via ENV
-	creds, err = fetchWebIdentityTokenFromFile(assumeRoleDuration)
+	credsProvider, err = fetchWebIdentityTokenFromFile(assumeRoleDuration)
 	if err != nil {
 		return nil, "", err
 	}
-	if creds != nil {
-		return creds, os.Getenv(RoleARNEnvKey), nil
+	if credsProvider != nil {
+		return credsProvider, os.Getenv(RoleARNEnvKey), nil
 	}
 
 	return nil, "", errkit.New("Missing AWS credentials, please check that either AWS access keys or web identity token are provided")
 }
 
-func fetchStaticAWSCredentials(config map[string]string) *credentials.Credentials {
+func fetchStaticAWSCredentials(config map[string]string) aws.CredentialsProvider {
 	if config[AccessKeyID] == "" || config[SecretAccessKey] == "" {
 		return nil
 	}
 
-	return credentials.NewStaticCredentials(config[AccessKeyID], config[SecretAccessKey], "")
+	return credentials.NewStaticCredentialsProvider(config[AccessKeyID], config[SecretAccessKey], "")
 }
 
-func fetchWebIdentityTokenFromConfig(config map[string]string, assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
+func fetchWebIdentityTokenFromConfig(config map[string]string, assumeRoleDuration time.Duration) (aws.CredentialsProvider, error) {
 	if config[ConfigWebIdentityToken] == "" || config[ConfigRole] == "" {
 		return nil, nil
 	}
@@ -142,14 +141,14 @@ func fetchWebIdentityTokenFromConfig(config map[string]string, assumeRoleDuratio
 	return creds, nil
 }
 
-func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
+func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) (aws.CredentialsProvider, error) {
 	if os.Getenv(WebIdentityTokenFilePathEnvKey) == "" || os.Getenv(RoleARNEnvKey) == "" {
 		return nil, nil
 	}
 
 	creds, err := getCredentialsWithDuration(
 		os.Getenv(RoleARNEnvKey),
-		stscreds.FetchTokenPath(os.Getenv(WebIdentityTokenFilePathEnvKey)),
+		stscreds.IdentityTokenFile(os.Getenv(WebIdentityTokenFilePathEnvKey)),
 		assumeRoleDuration,
 	)
 	if err != nil {
@@ -162,7 +161,7 @@ func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) (*credentia
 // switchAWSRole checks if the caller wants to assume a different role
 // return as is if ConfigRole is empty, or already same as assumedRole
 // otherwise proceed to switch role
-func switchAWSRole(ctx context.Context, creds *credentials.Credentials, targetRole string, currentRole string, assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
+func switchAWSRole(ctx context.Context, creds aws.CredentialsProvider, targetRole string, currentRole string, assumeRoleDuration time.Duration) (aws.CredentialsProvider, error) {
 	if targetRole == "" || targetRole == currentRole {
 		return creds, nil
 	}
@@ -173,12 +172,12 @@ func switchAWSRole(ctx context.Context, creds *credentials.Credentials, targetRo
 	}
 	// If the caller wants to use a specific role, use the credentials initialized above to assume that
 	// role and return those credentials instead
-	creds, err := awsrole.Switch(ctx, creds, targetRole, assumeRoleDuration)
-	return creds, errkit.Wrap(err, "Failed to switch roles")
+	switched, err := awsrole.Switch(ctx, creds, targetRole, assumeRoleDuration)
+	return switched, errkit.Wrap(err, "Failed to switch roles")
 }
 
 // GetCredentials returns credentials to use for AWS operations
-func GetCredentials(ctx context.Context, config map[string]string) (*credentials.Credentials, error) {
+func GetCredentials(ctx context.Context, config map[string]string) (aws.CredentialsProvider, error) {
 	assumeRoleDuration, err := durationFromString(config)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to get assume role duration")
@@ -195,65 +194,57 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 }
 
 // getCredentialsWithDuration returns credentials with the given duration.
-// In order to set a custom assume role duration, we have to get the
-// the provider first and then set it's Duration field before
-// getting the credentials from the provider.
 func getCredentialsWithDuration(
 	roleARN string,
-	tokenFetcher stscreds.TokenFetcher,
+	tokenProvider stscreds.IdentityTokenRetriever,
 	duration time.Duration,
-) (*credentials.Credentials, error) {
-	sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: duration})
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to create session to initialize Web Identify credentials")
-	}
-
-	svc := sts.New(sess)
-	p := stscreds.NewWebIdentityRoleProviderWithOptions(
-		svc,
-		roleARN,
-		"",
-		tokenFetcher,
-	)
-	p.Duration = duration
-	return credentials.NewCredentials(p), nil
+) (aws.CredentialsProvider, error) {
+	stsCli := sts.NewFromConfig(aws.Config{})
+	p := stscreds.NewWebIdentityRoleProvider(stsCli, roleARN, tokenProvider, func(o *stscreds.WebIdentityRoleOptions) {
+		o.Duration = duration
+	})
+	return p, nil
 }
 
 // GetConfig returns a configuration to establish AWS connection and connected region name.
-func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, err error) {
+func GetConfig(ctx context.Context, config map[string]string) (awsConfig aws.Config, region string, err error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
-		return nil, "", errkit.New("region required for storage type EBS/EFS")
+		return aws.Config{}, "", errkit.New("region required for storage type EBS/EFS")
 	}
 	creds, err := GetCredentials(ctx, config)
 	if err != nil {
-		return nil, "", errkit.Wrap(err, "could not initialize AWS credentials for operation")
+		return aws.Config{}, "", errkit.Wrap(err, "could not initialize AWS credentials for operation")
 	}
-	return &aws.Config{Credentials: creds}, region, nil
+	return aws.Config{Credentials: creds}, region, nil
+}
+
+// STSGetCallerIdentityClient is the interface used for testing credential validation.
+type STSGetCallerIdentityClient interface {
+	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 }
 
 func IsAwsCredsValid(ctx context.Context, config map[string]string) (bool, error) {
 	maxRetries := 10
-	awsConfig, region, err := GetConfig(ctx, config)
+	awsCfg, region, err := GetConfig(ctx, config)
 	if err != nil {
 		return false, errkit.Wrap(err, "Failed to get config for AWS creds")
 	}
-	s, err := session.NewSession(awsConfig)
-	if err != nil {
-		return false, errkit.Wrap(err, "Failed to create session with provided creds")
-	}
-	stsCli := sts.New(s, aws.NewConfig().WithRegion(region).WithMaxRetries(maxRetries))
-	_, err = stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	awsCfg.Region = region
+	stsCli := sts.NewFromConfig(awsCfg, func(o *sts.Options) {
+		o.RetryMaxAttempts = maxRetries
+	})
+	_, err = stsCli.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
 		return false, errkit.Wrap(err, "Failed to get user with provided creds")
 	}
 	return true, nil
 }
 
-// IsAwsCredsValidWithSTS uses the provided STS client to validate AWS credentials. with stsiface sdk.
+// IsAwsCredsValidWithSTS uses the provided STS client to validate AWS credentials.
 // Method solely for testing purposes, as it allows passing a mock STS client.
-func IsAwsCredsValidWithSTS(ctx context.Context, config map[string]string, stsCli stsiface.STSAPI) (bool, error) {
-	_, err := stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+func IsAwsCredsValidWithSTS(ctx context.Context, config map[string]string, stsCli STSGetCallerIdentityClient) (bool, error) {
+	_, err := stsCli.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
 		return false, err
 	}
