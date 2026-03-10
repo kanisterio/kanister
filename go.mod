@@ -1,8 +1,6 @@
 module github.com/kanisterio/kanister
 
-go 1.26
-
-toolchain go1.26.0
+go 1.26.1
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
