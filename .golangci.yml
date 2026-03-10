@@ -93,6 +93,10 @@ linters:
           - revive
         path: "pkg/utils/.+"
         text: "var-naming: avoid meaningless package names"
+      - linters:
+          - revive
+        path: "pkg/.+"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
     paths:
       - pkg/client/applyconfiguration/cr/v1alpha1
       - pkg/client/clientset
