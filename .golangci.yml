@@ -105,6 +105,26 @@ linters:
           - revive
         path: "pkg/version/"
         text: "var-naming: avoid package names that conflict with Go standard library package names"
+      - linters:
+          - revive
+        path: "pkg/format/"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+      - linters:
+          - revive
+        path: "pkg/kopia/cli/repository/storage/fs/"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+      - linters:
+          - revive
+        path: "pkg/metrics/"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+      - linters:
+          - revive
+        path: "pkg/log/"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+      - linters:
+          - revive
+        path: "pkg/testing/"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
     paths:
       - pkg/client/applyconfiguration/cr/v1alpha1
       - pkg/client/clientset
