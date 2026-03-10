@@ -393,6 +393,46 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *check.C) {
 	case <-time.After(2 * time.Second):
 		c.Error("timeout waiting on ready to use")
 	}
+
+	setVolumeSnapshotStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, nil)
+
+	// Set Portworx transient error: VolumeSnapshotContent is missing
+	message = "VolumeSnapshotContent is missing"
+	setErrorStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, message)
+
+	// Should retry (context deadline) rather than fail immediately
+	err = waitOnReadyToUseWithTimeout(ctx, fakeSs, snapshotName, timeout)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Matches, ".*context deadline exceeded*")
+
+	reply = waitOnReadyToUseInBackground(ctx, fakeSs, snapshotName, bgTimeout)
+	setReadyStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace)
+	select {
+	case err = <-reply:
+		c.Assert(err, check.IsNil)
+	case <-time.After(2 * time.Second):
+		c.Error("timeout waiting on ready to use after VolumeSnapshotContent is missing")
+	}
+
+	setVolumeSnapshotStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, nil)
+
+	// Set Portworx transient error: SnapshotFinalizerError
+	message = "SnapshotFinalizerError"
+	setErrorStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace, message)
+
+	// Should retry (context deadline) rather than fail immediately
+	err = waitOnReadyToUseWithTimeout(ctx, fakeSs, snapshotName, timeout)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Matches, ".*context deadline exceeded*")
+
+	reply = waitOnReadyToUseInBackground(ctx, fakeSs, snapshotName, bgTimeout)
+	setReadyStatus(c, dynCli, volumeSnapshotGVR, snapshotName, defaultNamespace)
+	select {
+	case err = <-reply:
+		c.Assert(err, check.IsNil)
+	case <-time.After(2 * time.Second):
+		c.Error("timeout waiting on ready to use after SnapshotFinalizerError")
+	}
 }
 
 // Helpers to work with volume snapshot status used in TestWaitOnReadyToUse
