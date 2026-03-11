@@ -121,12 +121,12 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 				if useLocalImages() {
 					updatedImage := rewriteToLocalImage(imageStr)
 					phase.Args["image"] = updatedImage
-					log.Debug().Print("using local pull request image", field.M{"image": updatedImage})
+					log.Info().Print("using local pull request image", field.M{"image": updatedImage})
 				} else {
 					baseImage := strings.Split(imageStr, ":")[0]
 					updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
 					phase.Args["image"] = updatedImage
-					log.Debug().Print("using dev image", field.M{"image": updatedImage})
+					log.Info().Print("using ghcr image", field.M{"image": updatedImage})
 				}
 			}
 

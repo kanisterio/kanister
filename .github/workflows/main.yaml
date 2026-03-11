@@ -95,6 +95,9 @@ jobs:
       run: echo "${{needs.gomod.outputs.gomod}}" > go.mod
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
+    - uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
     - uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
     - name: Build and load test images into Kind
       if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
