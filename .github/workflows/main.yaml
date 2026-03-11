@@ -76,6 +76,7 @@ jobs:
       LOCAL_MINIO: "true"
     steps:
     - name: Free disk space aggressively
+      if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
       run: |
         sudo rm -rf /usr/share/dotnet
         sudo rm -rf /usr/local/lib/android
