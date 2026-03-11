@@ -21,6 +21,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/smithy-go"
 	"github.com/kanisterio/errkit"
 
@@ -29,6 +30,7 @@ import (
 
 const (
 	bucketNotFound = "NotFound"
+	noSuchBucket   = "NoSuchBucket"
 	gcsS3NotFound  = "not found"
 )
 
@@ -36,13 +38,21 @@ func IsBucketNotFoundError(err error) bool {
 	if err == nil {
 		return false
 	}
-	var noSuchBucket *s3types.NoSuchBucket
-	if errors.As(err, &noSuchBucket) {
+	// Check for AWS SDK v2 error types
+	var noSuchBucketErr *s3types.NoSuchBucket
+	if errors.As(err, &noSuchBucketErr) {
 		return true
 	}
 	var apiErr smithy.APIError
 	if errors.As(err, &apiErr) {
-		return apiErr.ErrorCode() == bucketNotFound
+		code := apiErr.ErrorCode()
+		return code == bucketNotFound || code == noSuchBucket
+	}
+	// Check for AWS SDK v1 error types (stow still uses v1)
+	var awsErr awserr.Error
+	if errors.As(err, &awsErr) {
+		code := awsErr.Code()
+		return code == bucketNotFound || code == noSuchBucket
 	}
 	return strings.Contains(err.Error(), gcsS3NotFound)
 }
