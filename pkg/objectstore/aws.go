@@ -16,13 +16,13 @@ package objectstore
 
 import (
 	"context"
-	"crypto/tls"
-	"net/http"
+	"errors"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/smithy-go"
 	"github.com/kanisterio/errkit"
 
 	kaws "github.com/kanisterio/kanister/pkg/aws"
@@ -30,7 +30,7 @@ import (
 
 const (
 	bucketNotFound = "NotFound"
-	noSuchBucket   = s3.ErrCodeNoSuchBucket
+	noSuchBucket   = "NoSuchBucket"
 	gcsS3NotFound  = "not found"
 )
 
@@ -38,40 +38,48 @@ func IsBucketNotFoundError(err error) bool {
 	if err == nil {
 		return false
 	}
+	// Check for AWS SDK v2 error types
+	var noSuchBucketErr *s3types.NoSuchBucket
+	if errors.As(err, &noSuchBucketErr) {
+		return true
+	}
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		code := apiErr.ErrorCode()
+		return code == bucketNotFound || code == noSuchBucket
+	}
+	// Check for AWS SDK v1 error types (stow still uses v1)
 	var awsErr awserr.Error
-	if errkit.As(err, &awsErr) {
+	if errors.As(err, &awsErr) {
 		code := awsErr.Code()
 		return code == bucketNotFound || code == noSuchBucket
 	}
 	return strings.Contains(err.Error(), gcsS3NotFound)
 }
 
-func awsConfig(ctx context.Context, pc ProviderConfig, s SecretAws) (*aws.Config, string, error) {
+// normalizeBucketLocation maps an empty location string to "us-east-1",
+// mirroring the v1 SDK's s3.NormalizeBucketLocation behaviour.
+func normalizeBucketLocation(region string) string {
+	if region == "" {
+		return "us-east-1"
+	}
+	return region
+}
+
+func awsConfig(ctx context.Context, pc ProviderConfig, s SecretAws) (aws.Config, string, error) {
 	c := map[string]string{
 		kaws.AccessKeyID:     s.AccessKeyID,
 		kaws.SecretAccessKey: s.SecretAccessKey,
 		kaws.SessionToken:    s.SessionToken,
-		kaws.ConfigRegion:    s3.NormalizeBucketLocation(pc.Region),
+		kaws.ConfigRegion:    normalizeBucketLocation(pc.Region),
 		//TODO: Add aws.ConfigRole to profile
 	}
 	cfg, r, err := kaws.GetConfig(ctx, c)
 	if err != nil {
-		return nil, "", errkit.Wrap(err, "failed to create aws config")
+		return aws.Config{}, "", errkit.Wrap(err, "failed to create aws config")
 	}
-	cfg = cfg.WithRegion(r)
-	if pc.Endpoint != "" {
-		cfg = cfg.WithEndpoint(pc.Endpoint).WithS3ForcePathStyle(true)
-	}
-	if pc.SkipSSLVerify {
-		h := &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-		}
-		cfg = cfg.WithHTTPClient(h)
-	}
-
+	cfg.Region = r
+	// Endpoint and SkipSSLVerify are applied at S3 client construction time (see bucket.go),
+	// not on aws.Config in v2.
 	return cfg, r, nil
 }
