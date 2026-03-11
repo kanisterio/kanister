@@ -40,9 +40,14 @@ check_or_get_dependencies() {
         if ! command -v ${dep}
         then
             echo "Missing ${dep}. Trying to install"
-            if ! err=$(${lin_repo_pre_cmd} ${dep} 2>&1)
+            pkg=${dep}
+            # apt-get uses different package names for some binaries
+            if command -v apt-get && [ "${dep}" = "go" ]; then
+                pkg="golang"
+            fi
+            if ! err=$(${lin_repo_pre_cmd} ${pkg} 2>&1)
             then
-                echo "Insatlletion failed with $err"
+                echo "Installation failed with $err"
                 exit 1
             fi
         fi
