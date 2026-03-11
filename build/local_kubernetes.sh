@@ -42,9 +42,11 @@ check_or_get_dependencies() {
             echo "Missing ${dep}. Trying to install"
             pkg=${dep}
             # apt-get uses different package names for some binaries
-            if command -v apt-get && [ "${dep}" = "go" ]; then
-                pkg="golang-go"
-                sudo apt-get update -y
+            if [ "${dep}" = "go" ]; then
+                GO_VERSION=$(grep -m1 '^go ' "${BASE_DIR}/../go.mod" | awk '{print $2}')
+                curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | sudo tar -C /usr/local -xz
+                export PATH=$PATH:/usr/local/go/bin
+                continue
             fi
             if ! err=$(${lin_repo_pre_cmd} ${pkg} 2>&1)
             then
