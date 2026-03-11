@@ -184,6 +184,7 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/mxk/go-vss v1.2.0 // indirect
 	github.com/natefinch/atomic v1.0.1 // indirect
+	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/petar/GoLLRB v0.0.0-20210522233825-ae3b015fd3e9 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
@@ -250,5 +251,3 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.19.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 )
-
-require github.com/oklog/ulid/v2 v2.1.1 // indirect
