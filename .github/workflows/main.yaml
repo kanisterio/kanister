@@ -6,6 +6,12 @@ on:
     branches:
     - master
   pull_request:
+  workflow_dispatch:
+    inputs:
+      use_pr_images:
+        description: 'Run integration-test with PR-based images'
+        type: boolean
+        default: false
 
 jobs:
   ## Make sure go.mod and go.sum files are up-to-date with the code
@@ -200,6 +206,12 @@ jobs:
         run: |
           set -euo pipefail
           
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.use_pr_images }}" = "true" ]; then
+            echo "Event: Manual dispatch with use_pr_images=true"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="${{ github.event.pull_request.base.sha }}"
             HEAD="${{ github.event.pull_request.head.sha }}"
