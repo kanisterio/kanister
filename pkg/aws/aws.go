@@ -129,16 +129,11 @@ func fetchWebIdentityTokenFromConfig(config map[string]string, assumeRoleDuratio
 		return nil, nil
 	}
 
-	creds, err := getCredentialsWithDuration(
+	return getCredentialsWithDuration(
 		config[ConfigRole],
 		staticToken(config[ConfigWebIdentityToken]),
 		assumeRoleDuration,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return creds, nil
+	), nil
 }
 
 func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) (aws.CredentialsProvider, error) {
@@ -146,16 +141,11 @@ func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) (aws.Creden
 		return nil, nil
 	}
 
-	creds, err := getCredentialsWithDuration(
+	return getCredentialsWithDuration(
 		os.Getenv(RoleARNEnvKey),
 		stscreds.IdentityTokenFile(os.Getenv(WebIdentityTokenFilePathEnvKey)),
 		assumeRoleDuration,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return creds, nil
+	), nil
 }
 
 // switchAWSRole checks if the caller wants to assume a different role
@@ -198,12 +188,11 @@ func getCredentialsWithDuration(
 	roleARN string,
 	tokenProvider stscreds.IdentityTokenRetriever,
 	duration time.Duration,
-) (aws.CredentialsProvider, error) {
+) aws.CredentialsProvider {
 	stsCli := sts.NewFromConfig(aws.Config{})
-	p := stscreds.NewWebIdentityRoleProvider(stsCli, roleARN, tokenProvider, func(o *stscreds.WebIdentityRoleOptions) {
+	return stscreds.NewWebIdentityRoleProvider(stsCli, roleARN, tokenProvider, func(o *stscreds.WebIdentityRoleOptions) {
 		o.Duration = duration
 	})
-	return p, nil
 }
 
 // GetConfig returns a configuration to establish AWS connection and connected region name.
