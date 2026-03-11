@@ -94,22 +94,12 @@ func authenticateAWSCredentials(
 	}
 
 	// If Web Identity token and role were provided - use them
-	var err error
-	var credsProvider aws.CredentialsProvider
-	credsProvider, err = fetchWebIdentityTokenFromConfig(config, assumeRoleDuration)
-	if err != nil {
-		return nil, "", err
-	}
-	if credsProvider != nil {
+	if credsProvider := fetchWebIdentityTokenFromConfig(config, assumeRoleDuration); credsProvider != nil {
 		return credsProvider, config[ConfigRole], nil
 	}
 
 	// Otherwise use Web Identity token file and role provided via ENV
-	credsProvider, err = fetchWebIdentityTokenFromFile(assumeRoleDuration)
-	if err != nil {
-		return nil, "", err
-	}
-	if credsProvider != nil {
+	if credsProvider := fetchWebIdentityTokenFromFile(assumeRoleDuration); credsProvider != nil {
 		return credsProvider, os.Getenv(RoleARNEnvKey), nil
 	}
 
@@ -124,28 +114,28 @@ func fetchStaticAWSCredentials(config map[string]string) aws.CredentialsProvider
 	return credentials.NewStaticCredentialsProvider(config[AccessKeyID], config[SecretAccessKey], "")
 }
 
-func fetchWebIdentityTokenFromConfig(config map[string]string, assumeRoleDuration time.Duration) (aws.CredentialsProvider, error) {
+func fetchWebIdentityTokenFromConfig(config map[string]string, assumeRoleDuration time.Duration) aws.CredentialsProvider {
 	if config[ConfigWebIdentityToken] == "" || config[ConfigRole] == "" {
-		return nil, nil
+		return nil
 	}
 
 	return getCredentialsWithDuration(
 		config[ConfigRole],
 		staticToken(config[ConfigWebIdentityToken]),
 		assumeRoleDuration,
-	), nil
+	)
 }
 
-func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) (aws.CredentialsProvider, error) {
+func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) aws.CredentialsProvider {
 	if os.Getenv(WebIdentityTokenFilePathEnvKey) == "" || os.Getenv(RoleARNEnvKey) == "" {
-		return nil, nil
+		return nil
 	}
 
 	return getCredentialsWithDuration(
 		os.Getenv(RoleARNEnvKey),
 		stscreds.IdentityTokenFile(os.Getenv(WebIdentityTokenFilePathEnvKey)),
 		assumeRoleDuration,
-	), nil
+	)
 }
 
 // switchAWSRole checks if the caller wants to assume a different role
