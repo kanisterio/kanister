@@ -25,10 +25,10 @@ declare -a REQUIRED_BINS=( docker jq go )
 
 if command -v apt-get
 then
-    lin_repo_pre_cmd="apt-get install -y "
+    lin_repo_pre_cmd="sudo apt-get install -y "
 elif command -v apk
 then
-    lin_repo_pre_cmd="apk add --update "
+    lin_repo_pre_cmd="sudo apk add --update "
 else
     echo "apk or apt-get is supported at this moment"
     exit 1
