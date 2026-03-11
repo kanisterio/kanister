@@ -17,6 +17,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -117,19 +118,31 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 			}
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
-				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
-				baseImage := strings.Split(imageStr, ":")[0]
-				updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
-				phase.Args["image"] = updatedImage
-				log.Debug().Print("Using updated image", field.M{"image": updatedImage})
+				if useLocalImages() {
+					updatedImage := rewriteToLocalImage(imageStr)
+					phase.Args["image"] = updatedImage
+					log.Debug().Print("using local pull request image", field.M{"image": updatedImage})
+				} else {
+					baseImage := strings.Split(imageStr, ":")[0]
+					updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
+					phase.Args["image"] = updatedImage
+					log.Debug().Print("using dev image", field.M{"image": updatedImage})
+				}
 			}
 
-			// Change imagePullPolicy to Always using podOverride config
+			// Set imagePullPolicy based on image source:
+			// - local images loaded via kind load docker-image must use Never so
+			//   Kubernetes never attempts an external pull for an unqualified image name.
+			// - released images from ghcr.io use Always to stay current.
+			pullPolicy := "Always"
+			if useLocalImages() {
+				pullPolicy = "Never"
+			}
 			phase.Args["podOverride"] = crv1alpha1.JSONMap{
 				"containers": []map[string]interface{}{
 					{
 						"name":            "container",
-						"imagePullPolicy": "Always",
+						"imagePullPolicy": pullPolicy,
 					},
 				},
 			}
@@ -160,4 +173,46 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 		return nil, err
 	}
 	return &bp, nil
+}
+
+func useLocalImages() bool {
+	return strings.EqualFold(os.Getenv("KANISTER_USE_LOCAL_IMAGES"), "true")
+}
+
+func rewriteToLocalImage(image string) string {
+	repo, _ := splitImage(image)
+
+	parts := strings.Split(repo, "/")
+	appName := parts[len(parts)-1]
+
+	localOrg, localRepository := getLocalImageParams()
+	// Images are loaded into Kind via `kind load docker-image` using the
+	// path-based convention {org}/{repository}/{appName}:latest, so no registry
+	// prefix or PR-number suffix is needed.
+	return fmt.Sprintf("%s/%s/%s:latest", localOrg, localRepository, appName)
+}
+
+func splitImage(image string) (repo string, tag string) {
+	image = strings.Split(image, "@")[0] // drop digest if present
+
+	lastColon := strings.LastIndex(image, ":")
+	lastSlash := strings.LastIndex(image, "/")
+
+	if lastColon > lastSlash {
+		return image[:lastColon], image[lastColon+1:]
+	}
+
+	return image, "" // no tag
+}
+
+func getLocalImageParams() (org string, repository string) {
+	org = "kanisterio"
+	repository = "test-images"
+	if v := os.Getenv("LOCAL_IMAGE_ORG"); v != "" {
+		org = v
+	}
+	if v := os.Getenv("LOCAL_IMAGE_REPOSITORY"); v != "" {
+		repository = v
+	}
+	return org, repository
 }
