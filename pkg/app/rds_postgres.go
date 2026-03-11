@@ -16,14 +16,15 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
 
-	awssdk "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	awsrds "github.com/aws/aws-sdk-go/service/rds"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
+	"github.com/aws/smithy-go"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -180,7 +181,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, awssdk.Int64(20), dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID}, awssdk.Bool(pdb.publicAccess), nil, pdb.dbSubnetGroup)
+	_, err = rdsCli.CreateDBInstance(ctx, awsv2.Int64(20), dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID}, awsv2.Bool(pdb.publicAccess), nil, pdb.dbSubnetGroup)
 	if err != nil {
 		return err
 	}
@@ -392,13 +393,12 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	log.Info().Print("Deleting rds instance", field.M{"app": pdb.name})
 	_, err = rdsCli.DeleteDBInstance(ctx, pdb.id)
 	if err != nil {
-		if err, ok := err.(awserr.Error); ok {
-			switch err.Code() {
-			case awsrds.ErrCodeDBInstanceNotFoundFault:
-				log.Info().Print("RDS instance already deleted: ErrCodeDBInstanceNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
-			default:
-				return errkit.Wrap(err, "Failed to delete rds instance. You may need to delete it manually.", "app", "rds-postgresql", "id", pdb.id)
-			}
+		var notFound *rdstypes.DBInstanceNotFoundFault
+		if errors.As(err, &notFound) {
+			log.Info().Print("RDS instance already deleted: DBInstanceNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
+			err = nil
+		} else {
+			return errkit.Wrap(err, "Failed to delete rds instance. You may need to delete it manually.", "app", "rds-postgresql", "id", pdb.id)
 		}
 	}
 
@@ -421,13 +421,11 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	_, err = rdsCli.DeleteDBSubnetGroup(ctx, pdb.dbSubnetGroup)
 	if err != nil {
 		// If the subnet group does not exist, ignore the error and return
-		if err, ok := err.(awserr.Error); ok {
-			switch err.Code() {
-			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
-				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
-			default:
-				return errkit.Wrap(err, "Failed to delete db subnet group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.dbSubnetGroup)
-			}
+		var subnetNotFound *rdstypes.DBSubnetGroupNotFoundFault
+		if errors.As(err, &subnetNotFound) {
+			log.Info().Print("Subnet Group Does not exist: DBSubnetGroupNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
+		} else {
+			return errkit.Wrap(err, "Failed to delete db subnet group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.dbSubnetGroup)
 		}
 	}
 
@@ -435,13 +433,11 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	log.Info().Print("Deleting security group.", field.M{"app": pdb.name})
 	_, err = ec2Cli.DeleteSecurityGroup(ctx, pdb.securityGroupID)
 	if err != nil {
-		if err, ok := err.(awserr.Error); ok {
-			switch err.Code() {
-			case "InvalidGroup.NotFound":
-				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
-			default:
-				return errkit.Wrap(err, "Failed to delete security group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.securityGroupName)
-			}
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) && apiErr.ErrorCode() == "InvalidGroup.NotFound" {
+			log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
+		} else {
+			return errkit.Wrap(err, "Failed to delete security group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.securityGroupName)
 		}
 	}
 	// Remove workload object created for executing commands
@@ -457,7 +453,7 @@ func (pdb RDSPostgresDB) GetClusterScopedResources(ctx context.Context) []crv1al
 	return nil
 }
 
-func (pdb RDSPostgresDB) getAWSConfig(ctx context.Context) (*awssdk.Config, string, error) {
+func (pdb RDSPostgresDB) getAWSConfig(ctx context.Context) (awsv2.Config, string, error) {
 	config := make(map[string]string)
 	config[aws.ConfigRegion] = pdb.region
 	config[aws.AccessKeyID] = pdb.accessID
