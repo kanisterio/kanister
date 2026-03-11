@@ -43,7 +43,7 @@ check_or_get_dependencies() {
             pkg=${dep}
             # apt-get uses different package names for some binaries
             if command -v apt-get && [ "${dep}" = "go" ]; then
-                pkg="golang"
+                pkg="golang-go"
             fi
             if ! err=$(${lin_repo_pre_cmd} ${pkg} 2>&1)
             then
