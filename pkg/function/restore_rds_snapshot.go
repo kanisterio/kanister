@@ -16,13 +16,14 @@ package function
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	rdserr "github.com/aws/aws-sdk-go/service/rds"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	rdsv2 "github.com/aws/aws-sdk-go-v2/service/rds"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
 	"github.com/hashicorp/go-version"
 	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -384,12 +385,11 @@ func postgresRestoreCommand(pgHost, username, password string, backupArtifactPre
 func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, subnetGroup, snapshotID string, securityGrpIDs []string) error {
 	log.WithContext(ctx).Print("Deleting existing RDS DB instance.", field.M{"instanceID": instanceID})
 	if _, err := rdsCli.DeleteDBInstance(ctx, instanceID); err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
-				return err
-			}
-			log.WithContext(ctx).Print("RDS instance is not present ErrCodeDBInstanceNotFoundFault", field.M{"instanceID": instanceID})
+		var notFound *rdstypes.DBInstanceNotFoundFault
+		if !errors.As(err, &notFound) {
+			return err
 		}
+		log.WithContext(ctx).Print("RDS instance is not present DBInstanceNotFoundFault", field.M{"instanceID": instanceID})
 	} else {
 		log.WithContext(ctx).Print("Waiting for RDS DB instance to be deleted.", field.M{"instanceID": instanceID})
 		// Wait for the instance to be deleted
@@ -415,12 +415,11 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 	// Once all those instances are deleted, Aurora cluster will be deleted automatically
 	descOp, err := rdsCli.DescribeDBClusters(ctx, instanceID)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
-				return err
-			}
-			log.WithContext(ctx).Print("Aurora DB cluster is not found")
+		var notFound *rdstypes.DBClusterNotFoundFault
+		if !errors.As(err, &notFound) {
+			return err
 		}
+		log.WithContext(ctx).Print("Aurora DB cluster is not found")
 	} else {
 		// DB Cluster is present, delete and wait for it to be deleted
 		if err := DeleteAuroraDBCluster(ctx, rdsCli, descOp, instanceID); err != nil {
@@ -442,7 +441,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 	// From docs: Above action only restores the DB cluster, not the DB instances for that DB cluster
 	// wait for db cluster to be available
 	log.WithContext(ctx).Print("Waiting for db cluster to be available")
-	if err := rdsCli.WaitUntilDBClusterAvailable(ctx, *op.DBCluster.DBClusterIdentifier); err != nil {
+	if err := rdsCli.WaitUntilDBClusterAvailable(ctx, awsv2.ToString(op.DBCluster.DBClusterIdentifier)); err != nil {
 		return errkit.Wrap(err, "Error waiting for DBCluster to be available")
 	}
 
@@ -452,13 +451,13 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 		ctx,
 		nil,
 		defaultAuroraInstanceClass,
-		fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix),
+		fmt.Sprintf("%s-%s", awsv2.ToString(op.DBCluster.DBClusterIdentifier), restoredAuroraInstanceSuffix),
 		dbEngine,
 		"",
 		"",
 		nil,
 		nil,
-		aws.String(*op.DBCluster.DBClusterIdentifier),
+		awsv2.String(awsv2.ToString(op.DBCluster.DBClusterIdentifier)),
 		subnetGroup,
 	)
 	if err != nil {
@@ -466,23 +465,22 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 	}
 	// wait for instance to be up and running
 	log.WithContext(ctx).Print("Waiting for RDS Aurora instance to be ready.", field.M{"instanceID": instanceID})
-	if err = rdsCli.WaitUntilDBInstanceAvailable(ctx, *dbInsOp.DBInstance.DBInstanceIdentifier); err != nil {
+	if err = rdsCli.WaitUntilDBInstanceAvailable(ctx, awsv2.ToString(dbInsOp.DBInstance.DBInstanceIdentifier)); err != nil {
 		return errkit.Wrap(err, "Error while waiting for new RDS Aurora instance to be ready.")
 	}
 	return nil
 }
 
-func DeleteAuroraDBCluster(ctx context.Context, rdsCli *rds.RDS, descOp *rdserr.DescribeDBClustersOutput, instanceID string) error {
+func DeleteAuroraDBCluster(ctx context.Context, rdsCli *rds.RDS, descOp *rdsv2.DescribeDBClustersOutput, instanceID string) error {
 	for k, member := range descOp.DBClusters[0].DBClusterMembers {
-		if _, err := rdsCli.DeleteDBInstance(ctx, *member.DBInstanceIdentifier); err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
-					return err
-				}
+		if _, err := rdsCli.DeleteDBInstance(ctx, awsv2.ToString(member.DBInstanceIdentifier)); err != nil {
+			var notFound *rdstypes.DBInstanceNotFoundFault
+			if !errors.As(err, &notFound) {
+				return err
 			}
 		} else {
 			log.WithContext(ctx).Print("Waiting for RDS Aurora cluster instance to be deleted", field.M{"instance": k})
-			if err := rdsCli.WaitUntilDBInstanceDeleted(ctx, *member.DBInstanceIdentifier); err != nil {
+			if err := rdsCli.WaitUntilDBInstanceDeleted(ctx, awsv2.ToString(member.DBInstanceIdentifier)); err != nil {
 				return errkit.Wrap(err, "Error while waiting for RDS Aurora DB instance to be deleted")
 			}
 		}
@@ -490,10 +488,9 @@ func DeleteAuroraDBCluster(ctx context.Context, rdsCli *rds.RDS, descOp *rdserr.
 
 	log.WithContext(ctx).Print("Deleting existing RDS Aurora DB Cluster.", field.M{"instanceID": instanceID})
 	if _, err := rdsCli.DeleteDBCluster(ctx, instanceID); err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
-				return err
-			}
+		var notFound *rdstypes.DBClusterNotFoundFault
+		if !errors.As(err, &notFound) {
+			return err
 		}
 	} else {
 		log.WithContext(ctx).Print("Waiting for RDS Aurora cluster to be deleted.", field.M{"instanceID": instanceID})
@@ -509,5 +506,5 @@ func engineVersion(ctx context.Context, rdsCli *rds.RDS, snapshotID string) (str
 	if err != nil {
 		return "", err
 	}
-	return *snapshot.DBClusterSnapshots[0].EngineVersion, nil
+	return awsv2.ToString(snapshot.DBClusterSnapshots[0].EngineVersion), nil
 }
