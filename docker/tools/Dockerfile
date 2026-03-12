@@ -95,5 +95,4 @@ RUN microdnf -y update && microdnf -y install shadow-utils gzip && \
 
 RUN setcap cap_chown,cap_fowner,cap_dac_override+iep /usr/local/bin/kopia
 
-# trigger-rebuild
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
