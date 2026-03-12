@@ -24,7 +24,8 @@ set -o pipefail
 
 ORG=${LOCAL_IMAGE_ORG:-"kanisterio"}
 REPOSITORY=${LOCAL_IMAGE_REPOSITORY:-"test-images"}
-KIND_CLUSTER=${KIND_CLUSTER_NAME:-"integration-testing-cluster"}
+KIND_CLUSTER=${KIND_CLUSTER_NAME:-"kanister"}
+PLATFORM="linux/${ARCH:-amd64}"
 
 ########################################
 # App image matrix (tools handled separately as a build dependency)
@@ -59,7 +60,7 @@ build_load_clean() {
 
   echo "→ Building ${ref} from ${dockerfile}"
   docker buildx build \
-    --platform=linux/amd64 \
+    --platform="${PLATFORM}" \
     --load \
     --no-cache \
     -f "${dockerfile}" \
@@ -97,7 +98,7 @@ main() {
 
   echo "→ Building ${TOOLS_IMAGE}"
   docker buildx build \
-    --platform=linux/amd64 \
+    --platform="${PLATFORM}" \
     --load \
     --no-cache \
     -f "docker/tools/Dockerfile" \

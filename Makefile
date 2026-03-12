@@ -281,6 +281,6 @@ reno-lint:
 .PHONY: build-push-apps-images
 
 build-push-apps-images: build-dirs
-	@$(MAKE) run CMD="make build BIN=kando"
-	@$(MAKE) run CMD="make build BIN=kanctl"
-	@$(MAKE) run CMD="KANISTER_USE_LOCAL_IMAGES=$(KANISTER_USE_LOCAL_IMAGES) LOCAL_IMAGE_ORG=$(LOCAL_IMAGE_ORG) LOCAL_IMAGE_REPOSITORY=$(LOCAL_IMAGE_REPOSITORY) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) ./build/build_push_test_images.sh"
+	@$(MAKE) DOCKER_BUILD=false build BIN=kando
+	@$(MAKE) DOCKER_BUILD=false build BIN=kanctl
+	@$(MAKE) run CMD="ARCH=$(ARCH) KANISTER_USE_LOCAL_IMAGES=$(KANISTER_USE_LOCAL_IMAGES) LOCAL_IMAGE_ORG=$(LOCAL_IMAGE_ORG) LOCAL_IMAGE_REPOSITORY=$(LOCAL_IMAGE_REPOSITORY) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) ./build/build_push_test_images.sh"
