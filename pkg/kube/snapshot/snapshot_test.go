@@ -438,6 +438,7 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *check.C) {
 // Helpers to work with volume snapshot status used in TestWaitOnReadyToUse
 // ----------------------------------------------------------------------------
 
+//nolint:unparam // 'timeout' receives the same value in all calls currently, but keeping it in the signature is more natural over hardcoding it.
 func waitOnReadyToUseInBackground(
 	ctx context.Context,
 	fakeSs snapshot.Snapshotter,
