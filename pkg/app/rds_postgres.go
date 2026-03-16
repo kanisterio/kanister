@@ -434,7 +434,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	_, err = ec2Cli.DeleteSecurityGroup(ctx, pdb.securityGroupID)
 	if err != nil {
 		var apiErr smithy.APIError
-		if errors.As(err, &apiErr) && apiErr.ErrorCode() == "InvalidGroup.NotFound" {
+		if errors.As(err, &apiErr) && apiErr.ErrorCode() == errCodeSecurityGroupNotFound {
 			log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
 		} else {
 			return errkit.Wrap(err, "Failed to delete security group. You may need to delete it manually.", "app", "rds-postgresql", "name", pdb.securityGroupName)
