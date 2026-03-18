@@ -25,10 +25,10 @@ declare -a REQUIRED_BINS=( docker jq go )
 
 if command -v apt-get
 then
-    lin_repo_pre_cmd="apt-get install -y "
+    lin_repo_pre_cmd="sudo apt-get install -y "
 elif command -v apk
 then
-    lin_repo_pre_cmd="apk add --update "
+    lin_repo_pre_cmd="sudo apk add --update "
 else
     echo "apk or apt-get is supported at this moment"
     exit 1
@@ -40,9 +40,17 @@ check_or_get_dependencies() {
         if ! command -v ${dep}
         then
             echo "Missing ${dep}. Trying to install"
-            if ! err=$(${lin_repo_pre_cmd} ${dep} 2>&1)
+            pkg=${dep}
+            # apt-get uses different package names for some binaries
+            if [ "${dep}" = "go" ]; then
+                GO_VERSION=$(grep -m1 '^go ' "${BASE_DIR}/../go.mod" | awk '{print $2}')
+                curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | sudo tar -C /usr/local -xz
+                export PATH=$PATH:/usr/local/go/bin
+                continue
+            fi
+            if ! err=$(${lin_repo_pre_cmd} ${pkg} 2>&1)
             then
-                echo "Insatlletion failed with $err"
+                echo "Installation failed with $err"
                 exit 1
             fi
         fi
@@ -75,7 +83,9 @@ install_csi_hostpath_driver() {
 
     # Deploy the CSI Hostpath Driver
     pushd /tmp
-      git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+      if [ ! -d csi-driver-host-path ]; then
+        git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+      fi
       pushd csi-driver-host-path
         git checkout ${HOSTPATH_DRIVER_VERSION}
         sed -i 's/mountPropagation: Bidirectional/\#mountPropagation: Bidirectional/g' deploy/kubernetes-latest/hostpath/csi-hostpath-plugin.yaml
@@ -103,7 +113,9 @@ check_csi_hostpath_driver_installed() {
 
     # Deploy the CSI Hostpath Driver
     pushd /tmp
-      git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+      if [ ! -d csi-driver-host-path ]; then
+        git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+      fi
       pushd csi-driver-host-path
         # Check StorageClass created
         if ! kubectl diff -f ./examples/csi-storageclass.yaml 2>&1 > /dev/null ; then
