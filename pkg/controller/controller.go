@@ -273,8 +273,12 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 				return nil
 			}
 		}
+		if as.DeferPhase.Name != "" && as.DeferPhase.State != crv1alpha1.StateComplete {
+			log.WithContext(ctx).Print("Updated ActionSet", field.M{"Status": newAS.Status.State, "Phase": fmt.Sprintf("%s->%s", as.DeferPhase.Name, as.DeferPhase.State)})
+			return nil
+		}
 	}
-	if len(newAS.Status.Actions) != 0 {
+	if len(newAS.Status.Actions) == 0 {
 		return nil
 	}
 	return reconcile.ActionSet(context.TODO(), c.crClient.CrV1alpha1(), newAS.GetNamespace(), newAS.GetName(), func(ras *crv1alpha1.ActionSet) error {
@@ -391,6 +395,9 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 		return errkit.New("ActionSet was not initialized")
 	}
 	if as.Status.State != crv1alpha1.StatePending {
+		if as.Status.State == crv1alpha1.StateRunning {
+			return c.handleRunningActionSet(ctx, as)
+		}
 		return nil
 	}
 	as.Status.State = crv1alpha1.StateRunning
@@ -432,6 +439,51 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
 	return nil
+}
+
+// handleRunningActionSet is called when the controller encounters an ActionSet in the Running
+// state during startup (e.g. after an OOMKill or crash). Since in-memory goroutines do not
+// survive restarts, the controller has lost the execution context for this ActionSet and cannot
+// resume it. If all phases have already been recorded as complete in the ActionSet status, the
+// ActionSet is transitioned to Complete. Otherwise it is marked as Failed so that the user can
+// observe the interruption and retry the operation.
+func (c *Controller) handleRunningActionSet(ctx context.Context, as *crv1alpha1.ActionSet) error {
+	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
+	log.WithContext(ctx).Print("ActionSet found in Running state on controller startup, checking phase states")
+	if allPhasesComplete(as) {
+		c.logAndSuccessEvent(ctx, fmt.Sprintf("All phases complete for ActionSet '%s', transitioning to Complete", as.GetName()), "ActionSetComplete", as)
+		return reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), as.Namespace, as.Name, func(ras *crv1alpha1.ActionSet) error {
+			ras.Status.State = crv1alpha1.StateComplete
+			ras.Status.Progress.RunningPhase = ""
+			return nil
+		})
+	}
+	interruptErr := errkit.New("ActionSet execution was interrupted because the controller restarted while it was running. Please retry the operation.")
+	c.logAndErrorEvent(ctx, "ActionSet interrupted by controller restart", "ActionSetFailed", interruptErr, as)
+	return reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), as.Namespace, as.Name, func(ras *crv1alpha1.ActionSet) error {
+		ras.Status.State = crv1alpha1.StateFailed
+		ras.Status.Progress.RunningPhase = ""
+		ras.Status.Error = crv1alpha1.Error{
+			Message: interruptErr.Error(),
+		}
+		return nil
+	})
+}
+
+// allPhasesComplete returns true when every phase (including DeferPhase, if present) in every
+// action of the ActionSet has reached StateComplete.
+func allPhasesComplete(as *crv1alpha1.ActionSet) bool {
+	for _, action := range as.Status.Actions {
+		for _, p := range action.Phases {
+			if p.State != crv1alpha1.StateComplete {
+				return false
+			}
+		}
+		if action.DeferPhase.Name != "" && action.DeferPhase.State != crv1alpha1.StateComplete {
+			return false
+		}
+	}
+	return true
 }
 
 func (c *Controller) LoadOrStoreTomb(ctx context.Context, asName string) (*tomb.Tomb, context.Context) {
