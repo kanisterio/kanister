@@ -2,11 +2,11 @@ package function
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	awssdk "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	rdserr "github.com/aws/aws-sdk-go/service/rds"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 
@@ -61,13 +61,13 @@ func parseCredentialsSource(args map[string]interface{}) (*awsCredentialsSource,
 	return &awsCredentialsSource{sourceType: sourceType, secret: secret, region: region}, nil
 }
 
-func getAwsConfig(ctx context.Context, credentialsSource awsCredentialsSource, tp param.TemplateParams) (*awssdk.Config, string, error) {
+func getAwsConfig(ctx context.Context, credentialsSource awsCredentialsSource, tp param.TemplateParams) (awsv2.Config, string, error) {
 	switch credentialsSource.sourceType {
 	case CredentialSourceProfile:
 		profile := tp.Profile
 		// Validate profile
 		if err := ValidateProfile(profile); err != nil {
-			return nil, "", errkit.Wrap(err, "Profile Validation failed")
+			return awsv2.Config{}, "", errkit.Wrap(err, "Profile Validation failed")
 		}
 		// Get aws config from profile
 		return getAWSConfigFromProfile(ctx, profile, credentialsSource.region)
@@ -75,11 +75,11 @@ func getAwsConfig(ctx context.Context, credentialsSource awsCredentialsSource, t
 		if secret, ok := getParamSecret(tp, credentialsSource.secret); ok {
 			return getAWSConfigFromSecret(ctx, *secret, credentialsSource.region)
 		}
-		return nil, "", errkit.New("Cannot find secret in actionset secrets", "secret", credentialsSource.secret)
+		return awsv2.Config{}, "", errkit.New("Cannot find secret in actionset secrets", "secret", credentialsSource.secret)
 	case CredentialSourceServiceAccount:
 		return aws.GetConfig(ctx, make(map[string]string))
 	default:
-		return nil, "", errkit.New("Invalid awsCredentials type", "type", credentialsSource.sourceType)
+		return awsv2.Config{}, "", errkit.New("Invalid awsCredentials type", "type", credentialsSource.sourceType)
 	}
 }
 
@@ -99,7 +99,7 @@ func getParamSecret(tp param.TemplateParams, secretName string) (*corev1.Secret,
 	return nil, false
 }
 
-func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile, region string) (*awssdk.Config, string, error) {
+func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile, region string) (awsv2.Config, string, error) {
 	// Validate profile secret
 	config := make(map[string]string)
 	switch profile.Credential.Type {
@@ -120,7 +120,7 @@ func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile, region
 	return aws.GetConfig(ctx, config)
 }
 
-func getAWSConfigFromSecret(ctx context.Context, secret corev1.Secret, region string) (*awssdk.Config, string, error) {
+func getAWSConfigFromSecret(ctx context.Context, secret corev1.Secret, region string) (awsv2.Config, string, error) {
 	config := map[string]string{
 		aws.AccessKeyID:     string(secret.Data[secrets.AWSAccessKeyID]),
 		aws.SecretAccessKey: string(secret.Data[secrets.AWSSecretAccessKey]),
@@ -150,12 +150,11 @@ func findSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string)
 func findAuroraSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string) ([]string, error) {
 	desc, err := rdsCli.DescribeDBClusters(ctx, instanceID)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
-				return nil, err
-			}
+		var notFound *rdstypes.DBClusterNotFoundFault
+		if errors.As(err, &notFound) {
 			return nil, nil
 		}
+		return nil, err
 	}
 
 	var sgIDs []string
@@ -207,12 +206,11 @@ func GetRDSDBSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string
 func GetRDSAuroraDBSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string) (*string, error) {
 	desc, err := rdsCli.DescribeDBClusters(ctx, instanceID)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
-				return nil, err
-			}
+		var notFound *rdstypes.DBClusterNotFoundFault
+		if errors.As(err, &notFound) {
 			return nil, nil
 		}
+		return nil, err
 	}
 	if len(desc.DBClusters) == 0 {
 		return nil, errkit.New(fmt.Sprintf("Could not get DBCluster with the instanceID %s", instanceID))
