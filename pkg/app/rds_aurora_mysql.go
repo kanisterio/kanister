@@ -46,6 +46,7 @@ const (
 	DetailsCMName         = "dbconfig"
 	mysqlConnectionString = "mysql -h %s -u %s -p%s %s -N -e"
 
+	// errCodeSecurityGroupNotFound is the AWS EC2 API error code returned when a security group does not exist.
 	errCodeSecurityGroupNotFound = "InvalidGroup.NotFound"
 )
 
