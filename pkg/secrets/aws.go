@@ -19,11 +19,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kanisterio/kanister/pkg/aws"
+	kaws "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
@@ -92,27 +92,26 @@ func ValidateAWSCredentials(secret *corev1.Secret) error {
 // of the IAM role - The setting can be viewed using instructions here
 // https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html#id_roles_use_view-role-max-session.
 // The IAM role's max duration setting can be modified between 1h to 12h.
-func ExtractAWSCredentials(ctx context.Context, secret *corev1.Secret, assumeRoleDuration time.Duration) (*credentials.Value, error) {
+func ExtractAWSCredentials(ctx context.Context, secret *corev1.Secret, assumeRoleDuration time.Duration) (*aws.Credentials, error) {
 	if err := ValidateAWSCredentials(secret); err != nil {
 		return nil, err
 	}
 	config := map[string]string{
-		aws.AccessKeyID:        string(secret.Data[AWSAccessKeyID]),
-		aws.SecretAccessKey:    string(secret.Data[AWSSecretAccessKey]),
-		aws.ConfigRole:         string(secret.Data[ConfigRole]),
-		aws.AssumeRoleDuration: assumeRoleDuration.String(),
+		kaws.AccessKeyID:        string(secret.Data[AWSAccessKeyID]),
+		kaws.SecretAccessKey:    string(secret.Data[AWSSecretAccessKey]),
+		kaws.ConfigRole:         string(secret.Data[ConfigRole]),
+		kaws.AssumeRoleDuration: assumeRoleDuration.String(),
 	}
-	creds, err := aws.GetCredentials(ctx, config)
+	credProvider, err := kaws.GetCredentials(ctx, config)
 	if err != nil {
 		return nil, err
 	}
-	val, err := creds.Get()
+	val, err := credProvider.Retrieve(ctx)
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to get AWS credentials")
 	}
-	exp, err := creds.ExpiresAt()
-	if err == nil {
-		log.Debug().Print("Credential expiration", field.M{"expirationTime": exp})
+	if !val.Expires.IsZero() {
+		log.Debug().Print("Credential expiration", field.M{"expirationTime": val.Expires})
 	}
 	return &val, nil
 }
