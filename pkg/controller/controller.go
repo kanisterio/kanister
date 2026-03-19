@@ -278,9 +278,6 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 			return nil
 		}
 	}
-	if len(newAS.Status.Actions) == 0 {
-		return nil
-	}
 	return reconcile.ActionSet(context.TODO(), c.crClient.CrV1alpha1(), newAS.GetNamespace(), newAS.GetName(), func(ras *crv1alpha1.ActionSet) error {
 		ras.Status.Progress.RunningPhase = ""
 		ras.Status.State = crv1alpha1.StateComplete
@@ -453,6 +450,9 @@ func (c *Controller) handleRunningActionSet(ctx context.Context, as *crv1alpha1.
 	if allPhasesComplete(as) {
 		c.logAndSuccessEvent(ctx, fmt.Sprintf("All phases complete for ActionSet '%s', transitioning to Complete", as.GetName()), "ActionSetComplete", as)
 		return reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), as.Namespace, as.Name, func(ras *crv1alpha1.ActionSet) error {
+			if ras.Status == nil {
+				ras.Status = &crv1alpha1.ActionSetStatus{}
+			}
 			ras.Status.State = crv1alpha1.StateComplete
 			ras.Status.Progress.RunningPhase = ""
 			return nil
@@ -461,6 +461,9 @@ func (c *Controller) handleRunningActionSet(ctx context.Context, as *crv1alpha1.
 	interruptErr := errkit.New("ActionSet execution was interrupted because the controller restarted while it was running. Please retry the operation.")
 	c.logAndErrorEvent(ctx, "ActionSet interrupted by controller restart", "ActionSetFailed", interruptErr, as)
 	return reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), as.Namespace, as.Name, func(ras *crv1alpha1.ActionSet) error {
+		if ras.Status == nil {
+			ras.Status = &crv1alpha1.ActionSetStatus{}
+		}
 		ras.Status.State = crv1alpha1.StateFailed
 		ras.Status.Progress.RunningPhase = ""
 		ras.Status.Error = crv1alpha1.Error{
