@@ -72,6 +72,8 @@ func actionSpec(s crv1alpha1.ActionSpec) error {
 		fallthrough
 	case param.NamespaceKind:
 		// Known types
+	case param.UnstructuredKind:
+		// Known types
 	default:
 		// Not a known type. ActionSet must specify API group and resource
 		// name in order to populate `Object` TemplateParam

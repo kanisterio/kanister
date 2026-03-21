@@ -258,7 +258,7 @@ type ActionSetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 	// Items is the list of actionsets.
-	Items []*ActionSet `json:"items"`
+	Items []ActionSet `json:"items"`
 }
 
 var _ runtime.Object = (*Blueprint)(nil)
@@ -317,7 +317,7 @@ type BlueprintList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 	// Items is the list of Blueprints.
-	Items []*Blueprint `json:"items"`
+	Items []Blueprint `json:"items"`
 }
 
 // +genclient
@@ -422,5 +422,5 @@ type ProfileList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 	// Items represents a list of Profiles.
-	Items []*Profile `json:"items"`
+	Items []Profile `json:"items"`
 }
