@@ -123,7 +123,15 @@ type Source struct {
 
 // We use regexp to match because errors written in vs.Status.Error.Message are strings
 // and we don't have any status code or other metadata in there.
-var transientErrorRegexp = regexp.MustCompile("the object has been modified; please apply your changes to the latest version and try again")
+// Patterns:
+//   - "the object has been modified; ..." — resource conflict during update
+//   - "VolumeSnapshotContent is missing" — Portworx transient sync delay
+//   - "SnapshotFinalizerError" — Portworx transient finalizer error
+var transientErrorRegexp = regexp.MustCompile(
+	`the object has been modified; please apply your changes to the latest version and try again` +
+		`|VolumeSnapshotContent is missing` +
+		`|SnapshotFinalizerError`,
+)
 
 // Use regexp to detect resource conflict error
 // If CSI snapshotter changes error reporting to use more structured errors,
