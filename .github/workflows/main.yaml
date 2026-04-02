@@ -115,6 +115,7 @@ jobs:
     - run: |
         if [[ "${{ matrix.testSuite }}" == "integration-test" && \
           "${{ needs.detect_dockerfile_changes.outputs.changed }}" == "true" ]]; then
+          export IMAGE_REGISTRY=""
           export IMAGE_ORG="kanisterio/test-images"
           export IMAGE_TAG="pr-${GITHUB_SHA::12}"
           echo "using kind-loaded PR images (IMAGE_ORG=${IMAGE_ORG}, IMAGE_TAG=${IMAGE_TAG})"

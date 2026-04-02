@@ -185,8 +185,11 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 
 // imageRegistry returns the container registry to use for kanister images.
 // Defaults to ghcr.io; override with IMAGE_REGISTRY env var.
+// Setting IMAGE_REGISTRY to an empty string disables the registry prefix
+// (e.g. for kind-loaded images that have no registry component).
 func imageRegistry() string {
-	if v := os.Getenv("IMAGE_REGISTRY"); v != "" {
+	v, ok := os.LookupEnv("IMAGE_REGISTRY")
+	if ok {
 		return v
 	}
 	return defaultImageRegistry
