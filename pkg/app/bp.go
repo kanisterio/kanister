@@ -105,12 +105,13 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	return bpr
 }
 
-func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
+func updateImageTags(bp *crv1alpha1.Blueprint, devTag string) {
 	if bp == nil {
 		return
 	}
 	registry := imageRegistry()
 	org := imageOrg()
+	tag := imageTag(devTag)
 	customSource := registry != defaultImageRegistry || org != defaultImageOrg
 
 	for _, a := range bp.Actions {
@@ -130,9 +131,9 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 				appName := parts[len(parts)-1]
 				var updatedImage string
 				if registry != "" {
-					updatedImage = fmt.Sprintf("%s/%s/%s:%s", registry, org, appName, imageTag)
+					updatedImage = fmt.Sprintf("%s/%s/%s:%s", registry, org, appName, tag)
 				} else {
-					updatedImage = fmt.Sprintf("%s/%s:%s", org, appName, imageTag)
+					updatedImage = fmt.Sprintf("%s/%s:%s", org, appName, tag)
 				}
 				phase.Args["image"] = updatedImage
 				log.Info().Print("updated image", field.M{"image": updatedImage})
@@ -200,6 +201,15 @@ func imageOrg() string {
 		return v
 	}
 	return defaultImageOrg
+}
+
+// imageTag returns the tag to use for kanister images.
+// Falls back to devTag if IMAGE_TAG env var is not set.
+func imageTag(devTag string) string {
+	if v := os.Getenv("IMAGE_TAG"); v != "" {
+		return v
+	}
+	return devTag
 }
 
 func splitImage(image string) (repo string, tag string) {
