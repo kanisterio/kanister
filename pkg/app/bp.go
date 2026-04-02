@@ -38,6 +38,9 @@ const (
 
 	// default dev tag for kanister images
 	DefaultImageTag = "v9.99.9-dev"
+
+	defaultImageRegistry = "ghcr.io"
+	defaultImageOrg      = "kanisterio"
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
@@ -106,6 +109,10 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 	if bp == nil {
 		return
 	}
+	registry := imageRegistry()
+	org := imageOrg()
+	customSource := registry != defaultImageRegistry || org != defaultImageOrg
+
 	for _, a := range bp.Actions {
 		for _, phase := range a.Phases {
 			image, ok := phase.Args["image"]
@@ -118,25 +125,25 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 			}
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
-				if useLocalImages() {
-					updatedImage := rewriteToLocalImage(imageStr)
-					phase.Args["image"] = updatedImage
-					log.Info().Print("using local pull request image", field.M{"image": updatedImage})
+				repo, _ := splitImage(imageStr)
+				parts := strings.Split(repo, "/")
+				appName := parts[len(parts)-1]
+				var updatedImage string
+				if registry != "" {
+					updatedImage = fmt.Sprintf("%s/%s/%s:%s", registry, org, appName, imageTag)
 				} else {
-					baseImage := strings.Split(imageStr, ":")[0]
-					updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
-					phase.Args["image"] = updatedImage
-					log.Info().Print("using ghcr image", field.M{"image": updatedImage})
+					updatedImage = fmt.Sprintf("%s/%s:%s", org, appName, imageTag)
 				}
+				phase.Args["image"] = updatedImage
+				log.Info().Print("updated image", field.M{"image": updatedImage})
 			}
 
-			// Set imagePullPolicy based on image source:
-			// - local images loaded via kind load docker-image must use Never so
-			//   Kubernetes never attempts an external pull for an unqualified image name.
-			// - released images from ghcr.io use Always to stay current.
+			// Use IfNotPresent for custom image sources (local registry or kind-loaded images)
+			// so Kubernetes uses the locally available image without forcing a remote pull.
+			// Released images from ghcr.io use Always to stay current.
 			pullPolicy := "Always"
-			if useLocalImages() {
-				pullPolicy = "Never"
+			if customSource {
+				pullPolicy = "IfNotPresent"
 			}
 			phase.Args["podOverride"] = crv1alpha1.JSONMap{
 				"containers": []map[string]interface{}{
@@ -175,21 +182,24 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 	return &bp, nil
 }
 
-func useLocalImages() bool {
-	return strings.EqualFold(os.Getenv("KANISTER_USE_LOCAL_IMAGES"), "true")
+// imageRegistry returns the container registry to use for kanister images.
+// Defaults to ghcr.io; override with IMAGE_REGISTRY env var.
+func imageRegistry() string {
+	if v := os.Getenv("IMAGE_REGISTRY"); v != "" {
+		return v
+	}
+	return defaultImageRegistry
 }
 
-func rewriteToLocalImage(image string) string {
-	repo, _ := splitImage(image)
-
-	parts := strings.Split(repo, "/")
-	appName := parts[len(parts)-1]
-
-	localOrg, localRepository := getLocalImageParams()
-	// Images are loaded into Kind via `kind load docker-image` using the
-	// path-based convention {org}/{repository}/{appName}:latest, so no registry
-	// prefix or PR-number suffix is needed.
-	return fmt.Sprintf("%s/%s/%s:latest", localOrg, localRepository, appName)
+// imageOrg returns the org/namespace within the registry to use for kanister images.
+// Defaults to "kanisterio"; override with IMAGE_ORG env var.
+// For kind-loaded images without a registry, set IMAGE_ORG to include the repository
+// path component (e.g. "kanisterio/test-images") and leave IMAGE_REGISTRY unset.
+func imageOrg() string {
+	if v := os.Getenv("IMAGE_ORG"); v != "" {
+		return v
+	}
+	return defaultImageOrg
 }
 
 func splitImage(image string) (repo string, tag string) {
@@ -203,16 +213,4 @@ func splitImage(image string) (repo string, tag string) {
 	}
 
 	return image, "" // no tag
-}
-
-func getLocalImageParams() (org string, repository string) {
-	org = "kanisterio"
-	repository = "test-images"
-	if v := os.Getenv("LOCAL_IMAGE_ORG"); v != "" {
-		org = v
-	}
-	if v := os.Getenv("LOCAL_IMAGE_REPOSITORY"); v != "" {
-		repository = v
-	}
-	return org, repository
 }

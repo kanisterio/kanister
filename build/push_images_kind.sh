@@ -22,8 +22,11 @@ set -o pipefail
 # Environment (override externally if needed)
 ########################################
 
-ORG=${LOCAL_IMAGE_ORG:-"kanisterio"}
-REPOSITORY=${LOCAL_IMAGE_REPOSITORY:-"test-images"}
+# IMAGE_ORG may include a repository path component (e.g. "kanisterio/test-images")
+# when images are kind-loaded without a registry prefix.
+IMAGE_ORG=${IMAGE_ORG:-"kanisterio/test-images"}
+IMAGE_REGISTRY=${IMAGE_REGISTRY:-""}
+IMAGE_TAG=${IMAGE_TAG:-"v9.99.9-dev"}
 KIND_CLUSTER=${KIND_CLUSTER_NAME:-"kanister"}
 PLATFORM="linux/${ARCH:-amd64}"
 
@@ -41,13 +44,35 @@ postgres-kanister-tools|docker/postgres-kanister-tools/Dockerfile
 "
 
 ########################################
+# Pre-requisite checks
+########################################
+
+check_prerequisites() {
+  if ! command -v kind &>/dev/null; then
+    echo "ERROR: 'kind' is not installed or not in PATH" >&2
+    exit 1
+  fi
+
+  if ! kind get clusters 2>/dev/null | grep -qx "${KIND_CLUSTER}"; then
+    echo "ERROR: Kind cluster '${KIND_CLUSTER}' not found. Available clusters:" >&2
+    kind get clusters >&2 || true
+    exit 1
+  fi
+}
+
+########################################
 # Helpers
 ########################################
 
-# Image naming: {ORG}/{REPOSITORY}/{app_name}:latest
-# e.g. kanisterio/test-images/mongodb:latest
+# Image naming: [{IMAGE_REGISTRY}/]{IMAGE_ORG}/{app_name}:{IMAGE_TAG}
+# e.g. kanisterio/test-images/mongodb:v9.99.9-dev  (no registry, kind load)
+#      localhost:5001/kanisterio/mongodb:v9.99.9-dev (local registry)
 image_ref() {
-  echo "${ORG}/${REPOSITORY}/${1}:latest"
+  if [[ -n "${IMAGE_REGISTRY}" ]]; then
+    echo "${IMAGE_REGISTRY}/${IMAGE_ORG}/${1}:${IMAGE_TAG}"
+  else
+    echo "${IMAGE_ORG}/${1}:${IMAGE_TAG}"
+  fi
 }
 
 # Build an image into the local Docker daemon, then immediately load it into
@@ -80,9 +105,12 @@ build_load_clean() {
 ########################################
 
 main() {
-  echo "Image org:        ${ORG}"
-  echo "Image repository: ${REPOSITORY}"
-  echo "Kind cluster:     ${KIND_CLUSTER}"
+  check_prerequisites
+
+  echo "Image registry: ${IMAGE_REGISTRY:-"(none)"}"
+  echo "Image org:      ${IMAGE_ORG}"
+  echo "Image tag:      ${IMAGE_TAG}"
+  echo "Kind cluster:   ${KIND_CLUSTER}"
 
   ########################################
   # 1. Build kanister-tools first.

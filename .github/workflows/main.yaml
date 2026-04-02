@@ -70,8 +70,6 @@ jobs:
         testSuite: [test, integration-test, helm-test]
     env:
       DOCKER_BUILD: "false"
-      LOCAL_IMAGE_ORG: "kanisterio"
-      LOCAL_IMAGE_REPOSITORY: "test-images"
       KIND_CLUSTER_NAME: "chart-testing"
       LOCAL_MINIO: "true"
     steps:
@@ -102,7 +100,7 @@ jobs:
     - uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
     - name: Build and load test images into Kind
       if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
-      run: make build-push-apps-images
+      run: make build-push-images-to-kind
     # A test (CRDSuite) that runs as part of `make test` requies atleast one CRD to
     # be present on the cluster. That's why we are only installing csi-hostpath-driver
     # before running `make test`, to create some CRDs on the cluster.
@@ -117,11 +115,10 @@ jobs:
     - run: |
         if [[ "${{ matrix.testSuite }}" == "integration-test" && \
           "${{ needs.detect_dockerfile_changes.outputs.changed }}" == "true" ]]; then
-          export KANISTER_USE_LOCAL_IMAGES=true
-          echo "using local PR images"
+          export IMAGE_ORG="kanisterio/test-images"
+          echo "using kind-loaded PR images (IMAGE_ORG=${IMAGE_ORG})"
         else
-          export KANISTER_USE_LOCAL_IMAGES=false
-          echo "using released dev images"
+          echo "using released dev images from ghcr.io/kanisterio"
         fi
         make ${{ matrix.testSuite }}
   build:
