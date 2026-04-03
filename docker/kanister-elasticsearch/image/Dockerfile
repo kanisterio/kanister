@@ -3,7 +3,7 @@
 ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS tools_image
 
-FROM debian:bookworm@sha256:0a5bf4ecacfc050bad0131c8e1401063fd1e8343a418723f6dbd3cd13a7b9e33
+FROM debian:bookworm@sha256:bc960ef50e6feed90686c593361df158517556ed1d2d98e5d1df3724024e0f49
 COPY --from=tools_image /usr/local/bin/restic /usr/local/bin/restic
 COPY --from=tools_image /usr/local/bin/kopia /usr/local/bin/kopia
 # Install kando
