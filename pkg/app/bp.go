@@ -17,6 +17,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -37,6 +38,9 @@ const (
 
 	// default dev tag for kanister images
 	DefaultImageTag = "v9.99.9-dev"
+
+	defaultImageRegistry = "ghcr.io"
+	defaultImageOrg      = "kanisterio"
 )
 
 // AppBlueprint implements Blueprint() to return Blueprint specs for the app
@@ -101,10 +105,15 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	return bpr
 }
 
-func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
+func updateImageTags(bp *crv1alpha1.Blueprint, devTag string) {
 	if bp == nil {
 		return
 	}
+	registry := imageRegistry()
+	org := imageOrg()
+	tag := imageTag(devTag)
+	customSource := registry != defaultImageRegistry || org != defaultImageOrg
+
 	for _, a := range bp.Actions {
 		for _, phase := range a.Phases {
 			image, ok := phase.Args["image"]
@@ -117,19 +126,31 @@ func updateImageTags(bp *crv1alpha1.Blueprint, imageTag string) {
 			}
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
-				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
-				baseImage := strings.Split(imageStr, ":")[0]
-				updatedImage := fmt.Sprintf("%s:%s", baseImage, imageTag)
+				repo, _ := splitImage(imageStr)
+				parts := strings.Split(repo, "/")
+				appName := parts[len(parts)-1]
+				var updatedImage string
+				if registry != "" {
+					updatedImage = fmt.Sprintf("%s/%s/%s:%s", registry, org, appName, tag)
+				} else {
+					updatedImage = fmt.Sprintf("%s/%s:%s", org, appName, tag)
+				}
 				phase.Args["image"] = updatedImage
-				log.Debug().Print("Using updated image", field.M{"image": updatedImage})
+				log.Info().Print("updated image", field.M{"image": updatedImage})
 			}
 
-			// Change imagePullPolicy to Always using podOverride config
+			// Use IfNotPresent for custom image sources (local registry or kind-loaded images)
+			// so Kubernetes uses the locally available image without forcing a remote pull.
+			// Released images from ghcr.io use Always to stay current.
+			pullPolicy := "Always"
+			if customSource {
+				pullPolicy = "IfNotPresent"
+			}
 			phase.Args["podOverride"] = crv1alpha1.JSONMap{
 				"containers": []map[string]interface{}{
 					{
 						"name":            "container",
-						"imagePullPolicy": "Always",
+						"imagePullPolicy": pullPolicy,
 					},
 				},
 			}
@@ -160,4 +181,49 @@ func ParseBlueprint(data []byte) (*crv1alpha1.Blueprint, error) {
 		return nil, err
 	}
 	return &bp, nil
+}
+
+// imageRegistry returns the container registry to use for kanister images.
+// Defaults to ghcr.io; override with IMAGE_REGISTRY env var.
+// Setting IMAGE_REGISTRY to an empty string disables the registry prefix
+// (e.g. for kind-loaded images that have no registry component).
+func imageRegistry() string {
+	v, ok := os.LookupEnv("IMAGE_REGISTRY")
+	if ok {
+		return v
+	}
+	return defaultImageRegistry
+}
+
+// imageOrg returns the org/namespace within the registry to use for kanister images.
+// Defaults to "kanisterio"; override with IMAGE_ORG env var.
+// For kind-loaded images without a registry, set IMAGE_ORG to include the repository
+// path component (e.g. "kanisterio/test-images") and leave IMAGE_REGISTRY unset.
+func imageOrg() string {
+	if v := os.Getenv("IMAGE_ORG"); v != "" {
+		return v
+	}
+	return defaultImageOrg
+}
+
+// imageTag returns the tag to use for kanister images.
+// Falls back to devTag if IMAGE_TAG env var is not set.
+func imageTag(devTag string) string {
+	if v := os.Getenv("IMAGE_TAG"); v != "" {
+		return v
+	}
+	return devTag
+}
+
+func splitImage(image string) (repo string, tag string) {
+	image = strings.Split(image, "@")[0] // drop digest if present
+
+	lastColon := strings.LastIndex(image, ":")
+	lastSlash := strings.LastIndex(image, "/")
+
+	if lastColon > lastSlash {
+		return image[:lastColon], image[lastColon+1:]
+	}
+
+	return image, "" // no tag
 }
