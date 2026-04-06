@@ -396,14 +396,11 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		var notFound *rdstypes.DBInstanceNotFoundFault
 		if errors.As(err, &notFound) {
 			log.Info().Print("RDS instance already deleted: DBInstanceNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
-			err = nil
 		} else {
 			return errkit.Wrap(err, "Failed to delete rds instance. You may need to delete it manually.", "app", "rds-postgresql", "id", pdb.id)
 		}
-	}
-
-	// Waiting for rds to be deleted
-	if err == nil {
+	} else {
+		// Wait only if we actually initiated the deletion
 		log.Info().Print("Waiting for rds to be deleted", field.M{"app": pdb.name})
 		err = rdsCli.WaitUntilDBInstanceDeleted(ctx, pdb.id)
 		if err != nil {
