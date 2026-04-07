@@ -499,7 +499,7 @@ func getSecret(ctx context.Context, c *check.C, osType ProviderType) *Secret {
 		creds, err := aws.GetCredentials(ctx, config)
 		c.Assert(err, check.IsNil)
 
-		val, err := creds.Get()
+		val, err := creds.Retrieve(ctx)
 		c.Check(err, check.IsNil)
 		secret.Aws = &SecretAws{
 			AccessKeyID:     val.AccessKeyID,
