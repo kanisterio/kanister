@@ -98,6 +98,8 @@ jobs:
       with:
         go-version-file: go.mod
     - uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+      with:
+        cluster_name: ${{ env.KIND_CLUSTER_NAME }}
     - name: Build and load test images into Kind
       if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
       run: IMAGE_TAG="pr-${GITHUB_SHA::12}" make build-push-images-to-kind
