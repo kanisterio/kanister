@@ -110,7 +110,7 @@ func updateImageTags(bp *crv1alpha1.Blueprint, devTag string) {
 		return
 	}
 	registry := imageRegistry()
-	org := imageOrg()
+	org := imageRepository()
 	tag := imageTag(devTag)
 	customSource := registry != defaultImageRegistry || org != defaultImageOrg
 
@@ -126,9 +126,9 @@ func updateImageTags(bp *crv1alpha1.Blueprint, devTag string) {
 			}
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
-				repo, _ := splitImage(imageStr)
-				parts := strings.Split(repo, "/")
-				appName := parts[len(parts)-1]
+				repo, _ := repoAndTagFromImage(imageStr)
+				lastSlash := strings.LastIndex(repo, "/")
+				appName := repo[lastSlash+1:]
 				var updatedImage string
 				if registry != "" {
 					updatedImage = fmt.Sprintf("%s/%s/%s:%s", registry, org, appName, tag)
@@ -195,12 +195,12 @@ func imageRegistry() string {
 	return defaultImageRegistry
 }
 
-// imageOrg returns the org/namespace within the registry to use for kanister images.
-// Defaults to "kanisterio"; override with IMAGE_ORG env var.
-// For kind-loaded images without a registry, set IMAGE_ORG to include the repository
+// imageRepository returns the org/repository path to use for kanister images.
+// Defaults to "kanisterio"; override with IMAGE_REPOSITORY env var.
+// For kind-loaded images without a registry, set IMAGE_REPOSITORY to include the
 // path component (e.g. "kanisterio/test-images") and leave IMAGE_REGISTRY unset.
-func imageOrg() string {
-	if v := os.Getenv("IMAGE_ORG"); v != "" {
+func imageRepository() string {
+	if v := os.Getenv("IMAGE_REPOSITORY"); v != "" {
 		return v
 	}
 	return defaultImageOrg
@@ -215,7 +215,7 @@ func imageTag(devTag string) string {
 	return devTag
 }
 
-func splitImage(image string) (repo string, tag string) {
+func repoAndTagFromImage(image string) (repo string, tag string) {
 	image = strings.Split(image, "@")[0] // drop digest if present
 
 	lastColon := strings.LastIndex(image, ":")

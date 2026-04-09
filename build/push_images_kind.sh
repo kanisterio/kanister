@@ -22,9 +22,9 @@ set -o pipefail
 # Environment (override externally if needed)
 ########################################
 
-# IMAGE_ORG may include a repository path component (e.g. "kanisterio/test-images")
+# IMAGE_REPOSITORY may include a repository path component (e.g. "kanisterio/test-images")
 # when images are kind-loaded without a registry prefix.
-IMAGE_ORG=${IMAGE_ORG:-"kanisterio/test-images"}
+IMAGE_REPOSITORY=${IMAGE_REPOSITORY:-"kanisterio/test-images"}
 IMAGE_REGISTRY=${IMAGE_REGISTRY:-""}
 IMAGE_TAG=${IMAGE_TAG:-"v9.99.9-dev"}
 KIND_CLUSTER=${KIND_CLUSTER_NAME:-"kanister"}
@@ -64,20 +64,20 @@ check_prerequisites() {
 # Helpers
 ########################################
 
-# Image naming: [{IMAGE_REGISTRY}/]{IMAGE_ORG}/{app_name}:{IMAGE_TAG}
+# Image naming: [{IMAGE_REGISTRY}/]{IMAGE_REPOSITORY}/{app_name}:{IMAGE_TAG}
 # e.g. kanisterio/test-images/mongodb:v9.99.9-dev  (no registry, kind load)
 #      localhost:5001/kanisterio/mongodb:v9.99.9-dev (local registry)
 image_ref() {
   if [[ -n "${IMAGE_REGISTRY}" ]]; then
-    echo "${IMAGE_REGISTRY}/${IMAGE_ORG}/${1}:${IMAGE_TAG}"
+    echo "${IMAGE_REGISTRY}/${IMAGE_REPOSITORY}/${1}:${IMAGE_TAG}"
   else
-    echo "${IMAGE_ORG}/${1}:${IMAGE_TAG}"
+    echo "${IMAGE_REPOSITORY}/${1}:${IMAGE_TAG}"
   fi
 }
 
 # Build an image into the local Docker daemon, then immediately load it into
 # Kind and remove it from the daemon to reclaim disk space.
-build_load_clean() {
+build_and_load() {
   local app_name="$1"
   local dockerfile="$2"
   local ref
@@ -108,7 +108,7 @@ main() {
   check_prerequisites
 
   echo "Image registry: ${IMAGE_REGISTRY:-"(none)"}"
-  echo "Image org:      ${IMAGE_ORG}"
+  echo "Image repository: ${IMAGE_REPOSITORY}"
   echo "Image tag:      ${IMAGE_TAG}"
   echo "Kind cluster:   ${KIND_CLUSTER}"
 
@@ -142,7 +142,7 @@ main() {
 
   while IFS='|' read -r app_name dockerfile; do
     [[ -n "${app_name}" ]] || continue
-    build_load_clean "${app_name}" "${dockerfile}"
+    build_and_load "${app_name}" "${dockerfile}"
   done <<< "${APP_IMAGES}"
 
   ########################################

@@ -70,10 +70,10 @@ jobs:
         testSuite: [test, integration-test, helm-test]
     env:
       DOCKER_BUILD: "false"
-      KIND_CLUSTER_NAME: "chart-testing"
+      KIND_CLUSTER_NAME: "integ-testing"
       LOCAL_MINIO: "true"
     steps:
-    - name: Free disk space aggressively
+    - name: Free disk space
       if: matrix.testSuite == 'integration-test' && needs.detect_dockerfile_changes.outputs.changed == 'true'
       run: |
         sudo rm -rf /usr/share/dotnet
@@ -116,9 +116,9 @@ jobs:
         if [[ "${{ matrix.testSuite }}" == "integration-test" && \
           "${{ needs.detect_dockerfile_changes.outputs.changed }}" == "true" ]]; then
           export IMAGE_REGISTRY=""
-          export IMAGE_ORG="kanisterio/test-images"
+          export IMAGE_REPOSITORY="kanisterio/test-images"
           export IMAGE_TAG="pr-${GITHUB_SHA::12}"
-          echo "using kind-loaded PR images (IMAGE_ORG=${IMAGE_ORG}, IMAGE_TAG=${IMAGE_TAG})"
+          echo "using kind-loaded PR images (IMAGE_REPOSITORY=${IMAGE_REPOSITORY}, IMAGE_TAG=${IMAGE_TAG})"
         else
           echo "using released dev images from ghcr.io/kanisterio"
         fi
