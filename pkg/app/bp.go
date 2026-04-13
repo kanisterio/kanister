@@ -126,15 +126,7 @@ func updateImageTags(bp *crv1alpha1.Blueprint, devTag string) {
 			}
 
 			if strings.HasPrefix(imageStr, imagePrefix) {
-				repo, _ := repoAndTagFromImage(imageStr)
-				lastSlash := strings.LastIndex(repo, "/")
-				appName := repo[lastSlash+1:]
-				var updatedImage string
-				if registry != "" {
-					updatedImage = fmt.Sprintf("%s/%s/%s:%s", registry, org, appName, tag)
-				} else {
-					updatedImage = fmt.Sprintf("%s/%s:%s", org, appName, tag)
-				}
+				updatedImage := buildImage(imageStr, registry, org, tag)
 				phase.Args["image"] = updatedImage
 				log.Info().Print("updated image", field.M{"image": updatedImage})
 			}
@@ -226,4 +218,14 @@ func repoAndTagFromImage(image string) (repo string, tag string) {
 	}
 
 	return image, "" // no tag
+}
+
+func buildImage(imageStr, registry, org, tag string) string {
+	repo, _ := repoAndTagFromImage(imageStr)
+	lastSlash := strings.LastIndex(repo, "/")
+	appName := repo[lastSlash+1:]
+	if registry != "" {
+		return fmt.Sprintf("%s/%s/%s:%s", registry, org, appName, tag)
+	}
+	return fmt.Sprintf("%s/%s:%s", org, appName, tag)
 }
