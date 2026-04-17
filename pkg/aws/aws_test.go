@@ -45,8 +45,8 @@ func (s AWSSuite) TestResolveRegion(c *check.C) {
 	origRegion, regionSet := os.LookupEnv("AWS_REGION")
 	origDefault, defaultSet := os.LookupEnv("AWS_DEFAULT_REGION")
 	defer func() {
-		restoreEnv("AWS_REGION", origRegion, regionSet)
-		restoreEnv("AWS_DEFAULT_REGION", origDefault, defaultSet)
+		restoreEnv(c, "AWS_REGION", origRegion, regionSet)
+		restoreEnv(c, "AWS_DEFAULT_REGION", origDefault, defaultSet)
 	}()
 
 	cases := []struct {
@@ -101,19 +101,19 @@ func (s AWSSuite) TestResolveRegion(c *check.C) {
 	}
 
 	for _, tc := range cases {
-		os.Setenv("AWS_REGION", tc.awsRegion)
-		os.Setenv("AWS_DEFAULT_REGION", tc.awsDefault)
+		c.Assert(os.Setenv("AWS_REGION", tc.awsRegion), check.IsNil)
+		c.Assert(os.Setenv("AWS_DEFAULT_REGION", tc.awsDefault), check.IsNil)
 		got := resolveRegion(tc.config)
 		c.Assert(got, check.Equals, tc.expected, check.Commentf("case: %s", tc.name))
 	}
 }
 
-func restoreEnv(key, value string, wasSet bool) {
+func restoreEnv(c *check.C, key, value string, wasSet bool) {
 	if wasSet {
-		os.Setenv(key, value)
+		c.Assert(os.Setenv(key, value), check.IsNil)
 		return
 	}
-	os.Unsetenv(key)
+	c.Assert(os.Unsetenv(key), check.IsNil)
 }
 
 func (s AWSSuite) TestValidCreds(c *check.C) {
