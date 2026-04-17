@@ -25,8 +25,10 @@ import (
 )
 
 // Switch func uses credentials API to automatically generates New Credentials for a given role.
-func Switch(ctx context.Context, creds aws.CredentialsProvider, role string, duration time.Duration) (aws.CredentialsProvider, error) {
-	stsCli := sts.NewFromConfig(aws.Config{Credentials: creds})
+// region is set on the aws.Config used to build the STS client; AWS SDK v2
+// requires it for endpoint resolution even for the (global) STS service.
+func Switch(ctx context.Context, creds aws.CredentialsProvider, role, region string, duration time.Duration) (aws.CredentialsProvider, error) {
+	stsCli := sts.NewFromConfig(aws.Config{Credentials: creds, Region: region})
 	p := stscreds.NewAssumeRoleProvider(stsCli, role, func(o *stscreds.AssumeRoleOptions) {
 		o.Duration = duration
 	})

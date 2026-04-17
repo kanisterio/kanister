@@ -17,6 +17,7 @@ package aws
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -38,6 +39,81 @@ type mockSTSClient struct {
 
 func (m *mockSTSClient) GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 	return m.getCallerIdentityFunc(ctx, params, optFns...)
+}
+
+func (s AWSSuite) TestResolveRegion(c *check.C) {
+	origRegion, regionSet := os.LookupEnv("AWS_REGION")
+	origDefault, defaultSet := os.LookupEnv("AWS_DEFAULT_REGION")
+	defer func() {
+		restoreEnv("AWS_REGION", origRegion, regionSet)
+		restoreEnv("AWS_DEFAULT_REGION", origDefault, defaultSet)
+	}()
+
+	cases := []struct {
+		name       string
+		config     map[string]string
+		awsRegion  string
+		awsDefault string
+		expected   string
+	}{
+		{
+			name:       "config region wins over env",
+			config:     map[string]string{ConfigRegion: "us-east-1"},
+			awsRegion:  "us-west-2",
+			awsDefault: "eu-west-1",
+			expected:   "us-east-1",
+		},
+		{
+			name:       "falls back to AWS_REGION when config empty",
+			config:     map[string]string{},
+			awsRegion:  "us-west-2",
+			awsDefault: "eu-west-1",
+			expected:   "us-west-2",
+		},
+		{
+			name:       "falls back to AWS_DEFAULT_REGION when AWS_REGION unset",
+			config:     map[string]string{},
+			awsRegion:  "",
+			awsDefault: "eu-west-1",
+			expected:   "eu-west-1",
+		},
+		{
+			name:       "returns empty when nothing is set",
+			config:     map[string]string{},
+			awsRegion:  "",
+			awsDefault: "",
+			expected:   "",
+		},
+		{
+			name:       "nil config falls back to env",
+			config:     nil,
+			awsRegion:  "ap-south-1",
+			awsDefault: "",
+			expected:   "ap-south-1",
+		},
+		{
+			name:       "empty config entry treated as unset",
+			config:     map[string]string{ConfigRegion: ""},
+			awsRegion:  "us-west-2",
+			awsDefault: "",
+			expected:   "us-west-2",
+		},
+	}
+
+	for _, tc := range cases {
+		os.Setenv("AWS_REGION", tc.awsRegion)
+		os.Setenv("AWS_DEFAULT_REGION", tc.awsDefault)
+		got := resolveRegion(tc.config)
+		c.Assert(got, check.Equals, tc.expected, check.Commentf("case: %s", tc.name))
+	}
+}
+
+func restoreEnv(key, value string, wasSet bool) {
+	if wasSet {
+		os.Setenv(key, value)
+		return
+	}
+	os.Unsetenv(key)
 }
 
 func (s AWSSuite) TestValidCreds(c *check.C) {
