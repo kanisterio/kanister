@@ -18,13 +18,13 @@ package rds
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
 	"github.com/kanisterio/errkit"
 
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -36,21 +36,21 @@ const (
 	statusDBClusterAvailable = "available"
 )
 
-// RDS is a wrapper around ec2.RDS structs
+// RDS is a wrapper around the AWS RDS client
 type RDS struct {
-	*rds.RDS
+	client *rds.Client
 }
 
-// NewClient returns ec2 client struct.
-func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS, error) {
-	s, err := session.NewSession(awsConfig)
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to create session")
-	}
-	return &RDS{RDS: rds.New(s, awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(awsConfig.Credentials))}, nil
+// NewClient returns an RDS client struct.
+func NewClient(ctx context.Context, awsConfig aws.Config, region string) (*RDS, error) {
+	awsConfig.Region = region
+	client := rds.NewFromConfig(awsConfig, func(o *rds.Options) {
+		o.RetryMaxAttempts = maxRetries
+	})
+	return &RDS{client: client}, nil
 }
 
-// CreateDBInstance return DBInstance with context
+// CreateDBInstance creates an RDS DB instance with context
 func (r RDS) CreateDBInstance(
 	ctx context.Context,
 	storage *int64,
@@ -80,13 +80,16 @@ func (r RDS) CreateDBInstance(
 		dbi.DBClusterIdentifier = restoredClusterID
 	default:
 		// if not restoring from an existing cluster, create a new instance input
-		dbi.AllocatedStorage = storage
-		dbi.VpcSecurityGroupIds = convertSGIDs(sgIDs)
+		if storage != nil {
+			s := int32(*storage)
+			dbi.AllocatedStorage = &s
+		}
+		dbi.VpcSecurityGroupIds = sgIDs
 		dbi.MasterUsername = aws.String(username)
 		dbi.MasterUserPassword = aws.String(password)
 		dbi.PubliclyAccessible = publicAccess
 	}
-	return r.CreateDBInstanceWithContext(ctx, dbi)
+	return r.client.CreateDBInstance(ctx, dbi)
 }
 
 func (r RDS) CreateDBCluster(
@@ -108,18 +111,18 @@ func (r RDS) CreateDBCluster(
 		Engine:              &engine,
 		MasterUsername:      &username,
 		MasterUserPassword:  &password,
-		VpcSecurityGroupIds: convertSGIDs(sgIDs),
+		VpcSecurityGroupIds: sgIDs,
 	}
-	return r.CreateDBClusterWithContext(ctx, dbi)
+	return r.client.CreateDBCluster(ctx, dbi)
 }
 
 func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string) error {
 	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
 	defer cancel()
-	dba := &rds.DescribeDBInstancesInput{
+	waiter := rds.NewDBInstanceAvailableWaiter(r.client)
+	return waiter.Wait(ctx, &rds.DescribeDBInstancesInput{
 		DBInstanceIdentifier: &instanceID,
-	}
-	return r.WaitUntilDBInstanceAvailableWithContext(ctx, dba)
+	}, rdsReadyTimeout)
 }
 
 func (r RDS) WaitUntilDBClusterAvailable(ctx context.Context, dbClusterID string) error {
@@ -137,12 +140,12 @@ func (r RDS) WaitOnDBCluster(ctx context.Context, dbClusterID, status string) er
 	dci := &rds.DescribeDBClustersInput{
 		DBClusterIdentifier: &dbClusterID,
 	}
-	descCluster, err := r.DescribeDBClustersWithContext(ctx, dci)
+	descCluster, err := r.client.DescribeDBClusters(ctx, dci)
 	if err != nil {
 		return err
 	}
 
-	if *descCluster.DBClusters[0].Status == status {
+	if aws.ToString(descCluster.DBClusters[0].Status) == status {
 		return nil
 	}
 	return errkit.New(fmt.Sprintf("DBCluster is not in %s state", status))
@@ -155,13 +158,12 @@ func (r RDS) WaitUntilDBClusterDeleted(ctx context.Context, dbClusterID string) 
 		dci := &rds.DescribeDBClustersInput{
 			DBClusterIdentifier: &dbClusterID,
 		}
-		if _, err := r.DescribeDBClustersWithContext(ctx, dci); err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				if aerr.Code() == rds.ErrCodeDBClusterNotFoundFault {
-					return true, nil
-				}
-				return false, nil
+		if _, err := r.client.DescribeDBClusters(ctx, dci); err != nil {
+			var notFound *rdstypes.DBClusterNotFoundFault
+			if errors.As(err, &notFound) {
+				return true, nil
 			}
+			return false, nil
 		}
 
 		return false, nil
@@ -171,31 +173,31 @@ func (r RDS) WaitUntilDBClusterDeleted(ctx context.Context, dbClusterID string) 
 func (r RDS) WaitUntilDBInstanceDeleted(ctx context.Context, instanceID string) error {
 	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
 	defer cancel()
-	dba := &rds.DescribeDBInstancesInput{
+	waiter := rds.NewDBInstanceDeletedWaiter(r.client)
+	return waiter.Wait(ctx, &rds.DescribeDBInstancesInput{
 		DBInstanceIdentifier: &instanceID,
-	}
-	return r.WaitUntilDBInstanceDeletedWithContext(ctx, dba)
+	}, rdsReadyTimeout)
 }
 
 func (r RDS) DescribeDBInstances(ctx context.Context, instanceID string) (*rds.DescribeDBInstancesOutput, error) {
 	dbi := &rds.DescribeDBInstancesInput{
 		DBInstanceIdentifier: &instanceID,
 	}
-	return r.DescribeDBInstancesWithContext(ctx, dbi)
+	return r.client.DescribeDBInstances(ctx, dbi)
 }
 
 func (r RDS) DescribeDBClusters(ctx context.Context, instanceID string) (*rds.DescribeDBClustersOutput, error) {
 	dci := &rds.DescribeDBClustersInput{
 		DBClusterIdentifier: &instanceID,
 	}
-	return r.DescribeDBClustersWithContext(ctx, dci)
+	return r.client.DescribeDBClusters(ctx, dci)
 }
 
 func (r RDS) DescribeDBClustersSnapshot(ctx context.Context, snapshotID string) (*rds.DescribeDBClusterSnapshotsOutput, error) {
 	i := &rds.DescribeDBClusterSnapshotsInput{
 		DBClusterSnapshotIdentifier: &snapshotID,
 	}
-	return r.DescribeDBClusterSnapshotsWithContext(ctx, i)
+	return r.client.DescribeDBClusterSnapshots(ctx, i)
 }
 
 func (r RDS) DeleteDBInstance(ctx context.Context, instanceID string) (*rds.DeleteDBInstanceOutput, error) {
@@ -204,7 +206,7 @@ func (r RDS) DeleteDBInstance(ctx context.Context, instanceID string) (*rds.Dele
 		DBInstanceIdentifier: &instanceID,
 		SkipFinalSnapshot:    &skipSnapshot,
 	}
-	return r.DeleteDBInstanceWithContext(ctx, dbi)
+	return r.client.DeleteDBInstance(ctx, dbi)
 }
 
 func (r RDS) DeleteDBCluster(ctx context.Context, instanceID string) (*rds.DeleteDBClusterOutput, error) {
@@ -213,34 +215,30 @@ func (r RDS) DeleteDBCluster(ctx context.Context, instanceID string) (*rds.Delet
 		DBClusterIdentifier: &instanceID,
 		SkipFinalSnapshot:   &skipSnapshot,
 	}
-	return r.DeleteDBClusterWithContext(ctx, ddbc)
+	return r.client.DeleteDBCluster(ctx, ddbc)
 }
 
 func (r RDS) CreateDBSubnetGroup(ctx context.Context, dbSubnetGroupName, dbSubnetGroupDescription string, subnetIDs []string) (*rds.CreateDBSubnetGroupOutput, error) {
-	var awsSubnetIDs []*string
-	for _, ID := range subnetIDs {
-		awsSubnetIDs = append(awsSubnetIDs, aws.String(ID))
-	}
 	dbsgi := &rds.CreateDBSubnetGroupInput{
 		DBSubnetGroupName:        aws.String(dbSubnetGroupName),
 		DBSubnetGroupDescription: aws.String(dbSubnetGroupDescription),
-		SubnetIds:                awsSubnetIDs,
+		SubnetIds:                subnetIDs,
 	}
-	return r.CreateDBSubnetGroupWithContext(ctx, dbsgi)
+	return r.client.CreateDBSubnetGroup(ctx, dbsgi)
 }
 
 func (r RDS) DeleteDBSubnetGroup(ctx context.Context, dbSubnetGroupName string) (*rds.DeleteDBSubnetGroupOutput, error) {
 	dbsgi := &rds.DeleteDBSubnetGroupInput{
 		DBSubnetGroupName: aws.String(dbSubnetGroupName),
 	}
-	return r.DeleteDBSubnetGroupWithContext(ctx, dbsgi)
+	return r.client.DeleteDBSubnetGroup(ctx, dbsgi)
 }
 
 func (r RDS) DescribeDBSnapshot(ctx context.Context, snapshotID string) (*rds.DescribeDBSnapshotsOutput, error) {
 	dsi := &rds.DescribeDBSnapshotsInput{
 		DBSnapshotIdentifier: &snapshotID,
 	}
-	return r.DescribeDBSnapshotsWithContext(ctx, dsi)
+	return r.client.DescribeDBSnapshots(ctx, dsi)
 }
 
 func (r RDS) CreateDBSnapshot(ctx context.Context, instanceID, snapshotID string) (*rds.CreateDBSnapshotOutput, error) {
@@ -248,7 +246,7 @@ func (r RDS) CreateDBSnapshot(ctx context.Context, instanceID, snapshotID string
 		DBInstanceIdentifier: &instanceID,
 		DBSnapshotIdentifier: &snapshotID,
 	}
-	return r.CreateDBSnapshotWithContext(ctx, sni)
+	return r.client.CreateDBSnapshot(ctx, sni)
 }
 
 func (r RDS) CreateDBClusterSnapshot(ctx context.Context, clusterID, snapshotID string) (*rds.CreateDBClusterSnapshotOutput, error) {
@@ -256,57 +254,67 @@ func (r RDS) CreateDBClusterSnapshot(ctx context.Context, clusterID, snapshotID 
 		DBClusterIdentifier:         &clusterID,
 		DBClusterSnapshotIdentifier: &snapshotID,
 	}
-	return r.CreateDBClusterSnapshotWithContext(ctx, csni)
+	return r.client.CreateDBClusterSnapshot(ctx, csni)
 }
 
 func (r RDS) WaitUntilDBSnapshotAvailable(ctx context.Context, snapshotID string) error {
 	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
 	defer cancel()
-	sni := &rds.DescribeDBSnapshotsInput{
+	waiter := rds.NewDBSnapshotAvailableWaiter(r.client)
+	return waiter.Wait(ctx, &rds.DescribeDBSnapshotsInput{
 		DBSnapshotIdentifier: &snapshotID,
-	}
-	return r.WaitUntilDBSnapshotAvailableWithContext(ctx, sni)
+	}, rdsReadyTimeout)
 }
 
 func (r RDS) WaitUntilDBClusterSnapshotAvailable(ctx context.Context, snapshotID string) error {
 	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
 	defer cancel()
-	dsni := &rds.DescribeDBClusterSnapshotsInput{
+	waiter := rds.NewDBClusterSnapshotAvailableWaiter(r.client)
+	return waiter.Wait(ctx, &rds.DescribeDBClusterSnapshotsInput{
 		DBClusterSnapshotIdentifier: &snapshotID,
-	}
-	return r.WaitUntilDBClusterSnapshotAvailableWithContext(ctx, dsni)
+	}, rdsReadyTimeout)
 }
 
 func (r RDS) DeleteDBSnapshot(ctx context.Context, snapshotID string) (*rds.DeleteDBSnapshotOutput, error) {
 	sni := &rds.DeleteDBSnapshotInput{
 		DBSnapshotIdentifier: &snapshotID,
 	}
-	return r.DeleteDBSnapshotWithContext(ctx, sni)
+	return r.client.DeleteDBSnapshot(ctx, sni)
 }
 
 func (r RDS) DeleteDBClusterSnapshot(ctx context.Context, snapshotID string) (*rds.DeleteDBClusterSnapshotOutput, error) {
 	dci := &rds.DeleteDBClusterSnapshotInput{
 		DBClusterSnapshotIdentifier: &snapshotID,
 	}
-	return r.DeleteDBClusterSnapshotWithContext(ctx, dci)
+	return r.client.DeleteDBClusterSnapshot(ctx, dci)
 }
 
 func (r RDS) WaitUntilDBSnapshotDeleted(ctx context.Context, snapshotID string) error {
 	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
 	defer cancel()
-	sni := &rds.DescribeDBSnapshotsInput{
+	waiter := rds.NewDBSnapshotDeletedWaiter(r.client)
+	return waiter.Wait(ctx, &rds.DescribeDBSnapshotsInput{
 		DBSnapshotIdentifier: &snapshotID,
-	}
-	return r.WaitUntilDBSnapshotDeletedWithContext(ctx, sni)
+	}, rdsReadyTimeout)
 }
 
 func (r RDS) WaitUntilDBClusterSnapshotDeleted(ctx context.Context, snapshotID string) error {
+	// No pre-built DBClusterSnapshotDeleted waiter in v2; poll manually.
 	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
 	defer cancel()
-	sdi := &rds.DescribeDBClusterSnapshotsInput{
-		DBClusterSnapshotIdentifier: &snapshotID,
-	}
-	return r.WaitUntilDBClusterSnapshotDeletedWithContext(ctx, sdi)
+	return poll.Wait(ctx, func(c context.Context) (bool, error) {
+		_, err := r.client.DescribeDBClusterSnapshots(c, &rds.DescribeDBClusterSnapshotsInput{
+			DBClusterSnapshotIdentifier: &snapshotID,
+		})
+		if err != nil {
+			var notFound *rdstypes.DBClusterSnapshotNotFoundFault
+			if errors.As(err, &notFound) {
+				return true, nil
+			}
+			return false, nil
+		}
+		return false, nil
+	})
 }
 
 func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, subnetGroupName, snapshotID string, sgIDs []string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
@@ -314,39 +322,21 @@ func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, su
 		DBInstanceIdentifier: &instanceID,
 		DBSnapshotIdentifier: &snapshotID,
 		DBSubnetGroupName:    &subnetGroupName,
-		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
+		VpcSecurityGroupIds:  sgIDs,
 	}
-	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
+	return r.client.RestoreDBInstanceFromDBSnapshot(ctx, rdbi)
 }
 
 func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, dbSubnetGroup, snapshotID, dbEngine, version string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
-	var rdi *rds.RestoreDBClusterFromSnapshotInput
-	if sgIDs == nil {
-		rdi = &rds.RestoreDBClusterFromSnapshotInput{
-			Engine:              &dbEngine,
-			EngineVersion:       &version,
-			DBClusterIdentifier: &instanceID,
-			SnapshotIdentifier:  &snapshotID,
-			DBSubnetGroupName:   &dbSubnetGroup,
-		}
-	} else {
-		rdi = &rds.RestoreDBClusterFromSnapshotInput{
-			Engine:              &dbEngine,
-			EngineVersion:       &version,
-			DBClusterIdentifier: &instanceID,
-			SnapshotIdentifier:  &snapshotID,
-			VpcSecurityGroupIds: convertSGIDs(sgIDs),
-			DBSubnetGroupName:   &dbSubnetGroup,
-		}
+	rdi := &rds.RestoreDBClusterFromSnapshotInput{
+		Engine:              &dbEngine,
+		EngineVersion:       &version,
+		DBClusterIdentifier: &instanceID,
+		SnapshotIdentifier:  &snapshotID,
+		DBSubnetGroupName:   &dbSubnetGroup,
 	}
-	return r.RestoreDBClusterFromSnapshotWithContext(ctx, rdi)
-}
-
-func convertSGIDs(sgIDs []string) []*string {
-	var refSGIDs []*string
-	for _, ID := range sgIDs {
-		idPtr := &ID
-		refSGIDs = append(refSGIDs, idPtr)
+	if sgIDs != nil {
+		rdi.VpcSecurityGroupIds = sgIDs
 	}
-	return refSGIDs
+	return r.client.RestoreDBClusterFromSnapshot(ctx, rdi)
 }
