@@ -217,7 +217,7 @@ func GetConfig(ctx context.Context, config map[string]string) (awsConfig aws.Con
 	if err != nil {
 		return aws.Config{}, "", errkit.Wrap(err, "could not initialize AWS credentials for operation")
 	}
-	return aws.Config{Credentials: creds}, region, nil
+	return aws.Config{Credentials: creds, Region: region}, region, nil
 }
 
 // STSGetCallerIdentityClient is the interface used for testing credential validation.
