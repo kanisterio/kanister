@@ -69,7 +69,7 @@ const (
 	skipExistingFlag                = "--skip-existing"
 	deleteExtraFlag                 = "--delete-extra"
 	ignoreRuleFilePathFlag          = "--ignore-rules-file"
-	fadviseMinSizeKBFlag            = "--fadvise-min-size-kb"
+	streamingReadsFlag              = "--streaming-reads"
 
 	// Server specific
 	addSubCommand             = "add"

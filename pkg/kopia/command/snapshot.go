@@ -36,9 +36,7 @@ type SnapshotCreateCommandArgs struct {
 	EstimationType         string
 	EstimationThreshold    int
 	IgnoreRuleFilePath     string
-	// FadviseMinSizeKB sets the minimum file size (in KB) for which fadvise hints
-	// are issued during snapshot creation. A value of 0 (default) disables fadvise.
-	FadviseMinSizeKB int
+	StreamingReads         bool
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
@@ -72,8 +70,8 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 			args = args.AppendLoggableKV(adaptiveEstimationThresholdFlag, thresholdStr)
 		}
 	}
-	if cmdArgs.FadviseMinSizeKB > 0 {
-		args = args.AppendLoggableKV(fadviseMinSizeKBFlag, strconv.Itoa(cmdArgs.FadviseMinSizeKB))
+	if cmdArgs.StreamingReads {
+		args = args.AppendLoggable(streamingReadsFlag)
 	}
 
 	args = addTags(cmdArgs.Tags, args)
