@@ -24,6 +24,7 @@ import (
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
@@ -102,21 +103,19 @@ func (s *DataSuite) TearDownSuite(c *check.C) {
 }
 
 func (s *DataSuite) cleanupObjectStoreData(c *check.C) {
-	if c.Failed() {
-		ctx := context.Background()
-		profile := s.profile
-		if s.profileLocalEndpoint != nil {
-			profile = s.profileLocalEndpoint
-		}
-		c.Log("Cleaning up object store data after test failure from location", field.M{
-			"test":     c.TestName(),
-			"endpoint": profile.Location.Endpoint,
-			"bucket":   profile.Location.Bucket,
-		})
-		err := location.Delete(ctx, *profile, "")
-		if err != nil {
-			c.Log("Failed to clean data from location:", err)
-		}
+	ctx := context.Background()
+	profile := s.profile
+	if s.profileLocalEndpoint != nil {
+		profile = s.profileLocalEndpoint
+	}
+	c.Log("Cleaning up object store data from location", field.M{
+		"test":     c.TestName(),
+		"endpoint": profile.Location.Endpoint,
+		"bucket":   profile.Location.Bucket,
+	})
+	err := location.Delete(ctx, *profile, "")
+	if err != nil {
+		c.Log("Failed to clean data from location:", err)
 	}
 }
 
@@ -339,7 +338,8 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *check.C, replicas int32) (*pa
 func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, 1)
 
-	// cleanup in case of test failure
+	// Always clean up object store data so the next test in this suite
+	// starts with an empty kopia repository at the suite's prefix.
 	defer s.cleanupObjectStoreData(c)
 
 	for _, pvc := range pvcs {
@@ -398,7 +398,8 @@ func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *check.C) {
 	replicas := int32(2)
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, replicas)
 
-	// cleanup in case of test failure
+	// Always clean up object store data so the next test in this suite
+	// starts with an empty kopia repository at the suite's prefix.
 	defer s.cleanupObjectStoreData(c)
 
 	// Test backup
@@ -791,7 +792,9 @@ func (s *DataSuite) createNewTestProfile(c *check.C, profileName string, localEn
 	default:
 		c.Fatalf("Unrecognized objectstore '%s'", s.providerType)
 	}
-	location.Prefix = "testBackupRestoreLocDelete"
+	// Append a random suffix so concurrent invocations of DataSuite use
+	// disjoint kopia repositories under the shared test bucket.
+	location.Prefix = fmt.Sprintf("testBackupRestoreLocDelete-%s", rand.String(8))
 	location.Bucket = testBucketName
 	if endpoint, ok := os.LookupEnv("LOCATION_CLUSTER_ENDPOINT"); ok && !localEndpoint {
 		location.Endpoint = endpoint

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"gopkg.in/check.v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 type BucketSuite struct{}
@@ -63,7 +64,10 @@ func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *check.C) {
 
 	ctx := context.Background()
 	const pt = ProviderTypeS3
-	const bn = `kanister-test-bucket-us-west-1`
+	// Append a random suffix so concurrent invocations of this test against
+	// AWS use distinct, globally-unique bucket names instead of racing on a
+	// shared bucket.
+	bn := fmt.Sprintf("kanister-test-bucket-us-west-1-%s", rand.String(8))
 	const r1 = `us-west-1`
 	const r2 = `us-west-2`
 
