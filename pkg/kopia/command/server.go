@@ -22,18 +22,19 @@ import (
 type ServerStartCommandArgs struct {
 	*CommandArgs
 	CacheArgs
-	CacheDirectory       string
-	ServerAddress        string
-	TLSCertFile          string
-	TLSKeyFile           string
-	ServerUsername       string
-	ServerPassword       string
-	HtpasswdFilePath     string
-	ReadOnly             bool
-	AutoGenerateCert     bool
-	Background           bool
-	EnablePprof          bool
-	MetricsListenAddress string
+	CacheDirectory        string
+	ServerAddress         string
+	TLSCertFile           string
+	TLSKeyFile            string
+	ServerUsername        string
+	ServerPassword        string
+	HtpasswdFilePath      string
+	ReadOnly              bool
+	AutoGenerateCert      bool
+	Background            bool
+	EnablePprof           bool
+	MetricsListenAddress  string
+	ServerRefreshInterval string
 }
 
 func commonCommand(cmdArgs ServerStartCommandArgs) logsafe.Cmd {
@@ -59,6 +60,10 @@ func commonCommand(cmdArgs ServerStartCommandArgs) logsafe.Cmd {
 	args = args.AppendRedactedKV(serverControlPasswordFlag, cmdArgs.ServerPassword)
 
 	args = cmdArgs.kopiaCacheArgs(args, cmdArgs.CacheDirectory)
+
+	if cmdArgs.ServerRefreshInterval != "" {
+		args = args.AppendLoggableKV(serverRefreshIntervalFlag, cmdArgs.ServerRefreshInterval)
+	}
 
 	if cmdArgs.ReadOnly {
 		args = args.AppendLoggable(readOnlyFlag)
