@@ -4,7 +4,7 @@ ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS tools_image
 
 # Actual image base
-FROM postgres:17-bookworm@sha256:2e783c36c1c10112e5ee214157ad32e46d0cd5e4eee3403edc640c31a7738583
+FROM postgres:18-bookworm@sha256:a8824b3eef0c73d7a494881d625411060f5bf3c87280394cbc84197c6fa4bde5
 
 ENV DEBIAN_FRONTEND noninteractive
 
