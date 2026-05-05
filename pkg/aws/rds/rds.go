@@ -70,6 +70,9 @@ func (r RDS) CreateDBInstance(
 		Engine:               &engine,
 		DBSubnetGroupName:    aws.String(dbSubnetGroup),
 	}
+	if engine == "postgres" {
+		dbi.EngineVersion = aws.String("17.7")
+	}
 
 	// check if the instance is being restored from an existing cluster
 	switch {
