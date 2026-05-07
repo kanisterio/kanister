@@ -94,7 +94,7 @@ func (s *LocationSuite) SetUpSuite(c *check.C) {
 		Region:   s.region,
 		Endpoint: os.Getenv("LOCATION_ENDPOINT"),
 	}
-	secret, err := getOSSecret(ctx, s.osType, s.profile.Credential)
+	secret, err := getOSSecret(ctx, s.osType, s.profile.Credential, s.region)
 	c.Check(err, check.IsNil)
 	s.provider, err = objectstore.NewProvider(ctx, pc, secret)
 	c.Check(err, check.IsNil)
