@@ -92,7 +92,12 @@ func ValidateAWSCredentials(secret *corev1.Secret) error {
 // of the IAM role - The setting can be viewed using instructions here
 // https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html#id_roles_use_view-role-max-session.
 // The IAM role's max duration setting can be modified between 1h to 12h.
-func ExtractAWSCredentials(ctx context.Context, secret *corev1.Secret, assumeRoleDuration time.Duration) (*aws.Credentials, error) {
+//
+// An optional region may be provided as the last argument. When the secret
+// includes an IAM role to assume, AWS SDK v2 requires an explicit region to
+// construct the STS endpoint. If omitted, region is resolved from the
+// AWS_REGION / AWS_DEFAULT_REGION environment variables.
+func ExtractAWSCredentials(ctx context.Context, secret *corev1.Secret, assumeRoleDuration time.Duration, region ...string) (*aws.Credentials, error) {
 	if err := ValidateAWSCredentials(secret); err != nil {
 		return nil, err
 	}
@@ -101,6 +106,9 @@ func ExtractAWSCredentials(ctx context.Context, secret *corev1.Secret, assumeRol
 		kaws.SecretAccessKey:    string(secret.Data[AWSSecretAccessKey]),
 		kaws.ConfigRole:         string(secret.Data[ConfigRole]),
 		kaws.AssumeRoleDuration: assumeRoleDuration.String(),
+	}
+	if len(region) > 0 && region[0] != "" {
+		config[kaws.ConfigRegion] = region[0]
 	}
 	credProvider, err := kaws.GetCredentials(ctx, config)
 	if err != nil {
