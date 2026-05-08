@@ -277,10 +277,3 @@ reno-report:
 
 reno-lint:
 	@$(MAKE) run CMD="reno lint"
-
-.PHONY: build-push-images-to-kind
-
-build-push-images-to-kind: build-dirs
-	@$(MAKE) DOCKER_BUILD=false build BIN=kando
-	@$(MAKE) DOCKER_BUILD=false build BIN=kanctl
-	@$(MAKE) run CMD="ARCH=$(ARCH) IMAGE_REGISTRY=$(IMAGE_REGISTRY) IMAGE_ORG=$(IMAGE_ORG) IMAGE_TAG=$(IMAGE_TAG) KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) ./build/push_images_kind.sh"

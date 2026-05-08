@@ -1,7 +1,6 @@
 package caller
 
 import (
-	"strings"
 	"testing"
 
 	"gopkg.in/check.v1"
@@ -21,19 +20,19 @@ func (s *CallerSuite) TestCallerFields(c *check.C) {
 	c.Assert(frame.Function, check.Equals, "github.com/kanisterio/kanister/pkg/caller.GetFrame")
 	// This breaks if the function is relocated or the file is renamed or the
 	// this test is run independently
-	c.Assert(strings.HasSuffix(frame.File, "pkg/caller/frame.go"), check.Equals, true)
+	c.Assert(frame.File, check.Equals, "pkg/caller/frame.go")
 
 	frame = indirectCall(1)
 	// Check against the indirectCall() function
 	c.Assert(frame.Function, check.Equals, "github.com/kanisterio/kanister/pkg/caller.indirectCall")
 	// This breaks if the function is relocated or the file is renamed
-	c.Assert(strings.HasSuffix(frame.File, "pkg/caller/caller_test.go"), check.Equals, true)
+	c.Assert(frame.File, check.Equals, "pkg/caller/caller_test.go")
 
 	frame = indirectCall(2)
 	// Check against this function
 	c.Assert(frame.Function, check.Equals, "github.com/kanisterio/kanister/pkg/caller.(*CallerSuite).TestCallerFields")
 	// This breaks if the function is relocated or the file is renamed
-	c.Assert(strings.HasSuffix(frame.File, "pkg/caller/caller_test.go"), check.Equals, true)
+	c.Assert(frame.File, check.Equals, "pkg/caller/caller_test.go")
 }
 
 func indirectCall(depth int) Frame {
