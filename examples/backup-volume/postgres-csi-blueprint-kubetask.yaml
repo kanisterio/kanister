@@ -73,21 +73,16 @@ actions:
     inputArtifactNames:
     - backupVolumeSnapshot
     phases:
-    - func: RestoreCSISnapshot
-      name: createRestorePVC
-      args:
-        name: "{{ .ArtifactsIn.backupVolumeSnapshot.KeyValue.volumeSnapshotName }}"
-        namespace: "{{ .StatefulSet.Namespace }}"
-        pvc: postgres-kubetask-restore-pvc
-        storageClass: kopia-restore
-        restoreSize: 5Gi
-        waitForBound: true
-
     - func: KubeTask
       name: restoreDB
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
         image: bitnami/postgresql:latest
+        snapshotVolumes:
+          "{{ .ArtifactsIn.backupVolumeSnapshot.KeyValue.volumeSnapshotName }}":
+            mountPath: /restore
+            storageClass: kopia-restore
+            size: 5Gi
         command:
           - bash
           - -o
@@ -101,11 +96,3 @@ actions:
               --username="postgres" \
               --file=/restore/full.sql
             echo "=== Restore complete ==="
-        volumes:
-          "{{ .Phases.createRestorePVC.Output.pvcName }}": /restore
-
-    - func: DeleteVolume
-      name: cleanupPVC
-      args:
-        pvcName: "{{ .Phases.createRestorePVC.Output.pvcName }}"
-        pvcNamespace: "{{ .StatefulSet.Namespace }}"

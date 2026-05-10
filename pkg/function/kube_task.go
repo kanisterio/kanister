@@ -16,11 +16,16 @@ package function
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"time"
 
 	"github.com/kanisterio/errkit"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -31,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
@@ -39,11 +45,12 @@ const (
 	jobPrefix = "kanister-job-"
 
 	// KubeTaskFuncName gives the function name
-	KubeTaskFuncName     = "KubeTask"
-	KubeTaskNamespaceArg = "namespace"
-	KubeTaskImageArg     = "image"
-	KubeTaskCommandArg   = "command"
-	KubeTaskVolumesArg   = "volumes"
+	KubeTaskFuncName            = "KubeTask"
+	KubeTaskNamespaceArg        = "namespace"
+	KubeTaskImageArg            = "image"
+	KubeTaskCommandArg          = "command"
+	KubeTaskVolumesArg          = "volumes"
+	KubeTaskSnapshotVolumesArg  = "snapshotVolumes"
 )
 
 func init() {
@@ -152,6 +159,10 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, KubeTaskVolumesArg, &vols, nil); err != nil {
 		return nil, err
 	}
+	var snapVols map[string]map[string]string
+	if err = OptArg(args, KubeTaskSnapshotVolumesArg, &snapVols, nil); err != nil {
+		return nil, err
+	}
 	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
 		return nil, err
 	}
@@ -182,6 +193,71 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
+
+	if len(snapVols) > 0 {
+		if vols == nil {
+			vols = make(map[string]string)
+		}
+		createdPVCs := make([]string, 0, len(snapVols))
+		defer func() {
+			for _, pvcName := range createdPVCs {
+				err := cli.CoreV1().PersistentVolumeClaims(namespace).Delete(
+					context.Background(), pvcName, metav1.DeleteOptions{})
+				if err != nil && !apierrors.IsNotFound(err) {
+					_ = err // best-effort cleanup; pod already finished
+				}
+			}
+		}()
+		for snapName, spec := range snapVols {
+			mountPath := spec["mountPath"]
+			storageClass := spec["storageClass"]
+			sizeStr := spec["size"]
+			if mountPath == "" || storageClass == "" || sizeStr == "" {
+				return nil, fmt.Errorf("snapshotVolumes entry for %q must have mountPath, storageClass, and size", snapName)
+			}
+			size, err := resource.ParseQuantity(sizeStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid size %q for snapshot volume %q: %w", sizeStr, snapName, err)
+			}
+			pvcName := "restore-" + rand.String(5)
+			snapshotAPIGroup := SnapshotAPIGroup
+			pvc := &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      pvcName,
+					Namespace: namespace,
+				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					StorageClassName: &storageClass,
+					DataSource: &corev1.TypedLocalObjectReference{
+						APIGroup: &snapshotAPIGroup,
+						Kind:     "VolumeSnapshot",
+						Name:     snapName,
+					},
+					Resources: corev1.VolumeResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: size,
+						},
+					},
+				},
+			}
+			if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Create(ctx, pvc, metav1.CreateOptions{}); err != nil {
+				return nil, fmt.Errorf("failed to create restore PVC for snapshot %q: %w", snapName, err)
+			}
+			createdPVCs = append(createdPVCs, pvcName)
+			if err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+				p, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+				if err != nil {
+					return false, err
+				}
+				return p.Status.Phase == corev1.ClaimBound, nil
+			}); err != nil {
+				return nil, fmt.Errorf("restore PVC %q for snapshot %q did not become Bound: %w", pvcName, snapName, err)
+			}
+			vols[pvcName] = mountPath
+		}
+	}
+
 	return kubeTask(
 		ctx,
 		cli,
@@ -208,6 +284,7 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskCommandArg,
 		KubeTaskNamespaceArg,
 		KubeTaskVolumesArg,
+		KubeTaskSnapshotVolumesArg,
 		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
