@@ -1,0 +1,106 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: postgres-preparedata-bp
+  namespace: kanister
+actions:
+  # ---------------------------------------------------------------------------
+  # backup
+  #
+  # No StatefulSet patching needed. A fresh ephemeral pod is created per backup.
+  # The inline CSI volume uses ephemeral mode: the driver auto-creates a
+  # VolumeSnapshot when the pod exits (NodeUnpublishVolume).
+  #
+  # Requires secretNames.pgcreds in the ActionSet so the backup pod can
+  # authenticate to Postgres over TCP.
+  # ---------------------------------------------------------------------------
+  backup:
+    outputArtifacts:
+      backupVolumeSnapshot:
+        keyValue:
+          volumeSnapshotName: "{{ .Phases.discoverSnap.Output.volumeSnapshotName }}"
+          volumeSnapshotNamespace: "{{ .Phases.discoverSnap.Output.volumeSnapshotNamespace }}"
+    phases:
+    # Phase 1: run a dedicated backup pod with an ephemeral inline CSI volume at /backup.
+    # The pod connects to Postgres over TCP to dump data.
+    # On pod exit, NodeUnpublishVolume fires and the CSI driver auto-creates a VolumeSnapshot.
+    - func: PrepareData
+      name: dumpDB
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: bitnami/postgresql:15
+        podOverride:
+          volumes:
+          - name: backup
+            csi:
+              driver: backup.csi.kastenhq.io
+              volumeAttributes:
+                csi.storage.k8s.io/ephemeral: "true"
+                mode: backup
+                mountProtocol: fuse
+                configMap: kopia-repo-config
+                configMapNamespace: backup-csi-driver
+                repoPasswordSecret: kopia-repo-password
+                repoPasswordSecretNamespace: backup-csi-driver
+                storageCredentialsSecret: kopia-storage-credentials
+                storageCredentialsSecretNamespace: backup-csi-driver
+          containers:
+          - name: container
+            volumeMounts:
+            - name: backup
+              mountPath: /backup
+        command:
+        - bash
+        - -o
+        - errexit
+        - -c
+        - |
+          export PGPASSWORD="{{ index .Secrets.pgcreds.Data "postgres-password" | toString }}"
+          pg_dumpall \
+            --host="pg-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local" \
+            --username="postgres" \
+            --no-password \
+            --clean \
+            --if-exists \
+            > /backup/full.sql
+          echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /backup/full.timestamp
+          echo "=== Backup complete ==="
+
+    # Phase 2: discover the VolumeSnapshot auto-created by the CSI driver on pod exit.
+    # Filters by spec.source.volumeSnapshotContentName != "" (ephemeral signature)
+    # and creationTimestamp after ActionSet start time ({{ .Time }} is the default).
+    - func: WaitForEphemeralSnapshot
+      name: discoverSnap
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+
+  # ---------------------------------------------------------------------------
+  # restore — KubeTask with snapshotVolumes handles PVC creation, waiting for
+  # Bound, mounting, and deletion automatically. No separate phases needed.
+  # ---------------------------------------------------------------------------
+  restore:
+    inputArtifactNames:
+    - backupVolumeSnapshot
+    phases:
+    - func: KubeTask
+      name: restoreDB
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: bitnami/postgresql:15
+        snapshotVolumes:
+          "{{ .ArtifactsIn.backupVolumeSnapshot.KeyValue.volumeSnapshotName }}":
+            mountPath: /restore
+            storageClass: kopia-restore
+            size: 5Gi
+        command:
+        - bash
+        - -o
+        - errexit
+        - -c
+        - |
+          export PGPASSWORD="{{ index .Secrets.pgcreds.Data "postgres-password" | toString }}"
+          psql \
+            --host="pg-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local" \
+            --username="postgres" \
+            --file=/restore/full.sql
+          echo "=== Restore complete ==="
