@@ -76,12 +76,34 @@ func (*kubeTaskFunc) Name() string {
 	return KubeTaskFuncName
 }
 
-// ephemeralSnapshotDiscovery, when non-nil, instructs kubeTaskPodFunc to poll
-// for the VolumeSnapshot auto-created by the CSI driver after the backup pod
-// exits and merge the snapshot name/namespace into the phase output.
+// ephemeralSnapshotDiscovery instructs kubeTaskPodFunc to look at the live
+// pod's spec.volumes for an ephemeral CSI backup volume and, if present, poll
+// for the VolumeSnapshot the CSI driver auto-creates on NodeUnpublishVolume.
+// The pod's resolved spec is the source of truth — it survives strategic
+// merge of blueprint podOverride with the ActionSet's podOverride.
 type ephemeralSnapshotDiscovery struct {
+	cli       kubernetes.Interface
 	namespace string
 	after     time.Time
+}
+
+// podHasEphemeralBackupVolume returns true if any of the pod's spec.volumes
+// is an inline CSI volume signed as the backup-csi-driver's ephemeral backup
+// volume (csi.storage.k8s.io/ephemeral=="true" AND mode=="backup").
+func podHasEphemeralBackupVolume(pod *corev1.Pod) bool {
+	for _, v := range pod.Spec.Volumes {
+		if v.CSI == nil {
+			continue
+		}
+		if v.CSI.VolumeAttributes["csi.storage.k8s.io/ephemeral"] != "true" {
+			continue
+		}
+		if v.CSI.VolumeAttributes["mode"] != "backup" {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func kubeTask(
@@ -132,42 +154,6 @@ func kubeTask(
 	return pr.Run(ctx, podFunc)
 }
 
-// hasEphemeralBackupVolume returns true if podOverride declares an inline CSI
-// volume that the backup-csi-driver will auto-snapshot on NodeUnpublishVolume
-// (signature: csi.storage.k8s.io/ephemeral=="true" AND mode=="backup").
-func hasEphemeralBackupVolume(podOverride crv1alpha1.JSONMap) bool {
-	volsRaw, ok := podOverride["volumes"]
-	if !ok {
-		return false
-	}
-	vols, ok := volsRaw.([]interface{})
-	if !ok {
-		return false
-	}
-	for _, v := range vols {
-		vol, ok := v.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		csi, ok := vol["csi"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-		attrs, ok := csi["volumeAttributes"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-		if fmt.Sprintf("%v", attrs["csi.storage.k8s.io/ephemeral"]) != "true" {
-			continue
-		}
-		if fmt.Sprintf("%v", attrs["mode"]) != "backup" {
-			continue
-		}
-		return true
-	}
-	return false
-}
-
 // resolveRestoreSize picks the size to request for the restore PVC.
 // Order of precedence:
 //  1. Explicit "size" in the snapshotVolumes spec (if non-empty).
@@ -197,6 +183,19 @@ func kubeTaskPodFunc(disc *ephemeralSnapshotDiscovery) func(ctx context.Context,
 		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errkit.Wrap(err, "Failed while waiting for Pod to be ready", "pod", pc.PodName())
 		}
+
+		// Inspect the live pod once it is scheduled so we know whether to
+		// poll for an ephemeral CSI snapshot after it exits. Reading the
+		// actual pod is robust against blueprint+ActionSet podOverride
+		// merging that would obscure the JSONMap form.
+		var pollSnapshotAfterExit bool
+		if disc != nil {
+			pod, gErr := disc.cli.CoreV1().Pods(disc.namespace).Get(ctx, pc.PodName(), metav1.GetOptions{})
+			if gErr == nil && podHasEphemeralBackupVolume(pod) {
+				pollSnapshotAfterExit = true
+			}
+		}
+
 		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
 		r, err := pc.StreamPodLogs(ctx)
@@ -216,7 +215,7 @@ func kubeTaskPodFunc(disc *ephemeralSnapshotDiscovery) func(ctx context.Context,
 		// exits. Poll for it and surface name/namespace as phase outputs so
 		// the action's outputArtifacts can reference them without a separate
 		// WaitForEphemeralSnapshot phase.
-		if disc != nil {
+		if pollSnapshotAfterExit {
 			snapName, sErr := findEphemeralVolumeSnapshot(ctx, disc.namespace, disc.after, pc.PodName())
 			if sErr == nil {
 				if out == nil {
@@ -386,14 +385,14 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		}
 	}
 
-	var disc *ephemeralSnapshotDiscovery
-	if hasEphemeralBackupVolume(podOverride) {
-		// Capture "now" before the pod is created so the snapshot poll only
-		// considers snapshots created by this run, not earlier backups.
-		disc = &ephemeralSnapshotDiscovery{
-			namespace: namespace,
-			after:     time.Now(),
-		}
+	// Always set up discovery; kubeTaskPodFunc inspects the live pod's spec
+	// to decide whether to actually poll for an ephemeral snapshot. Capture
+	// "now" before the pod is created so the poll only considers snapshots
+	// created by this run, not earlier backups.
+	disc := &ephemeralSnapshotDiscovery{
+		cli:       cli,
+		namespace: namespace,
+		after:     time.Now(),
 	}
 
 	return kubeTask(
