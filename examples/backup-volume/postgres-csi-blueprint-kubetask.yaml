@@ -7,16 +7,17 @@ actions:
   # ---------------------------------------------------------------------------
   # backup — pg_dumpall into an ephemeral CSI backup volume.
   #
-  # The CSI driver auto-creates a VolumeSnapshot (pre-provisioned, named
-  # "snapshot-{podName}-{timestamp}") when the KubeTask pod exits via
-  # NodeUnpublishVolume. WaitForEphemeralSnapshot polls until it appears.
+  # KubeTask detects the ephemeral CSI backup volume in podOverride and, after
+  # the pod exits, polls for the VolumeSnapshot that the CSI driver auto-creates
+  # via NodeUnpublishVolume. It surfaces the snapshot name/namespace as phase
+  # outputs so outputArtifacts can reference them directly.
   # ---------------------------------------------------------------------------
   backup:
     outputArtifacts:
       backupVolumeSnapshot:
         keyValue:
-          volumeSnapshotName: "{{ .Phases.discoverSnap.Output.volumeSnapshotName }}"
-          volumeSnapshotNamespace: "{{ .Phases.discoverSnap.Output.volumeSnapshotNamespace }}"
+          volumeSnapshotName: "{{ .Phases.dumpDB.Output.volumeSnapshotName }}"
+          volumeSnapshotNamespace: "{{ .Phases.dumpDB.Output.volumeSnapshotNamespace }}"
     phases:
     - func: KubeTask
       name: dumpDB
@@ -59,11 +60,6 @@ actions:
                 repoPasswordSecretNamespace: backup-csi-driver
                 storageCredentialsSecret: kopia-storage-credentials
                 storageCredentialsSecretNamespace: backup-csi-driver
-
-    - func: WaitForEphemeralSnapshot
-      name: discoverSnap
-      args:
-        namespace: "{{ .StatefulSet.Namespace }}"
 
   # ---------------------------------------------------------------------------
   # restore — create a kopia-restore PVC from the saved VolumeSnapshot,
