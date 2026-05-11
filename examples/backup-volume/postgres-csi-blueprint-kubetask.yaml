@@ -78,11 +78,6 @@ actions:
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
         image: bitnami/postgresql:latest
-        snapshotVolumes:
-          "{{ .ArtifactsIn.backupVolumeSnapshot.KeyValue.volumeSnapshotName }}":
-            mountPath: /restore
-            storageClass: kopia-restore
-            size: 5Gi
         command:
           - bash
           - -o

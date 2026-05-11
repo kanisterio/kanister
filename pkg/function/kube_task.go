@@ -25,7 +25,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -34,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -45,12 +48,18 @@ const (
 	jobPrefix = "kanister-job-"
 
 	// KubeTaskFuncName gives the function name
-	KubeTaskFuncName            = "KubeTask"
-	KubeTaskNamespaceArg        = "namespace"
-	KubeTaskImageArg            = "image"
-	KubeTaskCommandArg          = "command"
-	KubeTaskVolumesArg          = "volumes"
-	KubeTaskSnapshotVolumesArg  = "snapshotVolumes"
+	KubeTaskFuncName           = "KubeTask"
+	KubeTaskNamespaceArg       = "namespace"
+	KubeTaskImageArg           = "image"
+	KubeTaskCommandArg         = "command"
+	KubeTaskVolumesArg         = "volumes"
+	KubeTaskSnapshotVolumesArg = "snapshotVolumes"
+
+	// Defaults used when KubeTask auto-creates a restore PVC from a snapshot
+	// artifact in ArtifactsIn without an explicit snapshotVolumes entry.
+	kubeTaskDefaultRestoreMountPath    = "/restore"
+	kubeTaskDefaultRestoreStorageClass = "kopia-restore"
+	kubeTaskDefaultRestoreSize         = "5Gi"
 )
 
 func init() {
@@ -112,6 +121,30 @@ func kubeTask(
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := kubeTaskPodFunc()
 	return pr.Run(ctx, podFunc)
+}
+
+// resolveRestoreSize picks the size to request for the restore PVC.
+// Order of precedence:
+//  1. Explicit "size" in the snapshotVolumes spec (if non-empty).
+//  2. The VolumeSnapshot's status.restoreSize, if reported by the CSI driver.
+//  3. Built-in fallback (kubeTaskDefaultRestoreSize).
+func resolveRestoreSize(ctx context.Context, dynCli dynamic.Interface, namespace, snapName, explicit string) (resource.Quantity, error) {
+	if explicit != "" {
+		q, err := resource.ParseQuantity(explicit)
+		if err != nil {
+			return resource.Quantity{}, fmt.Errorf("invalid size %q: %w", explicit, err)
+		}
+		return q, nil
+	}
+	snap, err := dynCli.Resource(snapshot.VolSnapGVR).Namespace(namespace).Get(ctx, snapName, metav1.GetOptions{})
+	if err == nil {
+		if restoreSize, found, _ := unstructured.NestedString(snap.Object, "status", "restoreSize"); found && restoreSize != "" {
+			if q, perr := resource.ParseQuantity(restoreSize); perr == nil {
+				return q, nil
+			}
+		}
+	}
+	return resource.MustParse(kubeTaskDefaultRestoreSize), nil
 }
 
 func kubeTaskPodFunc() func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
@@ -193,6 +226,33 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err != nil {
 		return nil, errkit.Wrap(err, "Failed to create Kubernetes client")
 	}
+	dynCli, err := kube.NewDynamicClient()
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to create dynamic Kubernetes client")
+	}
+
+	// Auto-detect: if no explicit snapshotVolumes was provided but ArtifactsIn
+	// contains a snapshot artifact (KeyValue.volumeSnapshotName), pick that one
+	// snapshot and let KubeTask transparently create a restore PVC for it.
+	// Only one snapshot is auto-mounted: the user explicitly selects the restore
+	// point via the artifact passed into the action, so there is exactly one.
+	if len(snapVols) == 0 && len(tp.ArtifactsIn) > 0 {
+		for _, art := range tp.ArtifactsIn {
+			if art.KeyValue == nil {
+				continue
+			}
+			snapName := art.KeyValue["volumeSnapshotName"]
+			if snapName == "" {
+				continue
+			}
+			snapVols = map[string]map[string]string{
+				snapName: {
+					"namespace": art.KeyValue["volumeSnapshotNamespace"],
+				},
+			}
+			break
+		}
+	}
 
 	if len(snapVols) > 0 {
 		if vols == nil {
@@ -210,15 +270,23 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		}()
 		for snapName, spec := range snapVols {
 			mountPath := spec["mountPath"]
+			if mountPath == "" {
+				mountPath = kubeTaskDefaultRestoreMountPath
+			}
 			storageClass := spec["storageClass"]
-			sizeStr := spec["size"]
-			if mountPath == "" || storageClass == "" || sizeStr == "" {
-				return nil, fmt.Errorf("snapshotVolumes entry for %q must have mountPath, storageClass, and size", snapName)
+			if storageClass == "" {
+				storageClass = kubeTaskDefaultRestoreStorageClass
 			}
-			size, err := resource.ParseQuantity(sizeStr)
+			snapNS := spec["namespace"]
+			if snapNS == "" {
+				snapNS = namespace
+			}
+
+			size, err := resolveRestoreSize(ctx, dynCli, snapNS, snapName, spec["size"])
 			if err != nil {
-				return nil, fmt.Errorf("invalid size %q for snapshot volume %q: %w", sizeStr, snapName, err)
+				return nil, fmt.Errorf("failed to resolve restore size for snapshot %q: %w", snapName, err)
 			}
+
 			pvcName := "restore-" + rand.String(5)
 			snapshotAPIGroup := SnapshotAPIGroup
 			pvc := &corev1.PersistentVolumeClaim{
