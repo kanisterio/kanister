@@ -1,0 +1,11 @@
+---
+features:
+  - Added ``DeepCopy`` method for ``PodOptions`` to support safe copying of pod configuration https://github.com/kanisterio/kanister/pull/3820
+upgrade:
+  - Upgraded Go version to 1.26.1 https://github.com/kanisterio/kanister/pull/3941
+  - Upgraded ``postgres-kanister-tools`` base image to ``postgres:18-bookworm`` https://github.com/kanisterio/kanister/pull/4046
+  - Migrated AWS SDK from v1 to v2 in ``pkg/aws`` https://github.com/kanisterio/kanister/pull/3945
+fixes:
+  - Fixed AWS STS role assumption to correctly thread the location region through the credential chain https://github.com/kanisterio/kanister/pull/4050
+  - Fixed Portworx CSI transient errors to be retried instead of failing the operation immediately https://github.com/kanisterio/kanister/pull/3962
+  - Removed unnecessary ``EndpointSlice`` polling during service readiness checks https://github.com/kanisterio/kanister/pull/3897
