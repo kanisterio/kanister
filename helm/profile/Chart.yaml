@@ -3,7 +3,7 @@ description: A helm chart to create profile custom resource for kanister
 engine: gotpl
 name: profile
 home: https://kanister.io/
-version: 0.118.0
+version: 0.119.0
 maintainers:
   - email: kanister.maintainers@veeam.com
     name: Kanister Maintainers
