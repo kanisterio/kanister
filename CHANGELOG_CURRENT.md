@@ -1,13 +1,30 @@
 # Release Notes
 
-## 0.118.0
+## 0.119.0
 
 ## New Features
 
-<!-- releasenotes/notes/pre-release-0.118.0-8816fe190614713e.yaml @ b'67f7f71e6279bc632763a40935f95f0e02324cf9' -->
-* Added support for overriding default `initContainer` specifications in the `MultiContainerRun` function [https://github.com/kanisterio/kanister/pull/3824](https://github.com/kanisterio/kanister/pull/3824)
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+* Added `DeepCopy` method for `PodOptions` to support safe copying of pod configuration [https://github.com/kanisterio/kanister/pull/3820](https://github.com/kanisterio/kanister/pull/3820)
 
-## Deprecations
+## Bug Fixes
 
-<!-- releasenotes/notes/pre-release-0.118.0-8816fe190614713e.yaml @ b'67f7f71e6279bc632763a40935f95f0e02324cf9' -->
-* Moved example Blueprints to a separate repository [https://github.com/kanisterio/blueprints](https://github.com/kanisterio/blueprints) [https://github.com/kanisterio/kanister/pull/3788](https://github.com/kanisterio/kanister/pull/3788)
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+* Fixed AWS STS role assumption to correctly thread the location region through the credential chain [https://github.com/kanisterio/kanister/pull/4050](https://github.com/kanisterio/kanister/pull/4050)
+
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+* Fixed Portworx CSI transient errors to be retried instead of failing the operation immediately [https://github.com/kanisterio/kanister/pull/3962](https://github.com/kanisterio/kanister/pull/3962)
+
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+* Removed unnecessary `EndpointSlice` polling during service readiness checks [https://github.com/kanisterio/kanister/pull/3897](https://github.com/kanisterio/kanister/pull/3897)
+
+## Upgrade Notes
+
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+* Upgraded Go version to 1.26.1 [https://github.com/kanisterio/kanister/pull/3941](https://github.com/kanisterio/kanister/pull/3941)
+
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+* Upgraded `postgres-kanister-tools` base image to `postgres:18-bookworm` [https://github.com/kanisterio/kanister/pull/4046](https://github.com/kanisterio/kanister/pull/4046)
+
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+* Migrated AWS SDK from v1 to v2 in `pkg/aws` [https://github.com/kanisterio/kanister/pull/3945](https://github.com/kanisterio/kanister/pull/3945)
