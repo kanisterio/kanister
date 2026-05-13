@@ -93,6 +93,7 @@ const (
 	enablePprof               = "--enable-pprof"
 	metricsListerAddress      = "--metrics-listen-addr"
 	htpasswdFilePath          = "--htpasswd-file"
+	serverRefreshIntervalFlag = "--refresh-interval"
 
 	// Repository specific
 	repositorySubCommand      = "repository"
