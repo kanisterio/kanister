@@ -69,6 +69,7 @@ const (
 	skipExistingFlag                = "--skip-existing"
 	deleteExtraFlag                 = "--delete-extra"
 	ignoreRuleFilePathFlag          = "--ignore-rules-file"
+	streamingReadsFlag              = "--streaming-reads"
 
 	// Server specific
 	addSubCommand             = "add"
