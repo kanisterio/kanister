@@ -36,7 +36,7 @@ type SnapshotCreateCommandArgs struct {
 	EstimationType         string
 	EstimationThreshold    int
 	IgnoreRuleFilePath     string
-	StreamingReads         bool
+	HintStreamingReads     bool
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
@@ -70,8 +70,8 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 			args = args.AppendLoggableKV(adaptiveEstimationThresholdFlag, thresholdStr)
 		}
 	}
-	if cmdArgs.StreamingReads {
-		args = args.AppendLoggable(streamingReadsFlag)
+	if cmdArgs.HintStreamingReads {
+		args = args.AppendLoggable(hintStreamingReadsFlag)
 	}
 
 	args = addTags(cmdArgs.Tags, args)
