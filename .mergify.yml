@@ -17,6 +17,7 @@ queue_rules:
           - label!="hold off merging"
     merge_conditions:
       - and:
+          - base = master
           - "#approved-reviews-by>=1"
           - check-success=gomod
           - check-success=lint
