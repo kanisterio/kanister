@@ -17,6 +17,7 @@ package consts
 
 const (
 	ActionsetNameKey = "ActionSet"
+	ActionsetUIDKey  = "ActionSetUID"
 	PodNameKey       = "Pod"
 	ContainerNameKey = "Container"
 	PhaseNameKey     = "Phase"

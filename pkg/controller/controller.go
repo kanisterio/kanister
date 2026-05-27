@@ -244,6 +244,7 @@ func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) {
 //nolint:unparam
 func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
 	ctx := field.Context(context.Background(), consts.ActionsetNameKey, newAS.GetName())
+	ctx = field.Context(ctx, consts.ActionsetUIDKey, string(newAS.GetUID()))
 	// adding labels with prefix "kanister.io/" in the context as field for better logging
 	for key, value := range newAS.GetLabels() {
 		if strings.HasPrefix(key, consts.LabelPrefix) {
@@ -312,6 +313,7 @@ func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) {
 
 func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.ActionSet) {
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
+	ctx = field.Context(ctx, consts.ActionsetUIDKey, string(as.GetUID()))
 	if as.Spec == nil {
 		log.Error().WithContext(ctx).Print("Cannot initialize an ActionSet without a spec.")
 		return
@@ -398,6 +400,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 		return errkit.WithStack(err)
 	}
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
+	ctx = field.Context(ctx, consts.ActionsetUIDKey, string(as.GetUID()))
 	// adding labels with prefix "kanister.io/" in the context as field for better logging
 	for key, value := range as.GetLabels() {
 		if strings.HasPrefix(key, consts.LabelPrefix) {
@@ -469,6 +472,7 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 	}
 
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
+	ctx = field.Context(ctx, consts.ActionsetUIDKey, string(as.GetUID()))
 	t.Go(func() error {
 		var coreErr error
 		defer func() {

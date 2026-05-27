@@ -84,7 +84,11 @@ type PodOptions struct {
 	RestartPolicy            corev1.RestartPolicy
 	OwnerReferences          []metav1.OwnerReference
 	EnvironmentVariables     []corev1.EnvVar
-	Lifecycle                *corev1.Lifecycle
+	// EnvFromSources are projected into the main container's `envFrom` field, providing
+	// Kubernetes-native env injection from Secrets or ConfigMaps without requiring the
+	// caller to enumerate keys.
+	EnvFromSources []corev1.EnvFromSource
+	Lifecycle      *corev1.Lifecycle
 	// In some situations, if it's required to schedule the pod on specific node,
 	// nodeName can be used to set that node name.
 	NodeName string
@@ -183,6 +187,10 @@ func GetPodObjectFromPodOptions(ctx context.Context, cli kubernetes.Interface, o
 
 	if len(opts.EnvironmentVariables) > 0 {
 		defaultSpecs.Containers[0].Env = opts.EnvironmentVariables
+	}
+
+	if len(opts.EnvFromSources) > 0 {
+		defaultSpecs.Containers[0].EnvFrom = opts.EnvFromSources
 	}
 
 	// Patch default Pod Specs if needed
