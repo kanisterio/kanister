@@ -37,6 +37,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/ephemeral"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -66,7 +67,37 @@ const (
 	// completion marker + sleep so the pod stays alive holding the mount past
 	// command exit. The function returns success when the marker appears in the
 	// pod logs; the keep-alive pod is cleaned up by the backupPosthook.
+	// Only meaningful when `takeSnapshot=false`; mutually exclusive with
+	// `takeSnapshot=true` (validated at Validate()).
 	KubeTaskWithBackupPVCKeepPodAliveForSnapshotArg = "keepPodAliveForSnapshot"
+
+	// KubeTaskWithBackupPVCTakeSnapshotArg controls whether THIS function
+	// drives the CSI snapshot of the staging PVC, or whether it leaves the
+	// PVC alive for an external snapshot phase (K10's snapshotVolumes phase
+	// under ActionHooks / BlueprintBinding wiring).
+	//
+	// Default: true. When set, the function calls CreateCSISnapshot's
+	// internal helper after the user command exits, waits for the snapshot
+	// to reach a terminal state (readyToUse=true OR Status.Error set OR
+	// ctx cancel), and returns the snapshot info as part of the output map.
+	// Suitable for blueprints using the `actions.backup` action TYPE.
+	//
+	// When false, the function returns immediately after the user command
+	// exits and the caller (postBackupHook) is responsible for cleaning up
+	// the PVC. Suitable for blueprints using ActionHooks/BlueprintBinding.
+	KubeTaskWithBackupPVCTakeSnapshotArg = "takeSnapshot"
+	// KubeTaskWithBackupPVCSnapshotClassArg names the VolumeSnapshotClass to
+	// use when `takeSnapshot=true`. Required in that mode; rejected otherwise.
+	KubeTaskWithBackupPVCSnapshotClassArg = "snapshotClass"
+	// KubeTaskWithBackupPVCCleanupArg controls whether the staging PVC is
+	// deleted at the end of Exec. Default: true. Combined with the existing
+	// `keepPVCOnFailure` arg:
+	//   cleanup=true,  keepPVCOnFailure=false  → always delete (default)
+	//   cleanup=true,  keepPVCOnFailure=true   → delete on success, keep on failure
+	//   cleanup=false                          → never delete (debug)
+	// When `takeSnapshot=false`, cleanup MUST be false; the postBackupHook owns
+	// cleanup in that path (Validate enforces this).
+	KubeTaskWithBackupPVCCleanupArg = "cleanup"
 
 	// Defaults match the backup-csi-driver shipped storage class and the
 	// path the example blueprints expect.
@@ -118,8 +149,17 @@ type kubeTaskWithBackupPVCArgs struct {
 	// past the user command's exit so the CSI driver still sees the volume
 	// mounted at snapshot time. Zero disables the keep-alive path entirely.
 	keepPodAliveSeconds int
-	bpAnnotations       map[string]string
-	bpLabels            map[string]string
+	// takeSnapshot controls whether this function drives the CSI snapshot
+	// itself (true) or leaves the PVC alive for an external snapshot phase
+	// (false). See KubeTaskWithBackupPVCTakeSnapshotArg doc.
+	takeSnapshot bool
+	// snapshotClass is the VolumeSnapshotClass name; required when takeSnapshot
+	// is true, rejected otherwise.
+	snapshotClass string
+	// cleanup controls whether the staging PVC is deleted at the end of Exec.
+	cleanup       bool
+	bpAnnotations map[string]string
+	bpLabels      map[string]string
 
 	workloadName      string
 	workloadNamespace string
@@ -148,6 +188,9 @@ func (*kubeTaskWithBackupPVCFunc) Arguments() []string {
 		KubeTaskWithBackupPVCTimeoutArg,
 		KubeTaskWithBackupPVCKeepPVCOnFailureArg,
 		KubeTaskWithBackupPVCKeepPodAliveForSnapshotArg,
+		KubeTaskWithBackupPVCTakeSnapshotArg,
+		KubeTaskWithBackupPVCSnapshotClassArg,
+		KubeTaskWithBackupPVCCleanupArg,
 		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
@@ -161,7 +204,56 @@ func (f *kubeTaskWithBackupPVCFunc) Validate(args map[string]any) error {
 	if err := utils.CheckSupportedArgs(f.Arguments(), args); err != nil {
 		return err
 	}
-	return utils.CheckRequiredArgs(f.RequiredArgs(), args)
+	if err := utils.CheckRequiredArgs(f.RequiredArgs(), args); err != nil {
+		return err
+	}
+	return f.validateSnapshotArgs(args)
+}
+
+// validateSnapshotArgs enforces the configuration rules for the
+// snapshot-related args. Failures here surface at admission time (webhook),
+// not at Exec time — they are configuration errors, not runtime errors.
+//
+// Note on keep-alive vs takeSnapshot interaction:
+//   - When takeSnapshot=true, the function INTERNALLY uses the keep-alive
+//     path to hold the volume mount until CreateSnapshot returns terminal
+//     state, then actively deletes the pod. The CSI driver requires a live
+//     mount at snapshot time. Users may explicitly set keepPodAliveForSnapshot
+//     to override the safety-net duration; if omitted, the function defaults
+//     it to the function timeout. The two are NOT mutually exclusive.
+//   - When takeSnapshot=false, keep-alive is required when an EXTERNAL phase
+//     will fire CreateSnapshot. The user supplies it via the arg as before.
+func (*kubeTaskWithBackupPVCFunc) validateSnapshotArgs(args map[string]any) error {
+	takeSnapshot := true // default
+	if v, ok := args[KubeTaskWithBackupPVCTakeSnapshotArg]; ok {
+		if b, ok := v.(bool); ok {
+			takeSnapshot = b
+		}
+	}
+	cleanup := true // default
+	if v, ok := args[KubeTaskWithBackupPVCCleanupArg]; ok {
+		if b, ok := v.(bool); ok {
+			cleanup = b
+		}
+	}
+	_, snapshotClassSet := args[KubeTaskWithBackupPVCSnapshotClassArg]
+
+	// takeSnapshot=true requires snapshotClass.
+	if takeSnapshot && !snapshotClassSet {
+		return errkit.New("snapshotClass is required when takeSnapshot=true")
+	}
+
+	// takeSnapshot=false forbids cleanup=true. With takeSnapshot=false,
+	// an external snapshot phase needs the PVC alive after this function returns;
+	// deleting it here would break that flow. The postBackupHook owns cleanup.
+	if !takeSnapshot && cleanup {
+		return errkit.New(
+			"cleanup=true requires takeSnapshot=true; in hook patterns " +
+				"(takeSnapshot=false) the postBackupHook owns staging-PVC cleanup",
+		)
+	}
+
+	return nil
 }
 
 func (f *kubeTaskWithBackupPVCFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
@@ -243,6 +335,34 @@ func (f *kubeTaskWithBackupPVCFunc) parseArgs(ctx context.Context, tp param.Temp
 	if parsed.keepPodAliveSeconds < 0 {
 		return nil, errkit.New("keepPodAliveForSnapshot must be >= 0", "value", parsed.keepPodAliveSeconds)
 	}
+	if err = OptArg(args, KubeTaskWithBackupPVCTakeSnapshotArg, &parsed.takeSnapshot, true); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KubeTaskWithBackupPVCSnapshotClassArg, &parsed.snapshotClass, ""); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KubeTaskWithBackupPVCCleanupArg, &parsed.cleanup, true); err != nil {
+		return nil, err
+	}
+	// Mirror Validate()'s rules so the same errors fire even when callers
+	// bypass Validate (e.g. unit tests building args by hand).
+	if parsed.takeSnapshot && parsed.snapshotClass == "" {
+		return nil, errkit.New("snapshotClass is required when takeSnapshot=true")
+	}
+	if !parsed.takeSnapshot && parsed.cleanup {
+		return nil, errkit.New(
+			"cleanup=true requires takeSnapshot=true; in hook patterns the " +
+				"postBackupHook owns staging-PVC cleanup",
+		)
+	}
+	// takeSnapshot=true requires the volume to be mounted at CreateSnapshot
+	// time (CSI driver constraint). Default the keep-alive sleep to the
+	// function timeout so the pod is guaranteed alive while we drive the
+	// snapshot. The function will actively delete the pod once the snapshot
+	// reaches a terminal state — the sleep is a safety net for crash paths.
+	if parsed.takeSnapshot && parsed.keepPodAliveSeconds == 0 {
+		parsed.keepPodAliveSeconds = int(parsed.timeout.Seconds())
+	}
 	if err = OptArg(args, PodAnnotationsArg, &parsed.bpAnnotations, nil); err != nil {
 		return nil, err
 	}
@@ -288,21 +408,31 @@ func (f *kubeTaskWithBackupPVCFunc) run(ctx context.Context, cli kubernetes.Inte
 			"namespace", a.namespace, "pvcName", a.pvcName, "storageClass", a.storageClass)
 	}
 
-	// On exit, clean up the staging PVC if the run failed. On success the PVC is
-	// intentionally left alive for Kasten's snapshot phase to discover and
-	// snapshot via the labels stamped below.
+	// Deferred staging-PVC cleanup. By the time this fires we are guaranteed
+	// to be past any in-flight snapshot work (the snapshot call below blocks
+	// until the snapshot reaches a terminal state — readyToUse=true, Status.Error
+	// set, or ctx cancel — before returning, so PVC deletion is never
+	// attempted while a snapshot is still being finalized).
+	//
+	// The three cases the cleanup honours:
+	//   1. a.cleanup=false        → never delete (debug)
+	//   2. retErr != nil and a.keepPVCOnFailure=true → leave for debug
+	//   3. otherwise              → delete (success or failure)
+	//
+	// When a.takeSnapshot=false, Validate forces a.cleanup=false; this defer
+	// is then a no-op and the postBackupHook owns cleanup.
 	defer func() {
-		if retErr == nil {
+		if !a.cleanup {
 			return
 		}
-		if a.keepPVCOnFailure {
+		if retErr != nil && a.keepPVCOnFailure {
 			log.WithContext(ctx).Print("Leaving staging PVC alive for debugging (keepPVCOnFailure=true)",
 				field.M{"namespace": a.namespace, "pvcName": pvc.Name})
 			return
 		}
 		if delErr := pvcGracefulDelete(ctx, cli, a.namespace, pvc.Name); delErr != nil {
-			log.WithError(delErr).WithContext(ctx).Print("Failed to delete staging PVC after backup failure",
-				field.M{"namespace": a.namespace, "pvcName": pvc.Name})
+			log.WithError(delErr).WithContext(ctx).Print("Failed to delete staging PVC",
+				field.M{"namespace": a.namespace, "pvcName": pvc.Name, "snapshotTaken": a.takeSnapshot, "execErr": retErr != nil})
 		}
 	}()
 
@@ -321,22 +451,56 @@ func (f *kubeTaskWithBackupPVCFunc) run(ctx context.Context, cli kubernetes.Inte
 	kube.AddLabelsToPodOptionsFromContext(ctx, podOpts, path.Join(consts.LabelPrefix, consts.LabelSuffixJobID))
 
 	// keepPodAliveForSnapshot path: wrap command so the pod stays alive holding
-	// the volume mount past command exit while Kasten's CSI snapshot fires.
-	// Function returns when it sees the marker; posthook deletes the pod.
-	var podOut map[string]interface{}
+	// the volume mount past command exit. The CSI driver requires a live mount
+	// at CreateSnapshot time. The function will actively delete the pod via a
+	// deferred cleanup on every exit path — the sleep duration inside the
+	// wrapped command is just a safety net for crash paths.
+	//
+	// In hook mode (takeSnapshot=false) the external posthook deletes the
+	// keep-alive pod via its label, so the function-owned defer is a no-op
+	// in that branch. In function-owned mode (takeSnapshot=true) parseArgs()
+	// defaulted keepPodAliveSeconds to the timeout so this path is always taken.
+	var (
+		podOut       map[string]interface{}
+		keepAlivePod string // name of the keep-alive pod we need to delete after snapshot
+	)
 	if a.keepPodAliveSeconds > 0 {
-		podOut, err = f.runWithKeepAlivePod(ctx, cli, podOpts, a)
+		podOut, keepAlivePod, err = f.runWithKeepAlivePod(ctx, cli, podOpts, a)
 	} else {
 		pr := kube.NewPodRunner(cli, podOpts)
 		podOut, err = pr.Run(ctx, kubeTaskWithBackupPVCPodFunc())
 	}
+
+	// Defer keep-alive pod deletion on EVERY exit path (success, error, panic).
+	// Registered AFTER the PVC cleanup defer → fires BEFORE it (LIFO), so the
+	// FUSE mount is released before PVC delete is attempted; otherwise the PVC
+	// gets stuck Terminating because something has it mounted.
+	//
+	// Captured by reference via the closure; keepAlivePod may be set even when
+	// runWithKeepAlivePod returns an error (pod was created but never became
+	// Ready, etc.). We want to clean those up too.
+	//
+	// Skipped in hook mode (takeSnapshot=false) — the external postBackupHook
+	// owns the pod's lifecycle, matching the PVC's own defer skip.
+	defer func() {
+		if keepAlivePod == "" || !a.takeSnapshot {
+			return
+		}
+		delCtx, delCancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer delCancel()
+		if delErr := cli.CoreV1().Pods(a.namespace).Delete(delCtx, keepAlivePod, metav1.DeleteOptions{}); delErr != nil {
+			log.WithError(delErr).WithContext(ctx).Print("Failed to delete keep-alive pod",
+				field.M{"namespace": a.namespace, "pod": keepAlivePod, "execErr": retErr != nil})
+		}
+	}()
+
 	if err != nil {
 		return nil, errkit.Wrap(err, "Backup command failed",
 			"namespace", a.namespace, "pvcName", pvc.Name)
 	}
 
-	// Success: leave PVC alive. Surface any `kando output` lines on top of
-	// our staging-PVC coordinates so downstream phases can reference both.
+	// Base output map carries the staging PVC coordinates; any `kando output`
+	// lines from the pod merge on top.
 	out = map[string]interface{}{
 		OutputKeyStagingPVCName:      pvc.Name,
 		OutputKeyStagingPVCNamespace: a.namespace,
@@ -347,7 +511,129 @@ func (f *kubeTaskWithBackupPVCFunc) run(ctx context.Context, cli kubernetes.Inte
 		}
 		out[k] = v
 	}
+
+	// Hook-mode path: leave PVC + keep-alive pod alive for the external phase.
+	// Both defers are no-ops here (cleanup=false, takeSnapshot=false).
+	if !a.takeSnapshot {
+		return out, nil
+	}
+
+	// Function-owned snapshot path: take the CSI snapshot now while the pod
+	// (and therefore the mount) is still alive. Wait until the snapshot reaches
+	// a terminal state (readyToUse=true OR Status.Error set OR ctx cancel —
+	// all observed by the shared isReadyToUse predicate in
+	// pkg/kube/snapshot/snapshot_stable.go). On return, the deferred keep-alive
+	// pod kill fires (releases mount), then the deferred PVC cleanup fires.
+	snapInfo, err := f.takeStagingSnapshot(ctx, cli, a, pvc.Name)
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to snapshot staging PVC",
+			"namespace", a.namespace, "pvcName", pvc.Name, "snapshotClass", a.snapshotClass)
+	}
+	for k, v := range snapInfo {
+		out[k] = v
+	}
 	return out, nil
+}
+
+// takeStagingSnapshot drives a CSI snapshot of the staging PVC by reusing the
+// package-private createCSISnapshot helper from create_csi_snapshot.go.
+//
+// We do NOT reimplement the snapshot loop here — createCSISnapshot already:
+//   - Builds the snapshotMeta
+//   - Calls snapshotter.Create with waitForReady=true
+//   - waitForReady triggers WaitOnReadyToUse which polls via
+//     poll.WaitWithRetries, honouring ctx cancellation
+//   - The isReadyToUse predicate returns success on ReadyToUse=true AND
+//     returns the driver's error on Status.Error — both terminal states are
+//     observed by the very first poll iteration thanks to immediate=true
+//     equivalent inside poll.WaitWithRetries.
+//
+// On any non-nil error from createCSISnapshot — API failure, driver-reported
+// snapshot error, or context cancel — this returns a wrapped loud error. The
+// caller's deferred PVC cleanup still fires (cleanup honours retErr separately).
+func (f *kubeTaskWithBackupPVCFunc) takeStagingSnapshot(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	a *kubeTaskWithBackupPVCArgs,
+	pvcName string,
+) (map[string]interface{}, error) {
+	dynCli, err := kube.NewDynamicClient()
+	if err != nil {
+		return nil, errkit.Wrap(err, "Failed to create dynamic client for snapshot")
+	}
+	snapshotter := snapshot.NewSnapshotter(cli, dynCli)
+
+	// Deterministic-ish name: <pvc>-snap-<random6>. defaultSnapshotName lives
+	// in create_csi_snapshot.go and uses the same convention.
+	snapName := defaultSnapshotName(pvcName, 6)
+
+	// Tag the snapshot so an operator can correlate it with the ActionSet that
+	// produced it. Same intent as the labels we stamp on the staging PVC.
+	snapLabels := map[string]string{
+		LabelKeyOwnerAction:       a.actionSetUID,
+		LabelKeyWorkloadNamespace: a.workloadNamespace,
+	}
+	if a.workloadName != "" {
+		snapLabels[LabelKeyWorkloadName] = a.workloadName
+	}
+	if a.workloadNamespace == "" {
+		// Avoid stamping an empty workload-namespace label (matches
+		// stagingPVCLabels' guard for unit-test contexts).
+		delete(snapLabels, LabelKeyWorkloadNamespace)
+	}
+
+	// Blocks here until snapshot reaches terminal state. PVC delete defer is
+	// suspended for the duration of this call.
+	vs, err := createCSISnapshot(ctx, snapshotter, snapName, a.namespace, pvcName, a.snapshotClass, true /* waitForReady */, snapLabels)
+	if err != nil {
+		return nil, err
+	}
+
+	out := map[string]interface{}{
+		OutputKeySnapshotName:      snapName,
+		OutputKeySnapshotNamespace: a.namespace,
+	}
+	// restoreSize: prefer the snapshot's own RestoreSize when populated.
+	// Streaming/FUSE CSI drivers (backup-csi-driver / kopia) often leave
+	// vs.Status.RestoreSize nil because they don't have a block-level size to
+	// report. Fall back to the PVC's actual provisioned capacity, then to the
+	// PVC's requested size. We emit *something* unconditionally so blueprint
+	// outputArtifacts templates referencing restoreSize never fail to render.
+	var snapRestoreSize *resource.Quantity
+	if vs.Status != nil {
+		snapRestoreSize = vs.Status.RestoreSize
+	}
+	out[OutputKeySnapshotRestoreSize] = f.deriveRestoreSize(ctx, cli, a.namespace, pvcName, snapRestoreSize)
+	if vs.Status != nil && vs.Status.BoundVolumeSnapshotContentName != nil {
+		out[OutputKeySnapshotContent] = *vs.Status.BoundVolumeSnapshotContentName
+	}
+	return out, nil
+}
+
+// deriveRestoreSize returns a non-empty size string suitable for emitting
+// as the snapshot's `restoreSize` output. Order of preference:
+//  1. VolumeSnapshot.status.restoreSize (block-level CSI drivers populate this)
+//  2. PVC.status.capacity[storage] (actual provisioned size; populated once Bound)
+//  3. PVC.spec.resources.requests[storage] (what we asked for at creation)
+//  4. defaultBackupPVCSize (last-resort default; matches our PVC create default)
+func (f *kubeTaskWithBackupPVCFunc) deriveRestoreSize(
+	ctx context.Context,
+	cli kubernetes.Interface,
+	namespace, pvcName string,
+	snapRestoreSize *resource.Quantity,
+) string {
+	if snapRestoreSize != nil && !snapRestoreSize.IsZero() {
+		return snapRestoreSize.String()
+	}
+	if pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{}); err == nil {
+		if pvcCap, ok := pvc.Status.Capacity[corev1.ResourceStorage]; ok && !pvcCap.IsZero() {
+			return pvcCap.String()
+		}
+		if req, ok := pvc.Spec.Resources.Requests[corev1.ResourceStorage]; ok && !req.IsZero() {
+			return req.String()
+		}
+	}
+	return defaultBackupPVCSize
 }
 
 func (f *kubeTaskWithBackupPVCFunc) createStagingPVC(ctx context.Context, cli kubernetes.Interface, a *kubeTaskWithBackupPVCArgs) (*corev1.PersistentVolumeClaim, error) {
@@ -400,17 +686,23 @@ func stagingPVCLabels(a *kubeTaskWithBackupPVCArgs) map[string]string {
 // alive past the command's exit. The pod sleeps for keepPodAliveSeconds after
 // emitting a marker; the function returns as soon as the marker appears in the
 // stream, so the calling phase completes while the pod (and its mount) keep
-// running. The backupPosthook is responsible for deleting the pod via the
-// keep-alive label selector.
+// running.
+//
+// Returns (parsed output, pod name, error). The caller is responsible for the
+// pod's eventual deletion:
+//   - In function-owned snapshot mode (takeSnapshot=true), run() actively
+//     deletes the pod after CreateSnapshot reaches a terminal state.
+//   - In hook mode (takeSnapshot=false), the backupPosthook deletes the pod
+//     via the keep-alive label selector after the external snapshot phase.
 func (f *kubeTaskWithBackupPVCFunc) runWithKeepAlivePod(
 	ctx context.Context,
 	cli kubernetes.Interface,
 	podOpts *kube.PodOptions,
 	a *kubeTaskWithBackupPVCArgs,
-) (map[string]interface{}, error) {
+) (map[string]interface{}, string, error) {
 	wrapped, err := wrapCommandForKeepAlive(podOpts.Command, a.keepPodAliveSeconds)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	podOpts.Command = wrapped
 
@@ -427,37 +719,36 @@ func (f *kubeTaskWithBackupPVCFunc) runWithKeepAlivePod(
 
 	pc := kube.NewPodController(cli, podOpts)
 	if err := pc.StartPod(ctx); err != nil {
-		return nil, errkit.Wrap(err, "Failed to create keep-alive pod", "namespace", a.namespace)
+		return nil, "", errkit.Wrap(err, "Failed to create keep-alive pod", "namespace", a.namespace)
 	}
 	pod := pc.Pod()
 	log.WithContext(ctx).Print("Created keep-alive backup pod",
 		field.M{"pod": pod.Name, "namespace": pod.Namespace, "keepAliveSeconds": a.keepPodAliveSeconds})
 
 	if err := pc.WaitForPodReady(ctx); err != nil {
-		return nil, errkit.Wrap(err, "Keep-alive pod did not become ready", "pod", pc.PodName())
+		return nil, pod.Name, errkit.Wrap(err, "Keep-alive pod did not become ready", "pod", pc.PodName())
 	}
 
 	streamCtx := field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 	r, err := pc.StreamPodLogs(streamCtx)
 	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to stream logs from keep-alive pod", "pod", pc.PodName())
+		return nil, pod.Name, errkit.Wrap(err, "Failed to stream logs from keep-alive pod", "pod", pc.PodName())
 	}
 	defer r.Close() //nolint:errcheck
 
 	exitCode, captured, err := waitForKeepAliveMarker(streamCtx, r)
 	if err != nil {
-		return nil, errkit.Wrap(err, "Failed waiting for command-done marker", "pod", pc.PodName())
+		return nil, pod.Name, errkit.Wrap(err, "Failed waiting for command-done marker", "pod", pc.PodName())
 	}
 	if exitCode != 0 {
-		return nil, errkit.New("Backup command exited non-zero inside keep-alive pod",
+		return nil, pod.Name, errkit.New("Backup command exited non-zero inside keep-alive pod",
 			"pod", pc.PodName(), "exitCode", exitCode)
 	}
 	parsedOut, err := output.LogAndParse(streamCtx, io.NopCloser(strings.NewReader(captured)))
 	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to parse output from keep-alive pod", "pod", pc.PodName())
+		return nil, pod.Name, errkit.Wrap(err, "Failed to parse output from keep-alive pod", "pod", pc.PodName())
 	}
-	// Do NOT stop the pod; the posthook deletes it via the keep-alive label.
-	return parsedOut, nil
+	return parsedOut, pod.Name, nil
 }
 
 // wrapCommandForKeepAlive composes the user's command into a shell pipeline

@@ -58,6 +58,15 @@ const (
 	// phase can reference the staging PVC.
 	OutputKeyStagingPVCName      = "pvcName"
 	OutputKeyStagingPVCNamespace = "namespace"
+
+	// Additional output keys returned by KubeTaskWithBackupPVC when
+	// `takeSnapshot=true`. Schema mirrors CreateCSISnapshot's output so an
+	// `actions.backup` blueprint can render a snapshotInfo artifact identical
+	// in shape to what CreateCSISnapshot produces today.
+	OutputKeySnapshotName            = "volumeSnapshotName"
+	OutputKeySnapshotNamespace       = "volumeSnapshotNamespace"
+	OutputKeySnapshotRestoreSize     = "restoreSize"
+	OutputKeySnapshotContent         = "snapshotContent"
 )
 
 // actionSetUIDFromContext extracts the ActionSet UID that the controller
