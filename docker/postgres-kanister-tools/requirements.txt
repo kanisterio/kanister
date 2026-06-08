@@ -1,4 +1,4 @@
-awscli==1.45.6
-pip==26.1.1
+awscli==1.45.25
+pip==26.1.2
 setuptools==82.0.1
 wheel==0.47.0
