@@ -52,7 +52,6 @@ const (
 
 	KubeTaskWithRestorePVCImageArg          = "image"
 	KubeTaskWithRestorePVCCommandArg        = "command"
-	KubeTaskWithRestorePVCEnvFromSecretArg  = "envFromSecret"
 	KubeTaskWithRestorePVCEnvArg            = "env"
 	KubeTaskWithRestorePVCPathArg           = "path"
 	KubeTaskWithRestorePVCStorageClassArg   = "storageClassName"
@@ -124,7 +123,6 @@ func (*kubeTaskWithRestorePVCFunc) Name() string {
 type kubeTaskWithRestorePVCArgs struct {
 	image          string
 	command        []string
-	envFromSecret  string
 	env            []corev1.EnvVar
 	mountPath      string
 	storageClass   string
@@ -175,7 +173,6 @@ func (*kubeTaskWithRestorePVCFunc) Arguments() []string {
 	return []string{
 		KubeTaskWithRestorePVCImageArg,
 		KubeTaskWithRestorePVCCommandArg,
-		KubeTaskWithRestorePVCEnvFromSecretArg,
 		KubeTaskWithRestorePVCEnvArg,
 		KubeTaskWithRestorePVCPathArg,
 		KubeTaskWithRestorePVCStorageClassArg,
@@ -239,9 +236,6 @@ func (f *kubeTaskWithRestorePVCFunc) parseArgs(tp param.TemplateParams, args map
 		return nil, err
 	}
 	if err = Arg(args, KubeTaskWithRestorePVCCommandArg, &parsed.command); err != nil {
-		return nil, err
-	}
-	if err = OptArg(args, KubeTaskWithRestorePVCEnvFromSecretArg, &parsed.envFromSecret, ""); err != nil {
 		return nil, err
 	}
 	if parsed.env, err = parseEnvVars(args, KubeTaskWithRestorePVCEnvArg); err != nil {
@@ -780,15 +774,6 @@ func (f *kubeTaskWithRestorePVCFunc) buildPodOptions(a *kubeTaskWithRestorePVCAr
 		PodOverride:          a.podOverride,
 		Annotations:          annotations,
 		Labels:               labels,
-	}
-	if a.envFromSecret != "" {
-		opts.EnvFromSources = []corev1.EnvFromSource{
-			{
-				SecretRef: &corev1.SecretEnvSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: a.envFromSecret},
-				},
-			},
-		}
 	}
 	return opts, nil
 }

@@ -116,16 +116,26 @@ const (
 	ArtifactKeySize = "size"
 )
 
-// actionSetUIDFromContext extracts the ActionSet UID that the controller
-// injected via field.Context. Returns the empty string if absent (typically
-// only in unit tests where the controller has not framed the context).
-func actionSetUIDFromContext(ctx context.Context) string {
+// actionSetTagFromContext extracts the ActionSet identifier the controller
+// already injects into the phase context via the standard `ActionsetNameKey`
+// (Kanister core plumbs this; we don't need a new UID-keyed const). Returns
+// the empty string if absent (typically only in unit tests where the
+// controller has not framed the context).
+//
+// We use the ActionSet *name* as the owner-action label value. Names CAN
+// theoretically be reused after an ActionSet is GC'd, but in practice
+// `generateName` produces unique suffixes and the staging PVCs created with
+// this label are short-lived (deleted at function exit). Using the name
+// instead of the UID keeps all our changes confined to `pkg/function/`
+// without touching Kanister core's `pkg/consts`, `pkg/controller`, or
+// `pkg/kube` packages.
+func actionSetTagFromContext(ctx context.Context) string {
 	fields := field.FromContext(ctx)
 	if fields == nil {
 		return ""
 	}
 	for _, f := range fields.Fields() {
-		if f.Key() == consts.ActionsetUIDKey {
+		if f.Key() == consts.ActionsetNameKey {
 			if v, ok := f.Value().(string); ok {
 				return v
 			}

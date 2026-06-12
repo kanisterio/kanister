@@ -39,7 +39,7 @@ type KubeTaskWithBackupPVCSuite struct{}
 func TestKubeTaskWithBackupPVCSuiteEntry(t *testing.T) { check.TestingT(t) }
 
 func (s *KubeTaskWithBackupPVCSuite) TestParseArgsDefaults(c *check.C) {
-	ctx := field.Context(context.Background(), consts.ActionsetUIDKey, "uid-abc-123")
+	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "uid-abc-123")
 	tp := param.TemplateParams{
 		StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"},
 	}
@@ -60,7 +60,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsDefaults(c *check.C) {
 	c.Check(parsed.namespace, check.Equals, "demo")
 	c.Check(parsed.workloadName, check.Equals, "pg")
 	c.Check(parsed.workloadNamespace, check.Equals, "demo")
-	c.Check(parsed.actionSetUID, check.Equals, "uid-abc-123")
+	c.Check(parsed.actionSetTag, check.Equals, "uid-abc-123")
 	c.Check(parsed.pvcName, check.HasLen, len("pg-backup-")+6)
 	c.Check(parsed.keepPVCOnFailure, check.Equals, false)
 	c.Check(parsed.takeSnapshot, check.Equals, true)
@@ -71,7 +71,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsDefaults(c *check.C) {
 func (s *KubeTaskWithBackupPVCSuite) TestParseArgsHookModeDefaults(c *check.C) {
 	// In hook mode (takeSnapshot=false), cleanup must be explicitly false
 	// since the posthook owns staging-PVC cleanup. snapshotClass is irrelevant.
-	ctx := field.Context(context.Background(), consts.ActionsetUIDKey, "u")
+	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	tp := param.TemplateParams{StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"}}
 	args := map[string]interface{}{
 		KubeTaskWithBackupPVCImageArg:                   "img",
@@ -92,7 +92,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsTakeSnapshotWithExplicitKeepAl
 	// NOT mutually exclusive. The CSI driver needs a live mount during
 	// CreateSnapshot, so keep-alive is the mechanism the function uses
 	// to hold the mount; the user may override the duration.
-	ctx := field.Context(context.Background(), consts.ActionsetUIDKey, "u")
+	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	tp := param.TemplateParams{StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"}}
 	args := map[string]interface{}{
 		KubeTaskWithBackupPVCImageArg:                   "img",
@@ -109,7 +109,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsTakeSnapshotWithExplicitKeepAl
 func (s *KubeTaskWithBackupPVCSuite) TestParseArgsTakeSnapshotDefaultsKeepAliveToTimeout(c *check.C) {
 	// When takeSnapshot=true and keepPodAliveForSnapshot is unset, parseArgs
 	// auto-fills the keep-alive duration to the function timeout.
-	ctx := field.Context(context.Background(), consts.ActionsetUIDKey, "u")
+	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	tp := param.TemplateParams{StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"}}
 	args := map[string]interface{}{
 		KubeTaskWithBackupPVCImageArg:         "img",
@@ -124,7 +124,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsTakeSnapshotDefaultsKeepAliveT
 }
 
 func (s *KubeTaskWithBackupPVCSuite) TestParseArgsRejectsTakeSnapshotWithoutClass(c *check.C) {
-	ctx := field.Context(context.Background(), consts.ActionsetUIDKey, "u")
+	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	tp := param.TemplateParams{StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"}}
 	args := map[string]interface{}{
 		KubeTaskWithBackupPVCImageArg:   "img",
@@ -137,7 +137,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsRejectsTakeSnapshotWithoutClas
 }
 
 func (s *KubeTaskWithBackupPVCSuite) TestParseArgsRejectsHookModeWithCleanup(c *check.C) {
-	ctx := field.Context(context.Background(), consts.ActionsetUIDKey, "u")
+	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	tp := param.TemplateParams{StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"}}
 	args := map[string]interface{}{
 		KubeTaskWithBackupPVCImageArg:        "img",
@@ -151,7 +151,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsRejectsHookModeWithCleanup(c *
 }
 
 func (s *KubeTaskWithBackupPVCSuite) TestParseArgsOverrides(c *check.C) {
-	ctx := field.Context(context.Background(), consts.ActionsetUIDKey, "u")
+	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	tp := param.TemplateParams{
 		Deployment: &param.DeploymentParams{Name: "app", Namespace: "ns1"},
 	}
@@ -165,7 +165,6 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsOverrides(c *check.C) {
 		KubeTaskWithBackupPVCPathArg:             "/data",
 		KubeTaskWithBackupPVCTimeoutArg:          "5m",
 		KubeTaskWithBackupPVCKeepPVCOnFailureArg: true,
-		KubeTaskWithBackupPVCEnvFromSecretArg:    "pgcreds",
 		// takeSnapshot defaults to true → snapshotClass required
 		KubeTaskWithBackupPVCSnapshotClassArg: "snapshotclassname",
 	}
@@ -178,7 +177,6 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsOverrides(c *check.C) {
 	c.Check(parsed.mountPath, check.Equals, "/data")
 	c.Check(parsed.timeout.String(), check.Equals, "5m0s")
 	c.Check(parsed.keepPVCOnFailure, check.Equals, true)
-	c.Check(parsed.envFromSecret, check.Equals, "pgcreds")
 }
 
 func (s *KubeTaskWithBackupPVCSuite) TestParseArgsMissingActionSetUID(c *check.C) {
@@ -193,7 +191,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsMissingActionSetUID(c *check.C
 }
 
 func (s *KubeTaskWithBackupPVCSuite) TestParseArgsMissingNamespace(c *check.C) {
-	ctx := field.Context(context.Background(), consts.ActionsetUIDKey, "u")
+	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	args := map[string]interface{}{
 		KubeTaskWithBackupPVCImageArg:         "img",
 		KubeTaskWithBackupPVCCommandArg:       []string{"true"},
@@ -207,7 +205,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestStagingPVCLabels(c *check.C) {
 	a := &kubeTaskWithBackupPVCArgs{
 		workloadName:      "pg",
 		workloadNamespace: "demo",
-		actionSetUID:      "uid-1",
+		actionSetTag:      "uid-1",
 		bpLabels:          map[string]string{"team": "platform"},
 	}
 	labels := stagingPVCLabels(a)
@@ -222,7 +220,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestStagingPVCLabels(c *check.C) {
 func (s *KubeTaskWithBackupPVCSuite) TestStagingPVCLabelsNoWorkloadNamespace(c *check.C) {
 	a := &kubeTaskWithBackupPVCArgs{
 		workloadName: "pg",
-		actionSetUID: "uid-1",
+		actionSetTag: "uid-1",
 	}
 	labels := stagingPVCLabels(a)
 	_, hasNs := labels[LabelKeyWorkloadNamespace]
@@ -241,7 +239,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestCreateStagingPVCShape(c *check.C) {
 		namespace:         "demo",
 		workloadName:      "pg",
 		workloadNamespace: "demo",
-		actionSetUID:      "uid-1",
+		actionSetTag:      "uid-1",
 	}
 	pvc, err := (&kubeTaskWithBackupPVCFunc{}).createStagingPVC(context.Background(), cli, a)
 	c.Assert(err, check.IsNil)
@@ -255,37 +253,6 @@ func (s *KubeTaskWithBackupPVCSuite) TestCreateStagingPVCShape(c *check.C) {
 	c.Check(pvc.Labels[LabelKeyIncludeInBackup], check.Equals, "true")
 	c.Check(pvc.Labels[LabelKeyOwnerAction], check.Equals, "uid-1")
 	c.Check(pvc.Labels[LabelKeyStagingPVC], check.Equals, "true")
-}
-
-func (s *KubeTaskWithBackupPVCSuite) TestBuildPodOptionsEnvFromSecret(c *check.C) {
-	a := &kubeTaskWithBackupPVCArgs{
-		image:         "img",
-		command:       []string{"echo", "hi"},
-		envFromSecret: "pgcreds",
-		mountPath:     "/backup",
-		namespace:     "demo",
-	}
-	opts, err := (&kubeTaskWithBackupPVCFunc{}).buildPodOptions(a, "the-pvc")
-	c.Assert(err, check.IsNil)
-	c.Assert(opts.EnvFromSources, check.HasLen, 1)
-	c.Assert(opts.EnvFromSources[0].SecretRef, check.NotNil)
-	c.Check(opts.EnvFromSources[0].SecretRef.Name, check.Equals, "pgcreds")
-	mount, ok := opts.Volumes["the-pvc"]
-	c.Assert(ok, check.Equals, true)
-	c.Check(mount.MountPath, check.Equals, "/backup")
-	c.Check(mount.ReadOnly, check.Equals, false)
-}
-
-func (s *KubeTaskWithBackupPVCSuite) TestBuildPodOptionsNoSecret(c *check.C) {
-	a := &kubeTaskWithBackupPVCArgs{
-		image:     "img",
-		command:   []string{"true"},
-		mountPath: "/backup",
-		namespace: "demo",
-	}
-	opts, err := (&kubeTaskWithBackupPVCFunc{}).buildPodOptions(a, "pvc")
-	c.Assert(err, check.IsNil)
-	c.Check(opts.EnvFromSources, check.IsNil)
 }
 
 func (s *KubeTaskWithBackupPVCSuite) TestRequiredAndArguments(c *check.C) {

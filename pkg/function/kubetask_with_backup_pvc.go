@@ -51,7 +51,6 @@ const (
 
 	KubeTaskWithBackupPVCImageArg            = "image"
 	KubeTaskWithBackupPVCCommandArg          = "command"
-	KubeTaskWithBackupPVCEnvFromSecretArg    = "envFromSecret"
 	KubeTaskWithBackupPVCEnvArg              = "env"
 	KubeTaskWithBackupPVCPathArg             = "path"
 	KubeTaskWithBackupPVCStorageClassArg     = "storageClassName"
@@ -134,7 +133,6 @@ func (*kubeTaskWithBackupPVCFunc) Name() string {
 type kubeTaskWithBackupPVCArgs struct {
 	image            string
 	command          []string
-	envFromSecret    string
 	env              []corev1.EnvVar
 	mountPath        string
 	storageClass     string
@@ -163,7 +161,10 @@ type kubeTaskWithBackupPVCArgs struct {
 
 	workloadName      string
 	workloadNamespace string
-	actionSetUID      string
+	// actionSetTag scopes the staging-PVC owner-action label to a specific
+	// ActionSet. Sourced from the controller-injected `ActionsetNameKey` in
+	// the phase context (Kanister already plumbs this).
+	actionSetTag string
 }
 
 func (*kubeTaskWithBackupPVCFunc) RequiredArgs() []string {
@@ -177,7 +178,6 @@ func (*kubeTaskWithBackupPVCFunc) Arguments() []string {
 	return []string{
 		KubeTaskWithBackupPVCImageArg,
 		KubeTaskWithBackupPVCCommandArg,
-		KubeTaskWithBackupPVCEnvFromSecretArg,
 		KubeTaskWithBackupPVCEnvArg,
 		KubeTaskWithBackupPVCPathArg,
 		KubeTaskWithBackupPVCStorageClassArg,
@@ -291,9 +291,6 @@ func (f *kubeTaskWithBackupPVCFunc) parseArgs(ctx context.Context, tp param.Temp
 	if err = Arg(args, KubeTaskWithBackupPVCCommandArg, &parsed.command); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskWithBackupPVCEnvFromSecretArg, &parsed.envFromSecret, ""); err != nil {
-		return nil, err
-	}
 	if parsed.env, err = parseEnvVars(args, KubeTaskWithBackupPVCEnvArg); err != nil {
 		return nil, err
 	}
@@ -390,9 +387,9 @@ func (f *kubeTaskWithBackupPVCFunc) parseArgs(ctx context.Context, tp param.Temp
 		parsed.pvcName = fmt.Sprintf("%s-backup-%s", base, rand.String(6))
 	}
 
-	parsed.actionSetUID = actionSetUIDFromContext(ctx)
-	if parsed.actionSetUID == "" {
-		return nil, errkit.New("Unable to read ActionSet UID from context; required to stamp the owner-action label")
+	parsed.actionSetTag = actionSetTagFromContext(ctx)
+	if parsed.actionSetTag == "" {
+		return nil, errkit.New("Unable to read ActionSet name from context; required to stamp the owner-action label")
 	}
 
 	return parsed, nil
@@ -570,7 +567,7 @@ func (f *kubeTaskWithBackupPVCFunc) takeStagingSnapshot(
 	// Tag the snapshot so an operator can correlate it with the ActionSet that
 	// produced it. Same intent as the labels we stamp on the staging PVC.
 	snapLabels := map[string]string{
-		LabelKeyOwnerAction:       a.actionSetUID,
+		LabelKeyOwnerAction:       a.actionSetTag,
 		LabelKeyWorkloadNamespace: a.workloadNamespace,
 	}
 	if a.workloadName != "" {
@@ -685,7 +682,7 @@ func stagingPVCLabels(a *kubeTaskWithBackupPVCArgs) map[string]string {
 	labels := map[string]string{
 		LabelKeyIncludeInBackup:   "true",
 		LabelKeyStagingPVC:        "true",
-		LabelKeyOwnerAction:       a.actionSetUID,
+		LabelKeyOwnerAction:       a.actionSetTag,
 		LabelKeyWorkloadNamespace: a.workloadNamespace,
 	}
 	if a.workloadName != "" {
@@ -850,15 +847,6 @@ func (f *kubeTaskWithBackupPVCFunc) buildPodOptions(a *kubeTaskWithBackupPVCArgs
 		PodOverride:          a.podOverride,
 		Annotations:          annotations,
 		Labels:               labels,
-	}
-	if a.envFromSecret != "" {
-		opts.EnvFromSources = []corev1.EnvFromSource{
-			{
-				SecretRef: &corev1.SecretEnvSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: a.envFromSecret},
-				},
-			},
-		}
 	}
 	return opts, nil
 }
