@@ -26,8 +26,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -89,6 +91,14 @@ const (
 	// CSI drivers like kopia, so we ask the blueprint author to plumb it from
 	// the input artifact).
 	KubeTaskWithRestorePVCRestoreSizeArg = "restoreSize"
+	// KubeTaskWithRestorePVCSnapshotHandleArg is the kopia snapshot ID
+	// (= CSI snapshotHandle from the source cluster's VolumeSnapshotContent).
+	// Used only on the cross-cluster restore path: when the named
+	// VolumeSnapshot does not exist on the dest cluster, the function builds
+	// a bridge VS+VSC referencing this handle. Same-cluster restores ignore
+	// this arg. Conventionally rendered from the input artifact's
+	// `backupIdentifier` key (the field K10 stores the kopia ID under).
+	KubeTaskWithRestorePVCSnapshotHandleArg = "snapshotHandle"
 
 	defaultRestorePVCStorageClass = "kopia-restore"
 	defaultRestorePVCMountPath    = "/restore"
@@ -144,6 +154,11 @@ type kubeTaskWithRestorePVCArgs struct {
 	// restoring via volumeSnapshotName. Required in that mode (the snapshot's
 	// own status.restoreSize is often unset on streaming CSI drivers).
 	restoreSize resource.Quantity
+	// snapshotHandle is the kopia snapshot ID. Used only when the named
+	// VolumeSnapshot is missing on the dest cluster (cross-cluster restore):
+	// the function then creates a bridge VS+VSC referencing this handle and
+	// cleans both up on exit. Empty on same-cluster restores.
+	snapshotHandle string
 
 	workloadName      string
 	workloadNamespace string
@@ -174,6 +189,7 @@ func (*kubeTaskWithRestorePVCFunc) Arguments() []string {
 		KubeTaskWithRestorePVCVolumeSnapshotNameArg,
 		KubeTaskWithRestorePVCVolumeSnapshotNamespaceArg,
 		KubeTaskWithRestorePVCRestoreSizeArg,
+		KubeTaskWithRestorePVCSnapshotHandleArg,
 		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
@@ -283,6 +299,9 @@ func (f *kubeTaskWithRestorePVCFunc) parseArgs(tp param.TemplateParams, args map
 			return nil, errkit.Wrap(err, "Failed to parse restoreSize", "restoreSize", restoreSizeStr)
 		}
 	}
+	if err = OptArg(args, KubeTaskWithRestorePVCSnapshotHandleArg, &parsed.snapshotHandle, ""); err != nil {
+		return nil, err
+	}
 	if err = OptArg(args, PodAnnotationsArg, &parsed.bpAnnotations, nil); err != nil {
 		return nil, err
 	}
@@ -358,6 +377,25 @@ func (f *kubeTaskWithRestorePVCFunc) run(ctx context.Context, cli kubernetes.Int
 			field.M{"volumeSnapshotName": a.volumeSnapshotName,
 				"volumeSnapshotNamespace": a.volumeSnapshotNamespace,
 				"namespace":               a.namespace})
+
+		// Cross-cluster: if the named VolumeSnapshot does not exist on this
+		// cluster, materialize a VS+VSC from the kopia snapshotHandle carried
+		// in the input artifact. Mirrors K10's pattern in
+		// kio/exec/internal/phaseutils/phaseutils.go:542 — clone the dest
+		// VolumeSnapshotClass with DeletionPolicy: Retain, CreateFromSource
+		// using the clone, defer cleanup at end of run() so the bridge
+		// survives both the PVC bind AND the pod's read of the volume.
+		// Same-cluster: VS exists, returns noop cleanup; no observable effect.
+		ns := a.volumeSnapshotNamespace
+		if ns == "" {
+			ns = a.namespace
+		}
+		snapshotCleanup, ensureErr := f.ensureRestoreSnapshot(ctx, cli, ns, a)
+		if ensureErr != nil {
+			return nil, ensureErr
+		}
+		defer snapshotCleanup()
+
 		pvc, err = f.restorePVCFromNamedSnapshot(ctx, cli, a)
 		if err != nil {
 			return nil, errkit.Wrap(err, "Failed to restore PVC from named VolumeSnapshot",
@@ -754,6 +792,159 @@ func labelsFromSelectorString(s string) labels.Set {
 }
 
 var _ = labelsFromSelectorString
+
+// ensureRestoreSnapshot guarantees a usable VolumeSnapshot exists at
+// (volumeSnapshotName, ns) on the dest cluster before the PVC is provisioned.
+//
+//   - Same-cluster restore: the VS already exists from backup time. Returns
+//     a no-op cleanup.
+//   - Cross-cluster restore: the VS is missing on dest. The function creates
+//     a VS+VSC referencing the kopia snapshotHandle carried in the input
+//     artifact, mirroring K10's CreatePVCandSnapshotFromSource at
+//     kio/exec/internal/phaseutils/phaseutils.go:542. The returned cleanup
+//     deletes the VS+VSC pair on function exit; the underlying kopia content
+//     is preserved because the cloned VolumeSnapshotClass carries
+//     DeletionPolicy: Retain — K10's pattern from kio/kube/csi.go:21.
+func (f *kubeTaskWithRestorePVCFunc) ensureRestoreSnapshot(ctx context.Context, cli kubernetes.Interface, ns string, a *kubeTaskWithRestorePVCArgs) (func(), error) {
+	noop := func() {}
+	dynCli, err := kube.NewDynamicClient()
+	if err != nil {
+		return noop, errkit.Wrap(err, "Failed to create dynamic client")
+	}
+	snapshotter := snapshot.NewSnapshotter(cli, dynCli)
+
+	if _, getErr := snapshotter.Get(ctx, a.volumeSnapshotName, ns); getErr == nil {
+		return noop, nil
+	} else if !apierrors.IsNotFound(getErr) {
+		return noop, errkit.Wrap(getErr, "Failed to look up VolumeSnapshot",
+			"volumeSnapshotName", a.volumeSnapshotName, "namespace", ns)
+	}
+
+	if a.snapshotHandle == "" {
+		return noop, errkit.New(
+			"VolumeSnapshot not found on dest cluster and no snapshotHandle provided for cross-cluster restore",
+			"volumeSnapshotName", a.volumeSnapshotName, "namespace", ns,
+		)
+	}
+
+	if err := f.createSnapshotFromSource(ctx, snapshotter, dynCli, ns, a); err != nil {
+		return noop, err
+	}
+
+	cleanup := func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), cleanupSnapshotTimeout)
+		defer cancel()
+		cleanupSnapshot(cleanupCtx, snapshotter, a.volumeSnapshotName, ns)
+	}
+	return cleanup, nil
+}
+
+// createSnapshotFromSource materializes the VolumeSnapshot + VolumeSnapshotContent
+// on the dest cluster from a kopia snapshot handle. Mirrors the K10 pattern in
+// kio/exec/internal/phaseutils/phaseutils.go:542 (CreatePVCandSnapshotFromSource),
+// minus the PVC creation — the existing restorePVCFromNamedSnapshot path
+// handles the PVC.
+//
+// Sequence:
+//  1. Find a VolumeSnapshotClass on the dest cluster matching our driver.
+//     Hard-fail if missing (same contract K10 enforces; the dest cluster's
+//     driver chart must install the class).
+//  2. Clone that class as kanister-clone-<name> with DeletionPolicy: Retain
+//     so the VSC inherits Retain regardless of the source class's policy.
+//     Reused across restores (CloneVolumeSnapshotClass is idempotent on
+//     AlreadyExists).
+//  3. CreateFromSource using the clone — creates a static VSC carrying the
+//     kopia handle and the matching VS bound to it, then waits for
+//     readyToUse.
+func (f *kubeTaskWithRestorePVCFunc) createSnapshotFromSource(ctx context.Context, snapshotter snapshot.Snapshotter, dynCli dynamic.Interface, ns string, a *kubeTaskWithRestorePVCArgs) error {
+	sourceClass, err := snapshotClassForRestore(ctx, dynCli, backupCSIDriverName)
+	if err != nil {
+		return errkit.Wrap(err, "dest cluster must have a VolumeSnapshotClass for driver", "driver", backupCSIDriverName)
+	}
+	cloneClassName := kanisterClonePrefix + sourceClass
+	if err := snapshotter.CloneVolumeSnapshotClass(ctx,
+		sourceClass, cloneClassName,
+		snapshot.DeletionPolicyRetain,
+		nil,
+	); err != nil {
+		return errkit.Wrap(err, "Failed to clone VolumeSnapshotClass with Retain",
+			"sourceClass", sourceClass, "cloneClass", cloneClassName)
+	}
+
+	log.WithContext(ctx).Print("Creating VolumeSnapshot from kopia handle",
+		field.M{
+			"volumeSnapshot": a.volumeSnapshotName,
+			"namespace":      ns,
+			"snapshotHandle": a.snapshotHandle,
+			"sourceClass":    sourceClass,
+			"cloneClass":     cloneClassName,
+		})
+
+	return snapshotter.CreateFromSource(ctx,
+		&snapshot.Source{
+			Handle:                  a.snapshotHandle,
+			Driver:                  backupCSIDriverName,
+			VolumeSnapshotClassName: cloneClassName,
+		},
+		true,
+		snapshot.ObjectMeta{
+			Name:      a.volumeSnapshotName,
+			Namespace: ns,
+			Labels:    map[string]string{LabelKeySnapshotCloned: "true"},
+		},
+		snapshot.ObjectMeta{},
+	)
+}
+
+// cleanupSnapshot deletes the VolumeSnapshot and its VolumeSnapshotContent on
+// the dest cluster. Mirrors K10's cleanupSnapshot at
+// kio/exec/internal/phaseutils/phaseutils.go:629. Errors are logged but not
+// returned (cleanup is best-effort).
+func cleanupSnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, vsName, ns string) {
+	vs, err := snapshotter.Delete(ctx, vsName, ns)
+	if err != nil {
+		log.WithError(err).WithContext(ctx).Print("Failed to delete VolumeSnapshot",
+			field.M{"name": vsName, "namespace": ns})
+	}
+	if vs != nil && vs.Spec.Source.VolumeSnapshotContentName != nil {
+		if err := snapshotter.DeleteContent(ctx, *vs.Spec.Source.VolumeSnapshotContentName); err != nil {
+			log.WithError(err).WithContext(ctx).Print("Failed to delete VolumeSnapshotContent",
+				field.M{"name": *vs.Spec.Source.VolumeSnapshotContentName})
+		}
+	}
+}
+
+// snapshotClassForRestore returns the name of any VolumeSnapshotClass on the
+// dest cluster whose `driver` field equals driverName. Equivalent in intent
+// to K10's SnapshotClassForRestore (kio/kube/csi.go:21) — both produce a
+// usable class name on the dest cluster — except we look up by driver
+// instead of carrying the source class name through the artifact, because
+// this function pair is purpose-built for a single CSI driver.
+func snapshotClassForRestore(ctx context.Context, dynCli dynamic.Interface, driverName string) (string, error) {
+	list, err := dynCli.Resource(snapshot.VolSnapClassGVR).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return "", errkit.Wrap(err, "Failed to list VolumeSnapshotClasses")
+	}
+	for i := range list.Items {
+		drv, _, _ := unstructured.NestedString(list.Items[i].Object, snapshot.VolSnapClassDriverKey)
+		if drv != driverName {
+			continue
+		}
+		name, _, _ := unstructured.NestedString(list.Items[i].Object, "metadata", "name")
+		if name == "" {
+			continue
+		}
+		// Skip our own clone classes — otherwise a subsequent restore could
+		// pick a previously-created clone as the source and stack nested
+		// "kanister-clone-kanister-clone-..." classes. The original class
+		// installed by the driver chart is always our intended source.
+		if strings.HasPrefix(name, kanisterClonePrefix) {
+			continue
+		}
+		return name, nil
+	}
+	return "", errkit.New("no VolumeSnapshotClass found for driver on dest cluster", "driver", driverName)
+}
 
 func kubeTaskWithRestorePVCPodFunc() func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {

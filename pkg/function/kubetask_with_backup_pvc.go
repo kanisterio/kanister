@@ -607,6 +607,26 @@ func (f *kubeTaskWithBackupPVCFunc) takeStagingSnapshot(
 	if vs.Status != nil && vs.Status.BoundVolumeSnapshotContentName != nil {
 		out[OutputKeySnapshotContent] = *vs.Status.BoundVolumeSnapshotContentName
 	}
+	// Surface the CSI snapshotHandle (= kopia snapshot ID for backup-csi-driver,
+	// standard CSI handle for any other driver) so blueprints can carry a
+	// content-addressed identifier through K10's catalog under K10's
+	// conventional `backupIdentifier` key. Best-effort: don't fail the backup
+	// if we can't read it — same-cluster restore via volumeSnapshotName still
+	// works without this field. Warn loudly so failures are observable in
+	// logs rather than surprising the operator at restore time.
+	src, srcErr := snapshotter.GetSource(ctx, snapName, a.namespace)
+	switch {
+	case srcErr != nil:
+		log.WithError(srcErr).WithContext(ctx).Print(
+			"Failed to read VolumeSnapshotContent source; cross-cluster restore will not be possible for this backup",
+			field.M{"volumeSnapshotName": snapName, "namespace": a.namespace})
+	case src == nil || src.Handle == "":
+		log.WithContext(ctx).Print(
+			"VolumeSnapshotContent source has no snapshotHandle; cross-cluster restore will not be possible for this backup",
+			field.M{"volumeSnapshotName": snapName, "namespace": a.namespace})
+	default:
+		out[OutputKeySnapshotHandle] = src.Handle
+	}
 	return out, nil
 }
 

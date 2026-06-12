@@ -67,6 +67,37 @@ const (
 	OutputKeySnapshotNamespace       = "volumeSnapshotNamespace"
 	OutputKeySnapshotRestoreSize     = "restoreSize"
 	OutputKeySnapshotContent         = "snapshotContent"
+
+	// OutputKeySnapshotHandle is the CSI snapshotHandle (= kopia snapshot ID for
+	// backup-csi-driver, standard CSI status.snapshotHandle for any driver).
+	// Surfaced under K10's conventional `backupIdentifier` key in blueprint
+	// outputArtifacts so K10's GetSnapshotIDFromArtifact resolves correctly and
+	// cross-cluster restore can identify the snapshot by content-addressed ID.
+	OutputKeySnapshotHandle          = "snapshotHandle"
+
+	// backupCSIDriverName is the CSI driver name of the kopia-backed backup
+	// driver this function pair is designed around. Used by the restore
+	// function to discover a matching VolumeSnapshotClass on the dest
+	// cluster when creating a VolumeSnapshot from a foreign kopia handle.
+	backupCSIDriverName = "backup.csi.kastenhq.io"
+
+	// kanisterClonePrefix prefixes the cloned VolumeSnapshotClass we create
+	// on the dest cluster for cross-cluster restore. The clone carries
+	// DeletionPolicy: Retain so deleting the cloned VolumeSnapshot never
+	// destroys the underlying kopia content. Mirrors K10's `k10-clone-`
+	// (kio/kube/csi.go:16).
+	kanisterClonePrefix = "kanister-clone-"
+
+	// LabelKeySnapshotCloned marks VolumeSnapshots that the restore function
+	// created via snapshotter.CreateFromSource (i.e. constructed on the dest
+	// cluster from a foreign kopia handle, not produced by a backup phase).
+	// Mirrors K10's names.LabelKeySnapshotVolumeCloned.
+	LabelKeySnapshotCloned = "kanister.io/snapshot-cloned"
+
+	// cleanupSnapshotTimeout caps how long the deferred cleanup of a cloned
+	// VolumeSnapshot can run using a fresh background context (the caller's
+	// ctx may have been cancelled by a phase timeout).
+	cleanupSnapshotTimeout = 60 * time.Second
 )
 
 // actionSetUIDFromContext extracts the ActionSet UID that the controller
