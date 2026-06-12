@@ -69,8 +69,8 @@ func (s *KubeTaskWithRestorePVCSuite) TestParseArgsUserSelectorRespected(c *chec
 func (s *KubeTaskWithRestorePVCSuite) TestParseArgsNoWorkloadAndNoSelector(c *check.C) {
 	// No workload, no selector → must error rather than match every PVC.
 	args := map[string]interface{}{
-		KubeTaskWithRestorePVCImageArg:   "img",
-		KubeTaskWithRestorePVCCommandArg: []string{"true"},
+		KubeTaskWithRestorePVCImageArg:     "img",
+		KubeTaskWithRestorePVCCommandArg:   []string{"true"},
 		KubeTaskWithRestorePVCNamespaceArg: "explicit-ns",
 	}
 	_, err := (&kubeTaskWithRestorePVCFunc{}).parseArgs(param.TemplateParams{}, args)
@@ -80,12 +80,12 @@ func (s *KubeTaskWithRestorePVCSuite) TestParseArgsNoWorkloadAndNoSelector(c *ch
 func (s *KubeTaskWithRestorePVCSuite) TestFindStagingPVCExactlyOneMatch(c *check.C) {
 	ctx := context.Background()
 	cli := fake.NewSimpleClientset(
-		stagedPVC("matching", "demo", map[string]string{
+		stagedPVC("matching", map[string]string{
 			LabelKeyStagingPVC:        "true",
 			LabelKeyWorkloadName:      "pg",
 			LabelKeyWorkloadNamespace: "demo",
 		}),
-		stagedPVC("other", "demo", map[string]string{
+		stagedPVC("other", map[string]string{
 			"unrelated": "label",
 		}),
 	)
@@ -106,7 +106,7 @@ func (s *KubeTaskWithRestorePVCSuite) TestFindStagingPVCExactlyOneMatch(c *check
 
 func (s *KubeTaskWithRestorePVCSuite) TestFindStagingPVCZeroMatches(c *check.C) {
 	cli := fake.NewSimpleClientset(
-		stagedPVC("p", "demo", map[string]string{"unrelated": "x"}),
+		stagedPVC("p", map[string]string{"unrelated": "x"}),
 	)
 	a := &kubeTaskWithRestorePVCArgs{
 		namespace: "demo",
@@ -120,8 +120,8 @@ func (s *KubeTaskWithRestorePVCSuite) TestFindStagingPVCZeroMatches(c *check.C) 
 
 func (s *KubeTaskWithRestorePVCSuite) TestFindStagingPVCMultipleMatches(c *check.C) {
 	cli := fake.NewSimpleClientset(
-		stagedPVC("a", "demo", map[string]string{LabelKeyStagingPVC: "true"}),
-		stagedPVC("b", "demo", map[string]string{LabelKeyStagingPVC: "true"}),
+		stagedPVC("a", map[string]string{LabelKeyStagingPVC: "true"}),
+		stagedPVC("b", map[string]string{LabelKeyStagingPVC: "true"}),
 	)
 	a := &kubeTaskWithRestorePVCArgs{
 		namespace: "demo",
@@ -134,7 +134,7 @@ func (s *KubeTaskWithRestorePVCSuite) TestFindStagingPVCMultipleMatches(c *check
 }
 
 func (s *KubeTaskWithRestorePVCSuite) TestFindStagingPVCEmptySelector(c *check.C) {
-	cli := fake.NewSimpleClientset(stagedPVC("a", "demo", map[string]string{}))
+	cli := fake.NewSimpleClientset(stagedPVC("a", map[string]string{}))
 	a := &kubeTaskWithRestorePVCArgs{
 		namespace:   "demo",
 		pvcSelector: metav1.LabelSelector{},
@@ -150,8 +150,7 @@ func (s *KubeTaskWithRestorePVCSuite) TestBuildPodOptionsReadOnlyMount(c *check.
 		mountPath: "/restore",
 		namespace: "demo",
 	}
-	opts, err := (&kubeTaskWithRestorePVCFunc{}).buildPodOptions(a, "vol")
-	c.Assert(err, check.IsNil)
+	opts := (&kubeTaskWithRestorePVCFunc{}).buildPodOptions(a, "vol")
 	v, ok := opts.Volumes["vol"]
 	c.Assert(ok, check.Equals, true)
 	c.Check(v.ReadOnly, check.Equals, true)
@@ -165,11 +164,11 @@ func (s *KubeTaskWithRestorePVCSuite) TestRequiredAndArguments(c *check.C) {
 	c.Check(required, check.DeepEquals, []string{KubeTaskWithRestorePVCImageArg, KubeTaskWithRestorePVCCommandArg})
 }
 
-func stagedPVC(name, namespace string, labels map[string]string) *corev1.PersistentVolumeClaim {
+func stagedPVC(name string, labels map[string]string) *corev1.PersistentVolumeClaim {
 	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: "demo",
 			Labels:    labels,
 		},
 	}
