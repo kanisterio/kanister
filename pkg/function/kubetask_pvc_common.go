@@ -98,6 +98,22 @@ const (
 	// VolumeSnapshot can run using a fresh background context (the caller's
 	// ctx may have been cancelled by a phase timeout).
 	cleanupSnapshotTimeout = 60 * time.Second
+
+	// SnapshotArtifactKey is the conventional outputArtifact name K10 expects
+	// for a Kanister artifact carrying a CSI snapshot reference. Mirrors
+	// K10's kanconsts.SnapshotArtifactKey. The restore function reads this
+	// artifact from tp.ArtifactsIn so the blueprint doesn't have to
+	// re-template each keyValue field as a function arg.
+	SnapshotArtifactKey = "snapshot"
+
+	// ArtifactKeyBackupIdentifier is the conventional keyValue key under
+	// which K10's catalog stores the kopia snapshot ID for a Kanister
+	// artifact. Mirrors K10's kanconsts.BackupIdentifierKey.
+	ArtifactKeyBackupIdentifier = "backupIdentifier"
+
+	// ArtifactKeySize is the conventional keyValue key under which K10's
+	// catalog stores the snapshot's restore-time PVC size.
+	ArtifactKeySize = "size"
 )
 
 // actionSetUIDFromContext extracts the ActionSet UID that the controller

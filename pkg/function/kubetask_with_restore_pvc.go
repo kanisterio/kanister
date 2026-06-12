@@ -302,6 +302,30 @@ func (f *kubeTaskWithRestorePVCFunc) parseArgs(tp param.TemplateParams, args map
 	if err = OptArg(args, KubeTaskWithRestorePVCSnapshotHandleArg, &parsed.snapshotHandle, ""); err != nil {
 		return nil, err
 	}
+
+	// Auto-fill snapshot-related args from the input artifact named "snapshot"
+	// (K10's convention, kanconsts.SnapshotArtifactKey). Blueprints that declare
+	// `inputArtifactNames: [snapshot]` and populate keyValue on the backup side
+	// don't need to re-template these fields into restore args — the function
+	// picks them up directly. Explicit args still win when provided, so authors
+	// retain full control if they need it.
+	if snapArt, ok := tp.ArtifactsIn[SnapshotArtifactKey]; ok {
+		kv := snapArt.KeyValue
+		if parsed.volumeSnapshotName == "" {
+			parsed.volumeSnapshotName = kv[OutputKeySnapshotName]
+		}
+		if parsed.snapshotHandle == "" {
+			parsed.snapshotHandle = kv[ArtifactKeyBackupIdentifier]
+		}
+		if parsed.restoreSize.IsZero() {
+			if sz := kv[ArtifactKeySize]; sz != "" {
+				if q, qErr := resource.ParseQuantity(sz); qErr == nil {
+					parsed.restoreSize = q
+				}
+			}
+		}
+	}
+
 	if err = OptArg(args, PodAnnotationsArg, &parsed.bpAnnotations, nil); err != nil {
 		return nil, err
 	}
