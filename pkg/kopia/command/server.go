@@ -15,6 +15,8 @@
 package command
 
 import (
+	"strconv"
+
 	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
 	"github.com/kanisterio/kanister/pkg/logsafe"
 )
@@ -34,6 +36,7 @@ type ServerStartCommandArgs struct {
 	Background           bool
 	EnablePprof          bool
 	MetricsListenAddress string
+	MaxConcurrency       int
 }
 
 func commonCommand(cmdArgs ServerStartCommandArgs) logsafe.Cmd {
@@ -70,6 +73,10 @@ func commonCommand(cmdArgs ServerStartCommandArgs) logsafe.Cmd {
 
 	if cmdArgs.MetricsListenAddress != "" {
 		args = args.AppendLoggableKV(metricsListerAddress, cmdArgs.MetricsListenAddress)
+	}
+
+	if cmdArgs.MaxConcurrency > 0 {
+		args = args.AppendLoggableKV(maxConcurrencyFlag, strconv.Itoa(cmdArgs.MaxConcurrency))
 	}
 
 	if cmdArgs.Background {
