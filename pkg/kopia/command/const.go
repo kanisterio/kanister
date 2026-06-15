@@ -91,6 +91,7 @@ const (
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
 	enablePprof               = "--enable-pprof"
+	maxConcurrencyFlag        = "--max-concurrency"
 	metricsListerAddress      = "--metrics-listen-addr"
 	htpasswdFilePath          = "--htpasswd-file"
 
