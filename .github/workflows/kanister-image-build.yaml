@@ -34,7 +34,6 @@ jobs:
   build:
     permissions:
       contents: read
-      packages: write
 
     runs-on: ubuntu-latest
     # TODO: Uncomment following when we enable check-file job
