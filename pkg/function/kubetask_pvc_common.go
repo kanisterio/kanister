@@ -53,6 +53,11 @@ const (
 	backupCSIDriverName = "backup.csi.kastenhq.io"
 	kanisterClonePrefix = "kanister-clone-"
 
+	// OptionKeyCSIStorageClass is the ActionSet option K10 injects when the CSI
+	// driver integration feature flag is on. Its value is the per-profile
+	// StorageClass name (csi-kopia-backup-<profile> / csi-kopia-restore-<profile>).
+	OptionKeyCSIStorageClass = "csiStorageClass"
+
 	cleanupSnapshotTimeout = 60 * time.Second
 
 	// SnapshotArtifactKey, ArtifactKeyBackupIdentifier, ArtifactKeySize mirror
@@ -92,6 +97,17 @@ func workloadFromTemplateParams(tp param.TemplateParams) (name, namespace string
 		return "", tp.Namespace.Namespace
 	}
 	return "", ""
+}
+
+// defaultStorageClass returns the StorageClass to use when the blueprint does
+// not pass an explicit storageClassName arg: K10's injected csiStorageClass
+// option (per-profile CSI StorageClass) when present, otherwise the built-in
+// default.
+func defaultStorageClass(tp param.TemplateParams, builtin string) string {
+	if sc := tp.Options[OptionKeyCSIStorageClass]; sc != "" {
+		return sc
+	}
+	return builtin
 }
 
 func waitForPVCBound(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {

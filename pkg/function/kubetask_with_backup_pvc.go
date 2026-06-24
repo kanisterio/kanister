@@ -212,7 +212,7 @@ func (f *kubeTaskWithBackupPVCFunc) Exec(ctx context.Context, tp param.TemplateP
 
 func (f *kubeTaskWithBackupPVCFunc) parseArgs(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (*kubeTaskWithBackupPVCArgs, error) {
 	parsed := &kubeTaskWithBackupPVCArgs{}
-	if err := f.parseBackupCoreArgs(args, parsed); err != nil {
+	if err := f.parseBackupCoreArgs(tp, args, parsed); err != nil {
 		return nil, err
 	}
 	if err := f.parseBackupSnapshotArgs(args, parsed); err != nil {
@@ -227,7 +227,7 @@ func (f *kubeTaskWithBackupPVCFunc) parseArgs(ctx context.Context, tp param.Temp
 	return parsed, nil
 }
 
-func (f *kubeTaskWithBackupPVCFunc) parseBackupCoreArgs(args map[string]interface{}, parsed *kubeTaskWithBackupPVCArgs) error {
+func (f *kubeTaskWithBackupPVCFunc) parseBackupCoreArgs(tp param.TemplateParams, args map[string]interface{}, parsed *kubeTaskWithBackupPVCArgs) error {
 	var err error
 	if err = Arg(args, KubeTaskWithBackupPVCImageArg, &parsed.image); err != nil {
 		return err
@@ -241,7 +241,7 @@ func (f *kubeTaskWithBackupPVCFunc) parseBackupCoreArgs(args map[string]interfac
 	if err = OptArg(args, KubeTaskWithBackupPVCPathArg, &parsed.mountPath, defaultBackupPVCMountPath); err != nil {
 		return err
 	}
-	if err = OptArg(args, KubeTaskWithBackupPVCStorageClassArg, &parsed.storageClass, defaultBackupPVCStorageClass); err != nil {
+	if err = OptArg(args, KubeTaskWithBackupPVCStorageClassArg, &parsed.storageClass, defaultStorageClass(tp, defaultBackupPVCStorageClass)); err != nil {
 		return err
 	}
 	var sizeStr string

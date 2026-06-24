@@ -184,7 +184,7 @@ func (f *kubeTaskWithRestorePVCFunc) Exec(ctx context.Context, tp param.Template
 
 func (f *kubeTaskWithRestorePVCFunc) parseArgs(tp param.TemplateParams, args map[string]interface{}) (*kubeTaskWithRestorePVCArgs, error) {
 	parsed := &kubeTaskWithRestorePVCArgs{}
-	if err := f.parseRestoreCoreArgs(args, parsed); err != nil {
+	if err := f.parseRestoreCoreArgs(tp, args, parsed); err != nil {
 		return nil, err
 	}
 	if err := f.parseRestoreSnapshotArgs(args, parsed); err != nil {
@@ -197,7 +197,7 @@ func (f *kubeTaskWithRestorePVCFunc) parseArgs(tp param.TemplateParams, args map
 	return parsed, f.resolveRestoreContext(tp, parsed)
 }
 
-func (f *kubeTaskWithRestorePVCFunc) parseRestoreCoreArgs(args map[string]interface{}, parsed *kubeTaskWithRestorePVCArgs) error {
+func (f *kubeTaskWithRestorePVCFunc) parseRestoreCoreArgs(tp param.TemplateParams, args map[string]interface{}, parsed *kubeTaskWithRestorePVCArgs) error {
 	var err error
 	if err = Arg(args, KubeTaskWithRestorePVCImageArg, &parsed.image); err != nil {
 		return err
@@ -211,7 +211,7 @@ func (f *kubeTaskWithRestorePVCFunc) parseRestoreCoreArgs(args map[string]interf
 	if err = OptArg(args, KubeTaskWithRestorePVCPathArg, &parsed.mountPath, defaultRestorePVCMountPath); err != nil {
 		return err
 	}
-	if err = OptArg(args, KubeTaskWithRestorePVCStorageClassArg, &parsed.storageClass, defaultRestorePVCStorageClass); err != nil {
+	if err = OptArg(args, KubeTaskWithRestorePVCStorageClassArg, &parsed.storageClass, defaultStorageClass(tp, defaultRestorePVCStorageClass)); err != nil {
 		return err
 	}
 	if err = OptArg(args, KubeTaskWithRestorePVCPVCSelectorArg, &parsed.pvcSelector, metav1.LabelSelector{}); err != nil {
