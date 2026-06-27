@@ -17,10 +17,10 @@ package aws
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/aws/aws-sdk-go/service/sts/stsiface"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"gopkg.in/check.v1"
 
 	envconfig "github.com/kanisterio/kanister/pkg/config"
@@ -34,12 +34,86 @@ type AWSSuite struct{}
 var _ = check.Suite(&AWSSuite{})
 
 type mockSTSClient struct {
-	stsiface.STSAPI
-	getCallerIdentityFunc func(*sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
+	getCallerIdentityFunc func(context.Context, *sts.GetCallerIdentityInput, ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 }
 
-func (m *mockSTSClient) GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
-	return m.getCallerIdentityFunc(input)
+func (m *mockSTSClient) GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+	return m.getCallerIdentityFunc(ctx, params, optFns...)
+}
+
+func (s AWSSuite) TestResolveRegion(c *check.C) {
+	origRegion, regionSet := os.LookupEnv("AWS_REGION")
+	origDefault, defaultSet := os.LookupEnv("AWS_DEFAULT_REGION")
+	defer func() {
+		restoreEnv(c, "AWS_REGION", origRegion, regionSet)
+		restoreEnv(c, "AWS_DEFAULT_REGION", origDefault, defaultSet)
+	}()
+
+	cases := []struct {
+		name       string
+		config     map[string]string
+		awsRegion  string
+		awsDefault string
+		expected   string
+	}{
+		{
+			name:       "config region wins over env",
+			config:     map[string]string{ConfigRegion: "us-east-1"},
+			awsRegion:  "us-west-2",
+			awsDefault: "eu-west-1",
+			expected:   "us-east-1",
+		},
+		{
+			name:       "falls back to AWS_REGION when config empty",
+			config:     map[string]string{},
+			awsRegion:  "us-west-2",
+			awsDefault: "eu-west-1",
+			expected:   "us-west-2",
+		},
+		{
+			name:       "falls back to AWS_DEFAULT_REGION when AWS_REGION unset",
+			config:     map[string]string{},
+			awsRegion:  "",
+			awsDefault: "eu-west-1",
+			expected:   "eu-west-1",
+		},
+		{
+			name:       "returns empty when nothing is set",
+			config:     map[string]string{},
+			awsRegion:  "",
+			awsDefault: "",
+			expected:   "",
+		},
+		{
+			name:       "nil config falls back to env",
+			config:     nil,
+			awsRegion:  "ap-south-1",
+			awsDefault: "",
+			expected:   "ap-south-1",
+		},
+		{
+			name:       "empty config entry treated as unset",
+			config:     map[string]string{ConfigRegion: ""},
+			awsRegion:  "us-west-2",
+			awsDefault: "",
+			expected:   "us-west-2",
+		},
+	}
+
+	for _, tc := range cases {
+		c.Assert(os.Setenv("AWS_REGION", tc.awsRegion), check.IsNil)
+		c.Assert(os.Setenv("AWS_DEFAULT_REGION", tc.awsDefault), check.IsNil)
+		got := resolveRegion(tc.config)
+		c.Assert(got, check.Equals, tc.expected, check.Commentf("case: %s", tc.name))
+	}
+}
+
+func restoreEnv(c *check.C, key, value string, wasSet bool) {
+	if wasSet {
+		c.Assert(os.Setenv(key, value), check.IsNil)
+		return
+	}
+	c.Assert(os.Unsetenv(key), check.IsNil)
 }
 
 func (s AWSSuite) TestValidCreds(c *check.C) {
@@ -50,7 +124,7 @@ func (s AWSSuite) TestValidCreds(c *check.C) {
 	config[ConfigRegion] = "us-west-2"
 
 	mockSTS := &mockSTSClient{
-		getCallerIdentityFunc: func(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
+		getCallerIdentityFunc: func(ctx context.Context, input *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 			return &sts.GetCallerIdentityOutput{}, nil
 		},
 	}
@@ -61,7 +135,7 @@ func (s AWSSuite) TestValidCreds(c *check.C) {
 
 	// Test with invalid credentials
 	mockSTS = &mockSTSClient{
-		getCallerIdentityFunc: func(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error) {
+		getCallerIdentityFunc: func(ctx context.Context, input *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
 			return nil, errors.New("invalid credentials")
 		},
 	}

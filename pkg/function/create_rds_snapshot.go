@@ -150,7 +150,7 @@ func createSnapshot(ctx context.Context, rdsCli *rds.RDS, snapshotID, instanceID
 			return allocatedStorage, errkit.Wrap(err, "Error while waiting snapshot to be available")
 		}
 		if dbSnapshotOutput.DBSnapshot != nil && dbSnapshotOutput.DBSnapshot.AllocatedStorage != nil {
-			allocatedStorage = *(dbSnapshotOutput.DBSnapshot.AllocatedStorage)
+			allocatedStorage = int64(*dbSnapshotOutput.DBSnapshot.AllocatedStorage)
 		}
 		return allocatedStorage, nil
 	}

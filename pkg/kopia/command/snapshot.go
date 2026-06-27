@@ -36,6 +36,7 @@ type SnapshotCreateCommandArgs struct {
 	EstimationType         string
 	EstimationThreshold    int
 	IgnoreRuleFilePath     string
+	HintStreamingReads     bool
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
@@ -69,6 +70,10 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 			args = args.AppendLoggableKV(adaptiveEstimationThresholdFlag, thresholdStr)
 		}
 	}
+	if cmdArgs.HintStreamingReads {
+		args = args.AppendLoggable(hintStreamingReadsFlag)
+	}
+
 	args = addTags(cmdArgs.Tags, args)
 
 	// kube.Exec might timeout after 4h if there is no output from the command

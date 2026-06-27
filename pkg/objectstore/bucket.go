@@ -18,14 +18,14 @@ package objectstore
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"path"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/graymeta/stow"
 	"github.com/kanisterio/errkit"
 
@@ -185,42 +185,51 @@ func (p *s3Provider) GetRegionForBucket(ctx context.Context, bucketName string) 
 }
 
 func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketName string) (string, error) {
-	c, r, err := awsConfig(ctx, cfg, *sec.Aws)
+	awsCfg, _, err := awsConfig(ctx, cfg, *sec.Aws)
 	if err != nil {
 		return "", err
 	}
-	s, err := session.NewSession(c)
-	if err != nil {
-		return "", errkit.Wrap(err, fmt.Sprintf("failed to create session, region = %s", r))
+
+	s3Opts := []func(*s3.Options){}
+	if cfg.Endpoint != "" {
+		s3Opts = append(s3Opts, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(cfg.Endpoint)
+			o.UsePathStyle = true
+		})
 	}
-	svc := s3.New(s)
+	if cfg.SkipSSLVerify {
+		s3Opts = append(s3Opts, func(o *s3.Options) {
+			o.HTTPClient = &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+				},
+			}
+		})
+	}
+	svc := s3.NewFromConfig(awsCfg, s3Opts...)
 
 	// s3-compatible stores may not support s3manager.GetBucketRegion() API, so
 	// prefer to use the get-bucket-location API instead
 	if cfg.Endpoint != "" {
-		resp, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{
+		resp, err := svc.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
 			Bucket: aws.String(bucketName),
 		})
 		if err == nil {
-			if resp.LocationConstraint == nil { // per the AWS SDK doc a nil location means us-east-1
+			// per the AWS SDK doc an empty location constraint means us-east-1
+			if resp.LocationConstraint == "" {
 				return "us-east-1", nil
 			}
-			return *resp.LocationConstraint, nil
+			return string(resp.LocationConstraint), nil
 		}
 		log.Error().
 			WithContext(ctx).
 			WithError(err).
-			Print("GetBucketLocation() failed, falling back to GetBucketRegion()", field.M{"config": c})
+			Print("GetBucketLocation() failed, falling back to GetBucketRegion()", field.M{"config": cfg})
 		// fallback to GetBucketRegion() API if we fail (could be due to
 		// access-denied or incorrect policies etc)
 	}
 
-	return s3manager.GetBucketRegionWithClient(ctx, svc, bucketName, func(r *request.Request) {
-		// GetBucketRegionWithClient() uses credentials.AnonymousCredentials by
-		// default which fails the api request in AWS China. We override the
-		// creds with the creds used by the client as a workaround.
-		r.Config.Credentials = svc.Config.Credentials
-	})
+	return s3manager.GetBucketRegion(ctx, svc, bucketName)
 }
 
 func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {

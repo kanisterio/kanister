@@ -16,13 +16,14 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 
-	awssdk "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	awsrds "github.com/aws/aws-sdk-go/service/rds"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
+	"github.com/aws/smithy-go"
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -44,6 +45,9 @@ const (
 	AuroraDBStorage       = 20
 	DetailsCMName         = "dbconfig"
 	mysqlConnectionString = "mysql -h %s -u %s -p%s %s -N -e"
+
+	// errCodeSecurityGroupNotFound is the AWS EC2 API error code returned when a security group does not exist.
+	errCodeSecurityGroupNotFound = "InvalidGroup.NotFound"
 )
 
 type RDSAuroraMySQLDB struct {
@@ -185,7 +189,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return errkit.Wrap(err, "Error waiting for DB cluster to be available")
 	}
 
-	_, err = rdsCli.CreateDBInstance(ctx, nil, AuroraDBInstanceClass, fmt.Sprintf("%s-instance-1", a.id), string(function.DBEngineAuroraMySQL), "", "", nil, awssdk.Bool(a.publicAccess), awssdk.String(a.id), a.dbSubnetGroup)
+	_, err = rdsCli.CreateDBInstance(ctx, nil, AuroraDBInstanceClass, fmt.Sprintf("%s-instance-1", a.id), string(function.DBEngineAuroraMySQL), "", "", nil, awsv2.Bool(a.publicAccess), awsv2.String(a.id), a.dbSubnetGroup)
 	if err != nil {
 		return errkit.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}
@@ -323,12 +327,11 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 
 	descOp, err := rdsCli.DescribeDBClusters(ctx, a.id)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() != awsrds.ErrCodeDBClusterNotFoundFault {
-				return err
-			}
-			log.Print("Aurora DB cluster is not found")
+		var notFound *rdstypes.DBClusterNotFoundFault
+		if !errors.As(err, &notFound) {
+			return err
 		}
+		log.Print("Aurora DB cluster is not found")
 	} else {
 		// DB Cluster is present, delete and wait for it to be deleted
 		if err := function.DeleteAuroraDBCluster(ctx, rdsCli, descOp, a.id); err != nil {
@@ -346,13 +349,11 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	_, err = rdsCli.DeleteDBSubnetGroup(ctx, a.dbSubnetGroup)
 	if err != nil {
 		// If the subnet group does not exist, ignore the error and return
-		if err, ok := err.(awserr.Error); ok {
-			switch err.Code() {
-			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
-				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": a.name, "name": a.dbSubnetGroup})
-			default:
-				return errkit.Wrap(err, "Failed to delete subnet group. You may need to delete it manually.", "app", a.name, "name", a.dbSubnetGroup)
-			}
+		var subnetNotFound *rdstypes.DBSubnetGroupNotFoundFault
+		if errors.As(err, &subnetNotFound) {
+			log.Info().Print("Subnet Group Does not exist: DBSubnetGroupNotFoundFault.", field.M{"app": a.name, "name": a.dbSubnetGroup})
+		} else {
+			return errkit.Wrap(err, "Failed to delete subnet group. You may need to delete it manually.", "app", a.name, "name", a.dbSubnetGroup)
 		}
 	}
 
@@ -360,13 +361,11 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	log.Info().Print("Deleting security group.", field.M{"app": a.name})
 	_, err = ec2Cli.DeleteSecurityGroup(ctx, a.securityGroupID)
 	if err != nil {
-		if err, ok := err.(awserr.Error); ok {
-			switch err.Code() {
-			case "InvalidGroup.NotFound":
-				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": a.name, "name": a.securityGroupName})
-			default:
-				return errkit.Wrap(err, "Failed to delete security group. You may need to delete it manually.", "app", a.name, "name", a.securityGroupName)
-			}
+		var apiErr smithy.APIError
+		if errors.As(err, &apiErr) && apiErr.ErrorCode() == errCodeSecurityGroupNotFound {
+			log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": a.name, "name": a.securityGroupName})
+		} else {
+			return errkit.Wrap(err, "Failed to delete security group. You may need to delete it manually.", "app", a.name, "name", a.securityGroupName)
 		}
 	}
 
@@ -382,7 +381,7 @@ func (a *RDSAuroraMySQLDB) GetClusterScopedResources(ctx context.Context) []crv1
 	return nil
 }
 
-func (a *RDSAuroraMySQLDB) getAWSConfig(ctx context.Context) (*awssdk.Config, string, error) {
+func (a *RDSAuroraMySQLDB) getAWSConfig(ctx context.Context) (awsv2.Config, string, error) {
 	config := make(map[string]string)
 	config[aws.ConfigRegion] = a.region
 	config[aws.AccessKeyID] = a.accessID

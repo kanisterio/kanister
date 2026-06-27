@@ -19,91 +19,89 @@ package ec2
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/kanisterio/errkit"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 const (
 	maxRetries = 10
 )
 
-// EC2 is a wrapper around ec2.EC2 structs
+// EC2 is a wrapper around the AWS EC2 client
 type EC2 struct {
-	*ec2.EC2
+	client *ec2.Client
 	DryRun bool
 }
 
-// NewClient returns ec2 client struct.
-func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*EC2, error) {
-	s, err := session.NewSession(awsConfig)
-	if err != nil {
-		return nil, errkit.Wrap(err, "Failed to create session")
-	}
-	return &EC2{EC2: ec2.New(s, awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(awsConfig.Credentials))}, nil
+// NewClient returns an EC2 client struct.
+func NewClient(ctx context.Context, awsConfig aws.Config, region string) (*EC2, error) {
+	awsConfig.Region = region
+	client := ec2.NewFromConfig(awsConfig, func(o *ec2.Options) {
+		o.RetryMaxAttempts = maxRetries
+	})
+	return &EC2{client: client, DryRun: false}, nil
 }
 
 func (e EC2) DescribeSecurityGroup(ctx context.Context, groupName string) (*ec2.DescribeSecurityGroupsOutput, error) {
 	sgi := &ec2.DescribeSecurityGroupsInput{
-		DryRun:     &e.DryRun,
-		GroupNames: []*string{&groupName},
+		DryRun:     aws.Bool(e.DryRun),
+		GroupNames: []string{groupName},
 	}
-	return e.DescribeSecurityGroupsWithContext(ctx, sgi)
+	return e.client.DescribeSecurityGroups(ctx, sgi)
 }
 
 func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description, vpcID string) (*ec2.CreateSecurityGroupOutput, error) {
 	sgi := &ec2.CreateSecurityGroupInput{
-		DryRun:      &e.DryRun,
+		DryRun:      aws.Bool(e.DryRun),
 		Description: &description,
 		GroupName:   &groupName,
 		VpcId:       aws.String(vpcID),
 	}
-	return e.CreateSecurityGroupWithContext(ctx, sgi)
+	return e.client.CreateSecurityGroup(ctx, sgi)
 }
 
 func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupID, cidr, protocol string, port int64) (*ec2.AuthorizeSecurityGroupIngressOutput, error) {
+	p := int32(port)
 	sgi := &ec2.AuthorizeSecurityGroupIngressInput{
-		DryRun:     &e.DryRun,
+		DryRun:     aws.Bool(e.DryRun),
 		GroupId:    &groupID,
 		CidrIp:     &cidr,
 		IpProtocol: &protocol,
-		ToPort:     &port,
-		FromPort:   &port,
+		ToPort:     &p,
+		FromPort:   &p,
 	}
-	return e.AuthorizeSecurityGroupIngressWithContext(ctx, sgi)
+	return e.client.AuthorizeSecurityGroupIngress(ctx, sgi)
 }
 
 func (e EC2) DeleteSecurityGroup(ctx context.Context, groupID string) (*ec2.DeleteSecurityGroupOutput, error) {
 	sgi := &ec2.DeleteSecurityGroupInput{
-		DryRun:  &e.DryRun,
+		DryRun:  aws.Bool(e.DryRun),
 		GroupId: aws.String(groupID),
 	}
-	return e.DeleteSecurityGroupWithContext(ctx, sgi)
+	return e.client.DeleteSecurityGroup(ctx, sgi)
 }
 
 func (e EC2) DescribeSubnets(ctx context.Context, vpcID string) (*ec2.DescribeSubnetsOutput, error) {
 	paramsEC2 := &ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
 				Name:   aws.String("vpc-id"),
-				Values: []*string{aws.String(vpcID)},
+				Values: []string{vpcID},
 			},
 		},
 	}
-	return e.DescribeSubnetsWithContext(ctx, paramsEC2)
+	return e.client.DescribeSubnets(ctx, paramsEC2)
 }
 
 func (e EC2) DescribeDefaultVpc(ctx context.Context) (*ec2.DescribeVpcsOutput, error) {
 	vpci := &ec2.DescribeVpcsInput{
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
-				Name: aws.String("isDefault"),
-				Values: []*string{
-					aws.String("true"),
-				},
+				Name:   aws.String("isDefault"),
+				Values: []string{"true"},
 			},
 		},
 	}
-	return e.DescribeVpcsWithContext(ctx, vpci)
+	return e.client.DescribeVpcs(ctx, vpci)
 }

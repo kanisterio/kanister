@@ -69,6 +69,7 @@ const (
 	skipExistingFlag                = "--skip-existing"
 	deleteExtraFlag                 = "--delete-extra"
 	ignoreRuleFilePathFlag          = "--ignore-rules-file"
+	hintStreamingReadsFlag          = "--hint-streaming-reads"
 
 	// Server specific
 	addSubCommand             = "add"
@@ -91,6 +92,7 @@ const (
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
 	enablePprof               = "--enable-pprof"
+	maxConcurrencyFlag        = "--max-concurrency"
 	metricsListerAddress      = "--metrics-listen-addr"
 	htpasswdFilePath          = "--htpasswd-file"
 

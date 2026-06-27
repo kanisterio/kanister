@@ -16,10 +16,10 @@ package function
 
 import (
 	"context"
+	"errors"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	awsrds "github.com/aws/aws-sdk-go/service/rds"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
 	"github.com/kanisterio/errkit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -73,15 +73,12 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, credentialsSource
 		log.WithContext(ctx).Print("Deleting RDS snapshot", field.M{"SnapshotID": snapshotID})
 		_, err := rdsCli.DeleteDBSnapshot(ctx, snapshotID)
 		if err != nil {
-			if err, ok := err.(awserr.Error); ok {
-				switch err.Code() {
-				case awsrds.ErrCodeDBSnapshotNotFoundFault:
-					log.WithContext(ctx).Print("Could not find matching RDS snapshot; might have been deleted previously", field.M{"SnapshotId": snapshotID})
-					return nil
-				default:
-					return errkit.Wrap(err, "Failed to delete snapshot")
-				}
+			var notFound *rdstypes.DBSnapshotNotFoundFault
+			if errors.As(err, &notFound) {
+				log.WithContext(ctx).Print("Could not find matching RDS snapshot; might have been deleted previously", field.M{"SnapshotId": snapshotID})
+				return nil
 			}
+			return errkit.Wrap(err, "Failed to delete snapshot")
 		}
 		// Wait until snapshot is deleted
 		log.WithContext(ctx).Print("Waiting for RDS snapshot to be deleted", field.M{"SnapshotID": snapshotID})
@@ -93,15 +90,12 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, credentialsSource
 	log.WithContext(ctx).Print("Deleting Aurora DB cluster snapshot")
 	_, err = rdsCli.DeleteDBClusterSnapshot(ctx, snapshotID)
 	if err != nil {
-		if err, ok := err.(awserr.Error); ok {
-			switch err.Code() {
-			case awsrds.ErrCodeDBClusterSnapshotNotFoundFault:
-				log.WithContext(ctx).Print("Could not find matching Aurora DB cluster snapshot; might have been deleted previously", field.M{"SnapshotId": snapshotID})
-				return nil
-			default:
-				return errkit.Wrap(err, "Error deleting Aurora DB cluster snapshot")
-			}
+		var notFound *rdstypes.DBClusterSnapshotNotFoundFault
+		if errors.As(err, &notFound) {
+			log.WithContext(ctx).Print("Could not find matching Aurora DB cluster snapshot; might have been deleted previously", field.M{"SnapshotId": snapshotID})
+			return nil
 		}
+		return errkit.Wrap(err, "Error deleting Aurora DB cluster snapshot")
 	}
 
 	log.WithContext(ctx).Print("Waiting for Aurora DB cluster snapshot to be deleted")

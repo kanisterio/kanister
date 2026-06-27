@@ -17,11 +17,12 @@ package secrets
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v2credentials "github.com/aws/aws-sdk-go-v2/credentials"
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kanisterio/kanister/pkg/aws"
+	kaws "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/config"
 )
 
@@ -32,7 +33,7 @@ var _ = check.Suite(&AWSSecretSuite{})
 func (s *AWSSecretSuite) TestExtractAWSCredentials(c *check.C) {
 	tcs := []struct {
 		secret     *corev1.Secret
-		expected   *credentials.Value
+		expected   *aws.Credentials
 		errChecker check.Checker
 	}{
 		{
@@ -43,10 +44,10 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *check.C) {
 					AWSSecretAccessKey: []byte("secret_key"),
 				},
 			},
-			expected: &credentials.Value{
+			expected: &aws.Credentials{
 				AccessKeyID:     "key_id",
 				SecretAccessKey: "secret_key",
-				ProviderName:    credentials.StaticProviderName,
+				Source:          v2credentials.StaticCredentialsName,
 			},
 			errChecker: check.IsNil,
 		},
@@ -91,7 +92,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *check.C) {
 		},
 	}
 	for testNum, tc := range tcs {
-		creds, err := ExtractAWSCredentials(context.Background(), tc.secret, aws.AssumeRoleDurationDefault)
+		creds, err := ExtractAWSCredentials(context.Background(), tc.secret, kaws.AssumeRoleDurationDefault)
 		c.Check(creds, check.DeepEquals, tc.expected, check.Commentf("test number: %d", testNum))
 		c.Check(err, tc.errChecker)
 	}
@@ -125,7 +126,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *check.C) {
 			output: check.NotNil,
 		},
 	} {
-		_, err := ExtractAWSCredentials(context.Background(), tc.secret, aws.AssumeRoleDurationDefault)
+		_, err := ExtractAWSCredentials(context.Background(), tc.secret, kaws.AssumeRoleDurationDefault)
 		c.Check(err, tc.output)
 	}
 }
