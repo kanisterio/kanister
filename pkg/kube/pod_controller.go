@@ -252,6 +252,7 @@ func newRestoreLogStreamReader(ctx context.Context, cli kubernetes.Interface, na
 		podName:       podName,
 		containerName: containerName,
 		reader:        reader,
+		streamFunc:    StreamPodLogs,
 	}, nil
 }
 
@@ -263,6 +264,7 @@ type restoreLogStreamReader struct {
 	containerName string
 	reader        io.ReadCloser
 	lastReadTime  metav1.Time
+	streamFunc    func(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string, sinceTime *metav1.Time) (io.ReadCloser, error)
 }
 
 func (s *restoreLogStreamReader) Read(p []byte) (n int, err error) {
@@ -282,10 +284,12 @@ func (s *restoreLogStreamReader) Read(p []byte) (n int, err error) {
 		if err != nil {
 			return 0, err
 		}
-		s.reader, err = StreamPodLogs(s.ctx, s.cli, s.namespace, s.podName, s.containerName, &s.lastReadTime)
+		newReader, err := s.streamFunc(s.ctx, s.cli, s.namespace, s.podName, s.containerName, &s.lastReadTime)
 		if err != nil {
+			// s.reader retains the closed (but non-nil) reader so Close() remains safe
 			return 0, err
 		}
+		s.reader = newReader
 
 		return s.reader.Read(p)
 	}
@@ -293,6 +297,9 @@ func (s *restoreLogStreamReader) Read(p []byte) (n int, err error) {
 }
 
 func (s *restoreLogStreamReader) Close() error {
+	if s.reader == nil {
+		return nil
+	}
 	return s.reader.Close()
 }
 
