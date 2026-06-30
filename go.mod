@@ -20,7 +20,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.7
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-logr/logr v1.4.3
-	github.com/go-openapi/strfmt v0.26.3
+	github.com/go-openapi/strfmt v0.26.4
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
@@ -126,7 +126,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/go-openapi/errors v0.22.7 // indirect
+	github.com/go-openapi/errors v0.22.8 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
@@ -226,14 +226,14 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc // indirect
-	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/term v0.37.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.44.0 // indirect
+	golang.org/x/tools v0.45.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20250715232539-7130f93afb79 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251022142026-3a174f9686a8 // indirect
