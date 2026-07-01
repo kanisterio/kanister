@@ -193,6 +193,14 @@ func restoreCSISnapshot(ctx context.Context, kubeCli kubernetes.Interface, args 
 
 func newPVCManifest(args restoreCSISnapshotArgs) *corev1.PersistentVolumeClaim {
 	snapshotAPIGroup := SnapshotAPIGroup
+	// nil StorageClassName => provision from the cluster default StorageClass. A
+	// pointer to "" would instead disable dynamic provisioning, leaving the PVC
+	// unbound, so only set the pointer when a StorageClass was provided.
+	var storageClassName *string
+	if args.StorageClass != "" {
+		sc := args.StorageClass
+		storageClassName = &sc
+	}
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      args.PVC,
@@ -206,7 +214,7 @@ func newPVCManifest(args restoreCSISnapshotArgs) *corev1.PersistentVolumeClaim {
 				Kind:     "VolumeSnapshot",
 				Name:     args.Name,
 			},
-			StorageClassName: &args.StorageClass,
+			StorageClassName: storageClassName,
 			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: *args.RestoreSize,

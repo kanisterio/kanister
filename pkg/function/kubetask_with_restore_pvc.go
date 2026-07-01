@@ -26,9 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -45,32 +43,41 @@ import (
 )
 
 const (
+	// KubeTaskWithRestorePVCFuncName gives the name of the function
 	KubeTaskWithRestorePVCFuncName = "KubeTaskWithRestorePVC"
-
-	KubeTaskWithRestorePVCImageArg                   = "image"
-	KubeTaskWithRestorePVCCommandArg                 = "command"
-	KubeTaskWithRestorePVCEnvArg                     = "env"
-	KubeTaskWithRestorePVCPathArg                    = "path"
-	KubeTaskWithRestorePVCStorageClassArg            = "storageClassName"
-	KubeTaskWithRestorePVCPVCSelectorArg             = "pvcSelector"
-	KubeTaskWithRestorePVCNamespaceArg               = "namespace"
-	KubeTaskWithRestorePVCServiceAccountArg          = "serviceAccountName"
-	KubeTaskWithRestorePVCTimeoutArg                 = "timeout"
-	KubeTaskWithRestorePVCCleanupPVCArg              = "cleanupPVC"
-	KubeTaskWithRestorePVCSourcePVCNameArg           = "sourcePVCName"
-	KubeTaskWithRestorePVCSizeArg                    = "size"
-	KubeTaskWithRestorePVCVolumeSnapshotNameArg      = "volumeSnapshotName"
+	// KubeTaskWithRestorePVCImageArg provides the container image used for the restore worker pod
+	KubeTaskWithRestorePVCImageArg = "image"
+	// KubeTaskWithRestorePVCCommandArg provides the shell-form command that reads from the staging PVC
+	KubeTaskWithRestorePVCCommandArg = "command"
+	// KubeTaskWithRestorePVCEnvArg provides the list of environment variables injected into the worker pod
+	KubeTaskWithRestorePVCEnvArg = "env"
+	// KubeTaskWithRestorePVCPathArg provides the read-only mount path for the staging PVC inside the worker pod
+	KubeTaskWithRestorePVCPathArg = "path"
+	// KubeTaskWithRestorePVCStorageClassArg provides the StorageClass used when provisioning a fresh staging PVC from a snapshot
+	KubeTaskWithRestorePVCStorageClassArg = "storageClassName"
+	// KubeTaskWithRestorePVCPVCSelectorArg provides a LabelSelector to discover an existing staging PVC to restore into
+	KubeTaskWithRestorePVCPVCSelectorArg = "pvcSelector"
+	// KubeTaskWithRestorePVCNamespaceArg provides the namespace to create the staging PVC and worker pod in
+	KubeTaskWithRestorePVCNamespaceArg = "namespace"
+	// KubeTaskWithRestorePVCServiceAccountArg provides the ServiceAccount for the worker pod
+	KubeTaskWithRestorePVCServiceAccountArg = "serviceAccountName"
+	// KubeTaskWithRestorePVCTimeoutArg provides the overall timeout for the phase
+	KubeTaskWithRestorePVCTimeoutArg = "timeout"
+	// KubeTaskWithRestorePVCCleanupPVCArg controls whether the staging PVC is deleted at phase exit
+	KubeTaskWithRestorePVCCleanupPVCArg = "cleanupPVC"
+	// KubeTaskWithRestorePVCSourcePVCNameArg names an existing PVC or the original backup PVC used for snapshot lookup
+	KubeTaskWithRestorePVCSourcePVCNameArg = "sourcePVCName"
+	// KubeTaskWithRestorePVCSizeArg overrides the requested size of the staging PVC when provisioning from a snapshot
+	KubeTaskWithRestorePVCSizeArg = "size"
+	// KubeTaskWithRestorePVCVolumeSnapshotNameArg names the VolumeSnapshot the fresh staging PVC is provisioned from
+	KubeTaskWithRestorePVCVolumeSnapshotNameArg = "volumeSnapshotName"
+	// KubeTaskWithRestorePVCVolumeSnapshotNamespaceArg names the namespace of the VolumeSnapshot referenced by volumeSnapshotName
 	KubeTaskWithRestorePVCVolumeSnapshotNamespaceArg = "volumeSnapshotNamespace"
-	KubeTaskWithRestorePVCRestoreSizeArg             = "restoreSize"
-	// KubeTaskWithRestorePVCSnapshotHandleArg is the kopia snapshot ID (CSI
-	// snapshotHandle). Used on the cross-cluster restore path when the named
-	// VolumeSnapshot doesn't exist on the dest cluster — function then creates
-	// a bridge VS+VSC referencing this handle.
-	KubeTaskWithRestorePVCSnapshotHandleArg = "snapshotHandle"
+	// KubeTaskWithRestorePVCRestoreSizeArg provides the fallback PVC size used when the VolumeSnapshot status carries none
+	KubeTaskWithRestorePVCRestoreSizeArg = "restoreSize"
 
-	defaultRestorePVCStorageClass = "kopia-restore"
-	defaultRestorePVCMountPath    = "/restore"
-	defaultRestorePVCTimeout      = 30 * time.Minute
+	defaultRestorePVCMountPath = "/restore"
+	defaultRestorePVCTimeout   = 30 * time.Minute
 
 	restorePVCJobPrefix = "kanister-restore-pvc-"
 )
@@ -79,8 +86,28 @@ func init() {
 	_ = kanister.Register(&kubeTaskWithRestorePVCFunc{})
 }
 
+// NewKubeTaskWithRestorePVCFunc returns a new instance of the generic
+// KubeTaskWithRestorePVC function. Versioned overrides (e.g. a downstream
+// v1.0.0-alpha registration) embed the returned value to reuse the generic
+// restore orchestration while adding their own pre/post behaviour such as
+// cross-cluster snapshot bridging.
+func NewKubeTaskWithRestorePVCFunc() kanister.Func {
+	return &kubeTaskWithRestorePVCFunc{}
+}
+
 var _ kanister.Func = (*kubeTaskWithRestorePVCFunc)(nil)
 
+// kubeTaskWithRestorePVCFunc provisions a staging PVC from a backed-up source
+// and runs a worker pod against it to restore data. It is CSI-driver agnostic:
+// the source can be a named VolumeSnapshot (volumeSnapshotName), an existing
+// PVC (sourcePVCName), or a label-selected staging PVC (pvcSelector), and the
+// staging StorageClass is supplied as an arg, so it works with any CSI driver
+// that supports provisioning a PVC from a VolumeSnapshot dataSource.
+//
+// This generic implementation operates within a single cluster: the referenced
+// VolumeSnapshot must already exist on the cluster. (Cross-cluster restore from
+// a foreign snapshot handle is an opt-in capability layered on by a versioned
+// override, not part of the generic function.)
 type kubeTaskWithRestorePVCFunc struct {
 	progressPercent string
 }
@@ -108,9 +135,6 @@ type kubeTaskWithRestorePVCArgs struct {
 	volumeSnapshotName      string
 	volumeSnapshotNamespace string
 	restoreSize             resource.Quantity
-	// snapshotHandle is the kopia snapshot ID; non-empty only for cross-cluster
-	// restore when the dest cluster doesn't have the VolumeSnapshot CR.
-	snapshotHandle string
 
 	workloadName      string
 	workloadNamespace string
@@ -140,7 +164,6 @@ func (*kubeTaskWithRestorePVCFunc) Arguments() []string {
 		KubeTaskWithRestorePVCVolumeSnapshotNameArg,
 		KubeTaskWithRestorePVCVolumeSnapshotNamespaceArg,
 		KubeTaskWithRestorePVCRestoreSizeArg,
-		KubeTaskWithRestorePVCSnapshotHandleArg,
 		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,
@@ -193,7 +216,6 @@ func (f *kubeTaskWithRestorePVCFunc) parseArgs(tp param.TemplateParams, args map
 	if err := f.parseRestorePodArgs(tp, args, parsed); err != nil {
 		return nil, err
 	}
-	mergeRestoreArtifact(tp, parsed)
 	return parsed, f.resolveRestoreContext(tp, parsed)
 }
 
@@ -205,13 +227,15 @@ func (f *kubeTaskWithRestorePVCFunc) parseRestoreCoreArgs(tp param.TemplateParam
 	if err = Arg(args, KubeTaskWithRestorePVCCommandArg, &parsed.command); err != nil {
 		return err
 	}
-	if parsed.env, err = parseEnvVars(args, KubeTaskWithRestorePVCEnvArg); err != nil {
+	if parsed.env, err = ParseEnvVars(args, KubeTaskWithRestorePVCEnvArg); err != nil {
 		return err
 	}
 	if err = OptArg(args, KubeTaskWithRestorePVCPathArg, &parsed.mountPath, defaultRestorePVCMountPath); err != nil {
 		return err
 	}
-	if err = OptArg(args, KubeTaskWithRestorePVCStorageClassArg, &parsed.storageClass, defaultStorageClass(tp, defaultRestorePVCStorageClass)); err != nil {
+	// Empty storageClass => use the cluster's default StorageClass (nil pointer
+	// at PVC-creation time). The blueprint passes storageClassName to override.
+	if err = OptArg(args, KubeTaskWithRestorePVCStorageClassArg, &parsed.storageClass, ""); err != nil {
 		return err
 	}
 	if err = OptArg(args, KubeTaskWithRestorePVCPVCSelectorArg, &parsed.pvcSelector, metav1.LabelSelector{}); err != nil {
@@ -246,10 +270,7 @@ func (f *kubeTaskWithRestorePVCFunc) parseRestoreSnapshotArgs(args map[string]in
 	if err := OptArg(args, KubeTaskWithRestorePVCVolumeSnapshotNamespaceArg, &parsed.volumeSnapshotNamespace, ""); err != nil {
 		return err
 	}
-	if err := parseOptionalQuantity(args, KubeTaskWithRestorePVCRestoreSizeArg, "restoreSize", &parsed.restoreSize); err != nil {
-		return err
-	}
-	return OptArg(args, KubeTaskWithRestorePVCSnapshotHandleArg, &parsed.snapshotHandle, "")
+	return parseOptionalQuantity(args, KubeTaskWithRestorePVCRestoreSizeArg, "restoreSize", &parsed.restoreSize)
 }
 
 func parseOptionalQuantity(args map[string]interface{}, argName, errLabel string, out *resource.Quantity) error {
@@ -268,29 +289,6 @@ func parseOptionalQuantity(args map[string]interface{}, argName, errLabel string
 	return nil
 }
 
-// mergeRestoreArtifact fills snapshot-related args from the conventional
-// "snapshot" input artifact when not explicitly provided.
-func mergeRestoreArtifact(tp param.TemplateParams, parsed *kubeTaskWithRestorePVCArgs) {
-	snapArt, ok := tp.ArtifactsIn[SnapshotArtifactKey]
-	if !ok {
-		return
-	}
-	kv := snapArt.KeyValue
-	if parsed.volumeSnapshotName == "" {
-		parsed.volumeSnapshotName = kv[OutputKeySnapshotName]
-	}
-	if parsed.snapshotHandle == "" {
-		parsed.snapshotHandle = kv[ArtifactKeyBackupIdentifier]
-	}
-	if parsed.restoreSize.IsZero() {
-		if sz := kv[ArtifactKeySize]; sz != "" {
-			if q, qErr := resource.ParseQuantity(sz); qErr == nil {
-				parsed.restoreSize = q
-			}
-		}
-	}
-}
-
 func (f *kubeTaskWithRestorePVCFunc) parseRestorePodArgs(tp param.TemplateParams, args map[string]interface{}, parsed *kubeTaskWithRestorePVCArgs) error {
 	if err := OptArg(args, PodAnnotationsArg, &parsed.bpAnnotations, nil); err != nil {
 		return err
@@ -304,7 +302,7 @@ func (f *kubeTaskWithRestorePVCFunc) parseRestorePodArgs(tp param.TemplateParams
 }
 
 func (f *kubeTaskWithRestorePVCFunc) resolveRestoreContext(tp param.TemplateParams, parsed *kubeTaskWithRestorePVCArgs) error {
-	parsed.workloadName, parsed.workloadNamespace = workloadFromTemplateParams(tp)
+	parsed.workloadName, parsed.workloadNamespace = WorkloadFromTemplateParams(tp)
 	if parsed.namespace == "" {
 		parsed.namespace = parsed.workloadNamespace
 	}
@@ -321,8 +319,11 @@ func (f *kubeTaskWithRestorePVCFunc) resolveRestoreContext(tp param.TemplatePara
 	if parsed.workloadNamespace != "" {
 		matchLabels[LabelKeyWorkloadNamespace] = parsed.workloadNamespace
 	}
-	if len(matchLabels) == 1 && parsed.sourcePVCName == "" {
-		return errkit.New("Unable to derive default pvcSelector: no workload context. Pass an explicit pvcSelector arg or sourcePVCName arg.")
+	// With no workload context the only label is staging-pvc=true, which would
+	// match every staging PVC in the namespace. Require an explicit
+	// sourcePVCName or volumeSnapshotName to disambiguate in that case.
+	if len(matchLabels) == 1 && parsed.sourcePVCName == "" && parsed.volumeSnapshotName == "" {
+		return errkit.New("Unable to derive default pvcSelector: no workload context. Pass an explicit pvcSelector, sourcePVCName, or volumeSnapshotName arg.")
 	}
 	parsed.pvcSelector = metav1.LabelSelector{MatchLabels: matchLabels}
 	return nil
@@ -333,9 +334,9 @@ func (f *kubeTaskWithRestorePVCFunc) run(ctx context.Context, cli kubernetes.Int
 	defer cancel()
 
 	// PVC resolution: try in order until one succeeds.
-	//   1. volumeSnapshotName  → materialize fresh PVC from the VS
+	//   1. volumeSnapshotName  → materialize fresh PVC from the named VS
 	//   2. sourcePVCName       → use existing PVC by exact name
-	//   3. pvcSelector         → discover PVC restored by K10
+	//   3. pvcSelector         → discover an existing staging PVC
 	//   4. sourcePVCName fallback → find VS whose source matched, then restore
 	var (
 		pvc *corev1.PersistentVolumeClaim
@@ -346,20 +347,6 @@ func (f *kubeTaskWithRestorePVCFunc) run(ctx context.Context, cli kubernetes.Int
 			field.M{"volumeSnapshotName": a.volumeSnapshotName,
 				"volumeSnapshotNamespace": a.volumeSnapshotNamespace,
 				"namespace":               a.namespace})
-
-		// Cross-cluster bridge: when the named VS is absent on this cluster,
-		// CreateFromSource it via a Retain-policy snapshot-class clone using
-		// the kopia handle from the input artifact. Defers cleanup so the
-		// bridge survives PVC bind and the pod's read. No-op same-cluster.
-		ns := a.volumeSnapshotNamespace
-		if ns == "" {
-			ns = a.namespace
-		}
-		snapshotCleanup, ensureErr := f.ensureRestoreSnapshot(ctx, cli, ns, a)
-		if ensureErr != nil {
-			return nil, ensureErr
-		}
-		defer snapshotCleanup()
 
 		pvc, err = f.restorePVCFromNamedSnapshot(ctx, cli, a)
 		if err != nil {
@@ -392,12 +379,12 @@ func (f *kubeTaskWithRestorePVCFunc) run(ctx context.Context, cli kubernetes.Int
 	}
 
 	// Delete staging PVC on exit (when cleanupPVC=true, the default). The
-	// kopia snapshot and VolumeSnapshot CR survive independently.
+	// VolumeSnapshot CR survives independently.
 	defer func() {
 		if !a.cleanupPVC {
 			return
 		}
-		if delErr := pvcGracefulDelete(ctx, cli, a.namespace, pvc.Name); delErr != nil {
+		if delErr := PVCGracefulDelete(ctx, cli, a.namespace, pvc.Name); delErr != nil {
 			log.WithError(delErr).WithContext(ctx).Print("Failed to delete restored staging PVC",
 				field.M{"namespace": a.namespace, "pvcName": pvc.Name})
 		}
@@ -410,7 +397,7 @@ func (f *kubeTaskWithRestorePVCFunc) run(ctx context.Context, cli kubernetes.Int
 	kube.AddLabelsToPodOptionsFromContext(ctx, podOpts, path.Join(consts.LabelPrefix, consts.LabelSuffixJobID))
 
 	pr := kube.NewPodRunner(cli, podOpts)
-	podOut, err := pr.Run(ctx, stagingPodRunner("Restore pod did not complete successfully"))
+	podOut, err := pr.Run(ctx, StagingPodRunner("Restore pod did not complete successfully"))
 	if err != nil {
 		return nil, errkit.Wrap(err, "Restore command failed",
 			"namespace", a.namespace, "pvcName", pvc.Name)
@@ -419,9 +406,9 @@ func (f *kubeTaskWithRestorePVCFunc) run(ctx context.Context, cli kubernetes.Int
 }
 
 // restorePVCFromSnapshot locates the VolumeSnapshot whose source matches the
-// backup-side staging PVC name from the artifact and provisions a fresh PVC
-// from it. The VS survives for the RestorePoint's lifetime, so this lookup
-// is reliable as long as the RestorePoint still exists.
+// backup-side staging PVC name and provisions a fresh PVC from it. The VS
+// survives for the RestorePoint's lifetime, so this lookup is reliable as long
+// as the RestorePoint still exists.
 func (f *kubeTaskWithRestorePVCFunc) restorePVCFromSnapshot(ctx context.Context, cli kubernetes.Interface, a *kubeTaskWithRestorePVCArgs) (*corev1.PersistentVolumeClaim, error) {
 	dynCli, err := kube.NewDynamicClient()
 	if err != nil {
@@ -474,7 +461,13 @@ func (f *kubeTaskWithRestorePVCFunc) restorePVCFromSnapshot(ctx context.Context,
 	}
 
 	pvcName := f.deriveRestoredPVCName(a)
-	sc := a.storageClass
+	// nil StorageClassName => cluster default StorageClass. A pointer to "" would
+	// instead disable dynamic provisioning, so only set it when resolved.
+	var scPtr *string
+	if a.storageClass != "" {
+		sc := a.storageClass
+		scPtr = &sc
+	}
 	apiGroup := "snapshot.storage.k8s.io"
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -484,7 +477,7 @@ func (f *kubeTaskWithRestorePVCFunc) restorePVCFromSnapshot(ctx context.Context,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			StorageClassName: &sc,
+			StorageClassName: scPtr,
 			DataSource: &corev1.TypedLocalObjectReference{
 				APIGroup: &apiGroup,
 				Kind:     "VolumeSnapshot",
@@ -503,9 +496,9 @@ func (f *kubeTaskWithRestorePVCFunc) restorePVCFromSnapshot(ctx context.Context,
 			"namespace", a.namespace, "pvcName", pvcName, "volumeSnapshot", match.name)
 	}
 	log.WithContext(ctx).Print("Created restored staging PVC from VolumeSnapshot",
-		field.M{"namespace": a.namespace, "pvcName": created.Name, "volumeSnapshot": match.name, "storageClass": sc, "size": size.String()})
+		field.M{"namespace": a.namespace, "pvcName": created.Name, "volumeSnapshot": match.name, "storageClass": a.storageClass, "size": size.String()})
 
-	if err := waitForPVCBound(ctx, cli, a.namespace, created.Name); err != nil {
+	if err := WaitForPVCBound(ctx, cli, a.namespace, created.Name); err != nil {
 		return nil, errkit.Wrap(err, "Restored staging PVC did not become Bound",
 			"namespace", a.namespace, "pvcName", created.Name, "volumeSnapshot", match.name)
 	}
@@ -543,7 +536,7 @@ func (f *kubeTaskWithRestorePVCFunc) restorePVCFromNamedSnapshot(ctx context.Con
 		field.M{"namespace": ns, "pvcName": pvcName, "volumeSnapshotName": a.volumeSnapshotName,
 			"storageClass": a.storageClass, "size": size.String()})
 
-	if err := waitForPVCBound(ctx, cli, ns, pvcName); err != nil {
+	if err := WaitForPVCBound(ctx, cli, ns, pvcName); err != nil {
 		return nil, errkit.Wrap(err, "Restored staging PVC did not become Bound",
 			"namespace", ns, "pvcName", pvcName, "volumeSnapshotName", a.volumeSnapshotName)
 	}
@@ -673,128 +666,4 @@ func (f *kubeTaskWithRestorePVCFunc) buildPodOptions(a *kubeTaskWithRestorePVCAr
 		Annotations:          a.bpAnnotations,
 		Labels:               a.bpLabels,
 	}
-}
-
-// ensureRestoreSnapshot guarantees a usable VolumeSnapshot exists at
-// (volumeSnapshotName, ns) on the dest cluster. Same-cluster: no-op. Cross-
-// cluster: materialize VS+VSC from the kopia snapshotHandle and return a
-// cleanup that deletes the bridge on exit. Kopia content survives via
-// Retain on the cloned VolumeSnapshotClass.
-func (f *kubeTaskWithRestorePVCFunc) ensureRestoreSnapshot(ctx context.Context, cli kubernetes.Interface, ns string, a *kubeTaskWithRestorePVCArgs) (func(), error) {
-	noop := func() {}
-	dynCli, err := kube.NewDynamicClient()
-	if err != nil {
-		return noop, errkit.Wrap(err, "Failed to create dynamic client")
-	}
-	snapshotter := snapshot.NewSnapshotter(cli, dynCli)
-
-	if _, getErr := snapshotter.Get(ctx, a.volumeSnapshotName, ns); getErr == nil {
-		return noop, nil
-	} else if !apierrors.IsNotFound(getErr) {
-		return noop, errkit.Wrap(getErr, "Failed to look up VolumeSnapshot",
-			"volumeSnapshotName", a.volumeSnapshotName, "namespace", ns)
-	}
-
-	if a.snapshotHandle == "" {
-		return noop, errkit.New(
-			"VolumeSnapshot not found on dest cluster and no snapshotHandle provided for cross-cluster restore",
-			"volumeSnapshotName", a.volumeSnapshotName, "namespace", ns,
-		)
-	}
-
-	if err := f.createSnapshotFromSource(ctx, snapshotter, dynCli, ns, a); err != nil {
-		return noop, err
-	}
-
-	cleanup := func() {
-		cleanupCtx, cancel := context.WithTimeout(context.Background(), cleanupSnapshotTimeout)
-		defer cancel()
-		cleanupSnapshot(cleanupCtx, snapshotter, a.volumeSnapshotName, ns)
-	}
-	return cleanup, nil
-}
-
-// createSnapshotFromSource materializes the VS + VSC on the dest cluster
-// from a kopia handle. Looks up a snapshot class for our driver, clones it
-// with DeletionPolicy: Retain (idempotent), then CreateFromSource and waits
-// for readyToUse.
-func (f *kubeTaskWithRestorePVCFunc) createSnapshotFromSource(ctx context.Context, snapshotter snapshot.Snapshotter, dynCli dynamic.Interface, ns string, a *kubeTaskWithRestorePVCArgs) error {
-	sourceClass, err := snapshotClassForRestore(ctx, dynCli, backupCSIDriverName)
-	if err != nil {
-		return errkit.Wrap(err, "dest cluster must have a VolumeSnapshotClass for driver", "driver", backupCSIDriverName)
-	}
-	cloneClassName := kanisterClonePrefix + sourceClass
-	if err := snapshotter.CloneVolumeSnapshotClass(ctx,
-		sourceClass, cloneClassName,
-		snapshot.DeletionPolicyRetain,
-		nil,
-	); err != nil {
-		return errkit.Wrap(err, "Failed to clone VolumeSnapshotClass with Retain",
-			"sourceClass", sourceClass, "cloneClass", cloneClassName)
-	}
-
-	log.WithContext(ctx).Print("Creating VolumeSnapshot from kopia handle",
-		field.M{
-			"volumeSnapshot": a.volumeSnapshotName,
-			"namespace":      ns,
-			"snapshotHandle": a.snapshotHandle,
-			"sourceClass":    sourceClass,
-			"cloneClass":     cloneClassName,
-		})
-
-	return snapshotter.CreateFromSource(ctx,
-		&snapshot.Source{
-			Handle:                  a.snapshotHandle,
-			Driver:                  backupCSIDriverName,
-			VolumeSnapshotClassName: cloneClassName,
-		},
-		true,
-		snapshot.ObjectMeta{
-			Name:      a.volumeSnapshotName,
-			Namespace: ns,
-			Labels:    map[string]string{LabelKeySnapshotCloned: "true"},
-		},
-		snapshot.ObjectMeta{},
-	)
-}
-
-// cleanupSnapshot deletes the VolumeSnapshot and its VolumeSnapshotContent.
-// Best-effort: errors are logged, not returned.
-func cleanupSnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, vsName, ns string) {
-	vs, err := snapshotter.Delete(ctx, vsName, ns)
-	if err != nil {
-		log.WithError(err).WithContext(ctx).Print("Failed to delete VolumeSnapshot",
-			field.M{"name": vsName, "namespace": ns})
-	}
-	if vs != nil && vs.Spec.Source.VolumeSnapshotContentName != nil {
-		if err := snapshotter.DeleteContent(ctx, *vs.Spec.Source.VolumeSnapshotContentName); err != nil {
-			log.WithError(err).WithContext(ctx).Print("Failed to delete VolumeSnapshotContent",
-				field.M{"name": *vs.Spec.Source.VolumeSnapshotContentName})
-		}
-	}
-}
-
-// snapshotClassForRestore returns the name of any VolumeSnapshotClass on
-// the dest cluster whose driver field equals driverName, skipping our own
-// clone classes (kanister-clone-*) to prevent nested clones.
-func snapshotClassForRestore(ctx context.Context, dynCli dynamic.Interface, driverName string) (string, error) {
-	list, err := dynCli.Resource(snapshot.VolSnapClassGVR).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to list VolumeSnapshotClasses")
-	}
-	for i := range list.Items {
-		drv, _, _ := unstructured.NestedString(list.Items[i].Object, snapshot.VolSnapClassDriverKey)
-		if drv != driverName {
-			continue
-		}
-		name, _, _ := unstructured.NestedString(list.Items[i].Object, "metadata", "name")
-		if name == "" {
-			continue
-		}
-		if strings.HasPrefix(name, kanisterClonePrefix) {
-			continue
-		}
-		return name, nil
-	}
-	return "", errkit.New("no VolumeSnapshotClass found for driver on dest cluster", "driver", driverName)
 }

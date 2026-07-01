@@ -46,28 +46,40 @@ import (
 )
 
 const (
+	// KubeTaskWithBackupPVCFuncName gives the name of the function
 	KubeTaskWithBackupPVCFuncName = "KubeTaskWithBackupPVC"
+	// KubeTaskWithBackupPVCImageArg provides the container image used for the backup worker pod
+	KubeTaskWithBackupPVCImageArg = "image"
+	// KubeTaskWithBackupPVCCommandArg provides the shell-form command that writes into the staging PVC
+	KubeTaskWithBackupPVCCommandArg = "command"
+	// KubeTaskWithBackupPVCEnvArg provides the list of environment variables injected into the worker pod
+	KubeTaskWithBackupPVCEnvArg = "env"
+	// KubeTaskWithBackupPVCPathArg provides the mount path for the staging PVC inside the worker pod
+	KubeTaskWithBackupPVCPathArg = "path"
+	// KubeTaskWithBackupPVCStorageClassArg provides the StorageClass used to provision the staging PVC
+	KubeTaskWithBackupPVCStorageClassArg = "storageClassName"
+	// KubeTaskWithBackupPVCSizeArg provides the requested size of the staging PVC
+	KubeTaskWithBackupPVCSizeArg = "size"
+	// KubeTaskWithBackupPVCPVCNameArg overrides the auto-generated name of the staging PVC
+	KubeTaskWithBackupPVCPVCNameArg = "pvcName"
+	// KubeTaskWithBackupPVCNamespaceArg provides the namespace to create the staging PVC and worker pod in
+	KubeTaskWithBackupPVCNamespaceArg = "namespace"
+	// KubeTaskWithBackupPVCServiceAccountArg provides the ServiceAccount for the worker pod
+	KubeTaskWithBackupPVCServiceAccountArg = "serviceAccountName"
+	// KubeTaskWithBackupPVCTimeoutArg provides the overall timeout for the phase
+	KubeTaskWithBackupPVCTimeoutArg = "timeout"
+	// KubeTaskWithBackupPVCKeepPVCOnFailureArg retains the staging PVC on failure for debugging
+	KubeTaskWithBackupPVCKeepPVCOnFailureArg = "keepPVCOnFailure"
+	// KubeTaskWithBackupPVCTakeSnapshotArg controls whether the function drives a CSI snapshot after the command exits
+	KubeTaskWithBackupPVCTakeSnapshotArg = "takeSnapshot"
+	// KubeTaskWithBackupPVCSnapshotClassArg provides the VolumeSnapshotClass used when takeSnapshot=true
+	KubeTaskWithBackupPVCSnapshotClassArg = "snapshotClass"
+	// KubeTaskWithBackupPVCCleanupArg controls whether the staging PVC is deleted at phase exit
+	KubeTaskWithBackupPVCCleanupArg = "cleanup"
 
-	KubeTaskWithBackupPVCImageArg                   = "image"
-	KubeTaskWithBackupPVCCommandArg                 = "command"
-	KubeTaskWithBackupPVCEnvArg                     = "env"
-	KubeTaskWithBackupPVCPathArg                    = "path"
-	KubeTaskWithBackupPVCStorageClassArg            = "storageClassName"
-	KubeTaskWithBackupPVCSizeArg                    = "size"
-	KubeTaskWithBackupPVCPVCNameArg                 = "pvcName"
-	KubeTaskWithBackupPVCNamespaceArg               = "namespace"
-	KubeTaskWithBackupPVCServiceAccountArg          = "serviceAccountName"
-	KubeTaskWithBackupPVCTimeoutArg                 = "timeout"
-	KubeTaskWithBackupPVCKeepPVCOnFailureArg        = "keepPVCOnFailure"
-	KubeTaskWithBackupPVCKeepPodAliveForSnapshotArg = "keepPodAliveForSnapshot"
-	KubeTaskWithBackupPVCTakeSnapshotArg            = "takeSnapshot"
-	KubeTaskWithBackupPVCSnapshotClassArg           = "snapshotClass"
-	KubeTaskWithBackupPVCCleanupArg                 = "cleanup"
-
-	defaultBackupPVCStorageClass = "kopia-backup"
-	defaultBackupPVCMountPath    = "/backup"
-	defaultBackupPVCSize         = "1Ti"
-	defaultBackupPVCTimeout      = 30 * time.Minute
+	defaultBackupPVCMountPath = "/backup"
+	defaultBackupPVCSize      = "1Ti"
+	defaultBackupPVCTimeout   = 30 * time.Minute
 
 	// keepAliveCommandDoneMarker is emitted by the wrapped command after the
 	// user command exits; the function returns once it sees the marker even
@@ -75,16 +87,37 @@ const (
 	// the CSI snapshot.
 	keepAliveCommandDoneMarker = "###KANISTER-COMMAND-DONE###"
 
+	// LabelKeyKeepAlivePod marks worker pods that intentionally outlive their command exit so the CSI snapshot can capture a mounted volume
 	LabelKeyKeepAlivePod = "kanister.io/keep-alive-for-snapshot"
-	backupPVCJobPrefix   = "kanister-backup-pvc-"
+
+	backupPVCJobPrefix = "kanister-backup-pvc-"
 )
 
 func init() {
 	_ = kanister.Register(&kubeTaskWithBackupPVCFunc{})
 }
 
+// NewKubeTaskWithBackupPVCFunc returns a new instance of the generic
+// KubeTaskWithBackupPVC function. Versioned overrides (e.g. a downstream
+// v1.0.0-alpha registration) embed the returned value to reuse the generic
+// backup orchestration while adding their own pre/post behaviour.
+func NewKubeTaskWithBackupPVCFunc() kanister.Func {
+	return &kubeTaskWithBackupPVCFunc{}
+}
+
 var _ kanister.Func = (*kubeTaskWithBackupPVCFunc)(nil)
 
+// kubeTaskWithBackupPVCFunc backs up data into a freshly provisioned staging
+// PVC and (optionally) takes a CSI VolumeSnapshot of it. It is CSI-driver
+// agnostic: the staging StorageClass and snapshotClass are supplied as args,
+// so it works with any CSI driver that supports dynamic provisioning and (for
+// takeSnapshot=true) the VolumeSnapshot API.
+//
+// When takeSnapshot=true the function internally keeps the worker pod (and
+// therefore the volume mount) alive until the snapshot reaches a terminal
+// state. Streaming/FUSE-backed CSI drivers require a live mount during
+// CreateSnapshot; for plain block CSI drivers the held mount is harmless.
+// The pod is deleted as soon as the snapshot is ready.
 type kubeTaskWithBackupPVCFunc struct {
 	progressPercent string
 }
@@ -138,7 +171,6 @@ func (*kubeTaskWithBackupPVCFunc) Arguments() []string {
 		KubeTaskWithBackupPVCServiceAccountArg,
 		KubeTaskWithBackupPVCTimeoutArg,
 		KubeTaskWithBackupPVCKeepPVCOnFailureArg,
-		KubeTaskWithBackupPVCKeepPodAliveForSnapshotArg,
 		KubeTaskWithBackupPVCTakeSnapshotArg,
 		KubeTaskWithBackupPVCSnapshotClassArg,
 		KubeTaskWithBackupPVCCleanupArg,
@@ -235,13 +267,15 @@ func (f *kubeTaskWithBackupPVCFunc) parseBackupCoreArgs(tp param.TemplateParams,
 	if err = Arg(args, KubeTaskWithBackupPVCCommandArg, &parsed.command); err != nil {
 		return err
 	}
-	if parsed.env, err = parseEnvVars(args, KubeTaskWithBackupPVCEnvArg); err != nil {
+	if parsed.env, err = ParseEnvVars(args, KubeTaskWithBackupPVCEnvArg); err != nil {
 		return err
 	}
 	if err = OptArg(args, KubeTaskWithBackupPVCPathArg, &parsed.mountPath, defaultBackupPVCMountPath); err != nil {
 		return err
 	}
-	if err = OptArg(args, KubeTaskWithBackupPVCStorageClassArg, &parsed.storageClass, defaultStorageClass(tp, defaultBackupPVCStorageClass)); err != nil {
+	// Empty storageClass => use the cluster's default StorageClass (nil pointer
+	// at PVC-creation time). The blueprint passes storageClassName to override.
+	if err = OptArg(args, KubeTaskWithBackupPVCStorageClassArg, &parsed.storageClass, ""); err != nil {
 		return err
 	}
 	var sizeStr string
@@ -271,12 +305,6 @@ func (f *kubeTaskWithBackupPVCFunc) parseBackupCoreArgs(tp param.TemplateParams,
 }
 
 func (f *kubeTaskWithBackupPVCFunc) parseBackupSnapshotArgs(args map[string]interface{}, parsed *kubeTaskWithBackupPVCArgs) error {
-	if err := OptArg(args, KubeTaskWithBackupPVCKeepPodAliveForSnapshotArg, &parsed.keepPodAliveSeconds, 0); err != nil {
-		return err
-	}
-	if parsed.keepPodAliveSeconds < 0 {
-		return errkit.New("keepPodAliveForSnapshot must be >= 0", "value", parsed.keepPodAliveSeconds)
-	}
 	if err := OptArg(args, KubeTaskWithBackupPVCTakeSnapshotArg, &parsed.takeSnapshot, true); err != nil {
 		return err
 	}
@@ -293,7 +321,12 @@ func (f *kubeTaskWithBackupPVCFunc) parseBackupSnapshotArgs(args map[string]inte
 	if !parsed.takeSnapshot && parsed.cleanup {
 		return errkit.New("cleanup=true requires takeSnapshot=true; the postBackupHook owns staging-PVC cleanup in hook patterns")
 	}
-	if parsed.takeSnapshot && parsed.keepPodAliveSeconds == 0 {
+	// Implicit keep-alive: when the function drives its own snapshot, hold the
+	// worker pod (and its mount) alive for the full function timeout so the
+	// CSI driver sees a live mount during CreateSnapshot. The pod is actively
+	// killed by the deferred cleanup once the snapshot reaches a terminal
+	// state. Block CSI drivers don't need this but it's harmless for them.
+	if parsed.takeSnapshot {
 		parsed.keepPodAliveSeconds = int(parsed.timeout.Seconds())
 	}
 	return nil
@@ -312,7 +345,7 @@ func (f *kubeTaskWithBackupPVCFunc) parseBackupPodArgs(tp param.TemplateParams, 
 }
 
 func (f *kubeTaskWithBackupPVCFunc) resolveBackupContext(ctx context.Context, tp param.TemplateParams, parsed *kubeTaskWithBackupPVCArgs) error {
-	parsed.workloadName, parsed.workloadNamespace = workloadFromTemplateParams(tp)
+	parsed.workloadName, parsed.workloadNamespace = WorkloadFromTemplateParams(tp)
 	if parsed.namespace == "" {
 		parsed.namespace = parsed.workloadNamespace
 	}
@@ -326,7 +359,7 @@ func (f *kubeTaskWithBackupPVCFunc) resolveBackupContext(ctx context.Context, tp
 		}
 		parsed.pvcName = fmt.Sprintf("%s-backup-%s", base, rand.String(6))
 	}
-	parsed.actionSetTag = actionSetTagFromContext(ctx)
+	parsed.actionSetTag = ActionSetTagFromContext(ctx)
 	if parsed.actionSetTag == "" {
 		return errkit.New("Unable to read ActionSet name from context; required to stamp the owner-action label")
 	}
@@ -354,13 +387,13 @@ func (f *kubeTaskWithBackupPVCFunc) run(ctx context.Context, cli kubernetes.Inte
 				field.M{"namespace": a.namespace, "pvcName": pvc.Name})
 			return
 		}
-		if delErr := pvcGracefulDelete(ctx, cli, a.namespace, pvc.Name); delErr != nil {
+		if delErr := PVCGracefulDelete(ctx, cli, a.namespace, pvc.Name); delErr != nil {
 			log.WithError(delErr).WithContext(ctx).Print("Failed to delete staging PVC",
 				field.M{"namespace": a.namespace, "pvcName": pvc.Name, "snapshotTaken": a.takeSnapshot, "execErr": retErr != nil})
 		}
 	}()
 
-	if err := waitForPVCBound(ctx, cli, a.namespace, pvc.Name); err != nil {
+	if err := WaitForPVCBound(ctx, cli, a.namespace, pvc.Name); err != nil {
 		return nil, errkit.Wrap(err, "Staging PVC did not become Bound",
 			"namespace", a.namespace, "pvcName", pvc.Name, "storageClass", a.storageClass)
 	}
@@ -379,7 +412,7 @@ func (f *kubeTaskWithBackupPVCFunc) run(ctx context.Context, cli kubernetes.Inte
 		podOut, keepAlivePod, err = f.runWithKeepAlivePod(ctx, cli, podOpts, a)
 	} else {
 		pr := kube.NewPodRunner(cli, podOpts)
-		podOut, err = pr.Run(ctx, stagingPodRunner("Backup pod did not complete successfully"))
+		podOut, err = pr.Run(ctx, StagingPodRunner("Backup pod did not complete successfully"))
 	}
 
 	// Pod-kill defer; LIFO before the PVC defer so the mount is released first.
@@ -475,9 +508,10 @@ func (f *kubeTaskWithBackupPVCFunc) takeStagingSnapshot(
 	}
 
 	// Best-effort: surface the CSI snapshotHandle so blueprints can carry a
-	// content-addressed identifier (kopia snapshot ID for backup-csi-driver)
-	// for cross-cluster restore. Same-cluster restore via volumeSnapshotName
-	// still works without it; log loud so failures are observable.
+	// content-addressed identifier for cross-cluster restore with drivers that
+	// support importing a foreign handle. Same-cluster restore via
+	// volumeSnapshotName still works without it; log loud so failures are
+	// observable.
 	src, srcErr := snapshotter.GetSource(ctx, snapName, a.namespace)
 	switch {
 	case srcErr != nil:
@@ -496,8 +530,8 @@ func (f *kubeTaskWithBackupPVCFunc) takeStagingSnapshot(
 
 // deriveRestoreSize falls back through snapshot.status.RestoreSize →
 // PVC.status.Capacity → PVC.spec.Requests → defaultBackupPVCSize so the
-// blueprint's restoreSize template always renders, even when streaming CSI
-// drivers (kopia/backup-csi-driver) leave vs.Status.RestoreSize nil.
+// blueprint's restoreSize template always renders, even when a CSI driver
+// leaves vs.Status.RestoreSize nil (some streaming drivers do).
 func (f *kubeTaskWithBackupPVCFunc) deriveRestoreSize(
 	ctx context.Context,
 	cli kubernetes.Interface,
@@ -519,7 +553,14 @@ func (f *kubeTaskWithBackupPVCFunc) deriveRestoreSize(
 }
 
 func (f *kubeTaskWithBackupPVCFunc) createStagingPVC(ctx context.Context, cli kubernetes.Interface, a *kubeTaskWithBackupPVCArgs) (*corev1.PersistentVolumeClaim, error) {
-	sc := a.storageClass
+	// nil StorageClassName => provision from the cluster default StorageClass.
+	// A pointer to "" would instead disable dynamic provisioning, so only set
+	// the pointer when an explicit storageClass was resolved.
+	var scPtr *string
+	if a.storageClass != "" {
+		sc := a.storageClass
+		scPtr = &sc
+	}
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      a.pvcName,
@@ -528,7 +569,7 @@ func (f *kubeTaskWithBackupPVCFunc) createStagingPVC(ctx context.Context, cli ku
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			StorageClassName: &sc,
+			StorageClassName: scPtr,
 			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: a.size,
@@ -571,7 +612,7 @@ func (f *kubeTaskWithBackupPVCFunc) runWithKeepAlivePod(
 	podOpts *kube.PodOptions,
 	a *kubeTaskWithBackupPVCArgs,
 ) (map[string]interface{}, string, error) {
-	wrapped, err := wrapCommandForKeepAlive(podOpts.Command, a.keepPodAliveSeconds)
+	wrapped, err := WrapCommandForKeepAlive(podOpts.Command, a.keepPodAliveSeconds)
 	if err != nil {
 		return nil, "", err
 	}
@@ -607,7 +648,7 @@ func (f *kubeTaskWithBackupPVCFunc) runWithKeepAlivePod(
 	}
 	defer r.Close() //nolint:errcheck
 
-	exitCode, captured, err := waitForKeepAliveMarker(streamCtx, r)
+	exitCode, captured, err := WaitForKeepAliveMarker(streamCtx, r)
 	if err != nil {
 		return nil, pod.Name, errkit.Wrap(err, "Failed waiting for command-done marker", "pod", pc.PodName())
 	}
@@ -622,12 +663,12 @@ func (f *kubeTaskWithBackupPVCFunc) runWithKeepAlivePod(
 	return parsedOut, pod.Name, nil
 }
 
-// wrapCommandForKeepAlive composes the user command into a shell pipeline
+// WrapCommandForKeepAlive composes the user command into a shell pipeline
 // that prints a marker (with the user command's exit code) and then sleeps,
 // holding the mount alive. Only supports the [bash|sh, -c, <script>] form.
-func wrapCommandForKeepAlive(orig []string, seconds int) ([]string, error) {
+func WrapCommandForKeepAlive(orig []string, seconds int) ([]string, error) {
 	if len(orig) < 3 {
-		return nil, errkit.New("keepPodAliveForSnapshot requires command of form [bash|sh, -c, <script>]",
+		return nil, errkit.New("takeSnapshot=true requires command of form [bash|sh, -c, <script>]",
 			"command", orig)
 	}
 	shell := orig[0]
@@ -635,10 +676,10 @@ func wrapCommandForKeepAlive(orig []string, seconds int) ([]string, error) {
 	switch shell {
 	case "bash", "sh", "/bin/bash", "/bin/sh":
 	default:
-		return nil, errkit.New("keepPodAliveForSnapshot requires shell to be bash or sh", "shell", shell)
+		return nil, errkit.New("takeSnapshot=true requires command shell to be bash or sh", "shell", shell)
 	}
 	if flag != "-c" {
-		return nil, errkit.New("keepPodAliveForSnapshot requires shell flag to be -c", "flag", flag)
+		return nil, errkit.New("takeSnapshot=true requires command shell flag to be -c", "flag", flag)
 	}
 	user := orig[2]
 	wrapped := fmt.Sprintf(
@@ -648,10 +689,10 @@ func wrapCommandForKeepAlive(orig []string, seconds int) ([]string, error) {
 	return []string{shell, "-c", wrapped}, nil
 }
 
-// waitForKeepAliveMarker scans pod log lines until the marker is seen and
+// WaitForKeepAliveMarker scans pod log lines until the marker is seen and
 // returns the embedded exit code plus everything emitted before the marker
 // (for downstream kando-output parsing).
-func waitForKeepAliveMarker(ctx context.Context, r io.Reader) (int, string, error) {
+func WaitForKeepAliveMarker(ctx context.Context, r io.Reader) (int, string, error) {
 	const maxLine = 1 * 1024 * 1024
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 64*1024), maxLine)

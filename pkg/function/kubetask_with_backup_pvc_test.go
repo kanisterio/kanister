@@ -47,14 +47,15 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsDefaults(c *check.C) {
 	args := map[string]interface{}{
 		KubeTaskWithBackupPVCImageArg:         "bitnami/postgresql:latest",
 		KubeTaskWithBackupPVCCommandArg:       []string{"sh", "-c", "echo hi > /backup/x"},
-		KubeTaskWithBackupPVCSnapshotClassArg: "kopia-snapshot-class",
+		KubeTaskWithBackupPVCSnapshotClassArg: "csi-snapshot-class",
 	}
 	f := &kubeTaskWithBackupPVCFunc{}
 	parsed, err := f.parseArgs(ctx, tp, args)
 	c.Assert(err, check.IsNil)
 	c.Check(parsed.image, check.Equals, "bitnami/postgresql:latest")
 	c.Check(parsed.mountPath, check.Equals, defaultBackupPVCMountPath)
-	c.Check(parsed.storageClass, check.Equals, defaultBackupPVCStorageClass)
+	// Empty default storageClass => cluster default StorageClass is used.
+	c.Check(parsed.storageClass, check.Equals, "")
 	c.Check(parsed.size.String(), check.Equals, defaultBackupPVCSize)
 	c.Check(parsed.timeout, check.Equals, defaultBackupPVCTimeout)
 	c.Check(parsed.namespace, check.Equals, "demo")
@@ -64,7 +65,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsDefaults(c *check.C) {
 	c.Check(parsed.pvcName, check.HasLen, len("pg-backup-")+6)
 	c.Check(parsed.keepPVCOnFailure, check.Equals, false)
 	c.Check(parsed.takeSnapshot, check.Equals, true)
-	c.Check(parsed.snapshotClass, check.Equals, "kopia-snapshot-class")
+	c.Check(parsed.snapshotClass, check.Equals, "csi-snapshot-class")
 	c.Check(parsed.cleanup, check.Equals, true)
 }
 
@@ -74,41 +75,23 @@ func (s *KubeTaskWithBackupPVCSuite) TestParseArgsHookModeDefaults(c *check.C) {
 	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	tp := param.TemplateParams{StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"}}
 	args := map[string]interface{}{
-		KubeTaskWithBackupPVCImageArg:                   "img",
-		KubeTaskWithBackupPVCCommandArg:                 []string{"true"},
-		KubeTaskWithBackupPVCTakeSnapshotArg:            false,
-		KubeTaskWithBackupPVCCleanupArg:                 false,
-		KubeTaskWithBackupPVCKeepPodAliveForSnapshotArg: 300,
+		KubeTaskWithBackupPVCImageArg:        "img",
+		KubeTaskWithBackupPVCCommandArg:      []string{"true"},
+		KubeTaskWithBackupPVCTakeSnapshotArg: false,
+		KubeTaskWithBackupPVCCleanupArg:      false,
 	}
 	parsed, err := (&kubeTaskWithBackupPVCFunc{}).parseArgs(ctx, tp, args)
 	c.Assert(err, check.IsNil)
 	c.Check(parsed.takeSnapshot, check.Equals, false)
 	c.Check(parsed.cleanup, check.Equals, false)
-	c.Check(parsed.keepPodAliveSeconds, check.Equals, 300)
+	// Hook mode: no implicit keep-alive (posthook handles mount lifecycle externally).
+	c.Check(parsed.keepPodAliveSeconds, check.Equals, 0)
 }
 
-func (s *KubeTaskWithBackupPVCSuite) TestParseArgsTakeSnapshotWithExplicitKeepAlive(c *check.C) {
-	// takeSnapshot=true cooperates with keepPodAliveForSnapshot — they are
-	// NOT mutually exclusive. The CSI driver needs a live mount during
-	// CreateSnapshot, so keep-alive is the mechanism the function uses
-	// to hold the mount; the user may override the duration.
-	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
-	tp := param.TemplateParams{StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"}}
-	args := map[string]interface{}{
-		KubeTaskWithBackupPVCImageArg:                   "img",
-		KubeTaskWithBackupPVCCommandArg:                 []string{"true"},
-		KubeTaskWithBackupPVCSnapshotClassArg:           "snap",
-		KubeTaskWithBackupPVCKeepPodAliveForSnapshotArg: 600,
-	}
-	parsed, err := (&kubeTaskWithBackupPVCFunc{}).parseArgs(ctx, tp, args)
-	c.Assert(err, check.IsNil)
-	c.Check(parsed.takeSnapshot, check.Equals, true)
-	c.Check(parsed.keepPodAliveSeconds, check.Equals, 600)
-}
-
-func (s *KubeTaskWithBackupPVCSuite) TestParseArgsTakeSnapshotDefaultsKeepAliveToTimeout(c *check.C) {
-	// When takeSnapshot=true and keepPodAliveForSnapshot is unset, parseArgs
-	// auto-fills the keep-alive duration to the function timeout.
+func (s *KubeTaskWithBackupPVCSuite) TestParseArgsTakeSnapshotImplicitKeepAlive(c *check.C) {
+	// When takeSnapshot=true, parseArgs implicitly holds the worker pod alive
+	// for the full function timeout so streaming CSI drivers see a live mount
+	// during CreateSnapshot. The behaviour is internal — no user-facing arg.
 	ctx := field.Context(context.Background(), consts.ActionsetNameKey, "u")
 	tp := param.TemplateParams{StatefulSet: &param.StatefulSetParams{Name: "pg", Namespace: "demo"}}
 	args := map[string]interface{}{
@@ -233,7 +216,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestCreateStagingPVCShape(c *check.C) {
 		image:             "img",
 		command:           []string{"true"},
 		mountPath:         "/backup",
-		storageClass:      "kopia-backup",
+		storageClass:      "test-storage-class",
 		size:              resource.MustParse("1Gi"),
 		pvcName:           "pg-backup-x",
 		namespace:         "demo",
@@ -246,7 +229,7 @@ func (s *KubeTaskWithBackupPVCSuite) TestCreateStagingPVCShape(c *check.C) {
 	c.Assert(pvc, check.NotNil)
 	c.Check(pvc.Name, check.Equals, "pg-backup-x")
 	c.Check(pvc.Namespace, check.Equals, "demo")
-	c.Check(*pvc.Spec.StorageClassName, check.Equals, "kopia-backup")
+	c.Check(*pvc.Spec.StorageClassName, check.Equals, "test-storage-class")
 	c.Check(pvc.Spec.AccessModes, check.DeepEquals, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce})
 	storage := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
 	c.Check(storage.String(), check.Equals, "1Gi")

@@ -35,40 +35,36 @@ import (
 )
 
 const (
-	LabelKeyIncludeInBackup   = "kasten.io/include-in-backup"
-	LabelKeyOwnerAction       = "kanister.io/owner-action"
-	LabelKeyStagingPVC        = "kanister.io/staging-pvc"
-	LabelKeyWorkloadName      = "kanister.io/workload-name"
+	// LabelKeyIncludeInBackup marks the staging PVC as one the backup system should snapshot
+	LabelKeyIncludeInBackup = "kanister.io/include-in-backup"
+	// LabelKeyOwnerAction identifies the ActionSet that owns the staging PVC (name of the ActionSet)
+	LabelKeyOwnerAction = "kanister.io/owner-action"
+	// LabelKeyStagingPVC identifies a PVC provisioned by KubeTaskWithBackupPVC for backup staging
+	LabelKeyStagingPVC = "kanister.io/staging-pvc"
+	// LabelKeyWorkloadName carries the name of the workload the staging PVC was created for
+	LabelKeyWorkloadName = "kanister.io/workload-name"
+	// LabelKeyWorkloadNamespace carries the namespace of the workload the staging PVC was created for
 	LabelKeyWorkloadNamespace = "kanister.io/workload-namespace"
-	LabelKeySnapshotCloned    = "kanister.io/snapshot-cloned"
 
-	OutputKeyStagingPVCName      = "pvcName"
+	// OutputKeyStagingPVCName provides the name of the staging PVC in the function's Output map
+	OutputKeyStagingPVCName = "pvcName"
+	// OutputKeyStagingPVCNamespace provides the namespace of the staging PVC in the function's Output map
 	OutputKeyStagingPVCNamespace = "namespace"
-	OutputKeySnapshotName        = "volumeSnapshotName"
-	OutputKeySnapshotNamespace   = "volumeSnapshotNamespace"
+	// OutputKeySnapshotName provides the name of the VolumeSnapshot created by the function
+	OutputKeySnapshotName = "volumeSnapshotName"
+	// OutputKeySnapshotNamespace provides the namespace of the VolumeSnapshot created by the function
+	OutputKeySnapshotNamespace = "volumeSnapshotNamespace"
+	// OutputKeySnapshotRestoreSize provides the restore size resolved from the VolumeSnapshot (or the fallback chain)
 	OutputKeySnapshotRestoreSize = "restoreSize"
-	OutputKeySnapshotContent     = "snapshotContent"
-	OutputKeySnapshotHandle      = "snapshotHandle"
-
-	backupCSIDriverName = "backup.csi.kastenhq.io"
-	kanisterClonePrefix = "kanister-clone-"
-
-	// OptionKeyCSIStorageClass is the ActionSet option K10 injects when the CSI
-	// driver integration feature flag is on. Its value is the per-profile
-	// StorageClass name (csi-kopia-backup-<profile> / csi-kopia-restore-<profile>).
-	OptionKeyCSIStorageClass = "csiStorageClass"
-
-	cleanupSnapshotTimeout = 60 * time.Second
-
-	// SnapshotArtifactKey, ArtifactKeyBackupIdentifier, ArtifactKeySize mirror
-	// K10's kanconsts so the restore function can read tp.ArtifactsIn without
-	// the blueprint re-templating each keyValue field as a function arg.
-	SnapshotArtifactKey         = "snapshot"
-	ArtifactKeyBackupIdentifier = "backupIdentifier"
-	ArtifactKeySize             = "size"
+	// OutputKeySnapshotContent provides the name of the bound VolumeSnapshotContent
+	OutputKeySnapshotContent = "snapshotContent"
+	// OutputKeySnapshotHandle provides the CSI snapshotHandle from the VolumeSnapshotContent
+	OutputKeySnapshotHandle = "snapshotHandle"
 )
 
-func actionSetTagFromContext(ctx context.Context) string {
+// ActionSetTagFromContext reads the ActionSet name from the Kanister field
+// context so callers can stamp the owner-action label on resources they create.
+func ActionSetTagFromContext(ctx context.Context) string {
 	fields := field.FromContext(ctx)
 	if fields == nil {
 		return ""
@@ -83,7 +79,10 @@ func actionSetTagFromContext(ctx context.Context) string {
 	return ""
 }
 
-func workloadFromTemplateParams(tp param.TemplateParams) (name, namespace string) {
+// WorkloadFromTemplateParams resolves the workload (name, namespace) the action
+// is running against, supporting StatefulSet/Deployment/DeploymentConfig/PVC/
+// Namespace template params.
+func WorkloadFromTemplateParams(tp param.TemplateParams) (name, namespace string) {
 	switch {
 	case tp.StatefulSet != nil:
 		return tp.StatefulSet.Name, tp.StatefulSet.Namespace
@@ -99,18 +98,9 @@ func workloadFromTemplateParams(tp param.TemplateParams) (name, namespace string
 	return "", ""
 }
 
-// defaultStorageClass returns the StorageClass to use when the blueprint does
-// not pass an explicit storageClassName arg: K10's injected csiStorageClass
-// option (per-profile CSI StorageClass) when present, otherwise the built-in
-// default.
-func defaultStorageClass(tp param.TemplateParams, builtin string) string {
-	if sc := tp.Options[OptionKeyCSIStorageClass]; sc != "" {
-		return sc
-	}
-	return builtin
-}
-
-func waitForPVCBound(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
+// WaitForPVCBound polls until the PVC reaches the Bound phase, failing fast if
+// it disappears or enters the Lost phase.
+func WaitForPVCBound(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
@@ -155,12 +145,12 @@ func stringifyMapKeys(v interface{}) interface{} {
 	}
 }
 
-// parseEnvVars decodes a Kanister arg holding a []corev1.EnvVar. The shared
+// ParseEnvVars decodes a Kanister arg holding a []corev1.EnvVar. The shared
 // arg-parser (mapstructure.WeakDecode) drops embedded LocalObjectReference
 // inside `valueFrom.secretKeyRef`/`valueFrom.configMapKeyRef`, so we route
 // through json.Marshal/Unmarshal which correctly traverses inline embedded
 // structs.
-func parseEnvVars(args map[string]interface{}, argName string) ([]corev1.EnvVar, error) {
+func ParseEnvVars(args map[string]interface{}, argName string) ([]corev1.EnvVar, error) {
 	raw, ok := args[argName]
 	if !ok || raw == nil {
 		return nil, nil
@@ -176,9 +166,9 @@ func parseEnvVars(args map[string]interface{}, argName string) ([]corev1.EnvVar,
 	return env, nil
 }
 
-// pvcGracefulDelete deletes a PVC, ignoring NotFound. Uses a fresh context so
+// PVCGracefulDelete deletes a PVC, ignoring NotFound. Uses a fresh context so
 // cleanup still runs when the caller's ctx is cancelled.
-func pvcGracefulDelete(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
+func PVCGracefulDelete(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	delCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	err := cli.CoreV1().PersistentVolumeClaims(namespace).Delete(delCtx, name, metav1.DeleteOptions{})
@@ -188,9 +178,9 @@ func pvcGracefulDelete(ctx context.Context, cli kubernetes.Interface, namespace,
 	return nil
 }
 
-// stagingPodRunner waits for the pod to be ready, streams + parses its logs,
+// StagingPodRunner waits for the pod to be ready, streams + parses its logs,
 // then waits for completion. failMsg is the wrapper for the completion error.
-func stagingPodRunner(failMsg string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
+func StagingPodRunner(failMsg string) func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 	return func(ctx context.Context, pc kube.PodController) (map[string]interface{}, error) {
 		if err := pc.WaitForPodReady(ctx); err != nil {
 			return nil, errkit.Wrap(err, "Failed while waiting for pod to be ready", "pod", pc.PodName())

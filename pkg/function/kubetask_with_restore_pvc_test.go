@@ -41,7 +41,8 @@ func (s *KubeTaskWithRestorePVCSuite) TestParseArgsDefaultSelectorFromWorkload(c
 	c.Assert(err, check.IsNil)
 	c.Check(parsed.namespace, check.Equals, "demo")
 	c.Check(parsed.mountPath, check.Equals, defaultRestorePVCMountPath)
-	c.Check(parsed.storageClass, check.Equals, defaultRestorePVCStorageClass)
+	// Empty default storageClass => cluster default StorageClass is used.
+	c.Check(parsed.storageClass, check.Equals, "")
 	c.Check(parsed.cleanupPVC, check.Equals, true)
 	c.Check(parsed.pvcSelector.MatchLabels[LabelKeyStagingPVC], check.Equals, "true")
 	c.Check(parsed.pvcSelector.MatchLabels[LabelKeyWorkloadName], check.Equals, "pg")
