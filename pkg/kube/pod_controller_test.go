@@ -17,6 +17,7 @@ package kube
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -305,4 +307,66 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 
 		tc(pcp, pc)
 	}
+}
+
+// RestoreLogStreamReaderTestSuite covers the nil-dereference fix in
+// restoreLogStreamReader.
+type RestoreLogStreamReaderTestSuite struct{}
+
+var _ = check.Suite(&RestoreLogStreamReaderTestSuite{})
+
+// eofReadCloser is a mock io.ReadCloser that returns io.EOF on Read.
+type eofReadCloser struct{ closed bool }
+
+func (e *eofReadCloser) Read([]byte) (int, error) { return 0, io.EOF }
+func (e *eofReadCloser) Close() error             { e.closed = true; return nil }
+
+// TestCloseWithNilReader verifies that Close() does not panic when s.reader is nil.
+func (s *RestoreLogStreamReaderTestSuite) TestCloseWithNilReader(c *check.C) {
+	r := &restoreLogStreamReader{reader: nil}
+	err := r.Close()
+	c.Assert(err, check.IsNil)
+}
+
+// TestReadReturnsErrorWhenStreamFuncFails verifies the full failure path:
+// - mock reader returns io.EOF (kubelet 4-hour timeout)
+// - pod is still Running so we attempt to re-establish the stream
+// - streamFunc returns an error (simulating pod termination mid-stream)
+// Read() must return the error cleanly and Close() must not panic afterwards.
+func (s *RestoreLogStreamReaderTestSuite) TestReadReturnsErrorWhenStreamFuncFails(c *check.C) {
+	const (
+		ns        = "test-ns"
+		podName   = "test-pod"
+		container = "test-container"
+	)
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: podName, Namespace: ns},
+		Status:     corev1.PodStatus{Phase: corev1.PodRunning},
+	}
+	cli := fake.NewSimpleClientset(pod)
+
+	streamErr := errkit.New("pod terminating")
+	mockReader := &eofReadCloser{}
+
+	r := &restoreLogStreamReader{
+		ctx:           context.Background(),
+		cli:           cli,
+		namespace:     ns,
+		podName:       podName,
+		containerName: container,
+		reader:        mockReader,
+		streamFunc: func(_ context.Context, _ kubernetes.Interface, _, _, _ string, _ *metav1.Time) (io.ReadCloser, error) {
+			return nil, streamErr
+		},
+	}
+
+	_, err := r.Read(make([]byte, 32))
+	c.Assert(err, check.Equals, streamErr)
+
+	// s.reader must still be the closed (non-nil) mock — Close() must not panic.
+	c.Assert(r.reader, check.NotNil)
+	err = r.Close()
+	c.Assert(err, check.IsNil)
+	c.Assert(mockReader.closed, check.Equals, true)
 }
