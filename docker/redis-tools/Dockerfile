@@ -1,4 +1,4 @@
-FROM redis:8.6.3
+FROM redis:8.8.0
 
 RUN apt update
 RUN apt install -y npm bash curl redis-tools
