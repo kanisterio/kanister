@@ -83,6 +83,30 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *check.C) {
 			expected:   nil,
 			errChecker: check.NotNil,
 		},
+		{ // federated identity, no storage key required
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AzureSecretType),
+				Data: map[string][]byte{
+					AzureStorageAccountID:  []byte("key_id"),
+					AzureFederatedIdentity: []byte("true"),
+				},
+			},
+			expected: &objectstore.SecretAzure{
+				StorageAccount: "key_id",
+			},
+			errChecker: check.IsNil,
+		},
+		{ // federated identity marker present but not "true", key still required
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AzureSecretType),
+				Data: map[string][]byte{
+					AzureStorageAccountID:  []byte("key_id"),
+					AzureFederatedIdentity: []byte("false"),
+				},
+			},
+			expected:   nil,
+			errChecker: check.NotNil,
+		},
 	} {
 		azsecret, err := ExtractAzureCredentials(tc.secret)
 		c.Check(azsecret, check.DeepEquals, tc.expected, check.Commentf("test number: %d", i))
