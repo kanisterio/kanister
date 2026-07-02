@@ -71,42 +71,6 @@ jobs:
         org.opencontainers.image.title=kanister mysql sidecar
         org.opencontainers.image.description=Image for kanister maysql example blueprints
 
-  build_kafka-adobe-s3-sink-connector:
-    permissions:
-      packages: write
-      contents: read
-    uses: ./.github/workflows/build_docker.yaml
-    with:
-      image_file: docker/kafka-adobes3Connector/image/adobeSink.Dockerfile
-      image_name: kanisterio/kafka-adobe-s3-sink-connector
-      image_tag: ${{ inputs.image_tag }}
-      extra_tags: ${{ inputs.extra_tags }}
-      ref:  ${{ inputs.ref }}
-      platforms: ${{ inputs.platforms }}
-      build-args: |
-        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
-      labels: |
-        org.opencontainers.image.title=kanister kafka sink connector
-        org.opencontainers.image.description=Image for kanister kafka example blueprints
-
-  build_kafka-adobe-s3-source-connector:
-    permissions:
-      packages: write
-      contents: read
-    uses: ./.github/workflows/build_docker.yaml
-    with:
-      image_file: docker/kafka-adobes3Connector/image/adobeSource.Dockerfile
-      image_name: kanisterio/kafka-adobe-s3-source-connector
-      image_tag: ${{ inputs.image_tag }}
-      extra_tags: ${{ inputs.extra_tags }}
-      ref:  ${{ inputs.ref }}
-      platforms: ${{ inputs.platforms }}
-      build-args: |
-        TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:${{ inputs.image_tag }}
-      labels: |
-        org.opencontainers.image.title=kanister kafka source connector
-        org.opencontainers.image.description=Image for kanister kafka example blueprints
-
   build_postgres-kanister-tools:
     permissions:
       packages: write
