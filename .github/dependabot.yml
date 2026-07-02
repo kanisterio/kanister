@@ -101,7 +101,6 @@ updates:
       - "/docker/couchbase-tools"
       - "/docker/docs-build"
       - "/docker/foundationdb"
-      - "/docker/kafka-adobes3Connector/image"
       - "/docker/kanister-elasticsearch/image"
       - "/docker/kanister-mongodb-replicaset"
       - "/docker/kanister-mysql"
