@@ -32,6 +32,9 @@ const (
 	AzureStorageAccountKey string = "azure_storage_key"
 	// AzureStorageEnvironment is the environment for Azures storage account
 	AzureStorageEnvironment string = "azure_storage_environment"
+	// AzureFederatedIdentity marks a secret as using Azure Workload Identity
+	// (federated identity) instead of a storage account key.
+	AzureFederatedIdentity string = "azure_federated_identity"
 )
 
 // ValidateAzureCredentials validates secret has all necessary information
@@ -40,10 +43,11 @@ const (
 //
 // Required fields:
 // - azure_storage_account_id
-// - azure_storage_key
+// - azure_storage_key (not required when azure_federated_identity is "true")
 //
-// Optional field:
+// Optional fields:
 // - azure_storage_environment
+// - azure_federated_identity
 func ValidateAzureCredentials(secret *corev1.Secret) error {
 	if string(secret.Type) != AzureSecretType {
 		return errkit.Wrap(secerrors.ErrValidate, secerrors.IncompatibleSecretTypeErrorMsg, AzureSecretType, secret.Namespace, secret.Name)
@@ -56,6 +60,9 @@ func ValidateAzureCredentials(secret *corev1.Secret) error {
 		count++
 	}
 	if _, ok := secret.Data[AzureStorageEnvironment]; ok {
+		count++
+	}
+	if _, ok := secret.Data[AzureFederatedIdentity]; ok {
 		count++
 	}
 	if len(secret.Data) > count {
@@ -87,7 +94,8 @@ func ExtractAzureCredentials(secret *corev1.Secret) (*objectstore.SecretAzure, e
 	if envName, ok := secret.Data[AzureStorageEnvironment]; ok {
 		azSecret.EnvironmentName = string(envName)
 	}
-	if azSecret.StorageAccount == "" || azSecret.StorageKey == "" {
+	federatedIdentity := string(secret.Data[AzureFederatedIdentity]) == "true"
+	if azSecret.StorageAccount == "" || (!federatedIdentity && azSecret.StorageKey == "") {
 		return nil, errkit.New("Azure secret is missing storage account ID or storage key")
 	}
 	return azSecret, nil
