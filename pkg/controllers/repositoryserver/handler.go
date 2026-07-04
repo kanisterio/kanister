@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/kanisterio/errkit"
@@ -32,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -242,7 +242,7 @@ func (h *RepoServerHandler) writeGCPCredsToPod(ctx context.Context, pod *corev1.
 
 func (h *RepoServerHandler) setCredDataFromSecretInPod(ctx context.Context, podOptions *kube.PodOptions) (*corev1.Pod, []corev1.EnvVar, error) {
 	storageCredSecret := h.RepositoryServerSecrets.storageCredentials
-	envVars, err := storage.GenerateEnvSpecFromCredentialSecret(storageCredSecret, time.Duration(time.Now().Second()))
+	envVars, err := storage.GenerateEnvSpecFromCredentialSecret(storageCredSecret, aws.AssumeRoleDurationDefault)
 	if err != nil {
 		return nil, nil, err
 	}

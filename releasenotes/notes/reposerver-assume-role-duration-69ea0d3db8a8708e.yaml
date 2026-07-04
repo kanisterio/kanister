@@ -1,0 +1,3 @@
+---
+fixes:
+  - Use a valid AWS assume-role session duration when generating the repository server pod's S3 credential environment, fixing role-based (IAM role / web identity) storage credentials that previously failed depending on the wall-clock second.
