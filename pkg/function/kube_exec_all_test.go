@@ -30,6 +30,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
@@ -140,6 +141,35 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *check.C) {
 	for _, p := range phases {
 		_, err = p.Exec(ctx, *bp, action, *tp)
 		c.Assert(err, check.IsNil)
+	}
+}
+
+// KubeExecAllOutputTest exercises execAllWith without a live cluster. It runs
+// under `go test -race` and guards against the output of the per-container
+// goroutines racing or being lost when more than one pod/container is targeted.
+type KubeExecAllOutputTest struct{}
+
+var _ = check.Suite(&KubeExecAllOutputTest{})
+
+func (s *KubeExecAllOutputTest) TestExecAllCollectsEveryContainerOutput(c *check.C) {
+	pods := []string{"pod-a", "pod-b", "pod-c", "pod-d"}
+	containers := []string{"c0", "c1", "c2"}
+
+	// Each pod/container emits a distinct phase-output line so a lost or
+	// corrupted concatenation shows up as a missing key.
+	fakeExec := func(_ context.Context, _ kubernetes.Interface, _, pod, container string, _ []string) (string, string, error) {
+		key := fmt.Sprintf("k_%s_%s", pod, container)
+		return fmt.Sprintf("%s{\"key\":\"%s\",\"value\":\"%s\"}", output.PhaseOpString, key, key), "", nil
+	}
+
+	out, err := execAllWith(context.Background(), nil, "ns", pods, containers, []string{"echo"}, fakeExec)
+	c.Assert(err, check.IsNil)
+	c.Assert(out, check.HasLen, len(pods)*len(containers))
+	for _, pod := range pods {
+		for _, container := range containers {
+			key := fmt.Sprintf("k_%s_%s", pod, container)
+			c.Check(out[key], check.Equals, key)
+		}
 	}
 }
 
