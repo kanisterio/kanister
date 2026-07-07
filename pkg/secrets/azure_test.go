@@ -47,6 +47,21 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *check.C) {
 			},
 			errChecker: check.IsNil,
 		},
+		{ // federated identity marker alongside a storage key still works
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AzureSecretType),
+				Data: map[string][]byte{
+					AzureStorageAccountID:  []byte("key_id"),
+					AzureStorageAccountKey: []byte("secret_key"),
+					AzureFederatedIdentity: []byte("true"),
+				},
+			},
+			expected: &objectstore.SecretAzure{
+				StorageAccount: "key_id",
+				StorageKey:     "secret_key",
+			},
+			errChecker: check.IsNil,
+		},
 		{ // bad type
 			secret: &corev1.Secret{
 				Type: corev1.SecretType(AWSSecretType),
@@ -78,6 +93,30 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *check.C) {
 					AzureStorageAccountKey:  []byte("secret_key"),
 					AzureStorageEnvironment: []byte("env"),
 					"bad field":             []byte("bad"),
+				},
+			},
+			expected:   nil,
+			errChecker: check.NotNil,
+		},
+		{ // federated identity, no storage key required
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AzureSecretType),
+				Data: map[string][]byte{
+					AzureStorageAccountID:  []byte("key_id"),
+					AzureFederatedIdentity: []byte("true"),
+				},
+			},
+			expected: &objectstore.SecretAzure{
+				StorageAccount: "key_id",
+			},
+			errChecker: check.IsNil,
+		},
+		{ // federated identity marker present but not "true", key still required
+			secret: &corev1.Secret{
+				Type: corev1.SecretType(AzureSecretType),
+				Data: map[string][]byte{
+					AzureStorageAccountID:  []byte("key_id"),
+					AzureFederatedIdentity: []byte("false"),
 				},
 			},
 			expected:   nil,
