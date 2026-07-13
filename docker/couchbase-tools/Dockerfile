@@ -1,4 +1,4 @@
-FROM couchbase:enterprise-8.0.1
+FROM couchbase:enterprise-8.0.2
 
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 
