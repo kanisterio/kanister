@@ -191,6 +191,17 @@ func getBucket(ctx context.Context, pType objectstore.ProviderType, profile para
 	if err != nil {
 		return nil, err
 	}
+	// Azure workload (federated) identity has no storage key. Mint a short-lived,
+	// container-scoped user-delegation SAS token here, where the bucket
+	// (container) name required to scope it is known, and hand it to the provider
+	// via the secret. See objectstore.MintAzureUserDelegationSAS.
+	if pType == objectstore.ProviderTypeAzure && secret.Azure != nil && secret.Azure.FederatedIdentity {
+		sasToken, err := objectstore.MintAzureUserDelegationSAS(ctx, secret.Azure.StorageAccount, profile.Location.Bucket)
+		if err != nil {
+			return nil, errkit.Wrap(err, "Failed to mint Azure user-delegation SAS token")
+		}
+		secret.Azure.SASToken = sasToken
+	}
 	provider, err := objectstore.NewProvider(ctx, pc, secret)
 	if err != nil {
 		return nil, err

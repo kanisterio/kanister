@@ -57,8 +57,9 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *check.C) {
 				},
 			},
 			expected: &objectstore.SecretAzure{
-				StorageAccount: "key_id",
-				StorageKey:     "secret_key",
+				StorageAccount:    "key_id",
+				StorageKey:        "secret_key",
+				FederatedIdentity: true,
 			},
 			errChecker: check.IsNil,
 		},
@@ -107,7 +108,8 @@ func (s *AzureSecretSuite) TestExtractAzureCredentials(c *check.C) {
 				},
 			},
 			expected: &objectstore.SecretAzure{
-				StorageAccount: "key_id",
+				StorageAccount:    "key_id",
+				FederatedIdentity: true,
 			},
 			errChecker: check.IsNil,
 		},
