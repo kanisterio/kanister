@@ -436,8 +436,6 @@ github.com/kanisterio/safecli v0.0.10 h1:oS3XMYUkzutKatV50cI0IGgPrdHnOuKpFkVv6rp
 github.com/kanisterio/safecli v0.0.10/go.mod h1:MWc9fYCCiQCZv2uVJ3GZTEFc/1B/cIecU9R71NpSr18=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
-github.com/kastenhq/stow v0.2.6-kasten.1.0.20250930185039-ccb63ada4a21 h1:NeSbLA0HG59ocJTfA4U8d6XIKuYK+D8os3Y6XkTolRo=
-github.com/kastenhq/stow v0.2.6-kasten.1.0.20250930185039-ccb63ada4a21/go.mod h1:5xCHhjpJfKyCTQVEuXmZd22+aKokRg01e0Y4GTswYlQ=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
 github.com/keybase/go-keychain v0.0.1/go.mod h1:PdEILRW3i9D8JcdM+FmY6RwkHGnhHxXwkPPMeUgOK1k=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
@@ -621,6 +619,8 @@ github.com/tg123/go-htpasswd v1.2.4 h1:HgH8KKCjdmo7jjXWN9k1nefPBd7Be3tFCTjc2jPra
 github.com/tg123/go-htpasswd v1.2.4/go.mod h1:EKThQok9xHkun6NBMynNv6Jmu24A33XdZzzl4Q7H1+0=
 github.com/tinylib/msgp v1.3.0 h1:ULuf7GPooDaIlbyvgAxBV/FI7ynli6LZ1/nVUNu+0ww=
 github.com/tinylib/msgp v1.3.0/go.mod h1:ykjzy2wzgrlvpDCRc4LA8UXy6D8bzMSuAF3WD57Gok0=
+github.com/vm-ashwinkolhatkar/stow v0.0.0-20260713110544-d0d4c25cf43c h1:+wHw+RnjlC9WAkELmxKXzNWjfCQIimAiauhn148n6BE=
+github.com/vm-ashwinkolhatkar/stow v0.0.0-20260713110544-d0d4c25cf43c/go.mod h1:5xCHhjpJfKyCTQVEuXmZd22+aKokRg01e0Y4GTswYlQ=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xhit/go-str2duration/v2 v2.1.0 h1:lxklc02Drh6ynqX+DdPyp5pCKLUQpRT8bp8Ydu2Bstc=

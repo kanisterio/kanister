@@ -47,6 +47,16 @@ type SecretAzure struct {
 	StorageKey string
 	// environment name
 	EnvironmentName string
+	// FederatedIdentity indicates the credential uses Azure Workload
+	// (federated) Identity instead of a storage account key. When true,
+	// StorageKey is expected to be empty and authentication is performed
+	// via the pod's injected workload-identity token.
+	FederatedIdentity bool
+	// SASToken is a pre-minted, container-scoped user-delegation SAS token
+	// used instead of a storage key when authenticating via workload
+	// (federated) identity. Populated by the caller (see
+	// pkg/location.getBucket) before the stow provider is constructed.
+	SASToken string
 }
 
 // SecretGcp GCP credentials
