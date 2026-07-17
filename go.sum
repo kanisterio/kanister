@@ -619,8 +619,8 @@ github.com/tg123/go-htpasswd v1.2.4 h1:HgH8KKCjdmo7jjXWN9k1nefPBd7Be3tFCTjc2jPra
 github.com/tg123/go-htpasswd v1.2.4/go.mod h1:EKThQok9xHkun6NBMynNv6Jmu24A33XdZzzl4Q7H1+0=
 github.com/tinylib/msgp v1.3.0 h1:ULuf7GPooDaIlbyvgAxBV/FI7ynli6LZ1/nVUNu+0ww=
 github.com/tinylib/msgp v1.3.0/go.mod h1:ykjzy2wzgrlvpDCRc4LA8UXy6D8bzMSuAF3WD57Gok0=
-github.com/vm-ashwinkolhatkar/stow v0.0.0-20260713110544-d0d4c25cf43c h1:+wHw+RnjlC9WAkELmxKXzNWjfCQIimAiauhn148n6BE=
-github.com/vm-ashwinkolhatkar/stow v0.0.0-20260713110544-d0d4c25cf43c/go.mod h1:5xCHhjpJfKyCTQVEuXmZd22+aKokRg01e0Y4GTswYlQ=
+github.com/vm-ashwinkolhatkar/stow v0.0.0-20260716073410-08abec35b8ba h1:6QExYgsXHlwtpSpPEbNzHCxxzr8klSW+xGKeC9W0078=
+github.com/vm-ashwinkolhatkar/stow v0.0.0-20260716073410-08abec35b8ba/go.mod h1:5xCHhjpJfKyCTQVEuXmZd22+aKokRg01e0Y4GTswYlQ=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xhit/go-str2duration/v2 v2.1.0 h1:lxklc02Drh6ynqX+DdPyp5pCKLUQpRT8bp8Ydu2Bstc=
