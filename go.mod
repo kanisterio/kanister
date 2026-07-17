@@ -4,7 +4,7 @@ go 1.26.1
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
-	github.com/graymeta/stow => github.com/vm-ashwinkolhatkar/stow v0.0.0-20260713110544-d0d4c25cf43c
+	github.com/graymeta/stow => github.com/vm-ashwinkolhatkar/stow v0.0.0-20260716073410-08abec35b8ba
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 	golang.org/x/net => golang.org/x/net v0.41.0
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
