@@ -24,14 +24,32 @@ import (
 
 // ActionProgressApplyConfiguration represents a declarative configuration of the ActionProgress type for use
 // with apply.
+//
+// ActionProgress provides information on the combined progress
+// of all the phases in the action.
 type ActionProgressApplyConfiguration struct {
-	RunningPhase           *string  `json:"runningPhase,omitempty"`
-	PercentCompleted       *string  `json:"percentCompleted,omitempty"`
-	SizeDownloadedB        *int64   `json:"sizeDownloadedB,omitempty"`
-	SizeUploadedB          *int64   `json:"sizeUploadedB,omitempty"`
-	EstimatedDownloadSizeB *int64   `json:"estimatedDownloadSizeB,omitempty"`
-	EstimatedUploadSizeB   *int64   `json:"estimatedUploadSizeB,omitempty"`
-	LastTransitionTime     *v1.Time `json:"lastTransitionTime,omitempty"`
+	// RunningPhase represents which phase of the action is being run
+	RunningPhase *string `json:"runningPhase,omitempty"`
+	// PercentCompleted is computed by assessing the number of completed phases
+	// against the total number of phases.
+	PercentCompleted *string `json:"percentCompleted,omitempty"`
+	// SizeDownloadedB represents the size of data downloaded in Bytes at a given time during action execution.
+	// This field will be empty for actions which do not involve data movement.
+	SizeDownloadedB *int64 `json:"sizeDownloadedB,omitempty"`
+	// SizeUploadedB represents the size of data uploaded in Bytes at a given time during action execution.
+	// This field will be empty for actions which do not involve data movement.
+	SizeUploadedB *int64 `json:"sizeUploadedB,omitempty"`
+	// EstimatedDownloadSizeB represents the total estimated size of data in Bytes
+	// that will be downloaded during the action execution.
+	// This field will be empty for actions which do not involve data movement.
+	EstimatedDownloadSizeB *int64 `json:"estimatedDownloadSizeB,omitempty"`
+	// EstimatedUploadSizeB represents the total estimated size of data in Bytes
+	// that will be uploaded during the phase execution.
+	// This field will be empty for phases which do not involve data movement.
+	EstimatedUploadSizeB *int64 `json:"estimatedUploadSizeB,omitempty"`
+	// LastTransitionTime represents the last date time when the progress status
+	// was received.
+	LastTransitionTime *v1.Time `json:"lastTransitionTime,omitempty"`
 }
 
 // ActionProgressApplyConfiguration constructs a declarative configuration of the ActionProgress type for use with

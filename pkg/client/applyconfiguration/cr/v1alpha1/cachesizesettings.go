@@ -20,9 +20,14 @@ package v1alpha1
 
 // CacheSizeSettingsApplyConfiguration represents a declarative configuration of the CacheSizeSettings type for use
 // with apply.
+//
+// CacheSizeSettings are the metadata/content cache size details
+// that can be used while establishing connection to the kopia repository
 type CacheSizeSettingsApplyConfiguration struct {
+	// Metadata size should be in specified in MB
 	Metadata *int `json:"metadata,omitempty"`
-	Content  *int `json:"content,omitempty"`
+	// Content size should be in specified in MB
+	Content *int `json:"content,omitempty"`
 }
 
 // CacheSizeSettingsApplyConfiguration constructs a declarative configuration of the CacheSizeSettings type for use with

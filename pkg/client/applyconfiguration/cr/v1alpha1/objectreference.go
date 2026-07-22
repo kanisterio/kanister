@@ -20,13 +20,24 @@ package v1alpha1
 
 // ObjectReferenceApplyConfiguration represents a declarative configuration of the ObjectReference type for use
 // with apply.
+//
+// ObjectReference refers to a kubernetes object.
 type ObjectReferenceApplyConfiguration struct {
+	// API version of the referent.
 	APIVersion *string `json:"apiVersion,omitempty"`
-	Group      *string `json:"group,omitempty"`
-	Resource   *string `json:"resource,omitempty"`
-	Kind       *string `json:"kind,omitempty"`
-	Name       *string `json:"name,omitempty"`
-	Namespace  *string `json:"namespace,omitempty"`
+	// API Group of the referent.
+	Group *string `json:"group,omitempty"`
+	// Resource name of the referent.
+	Resource *string `json:"resource,omitempty"`
+	// Kind of the referent.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds
+	Kind *string `json:"kind,omitempty"`
+	// Name of the referent.
+	// More info: http://kubernetes.io/docs/user-guide/identifiers#names
+	Name *string `json:"name,omitempty"`
+	// Namespace of the referent.
+	// More info: http://kubernetes.io/docs/user-guide/namespaces
+	Namespace *string `json:"namespace,omitempty"`
 }
 
 // ObjectReferenceApplyConfiguration constructs a declarative configuration of the ObjectReference type for use with
