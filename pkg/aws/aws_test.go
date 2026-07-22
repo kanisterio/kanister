@@ -19,6 +19,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"gopkg.in/check.v1"
@@ -114,6 +115,53 @@ func restoreEnv(c *check.C, key, value string, wasSet bool) {
 		return
 	}
 	c.Assert(os.Unsetenv(key), check.IsNil)
+}
+
+// stsMinDurationSeconds is the smallest DurationSeconds AWS STS accepts for
+// AssumeRole / AssumeRoleWithWebIdentity (the documented minimum is 900s / 15m).
+const stsMinDurationSeconds = 900
+
+// stsDurationSeconds mirrors how the AWS SDK v2 stscreds providers derive the
+// STS DurationSeconds request parameter from the configured session duration:
+// DurationSeconds = int32(duration / time.Second).
+func stsDurationSeconds(d time.Duration) int32 {
+	return int32(d / time.Second)
+}
+
+// TestAssumeRoleDurationRoundTrip guards against passing a sub-second session
+// duration (for example time.Duration(time.Now().Second()), which yields 0-59
+// nanoseconds) into the assume-role credential path. Such a value is stored as
+// its String() form, parsed back by durationFromString, and finally divided by
+// time.Second by the SDK, collapsing to DurationSeconds=0 while remaining
+// non-zero. STS rejects that for role-based secrets, so the resolved duration
+// must convert to a DurationSeconds of at least the STS minimum.
+func (s AWSSuite) TestAssumeRoleDurationRoundTrip(c *check.C) {
+	// The default used across the credential call sites must resolve to a
+	// valid, non-truncating STS session duration.
+	d, err := durationFromString(map[string]string{
+		AssumeRoleDuration: AssumeRoleDurationDefault.String(),
+	})
+	c.Assert(err, check.IsNil)
+	c.Assert(stsDurationSeconds(d) >= stsMinDurationSeconds, check.Equals, true,
+		check.Commentf("resolved DurationSeconds=%d must be >= %d", stsDurationSeconds(d), stsMinDurationSeconds))
+
+	// An unset/empty duration falls back to the default and is likewise valid.
+	d, err = durationFromString(map[string]string{})
+	c.Assert(err, check.IsNil)
+	c.Assert(stsDurationSeconds(d) >= stsMinDurationSeconds, check.Equals, true,
+		check.Commentf("default DurationSeconds=%d must be >= %d", stsDurationSeconds(d), stsMinDurationSeconds))
+
+	// Document the regressed behaviour: a sub-second duration round-trips to a
+	// DurationSeconds of 0 while staying non-zero, which STS rejects. The value
+	// that reaches this path must never be sub-second.
+	for _, ns := range []time.Duration{1, 37, 59} {
+		bad, perr := durationFromString(map[string]string{
+			AssumeRoleDuration: ns.String(),
+		})
+		c.Assert(perr, check.IsNil)
+		c.Assert(stsDurationSeconds(bad), check.Equals, int32(0),
+			check.Commentf("a %s duration truncates to DurationSeconds=0", ns))
+	}
 }
 
 func (s AWSSuite) TestValidCreds(c *check.C) {
