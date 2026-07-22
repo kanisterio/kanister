@@ -25,11 +25,19 @@ import (
 // LocationApplyConfiguration represents a declarative configuration of the Location type for use
 // with apply.
 type LocationApplyConfiguration struct {
-	Type     *crv1alpha1.LocationType `json:"type,omitempty"`
-	Bucket   *string                  `json:"bucket,omitempty"`
-	Endpoint *string                  `json:"endpoint,omitempty"`
-	Prefix   *string                  `json:"prefix,omitempty"`
-	Region   *string                  `json:"region,omitempty"`
+	// Type specifies the kind of object storage that would be used to upload the
+	// backup objects. Currently supported values are: "GCS", "S3Compliant",
+	// and "Azure".
+	Type *crv1alpha1.LocationType `json:"type,omitempty"`
+	// Bucket represents the bucket on the object storage where the backup is uploaded.
+	Bucket *string `json:"bucket,omitempty"`
+	// Endpoint specifies the endpoint where the object storage is accessible at.
+	Endpoint *string `json:"endpoint,omitempty"`
+	// Prefix is the string that would be prepended to the object path in the
+	// bucket where the backup objects are uploaded.
+	Prefix *string `json:"prefix,omitempty"`
+	// Region represents the region of the bucket specified above.
+	Region *string `json:"region,omitempty"`
 }
 
 // LocationApplyConfiguration constructs a declarative configuration of the Location type for use with

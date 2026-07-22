@@ -24,20 +24,42 @@ import (
 
 // ActionSpecApplyConfiguration represents a declarative configuration of the ActionSpec type for use
 // with apply.
+//
+// ActionSpec is the specification for a single Action.
 type ActionSpecApplyConfiguration struct {
-	Name             *string                                      `json:"name,omitempty"`
-	Object           *ObjectReferenceApplyConfiguration           `json:"object,omitempty"`
-	Blueprint        *string                                      `json:"blueprint,omitempty"`
-	Artifacts        map[string]ArtifactApplyConfiguration        `json:"artifacts,omitempty"`
-	ConfigMaps       map[string]ObjectReferenceApplyConfiguration `json:"configMaps,omitempty"`
-	Secrets          map[string]ObjectReferenceApplyConfiguration `json:"secrets,omitempty"`
-	Profile          *ObjectReferenceApplyConfiguration           `json:"profile,omitempty"`
-	RepositoryServer *ObjectReferenceApplyConfiguration           `json:"repositoryServer,omitempty"`
-	PodOverride      *crv1alpha1.JSONMap                          `json:"podOverride,omitempty"`
-	Options          map[string]string                            `json:"options,omitempty"`
-	PreferredVersion *string                                      `json:"preferredVersion,omitempty"`
-	PodLabels        map[string]string                            `json:"podLabels,omitempty"`
-	PodAnnotations   map[string]string                            `json:"podAnnotations,omitempty"`
+	// Name is the action we'll perform. For example: `backup` or `restore`.
+	Name *string `json:"name,omitempty"`
+	// Object refers to the thing we'll perform this action on.
+	Object *ObjectReferenceApplyConfiguration `json:"object,omitempty"`
+	// Blueprint with instructions on how to execute this action.
+	Blueprint *string `json:"blueprint,omitempty"`
+	// Artifacts will be passed as inputs into this phase.
+	Artifacts map[string]ArtifactApplyConfiguration `json:"artifacts,omitempty"`
+	// ConfigMaps that we'll get and pass into the blueprint.
+	ConfigMaps map[string]ObjectReferenceApplyConfiguration `json:"configMaps,omitempty"`
+	// Secrets that we'll get and pass into the blueprint.
+	Secrets map[string]ObjectReferenceApplyConfiguration `json:"secrets,omitempty"`
+	// Profile is use to specify the location where store artifacts and the
+	// credentials authorized to access them.
+	Profile *ObjectReferenceApplyConfiguration `json:"profile,omitempty"`
+	// RepositoryServer is used to specify the CR reference
+	// of the kopia repository server
+	RepositoryServer *ObjectReferenceApplyConfiguration `json:"repositoryServer,omitempty"`
+	// PodOverride is used to specify pod specs that will override the
+	// default pod specs
+	PodOverride *crv1alpha1.JSONMap `json:"podOverride,omitempty"`
+	// Options will be used to specify additional values
+	// to be used in the Blueprint.
+	Options map[string]string `json:"options,omitempty"`
+	// PreferredVersion will be used to select the preferred version of Kanister functions
+	// to be executed for this action
+	PreferredVersion *string `json:"preferredVersion,omitempty"`
+	// PodLabels will be used to configure the labels of the pods that are created
+	// by Kanister functions run by this ActionSet
+	PodLabels map[string]string `json:"podLabels,omitempty"`
+	// PodAnnotations will be used to configure the annotations of the pods that created
+	// by Kanister functions run by this ActionSet
+	PodAnnotations map[string]string `json:"podAnnotations,omitempty"`
 }
 
 // ActionSpecApplyConfiguration constructs a declarative configuration of the ActionSpec type for use with

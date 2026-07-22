@@ -26,12 +26,20 @@ import (
 
 // ProfileApplyConfiguration represents a declarative configuration of the Profile type for use
 // with apply.
+//
+// Profile captures information about a storage location for backup artifacts and
+// corresponding credentials, that will be made available to a Blueprint phase.
 type ProfileApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Location                         *LocationApplyConfiguration   `json:"location,omitempty"`
-	Credential                       *CredentialApplyConfiguration `json:"credential,omitempty"`
-	SkipSSLVerify                    *bool                         `json:"skipSSLVerify,omitempty"`
+	// Location provides the information about the object storage that is going to be used by Kanister to upload the backup objects.
+	Location *LocationApplyConfiguration `json:"location,omitempty"`
+	// Credential represents the credentials associated with the Location.
+	Credential *CredentialApplyConfiguration `json:"credential,omitempty"`
+	// SkipSSLVerify is a boolean that specifies whether skipping SSL verification
+	// is allowed when operating with the Location.
+	// If omitted from the CR definition, it defaults to false
+	SkipSSLVerify *bool `json:"skipSSLVerify,omitempty"`
 }
 
 // Profile constructs a declarative configuration of the Profile type for use with
@@ -44,6 +52,8 @@ func Profile(name, namespace string) *ProfileApplyConfiguration {
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
 }
+
+func (b ProfileApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -227,8 +237,24 @@ func (b *ProfileApplyConfiguration) WithSkipSSLVerify(value bool) *ProfileApplyC
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *ProfileApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *ProfileApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *ProfileApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *ProfileApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }
