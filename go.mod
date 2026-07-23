@@ -35,9 +35,9 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/mitchellh/mapstructure v1.5.0
 
-	//pinned openshift to release-4.5 branch
-	github.com/openshift/api v0.0.0-20231222123017-053aee22b4b4
-	github.com/openshift/client-go v0.0.0-20231221125933-2aa81c72f992
+	//pinned openshift to release-4.22 branch (matches k8s.io v0.35 / structured-merge-diff v6)
+	github.com/openshift/api v0.0.0-20260717133910-57eb58a15422
+	github.com/openshift/client-go v0.0.0-20260720094807-fbc45213df28
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
@@ -190,8 +190,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
