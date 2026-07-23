@@ -36,9 +36,9 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/mitchellh/mapstructure v1.5.0
 
-	//pinned openshift to release-4.5 branch
-	github.com/openshift/api v0.0.0-20231222123017-053aee22b4b4
-	github.com/openshift/client-go v0.0.0-20231221125933-2aa81c72f992
+	//pinned openshift to release-4.22 branch (matches k8s.io v0.35 / structured-merge-diff v6)
+	github.com/openshift/api v0.0.0-20260717133910-57eb58a15422
+	github.com/openshift/client-go v0.0.0-20260720094807-fbc45213df28
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
@@ -134,7 +134,6 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gofrs/flock v0.12.1 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/glog v1.2.5 // indirect
@@ -249,7 +248,6 @@ require (
 	sigs.k8s.io/kustomize/api v0.20.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.20.1 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 )
 
 require (
