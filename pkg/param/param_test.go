@@ -497,7 +497,7 @@ func (s *ParamsSuite) TestfetchKVSecretCredential(c *check.C) {
 			checker: check.IsNil,
 		},
 	} {
-		cli := fake.NewSimpleClientset(tc.secret)
+		cli := fake.NewClientset(tc.secret)
 		cred, err := fetchKeyPairCredential(ctx, cli, tc.kvs)
 		c.Assert(err, tc.checker)
 		c.Assert(cred, check.DeepEquals, tc.cred)
@@ -531,7 +531,7 @@ func (s *ParamsSuite) TestProfile(c *check.C) {
 		},
 	}
 	ctx := context.Background()
-	cli := fake.NewSimpleClientset(ss, pod, secret)
+	cli := fake.NewClientset(ss, pod, secret)
 	dynCli := fakedyncli.NewSimpleDynamicClient(scheme.Scheme, ss)
 	_, err := cli.AppsV1().StatefulSets("").List(ctx, metav1.ListOptions{})
 	c.Assert(err, check.IsNil)
@@ -752,7 +752,7 @@ func (s *ParamsSuite) TestRenderingPhaseParams(c *check.C) {
 			"myValue": "bar",
 		},
 	}
-	cli := fake.NewSimpleClientset(secret, configMap)
+	cli := fake.NewClientset(secret, configMap)
 	refs := map[string]crv1alpha1.ObjectReference{
 		"authSecret": {
 			Kind:      SecretKind,
