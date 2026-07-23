@@ -21,7 +21,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/kanisterio/errkit"
 
@@ -40,6 +42,12 @@ const (
 	GoogleProjectID     = "GOOGLE_PROJECT_ID"
 	AzureStorageAccount = "AZURE_ACCOUNT_NAME"
 	AzureStorageKey     = "AZURE_ACCOUNT_KEY"
+
+	// AzureSASTokenFileEnv names a file holding a pre-minted, container-scoped
+	// user-delegation SAS token, injected into the worker pod by the K10
+	// controller (see K10-38332). The worker pod holds no Azure identity of its
+	// own and relies entirely on this injected token.
+	AzureSASTokenFileEnv = "AZURE_SAS_TOKEN_FILE"
 
 	// buffSize is the maximum size of an object that can be Put to Azure container in a single request
 	// https://github.com/kastenhq/stow/blob/v0.2.6-kasten/azure/container.go#L14
@@ -191,14 +199,13 @@ func getBucket(ctx context.Context, pType objectstore.ProviderType, profile para
 	if err != nil {
 		return nil, err
 	}
-	// Azure workload (federated) identity has no storage key. Mint a short-lived,
-	// container-scoped user-delegation SAS token here, where the bucket
-	// (container) name required to scope it is known, and hand it to the provider
-	// via the secret. See objectstore.MintAzureUserDelegationSAS.
+	// Azure workload (federated) identity has no storage key. The controller
+	// mints a short-lived, container-scoped user-delegation SAS and projects it
+	// into this pod as a file; read it and hand it to the provider via the secret.
 	if pType == objectstore.ProviderTypeAzure && secret.Azure != nil && secret.Azure.FederatedIdentity {
-		sasToken, err := objectstore.MintAzureUserDelegationSAS(ctx, secret.Azure.StorageAccount, profile.Location.Bucket)
+		sasToken, err := azureSASTokenFromFile()
 		if err != nil {
-			return nil, errkit.Wrap(err, "Failed to mint Azure user-delegation SAS token")
+			return nil, err
 		}
 		secret.Azure.SASToken = sasToken
 	}
@@ -207,6 +214,26 @@ func getBucket(ctx context.Context, pType objectstore.ProviderType, profile para
 		return nil, err
 	}
 	return provider.GetBucket(ctx, profile.Location.Bucket)
+}
+
+// azureSASTokenFromFile reads the container-scoped user-delegation SAS token
+// that the K10 controller minted and projected into the worker pod as a file
+// named by AZURE_SAS_TOKEN_FILE. The worker pod holds no Azure identity of its
+// own, so the token must be present.
+func azureSASTokenFromFile() (string, error) {
+	path := os.Getenv(AzureSASTokenFileEnv)
+	if path == "" {
+		return "", errkit.New("AZURE_SAS_TOKEN_FILE is not set: the SAS token must be injected by the controller for Azure workload-identity profiles")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", errkit.Wrap(err, "Failed to read Azure SAS token file")
+	}
+	token := strings.TrimSpace(string(data))
+	if token == "" {
+		return "", errkit.New(fmt.Sprintf("Azure SAS token file %q is empty", path))
+	}
+	return token, nil
 }
 
 func getOSSecret(ctx context.Context, pType objectstore.ProviderType, cred param.Credential, region string) (*objectstore.Secret, error) {
