@@ -184,5 +184,5 @@ func getCli(cp cliParams) kubernetes.Interface {
 	}
 	kubeObjects = append(kubeObjects, podSet)
 
-	return fake.NewSimpleClientset(kubeObjects...)
+	return fake.NewClientset(kubeObjects...)
 }

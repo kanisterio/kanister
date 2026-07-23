@@ -116,7 +116,7 @@ func (s *TestSuiteMultiActions) SetUpTest(c *check.C) {
 		},
 	}
 
-	s.clientset = fake.NewSimpleClientset()
+	s.clientset = fake.NewClientset()
 	err := s.createFixtures(mockBlueprint, mockActionSet)
 	c.Assert(err, check.IsNil)
 }

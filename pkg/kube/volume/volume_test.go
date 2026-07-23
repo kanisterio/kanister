@@ -45,7 +45,7 @@ func (s *TestVolSuite) TestCreatePVC(c *check.C) {
 	ns := "kanister-pvc-test"
 	targetVolID := "testVolID"
 	annotations := map[string]string{"a1": "foo"}
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	pvcName, err := CreatePVC(ctx, cli, ns, NoPVCNameSpecified, pvcSize, targetVolID, annotations, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, nil)
 	c.Assert(err, check.IsNil)
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, pvcName, metav1.GetOptions{})
@@ -78,7 +78,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *check.C) {
 	ctx := context.Background()
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
-	fakeCli := fake.NewSimpleClientset()
+	fakeCli := fake.NewClientset()
 	fakeCli.Resources = []*metav1.APIResourceList{{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "VolumeSnapshot",
@@ -159,7 +159,7 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *check.C) {
 		},
 		{ // Failed to create snapshotter
 			args: &CreatePVCFromSnapshotArgs{
-				KubeCli:      fake.NewSimpleClientset(), // fails to find dynamic api
+				KubeCli:      fake.NewClientset(), // fails to find dynamic api
 				DynCli:       dynfake.NewSimpleDynamicClient(scheme),
 				SnapshotName: "vsName",
 				Namespace:    "vsNamespace",

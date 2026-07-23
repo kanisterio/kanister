@@ -115,7 +115,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *check.C) {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 
-	fakeCli := fake.NewSimpleClientset()
+	fakeCli := fake.NewClientset()
 
 	size, err := resource.ParseQuantity("1Gi")
 	c.Assert(err, check.IsNil)
@@ -159,7 +159,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *check.C) {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 
-	fakeCli := fake.NewSimpleClientset(
+	fakeCli := fake.NewClientset(
 		&scv1.StorageClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fakeSC,
@@ -312,7 +312,7 @@ func (s *SnapshotTestSuite) TestWaitOnReadyToUse(c *check.C) {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 
-	fakeCli := fake.NewSimpleClientset()
+	fakeCli := fake.NewClientset()
 
 	size, err := resource.ParseQuantity("1Gi")
 	c.Assert(err, check.IsNil)
@@ -731,7 +731,7 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *check.C) {
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 
 	dynCli := dynfake.NewSimpleDynamicClient(scheme)
-	kubeCli := fake.NewSimpleClientset(
+	kubeCli := fake.NewClientset(
 		&scv1.StorageClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fakeSC,
@@ -954,7 +954,7 @@ func (s *SnapshotTestSuite) TestCreateFromSource(c *check.C) {
 		snapshotMeta, snapshotContentMeta)
 	volSnapClass := snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, snapshotClass, "driver", "DELETE", nil)
 	dynCli := dynfake.NewSimpleDynamicClient(scheme, volSnap, volSnapClass)
-	kubeCli := fake.NewSimpleClientset()
+	kubeCli := fake.NewClientset()
 	snapshotter := snapshot.NewSnapshotter(kubeCli, dynCli)
 	for _, snapshotter := range []snapshot.Snapshotter{snapshotter} {
 		snapshotMeta = snapshot.ObjectMeta{
@@ -993,7 +993,7 @@ func (s *SnapshotTestSuite) TestUpdateVolumeSnapshotStatus(c *check.C) {
 	}
 	scheme := runtime.NewScheme()
 	dynCli := dynfake.NewSimpleDynamicClient(scheme, volSnap)
-	kubeCli := fake.NewSimpleClientset()
+	kubeCli := fake.NewClientset()
 
 	snapshotter, ok := snapshot.NewSnapshotter(kubeCli, dynCli).(*snapshot.Snapshot)
 	c.Assert(ok, check.Equals, true)
@@ -1070,7 +1070,7 @@ func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *check.C) {
 	}{
 		{
 			dyncli:     dynfake.NewSimpleDynamicClient(scheme, vsc1),
-			kubecli:    fake.NewSimpleClientset(sc1),
+			kubecli:    fake.NewClientset(sc1),
 			gvr:        snapshot.VolSnapClassGVR,
 			key:        "key",
 			value:      "value",
@@ -1080,7 +1080,7 @@ func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *check.C) {
 		},
 		{ // no vsc available
 			dyncli:     dynfake.NewSimpleDynamicClient(scheme),
-			kubecli:    fake.NewSimpleClientset(sc1),
+			kubecli:    fake.NewClientset(sc1),
 			gvr:        snapshot.VolSnapClassGVR,
 			key:        "key",
 			value:      "value",
@@ -1089,7 +1089,7 @@ func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *check.C) {
 		},
 		{ // annotation on sc
 			dyncli:     dynfake.NewSimpleDynamicClient(scheme, vsc2),
-			kubecli:    fake.NewSimpleClientset(sc2),
+			kubecli:    fake.NewClientset(sc2),
 			gvr:        snapshot.VolSnapClassGVR,
 			key:        "key",
 			value:      "value",
@@ -1099,7 +1099,7 @@ func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *check.C) {
 		},
 		{ // missing vsc
 			dyncli:     dynfake.NewSimpleDynamicClient(scheme),
-			kubecli:    fake.NewSimpleClientset(sc2),
+			kubecli:    fake.NewClientset(sc2),
 			gvr:        snapshot.VolSnapClassGVR,
 			key:        "key",
 			value:      "value",
@@ -1127,7 +1127,7 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *check.C) {
 	volName := "vol1"
 	snapName := "snap1"
 	snapClass := "snapClass"
-	fakeCli := fake.NewSimpleClientset(fakePVC(volName, ns))
+	fakeCli := fake.NewClientset(fakePVC(volName, ns))
 	for _, tc := range []struct {
 		dynCli       dynamic.Interface
 		createLabels map[string]string
@@ -1197,7 +1197,7 @@ func (s *SnapshotLocalTestSuite) TestAnnotations(c *check.C) {
 	volName := "vol1"
 	snapName := "snap1"
 	snapClass := "snapClass"
-	fakeCli := fake.NewSimpleClientset(fakePVC(volName, ns))
+	fakeCli := fake.NewClientset(fakePVC(volName, ns))
 	for _, tc := range []struct {
 		dynCli              dynamic.Interface
 		snapshotAnnotations map[string]string
