@@ -89,6 +89,14 @@ linters:
       - linters:
           - unparam
         text: 'ctx is unused'
+      # client-go v0.35 deprecates NewSimpleClientset in favor of NewClientset. For the
+      # generated kanister CRD (crfake) and OpenShift (osfake) fake clients used in these
+      # tests, NewClientset relies on a field-managed object tracker that nil-panics on
+      # these types at runtime, so we must keep NewSimpleClientset here.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*NewSimpleClientset is deprecated'
+        path: '(pkg/param/param_test\.go|pkg/progress/action_multi_actions_test\.go|pkg/progress/action_multi_phases_test\.go|pkg/progress/action_single_phase_test\.go)'
       - linters:
           - revive
         path: "pkg/utils/.+"
