@@ -59,6 +59,22 @@ func (*kubeTaskFunc) Name() string {
 	return KubeTaskFuncName
 }
 
+// kubeTaskOption configures optional behaviour of kubeTask.
+type kubeTaskOption func(*kubeTaskConfig)
+
+type kubeTaskConfig struct {
+	// tp, when set, enables running the registered pod credential injectors
+	// (e.g. minting a short-lived cloud credential into an ephemeral Secret and
+	// projecting it into the pod) against this pod's options.
+	tp *param.TemplateParams
+}
+
+// withPodCredentialInjection runs the registered ephemeral pod credential
+// injectors for this task, using tp to resolve the profile/credentials.
+func withPodCredentialInjection(tp param.TemplateParams) kubeTaskOption {
+	return func(c *kubeTaskConfig) { c.tp = &tp }
+}
+
 func kubeTask(
 	ctx context.Context,
 	cli kubernetes.Interface,
@@ -68,7 +84,13 @@ func kubeTask(
 	podOverride crv1alpha1.JSONMap,
 	annotations,
 	labels map[string]string,
+	opts ...kubeTaskOption,
 ) (map[string]interface{}, error) {
+	cfg := &kubeTaskConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
@@ -82,6 +104,18 @@ func kubeTask(
 	// Apply the registered ephemeral pod changes.
 	if err := ephemeral.PodOptions.Apply(options); err != nil {
 		return nil, errkit.Wrap(err, "Failed to apply ephemeral pod options")
+	}
+
+	// Run registered pod credential injectors, which may create auxiliary
+	// objects (e.g. a short-lived Secret) and inject a projected file into the
+	// pod. The returned cleanup is deferred until after the pod completes; it
+	// runs on a detached context so teardown still happens if ctx was cancelled.
+	if cfg.tp != nil {
+		cleanup, err := ephemeral.InjectPodCredentials(ctx, cli, *cfg.tp, command, options)
+		if err != nil {
+			return nil, errkit.Wrap(err, "Failed to inject ephemeral pod credentials")
+		}
+		defer cleanup(context.WithoutCancel(ctx))
 	}
 
 	// Mark pod with label having key `kanister.io/JobID`, the value of which is a reference to the origin of the pod.
@@ -171,6 +205,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		podOverride,
 		annotations,
 		labels,
+		withPodCredentialInjection(tp),
 	)
 }
 

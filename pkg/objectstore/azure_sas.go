@@ -22,6 +22,37 @@ const (
 	azureSASRefreshMargin = 1 * time.Hour
 )
 
+// AzureSASPermissions is the least-privilege permission set granted to a minted
+// user-delegation SAS. The zero value grants no permissions; callers should set
+// only the permissions the operation needs (e.g. Read for pull, Create+Write+Add
+// for push, Delete+List for retire).
+type AzureSASPermissions struct {
+	Read   bool
+	Add    bool
+	Create bool
+	Write  bool
+	Delete bool
+	List   bool
+}
+
+func (p AzureSASPermissions) toContainerPermissions() *sas.ContainerPermissions {
+	return &sas.ContainerPermissions{
+		Read:   p.Read,
+		Add:    p.Add,
+		Create: p.Create,
+		Write:  p.Write,
+		Delete: p.Delete,
+		List:   p.List,
+	}
+}
+
+// AllAzureSASPermissions grants every container-scoped permission. It is the
+// safe default when the specific object-store operation cannot be determined;
+// callers that know the operation pass a narrower, least-privilege set.
+func AllAzureSASPermissions() AzureSASPermissions {
+	return AzureSASPermissions{Read: true, Add: true, Create: true, Write: true, Delete: true, List: true}
+}
+
 // cachedAzureSAS is a minted SAS token together with the time it expires.
 type cachedAzureSAS struct {
 	token  string
@@ -61,14 +92,17 @@ var (
 // NOTE: a user-delegation SAS is scoped to a single container and cannot list,
 // create, or delete containers — consumers must operate within the given
 // container only.
-func MintAzureUserDelegationSAS(ctx context.Context, account, containerName string) (string, error) {
+func MintAzureUserDelegationSAS(ctx context.Context, account, containerName string, perms AzureSASPermissions) (string, error) {
 	if account == "" {
 		return "", errkit.New("Azure storage account is required to mint a SAS token")
 	}
 	if containerName == "" {
 		return "", errkit.New("container name is required to scope the user-delegation SAS token")
 	}
-	cacheKey := account + "/" + containerName
+	permStr := perms.toContainerPermissions().String()
+	// Permissions are part of the cache key: tokens minted for different
+	// permission sets must not be shared.
+	cacheKey := account + "/" + containerName + "/" + permStr
 
 	// Fast path: reuse a cached token that still has ample validity left. The
 	// network mint below is intentionally not held under the lock.
@@ -79,7 +113,7 @@ func MintAzureUserDelegationSAS(ctx context.Context, account, containerName stri
 	}
 	azureSASCacheMu.Unlock()
 
-	token, expiry, err := mintAzureUserDelegationSAS(ctx, account, containerName)
+	token, expiry, err := mintAzureUserDelegationSAS(ctx, account, containerName, permStr)
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +129,7 @@ func MintAzureUserDelegationSAS(ctx context.Context, account, containerName stri
 //
 // TODO: sovereign/government cloud endpoints are not handled yet; this assumes
 // the public Azure cloud (blob.core.windows.net).
-func mintAzureUserDelegationSAS(ctx context.Context, account, containerName string) (string, time.Time, error) {
+func mintAzureUserDelegationSAS(ctx context.Context, account, containerName, permissions string) (string, time.Time, error) {
 	accountURL := fmt.Sprintf("https://%s.blob.core.windows.net/", account)
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
@@ -120,16 +154,9 @@ func mintAzureUserDelegationSAS(ctx context.Context, account, containerName stri
 
 	sasQueryParams, err := sas.BlobSignatureValues{
 		Protocol:   sas.ProtocolHTTPS,
-		StartTime:  now,
-		ExpiryTime: expiry,
-		Permissions: to.Ptr(sas.ContainerPermissions{
-			Read:   true,
-			Add:    true,
-			Create: true,
-			Write:  true,
-			Delete: true,
-			List:   true,
-		}).String(),
+		StartTime:     now,
+		ExpiryTime:    expiry,
+		Permissions:   permissions,
 		ContainerName: containerName,
 	}.SignWithUserDelegation(udc)
 	if err != nil {
