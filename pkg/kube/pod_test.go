@@ -90,7 +90,7 @@ func (s *PodSuite) TestPod(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	// get controller's SA
-	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
+	sa, err := GetControllerServiceAccount(fake.NewClientset())
 	c.Assert(err, check.IsNil)
 
 	testSec := s.createTestSecret(c)
@@ -296,7 +296,7 @@ func (s *PodSuite) createTestSecret(c *check.C) *corev1.Secret {
 }
 
 func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *check.C) {
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	pvcName := "prometheus-ibm-monitoring-prometheus-db-prometheus-ibm-monitoring-prometheus-0"
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -345,7 +345,7 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *check.C) {
 }
 
 func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *check.C) {
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	pvcName := "pvc-with-read-only-mount"
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -394,7 +394,7 @@ func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *check.C) {
 }
 
 func (s *PodSuite) TestPodWithBlockModeVolumes(c *check.C) {
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	pvcName := "block-mode-volume"
 	blockMode := corev1.PersistentVolumeBlock
 	pvc := &corev1.PersistentVolumeClaim{
@@ -1254,7 +1254,7 @@ func (s *PodSuite) TestAddAnnotations(c *check.C) {
 // TestErrkitApiErrorsWrapping verifies that apierrors wrapped with errkit.Wrap are still matchable using apierrors matchers
 func (s *PodSuite) TestErrkitApiErrorsWrapping(c *check.C) {
 	// Create the fake client
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 
 	// Add a reactor to simulate an error when trying to get a PVC
 	fakeClient.PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
