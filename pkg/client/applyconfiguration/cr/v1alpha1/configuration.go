@@ -20,9 +20,15 @@ package v1alpha1
 
 // ConfigurationApplyConfiguration represents a declarative configuration of the Configuration type for use
 // with apply.
+//
+// Configuration can be used to specify the optional fields used
+// for repository operations
 type ConfigurationApplyConfiguration struct {
+	// CacheDirectory is an optional field to specify kopia cache directory
 	CacheDirectory *string `json:"cacheDirectory,omitempty"`
-	LogDirectory   *string `json:"logDirectory,omitempty"`
+	// LogDirectory is an optional field to specify kopia log directory
+	LogDirectory *string `json:"logDirectory,omitempty"`
+	// ConfigFilePath is an optional field to specify kopia config file path
 	ConfigFilePath *string `json:"configFilePath,omitempty"`
 }
 

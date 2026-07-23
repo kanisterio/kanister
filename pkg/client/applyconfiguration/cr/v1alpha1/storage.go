@@ -24,8 +24,15 @@ import (
 
 // StorageApplyConfiguration represents a declarative configuration of the Storage type for use
 // with apply.
+//
+// Storage references the backend store where a repository already exists
+// and the credential necessary to connect to the backend store
 type StorageApplyConfiguration struct {
-	SecretRef           *v1.SecretReference `json:"secretRef,omitempty"`
+	// SecretRef has the details of the object storage (location)
+	// where the kopia would backup the data
+	SecretRef *v1.SecretReference `json:"secretRef,omitempty"`
+	// CredentialSecretRef stores the credentials required
+	// to connect to the object storage specified in `SecretRef` field
 	CredentialSecretRef *v1.SecretReference `json:"credentialSecretRef,omitempty"`
 }
 

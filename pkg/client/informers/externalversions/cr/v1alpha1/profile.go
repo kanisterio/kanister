@@ -57,7 +57,7 @@ func NewProfileInformer(client versioned.Interface, namespace string, resyncPeri
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredProfileInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
@@ -82,7 +82,7 @@ func NewFilteredProfileInformer(client versioned.Interface, namespace string, re
 				}
 				return client.CrV1alpha1().Profiles(namespace).Watch(ctx, options)
 			},
-		},
+		}, client),
 		&apiscrv1alpha1.Profile{},
 		resyncPeriod,
 		indexers,

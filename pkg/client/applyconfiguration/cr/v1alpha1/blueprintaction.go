@@ -20,15 +20,27 @@ package v1alpha1
 
 // BlueprintActionApplyConfiguration represents a declarative configuration of the BlueprintAction type for use
 // with apply.
+//
+// BlueprintAction describes the set of phases that constitute an action.
 type BlueprintActionApplyConfiguration struct {
-	Name               *string                               `json:"name,omitempty"`
-	Kind               *string                               `json:"kind,omitempty"`
-	ConfigMapNames     []string                              `json:"configMapNames,omitempty"`
-	SecretNames        []string                              `json:"secretNames,omitempty"`
-	InputArtifactNames []string                              `json:"inputArtifactNames,omitempty"`
-	OutputArtifacts    map[string]ArtifactApplyConfiguration `json:"outputArtifacts,omitempty"`
-	Phases             []BlueprintPhaseApplyConfiguration    `json:"phases,omitempty"`
-	DeferPhase         *BlueprintPhaseApplyConfiguration     `json:"deferPhase,omitempty"`
+	// Name contains the name of the action.
+	Name *string `json:"name,omitempty"`
+	// Kind contains the resource on which this action has to be performed.
+	Kind *string `json:"kind,omitempty"`
+	// ConfigMapNames is used to specify the config map names that can be used later in the action phases.
+	ConfigMapNames []string `json:"configMapNames,omitempty"`
+	// List of Kubernetes secret names used in action phases.
+	SecretNames []string `json:"secretNames,omitempty"`
+	// InputArtifactNames is the list of Artifact names that were set from previous action and can be consumed in the current action.
+	InputArtifactNames []string `json:"inputArtifactNames,omitempty"`
+	// OutputArtifacts is the map of rendered artifacts produced by the BlueprintAction.
+	OutputArtifacts map[string]ArtifactApplyConfiguration `json:"outputArtifacts,omitempty"`
+	// Phases is the list of BlueprintPhases which are invoked in order when executing this action.
+	Phases []BlueprintPhaseApplyConfiguration `json:"phases,omitempty"`
+	// DeferPhase is invoked after the execution of Phases that are defined for an action.
+	// A DeferPhase is executed regardless of the statuses of the other phases of the action.
+	// A DeferPhase can be used for cleanup operations at the end of an action.
+	DeferPhase *BlueprintPhaseApplyConfiguration `json:"deferPhase,omitempty"`
 }
 
 // BlueprintActionApplyConfiguration constructs a declarative configuration of the BlueprintAction type for use with

@@ -27,10 +27,13 @@ import (
 
 // BlueprintApplyConfiguration represents a declarative configuration of the Blueprint type for use
 // with apply.
+//
+// Blueprint describes kanister actions.
 type BlueprintApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Actions                          map[string]*crv1alpha1.BlueprintAction `json:"actions,omitempty"`
+	// Actions is the list of actions constructing the Blueprint.
+	Actions map[string]*crv1alpha1.BlueprintAction `json:"actions,omitempty"`
 }
 
 // Blueprint constructs a declarative configuration of the Blueprint type for use with
@@ -43,6 +46,8 @@ func Blueprint(name, namespace string) *BlueprintApplyConfiguration {
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
 }
+
+func (b BlueprintApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -216,8 +221,24 @@ func (b *BlueprintApplyConfiguration) WithActions(entries map[string]*crv1alpha1
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *BlueprintApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *BlueprintApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *BlueprintApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *BlueprintApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }

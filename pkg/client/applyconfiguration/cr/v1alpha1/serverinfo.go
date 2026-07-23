@@ -20,6 +20,8 @@ package v1alpha1
 
 // ServerInfoApplyConfiguration represents a declarative configuration of the ServerInfo type for use
 // with apply.
+//
+// ServerInfo describes all the information required by the client users to connect to the repository server
 type ServerInfoApplyConfiguration struct {
 	PodName     *string `json:"podName,omitempty"`
 	ServiceName *string `json:"serviceName,omitempty"`

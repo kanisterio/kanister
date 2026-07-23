@@ -26,11 +26,16 @@ import (
 
 // RepositoryServerApplyConfiguration represents a declarative configuration of the RepositoryServer type for use
 // with apply.
+//
+// RepositoryServer manages the lifecycle of Kopia Repository Server within a Pod
 type RepositoryServerApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *RepositoryServerSpecApplyConfiguration   `json:"spec,omitempty"`
-	Status                           *RepositoryServerStatusApplyConfiguration `json:"status,omitempty"`
+	// Spec defines the spec of repository server.
+	// It has all the details required to start the kopia repository server
+	Spec *RepositoryServerSpecApplyConfiguration `json:"spec,omitempty"`
+	// Status refers to the current status of the repository server.
+	Status *RepositoryServerStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // RepositoryServer constructs a declarative configuration of the RepositoryServer type for use with
@@ -43,6 +48,8 @@ func RepositoryServer(name, namespace string) *RepositoryServerApplyConfiguratio
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
 }
+
+func (b RepositoryServerApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -218,8 +225,24 @@ func (b *RepositoryServerApplyConfiguration) WithStatus(value *RepositoryServerS
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *RepositoryServerApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *RepositoryServerApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *RepositoryServerApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *RepositoryServerApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }

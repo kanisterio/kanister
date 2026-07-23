@@ -24,14 +24,32 @@ import (
 
 // PhaseProgressApplyConfiguration represents a declarative configuration of the PhaseProgress type for use
 // with apply.
+//
+// PhaseProgress represents the execution state of the phase.
 type PhaseProgressApplyConfiguration struct {
-	ProgressPercent        *string  `json:"progressPercent,omitempty"`
-	SizeDownloadedB        *int64   `json:"sizeDownloadedB,omitempty"`
-	SizeUploadedB          *int64   `json:"sizeUploadedB,omitempty"`
-	EstimatedDownloadSizeB *int64   `json:"estimatedDownloadSizeB,omitempty"`
-	EstimatedUploadSizeB   *int64   `json:"estimatedUploadSizeB,omitempty"`
-	EstimatedTimeSeconds   *int64   `json:"estinatedTimeSeconds,omitempty"`
-	LastTransitionTime     *v1.Time `json:"lastTransitionTime,omitempty"`
+	// ProgressPercent represents the execution progress in percentage.
+	ProgressPercent *string `json:"progressPercent,omitempty"`
+	// SizeDownloadedB represents the size of data downloaded in Bytes at a given time during phase execution.
+	// This field will be empty for phases which do not involve data movement.
+	SizeDownloadedB *int64 `json:"sizeDownloadedB,omitempty"`
+	// SizeUploadedB represents the size of data uploaded in Bytes at a given time during phase execution.
+	// This field will be empty for phases which do not involve data movement.
+	SizeUploadedB *int64 `json:"sizeUploadedB,omitempty"`
+	// EstimatedDownloadSizeB represents the total estimated size of data in Bytes
+	// that will be downloaded during the phase execution.
+	// This field will be empty for phases which do not involve data movement.
+	EstimatedDownloadSizeB *int64 `json:"estimatedDownloadSizeB,omitempty"`
+	// EstimatedUploadSizeB represents the total estimated size of data in Bytes
+	// that will be uploaded during the phase execution.
+	// This field will be empty for phases which do not involve data movement.
+	EstimatedUploadSizeB *int64 `json:"estimatedUploadSizeB,omitempty"`
+	// EstimatedTimeSeconds is the estimated time required in seconds to transfer the
+	// remaining data estimated with EstimatedUploadSizeB/EstimatedDownloadSizeB.
+	// This field will be empty for phases which do not involve data movement.
+	EstimatedTimeSeconds *int64 `json:"estinatedTimeSeconds,omitempty"`
+	// LastTransitionTime represents the last date time when the progress status
+	// was received.
+	LastTransitionTime *v1.Time `json:"lastTransitionTime,omitempty"`
 }
 
 // PhaseProgressApplyConfiguration constructs a declarative configuration of the PhaseProgress type for use with
