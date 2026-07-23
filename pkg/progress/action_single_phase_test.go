@@ -86,7 +86,7 @@ func (s *TestSuiteSinglePhase) SetUpTest(c *check.C) {
 		},
 	}
 
-	s.clientset = fake.NewClientset()
+	s.clientset = fake.NewSimpleClientset()
 	err := s.createFixtures(mockBlueprint, mockActionSet)
 	c.Assert(err, check.IsNil)
 }
