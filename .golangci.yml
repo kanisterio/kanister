@@ -89,10 +89,10 @@ linters:
       - linters:
           - unparam
         text: 'ctx is unused'
-      # client-go v0.35 deprecates NewSimpleClientset in favor of NewClientset. For the
-      # generated kanister CRD (crfake) and OpenShift (osfake) fake clients used in these
-      # tests, NewClientset relies on a field-managed object tracker that nil-panics on
-      # these types at runtime, so we must keep NewSimpleClientset here.
+        # client-go v0.35 deprecates NewSimpleClientset in favor of NewClientset.
+        # Keep NewSimpleClientset for Kanister and OpenShift fake clients, as
+        # NewClientset currently nil-panics due to missing applyconfig OpenAPI schemas.
+        # TODO(K10-38337): Migrate to NewClientset and remove this workaround.
       - linters:
           - staticcheck
         text: 'SA1019: .*NewSimpleClientset is deprecated'
