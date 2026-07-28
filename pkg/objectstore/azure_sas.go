@@ -153,7 +153,7 @@ func mintAzureUserDelegationSAS(ctx context.Context, account, containerName, per
 	}
 
 	sasQueryParams, err := sas.BlobSignatureValues{
-		Protocol:   sas.ProtocolHTTPS,
+		Protocol:      sas.ProtocolHTTPS,
 		StartTime:     now,
 		ExpiryTime:    expiry,
 		Permissions:   permissions,
