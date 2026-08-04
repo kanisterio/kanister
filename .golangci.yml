@@ -92,7 +92,7 @@ linters:
         # client-go v0.35 deprecates NewSimpleClientset in favor of NewClientset.
         # Keep NewSimpleClientset for Kanister and OpenShift fake clients, as
         # NewClientset currently nil-panics due to missing applyconfig OpenAPI schemas.
-        # TODO(K10-38337): Migrate to NewClientset and remove this workaround.
+        # TODO: Migrate to NewClientset and remove this workaround.
       - linters:
           - staticcheck
         text: 'SA1019: .*NewSimpleClientset is deprecated'
