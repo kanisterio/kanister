@@ -19,8 +19,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	internal "github.com/kanisterio/kanister/pkg/client/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -47,6 +50,47 @@ func RepositoryServer(name, namespace string) *RepositoryServerApplyConfiguratio
 	b.WithKind("RepositoryServer")
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
+}
+
+// ExtractRepositoryServerFrom extracts the applied configuration owned by fieldManager from
+// repositoryServer for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// repositoryServer must be a unmodified RepositoryServer API object that was retrieved from the Kubernetes API.
+// ExtractRepositoryServerFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractRepositoryServerFrom(repositoryServer *crv1alpha1.RepositoryServer, fieldManager string, subresource string) (*RepositoryServerApplyConfiguration, error) {
+	b := &RepositoryServerApplyConfiguration{}
+	err := managedfields.ExtractInto(repositoryServer, internal.Parser().Type("com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServer"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(repositoryServer.Name)
+	b.WithNamespace(repositoryServer.Namespace)
+
+	b.WithKind("RepositoryServer")
+	b.WithAPIVersion("cr.kanister.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractRepositoryServer extracts the applied configuration owned by fieldManager from
+// repositoryServer. If no managedFields are found in repositoryServer for fieldManager, a
+// RepositoryServerApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// repositoryServer must be a unmodified RepositoryServer API object that was retrieved from the Kubernetes API.
+// ExtractRepositoryServer provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractRepositoryServer(repositoryServer *crv1alpha1.RepositoryServer, fieldManager string) (*RepositoryServerApplyConfiguration, error) {
+	return ExtractRepositoryServerFrom(repositoryServer, fieldManager, "")
+}
+
+// ExtractRepositoryServerStatus extracts the applied configuration owned by fieldManager from
+// repositoryServer for the status subresource.
+func ExtractRepositoryServerStatus(repositoryServer *crv1alpha1.RepositoryServer, fieldManager string) (*RepositoryServerApplyConfiguration, error) {
+	return ExtractRepositoryServerFrom(repositoryServer, fieldManager, "status")
 }
 
 func (b RepositoryServerApplyConfiguration) IsApplyConfiguration() {}

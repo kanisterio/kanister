@@ -39,6 +39,783 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
+- name: Condition.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: lastTransitionTime
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: message
+      type:
+        scalar: string
+      default: ""
+    - name: observedGeneration
+      type:
+        scalar: numeric
+    - name: reason
+      type:
+        scalar: string
+      default: ""
+    - name: status
+      type:
+        scalar: string
+      default: ""
+    - name: type
+      type:
+        scalar: string
+      default: ""
+- name: FieldsV1.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: ManagedFieldsEntry.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: fieldsType
+      type:
+        scalar: string
+    - name: fieldsV1
+      type:
+        namedType: FieldsV1.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: manager
+      type:
+        scalar: string
+    - name: operation
+      type:
+        scalar: string
+    - name: subresource
+      type:
+        scalar: string
+    - name: time
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+- name: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: annotations
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: creationTimestamp
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: deletionGracePeriodSeconds
+      type:
+        scalar: numeric
+    - name: deletionTimestamp
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: finalizers
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: generateName
+      type:
+        scalar: string
+    - name: generation
+      type:
+        scalar: numeric
+    - name: labels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: managedFields
+      type:
+        list:
+          elementType:
+            namedType: ManagedFieldsEntry.v1.meta.apis.pkg.apimachinery.k8s.io
+          elementRelationship: atomic
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: ownerReferences
+      type:
+        list:
+          elementType:
+            namedType: OwnerReference.v1.meta.apis.pkg.apimachinery.k8s.io
+          elementRelationship: associative
+          keys:
+          - uid
+    - name: resourceVersion
+      type:
+        scalar: string
+    - name: selfLink
+      type:
+        scalar: string
+    - name: uid
+      type:
+        scalar: string
+- name: OwnerReference.v1.meta.apis.pkg.apimachinery.k8s.io
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+      default: ""
+    - name: blockOwnerDeletion
+      type:
+        scalar: boolean
+    - name: controller
+      type:
+        scalar: boolean
+    - name: kind
+      type:
+        scalar: string
+      default: ""
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: uid
+      type:
+        scalar: string
+      default: ""
+    elementRelationship: atomic
+- name: SecretReference.v1.core.api.k8s.io
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    elementRelationship: atomic
+- name: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+  scalar: untyped
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionProgress
+  map:
+    fields:
+    - name: estimatedDownloadSizeB
+      type:
+        scalar: numeric
+    - name: estimatedUploadSizeB
+      type:
+        scalar: numeric
+    - name: lastTransitionTime
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: percentCompleted
+      type:
+        scalar: string
+    - name: runningPhase
+      type:
+        scalar: string
+    - name: sizeDownloadedB
+      type:
+        scalar: numeric
+    - name: sizeUploadedB
+      type:
+        scalar: numeric
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionSet
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionSetSpec
+    - name: status
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionSetStatus
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionSetSpec
+  map:
+    fields:
+    - name: actions
+      type:
+        list:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionSpec
+          elementRelationship: atomic
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionSetStatus
+  map:
+    fields:
+    - name: actions
+      type:
+        list:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionStatus
+          elementRelationship: atomic
+    - name: error
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Error
+      default: {}
+    - name: progress
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionProgress
+      default: {}
+    - name: state
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionSpec
+  map:
+    fields:
+    - name: artifacts
+      type:
+        map:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Artifact
+    - name: blueprint
+      type:
+        scalar: string
+    - name: configMaps
+      type:
+        map:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: object
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+      default: {}
+    - name: options
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: podAnnotations
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: podLabels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: podOverride
+      type:
+        map:
+          elementType:
+            map:
+              elementType:
+                scalar: untyped
+                list:
+                  elementType:
+                    namedType: __untyped_atomic_
+                  elementRelationship: atomic
+                map:
+                  elementType:
+                    namedType: __untyped_deduced_
+                  elementRelationship: separable
+    - name: preferredVersion
+      type:
+        scalar: string
+      default: ""
+    - name: profile
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+    - name: repositoryServer
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+    - name: secrets
+      type:
+        map:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionStatus
+  map:
+    fields:
+    - name: artifacts
+      type:
+        map:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Artifact
+    - name: blueprint
+      type:
+        scalar: string
+      default: ""
+    - name: deferPhase
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Phase
+      default: {}
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: object
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+      default: {}
+    - name: phases
+      type:
+        list:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Phase
+          elementRelationship: atomic
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Artifact
+  map:
+    fields:
+    - name: keyValue
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: kopiaSnapshot
+      type:
+        scalar: string
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Blueprint
+  map:
+    fields:
+    - name: actions
+      type:
+        map:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.BlueprintAction
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
+      default: {}
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.BlueprintAction
+  map:
+    fields:
+    - name: configMapNames
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: deferPhase
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.BlueprintPhase
+    - name: inputArtifactNames
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: kind
+      type:
+        scalar: string
+      default: ""
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: outputArtifacts
+      type:
+        map:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Artifact
+    - name: phases
+      type:
+        list:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.BlueprintPhase
+          elementRelationship: atomic
+    - name: secretNames
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.BlueprintPhase
+  map:
+    fields:
+    - name: args
+      type:
+        map:
+          elementType:
+            map:
+              elementType:
+                scalar: untyped
+                list:
+                  elementType:
+                    namedType: __untyped_atomic_
+                  elementRelationship: atomic
+                map:
+                  elementType:
+                    namedType: __untyped_deduced_
+                  elementRelationship: separable
+    - name: func
+      type:
+        scalar: string
+      default: ""
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: objects
+      type:
+        map:
+          elementType:
+            namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.CacheSizeSettings
+  map:
+    fields:
+    - name: content
+      type:
+        scalar: numeric
+    - name: metadata
+      type:
+        scalar: numeric
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Configuration
+  map:
+    fields:
+    - name: cacheDirectory
+      type:
+        scalar: string
+    - name: configFilePath
+      type:
+        scalar: string
+    - name: logDirectory
+      type:
+        scalar: string
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Credential
+  map:
+    fields:
+    - name: keyPair
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.KeyPair
+    - name: kopiaServerSecret
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.KopiaServerSecret
+    - name: secret
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+    - name: type
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Error
+  map:
+    fields:
+    - name: message
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.KeyPair
+  map:
+    fields:
+    - name: idField
+      type:
+        scalar: string
+      default: ""
+    - name: secret
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+      default: {}
+    - name: secretField
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.KopiaServerSecret
+  map:
+    fields:
+    - name: connectOptions
+      type:
+        map:
+          elementType:
+            scalar: numeric
+    - name: hostname
+      type:
+        scalar: string
+    - name: tlsCert
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.KopiaServerSecretRef
+    - name: userPassphrase
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.KopiaServerSecretRef
+    - name: username
+      type:
+        scalar: string
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.KopiaServerSecretRef
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
+    - name: secret
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Location
+  map:
+    fields:
+    - name: bucket
+      type:
+        scalar: string
+      default: ""
+    - name: endpoint
+      type:
+        scalar: string
+      default: ""
+    - name: prefix
+      type:
+        scalar: string
+      default: ""
+    - name: region
+      type:
+        scalar: string
+      default: ""
+    - name: type
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+      default: ""
+    - name: group
+      type:
+        scalar: string
+      default: ""
+    - name: kind
+      type:
+        scalar: string
+      default: ""
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: namespace
+      type:
+        scalar: string
+    - name: resource
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Phase
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: output
+      type:
+        map:
+          elementType:
+            map:
+              elementType:
+                scalar: untyped
+                list:
+                  elementType:
+                    namedType: __untyped_atomic_
+                  elementRelationship: atomic
+                map:
+                  elementType:
+                    namedType: __untyped_deduced_
+                  elementRelationship: separable
+    - name: progress
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.PhaseProgress
+      default: {}
+    - name: state
+      type:
+        scalar: string
+      default: ""
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.PhaseProgress
+  map:
+    fields:
+    - name: estimatedDownloadSizeB
+      type:
+        scalar: numeric
+    - name: estimatedUploadSizeB
+      type:
+        scalar: numeric
+    - name: estinatedTimeSeconds
+      type:
+        scalar: numeric
+    - name: lastTransitionTime
+      type:
+        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
+    - name: progressPercent
+      type:
+        scalar: string
+    - name: sizeDownloadedB
+      type:
+        scalar: numeric
+    - name: sizeUploadedB
+      type:
+        scalar: numeric
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Profile
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: credential
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Credential
+      default: {}
+    - name: kind
+      type:
+        scalar: string
+    - name: location
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Location
+      default: {}
+    - name: metadata
+      type:
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
+      default: {}
+    - name: skipSSLVerify
+      type:
+        scalar: boolean
+      default: false
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Repository
+  map:
+    fields:
+    - name: cacheSizeSettings
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.CacheSizeSettings
+      default: {}
+    - name: configuration
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Configuration
+      default: {}
+    - name: hostname
+      type:
+        scalar: string
+    - name: passwordSecretRef
+      type:
+        namedType: SecretReference.v1.core.api.k8s.io
+      default: {}
+    - name: rootPath
+      type:
+        scalar: string
+      default: ""
+    - name: username
+      type:
+        scalar: string
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServer
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServerSpec
+      default: {}
+    - name: status
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServerStatus
+      default: {}
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServerSpec
+  map:
+    fields:
+    - name: repository
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Repository
+      default: {}
+    - name: server
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Server
+      default: {}
+    - name: storage
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Storage
+      default: {}
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServerStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: Condition.v1.meta.apis.pkg.apimachinery.k8s.io
+          elementRelationship: atomic
+    - name: progress
+      type:
+        scalar: string
+    - name: serverInfo
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ServerInfo
+      default: {}
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Server
+  map:
+    fields:
+    - name: adminSecretRef
+      type:
+        namedType: SecretReference.v1.core.api.k8s.io
+      default: {}
+    - name: tlsSecretRef
+      type:
+        namedType: SecretReference.v1.core.api.k8s.io
+      default: {}
+    - name: userAccess
+      type:
+        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.UserAccess
+      default: {}
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ServerInfo
+  map:
+    fields:
+    - name: podName
+      type:
+        scalar: string
+    - name: serviceName
+      type:
+        scalar: string
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Storage
+  map:
+    fields:
+    - name: credentialSecretRef
+      type:
+        namedType: SecretReference.v1.core.api.k8s.io
+      default: {}
+    - name: secretRef
+      type:
+        namedType: SecretReference.v1.core.api.k8s.io
+      default: {}
+- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.UserAccess
+  map:
+    fields:
+    - name: userAccessSecretRef
+      type:
+        namedType: SecretReference.v1.core.api.k8s.io
+      default: {}
+    - name: username
+      type:
+        scalar: string
+      default: ""
 - name: __untyped_atomic_
   scalar: untyped
   list:

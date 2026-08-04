@@ -396,9 +396,9 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *check.C, dyn
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(ctx, "secret-name", metav1.GetOptions{})
 	c.Assert(err, check.IsNil)
 
-	osCli := osfake.NewSimpleClientset() // TODO: Migrate to fake.NewClientset once Kanister CRD client support is available.
+	osCli := osfake.NewClientset()
 
-	crCli := crfake.NewSimpleClientset() // TODO: Migrate to fake.NewClientset once Kanister CRD client support is available.
+	crCli := crfake.NewClientset()
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, prof, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(ctx, "profName", metav1.GetOptions{})
@@ -579,7 +579,7 @@ func (s *ParamsSuite) TestProfile(c *check.C) {
 			},
 		},
 	}
-	crCli := crfake.NewSimpleClientset() // TODO: Migrate to fake.NewClientset once Kanister CRD client support is available.
+	crCli := crfake.NewClientset()
 	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).List(ctx, metav1.ListOptions{})
@@ -589,7 +589,7 @@ func (s *ParamsSuite) TestProfile(c *check.C) {
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).List(ctx, metav1.ListOptions{})
 	c.Assert(err, check.IsNil)
 
-	osCli := osfake.NewSimpleClientset() // TODO: Migrate to fake.NewClientset once Kanister CRD client support is available.
+	osCli := osfake.NewClientset()
 
 	tp, err := New(ctx, cli, dynCli, crCli, osCli, as.Spec.Actions[0])
 	c.Assert(err, check.IsNil)
@@ -631,8 +631,8 @@ func (s *ParamsSuite) TestParamsWithoutProfile(c *check.C) {
 	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(ctx, s.pvc, metav1.GetOptions{})
 	c.Assert(err, check.IsNil)
 	dynCli := s.getDynamicClient(c, pvc)
-	crCli := crfake.NewSimpleClientset() // TODO: Migrate to fake.NewClientset once Kanister CRD client support is available.
-	osCli := osfake.NewSimpleClientset() // TODO: Migrate to fake.NewClientset once Kanister CRD client support is available.
+	crCli := crfake.NewClientset()
+	osCli := osfake.NewClientset()
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
 			Name:      s.pvc,
@@ -693,8 +693,8 @@ func (s *ParamsSuite) TestPhaseParams(c *check.C) {
 	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(ctx, s.pvc, metav1.GetOptions{})
 	c.Assert(err, check.IsNil)
 	dynCli := s.getDynamicClient(c, pvc)
-	crCli := crfake.NewSimpleClientset() // TODO: Migrate to fake.NewClientset once Kanister CRD client support is available.
-	osCli := osfake.NewSimpleClientset() // TODO: Migrate to fake.NewClientset once Kanister CRD client support is available.
+	crCli := crfake.NewClientset()
+	osCli := osfake.NewClientset()
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, prof, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(ctx, "profName", metav1.GetOptions{})
