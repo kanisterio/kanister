@@ -24,10 +24,22 @@ import (
 
 // RepositoryApplyConfiguration represents a declarative configuration of the Repository type for use
 // with apply.
+//
+// Repository has the details required by the repository server to connect to kopia repository
 type RepositoryApplyConfiguration struct {
-	RootPath          *string                              `json:"rootPath,omitempty"`
-	Username          *string                              `json:"username,omitempty"`
-	Hostname          *string                              `json:"hostname,omitempty"`
+	// Path for the repository, it will be a relative sub path
+	// within the path prefix specified in the location
+	// More info: https://kopia.io/docs/reference/command-line/common/#commands-to-manipulate-repository
+	RootPath *string `json:"rootPath,omitempty"`
+	// If specified, these values will be used by the controller to
+	// override default username when connecting to the
+	// repository from the server.
+	Username *string `json:"username,omitempty"`
+	// If specified, these values will be used by the controller to
+	// override default hostname when connecting to the
+	// repository from the server.
+	Hostname *string `json:"hostname,omitempty"`
+	// PasswordSecretRef has the password required to connect to kopia repository
 	PasswordSecretRef *v1.SecretReference                  `json:"passwordSecretRef,omitempty"`
 	CacheSizeSettings *CacheSizeSettingsApplyConfiguration `json:"cacheSizeSettings,omitempty"`
 	Configuration     *ConfigurationApplyConfiguration     `json:"configuration,omitempty"`

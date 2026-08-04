@@ -20,10 +20,18 @@ package v1alpha1
 
 // RepositoryServerSpecApplyConfiguration represents a declarative configuration of the RepositoryServerSpec type for use
 // with apply.
+//
+// RepositoryServerSpec is the specification for the RepositoryServer
 type RepositoryServerSpecApplyConfiguration struct {
-	Storage    *StorageApplyConfiguration    `json:"storage,omitempty"`
+	// Storage references the backend store where a repository already exists
+	// and the credential necessary to connect to the backend store
+	Storage *StorageApplyConfiguration `json:"storage,omitempty"`
+	// Repository has the details required by the repository server
+	// to connect to kopia repository
 	Repository *RepositoryApplyConfiguration `json:"repository,omitempty"`
-	Server     *ServerApplyConfiguration     `json:"server,omitempty"`
+	// Server has the details of all the secrets required to start
+	// the kopia repository server
+	Server *ServerApplyConfiguration `json:"server,omitempty"`
 }
 
 // RepositoryServerSpecApplyConfiguration constructs a declarative configuration of the RepositoryServerSpec type for use with

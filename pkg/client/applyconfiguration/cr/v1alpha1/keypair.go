@@ -21,9 +21,12 @@ package v1alpha1
 // KeyPairApplyConfiguration represents a declarative configuration of the KeyPair type for use
 // with apply.
 type KeyPairApplyConfiguration struct {
-	IDField     *string                            `json:"idField,omitempty"`
-	SecretField *string                            `json:"secretField,omitempty"`
-	Secret      *ObjectReferenceApplyConfiguration `json:"secret,omitempty"`
+	// IDField specifies the corresponding key in the secret where the AWS Key ID value is stored.
+	IDField *string `json:"idField,omitempty"`
+	// SecretField specifies the corresponding key in the secret where the AWS Secret Key value is stored.
+	SecretField *string `json:"secretField,omitempty"`
+	// Secret represents a Kubernetes Secret object storing the KeyPair credentials.
+	Secret *ObjectReferenceApplyConfiguration `json:"secret,omitempty"`
 }
 
 // KeyPairApplyConfiguration constructs a declarative configuration of the KeyPair type for use with
