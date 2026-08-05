@@ -74,7 +74,7 @@ func (s *PodInfoSuite) TestGetControllerServiceAccountFromEnv(c *check.C) {
 	err := os.Setenv(PodSAEnvVar, testPodSA)
 	c.Assert(err, check.IsNil)
 
-	saName, err := GetControllerServiceAccount(fake.NewSimpleClientset())
+	saName, err := GetControllerServiceAccount(fake.NewClientset())
 	c.Assert(err, check.IsNil)
 	c.Assert(saName, check.Equals, testPodSA)
 	err = os.Unsetenv(testPodSA)
