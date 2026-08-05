@@ -48,7 +48,6 @@ kube::codegen::gen_openapi \
 --update-report \
 ./pkg/apis
 
-# Render the generated definitions into the schema consumed by applyconfiguration-gen.
 go run ./cmd/openapi-spec > "${openapiSpecFile}"
 
 kube::codegen::gen_client \
