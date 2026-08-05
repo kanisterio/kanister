@@ -32,6 +32,16 @@ import (
 // crAPIPackage is the Go import path holding the Kanister CR types.
 const crAPIPackage = "github.com/kanisterio/kanister/pkg/apis/cr/"
 
+func WriteSpec(w io.Writer) error {
+	swagger, err := buildSwagger()
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(w).Encode(swagger)
+}
+
+// buildSwagger builds a Swagger spec for the Kanister API types.
 func buildSwagger() (*spec.Swagger, error) {
 	config := &common.Config{
 		Info: &spec.Info{
@@ -41,7 +51,7 @@ func buildSwagger() (*spec.Swagger, error) {
 			},
 		},
 		GetDefinitions: GetOpenAPIDefinitions,
-		// applyconfiguration-gen looks definitions up by their REST-friendly name.
+		// applyconfiguration-gen resolves definitions by their REST friendly names.
 		GetDefinitionName: func(name string) (string, spec.Extensions) {
 			return util.ToRESTFriendlyName(name), nil
 		},
@@ -58,13 +68,4 @@ func buildSwagger() (*spec.Swagger, error) {
 	}
 
 	return builder.BuildOpenAPIDefinitionsForResources(config, names...)
-}
-
-func WriteSpec(w io.Writer) error {
-	swagger, err := buildSwagger()
-	if err != nil {
-		return err
-	}
-
-	return json.NewEncoder(w).Encode(swagger)
 }

@@ -38,6 +38,7 @@ kube::codegen::gen_helpers \
 --extra-peer-dir  ./pkg/apis  \
 go/src/
 
+# Generate OpenAPI definitions for Kanister API types.
 kube::codegen::gen_openapi \
 --boilerplate  "${boilerplateFile}" \
 --output-dir "./pkg/client/openapi" \
@@ -47,6 +48,7 @@ kube::codegen::gen_openapi \
 --update-report \
 ./pkg/apis
 
+# Render the generated definitions into the schema consumed by applyconfiguration-gen.
 go run ./cmd/openapi-spec > "${openapiSpecFile}"
 
 kube::codegen::gen_client \
