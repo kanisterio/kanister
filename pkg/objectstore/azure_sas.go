@@ -3,7 +3,6 @@ package objectstore
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -15,11 +14,22 @@ import (
 
 const (
 	// azureSASValidity is the lifetime of a minted user-delegation SAS token.
-	azureSASValidity = 24 * time.Hour
-	// azureSASRefreshMargin is how long before expiry a cached token is
-	// considered stale and re-minted, so a handed-out SAS always has enough
-	// remaining validity to outlast an in-flight operation.
-	azureSASRefreshMargin = 1 * time.Hour
+	//
+	// The token is minted per operation and injected into a single worker pod
+	// (there is no cross-pod cache — see MintAzureUserDelegationSAS), so its
+	// lifetime is the blast-radius bound for exactly that one pod. A
+	// user-delegation SAS cannot be revoked individually, so this validity is
+	// the only such bound.
+	//
+	// It must outlast the longest single kando operation (e.g. a `location push`
+	// of a very large logical export) or the SAS would expire mid-upload.
+	// Worst-case sizing — a multi-terabyte single-object export at a
+	// conservative sustained upload throughput of ~50 MB/s: 1 TiB ≈ 5.8h,
+	// 5 TiB ≈ 29h. Adding margin for retries/throttling/TLS/variance and
+	// rounding up gives 48h, which covers ~8 TiB @50 MB/s (~4 TiB even @25 MB/s)
+	// and stays well under the 7-day user-delegation-key ceiling. Raise it (to
+	// <7d) if a larger single-object export must be supported.
+	azureSASValidity = 48 * time.Hour
 )
 
 // AzureSASPermissions is the least-privilege permission set granted to a minted
@@ -53,31 +63,19 @@ func AllAzureSASPermissions() AzureSASPermissions {
 	return AzureSASPermissions{Read: true, Add: true, Create: true, Write: true, Delete: true, List: true}
 }
 
-// cachedAzureSAS is a minted SAS token together with the time it expires.
-type cachedAzureSAS struct {
-	token  string
-	expiry time.Time
-}
-
-func (c cachedAzureSAS) fresh() bool {
-	return time.Now().UTC().Before(c.expiry.Add(-azureSASRefreshMargin))
-}
-
-// azureSASCache caches minted user-delegation SAS tokens for the lifetime of the
-// process (e.g. a kando pod), keyed by "<account>/<container>". This avoids a
-// fresh workload-identity token acquisition + GetUserDelegationCredential call
-// on every object-store operation. Entries are re-minted once they fall within
-// azureSASRefreshMargin of expiry.
-var (
-	azureSASCacheMu sync.Mutex
-	azureSASCache   = map[string]cachedAzureSAS{}
-)
-
 // MintAzureUserDelegationSAS returns a short-lived, container-scoped Azure
 // user-delegation SAS token for the given storage account and container,
-// minted using the pod's Azure Workload (federated) Identity. Results are cached
-// per account/container for the process lifetime (see azureSASCache); a cached
-// token is reused until it is within azureSASRefreshMargin of expiry.
+// minted using the pod's Azure Workload (federated) Identity.
+//
+// It mints a fresh token on every call — there is deliberately no cross-call
+// cache. The injector runs in kanister-svc and builds worker pods across many
+// namespaces; a process-level cache would hand one long-lived token to all of
+// them (a token that, given the TB-scale validity, can outlive the pod that
+// read it). Minting per invocation binds each token to a single pod's operation
+// and keeps its blast radius to that one pod. (The GetUserDelegationCredential
+// call this adds per pod-build is one network round-trip; a future optimization
+// could cache the user-delegation *key* — safe to reuse for local signing — and
+// still sign a distinct per-pod SAS.)
 //
 // It is used on the non-Kopia object-store data path (e.g. `kando location
 // push/pull`) when the storage account has no shared key.
@@ -100,27 +98,10 @@ func MintAzureUserDelegationSAS(ctx context.Context, account, containerName stri
 		return "", errkit.New("container name is required to scope the user-delegation SAS token")
 	}
 	permStr := perms.toContainerPermissions().String()
-	// Permissions are part of the cache key: tokens minted for different
-	// permission sets must not be shared.
-	cacheKey := account + "/" + containerName + "/" + permStr
-
-	// Fast path: reuse a cached token that still has ample validity left. The
-	// network mint below is intentionally not held under the lock.
-	azureSASCacheMu.Lock()
-	if cached, ok := azureSASCache[cacheKey]; ok && cached.fresh() {
-		azureSASCacheMu.Unlock()
-		return cached.token, nil
-	}
-	azureSASCacheMu.Unlock()
-
-	token, expiry, err := mintAzureUserDelegationSAS(ctx, account, containerName, permStr)
+	token, _, err := mintAzureUserDelegationSAS(ctx, account, containerName, permStr)
 	if err != nil {
 		return "", err
 	}
-
-	azureSASCacheMu.Lock()
-	azureSASCache[cacheKey] = cachedAzureSAS{token: token, expiry: expiry}
-	azureSASCacheMu.Unlock()
 	return token, nil
 }
 

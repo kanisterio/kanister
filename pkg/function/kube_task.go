@@ -71,6 +71,14 @@ type kubeTaskConfig struct {
 
 // withPodCredentialInjection runs the registered ephemeral pod credential
 // injectors for this task, using tp to resolve the profile/credentials.
+//
+// Supported surface: pod credential injection is wired only here, into
+// KubeTask (the pod this function builds). It therefore covers kando run via
+// KubeTask (location push/pull/delete, chronicle push). It does NOT cover
+// KubeExec — which runs a command inside a pre-existing application pod, where
+// there is no pod-build seam to project a Secret into — nor functions that
+// construct pods by other means. Consumers that need an injected credential
+// must route their work through KubeTask.
 func withPodCredentialInjection(tp param.TemplateParams) kubeTaskOption {
 	return func(c *kubeTaskConfig) { c.tp = &tp }
 }
