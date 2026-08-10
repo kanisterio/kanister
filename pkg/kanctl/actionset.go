@@ -24,7 +24,6 @@ import (
 	"github.com/kanisterio/errkit"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/spf13/cobra"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -36,33 +35,30 @@ import (
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/validate"
 )
 
 const (
-	actionFlagName                       = "action"
-	actionSetFlagName                    = "name"
-	blueprintFlagName                    = "blueprint"
-	configMapsFlagName                   = "config-maps"
-	deploymentFlagName                   = "deployment"
-	optionsFlagName                      = "options"
-	profileFlagName                      = "profile"
-	repositoryServerFlagName             = "repository-server"
-	pvcFlagName                          = "pvc"
-	secretsFlagName                      = "secrets"
-	statefulSetFlagName                  = "statefulset"
-	deploymentConfigFlagName             = "deploymentconfig"
-	sourceFlagName                       = "from"
-	selectorFlagName                     = "selector"
-	selectorKindFlag                     = "kind"
-	selectorNamespaceFlag                = "selector-namespace"
-	namespaceTargetsFlagName             = "namespacetargets"
-	objectsFlagName                      = "objects"
-	waitForRepositoryServerReadyFlagName = "wait-for-repository-server"
-	labelsFlagName                       = "labels"
-	podAnnotationsFlagName               = "podannotations"
-	podLabelsFlagName                    = "podlabels"
+	actionFlagName           = "action"
+	actionSetFlagName        = "name"
+	blueprintFlagName        = "blueprint"
+	configMapsFlagName       = "config-maps"
+	deploymentFlagName       = "deployment"
+	optionsFlagName          = "options"
+	profileFlagName          = "profile"
+	pvcFlagName              = "pvc"
+	secretsFlagName          = "secrets"
+	statefulSetFlagName      = "statefulset"
+	deploymentConfigFlagName = "deploymentconfig"
+	sourceFlagName           = "from"
+	selectorFlagName         = "selector"
+	selectorKindFlag         = "kind"
+	selectorNamespaceFlag    = "selector-namespace"
+	namespaceTargetsFlagName = "namespacetargets"
+	objectsFlagName          = "objects"
+	labelsFlagName           = "labels"
+	podAnnotationsFlagName   = "podannotations"
+	podLabelsFlagName        = "podlabels"
 )
 
 var (
@@ -71,21 +67,20 @@ var (
 )
 
 type PerformParams struct {
-	Namespace        string
-	ActionName       string
-	ActionSetName    string
-	ParentName       string
-	Blueprint        string
-	DryRun           bool
-	Objects          []crv1alpha1.ObjectReference
-	Options          map[string]string
-	Profile          *crv1alpha1.ObjectReference
-	RepositoryServer *crv1alpha1.ObjectReference
-	Secrets          map[string]crv1alpha1.ObjectReference
-	ConfigMaps       map[string]crv1alpha1.ObjectReference
-	Labels           map[string]string
-	PodLabels        map[string]string
-	PodAnnotations   map[string]string
+	Namespace      string
+	ActionName     string
+	ActionSetName  string
+	ParentName     string
+	Blueprint      string
+	DryRun         bool
+	Objects        []crv1alpha1.ObjectReference
+	Options        map[string]string
+	Profile        *crv1alpha1.ObjectReference
+	Secrets        map[string]crv1alpha1.ObjectReference
+	ConfigMaps     map[string]crv1alpha1.ObjectReference
+	Labels         map[string]string
+	PodLabels      map[string]string
+	PodAnnotations map[string]string
 }
 
 func newActionSetCmd() *cobra.Command {
@@ -104,7 +99,6 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringSliceP(deploymentFlagName, "d", []string{}, "deployment for the action set, comma separated namespace/name pairs (eg: --deployment namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(optionsFlagName, "o", []string{}, "specify options for the action set, comma separated key=value pairs (eg: --options key1=value1,key2=value2)")
 	cmd.Flags().StringP(profileFlagName, "p", "", "profile for the action set")
-	cmd.Flags().StringP(repositoryServerFlagName, "r", "", "kopia repository server custom resource reference (eg: --repository-server namespace/name)")
 	cmd.Flags().StringSliceP(pvcFlagName, "v", []string{}, "pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(secretsFlagName, "s", []string{}, "secrets for the action set, comma separated ref=namespace/name pairs (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)")
 	cmd.Flags().StringSliceP(statefulSetFlagName, "t", []string{}, "statefulset for the action set, comma separated namespace/name pairs (eg: --statefulset namespace1/name1,namespace2/name2)")
@@ -115,7 +109,6 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().StringSliceP(namespaceTargetsFlagName, "T", []string{}, "namespaces for the action set, comma separated list of namespaces (eg: --namespacetargets namespace1,namespace2)")
 	cmd.Flags().StringSliceP(objectsFlagName, "O", []string{}, "objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)")
-	cmd.Flags().BoolP(waitForRepositoryServerReadyFlagName, "w", false, "wait for repository server to be ready before creating actionset")
 	cmd.Flags().String(labelsFlagName, "", "Labels that should be added to the created actionset, space chars would be trimmed automatically. Multiple labels can be separate by comma(,) (eg: --labels key=value,foo=bar)")
 	cmd.Flags().StringToString(podAnnotationsFlagName, nil, "This flag can be used to configure annotations of the pods that are created by Kanister functions that are run by this ActionSet. (eg. --podannotations=key1=value1,key2=value2)")
 	cmd.Flags().StringToString(podLabelsFlagName, nil, "This flag can be used to configure labels of the pods that are created by Kanister functions that are run by this ActionSet. (eg: --podlabels=key1=value1,key2=value2)")
@@ -135,8 +128,7 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	valFlag, _ := cmd.Flags().GetBool(skipValidationFlag)
 	if !valFlag {
-		repoServerReady, _ := cmd.Flags().GetBool(waitForRepositoryServerReadyFlagName)
-		err = verifyParams(ctx, params, cli, crCli, osCli, repoServerReady)
+		err = verifyParams(ctx, params, cli, crCli, osCli)
 		if err != nil {
 			return err
 		}
@@ -183,16 +175,15 @@ func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 	actions := make([]crv1alpha1.ActionSpec, 0, len(params.Objects))
 	for _, obj := range params.Objects {
 		actions = append(actions, crv1alpha1.ActionSpec{
-			Name:             params.ActionName,
-			Blueprint:        params.Blueprint,
-			Object:           obj,
-			Secrets:          params.Secrets,
-			ConfigMaps:       params.ConfigMaps,
-			Profile:          params.Profile,
-			RepositoryServer: params.RepositoryServer,
-			Options:          params.Options,
-			PodAnnotations:   params.PodAnnotations,
-			PodLabels:        params.PodLabels,
+			Name:           params.ActionName,
+			Blueprint:      params.Blueprint,
+			Object:         obj,
+			Secrets:        params.Secrets,
+			ConfigMaps:     params.ConfigMaps,
+			Profile:        params.Profile,
+			Options:        params.Options,
+			PodAnnotations: params.PodAnnotations,
+			PodLabels:      params.PodLabels,
 		})
 	}
 
@@ -224,17 +215,16 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 	actions := make([]crv1alpha1.ActionSpec, 0, len(parent.Status.Actions)*max(1, len(params.Objects)))
 	for aidx, pa := range parent.Status.Actions {
 		as := crv1alpha1.ActionSpec{
-			Name:             parent.Spec.Actions[aidx].Name,
-			Blueprint:        pa.Blueprint,
-			Object:           pa.Object,
-			Artifacts:        pa.Artifacts,
-			Secrets:          parent.Spec.Actions[aidx].Secrets,
-			ConfigMaps:       parent.Spec.Actions[aidx].ConfigMaps,
-			Profile:          parent.Spec.Actions[aidx].Profile,
-			RepositoryServer: parent.Spec.Actions[aidx].RepositoryServer,
-			Options:          mergeOptions(params.Options, parent.Spec.Actions[aidx].Options),
-			PodAnnotations:   params.PodAnnotations,
-			PodLabels:        params.PodLabels,
+			Name:           parent.Spec.Actions[aidx].Name,
+			Blueprint:      pa.Blueprint,
+			Object:         pa.Object,
+			Artifacts:      pa.Artifacts,
+			Secrets:        parent.Spec.Actions[aidx].Secrets,
+			ConfigMaps:     parent.Spec.Actions[aidx].ConfigMaps,
+			Profile:        parent.Spec.Actions[aidx].Profile,
+			Options:        mergeOptions(params.Options, parent.Spec.Actions[aidx].Options),
+			PodAnnotations: params.PodAnnotations,
+			PodLabels:      params.PodLabels,
 		}
 		// Apply overrides
 		if params.ActionName != "" {
@@ -251,9 +241,6 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 		}
 		if params.Profile != nil {
 			as.Profile = params.Profile
-		}
-		if params.RepositoryServer != nil {
-			as.RepositoryServer = params.RepositoryServer
 		}
 		if len(params.Objects) > 0 {
 			for _, obj := range params.Objects {
@@ -326,10 +313,6 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	if err != nil {
 		return nil, err
 	}
-	repositoryServer, err := parseRepositoryServer(cmd)
-	if err != nil {
-		return nil, err
-	}
 	cms, err := parseConfigMaps(cmd)
 	if err != nil {
 		return nil, err
@@ -365,21 +348,20 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	}
 
 	return &PerformParams{
-		Namespace:        ns,
-		ActionName:       actionName,
-		ActionSetName:    actionSetName,
-		ParentName:       parentName,
-		Blueprint:        blueprint,
-		DryRun:           dryRun,
-		Objects:          objects,
-		Options:          options,
-		Secrets:          secrets,
-		ConfigMaps:       cms,
-		Profile:          profile,
-		RepositoryServer: repositoryServer,
-		Labels:           ls,
-		PodAnnotations:   podAnnotations,
-		PodLabels:        podLabels,
+		Namespace:      ns,
+		ActionName:     actionName,
+		ActionSetName:  actionSetName,
+		ParentName:     parentName,
+		Blueprint:      blueprint,
+		DryRun:         dryRun,
+		Objects:        objects,
+		Options:        options,
+		Secrets:        secrets,
+		ConfigMaps:     cms,
+		Profile:        profile,
+		Labels:         ls,
+		PodAnnotations: podAnnotations,
+		PodLabels:      podLabels,
 	}, nil
 }
 
@@ -442,28 +424,6 @@ func parseProfile(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, e
 		Name:      profileName,
 		Namespace: ns,
 	}, nil
-}
-
-// parseRepositoryServer returns the object reference
-// for the passed Repository Server
-func parseRepositoryServer(cmd *cobra.Command) (*crv1alpha1.ObjectReference, error) {
-	repositoryServerName, _ := cmd.Flags().GetString(repositoryServerFlagName)
-	if repositoryServerName == "" {
-		return nil, nil
-	}
-	if strings.Contains(repositoryServerName, "/") {
-		nsName := strings.Split(repositoryServerName, "/")
-		if len(nsName) != 2 {
-			return nil, errkit.New(fmt.Sprintf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName))
-		}
-		ns := nsName[0]
-		repositoryServerName = nsName[1]
-		return &crv1alpha1.ObjectReference{
-			Name:      repositoryServerName,
-			Namespace: ns,
-		}, nil
-	}
-	return nil, errkit.New(fmt.Sprintf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName))
 }
 
 func parseSecrets(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference, error) {
@@ -727,11 +687,11 @@ func parseName(k string, r string) (namespace, name string, err error) {
 	return m[1], m[2], nil
 }
 
-func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface, waitForRepoServerReady bool) error {
+func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
-	wg.Add(6)
+	wg.Add(5)
 
 	// Blueprint
 	go func() {
@@ -752,15 +712,6 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 			if err != nil {
 				msgs <- errkit.Wrap(err, fmt.Sprintf(notFoundTmpl, "profile", p.Profile.Name, p.Profile.Namespace))
 			}
-		}
-	}()
-
-	// RepositoryServer
-	go func() {
-		defer wg.Done()
-		err := verifyRepositoryServerParams(ctx, crCli, p.RepositoryServer, waitForRepoServerReady)
-		if err != nil {
-			msgs <- err
 		}
 	}()
 
@@ -839,39 +790,6 @@ func generateActionSetName(p *PerformParams) (string, error) {
 	return "", errMissingFieldActionName
 }
 
-func verifyRepositoryServerParams(ctx context.Context, crCli versioned.Interface, repoServer *crv1alpha1.ObjectReference, waitForRepoServerReady bool) error {
-	if repoServer != nil {
-		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return errkit.Wrap(err, fmt.Sprintf("Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace))
-			}
-			return errkit.New("error while fetching repo server")
-		}
-		if waitForRepoServerReady {
-			return waitForKopiaRepositoryServerReady(ctx, crCli, rs)
-		}
-		if rs.Status.Progress != crv1alpha1.Ready {
-			err = errkit.New("Repository Server Not Ready")
-			return errkit.Wrap(err, fmt.Sprintf("Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name))
-		}
-	}
-	return nil
-}
-
-func waitForKopiaRepositoryServerReady(ctx context.Context, crCli versioned.Interface, rs *crv1alpha1.RepositoryServer) error {
-	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
-	defer waitCancel()
-	pollErr := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
-		repositoryServer, err := crCli.CrV1alpha1().RepositoryServers(rs.GetNamespace()).Get(ctx, rs.GetName(), metav1.GetOptions{})
-		return repositoryServer.Status.Progress == crv1alpha1.Ready, err
-	})
-	if pollErr != nil {
-		return errkit.Wrap(pollErr, fmt.Sprintf("Failed while waiting for Repository Server %s/%s to be Ready", rs.GetNamespace(), rs.GetName()))
-	}
-	return nil
-}
-
 func verifyObjectParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, osCli osversioned.Interface) error {
 	var err error
 	for _, obj := range p.Objects {
@@ -904,9 +822,8 @@ func verifyObjectParams(ctx context.Context, p *PerformParams, cli kubernetes.In
 
 func isDataMoverProvided(cmd *cobra.Command) error {
 	profile := cmd.Flags().Lookup(profileFlagName).Value.String()
-	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
-	if profile == "" && repositoryServer == "" {
-		return errkit.New("Neither --profile nor --repository-server flag is provided.\nAction might fail if blueprint is using these resources.")
+	if profile == "" {
+		return errkit.New("--profile flag is not provided.\nAction might fail if blueprint is using this resource.")
 	}
 	return nil
 }
