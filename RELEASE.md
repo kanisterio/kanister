@@ -41,7 +41,7 @@ And then committed to the pre-release branch.
 ### Release workflow
 
 `release` workflow tags the repo using `release_tag` variable either from the merged pre-release PR or from workflow dispatch.
-It then uses the `goreleaser` tool to produce a github release and core images such as `ghcr.io/kanisterio/controller`, `ghcr.io/kanisterio/repo-server-controller`, `ghcr.io/kanisterio/kanister-tools` and `ghcr.io/kanisterio/kanister-kubectl-1.18`
+It then uses the `goreleaser` tool to produce a github release and core images such as `ghcr.io/kanisterio/controller`, `ghcr.io/kanisterio/kanister-tools` and `ghcr.io/kanisterio/kanister-kubectl-1.18`
 
 Published release artifacts include helm chart for the operator.
 

@@ -39,26 +39,12 @@ builds:
   env: *env
   goos: *goos
   goarch: *goarch
-- id: repo-server-controller
-  binary: repo-server-controller
-  main: cmd/reposervercontroller/main.go
-  ldflags: *ldflags
-  env: *env
-  goos: *goos
-  goarch: *goarch
 dockers:
 - ids:
   - controller
   image_templates:
   - 'ghcr.io/kanisterio/controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
-  build_flag_templates:
-  - "--pull"
-- ids:
-  - repo-server-controller
-  image_templates:
-  - 'ghcr.io/kanisterio/repo-server-controller:{{ .Tag }}'
-  dockerfile: 'docker/repo-server-controller/Dockerfile'
   build_flag_templates:
   - "--pull"
 - ids:
