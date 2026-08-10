@@ -40,8 +40,6 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/kopia/command"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/kanisterio/kanister/pkg/utils/volumesnapshot"
@@ -512,82 +510,6 @@ func GetDefaultS3CompliantStorageLocation() map[string][]byte {
 		reposerver.RegionKey:   []byte(TestS3Region),
 		reposerver.EndpointKey: []byte(os.Getenv(s3CompliantLocationEndpointEnv)),
 	}
-}
-
-func CreateTestKopiaRepository(
-	ctx context.Context,
-	cli kubernetes.Interface,
-	rs *crv1alpha1.RepositoryServer,
-	storageLocation map[string][]byte,
-) error {
-	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
-
-	commandArgs := command.RepositoryCommandArgs{
-		CommandArgs: &command.CommandArgs{
-			RepoPassword:   KopiaRepositoryPassword,
-			ConfigFilePath: command.DefaultConfigFilePath,
-			LogDirectory:   command.DefaultLogDirectory,
-		},
-		CacheDirectory: command.DefaultCacheDirectory,
-		Hostname:       KopiaRepositoryServerHost,
-		CacheArgs: command.CacheArgs{
-			ContentCacheLimitMB:  contentCacheMB,
-			MetadataCacheLimitMB: metadataCacheMB,
-		},
-		Username:       KopiaRepositoryUser,
-		RepoPathPrefix: KopiaRepositoryPath,
-		Location:       storageLocation,
-	}
-	return repository.ConnectToOrCreateKopiaRepository(
-		ctx,
-		cli,
-		rs.Namespace,
-		rs.Status.ServerInfo.PodName,
-		DefaultKopiaRepositoryServerContainer,
-		commandArgs,
-	)
-}
-
-func GetTestKopiaRepositoryServerCR(namespace string) crv1alpha1.RepositoryServer {
-	repositoryServer := crv1alpha1.RepositoryServer{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-kopia-repo-server-",
-			Namespace:    namespace,
-		},
-		Spec: crv1alpha1.RepositoryServerSpec{
-			Storage: crv1alpha1.Storage{
-				SecretRef: corev1.SecretReference{
-					Namespace: namespace,
-				},
-				CredentialSecretRef: corev1.SecretReference{
-					Namespace: namespace,
-				},
-			},
-			Repository: crv1alpha1.Repository{
-				RootPath: KopiaRepositoryPath,
-				Username: KopiaRepositoryUser,
-				Hostname: KopiaRepositoryServerHost,
-				PasswordSecretRef: corev1.SecretReference{
-					Namespace: namespace,
-				},
-			},
-			Server: crv1alpha1.Server{
-				UserAccess: crv1alpha1.UserAccess{
-					UserAccessSecretRef: corev1.SecretReference{
-						Namespace: namespace,
-					},
-					Username: KopiaRepositoryServerAccessUser,
-				},
-				AdminSecretRef: corev1.SecretReference{
-					Namespace: namespace,
-				},
-				TLSSecretRef: corev1.SecretReference{
-					Namespace: namespace,
-				},
-			},
-		},
-	}
-	return repositoryServer
 }
 
 func GetFileStoreLocationSecretData(claimName string) map[string][]byte {
