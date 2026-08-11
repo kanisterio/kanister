@@ -19,19 +19,30 @@ limitations under the License.
 package v1alpha1
 
 import (
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	internal "github.com/kanisterio/kanister/pkg/client/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // ProfileApplyConfiguration represents a declarative configuration of the Profile type for use
 // with apply.
+//
+// Profile captures information about a storage location for backup artifacts and
+// corresponding credentials, that will be made available to a Blueprint phase.
 type ProfileApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Location                         *LocationApplyConfiguration   `json:"location,omitempty"`
-	Credential                       *CredentialApplyConfiguration `json:"credential,omitempty"`
-	SkipSSLVerify                    *bool                         `json:"skipSSLVerify,omitempty"`
+	// Location provides the information about the object storage that is going to be used by Kanister to upload the backup objects.
+	Location *LocationApplyConfiguration `json:"location,omitempty"`
+	// Credential represents the credentials associated with the Location.
+	Credential *CredentialApplyConfiguration `json:"credential,omitempty"`
+	// SkipSSLVerify is a boolean that specifies whether skipping SSL verification
+	// is allowed when operating with the Location.
+	// If omitted from the CR definition, it defaults to false
+	SkipSSLVerify *bool `json:"skipSSLVerify,omitempty"`
 }
 
 // Profile constructs a declarative configuration of the Profile type for use with
@@ -44,6 +55,43 @@ func Profile(name, namespace string) *ProfileApplyConfiguration {
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
 }
+
+// ExtractProfileFrom extracts the applied configuration owned by fieldManager from
+// profile for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// profile must be a unmodified Profile API object that was retrieved from the Kubernetes API.
+// ExtractProfileFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractProfileFrom(profile *crv1alpha1.Profile, fieldManager string, subresource string) (*ProfileApplyConfiguration, error) {
+	b := &ProfileApplyConfiguration{}
+	err := managedfields.ExtractInto(profile, internal.Parser().Type("com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Profile"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(profile.Name)
+	b.WithNamespace(profile.Namespace)
+
+	b.WithKind("Profile")
+	b.WithAPIVersion("cr.kanister.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractProfile extracts the applied configuration owned by fieldManager from
+// profile. If no managedFields are found in profile for fieldManager, a
+// ProfileApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// profile must be a unmodified Profile API object that was retrieved from the Kubernetes API.
+// ExtractProfile provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractProfile(profile *crv1alpha1.Profile, fieldManager string) (*ProfileApplyConfiguration, error) {
+	return ExtractProfileFrom(profile, fieldManager, "")
+}
+
+func (b ProfileApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -227,8 +275,24 @@ func (b *ProfileApplyConfiguration) WithSkipSSLVerify(value bool) *ProfileApplyC
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *ProfileApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *ProfileApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *ProfileApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *ProfileApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }

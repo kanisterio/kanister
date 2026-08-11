@@ -25,6 +25,8 @@ import (
 
 // RepositoryServerStatusApplyConfiguration represents a declarative configuration of the RepositoryServerStatus type for use
 // with apply.
+//
+// RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
 type RepositoryServerStatusApplyConfiguration struct {
 	Conditions []v1.ConditionApplyConfiguration     `json:"conditions,omitempty"`
 	ServerInfo *ServerInfoApplyConfiguration        `json:"serverInfo,omitempty"`

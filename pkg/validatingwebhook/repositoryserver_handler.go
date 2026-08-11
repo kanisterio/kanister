@@ -19,8 +19,6 @@ import (
 	"fmt"
 
 	"github.com/kanisterio/errkit"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -28,31 +26,29 @@ import (
 
 type RepositoryServerValidator struct{}
 
-var _ webhook.CustomValidator = &RepositoryServerValidator{}
+var _ admission.Validator[*crv1alpha1.RepositoryServer] = &RepositoryServerValidator{}
 
 //nolint:lll
 //+kubebuilder:webhook:path=/validate/v1alpha1/repositoryserver,mutating=false,failurePolicy=fail,sideEffects=None,groups=cr.kanister.io,resources=repositoryservers,verbs=update,versions=v1alpha1,name=repositoryserver.cr.kanister.io,admissionReviewVersions=v1
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *RepositoryServerValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+// ValidateCreate implements admission.Validator so a webhook will be registered for the type
+func (r *RepositoryServerValidator) ValidateCreate(ctx context.Context, obj *crv1alpha1.RepositoryServer) (admission.Warnings, error) {
 	return nil, nil
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *RepositoryServerValidator) ValidateUpdate(ctx context.Context, old runtime.Object, new runtime.Object) (admission.Warnings, error) {
-	oldrs, ook := old.(*crv1alpha1.RepositoryServer)
-	newrs, nok := new.(*crv1alpha1.RepositoryServer)
-	if !ook || !nok {
+// ValidateUpdate implements admission.Validator so a webhook will be registered for the type
+func (r *RepositoryServerValidator) ValidateUpdate(ctx context.Context, old *crv1alpha1.RepositoryServer, new *crv1alpha1.RepositoryServer) (admission.Warnings, error) {
+	if old == nil || new == nil {
 		return nil, errkit.New("Either updated object or the old object is not of type RepositoryServer.cr.kanister.io")
 	}
-	errMsg := fmt.Sprintf("RepositoryServer.cr.kanister.io \"%s\" is invalid: spec.repository.rootPath: Invalid value, Value is immutable", newrs.Name)
-	if oldrs.Spec.Repository.RootPath != newrs.Spec.Repository.RootPath {
+	errMsg := fmt.Sprintf("RepositoryServer.cr.kanister.io \"%s\" is invalid: spec.repository.rootPath: Invalid value, Value is immutable", new.Name)
+	if old.Spec.Repository.RootPath != new.Spec.Repository.RootPath {
 		return nil, errkit.New(errMsg)
 	}
 	return nil, nil
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *RepositoryServerValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+// ValidateDelete implements admission.Validator so a webhook will be registered for the type
+func (r *RepositoryServerValidator) ValidateDelete(ctx context.Context, obj *crv1alpha1.RepositoryServer) (admission.Warnings, error) {
 	return nil, nil
 }

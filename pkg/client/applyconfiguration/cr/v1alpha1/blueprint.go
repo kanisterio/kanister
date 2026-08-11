@@ -20,17 +20,22 @@ package v1alpha1
 
 import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	internal "github.com/kanisterio/kanister/pkg/client/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // BlueprintApplyConfiguration represents a declarative configuration of the Blueprint type for use
 // with apply.
+//
+// Blueprint describes kanister actions.
 type BlueprintApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Actions                          map[string]*crv1alpha1.BlueprintAction `json:"actions,omitempty"`
+	// Actions is the list of actions constructing the Blueprint.
+	Actions map[string]*crv1alpha1.BlueprintAction `json:"actions,omitempty"`
 }
 
 // Blueprint constructs a declarative configuration of the Blueprint type for use with
@@ -43,6 +48,43 @@ func Blueprint(name, namespace string) *BlueprintApplyConfiguration {
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
 }
+
+// ExtractBlueprintFrom extracts the applied configuration owned by fieldManager from
+// blueprint for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// blueprint must be a unmodified Blueprint API object that was retrieved from the Kubernetes API.
+// ExtractBlueprintFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractBlueprintFrom(blueprint *crv1alpha1.Blueprint, fieldManager string, subresource string) (*BlueprintApplyConfiguration, error) {
+	b := &BlueprintApplyConfiguration{}
+	err := managedfields.ExtractInto(blueprint, internal.Parser().Type("com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Blueprint"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(blueprint.Name)
+	b.WithNamespace(blueprint.Namespace)
+
+	b.WithKind("Blueprint")
+	b.WithAPIVersion("cr.kanister.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractBlueprint extracts the applied configuration owned by fieldManager from
+// blueprint. If no managedFields are found in blueprint for fieldManager, a
+// BlueprintApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// blueprint must be a unmodified Blueprint API object that was retrieved from the Kubernetes API.
+// ExtractBlueprint provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractBlueprint(blueprint *crv1alpha1.Blueprint, fieldManager string) (*BlueprintApplyConfiguration, error) {
+	return ExtractBlueprintFrom(blueprint, fieldManager, "")
+}
+
+func (b BlueprintApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -216,8 +258,24 @@ func (b *BlueprintApplyConfiguration) WithActions(entries map[string]*crv1alpha1
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *BlueprintApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *BlueprintApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *BlueprintApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *BlueprintApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }

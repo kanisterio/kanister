@@ -24,10 +24,16 @@ import (
 
 // PhaseApplyConfiguration represents a declarative configuration of the Phase type for use
 // with apply.
+//
+// Phase is subcomponent of an action.
 type PhaseApplyConfiguration struct {
-	Name     *string                          `json:"name,omitempty"`
-	State    *crv1alpha1.State                `json:"state,omitempty"`
-	Output   map[string]any                   `json:"output,omitempty"`
+	// Name represents the name of the Blueprint phase.
+	Name *string `json:"name,omitempty"`
+	// State represents the current state of execution of the Blueprint phase.
+	State *crv1alpha1.State `json:"state,omitempty"`
+	// Output is the map of output artifacts produced by the Blueprint phase.
+	Output map[string]any `json:"output,omitempty"`
+	// Progress represents the phase execution progress.
 	Progress *PhaseProgressApplyConfiguration `json:"progress,omitempty"`
 }
 

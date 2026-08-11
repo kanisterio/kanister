@@ -20,7 +20,10 @@ package v1alpha1
 
 // ErrorApplyConfiguration represents a declarative configuration of the Error type for use
 // with apply.
+//
+// Error represents an error that occurred when executing an actionset.
 type ErrorApplyConfiguration struct {
+	// Message is the actual error message that is displayed in case of errors.
 	Message *string `json:"message,omitempty"`
 }
 

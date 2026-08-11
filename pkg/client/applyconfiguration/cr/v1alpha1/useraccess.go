@@ -24,9 +24,15 @@ import (
 
 // UserAccessApplyConfiguration represents a declarative configuration of the UserAccess type for use
 // with apply.
+//
+// UserAccess has the details of the user credentials required by client to connect to kopia
+// repository server
 type UserAccessApplyConfiguration struct {
+	// UserAccessSecretRef stores the list of hostname and passwords used by kopia clients
+	// to connect to kopia repository server
 	UserAccessSecretRef *v1.SecretReference `json:"userAccessSecretRef,omitempty"`
-	Username            *string             `json:"username,omitempty"`
+	// Username is the user required by client to connect to kopia repository server
+	Username *string `json:"username,omitempty"`
 }
 
 // UserAccessApplyConfiguration constructs a declarative configuration of the UserAccess type for use with

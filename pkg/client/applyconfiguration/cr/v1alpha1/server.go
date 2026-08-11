@@ -24,10 +24,16 @@ import (
 
 // ServerApplyConfiguration represents a declarative configuration of the Server type for use
 // with apply.
+//
+// Server details required for starting the repository proxy server and initializing the repository client users
 type ServerApplyConfiguration struct {
-	UserAccess     *UserAccessApplyConfiguration `json:"userAccess,omitempty"`
-	AdminSecretRef *v1.SecretReference           `json:"adminSecretRef,omitempty"`
-	TLSSecretRef   *v1.SecretReference           `json:"tlsSecretRef,omitempty"`
+	UserAccess *UserAccessApplyConfiguration `json:"userAccess,omitempty"`
+	// AdminSecretRef has the username and password required to start the
+	// kopia repository server
+	AdminSecretRef *v1.SecretReference `json:"adminSecretRef,omitempty"`
+	// TLSSecretRef has the certificates required for kopia repository
+	// client server connection
+	TLSSecretRef *v1.SecretReference `json:"tlsSecretRef,omitempty"`
 }
 
 // ServerApplyConfiguration constructs a declarative configuration of the Server type for use with

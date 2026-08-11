@@ -19,18 +19,27 @@ limitations under the License.
 package v1alpha1
 
 import (
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	internal "github.com/kanisterio/kanister/pkg/client/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // ActionSetApplyConfiguration represents a declarative configuration of the ActionSet type for use
 // with apply.
+//
+// ActionSet describes kanister actions.
 type ActionSetApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *ActionSetSpecApplyConfiguration   `json:"spec,omitempty"`
-	Status                           *ActionSetStatusApplyConfiguration `json:"status,omitempty"`
+	// Spec defines the specification for the actionset.
+	// The specification includes a list of Actions to be performed. Each Action includes details
+	// about the referenced Blueprint and other objects used to perform the defined action.
+	Spec *ActionSetSpecApplyConfiguration `json:"spec,omitempty"`
+	// Status refers to the current status of the Kanister actions.
+	Status *ActionSetStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // ActionSet constructs a declarative configuration of the ActionSet type for use with
@@ -43,6 +52,43 @@ func ActionSet(name, namespace string) *ActionSetApplyConfiguration {
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
 }
+
+// ExtractActionSetFrom extracts the applied configuration owned by fieldManager from
+// actionSet for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// actionSet must be a unmodified ActionSet API object that was retrieved from the Kubernetes API.
+// ExtractActionSetFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractActionSetFrom(actionSet *crv1alpha1.ActionSet, fieldManager string, subresource string) (*ActionSetApplyConfiguration, error) {
+	b := &ActionSetApplyConfiguration{}
+	err := managedfields.ExtractInto(actionSet, internal.Parser().Type("com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ActionSet"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(actionSet.Name)
+	b.WithNamespace(actionSet.Namespace)
+
+	b.WithKind("ActionSet")
+	b.WithAPIVersion("cr.kanister.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractActionSet extracts the applied configuration owned by fieldManager from
+// actionSet. If no managedFields are found in actionSet for fieldManager, a
+// ActionSetApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// actionSet must be a unmodified ActionSet API object that was retrieved from the Kubernetes API.
+// ExtractActionSet provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractActionSet(actionSet *crv1alpha1.ActionSet, fieldManager string) (*ActionSetApplyConfiguration, error) {
+	return ExtractActionSetFrom(actionSet, fieldManager, "")
+}
+
+func (b ActionSetApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -218,8 +264,24 @@ func (b *ActionSetApplyConfiguration) WithStatus(value *ActionSetStatusApplyConf
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *ActionSetApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *ActionSetApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *ActionSetApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *ActionSetApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }
