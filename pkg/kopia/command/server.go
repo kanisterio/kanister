@@ -15,6 +15,7 @@
 package command
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/kanisterio/kanister/pkg/kopia/cli/args"
@@ -36,7 +37,13 @@ type ServerStartCommandArgs struct {
 	Background           bool
 	EnablePprof          bool
 	MetricsListenAddress string
-	MaxConcurrency       int
+	// MaxConcurrency sets --max-concurrency to a fixed value. Zero means use
+	// kopia's default (2 * NumCPU on the server pod).
+	MaxConcurrency int
+	// MaxConcurrencyMultiplier sets --max-concurrency to multiplier * $(nproc)
+	// evaluated on the server pod at startup, so the ceiling scales with the
+	// pod's actual CPU count. Ignored when MaxConcurrency > 0.
+	MaxConcurrencyMultiplier int
 }
 
 func commonCommand(cmdArgs ServerStartCommandArgs) logsafe.Cmd {
@@ -75,7 +82,13 @@ func commonCommand(cmdArgs ServerStartCommandArgs) logsafe.Cmd {
 		args = args.AppendLoggableKV(metricsListerAddress, cmdArgs.MetricsListenAddress)
 	}
 
-	if cmdArgs.MaxConcurrency > 0 {
+	switch {
+	case cmdArgs.MaxConcurrencyMultiplier > 0:
+		// Evaluate $(nproc) on the server pod at startup so the ceiling
+		// scales with the pod's CPU count, not the caller's.
+		expr := fmt.Sprintf("$(( $(nproc) * %d ))", cmdArgs.MaxConcurrencyMultiplier)
+		args = args.AppendLoggableKV(maxConcurrencyFlag, expr)
+	case cmdArgs.MaxConcurrency > 0:
 		args = args.AppendLoggableKV(maxConcurrencyFlag, strconv.Itoa(cmdArgs.MaxConcurrency))
 	}
 
