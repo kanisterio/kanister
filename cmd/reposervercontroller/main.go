@@ -150,7 +150,7 @@ func main() {
 		if validatingwebhook.IsCACertMounted() {
 			hookServerOptions := webhook.Options{CertDir: validatingwebhook.WHCertsDir, Port: webhookServerPort}
 			hookServer := webhook.NewServer(hookServerOptions)
-			webhook := admission.WithCustomValidator(mgr.GetScheme(), &crv1alpha1.RepositoryServer{}, &validatingwebhook.RepositoryServerValidator{})
+			webhook := admission.WithValidator(mgr.GetScheme(), &validatingwebhook.RepositoryServerValidator{})
 			// registers a webhooks to a webhook server that gets run by a controller manager.
 			hookServer.Register(whHandlePath, webhook)
 			if err := mgr.Add(hookServer); err != nil {
