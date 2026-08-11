@@ -19,9 +19,6 @@ import (
 
 	"github.com/kanisterio/errkit"
 	corev1 "k8s.io/api/core/v1"
-
-	secerrors "github.com/kanisterio/kanister/pkg/secrets/errors"
-	reposerver "github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 // ValidateCredentials returns error if secret is failed at validation.
@@ -45,51 +42,4 @@ func ValidateCredentials(secret *corev1.Secret) error {
 	default:
 		return errkit.New(fmt.Sprintf("Unsupported type '%s' for secret '%s:%s'", string(secret.Type), secret.Namespace, secret.Name))
 	}
-}
-
-func getLocationSecret(secret *corev1.Secret) (reposerver.Secret, error) {
-	var locationType []byte
-	var ok bool
-	if secret == nil {
-		return nil, errkit.New("Secret for kopia repository location is Nil")
-	}
-
-	if locationType, ok = (secret.Data[reposerver.TypeKey]); !ok {
-		return nil, errkit.Wrap(secerrors.ErrValidate, secerrors.MissingRequiredFieldErrorMsg, reposerver.TypeKey, secret.Namespace, secret.Name)
-	}
-
-	switch reposerver.LocType(string(locationType)) {
-	case reposerver.LocTypeS3:
-		return reposerver.NewAWSLocation(secret), nil
-	case reposerver.LocTypes3Compliant:
-		return reposerver.NewS3CompliantLocation(secret), nil
-	case reposerver.LocTypeAzure:
-		return reposerver.NewAzureLocation(secret), nil
-	case reposerver.LocTypeGCS:
-		return reposerver.NewGCPLocation(secret), nil
-	case reposerver.LocTypeFilestore:
-		return reposerver.NewFileStoreLocation(secret), nil
-	default:
-		return nil, errkit.Wrap(secerrors.ErrValidate, secerrors.UnsupportedLocationTypeErrorMsg, locationType, secret.Namespace, secret.Name)
-	}
-}
-
-func ValidateRepositoryServerSecret(repositoryServerSecret *corev1.Secret) error {
-	var secret reposerver.Secret
-	var err error
-
-	switch repositoryServerSecret.Type {
-	case reposerver.Location:
-		secret, err = getLocationSecret(repositoryServerSecret)
-		if err != nil {
-			return err
-		}
-	case reposerver.RepositoryPasswordSecret:
-		secret = reposerver.NewRepoPassword(repositoryServerSecret)
-	case reposerver.AdminCredentialsSecret:
-		secret = reposerver.NewRepositoryServerAdminCredentials(repositoryServerSecret)
-	default:
-		return ValidateCredentials(repositoryServerSecret)
-	}
-	return secret.Validate()
 }

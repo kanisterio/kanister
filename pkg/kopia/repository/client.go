@@ -19,7 +19,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,18 +57,6 @@ const (
 // IsReadOnly returns true if repository access mode is Read-only.
 func (m AccessMode) IsReadOnly() bool {
 	return m == ReadOnlyAccess
-}
-
-// String returns a string representation of the RepositoryAccessMode type.
-func (m AccessMode) String() string {
-	switch m {
-	case ReadOnlyAccess:
-		return "ReadOnlyAccess"
-	case WriteAccess:
-		return "WriteAccess"
-	default:
-		return fmt.Sprintf("RepositoryAccessMode(%d)", m)
-	}
 }
 
 var apiConnectBackoff = backoff.Backoff{

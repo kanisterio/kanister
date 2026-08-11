@@ -23,26 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/secrets"
 )
-
-func performRepoServerSecretsValidation(ctx context.Context, p *validateParams) error {
-	var cli kubernetes.Interface
-	var secret *corev1.Secret
-
-	cli, err := kube.NewClient()
-	if err != nil {
-		return errkit.Wrap(err, "could not get the kubernetes client")
-	}
-
-	secret, err = getSecretFromCmd(ctx, cli, p)
-	if err != nil {
-		return err
-	}
-	return secrets.ValidateRepositoryServerSecret(secret)
-}
 
 func getSecretFromCmd(ctx context.Context, cli kubernetes.Interface, p *validateParams) (*corev1.Secret, error) {
 	if p.name != "" {
