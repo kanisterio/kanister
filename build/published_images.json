@@ -3,8 +3,7 @@
     "images": [
         "kanister-kubectl-1.18",
         "controller",
-        "kanister-tools",
-        "repo-server-controller"
+        "kanister-tools"
     ],
     "tag": "v9.99.9-dev"
 }

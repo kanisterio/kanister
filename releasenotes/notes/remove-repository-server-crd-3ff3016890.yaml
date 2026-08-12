@@ -1,0 +1,3 @@
+---
+deprecations:
+  - Clean up stale code for `repositoryserver`.
