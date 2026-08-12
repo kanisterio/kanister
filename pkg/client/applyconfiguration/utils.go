@@ -52,10 +52,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &crv1alpha1.BlueprintActionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BlueprintPhase"):
 		return &crv1alpha1.BlueprintPhaseApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("CacheSizeSettings"):
-		return &crv1alpha1.CacheSizeSettingsApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("Configuration"):
-		return &crv1alpha1.ConfigurationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Credential"):
 		return &crv1alpha1.CredentialApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Error"):
@@ -76,22 +72,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &crv1alpha1.PhaseProgressApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Profile"):
 		return &crv1alpha1.ProfileApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("Repository"):
-		return &crv1alpha1.RepositoryApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("RepositoryServer"):
-		return &crv1alpha1.RepositoryServerApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("RepositoryServerSpec"):
-		return &crv1alpha1.RepositoryServerSpecApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("RepositoryServerStatus"):
-		return &crv1alpha1.RepositoryServerStatusApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("Server"):
-		return &crv1alpha1.ServerApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("ServerInfo"):
-		return &crv1alpha1.ServerInfoApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("Storage"):
-		return &crv1alpha1.StorageApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("UserAccess"):
-		return &crv1alpha1.UserAccessApplyConfiguration{}
 
 	}
 	return nil

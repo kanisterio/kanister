@@ -15,14 +15,5 @@
 package testutil
 
 const (
-	KopiaRepositoryServerAdminUser        = "admin@test"
-	KopiaRepositoryServerAdminPassword    = "admin1234"
-	KopiaRepositoryServerHost             = "localhost"
-	KopiaRepositoryPassword               = "test1234"
-	KopiaRepositoryUser                   = "repository-user"
-	KopiaRepositoryServerAccessUser       = "kanister-user"
-	KopiaRepositoryServerAccessPassword   = "test1234"
-	KanisterNamespace                     = "kanister"
-	KopiaRepositoryPath                   = "kopia-repo-path-test"
-	DefaultKopiaRepositoryServerContainer = "repo-server-container"
+	KopiaRepositoryPath = "kopia-repo-path-test"
 )

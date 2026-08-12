@@ -47,12 +47,6 @@ const (
 	GCEPDProvisionerInTree  = "kubernetes.io/gce-pd"
 )
 
-// These consts are used to query Repository server API objects
-const (
-	RepositoryServerResourceName       = "repositoryserver"
-	RepositoryServerResourceNamePlural = "repositoryservers"
-)
-
 const (
 	LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
 	KanisterToolsImage       = "ghcr.io/kanisterio/kanister-tools:0.119.0"
