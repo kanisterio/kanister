@@ -66,8 +66,6 @@ func performValidation(cmd *cobra.Command, args []string) error {
 		return performProfileValidation(p)
 	case "blueprint":
 		return performBlueprintValidation(p)
-	case "repository-server-secrets":
-		return performRepoServerSecretsValidation(cmd.Context(), p)
 	default:
 		return errkit.New(fmt.Sprintf("resource %s is not supported for validate subcommand", p.resourceKind))
 	}

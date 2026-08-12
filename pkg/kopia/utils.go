@@ -18,12 +18,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/pem"
 	"path/filepath"
-	"strings"
 
 	"github.com/kanisterio/errkit"
 	"github.com/kopia/kopia/repo"
@@ -31,10 +28,6 @@ import (
 	"github.com/kopia/kopia/repo/object"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 )
 
 const (
@@ -44,52 +37,11 @@ const (
 	// defaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
 	defaultDataStoreGeneralMetadataCacheSizeMB = 500
 
-	// TLSCertificateKey represents the key used to fetch the certificate
-	// from the secret.
-	TLSCertificateKey = "tls.crt"
-
-	// BackupIdentifierKey is the artifact key used for kopia snapshot ID
-	BackupIdentifierKey = "backupID"
-
-	// ObjectStorePathOption is the option that specifies the repository to
-	// use when describing repo
-	ObjectStorePathOption = "objectStorePath"
-
 	// DataStoreGeneralContentCacheSizeMBKey is the key to pass content cache size for general command workloads
 	DataStoreGeneralContentCacheSizeMBKey = "dataStoreGeneralContentCacheSize"
 	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
 	DataStoreGeneralMetadataCacheSizeMBKey = "dataStoreGeneralMetadataCacheSize"
-	// ServerUsernameFormat is used to construct server username for Kopia Repository Server Status Command
-	ServerUsernameFormat = "%s@%s"
-	// KanisterAdminUsername is the username for the user with Admin privileges
-	KanisterAdminUsername = "kanister-admin"
-	defaultServerHostname = "data-mover-server-pod"
 )
-
-// ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
-func ExtractFingerprintFromCertSecret(ctx context.Context, cli kubernetes.Interface, secretName, secretNamespace string) (string, error) {
-	secret, err := cli.CoreV1().Secrets(secretNamespace).Get(ctx, secretName, metav1.GetOptions{})
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to get Certificate Secret.", "secretName", secretName)
-	}
-
-	certBytes, err := json.Marshal(secret.Data[TLSCertificateKey])
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to marshal Certificate Secret Data")
-	}
-
-	var certString string
-	if err := json.Unmarshal([]byte(certBytes), &certString); err != nil {
-		return "", errkit.Wrap(err, "Failed to unmarshal Certificate Secret Data")
-	}
-
-	decodedCertData, err := base64.StdEncoding.DecodeString(certString)
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to decode Certificate Secret Data")
-	}
-
-	return extractFingerprintFromSliceOfBytes(decodedCertData)
-}
 
 // extractFingerprintFromSliceOfBytes extracts the fingeprint from the
 // certificate data provided in slice of bytes (default type for secret.Data)
@@ -106,28 +58,6 @@ func extractFingerprintFromSliceOfBytes(pemData []byte) (string, error) {
 
 	fingerprint := sha256.Sum256(cert.Raw)
 	return hex.EncodeToString(fingerprint[:]), nil
-}
-
-// ExtractFingerprintFromCertificateJSON fetch the fingerprint from a base64 encoded,
-// certificate which is also type asserted into a string.
-func ExtractFingerprintFromCertificateJSON(cert string) (string, error) {
-	var certMap map[string]string
-
-	if err := json.Unmarshal([]byte(cert), &certMap); err != nil {
-		return "", errkit.Wrap(err, "Failed to unmarshal Kopia API Server Certificate Secret Data")
-	}
-
-	decodedCertData, err := base64.StdEncoding.DecodeString(certMap[TLSCertificateKey])
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to base64 decode Kopia API Server Certificate Secret Data")
-	}
-
-	fingerprint, err := extractFingerprintFromSliceOfBytes(decodedCertData)
-	if err != nil {
-		return "", errkit.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
-	}
-
-	return fingerprint, nil
 }
 
 // ExtractFingerprintFromCertificate fetch the fingerprint from a base64 encoded,
@@ -191,12 +121,4 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 		return metadataCacheSize
 	}
 	return defaultDataStoreGeneralMetadataCacheSizeMB
-}
-
-// CustomConfigFileAndLogDirectory returns a config file path and log directory based on the hostname
-func CustomConfigFileAndLogDirectory(hostname string) (string, string) {
-	hostname = strings.ReplaceAll(hostname, ".", "-")
-	configFile := filepath.Join(kopiacmd.DefaultConfigDirectory, hostname+".config")
-	logDir := filepath.Join(kopiacmd.DefaultLogDirectory, hostname)
-	return configFile, logDir
 }
