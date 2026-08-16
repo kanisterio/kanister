@@ -381,7 +381,7 @@ func execDumpCommand(
 		}
 	}()
 
-	return kubeTask(ctx, cli, namespace, postgresToolsImage, command, injectPostgresSecrets(secretName), annotations, labels)
+	return kubeTask(ctx, cli, namespace, postgresToolsImage, command, nil, injectPostgresSecrets(secretName), annotations, labels)
 }
 
 func prepareCommand(

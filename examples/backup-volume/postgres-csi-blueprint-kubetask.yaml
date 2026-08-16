@@ -1,0 +1,111 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: postgres-kubetask-bp
+  namespace: kanister
+actions:
+  # ---------------------------------------------------------------------------
+  # backup — pg_dumpall into an ephemeral CSI backup volume.
+  #
+  # The CSI driver auto-creates a VolumeSnapshot (pre-provisioned, named
+  # "snapshot-{podName}-{timestamp}") when the KubeTask pod exits via
+  # NodeUnpublishVolume. WaitForEphemeralSnapshot polls until it appears.
+  # ---------------------------------------------------------------------------
+  backup:
+    outputArtifacts:
+      backupVolumeSnapshot:
+        keyValue:
+          volumeSnapshotName: "{{ .Phases.discoverSnap.Output.volumeSnapshotName }}"
+          volumeSnapshotNamespace: "{{ .Phases.discoverSnap.Output.volumeSnapshotNamespace }}"
+    phases:
+    - func: KubeTask
+      name: dumpDB
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: bitnami/postgresql:latest
+        command:
+          - bash
+          - -o
+          - errexit
+          - -c
+          - |
+            export PGPASSWORD="{{ index .Secrets.pgcreds.Data "postgres-password" | toString }}"
+            pg_dumpall \
+              --host="pg-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local" \
+              --username="postgres" \
+              --no-password \
+              --clean \
+              --if-exists \
+              > /backup/full.sql
+            echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /backup/full.timestamp
+            echo "=== Backup complete ===" && ls -lh /backup/
+        podOverride:
+          containers:
+          - name: container
+            volumeMounts:
+            - name: backup
+              mountPath: /backup
+          volumes:
+          - name: backup
+            csi:
+              driver: backup.csi.kastenhq.io
+              volumeAttributes:
+                csi.storage.k8s.io/ephemeral: "true"
+                mode: backup
+                mountProtocol: fuse
+                configMap: kopia-repo-config
+                configMapNamespace: backup-csi-driver
+                repoPasswordSecret: kopia-repo-password
+                repoPasswordSecretNamespace: backup-csi-driver
+                storageCredentialsSecret: kopia-storage-credentials
+                storageCredentialsSecretNamespace: backup-csi-driver
+
+    - func: WaitForEphemeralSnapshot
+      name: discoverSnap
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+
+  # ---------------------------------------------------------------------------
+  # restore — create a kopia-restore PVC from the saved VolumeSnapshot,
+  # mount it read-only in a KubeTask pod and run psql to restore.
+  # ---------------------------------------------------------------------------
+  restore:
+    inputArtifactNames:
+    - backupVolumeSnapshot
+    phases:
+    - func: RestoreCSISnapshot
+      name: createRestorePVC
+      args:
+        name: "{{ .ArtifactsIn.backupVolumeSnapshot.KeyValue.volumeSnapshotName }}"
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pvc: postgres-kubetask-restore-pvc
+        storageClass: kopia-restore
+        restoreSize: 5Gi
+        waitForBound: true
+
+    - func: KubeTask
+      name: restoreDB
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: bitnami/postgresql:latest
+        command:
+          - bash
+          - -o
+          - errexit
+          - -c
+          - |
+            export PGPASSWORD="{{ index .Secrets.pgcreds.Data "postgres-password" | toString }}"
+            echo "=== Restoring from: $(cat /restore/full.timestamp 2>/dev/null || echo unknown) ==="
+            psql \
+              --host="pg-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local" \
+              --username="postgres" \
+              --file=/restore/full.sql
+            echo "=== Restore complete ==="
+        volumes:
+          "{{ .Phases.createRestorePVC.Output.pvcName }}": /restore
+
+    - func: DeleteVolume
+      name: cleanupPVC
+      args:
+        pvcName: "{{ .Phases.createRestorePVC.Output.pvcName }}"
+        pvcNamespace: "{{ .StatefulSet.Namespace }}"

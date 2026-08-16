@@ -43,6 +43,7 @@ const (
 	KubeTaskNamespaceArg = "namespace"
 	KubeTaskImageArg     = "image"
 	KubeTaskCommandArg   = "command"
+	KubeTaskVolumesArg   = "volumes"
 )
 
 func init() {
@@ -65,15 +66,30 @@ func kubeTask(
 	namespace,
 	image string,
 	command []string,
+	vols map[string]string,
 	podOverride crv1alpha1.JSONMap,
 	annotations,
 	labels map[string]string,
 ) (map[string]interface{}, error) {
+	// Validate and build volume mount options.
+	validatedVols := make(map[string]kube.VolumeMountOptions)
+	for pvcName, mountPath := range vols {
+		pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errkit.Wrap(err, "Failed to retrieve PVC", "namespace", namespace, "name", pvcName)
+		}
+		validatedVols[pvcName] = kube.VolumeMountOptions{
+			MountPath: mountPath,
+			ReadOnly:  kube.PVCContainsReadOnlyAccessMode(pvc),
+		}
+	}
+
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      command,
+		Volumes:      validatedVols,
 		PodOverride:  podOverride,
 		Annotations:  annotations,
 		Labels:       labels,
@@ -121,6 +137,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 
 	var namespace, image string
 	var command []string
+	var vols map[string]string
 	var err error
 	var bpAnnotations, bpLabels map[string]string
 	if err = Arg(args, KubeTaskImageArg, &image); err != nil {
@@ -130,6 +147,9 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, KubeTaskVolumesArg, &vols, nil); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, PodAnnotationsArg, &bpAnnotations, nil); err != nil {
@@ -168,6 +188,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		namespace,
 		image,
 		command,
+		vols,
 		podOverride,
 		annotations,
 		labels,
@@ -186,6 +207,7 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskImageArg,
 		KubeTaskCommandArg,
 		KubeTaskNamespaceArg,
+		KubeTaskVolumesArg,
 		PodOverrideArg,
 		PodAnnotationsArg,
 		PodLabelsArg,

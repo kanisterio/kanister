@@ -29,6 +29,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
@@ -62,6 +63,12 @@ const (
 	RestoreCSISnapshotLabelsArg = "labels"
 	// RestoreCSISnapshotVolumeModeArg defines mode of volume
 	RestoreCSISnapshotVolumeModeArg = "volumeMode"
+	// RestoreCSISnapshotWaitForBoundArg waits until the restored PVC reaches Bound phase when true
+	RestoreCSISnapshotWaitForBoundArg = "waitForBound"
+	// RestoreCSISnapshotPVCNameOutput is the output key for the restored PVC name
+	RestoreCSISnapshotPVCNameOutput = "pvcName"
+	// RestoreCSISnapshotPVCNamespaceOutput is the output key for the restored PVC namespace
+	RestoreCSISnapshotPVCNamespaceOutput = "pvcNamespace"
 )
 
 type restoreCSISnapshotFunc struct {
@@ -120,6 +127,10 @@ func (r *restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 	if err := OptArg(args, RestoreCSISnapshotLabelsArg, &restoreArgs.Labels, nil); err != nil {
 		return nil, err
 	}
+	var waitForBound bool
+	if err := OptArg(args, RestoreCSISnapshotWaitForBoundArg, &waitForBound, false); err != nil {
+		return nil, err
+	}
 	size, err := resource.ParseQuantity(restoreSize)
 	if err != nil {
 		return nil, err
@@ -136,7 +147,15 @@ func (r *restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplatePara
 	if _, err := restoreCSISnapshot(ctx, kubeCli, restoreArgs); err != nil {
 		return nil, err
 	}
-	return nil, nil
+	if waitForBound {
+		if err := waitForPVCBound(ctx, kubeCli, restoreArgs.PVC, restoreArgs.Namespace); err != nil {
+			return nil, err
+		}
+	}
+	return map[string]interface{}{
+		RestoreCSISnapshotPVCNameOutput:      restoreArgs.PVC,
+		RestoreCSISnapshotPVCNamespaceOutput: restoreArgs.Namespace,
+	}, nil
 }
 
 func (*restoreCSISnapshotFunc) RequiredArgs() []string {
@@ -159,6 +178,7 @@ func (*restoreCSISnapshotFunc) Arguments() []string {
 		RestoreCSISnapshotAccessModesArg,
 		RestoreCSISnapshotVolumeModeArg,
 		RestoreCSISnapshotLabelsArg,
+		RestoreCSISnapshotWaitForBoundArg,
 	}
 }
 
@@ -228,6 +248,16 @@ func validateVolumeModeArg(volumeMode corev1.PersistentVolumeMode) error {
 		return errkit.New("Given volumeMode " + string(volumeMode) + " is invalid")
 	}
 	return nil
+}
+
+func waitForPVCBound(ctx context.Context, kubeCli kubernetes.Interface, pvcName, namespace string) error {
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		pvc, err := kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		return pvc.Status.Phase == corev1.ClaimBound, nil
+	})
 }
 
 func validateVolumeAccessModesArg(accessModes []corev1.PersistentVolumeAccessMode) error {
