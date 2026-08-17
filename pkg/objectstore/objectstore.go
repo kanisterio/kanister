@@ -198,11 +198,19 @@ func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConf
 		}
 		azEnvName, _ = os.LookupEnv("AZURE_ENV_NAME") // not required to be set.
 	}
-	return stowaz.Kind, stow.ConfigMap{
+	config := stow.ConfigMap{
 		stowaz.ConfigAccount: azAccount,
 		stowaz.ConfigKey:     azStorageKey,
 		stowaz.ConfigEnvName: azEnvName,
-	}, nil
+	}
+	// Workload (federated) identity path: there is no shared key, so authenticate
+	// with a pre-minted, container-scoped user-delegation SAS token (minted in
+	// pkg/location.getBucket where the container name is known). stow's Azure
+	// provider reads it from stowaz.ConfigSASToken.
+	if secret != nil && secret.Azure != nil && secret.Azure.SASToken != "" {
+		config[stowaz.ConfigSASToken] = secret.Azure.SASToken
+	}
+	return stowaz.Kind, config, nil
 }
 
 func getConfig(ctx context.Context, config ProviderConfig, secret *Secret) (stowKind string, stowConfig stow.Config, err error) {

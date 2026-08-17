@@ -97,6 +97,7 @@ func ExtractAzureCredentials(secret *corev1.Secret) (*objectstore.SecretAzure, e
 		azSecret.EnvironmentName = string(envName)
 	}
 	federatedIdentity := strings.EqualFold(string(secret.Data[AzureFederatedIdentity]), "true")
+	azSecret.FederatedIdentity = federatedIdentity
 	if azSecret.StorageAccount == "" || (!federatedIdentity && azSecret.StorageKey == "") {
 		return nil, errkit.New("Azure secret is missing storage account ID or storage key")
 	}
