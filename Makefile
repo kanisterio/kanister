@@ -15,9 +15,6 @@
 # limitations under the License.
 
 
-# include repository server's makefile
-include Makefile.kubebuilder
-
 # The binary to build (just the basename).
 BIN := controller
 

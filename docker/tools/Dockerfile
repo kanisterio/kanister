@@ -58,7 +58,7 @@ USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-FROM debian:bullseye@sha256:ee239c601913c0d3962208299eef70dcffcb7aac1787f7a02f6d3e2b518755e6
+FROM debian:bullseye@sha256:99cdf7792e25416bd801861ccd8e2fb27fb527b25e8d9a8704ebc3ead2015675
 
 WORKDIR /kopia
 
@@ -71,7 +71,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:062c52ff973065752b0965787649db2bcf551a6c727a00e95a3eb42cebadbdab
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:7c372902c8d211db2d25c8277ba534a73b92742a334874dced829a63b0f21221
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \

@@ -68,20 +68,6 @@ func newOpKitContext(ctx context.Context, config *rest.Config) (*customresource.
 	}, nil
 }
 
-// CreateRepoServerCustomResource creates the kopia repository server custom resource
-func CreateRepoServerCustomResource(ctx context.Context, config *rest.Config) error {
-	crCTX, err := newOpKitContext(ctx, config)
-	if err != nil {
-		return err
-	}
-
-	resources := []customresource.CustomResource{
-		crv1alpha1.RepositoryServerResource,
-	}
-
-	return customresource.CreateCustomResources(*crCTX, resources)
-}
-
 func CreateOrUpdateCRDs() bool {
 	createOrUpdateCRD := os.Getenv(createOrUpdateCRDEnvVar)
 	if createOrUpdateCRD == "" {

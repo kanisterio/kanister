@@ -88,7 +88,6 @@ updates:
       - "/docker/tools"
       - "/docker/controller"
       - "/docker/kanister-kubectl"
-      - "/docker/repo-server-controller"
       - "/docker/postgres-kanister-tools"
 
   - package-ecosystem: "docker"

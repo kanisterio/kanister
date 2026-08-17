@@ -32,7 +32,6 @@ type ActionSpecApplyConfiguration struct {
 	ConfigMaps       map[string]ObjectReferenceApplyConfiguration `json:"configMaps,omitempty"`
 	Secrets          map[string]ObjectReferenceApplyConfiguration `json:"secrets,omitempty"`
 	Profile          *ObjectReferenceApplyConfiguration           `json:"profile,omitempty"`
-	RepositoryServer *ObjectReferenceApplyConfiguration           `json:"repositoryServer,omitempty"`
 	PodOverride      *crv1alpha1.JSONMap                          `json:"podOverride,omitempty"`
 	Options          map[string]string                            `json:"options,omitempty"`
 	PreferredVersion *string                                      `json:"preferredVersion,omitempty"`
@@ -117,14 +116,6 @@ func (b *ActionSpecApplyConfiguration) WithSecrets(entries map[string]ObjectRefe
 // If called multiple times, the Profile field is set to the value of the last call.
 func (b *ActionSpecApplyConfiguration) WithProfile(value *ObjectReferenceApplyConfiguration) *ActionSpecApplyConfiguration {
 	b.Profile = value
-	return b
-}
-
-// WithRepositoryServer sets the RepositoryServer field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the RepositoryServer field is set to the value of the last call.
-func (b *ActionSpecApplyConfiguration) WithRepositoryServer(value *ObjectReferenceApplyConfiguration) *ActionSpecApplyConfiguration {
-	b.RepositoryServer = value
 	return b
 }
 
