@@ -1,0 +1,3 @@
+---
+features:
+  - Added support for Azure Workload (Federated) Identity when moving backup data to Azure Blob Storage. The controller mints a short-lived, container-scoped, least-privilege user-delegation SAS token and injects it into the data-mover pods, so no static storage account key is needed. The controller's managed identity must be able to fetch a user-delegation key on the storage account (e.g. the `Storage Blob Data Contributor` role).
