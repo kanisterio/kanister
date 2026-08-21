@@ -60,8 +60,8 @@ func (w *waitV2Func) Exec(ctx context.Context, tp param.TemplateParams, args map
 	w.progressPercent = progress.StartedPercent
 	defer func() { w.progressPercent = progress.CompletedPercent }()
 
-	var timeout string
-	if err := Arg(args, WaitV2TimeoutArg, &timeout); err != nil {
+	timeout, err := renderWaitV2Timeout(args, tp)
+	if err != nil {
 		return nil, err
 	}
 
@@ -82,6 +82,23 @@ func (w *waitV2Func) Exec(ctx context.Context, tp param.TemplateParams, args map
 	}
 	err = waitForCondition(ctx, dynCli, conditions, timeoutDur, tp, evaluateWaitV2Condition)
 	return nil, err
+}
+
+func renderWaitV2Timeout(args map[string]interface{}, tp param.TemplateParams) (string, error) {
+	renderedArgs := args
+	if ArgExists(args, WaitV2TimeoutArg) {
+		rendered, err := param.RenderArgs(map[string]interface{}{WaitV2TimeoutArg: args[WaitV2TimeoutArg]}, tp)
+		if err != nil {
+			return "", err
+		}
+		renderedArgs = rendered
+	}
+
+	var timeout string
+	if err := Arg(renderedArgs, WaitV2TimeoutArg, &timeout); err != nil {
+		return "", err
+	}
+	return timeout, nil
 }
 
 func (*waitV2Func) RequiredArgs() []string {
