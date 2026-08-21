@@ -21,7 +21,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -211,9 +213,21 @@ func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketN
 	// s3-compatible stores may not support s3manager.GetBucketRegion() API, so
 	// prefer to use the get-bucket-location API instead
 	if cfg.Endpoint != "" {
+		locationOpts := []func(*s3.Options){}
+		// GetBucketLocation against the AWS global S3 endpoint (s3.amazonaws.com)
+		// must be signed for us-east-1: the global endpoint is the legacy
+		// us-east-1 endpoint, so signing it with the user-supplied region (e.g.
+		// eu-west-1) is rejected with AuthorizationHeaderMalformed. Override the
+		// signing region for this single call only; region-specific AWS endpoints
+		// and s3-compatible stores (MinIO/Ceph) keep the configured region.
+		if isAWSGlobalS3Endpoint(cfg.Endpoint) {
+			locationOpts = append(locationOpts, func(o *s3.Options) {
+				o.Region = defaultS3region
+			})
+		}
 		resp, err := svc.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
 			Bucket: aws.String(bucketName),
-		})
+		}, locationOpts...)
 		if err == nil {
 			// per the AWS SDK doc an empty location constraint means us-east-1
 			if resp.LocationConstraint == "" {
@@ -270,4 +284,29 @@ const awsS3EndpointFmt = "https://s3.%s.amazonaws.com"
 
 func awsS3Endpoint(region string) string {
 	return fmt.Sprintf(awsS3EndpointFmt, region)
+}
+
+// awsGlobalS3Host is the AWS global (legacy us-east-1) S3 endpoint host. Unlike
+// region-specific hosts (s3.<region>.amazonaws.com), requests to it must be
+// signed for us-east-1.
+const awsGlobalS3Host = "s3.amazonaws.com"
+
+// isAWSGlobalS3Endpoint reports whether endpoint points at the AWS global S3
+// endpoint (s3.amazonaws.com). Region-specific AWS endpoints
+// (e.g. s3.eu-west-1.amazonaws.com) and s3-compatible endpoints return false.
+func isAWSGlobalS3Endpoint(endpoint string) bool {
+	if endpoint == "" {
+		return false
+	}
+	// The endpoint may be configured without a scheme (e.g. "s3.amazonaws.com"),
+	// in which case url.Parse treats the whole value as a path; add a scheme so
+	// the host is parsed.
+	if !strings.Contains(endpoint, "://") {
+		endpoint = "https://" + endpoint
+	}
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return false
+	}
+	return u.Hostname() == awsGlobalS3Host
 }
