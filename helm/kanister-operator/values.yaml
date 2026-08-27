@@ -9,6 +9,11 @@ kanisterToolsImage:
   override: false
   image: ghcr.io/kanisterio/kanister-tools
   tag: 0.119.0
+# imagePullSecrets is used to specify secrets for pulling the operator image from a private registry.
+# Example:
+# imagePullSecrets:
+#   - name: my-registry-secret
+imagePullSecrets: []
 # secureDefaultsForJobPods is responsible for applying secure default configurations to kanister Job pods.
 secureDefaultsForJobPods: false
 rbac:
