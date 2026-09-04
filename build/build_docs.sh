@@ -10,7 +10,7 @@ then
 echo "{\"version\":\"${VERSION}\"}" > ./.vitepress/version.json
 fi
 
-npm install -g pnpm
+npm install -g pnpm@9
 
 pnpm cache clean
 pnpm install --force
