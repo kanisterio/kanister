@@ -59,7 +59,7 @@ require (
 	k8s.io/cli-runtime v0.35.8
 	k8s.io/client-go v0.35.8
 	k8s.io/code-generator v0.35.8
-	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
+	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912
 	k8s.io/kubectl v0.35.8
 	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0
