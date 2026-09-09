@@ -80,8 +80,12 @@ updates:
     groups:
       base-images:
         patterns:
-        - "golang*"
         - "*ubi9*"
+      golang:
+        patterns:
+        - "golang*"
+        update-types:
+        - patch
     directories:
       - "/"
       - "/docker/build"
