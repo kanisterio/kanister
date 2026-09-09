@@ -20,7 +20,10 @@ package v1alpha1
 
 // ActionSetSpecApplyConfiguration represents a declarative configuration of the ActionSetSpec type for use
 // with apply.
+//
+// ActionSetSpec is the specification for the actionset.
 type ActionSetSpecApplyConfiguration struct {
+	// Actions represents a list of Actions that need to be performed by the actionset.
 	Actions []ActionSpecApplyConfiguration `json:"actions,omitempty"`
 }
 

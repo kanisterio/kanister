@@ -82,7 +82,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *check.C)
 		},
 	} {
 		ctx := context.Background()
-		fakeCli := fake.NewSimpleClientset()
+		fakeCli := fake.NewClientset()
 		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
 
 		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})

@@ -20,12 +20,19 @@ package v1alpha1
 
 // KopiaServerSecretApplyConfiguration represents a declarative configuration of the KopiaServerSecret type for use
 // with apply.
+//
+// KopiaServerSecret contains credentials to connect to Kopia server
 type KopiaServerSecretApplyConfiguration struct {
-	Username       *string                                 `json:"username,omitempty"`
-	Hostname       *string                                 `json:"hostname,omitempty"`
+	// Username represents the username used to connect to the Kopia Server.
+	Username *string `json:"username,omitempty"`
+	// Hostname represents the hostname used to connect to the Kopia Server.
+	Hostname *string `json:"hostname,omitempty"`
+	// UserPassphrase is the user password used to connect to the Kopia Server.
 	UserPassphrase *KopiaServerSecretRefApplyConfiguration `json:"userPassphrase,omitempty"`
-	TLSCert        *KopiaServerSecretRefApplyConfiguration `json:"tlsCert,omitempty"`
-	ConnectOptions map[string]int                          `json:"connectOptions,omitempty"`
+	// TLSCert is the certificate used to connect to the Kopia Server.
+	TLSCert *KopiaServerSecretRefApplyConfiguration `json:"tlsCert,omitempty"`
+	// ConnectOptions represents a map of options which can be used to connect to the Kopia Server.
+	ConnectOptions map[string]int `json:"connectOptions,omitempty"`
 }
 
 // KopiaServerSecretApplyConfiguration constructs a declarative configuration of the KopiaServerSecret type for use with

@@ -98,7 +98,7 @@ func (fprp *fakePodCommandExecutorProcessor) ExecWithOptions(ctx context.Context
 
 func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *check.C) {
 	ctx := context.Background()
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 
 	command := []string{"command", "arg1"}
 
