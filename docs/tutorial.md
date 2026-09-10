@@ -50,6 +50,18 @@ spec:
 EOF
 ```
 
+By default, Kanister can only access resources within its own namespace, so the
+controller in the `kanister` namespace cannot act on `time-logger` in `default`.
+Grant Kanister's Service Account `edit` access in the application namespace by
+creating a `RoleBinding`. For more details and granular alternatives, see
+[RBAC Configuration](rbac).
+
+``` bash
+kubectl create rolebinding kanister-edit-binding --clusterrole=edit \
+--serviceaccount=kanister:kanister-kanister-operator \
+--namespace=default
+```
+
 ## Invoking Kanister Actions
 
 Kanister CustomResources are created in the same namespace as the
