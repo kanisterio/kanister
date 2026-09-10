@@ -25,6 +25,11 @@ go mod download
 execDir="/go/pkg/mod/k8s.io/code-generator@$(go list -f '{{.Version}}' -m k8s.io/code-generator)"
 boilerplateFile="$(pwd)"/build/boilerplate.go.txt
 
+openapiDir="$(pwd)"/pkg/client/openapi
+openapiSpecFile="${openapiDir}"/swagger.json
+apiViolationsFile="${openapiDir}"/violation_exceptions.list
+trap 'rm -f "${openapiSpecFile}" "${apiViolationsFile}"' EXIT
+
 source "${execDir}"/kube_codegen.sh
 
 kube::codegen::gen_helpers \
@@ -33,8 +38,22 @@ kube::codegen::gen_helpers \
 --extra-peer-dir  ./pkg/apis  \
 go/src/
 
+# Generate OpenAPI definitions for Kanister API types.
+kube::codegen::gen_openapi \
+--boilerplate  "${boilerplateFile}" \
+--output-dir "./pkg/client/openapi" \
+--output-pkg "github.com/kanisterio/kanister/pkg/client/openapi" \
+--extra-pkgs k8s.io/api/core/v1 \
+--report-filename "${apiViolationsFile}" \
+--update-report \
+./pkg/apis
+
+# Render the generated definitions into the schema consumed by applyconfiguration-gen.
+go run ./cmd/openapi-spec > "${openapiSpecFile}"
+
 kube::codegen::gen_client \
 --with-applyconfig \
+--applyconfig-openapi-schema "${openapiSpecFile}" \
 --with-watch \
 --boilerplate  "${boilerplateFile}" \
 --output-dir ./pkg/client \
