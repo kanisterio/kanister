@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    The ``timeout`` argument of the ``WaitV2`` function is now rendered as a
+    Go template against the Blueprint's template params before being parsed,
+    matching the behavior of the deprecated ``Wait`` function. This allows
+    the timeout to be parameterized, e.g. ``timeout: '{{ .Options.waitTimeout }}'``.
