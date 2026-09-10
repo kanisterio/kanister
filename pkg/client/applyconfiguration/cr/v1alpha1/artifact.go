@@ -20,9 +20,15 @@ package v1alpha1
 
 // ArtifactApplyConfiguration represents a declarative configuration of the Artifact type for use
 // with apply.
+//
+// k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// Artifact tracks objects produced by an action.
 type ArtifactApplyConfiguration struct {
-	KeyValue      map[string]string `json:"keyValue,omitempty"`
-	KopiaSnapshot *string           `json:"kopiaSnapshot,omitempty"`
+	// KeyValue represents key-value pair artifacts produced by the action.
+	KeyValue map[string]string `json:"keyValue,omitempty"`
+	// KopiaSnapshot captures the kopia snapshot information
+	// produced as a JSON string by kando command in phases of an action.
+	KopiaSnapshot *string `json:"kopiaSnapshot,omitempty"`
 }
 
 // ArtifactApplyConfiguration constructs a declarative configuration of the Artifact type for use with
