@@ -16,6 +16,8 @@ package kanister
 
 import (
 	"context"
+	"errors"
+	"log"
 
 	"gopkg.in/check.v1"
 
@@ -217,5 +219,85 @@ func (s *PhaseSuite) TestRegFuncVersion(c *check.C) {
 		semVer, err := regFuncVersion(tc.f.Name(), tc.queryVersion)
 		c.Assert(err, check.IsNil)
 		c.Assert(semVer.Original(), check.Equals, tc.expectedVersion)
+	}
+}
+
+func (s *PhaseSuite) TestPhaseCondition(c *check.C) {
+	for _, tc := range []struct {
+		artifact      string
+		condition     string
+		expectedError error
+		argument      string
+		expected      string
+	}{
+		{
+			// Incorrect phase condition throws error
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{",
+			expectedError: ErrParsePhaseCondition,
+			expected:      "",
+		},
+		{
+			// Phase expression that doesn't result in either `true` or `false` throws error
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{\"test\"}}",
+			expectedError: ErrPhaseExpressionNotConditional,
+			expected:      "",
+		},
+		{
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ .Invalid.Option }}",
+			expectedError: ErrExecutePhaseCondition,
+			expected:      "",
+		},
+		{
+			// Empty phase expression results in running the phase function
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "",
+			expectedError: nil,
+			expected:      "hello world",
+		},
+		{
+			// Phase function is executed when condition evaluates to `true`
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ eq .Options.test \"hello\" }}",
+			expectedError: nil,
+			expected:      "hello world",
+		},
+		{
+			// Phase function isn't executed when condition evaluates to `false`
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ eq .Options.test \"HELLO\" }}",
+			expectedError: nil,
+			expected:      "",
+		},
+	} {
+		var output string
+		tf := &testFunc{output: &output}
+		tp := param.TemplateParams{
+			Options: map[string]string{
+				"test": tc.artifact,
+			},
+		}
+		rawArgs := map[string]interface{}{
+			"testKey": tc.argument,
+		}
+		args, err := param.RenderArgs(rawArgs, tp)
+		c.Assert(err, check.IsNil)
+		p := Phase{args: args, f: tf, condition: tc.condition}
+		_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "", tp)
+		if tc.expectedError != nil {
+			log.Printf("******** Error received: %s", err)
+			c.Assert(errors.Is(err, tc.expectedError), check.Equals, true)
+		} else {
+			c.Assert(err, check.IsNil)
+			c.Assert(output, check.Equals, tc.expected)
+		}
 	}
 }

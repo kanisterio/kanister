@@ -476,6 +476,75 @@ func (s *ValidateSuite) TestActionSetStatus(c *check.C) {
 			},
 			checker: check.NotNil,
 		},
+		{
+			as: &crv1alpha1.ActionSetStatus{
+				State: crv1alpha1.StateComplete,
+				Actions: []crv1alpha1.ActionStatus{
+					{
+						Phases: []crv1alpha1.Phase{
+							{
+								State: crv1alpha1.StateSkipped,
+							},
+						},
+					},
+				},
+			},
+			checker: check.IsNil,
+		},
+		{
+			as: &crv1alpha1.ActionSetStatus{
+				State: crv1alpha1.StateFailed,
+				Actions: []crv1alpha1.ActionStatus{
+					{
+						Phases: []crv1alpha1.Phase{
+							{
+								State: crv1alpha1.StateSkipped,
+							},
+							{
+								State: crv1alpha1.StateFailed,
+							},
+						},
+					},
+				},
+			},
+			checker: check.IsNil,
+		},
+		{
+			as: &crv1alpha1.ActionSetStatus{
+				State: crv1alpha1.StateComplete,
+				Actions: []crv1alpha1.ActionStatus{
+					{
+						Phases: []crv1alpha1.Phase{
+							{
+								State: crv1alpha1.StateSkipped,
+							},
+							{
+								State: crv1alpha1.StateComplete,
+							},
+						},
+					},
+				},
+			},
+			checker: check.IsNil,
+		},
+		{
+			as: &crv1alpha1.ActionSetStatus{
+				State: crv1alpha1.StatePending,
+				Actions: []crv1alpha1.ActionStatus{
+					{
+						Phases: []crv1alpha1.Phase{
+							{
+								State: crv1alpha1.StateSkipped,
+							},
+							{
+								State: crv1alpha1.StatePending,
+							},
+						},
+					},
+				},
+			},
+			checker: check.IsNil,
+		},
 	} {
 		err := actionSetStatus(tc.as)
 		c.Check(err, tc.checker)

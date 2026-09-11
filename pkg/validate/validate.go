@@ -96,6 +96,7 @@ func actionSetStatus(as *crv1alpha1.ActionSetStatus) error {
 		crv1alpha1.StateRunning:  false,
 		crv1alpha1.StateFailed:   false,
 		crv1alpha1.StateComplete: false,
+		crv1alpha1.StateSkipped:  false,
 	}
 	for _, a := range as.Actions {
 		for _, p := range a.Phases {
@@ -129,7 +130,7 @@ func actionSetStatusActions(as []crv1alpha1.ActionStatus) error {
 			if !sawNotComplete {
 				lastNonComplete = p.State
 			}
-			sawNotComplete = p.State != crv1alpha1.StateComplete
+			sawNotComplete = !(p.State == crv1alpha1.StateComplete || p.State == crv1alpha1.StateSkipped)
 		}
 	}
 	return nil

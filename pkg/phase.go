@@ -15,12 +15,16 @@
 package kanister
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
+	"text/template"
+	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/kanisterio/errkit"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -34,12 +38,19 @@ var skipRenderFuncs = map[string]bool{
 	"waitv2": true,
 }
 
+var ErrParsePhaseCondition = errkit.NewSentinelErr("Failed to parse phase condition")
+var ErrExecutePhaseCondition = errkit.NewSentinelErr("Failed to execute phase condition")
+var ErrPhaseExpressionNotConditional = errkit.NewSentinelErr("Phase condition is not conditional expression")
+
 // Phase is an atomic unit of execution.
 type Phase struct {
-	name    string
-	args    map[string]interface{}
-	objects map[string]crv1alpha1.ObjectReference
-	f       Func
+	name         string
+	args         map[string]interface{}
+	objects      map[string]crv1alpha1.ObjectReference
+	condition    string
+	f            Func
+	phaseSkipped bool
+	skipReason   string
 }
 
 // Name returns the name of this phase.
@@ -49,6 +60,13 @@ func (p *Phase) Name() string {
 
 // Progress return execution progress of the phase.
 func (p *Phase) Progress() (crv1alpha1.PhaseProgress, error) {
+	if p.phaseSkipped {
+		phaseTime := metav1.NewTime(time.Now())
+		return crv1alpha1.PhaseProgress{
+			ProgressPercent:    "100",
+			LastTransitionTime: &phaseTime,
+		}, nil
+	}
 	return p.f.ExecutionProgress()
 }
 
@@ -80,8 +98,29 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 	}
 	// To simplify usage of the phase secrets in phase functions
 	tp.CurrentPhase = tp.Phases[p.name]
+
+	phaseShouldBeExecuted, err := p.shouldBeExecuted(tp)
+	if err != nil {
+		return nil, err
+	}
+	if !phaseShouldBeExecuted {
+		skipReason := fmt.Sprintf("if=`%s` evaluated to false.", p.condition)
+		log.Print(fmt.Sprintf("SKIP: phase skipped from execution. %s", skipReason))
+		p.phaseSkipped = true
+		p.skipReason = skipReason
+		return nil, nil
+	}
+
 	// Execute the function
 	return p.f.Exec(ctx, tp, p.args)
+}
+
+func (p *Phase) PhaseSkipped() bool {
+	return p.phaseSkipped
+}
+
+func (p *Phase) SkipReason() string {
+	return p.skipReason
 }
 
 func (p *Phase) setPhaseArgs(phases []crv1alpha1.BlueprintPhase, tp param.TemplateParams) error {
@@ -106,6 +145,29 @@ func (p *Phase) setPhaseArgs(phases []crv1alpha1.BlueprintPhase, tp param.Templa
 		p.args = args
 	}
 	return nil
+}
+
+func (p *Phase) shouldBeExecuted(tp param.TemplateParams) (bool, error) {
+	if p.condition == "" {
+		return true, nil
+	}
+	t, parseErr := template.New("config").Parse(p.condition)
+	if parseErr != nil {
+		return false, errkit.WithCause(parseErr, ErrParsePhaseCondition)
+	}
+
+	buf := new(bytes.Buffer)
+	execErr := t.Execute(buf, tp)
+	if execErr != nil {
+		return false, errkit.WithCause(execErr, ErrExecutePhaseCondition)
+	}
+
+	evalResult := strings.ToLower(strings.TrimSpace(buf.String()))
+	if !(evalResult == "true" || evalResult == "false") {
+		err := errkit.New(fmt.Sprintf("if=`%s` expression is not conditional expression", p.condition))
+		return false, errkit.WithCause(err, ErrPhaseExpressionNotConditional)
+	}
+	return evalResult == "true", nil
 }
 
 func renderFuncArgs(
@@ -194,16 +256,22 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 			return nil, err
 		}
 		phases = append(phases, &Phase{
-			name:    p.Name,
-			objects: objs,
-			f:       funcs[p.Func][regVersion],
+			name:      p.Name,
+			objects:   objs,
+			condition: p.If,
+			f:         funcs[p.Func][regVersion],
 		})
 	}
 	return phases, nil
 }
 
-// Validate gets the provided arguments from a blueprint and calls Validate method of function to valdiate a function.
+// Validate gets the provided arguments from a blueprint and calls Validate method of function to validate a function.
 func (p *Phase) Validate(args map[string]any) error {
+	err := validatePhaseCondition(p.condition)
+	if err != nil {
+		return err
+	}
+
 	return p.f.Validate(args)
 }
 
@@ -222,4 +290,17 @@ func getFunctionVersion(version string) (*semver.Version, *semver.Version, error
 		}
 		return dv, fv, nil
 	}
+}
+
+func validatePhaseCondition(condition string) error {
+	if condition == "" {
+		return nil
+	}
+
+	_, parseErr := template.New("condition").Parse(condition)
+	if parseErr != nil {
+		return errkit.Wrap(parseErr, "Failed to parse phase's 'if' condition")
+	}
+
+	return nil
 }
