@@ -730,7 +730,7 @@ func (c *Controller) maybeSetActionSetStateComplete(ctx context.Context,
 
 		for _, as := range ras.Status.Actions {
 			for _, p := range as.Phases {
-				if !(p.State == crv1alpha1.StateComplete || p.State == crv1alpha1.StateSkipped) {
+				if p.State != crv1alpha1.StateComplete && p.State != crv1alpha1.StateSkipped {
 					log.WithContext(ctx).Print(
 						"Finished action, but other action's phase is still running. Not setting state to complete.",
 						field.M{
