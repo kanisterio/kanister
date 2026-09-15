@@ -130,7 +130,7 @@ func actionSetStatusActions(as []crv1alpha1.ActionStatus) error {
 			if !sawNotComplete {
 				lastNonComplete = p.State
 			}
-			sawNotComplete = !(p.State == crv1alpha1.StateComplete || p.State == crv1alpha1.StateSkipped)
+			sawNotComplete = p.State != crv1alpha1.StateComplete && p.State != crv1alpha1.StateSkipped
 		}
 	}
 	return nil
