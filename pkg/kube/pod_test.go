@@ -238,7 +238,10 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.ObjectMeta.Name, check.Equals, po.Name)
 		}
 
-		// Admission can add labels of its own (e.g. topology labels on pods with a nodeName), so only Kanister's labels are asserted.
+		// Admission can add labels of its own, so the exact label set is asserted on the spec before submission.
+		specPod, err := GetPodObjectFromPodOptions(ctx, s.cli, po)
+		c.Assert(err, check.IsNil)
+		c.Check(len(specPod.ObjectMeta.Labels), check.Equals, len(po.Labels)+1)
 		c.Check(pod.ObjectMeta.Labels[consts.LabelKeyCreatedBy], check.Equals, consts.LabelValueKanister)
 		for key, value := range po.Labels {
 			c.Check(pod.ObjectMeta.Labels[key], check.Equals, value)
