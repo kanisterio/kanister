@@ -214,6 +214,7 @@ func (s *PodSuite) TestPod(c *check.C) {
 
 	for _, po := range podOptions {
 		pod, err := CreatePod(context.Background(), s.cli, po)
+		c.Assert(err, check.IsNil)
 
 		// we have not specified the SA, if the pod is being created in the
 		// same ns as controller's, controller's SA should have been set.
@@ -238,7 +239,10 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.ObjectMeta.Name, check.Equals, po.Name)
 		}
 
-		c.Check(len(pod.ObjectMeta.Labels), check.Equals, len(po.Labels)+1)
+		// Admission can add labels of its own, so the exact label set is asserted on the spec before submission.
+		specPod, err := GetPodObjectFromPodOptions(ctx, s.cli, po)
+		c.Assert(err, check.IsNil)
+		c.Check(len(specPod.ObjectMeta.Labels), check.Equals, len(po.Labels)+1)
 		c.Check(pod.ObjectMeta.Labels[consts.LabelKeyCreatedBy], check.Equals, consts.LabelValueKanister)
 		for key, value := range po.Labels {
 			c.Check(pod.ObjectMeta.Labels[key], check.Equals, value)
@@ -269,7 +273,6 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.Spec.Containers[0].Env, check.DeepEquals, po.EnvironmentVariables)
 		}
 
-		c.Assert(err, check.IsNil)
 		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), check.IsNil)
 
 		// make sure the nodeName set in podOptions is, actually assinged to the pod
