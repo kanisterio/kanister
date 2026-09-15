@@ -214,6 +214,7 @@ func (s *PodSuite) TestPod(c *check.C) {
 
 	for _, po := range podOptions {
 		pod, err := CreatePod(context.Background(), s.cli, po)
+		c.Assert(err, check.IsNil)
 
 		// we have not specified the SA, if the pod is being created in the
 		// same ns as controller's, controller's SA should have been set.
@@ -272,7 +273,6 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.Spec.Containers[0].Env, check.DeepEquals, po.EnvironmentVariables)
 		}
 
-		c.Assert(err, check.IsNil)
 		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), check.IsNil)
 
 		// make sure the nodeName set in podOptions is, actually assinged to the pod
