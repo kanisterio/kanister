@@ -163,7 +163,7 @@ func (p *Phase) shouldBeExecuted(tp param.TemplateParams) (bool, error) {
 	}
 
 	evalResult := strings.ToLower(strings.TrimSpace(buf.String()))
-	if !(evalResult == "true" || evalResult == "false") {
+	if evalResult != "true" && evalResult != "false" {
 		err := errkit.New(fmt.Sprintf("if=`%s` expression is not conditional expression", p.condition))
 		return false, errkit.WithCause(err, ErrPhaseExpressionNotConditional)
 	}
