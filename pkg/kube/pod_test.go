@@ -238,7 +238,7 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.ObjectMeta.Name, check.Equals, po.Name)
 		}
 
-		c.Check(len(pod.ObjectMeta.Labels), check.Equals, len(po.Labels)+1)
+		// Admission can add labels of its own (e.g. topology labels on pods with a nodeName), so only Kanister's labels are asserted.
 		c.Check(pod.ObjectMeta.Labels[consts.LabelKeyCreatedBy], check.Equals, consts.LabelValueKanister)
 		for key, value := range po.Labels {
 			c.Check(pod.ObjectMeta.Labels[key], check.Equals, value)
