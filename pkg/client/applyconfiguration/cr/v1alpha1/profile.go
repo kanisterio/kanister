@@ -19,8 +19,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	internal "github.com/kanisterio/kanister/pkg/client/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -51,6 +54,41 @@ func Profile(name, namespace string) *ProfileApplyConfiguration {
 	b.WithKind("Profile")
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
+}
+
+// ExtractProfileFrom extracts the applied configuration owned by fieldManager from
+// profile for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// profile must be a unmodified Profile API object that was retrieved from the Kubernetes API.
+// ExtractProfileFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractProfileFrom(profile *crv1alpha1.Profile, fieldManager string, subresource string) (*ProfileApplyConfiguration, error) {
+	b := &ProfileApplyConfiguration{}
+	err := managedfields.ExtractInto(profile, internal.Parser().Type("com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Profile"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(profile.Name)
+	b.WithNamespace(profile.Namespace)
+
+	b.WithKind("Profile")
+	b.WithAPIVersion("cr.kanister.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractProfile extracts the applied configuration owned by fieldManager from
+// profile. If no managedFields are found in profile for fieldManager, a
+// ProfileApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// profile must be a unmodified Profile API object that was retrieved from the Kubernetes API.
+// ExtractProfile provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractProfile(profile *crv1alpha1.Profile, fieldManager string) (*ProfileApplyConfiguration, error) {
+	return ExtractProfileFrom(profile, fieldManager, "")
 }
 
 func (b ProfileApplyConfiguration) IsApplyConfiguration() {}

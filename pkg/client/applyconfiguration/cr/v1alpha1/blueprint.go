@@ -20,8 +20,10 @@ package v1alpha1
 
 import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	internal "github.com/kanisterio/kanister/pkg/client/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -45,6 +47,41 @@ func Blueprint(name, namespace string) *BlueprintApplyConfiguration {
 	b.WithKind("Blueprint")
 	b.WithAPIVersion("cr.kanister.io/v1alpha1")
 	return b
+}
+
+// ExtractBlueprintFrom extracts the applied configuration owned by fieldManager from
+// blueprint for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// blueprint must be a unmodified Blueprint API object that was retrieved from the Kubernetes API.
+// ExtractBlueprintFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractBlueprintFrom(blueprint *crv1alpha1.Blueprint, fieldManager string, subresource string) (*BlueprintApplyConfiguration, error) {
+	b := &BlueprintApplyConfiguration{}
+	err := managedfields.ExtractInto(blueprint, internal.Parser().Type("com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Blueprint"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(blueprint.Name)
+	b.WithNamespace(blueprint.Namespace)
+
+	b.WithKind("Blueprint")
+	b.WithAPIVersion("cr.kanister.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractBlueprint extracts the applied configuration owned by fieldManager from
+// blueprint. If no managedFields are found in blueprint for fieldManager, a
+// BlueprintApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// blueprint must be a unmodified Blueprint API object that was retrieved from the Kubernetes API.
+// ExtractBlueprint provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractBlueprint(blueprint *crv1alpha1.Blueprint, fieldManager string) (*BlueprintApplyConfiguration, error) {
+	return ExtractBlueprintFrom(blueprint, fieldManager, "")
 }
 
 func (b BlueprintApplyConfiguration) IsApplyConfiguration() {}
