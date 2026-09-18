@@ -20,13 +20,22 @@ package v1alpha1
 
 // ActionStatusApplyConfiguration represents a declarative configuration of the ActionStatus type for use
 // with apply.
+//
+// ActionStatus is updated as we execute phases.
 type ActionStatusApplyConfiguration struct {
-	Name       *string                               `json:"name,omitempty"`
-	Object     *ObjectReferenceApplyConfiguration    `json:"object,omitempty"`
-	Blueprint  *string                               `json:"blueprint,omitempty"`
-	Phases     []PhaseApplyConfiguration             `json:"phases,omitempty"`
-	Artifacts  map[string]ArtifactApplyConfiguration `json:"artifacts,omitempty"`
-	DeferPhase *PhaseApplyConfiguration              `json:"deferPhase,omitempty"`
+	// Name is the action we'll perform. For example: `backup` or `restore`.
+	Name *string `json:"name,omitempty"`
+	// Object refers to the thing we'll perform this action on.
+	Object *ObjectReferenceApplyConfiguration `json:"object,omitempty"`
+	// Blueprint with instructions on how to execute this action.
+	Blueprint *string `json:"blueprint,omitempty"`
+	// Phases are sub-actions an are executed sequentially.
+	Phases []PhaseApplyConfiguration `json:"phases,omitempty"`
+	// Artifacts created by this phase.
+	Artifacts map[string]ArtifactApplyConfiguration `json:"artifacts,omitempty"`
+	// DeferPhase is the phase that is executed at the end of an action
+	// irrespective of the status of other phases in the action
+	DeferPhase *PhaseApplyConfiguration `json:"deferPhase,omitempty"`
 }
 
 // ActionStatusApplyConfiguration constructs a declarative configuration of the ActionStatus type for use with
