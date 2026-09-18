@@ -20,8 +20,13 @@ package v1alpha1
 
 // KopiaServerSecretRefApplyConfiguration represents a declarative configuration of the KopiaServerSecretRef type for use
 // with apply.
+//
+// KopiaServerSecretRef refers to K8s secrets containing Kopia creds
 type KopiaServerSecretRefApplyConfiguration struct {
-	Key    *string                            `json:"key,omitempty"`
+	// Key represents the corresponding key in the secret where the required
+	// credential or certificate value is stored.
+	Key *string `json:"key,omitempty"`
+	// Secret is the K8s secret object where the creds related to the Kopia Server are stored.
 	Secret *ObjectReferenceApplyConfiguration `json:"secret,omitempty"`
 }
 
