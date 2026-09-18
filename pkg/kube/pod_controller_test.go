@@ -45,7 +45,7 @@ func (s *PodControllerTestSuite) SetUpSuite(c *check.C) {
 
 func (s *PodControllerTestSuite) TestPodControllerStartPod(c *check.C) {
 	ctx := context.Background()
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 
 	simulatedError := errkit.New("SimulatedError")
 
@@ -107,7 +107,7 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *check.C) {
 
 func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *check.C) {
 	ctx := context.Background()
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 
 	simulatedError := errkit.Wrap(errkit.New("SimulatedError"), "Wrapped")
 
@@ -167,7 +167,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *check.C) {
 
 func (s *PodControllerTestSuite) TestPodControllerStopPod(c *check.C) {
 	ctx := context.Background()
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 
 	untouchedStr := "DEADBEEF"
 	simulatedError := errkit.New("SimulatedError")
@@ -233,7 +233,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *check.C) {
 
 func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWriter(c *check.C) {
 	ctx := context.Background()
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 
 	cases := map[string]func(pcp *FakePodControllerProcessor, pc PodController){
 		"Pod not started yet": func(_ *FakePodControllerProcessor, pc PodController) {
@@ -344,7 +344,7 @@ func (s *RestoreLogStreamReaderTestSuite) TestReadReturnsErrorWhenStreamFuncFail
 		ObjectMeta: metav1.ObjectMeta{Name: podName, Namespace: ns},
 		Status:     corev1.PodStatus{Phase: corev1.PodRunning},
 	}
-	cli := fake.NewSimpleClientset(pod)
+	cli := fake.NewClientset(pod)
 
 	streamErr := errkit.New("pod terminating")
 	mockReader := &eofReadCloser{}
