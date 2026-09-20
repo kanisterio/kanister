@@ -1083,6 +1083,171 @@ func (s *ControllerSuite) TestProgressRunningPhase(c *check.C) {
 	c.Assert(runningPhases, check.HasLen, 0)
 }
 
+func (s *ControllerSuite) TestAllPhasesComplete(c *check.C) {
+	for _, tc := range []struct {
+		desc     string
+		as       *crv1alpha1.ActionSet
+		expected bool
+	}{
+		{
+			desc:     "empty actions",
+			as:       &crv1alpha1.ActionSet{Status: &crv1alpha1.ActionSetStatus{}},
+			expected: true,
+		},
+		{
+			desc: "all phases complete, no defer phase",
+			as: &crv1alpha1.ActionSet{Status: &crv1alpha1.ActionSetStatus{
+				Actions: []crv1alpha1.ActionStatus{
+					{Phases: []crv1alpha1.Phase{
+						{Name: "p1", State: crv1alpha1.StateComplete},
+						{Name: "p2", State: crv1alpha1.StateComplete},
+					}},
+				},
+			}},
+			expected: true,
+		},
+		{
+			desc: "one phase still running",
+			as: &crv1alpha1.ActionSet{Status: &crv1alpha1.ActionSetStatus{
+				Actions: []crv1alpha1.ActionStatus{
+					{Phases: []crv1alpha1.Phase{
+						{Name: "p1", State: crv1alpha1.StateComplete},
+						{Name: "p2", State: crv1alpha1.StateRunning},
+					}},
+				},
+			}},
+			expected: false,
+		},
+		{
+			desc: "one phase still pending",
+			as: &crv1alpha1.ActionSet{Status: &crv1alpha1.ActionSetStatus{
+				Actions: []crv1alpha1.ActionStatus{
+					{Phases: []crv1alpha1.Phase{
+						{Name: "p1", State: crv1alpha1.StatePending},
+					}},
+				},
+			}},
+			expected: false,
+		},
+		{
+			desc: "all phases complete but defer phase running",
+			as: &crv1alpha1.ActionSet{Status: &crv1alpha1.ActionSetStatus{
+				Actions: []crv1alpha1.ActionStatus{
+					{
+						Phases: []crv1alpha1.Phase{
+							{Name: "p1", State: crv1alpha1.StateComplete},
+						},
+						DeferPhase: crv1alpha1.Phase{Name: "defer", State: crv1alpha1.StateRunning},
+					},
+				},
+			}},
+			expected: false,
+		},
+		{
+			desc: "all phases and defer phase complete",
+			as: &crv1alpha1.ActionSet{Status: &crv1alpha1.ActionSetStatus{
+				Actions: []crv1alpha1.ActionStatus{
+					{
+						Phases: []crv1alpha1.Phase{
+							{Name: "p1", State: crv1alpha1.StateComplete},
+						},
+						DeferPhase: crv1alpha1.Phase{Name: "defer", State: crv1alpha1.StateComplete},
+					},
+				},
+			}},
+			expected: true,
+		},
+		{
+			desc: "no phases but defer phase complete",
+			as: &crv1alpha1.ActionSet{Status: &crv1alpha1.ActionSetStatus{
+				Actions: []crv1alpha1.ActionStatus{
+					{
+						DeferPhase: crv1alpha1.Phase{Name: "defer", State: crv1alpha1.StateComplete},
+					},
+				},
+			}},
+			expected: true,
+		},
+	} {
+		c.Assert(allPhasesComplete(tc.as), check.Equals, tc.expected, check.Commentf("case: %s", tc.desc))
+	}
+}
+
+func (s *ControllerSuite) TestHandleRunningActionSetFailed(c *check.C) {
+	ctx := context.Background()
+	// Create a minimal ActionSet in k8s. The controller will immediately transition
+	// it to Complete (empty actions). We pass a separate in-memory ActionSet with
+	// Running state and an incomplete phase to handleRunningActionSet — it uses that
+	// only for allPhasesComplete; the actual k8s update is done on the live object.
+	as, err := s.crCli.ActionSets(s.namespace).Create(ctx, &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-running-as-",
+			Namespace:    s.namespace,
+		},
+		Spec: &crv1alpha1.ActionSetSpec{Actions: []crv1alpha1.ActionSpec{}},
+	}, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	defer func() {
+		_ = s.crCli.ActionSets(s.namespace).Delete(ctx, as.GetName(), metav1.DeleteOptions{})
+	}()
+
+	// Build an in-memory view with an incomplete phase to drive allPhasesComplete → false.
+	asRunning := as.DeepCopy()
+	asRunning.Status = &crv1alpha1.ActionSetStatus{
+		State: crv1alpha1.StateRunning,
+		Actions: []crv1alpha1.ActionStatus{
+			{Phases: []crv1alpha1.Phase{
+				{Name: "phase1", State: crv1alpha1.StateRunning},
+			}},
+		},
+	}
+
+	err = s.ctrl.handleRunningActionSet(ctx, asRunning)
+	c.Assert(err, check.IsNil)
+
+	updated, err := s.crCli.ActionSets(s.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
+	c.Assert(err, check.IsNil)
+	c.Assert(updated.Status.State, check.Equals, crv1alpha1.StateFailed)
+	c.Assert(updated.Status.Error.Message, check.Not(check.Equals), "")
+}
+
+func (s *ControllerSuite) TestHandleRunningActionSetComplete(c *check.C) {
+	ctx := context.Background()
+	// Create a minimal ActionSet in k8s. We pass an in-memory ActionSet with
+	// Running state and all phases already complete to handleRunningActionSet,
+	// which should cause it to transition the live object to Complete.
+	as, err := s.crCli.ActionSets(s.namespace).Create(ctx, &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-running-as-complete-",
+			Namespace:    s.namespace,
+		},
+		Spec: &crv1alpha1.ActionSetSpec{Actions: []crv1alpha1.ActionSpec{}},
+	}, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	defer func() {
+		_ = s.crCli.ActionSets(s.namespace).Delete(ctx, as.GetName(), metav1.DeleteOptions{})
+	}()
+
+	// Build an in-memory view with all phases complete to drive allPhasesComplete → true.
+	asRunning := as.DeepCopy()
+	asRunning.Status = &crv1alpha1.ActionSetStatus{
+		State: crv1alpha1.StateRunning,
+		Actions: []crv1alpha1.ActionStatus{
+			{Phases: []crv1alpha1.Phase{
+				{Name: "phase1", State: crv1alpha1.StateComplete},
+			}},
+		},
+	}
+
+	err = s.ctrl.handleRunningActionSet(ctx, asRunning)
+	c.Assert(err, check.IsNil)
+
+	updated, err := s.crCli.ActionSets(s.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
+	c.Assert(err, check.IsNil)
+	c.Assert(updated.Status.State, check.Equals, crv1alpha1.StateComplete)
+	c.Assert(updated.Status.Progress.RunningPhase, check.Equals, "")
+}
+
 func (s *ControllerSuite) TestGetActionTypeBucket(c *check.C) {
 	for _, tc := range []struct {
 		actionType string
