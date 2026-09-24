@@ -1,5 +1,5 @@
 /*
-Copyright 2025 by contributors to the Kanister project.
+Copyright 2026 by contributors to the Kanister project.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,31 +39,6 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
-- name: Condition.v1.meta.apis.pkg.apimachinery.k8s.io
-  map:
-    fields:
-    - name: lastTransitionTime
-      type:
-        namedType: Time.v1.meta.apis.pkg.apimachinery.k8s.io
-    - name: message
-      type:
-        scalar: string
-      default: ""
-    - name: observedGeneration
-      type:
-        scalar: numeric
-    - name: reason
-      type:
-        scalar: string
-      default: ""
-    - name: status
-      type:
-        scalar: string
-      default: ""
-    - name: type
-      type:
-        scalar: string
-      default: ""
 - name: FieldsV1.v1.meta.apis.pkg.apimachinery.k8s.io
   map:
     elementType:
@@ -188,16 +163,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-    elementRelationship: atomic
-- name: SecretReference.v1.core.api.k8s.io
-  map:
-    fields:
-    - name: name
-      type:
-        scalar: string
-    - name: namespace
-      type:
-        scalar: string
     elementRelationship: atomic
 - name: Time.v1.meta.apis.pkg.apimachinery.k8s.io
   scalar: untyped
@@ -333,9 +298,6 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: string
       default: ""
     - name: profile
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
-    - name: repositoryServer
       type:
         namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
     - name: secrets
@@ -476,27 +438,6 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ObjectReference
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.CacheSizeSettings
-  map:
-    fields:
-    - name: content
-      type:
-        scalar: numeric
-    - name: metadata
-      type:
-        scalar: numeric
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Configuration
-  map:
-    fields:
-    - name: cacheDirectory
-      type:
-        scalar: string
-    - name: configFilePath
-      type:
-        scalar: string
-    - name: logDirectory
-      type:
-        scalar: string
 - name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Credential
   map:
     fields:
@@ -693,129 +634,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: boolean
       default: false
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Repository
-  map:
-    fields:
-    - name: cacheSizeSettings
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.CacheSizeSettings
-      default: {}
-    - name: configuration
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Configuration
-      default: {}
-    - name: hostname
-      type:
-        scalar: string
-    - name: passwordSecretRef
-      type:
-        namedType: SecretReference.v1.core.api.k8s.io
-      default: {}
-    - name: rootPath
-      type:
-        scalar: string
-      default: ""
-    - name: username
-      type:
-        scalar: string
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServer
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: kind
-      type:
-        scalar: string
-    - name: metadata
-      type:
-        namedType: ObjectMeta.v1.meta.apis.pkg.apimachinery.k8s.io
-      default: {}
-    - name: spec
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServerSpec
-      default: {}
-    - name: status
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServerStatus
-      default: {}
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServerSpec
-  map:
-    fields:
-    - name: repository
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Repository
-      default: {}
-    - name: server
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Server
-      default: {}
-    - name: storage
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Storage
-      default: {}
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.RepositoryServerStatus
-  map:
-    fields:
-    - name: conditions
-      type:
-        list:
-          elementType:
-            namedType: Condition.v1.meta.apis.pkg.apimachinery.k8s.io
-          elementRelationship: atomic
-    - name: progress
-      type:
-        scalar: string
-    - name: serverInfo
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ServerInfo
-      default: {}
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Server
-  map:
-    fields:
-    - name: adminSecretRef
-      type:
-        namedType: SecretReference.v1.core.api.k8s.io
-      default: {}
-    - name: tlsSecretRef
-      type:
-        namedType: SecretReference.v1.core.api.k8s.io
-      default: {}
-    - name: userAccess
-      type:
-        namedType: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.UserAccess
-      default: {}
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.ServerInfo
-  map:
-    fields:
-    - name: podName
-      type:
-        scalar: string
-    - name: serviceName
-      type:
-        scalar: string
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.Storage
-  map:
-    fields:
-    - name: credentialSecretRef
-      type:
-        namedType: SecretReference.v1.core.api.k8s.io
-      default: {}
-    - name: secretRef
-      type:
-        namedType: SecretReference.v1.core.api.k8s.io
-      default: {}
-- name: com.github.kanisterio.kanister.pkg.apis.cr.v1alpha1.UserAccess
-  map:
-    fields:
-    - name: userAccessSecretRef
-      type:
-        namedType: SecretReference.v1.core.api.k8s.io
-      default: {}
-    - name: username
-      type:
-        scalar: string
-      default: ""
 - name: __untyped_atomic_
   scalar: untyped
   list:
