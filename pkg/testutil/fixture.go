@@ -86,7 +86,7 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 	var key, val string
 	switch osType {
 	case objectstore.ProviderTypeS3:
-		if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
+		if useS3Mock, ok := os.LookupEnv("USE_S3MOCK"); ok && useS3Mock == "true" {
 			if region, ok := os.LookupEnv(awsconfig.Region); ok && location.Region == "" {
 				location.Region = region
 			}
