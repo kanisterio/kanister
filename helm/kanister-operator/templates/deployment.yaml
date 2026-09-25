@@ -15,6 +15,10 @@ spec:
 {{ include "kanister-operator.helmLabels" . | indent 8}}
     spec:
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 8 }}
+{{- end }}
 {{ include "podSecurityContext" . | indent 2 }}
 {{- if .Values.bpValidatingWebhook.enabled }}
       volumes:
