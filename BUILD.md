@@ -142,10 +142,10 @@ expected. They are located in the `pkg/testing` directory.
 
 Before running integration tests, ensure the following:
 
-* **MinIO:** Make sure MinIO is installed and running. Use the following
+* **S3Mock:** Make sure S3Mock is installed and running. Use the following
   command to install it:
    ```bash
-   make install-minio
+   make install-s3mock
    ```
 
 ### Running Tests

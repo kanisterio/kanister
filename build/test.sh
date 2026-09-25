@@ -34,20 +34,20 @@ fi
 TARGETS=$(for d in "$@"; do echo ./$d/...; done)
 
 check_dependencies() {
-    # Check if minio is already deployed. We suppress only `stdout` and not `stderr` to make sure we catch errors if `helm status` fails
-    if helm status minio -n minio 1> /dev/null ; then
-        # Setting env vars to access MinIO
+    # Check if s3mock is already deployed. We suppress only `stdout` and not `stderr` to make sure we catch errors if `kubectl get` fails
+    if kubectl get deployment s3mock -n s3mock 1> /dev/null ; then
+        # Setting env vars to access S3Mock
         export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
         export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
         export AWS_REGION="us-west-2"
         export LOCATION_ENDPOINT="http://localhost:9000"
-        export LOCATION_CLUSTER_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
+        export LOCATION_CLUSTER_ENDPOINT="http://s3mock.s3mock.svc.cluster.local:9000"
         export TEST_REPOSITORY_ENCRYPTION_KEY="testKopiaRepoPassword"
         unset AWS_SESSION_TOKEN
-        export USE_MINIO="true"
-        export LOCAL_MINIO="${LOCAL_MINIO:-false}"
+        export USE_S3MOCK="true"
+        export LOCAL_S3MOCK="${LOCAL_S3MOCK:-false}"
     else
-        echo "Please install MinIO using 'make install-minio' and try again."
+        echo "Please install S3Mock using 'make install-s3mock' and try again."
         exit 1
     fi
 

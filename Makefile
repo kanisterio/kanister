@@ -158,7 +158,7 @@ format-vet: build-dirs
 	@$(MAKE) run CMD="./build/format-vet.sh $(SRC_DIRS)"
 
 go-test: build-dirs
-	@$(MAKE) run CMD="TEST_FILTER=$(TEST_FILTER) TEST_BASE=$(TEST_BASE) TEST_CONTROLLER=$(TEST_CONTROLLER) TEST_FUNCTIONS=$(TEST_FUNCTIONS) LOCAL_MINIO=$(LOCAL_MINIO) ./build/test.sh $(SRC_DIRS)"
+	@$(MAKE) run CMD="TEST_FILTER=$(TEST_FILTER) TEST_BASE=$(TEST_BASE) TEST_CONTROLLER=$(TEST_CONTROLLER) TEST_FUNCTIONS=$(TEST_FUNCTIONS) LOCAL_S3MOCK=$(LOCAL_S3MOCK) ./build/test.sh $(SRC_DIRS)"
 
 test: format-vet go-test
 
@@ -232,14 +232,14 @@ start-kind:
 tiller:
 	@/bin/bash ./build/init_tiller.sh
 
-install-minio:
-	@$(MAKE) run CMD="./build/minio.sh install_minio"
+install-s3mock:
+	@$(MAKE) run CMD="./build/s3mock.sh install_s3mock"
 
 install-csi-hostpath-driver:
 	@$(MAKE) run CMD="./build/local_kubernetes.sh install_csi_hostpath_driver"
 
-uninstall-minio:
-	@$(MAKE) run CMD="./build/minio.sh uninstall_minio"
+uninstall-s3mock:
+	@$(MAKE) run CMD="./build/s3mock.sh uninstall_s3mock"
 
 start-minishift:
 	@/bin/bash ./build/minishift.sh start_minishift $(vm-driver)

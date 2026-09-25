@@ -84,7 +84,7 @@ func (s *DataSuite) SetUpSuite(c *check.C) {
 	s.namespace = cns.GetName()
 
 	s.profile = s.createNewTestProfile(c, testutil.TestProfileName, false)
-	if localMinio, ok := os.LookupEnv("LOCAL_MINIO"); ok && localMinio == "true" {
+	if localS3Mock, ok := os.LookupEnv("LOCAL_S3MOCK"); ok && localS3Mock == "true" {
 		s.profileLocalEndpoint = s.createNewTestProfile(c, "test-profile-loc", true)
 	}
 
@@ -362,7 +362,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *check.C) {
 		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 		_ = runAction(c, bp, "restore", tp)
 
-		if localMinio, ok := os.LookupEnv("LOCAL_MINIO"); ok && localMinio == "true" {
+		if localS3Mock, ok := os.LookupEnv("LOCAL_S3MOCK"); ok && localS3Mock == "true" {
 			tp.Profile = s.profileLocalEndpoint
 		}
 		bp = *newLocationDeleteBlueprint()
