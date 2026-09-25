@@ -41,15 +41,15 @@ OC_APPS4_12="MysqlDBDepConfig4_12|PostgreSQLDepConfig4_12"
 OC_APPS4_13="MysqlDBDepConfig4_13|PostgreSQLDepConfig4_13"
 
 check_dependencies() {
-    # Check if minio is already deployed
-    if helm status minio -n minio > /dev/null 2>&1 ; then
-        # Setting env vars to access MinIO
+    # Check if s3mock is already deployed
+    if kubectl get deployment s3mock -n s3mock > /dev/null 2>&1 ; then
+        # Setting env vars to access S3Mock
         export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
         export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
         export AWS_REGION="us-west-2"
-        export LOCATION_ENDPOINT="http://minio.minio.svc.cluster.local:9000"
+        export LOCATION_ENDPOINT="http://s3mock.s3mock.svc.cluster.local:9000"
     else
-        echo "Please install MinIO using 'make install-minio' and try again."
+        echo "Please install S3Mock using 'make install-s3mock' and try again."
         exit 1
     fi
 }
