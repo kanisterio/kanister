@@ -634,7 +634,7 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *check.C) {
 				},
 			},
 			pType: objectstore.ProviderTypeAzure,
-			cli: fake.NewSimpleClientset(&corev1.Secret{
+			cli: fake.NewClientset(&corev1.Secret{
 				Type: corev1.SecretType(secrets.AzureSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secname",
@@ -671,7 +671,7 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *check.C) {
 				},
 			},
 			pType: objectstore.ProviderTypeAzure,
-			cli: fake.NewSimpleClientset(&corev1.Secret{
+			cli: fake.NewClientset(&corev1.Secret{
 				Type: corev1.SecretType(secrets.AzureSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secname",
@@ -708,7 +708,7 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *check.C) {
 				},
 			},
 			pType: objectstore.ProviderTypeAzure,
-			cli: fake.NewSimpleClientset(&corev1.Secret{
+			cli: fake.NewClientset(&corev1.Secret{
 				Type: corev1.SecretType(secrets.AzureSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secname",
@@ -738,7 +738,7 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *check.C) {
 				},
 			},
 			pType: objectstore.ProviderTypeAzure,
-			cli: fake.NewSimpleClientset(&corev1.Secret{
+			cli: fake.NewClientset(&corev1.Secret{
 				Type: corev1.SecretType(secrets.AzureSecretType),
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secname",
@@ -768,7 +768,7 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *check.C) {
 				},
 			},
 			pType:      objectstore.ProviderTypeAzure,
-			cli:        fake.NewSimpleClientset(),
+			cli:        fake.NewClientset(),
 			expected:   nil,
 			errChecker: check.NotNil,
 		},
@@ -780,7 +780,7 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *check.C) {
 				},
 			},
 			pType:      objectstore.ProviderTypeAzure,
-			cli:        fake.NewSimpleClientset(),
+			cli:        fake.NewClientset(),
 			expected:   nil,
 			errChecker: check.NotNil,
 		},
@@ -795,7 +795,7 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *check.C) {
 				},
 			},
 			pType:      objectstore.ProviderTypeAzure,
-			cli:        fake.NewSimpleClientset(),
+			cli:        fake.NewClientset(),
 			expected:   nil,
 			errChecker: check.NotNil,
 		},
