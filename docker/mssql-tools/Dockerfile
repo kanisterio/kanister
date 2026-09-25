@@ -1,7 +1,7 @@
 ARG TOOLS_IMAGE
 FROM ${TOOLS_IMAGE} AS tools_image
 
-FROM ubuntu:noble@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254
+FROM ubuntu:noble@sha256:69cecf4bbf72d2d44a9eef1b71fb98c7fb973d78af11399deccef19beb008ad9
 
 # Declare build arguments for this stage
 ARG TARGETARCH
