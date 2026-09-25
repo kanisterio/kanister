@@ -1,5 +1,5 @@
 /*
-Copyright 2025 by contributors to the Kanister project.
+Copyright 2026 by contributors to the Kanister project.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,11 +20,18 @@ package v1alpha1
 
 // BlueprintPhaseApplyConfiguration represents a declarative configuration of the BlueprintPhase type for use
 // with apply.
+//
+// BlueprintPhase is a an individual unit of execution.
 type BlueprintPhaseApplyConfiguration struct {
-	Func       *string                                      `json:"func,omitempty"`
-	Name       *string                                      `json:"name,omitempty"`
+	// Func is the name of a registered Kanister function.
+	Func *string `json:"func,omitempty"`
+	// Name contains name of the phase.
+	Name *string `json:"name,omitempty"`
+	// ObjectRefs represents a map of references to the Kubernetes objects that
+	// can later be used in the `Args` of the function.
 	ObjectRefs map[string]ObjectReferenceApplyConfiguration `json:"objects,omitempty"`
-	Args       map[string]any                               `json:"args,omitempty"`
+	// Args represents a map of named arguments that the controller will pass to the Kanister function.
+	Args map[string]any `json:"args,omitempty"`
 }
 
 // BlueprintPhaseApplyConfiguration constructs a declarative configuration of the BlueprintPhase type for use with
