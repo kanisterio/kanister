@@ -1,5 +1,5 @@
 /*
-Copyright 2025 by contributors to the Kanister project.
+Copyright 2026 by contributors to the Kanister project.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,10 @@ package v1alpha1
 
 // ErrorApplyConfiguration represents a declarative configuration of the Error type for use
 // with apply.
+//
+// Error represents an error that occurred when executing an actionset.
 type ErrorApplyConfiguration struct {
+	// Message is the actual error message that is displayed in case of errors.
 	Message *string `json:"message,omitempty"`
 }
 

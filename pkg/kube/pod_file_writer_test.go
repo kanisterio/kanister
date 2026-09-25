@@ -77,7 +77,7 @@ var _ PodWriter = (*fakePodWriter)(nil)
 
 func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *check.C) {
 	ctx := context.Background()
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 
 	simulatedError := errkit.NewSentinelErr("SimulatedError")
 
