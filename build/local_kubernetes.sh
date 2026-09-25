@@ -15,12 +15,12 @@ export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
-export KUBE_VERSION=${KUBE_VERSION:-"v1.26.0"}
+export KUBE_VERSION=${KUBE_VERSION:-"v1.35.8"}
 export KIND_VERSION=${KIND_VERSION:-"v0.18.0"}
 export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
 export LOCAL_PATH_PROV_VERSION="v0.0.11"
-export SNAPSHOTTER_VERSION="v6.2.1"
-export HOSTPATH_DRIVER_VERSION="v1.12.1"
+export SNAPSHOTTER_VERSION="v8.6.0"
+export HOSTPATH_DRIVER_VERSION="v1.18.0"
 declare -a REQUIRED_BINS=( docker jq go )
 
 if command -v apt-get
@@ -50,7 +50,7 @@ check_or_get_dependencies() {
 }
 
 # This function is not used to create Kubernetes cluster in CI anymore. We are
-# using `helm/kind-action@v1.4.0` instead in our github actions source file
+# using `helm/kind-action` instead in our github actions source file
 # `.github/workflows/main.yaml` to create the cluster
 start_localkube() {
     if ! command -v kind
