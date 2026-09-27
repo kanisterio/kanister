@@ -224,7 +224,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/rds v1.128.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.111.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.49.0
-	github.com/aws/smithy-go v1.28.1
+	github.com/aws/smithy-go v1.28.2
 )
 
 require (
