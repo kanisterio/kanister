@@ -162,3 +162,22 @@ jobs:
       labels: |
         org.opencontainers.image.title=kanister mssql-tools
         org.opencontainers.image.description=Image for kanister mssql example blueprints
+
+  build_ocp-etcd-backup:
+    permissions:
+      packages: write
+      contents: read
+    uses: ./.github/workflows/build_docker.yaml
+    with:
+      image_file: docker/ocp-etcd-backup/Dockerfile
+      image_name: kanisterio/ocp-etcd-backup
+      image_tag: ${{ inputs.image_tag }}
+      extra_tags: ${{ inputs.extra_tags }}
+      ref:  ${{ inputs.ref }}
+      ## Only amd64 platform is supported
+      platforms: linux/amd64
+      build-args: |
+        KUBECTL_VERSION=v1.31.6
+      labels: |
+        org.opencontainers.image.title=kanister ocp-etcd-backup
+        org.opencontainers.image.description=Keeper image for the kanister OpenShift etcd backup blueprint
