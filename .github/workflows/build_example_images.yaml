@@ -176,8 +176,7 @@ jobs:
       ref:  ${{ inputs.ref }}
       ## Only amd64 platform is supported
       platforms: linux/amd64
-      build-args: |
-        KUBECTL_VERSION=v1.31.6
+      build-args: ''
       labels: |
         org.opencontainers.image.title=kanister ocp-etcd-backup
         org.opencontainers.image.description=Keeper image for the kanister OpenShift etcd backup blueprint

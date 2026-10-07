@@ -111,5 +111,6 @@ updates:
       - "/docker/mongodb"
       - "/docker/mongodb-atlas"
       - "/docker/mssql-tools"
+      - "/docker/ocp-etcd-backup"
       - "/docker/postgresql"
       - "/docker/redis-tools"
