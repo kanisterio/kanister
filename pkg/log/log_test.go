@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -203,6 +204,8 @@ func (s *LogSuite) TestLogLevel(c *check.C) {
 }
 
 func (s *LogSuite) TestCloneGlobalLogger(c *check.C) {
+	savedHooks := log.ReplaceHooks(make(logrus.LevelHooks))
+	defer log.ReplaceHooks(savedHooks)
 	hook := newTestLogHook()
 	log.AddHook(hook)
 	actual := cloneGlobalLogger()
@@ -230,9 +233,10 @@ func (s *LogSuite) TestCloneGlobalLogger(c *check.C) {
 	c.Assert(hook.capturedMessages[0].Message, check.Equals, "Test message")
 }
 
-// The settings change while the log is written; run with -race.
+// Each setting changes on its own while the log is written, so that no other
+// setter's lock orders the accesses for the race detector; run with -race.
 func (s *LogSuite) TestChangeSettingsWhileLogging(c *check.C) {
-	// Not closed: the fluentbit hook flushes its buffer after the test ends.
+	// Not closed: the fluentbit hooks flush their buffers after the test ends.
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	c.Assert(err, check.IsNil)
 	go func() {
@@ -247,61 +251,77 @@ func (s *LogSuite) TestChangeSettingsWhileLogging(c *check.C) {
 			}()
 		}
 	}()
+	host, port, err := net.SplitHostPort(listener.Addr().String())
+	c.Assert(err, check.IsNil)
 
-	clusterName, clusterNameSet := os.LookupEnv(config.ClusterNameEnvName)
-	c.Assert(os.Setenv(config.ClusterNameEnvName, "test-cluster"), check.IsNil)
+	defer setEnv(c, config.ClusterNameEnvName, "test-cluster")()
+	defer setEnv(c, LoggingServiceHostEnv, host)()
+	defer setEnv(c, LoggingServicePortEnv, port)()
 	savedHooks := log.ReplaceHooks(make(logrus.LevelHooks))
 	savedOut := log.Out
+	savedFormatter := log.Formatter
+	savedLevel := log.GetLevel()
 	savedEnvVarFields := envVarFields
 	defer func() {
 		log.ReplaceHooks(savedHooks)
 		log.SetOutput(savedOut)
-		SetFormatter(JSONFormat)
-		initLogLevel()
+		log.SetFormatter(savedFormatter)
+		log.SetLevel(savedLevel)
 		envVarFields = savedEnvVarFields
-		if clusterNameSet {
-			c.Check(os.Setenv(config.ClusterNameEnvName, clusterName), check.IsNil)
-		} else {
-			c.Check(os.Unsetenv(config.ClusterNameEnvName), check.IsNil)
-		}
 	}()
 
-	changes := []func() error{
-		func() error { SetLevel(DebugLevel); return nil },
-		func() error { SetLevel(InfoLevel); return nil },
-		func() error { SetFormatter(TextFormat); return nil },
-		func() error { SetFormatter(JSONFormat); return nil },
-		func() error { return SetOutput(StderrSink) },
-		func() error { SetupClusterNameInLogVars(); return nil },
+	for _, tc := range []struct {
+		name   string
+		change func() error
+		times  int
+	}{
+		{"SetLevel", func() error { SetLevel(DebugLevel); SetLevel(InfoLevel); return nil }, 100},
+		{"SetFormatter", func() error { SetFormatter(TextFormat); SetFormatter(JSONFormat); return nil }, 100},
+		{"SetOutput(StderrSink)", func() error { return SetOutput(StderrSink) }, 100},
+		{"SetupClusterNameInLogVars", func() error { SetupClusterNameInLogVars(); return nil }, 100},
+		{"SetOutput(FluentbitSink)", func() error { return SetOutput(FluentbitSink) }, 1},
+		{"SetFluentbitOutput", func() error {
+			return SetFluentbitOutput(&url.URL{Scheme: "tcp", Host: listener.Addr().String()})
+		}, 1},
+	} {
+		c.Check(logWhileChanging(tc.change, tc.times), check.IsNil, check.Commentf("%s", tc.name))
 	}
-	errs := make(chan error, len(changes)+1)
+}
+
+// logWhileChanging writes the log while another goroutine calls change, yielding
+// after each entry so that the two interleave even on one CPU. It waits for that
+// goroutine even if logging panics, so a restore never races it.
+func logWhileChanging(change func() error, times int) error {
 	var wg sync.WaitGroup
-	for _, change := range changes {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for range 100 {
-				if err := change(); err != nil {
-					errs <- err
-					return
-				}
-			}
-		}()
-	}
+	defer wg.Wait()
+	var err error
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := SetFluentbitOutput(&url.URL{Scheme: "tcp", Host: listener.Addr().String()}); err != nil {
-			errs <- err
+		for range times {
+			if err = change(); err != nil {
+				return
+			}
 		}
 	}()
 	for range 200 {
 		PrintTo(io.Discard, "logging while the settings change")
+		runtime.Gosched()
 	}
 	wg.Wait()
-	close(errs)
-	for err := range errs {
-		c.Check(err, check.IsNil)
+	return err
+}
+
+// setEnv sets key to value and returns a func that restores the previous state.
+func setEnv(c *check.C, key, value string) func() {
+	old, wasSet := os.LookupEnv(key)
+	c.Assert(os.Setenv(key, value), check.IsNil)
+	return func() {
+		if wasSet {
+			c.Check(os.Setenv(key, old), check.IsNil)
+		} else {
+			c.Check(os.Unsetenv(key), check.IsNil)
+		}
 	}
 }
 
@@ -352,7 +372,6 @@ func (s *LogSuite) TestSetFluentbitOutput(c *check.C) {
 }
 
 type logHook struct {
-	mu               sync.Mutex
 	capturedMessages []*logrus.Entry
 }
 
@@ -370,8 +389,6 @@ func (t *logHook) Levels() []logrus.Level {
 }
 
 func (t *logHook) Fire(entry *logrus.Entry) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
 	if t.capturedMessages != nil {
 		t.capturedMessages = append(t.capturedMessages, entry)
 	}
