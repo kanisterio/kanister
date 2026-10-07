@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -65,8 +66,8 @@ type logger struct {
 // common logger implementation used in the library
 var log = logrus.New()
 
-// settingsMu guards the settings of log that cloneGlobalLogger copies, and
-// envVarFields. logrus locks its own setters but not plain field reads.
+// settingsMu guards envVarFields and the fields of log that cloneGlobalLogger
+// reads directly. logrus's own lock does not cover those reads; Level is atomic.
 var settingsMu sync.RWMutex
 
 // SetOutput sets the output destination.
@@ -313,16 +314,8 @@ func cloneGlobalLogger() *logrus.Logger {
 	cloned.SetOutput(log.Out)
 	cloned.ExitFunc = log.ExitFunc
 
-	globalHooks := make(map[logrus.Hook]bool)
-
-	for _, hooks := range log.Hooks {
-		for _, hook := range hooks {
-			globalHooks[hook] = true
-		}
-	}
-
-	for hook := range globalHooks {
-		cloned.Hooks.Add(hook)
+	for level, hooks := range log.Hooks {
+		cloned.Hooks[level] = slices.Clone(hooks)
 	}
 
 	return cloned
