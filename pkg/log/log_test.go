@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
 	"net/url"
 	"os"
 	"sync"
@@ -15,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/check.v1"
 
+	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
@@ -227,6 +230,81 @@ func (s *LogSuite) TestCloneGlobalLogger(c *check.C) {
 	c.Assert(hook.capturedMessages[0].Message, check.Equals, "Test message")
 }
 
+// The settings change while the log is written; run with -race.
+func (s *LogSuite) TestChangeSettingsWhileLogging(c *check.C) {
+	// Not closed: the fluentbit hook flushes its buffer after the test ends.
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	c.Assert(err, check.IsNil)
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			go func() {
+				defer conn.Close() //nolint:errcheck
+				_, _ = io.Copy(io.Discard, conn)
+			}()
+		}
+	}()
+
+	clusterName, clusterNameSet := os.LookupEnv(config.ClusterNameEnvName)
+	c.Assert(os.Setenv(config.ClusterNameEnvName, "test-cluster"), check.IsNil)
+	savedHooks := log.ReplaceHooks(make(logrus.LevelHooks))
+	savedOut := log.Out
+	savedEnvVarFields := envVarFields
+	defer func() {
+		log.ReplaceHooks(savedHooks)
+		log.SetOutput(savedOut)
+		SetFormatter(JSONFormat)
+		initLogLevel()
+		envVarFields = savedEnvVarFields
+		if clusterNameSet {
+			c.Check(os.Setenv(config.ClusterNameEnvName, clusterName), check.IsNil)
+		} else {
+			c.Check(os.Unsetenv(config.ClusterNameEnvName), check.IsNil)
+		}
+	}()
+
+	changes := []func() error{
+		func() error { SetLevel(DebugLevel); return nil },
+		func() error { SetLevel(InfoLevel); return nil },
+		func() error { SetFormatter(TextFormat); return nil },
+		func() error { SetFormatter(JSONFormat); return nil },
+		func() error { return SetOutput(StderrSink) },
+		func() error { SetupClusterNameInLogVars(); return nil },
+	}
+	errs := make(chan error, len(changes)+1)
+	var wg sync.WaitGroup
+	for _, change := range changes {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for range 100 {
+				if err := change(); err != nil {
+					errs <- err
+					return
+				}
+			}
+		}()
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := SetFluentbitOutput(&url.URL{Scheme: "tcp", Host: listener.Addr().String()}); err != nil {
+			errs <- err
+		}
+	}()
+	for range 200 {
+		PrintTo(io.Discard, "logging while the settings change")
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		c.Check(err, check.IsNil)
+	}
+}
+
 func (s *LogSuite) TestSetFluentbitOutput(c *check.C) {
 	for _, tc := range []struct {
 		desc string
@@ -274,6 +352,7 @@ func (s *LogSuite) TestSetFluentbitOutput(c *check.C) {
 }
 
 type logHook struct {
+	mu               sync.Mutex
 	capturedMessages []*logrus.Entry
 }
 
@@ -291,6 +370,8 @@ func (t *logHook) Levels() []logrus.Level {
 }
 
 func (t *logHook) Fire(entry *logrus.Entry) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	if t.capturedMessages != nil {
 		t.capturedMessages = append(t.capturedMessages, entry)
 	}
