@@ -228,3 +228,41 @@ func (s *WaitV2Suite) TestWaitV2(c *check.C) {
 		}
 	}
 }
+
+func (s *WaitV2Suite) TestRenderWaitV2Timeout(c *check.C) {
+	for _, tc := range []struct {
+		description string
+		args        map[string]any
+		tp          param.TemplateParams
+		expected    string
+		expectErr   bool
+	}{
+		{
+			description: "plain duration string is unaffected",
+			args:        map[string]any{WaitV2TimeoutArg: "1m"},
+			tp:          param.TemplateParams{},
+			expected:    "1m",
+		},
+		{
+			description: "templated timeout resolves against Options",
+			args:        map[string]any{WaitV2TimeoutArg: "{{ .Options.waitTimeout }}"},
+			tp:          param.TemplateParams{Options: map[string]string{"waitTimeout": "2m30s"}},
+			expected:    "2m30s",
+		},
+		{
+			description: "missing timeout arg errors",
+			args:        map[string]any{},
+			tp:          param.TemplateParams{},
+			expectErr:   true,
+		},
+	} {
+		timeout, err := renderWaitV2Timeout(tc.args, tc.tp)
+		comment := check.Commentf(tc.description)
+		if tc.expectErr {
+			c.Assert(err, check.NotNil, comment)
+			continue
+		}
+		c.Assert(err, check.IsNil, comment)
+		c.Assert(timeout, check.Equals, tc.expected, comment)
+	}
+}
