@@ -7,7 +7,8 @@
         "cassandra",
         "mongodb",
         "es-sidecar",
-        "mssql-tools"
+        "mssql-tools",
+        "ocp-etcd-backup"
     ],
     "tag": "v9.99.9-dev"
 }
