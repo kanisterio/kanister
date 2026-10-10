@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
 {{ include "kanister-operator.helmLabels" . | indent 8}}
+      {{- if .Values.podAnnotations}}
+      annotations:
+      {{- toYaml .Values.podAnnotations | nindent 8 -}}
+      {{end}}
     spec:
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
 {{ include "podSecurityContext" . | indent 2 }}
