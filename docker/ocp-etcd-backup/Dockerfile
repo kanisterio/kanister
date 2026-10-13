@@ -12,11 +12,10 @@
 # the read-only /etc/kubernetes hostPath mount:
 #   /etc/kubernetes/static-pod-resources/etcd-certs/configmaps/etcd-scripts/cluster-backup.sh
 
-ARG ETCD_SOURCE_IMAGE=quay.io/coreos/etcd:v3.5.18@sha256:d0a641d5fbcc89678c931a61b7de7b8a1cf097149f135c9c73bc81d076a1494b
 # kubectl is matched to the cluster Kubernetes version (OCP 4.18 = k8s 1.31).
 ARG KUBECTL_VERSION=v1.31.6
 
-FROM ${ETCD_SOURCE_IMAGE} AS etcd-src
+FROM quay.io/coreos/etcd:v3.5.18@sha256:d0a641d5fbcc89678c931a61b7de7b8a1cf097149f135c9c73bc81d076a1494b AS etcd-src
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest@sha256:5ed244b62bbf4095080144d9d35eb8fcd3d39a9801f94aadd63b9d10978a01ae
 ARG KUBECTL_VERSION
