@@ -1294,7 +1294,6 @@ Example:
 - func: WaitV2
   name: waitForDeploymentReady
   args:
-    # timeout can also be a template expression, e.g. '{{ .Options.waitTimeout }}'
     timeout: 5m
     conditions:
       anyOf:
