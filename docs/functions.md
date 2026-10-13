@@ -1264,8 +1264,8 @@ Arguments:
 
   | Argument   | Required | Type                     | Description |
   | ---------- | :------: | ------------------------ | ----------- |
-  | timeout    | Yes      | string                   | wait timeout, rendered as a Go template against the Blueprint's template params before being parsed (see example below) |
-  | conditions | Yes      | map[string]interface{}   | keys should be `allOf` and/or `anyOf` with value as `[]Condition`. Unlike `timeout`, these are **not** rendered against the template params; each `condition` is instead evaluated as a Go template per-poll against the fetched object |
+  | timeout    | Yes      | string                   | wait timeout |
+  | conditions | Yes      | map[string]interface{}   | keys should be `allOf` and/or `anyOf` with value as `[]Condition` |
 
 `Condition` struct:
 
