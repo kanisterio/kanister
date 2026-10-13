@@ -1,4 +1,4 @@
-FROM couchbase:enterprise-8.0.2@sha256:e3773914cdfe8ec8014f0c6eb81f6eda70030de3ba86ec81402b2a82d0df39fc
+FROM couchbase:enterprise-8.0.3@sha256:db0e1cdcaf4bf4a86f7ba65857c4693ac3b5600900ec59e796fac8e75ee5293d
 
 LABEL maintainer="Kanister maintainers<kanister.maintainers@veeam.com>"
 

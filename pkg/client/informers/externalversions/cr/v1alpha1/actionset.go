@@ -1,5 +1,5 @@
 /*
-Copyright 2025 by contributors to the Kanister project.
+Copyright 2026 by contributors to the Kanister project.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ func NewActionSetInformer(client versioned.Interface, namespace string, resyncPe
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredActionSetInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
@@ -82,7 +82,7 @@ func NewFilteredActionSetInformer(client versioned.Interface, namespace string, 
 				}
 				return client.CrV1alpha1().ActionSets(namespace).Watch(ctx, options)
 			},
-		},
+		}, client),
 		&apiscrv1alpha1.ActionSet{},
 		resyncPeriod,
 		indexers,

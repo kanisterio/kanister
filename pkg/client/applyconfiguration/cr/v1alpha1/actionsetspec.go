@@ -1,5 +1,5 @@
 /*
-Copyright 2025 by contributors to the Kanister project.
+Copyright 2026 by contributors to the Kanister project.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,10 @@ package v1alpha1
 
 // ActionSetSpecApplyConfiguration represents a declarative configuration of the ActionSetSpec type for use
 // with apply.
+//
+// ActionSetSpec is the specification for the actionset.
 type ActionSetSpecApplyConfiguration struct {
+	// Actions represents a list of Actions that need to be performed by the actionset.
 	Actions []ActionSpecApplyConfiguration `json:"actions,omitempty"`
 }
 

@@ -57,8 +57,8 @@ func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *check.C) {
 }
 
 func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *check.C) {
-	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
-		c.Skip("Skipping region mismatch test because MinIO always returns the same region")
+	if useS3Mock, ok := os.LookupEnv("USE_S3MOCK"); ok && useS3Mock == "true" {
+		c.Skip("Skipping region mismatch test because S3Mock always returns the same region")
 	}
 
 	ctx := context.Background()
@@ -149,8 +149,8 @@ func checkProviderWithBucket(ctx context.Context, c *check.C, p Provider, bucket
 }
 
 func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
-	if useMinio, ok := os.LookupEnv("USE_MINIO"); ok && useMinio == "true" {
-		c.Skip("Skipping region mismatch test because MinIO always returns the same region")
+	if useS3Mock, ok := os.LookupEnv("USE_S3MOCK"); ok && useS3Mock == "true" {
+		c.Skip("Skipping region mismatch test because S3Mock always returns the same region")
 	}
 
 	ctx := context.Background()

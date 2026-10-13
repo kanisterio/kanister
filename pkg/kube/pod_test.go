@@ -90,7 +90,7 @@ func (s *PodSuite) TestPod(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	// get controller's SA
-	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
+	sa, err := GetControllerServiceAccount(fake.NewClientset())
 	c.Assert(err, check.IsNil)
 
 	testSec := s.createTestSecret(c)
@@ -214,6 +214,7 @@ func (s *PodSuite) TestPod(c *check.C) {
 
 	for _, po := range podOptions {
 		pod, err := CreatePod(context.Background(), s.cli, po)
+		c.Assert(err, check.IsNil)
 
 		// we have not specified the SA, if the pod is being created in the
 		// same ns as controller's, controller's SA should have been set.
@@ -238,7 +239,10 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.ObjectMeta.Name, check.Equals, po.Name)
 		}
 
-		c.Check(len(pod.ObjectMeta.Labels), check.Equals, len(po.Labels)+1)
+		// Admission can add labels of its own, so the exact label set is asserted on the spec before submission.
+		specPod, err := GetPodObjectFromPodOptions(ctx, s.cli, po)
+		c.Assert(err, check.IsNil)
+		c.Check(len(specPod.ObjectMeta.Labels), check.Equals, len(po.Labels)+1)
 		c.Check(pod.ObjectMeta.Labels[consts.LabelKeyCreatedBy], check.Equals, consts.LabelValueKanister)
 		for key, value := range po.Labels {
 			c.Check(pod.ObjectMeta.Labels[key], check.Equals, value)
@@ -269,7 +273,6 @@ func (s *PodSuite) TestPod(c *check.C) {
 			c.Assert(pod.Spec.Containers[0].Env, check.DeepEquals, po.EnvironmentVariables)
 		}
 
-		c.Assert(err, check.IsNil)
 		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), check.IsNil)
 
 		// make sure the nodeName set in podOptions is, actually assinged to the pod
@@ -296,7 +299,7 @@ func (s *PodSuite) createTestSecret(c *check.C) *corev1.Secret {
 }
 
 func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *check.C) {
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	pvcName := "prometheus-ibm-monitoring-prometheus-db-prometheus-ibm-monitoring-prometheus-0"
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -345,7 +348,7 @@ func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *check.C) {
 }
 
 func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *check.C) {
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	pvcName := "pvc-with-read-only-mount"
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -394,7 +397,7 @@ func (s *PodSuite) TestPodWithFilesystemModeReadOnlyVolumes(c *check.C) {
 }
 
 func (s *PodSuite) TestPodWithBlockModeVolumes(c *check.C) {
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	pvcName := "block-mode-volume"
 	blockMode := corev1.PersistentVolumeBlock
 	pvc := &corev1.PersistentVolumeClaim{
@@ -1254,7 +1257,7 @@ func (s *PodSuite) TestAddAnnotations(c *check.C) {
 // TestErrkitApiErrorsWrapping verifies that apierrors wrapped with errkit.Wrap are still matchable using apierrors matchers
 func (s *PodSuite) TestErrkitApiErrorsWrapping(c *check.C) {
 	// Create the fake client
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 
 	// Add a reactor to simulate an error when trying to get a PVC
 	fakeClient.PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {

@@ -52,7 +52,7 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 		GroupVersion: fmt.Sprintf("%s/%s", snapshot.GroupName, snapshot.Version),
 	}
 	ctx := context.Background()
-	fakeCli := fake.NewSimpleClientset()
+	fakeCli := fake.NewClientset()
 	fakeCli.Resources = []*metav1.APIResourceList{api}
 
 	scheme := runtime.NewScheme()

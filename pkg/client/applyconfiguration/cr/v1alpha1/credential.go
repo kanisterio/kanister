@@ -1,5 +1,5 @@
 /*
-Copyright 2025 by contributors to the Kanister project.
+Copyright 2026 by contributors to the Kanister project.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,9 +25,13 @@ import (
 // CredentialApplyConfiguration represents a declarative configuration of the Credential type for use
 // with apply.
 type CredentialApplyConfiguration struct {
-	Type              *crv1alpha1.CredentialType           `json:"type,omitempty"`
-	KeyPair           *KeyPairApplyConfiguration           `json:"keyPair,omitempty"`
-	Secret            *ObjectReferenceApplyConfiguration   `json:"secret,omitempty"`
+	// Type represents the information about how the credentials are provided for the respective object storage.
+	Type *crv1alpha1.CredentialType `json:"type,omitempty"`
+	// KeyPair represents the key-value map used for the Credential of Type KeyPair.
+	KeyPair *KeyPairApplyConfiguration `json:"keyPair,omitempty"`
+	// Secret represents the Kubernetes Secret Object used for the Credential of Type Secret.
+	Secret *ObjectReferenceApplyConfiguration `json:"secret,omitempty"`
+	// KopiaServerSecret represents the secret being used by Credential of Type Kopia.
 	KopiaServerSecret *KopiaServerSecretApplyConfiguration `json:"kopiaServerSecret,omitempty"`
 }
 

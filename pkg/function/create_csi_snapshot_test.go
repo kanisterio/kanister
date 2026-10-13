@@ -68,7 +68,7 @@ func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *check.C) {
 		GroupVersion: "snapshot.storage.k8s.io/v1",
 	}
 	ctx := context.Background()
-	fakeCli := fake.NewSimpleClientset()
+	fakeCli := fake.NewClientset()
 	fakeCli.Resources = []*metav1.APIResourceList{api}
 
 	_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})

@@ -46,7 +46,7 @@ func (s *PodRunnerTestSuite) SetUpSuite(c *check.C) {
 
 func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 		return false, nil, nil
 	})
@@ -81,7 +81,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *check.C) {
 
 func (s *PodRunnerTestSuite) TestPodRunnerForSuccessCase(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cli := fake.NewSimpleClientset()
+	cli := fake.NewClientset()
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 		return false, nil, nil
 	})
@@ -143,7 +143,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerWithDebugLabelForSuccessCase(c *check.
 	} {
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = field.Context(ctx, tc.contextKey, tc.contextValue)
-		cli := fake.NewSimpleClientset()
+		cli := fake.NewClientset()
 		cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 			return false, nil, nil
 		})

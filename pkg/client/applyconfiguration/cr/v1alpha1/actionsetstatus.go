@@ -1,5 +1,5 @@
 /*
-Copyright 2025 by contributors to the Kanister project.
+Copyright 2026 by contributors to the Kanister project.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,10 +24,19 @@ import (
 
 // ActionSetStatusApplyConfiguration represents a declarative configuration of the ActionSetStatus type for use
 // with apply.
+//
+// ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatusApplyConfiguration struct {
-	State    *crv1alpha1.State                 `json:"state,omitempty"`
-	Actions  []ActionStatusApplyConfiguration  `json:"actions,omitempty"`
-	Error    *ErrorApplyConfiguration          `json:"error,omitempty"`
+	// State represents the current state of the actionset.
+	// There are four possible values: "Pending", "Running", "Failed", and "Complete".
+	State *crv1alpha1.State `json:"state,omitempty"`
+	// Actions list represents the latest available observations of the current state of all the actions.
+	Actions []ActionStatusApplyConfiguration `json:"actions,omitempty"`
+	// Error contains the detailed error message of an actionset failure.
+	Error *ErrorApplyConfiguration `json:"error,omitempty"`
+	// Progress provides information on the progress of a running actionset.
+	// This includes the percentage of completion of an actionset and the phase that is
+	// currently being executed.
 	Progress *ActionProgressApplyConfiguration `json:"progress,omitempty"`
 }
 
