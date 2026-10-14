@@ -403,11 +403,15 @@ func (s *KanXSuite) TestCreateProcess_BufferOverflow_1(c *check.C) {
 	c.Assert(p0.GetExitErr(), check.Equals, "")
 	c.Assert(p0.GetExitCode(), check.Equals, int64(0))
 
-	_ = poll.Wait(ctx, func(context.Context) (bool, error) {
-		p0, err = GetProcess(ctx, addr, p0.GetPid())
-		c.Assert(err, check.IsNil)
+	err = poll.Wait(ctx, func(context.Context) (bool, error) {
+		var perr error
+		p0, perr = GetProcess(ctx, addr, p0.GetPid())
+		if perr != nil {
+			return false, perr
+		}
 		return p0.GetState() != ProcessState_PROCESS_STATE_RUNNING, nil
 	})
+	c.Assert(err, check.IsNil)
 
 	c.Assert(p0.GetState(), check.Equals, ProcessState_PROCESS_STATE_SUCCEEDED)
 	c.Assert(p0.GetExitCode(), check.Equals, int64(0))
