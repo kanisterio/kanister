@@ -76,6 +76,8 @@ jobs:
     - name: restore_gosum
       run: echo "${{needs.gomod.outputs.gosum}}" > go.sum
     - uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
+      with:
+        node_image: kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0
     # A test (CRDSuite) that runs as part of `make test` requies atleast one CRD to
     # be present on the cluster. That's why we are only installing csi-hostpath-driver
     # before running `make test`, to create some CRDs on the cluster.
