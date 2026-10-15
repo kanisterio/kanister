@@ -18,12 +18,12 @@ package objectstore
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"path"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/graymeta/stow"
@@ -199,11 +199,7 @@ func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketN
 	}
 	if cfg.SkipSSLVerify {
 		s3Opts = append(s3Opts, func(o *s3.Options) {
-			o.HTTPClient = &http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
-				},
-			}
+			o.HTTPClient = skipSSLVerifyHTTPClient()
 		})
 	}
 	svc := s3.NewFromConfig(awsCfg, s3Opts...)
@@ -270,4 +266,13 @@ const awsS3EndpointFmt = "https://s3.%s.amazonaws.com"
 
 func awsS3Endpoint(region string) string {
 	return fmt.Sprintf(awsS3EndpointFmt, region)
+}
+
+// skipSSLVerifyHTTPClient returns the SDK's default client with certificate
+// verification turned off, so the proxy from the environment, the timeouts and
+// the redirect handling stay the same as without SkipSSLVerify.
+func skipSSLVerifyHTTPClient() *awshttp.BuildableClient {
+	return awshttp.NewBuildableClient().WithTransportOptions(func(tr *http.Transport) {
+		tr.TLSClientConfig.InsecureSkipVerify = true //nolint:gosec
+	})
 }
