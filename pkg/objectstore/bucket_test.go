@@ -280,3 +280,34 @@ func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
 		}
 	}
 }
+
+// S3EndpointSuite holds tests that do not require live AWS credentials.
+type S3EndpointSuite struct{}
+
+var _ = check.Suite(&S3EndpointSuite{})
+
+func (s *S3EndpointSuite) TestIsAWSGlobalS3Endpoint(c *check.C) {
+	for _, tc := range []struct {
+		endpoint string
+		expected bool
+	}{
+		// AWS global endpoint must be detected, with or without a scheme or
+		// trailing slash, so GetBucketLocation is signed for us-east-1.
+		{endpoint: "s3.amazonaws.com", expected: true},
+		{endpoint: "https://s3.amazonaws.com", expected: true},
+		{endpoint: "https://s3.amazonaws.com/", expected: true},
+		{endpoint: "http://s3.amazonaws.com", expected: true},
+		// Region-specific AWS endpoints keep the configured region. The first
+		// guards TestInvalidS3RegionEndpointMismatch's endpoint.
+		{endpoint: "https://s3.us-gov-west-1.amazonaws.com", expected: false},
+		{endpoint: "https://s3.eu-west-1.amazonaws.com", expected: false},
+		{endpoint: awsS3Endpoint("us-west-2"), expected: false},
+		// s3-compatible stores (MinIO/Ceph) are never the AWS global endpoint.
+		{endpoint: "https://minio.example.com:9000", expected: false},
+		{endpoint: "https://play.min.io", expected: false},
+		{endpoint: "", expected: false},
+	} {
+		cmt := check.Commentf("endpoint: %q", tc.endpoint)
+		c.Check(isAWSGlobalS3Endpoint(tc.endpoint), check.Equals, tc.expected, cmt)
+	}
+}
