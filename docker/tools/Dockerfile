@@ -1,5 +1,5 @@
 # Build Kopia binary
-FROM golang:1.27.0-bookworm@sha256:ded31c68586d2e49e760acc2e65a884b23d032e9bbbed0ae0c55abd3fcaf4452 AS builder
+FROM golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS builder
 
 ARG kopia_build_commit=master
 ARG kopia_repo_org=kopia
@@ -71,7 +71,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:a21d19f72557aa893a0f6ca1177bb1ffd91df6015e60470a116c50a6a05efcd9
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:c4c285d42941ebb2bd4da878479008e1e4536bb599aad1dbe568f89de9053661
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \

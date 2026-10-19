@@ -521,12 +521,8 @@ packages:
     resolution: {integrity: sha512-wtZg3T0vtYV2PnqusWQs3mDaJBdCPWxFDrBM/SE5LfrX92gjUvfEMlc+vJnoKY6Z/S44OWaCRzNIsdBRWcTAiw==}
     deprecated: Shikiji is merged back to Shiki v1.0, please migrate over to get the latest updates
 
-  source-map-js@1.0.2:
-    resolution: {integrity: sha512-R0XvVJ9WusLiqTCEiGCmICCMplcCkIwwR11mOSD9CR5u+IXYdiseeEuXCVAjS54zqwkLcPNnmU4OeJ6tUrWhDw==}
-    engines: {node: '>=0.10.0'}
-
-  source-map-js@1.2.1:
-    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
+  source-map-js@1.2.2:
+    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
   tabbable@6.2.0:
@@ -871,7 +867,7 @@ snapshots:
       '@vue/shared': 3.4.15
       entities: 4.5.0
       estree-walker: 2.0.2
-      source-map-js: 1.0.2
+      source-map-js: 1.2.2
 
   '@vue/compiler-dom@3.4.15':
     dependencies:
@@ -888,7 +884,7 @@ snapshots:
       estree-walker: 2.0.2
       magic-string: 0.30.5
       postcss: 8.4.33
-      source-map-js: 1.0.2
+      source-map-js: 1.2.2
 
   '@vue/compiler-ssr@3.4.15':
     dependencies:
@@ -1024,13 +1020,13 @@ snapshots:
     dependencies:
       nanoid: 3.3.8
       picocolors: 1.0.0
-      source-map-js: 1.0.2
+      source-map-js: 1.2.2
 
   postcss@8.4.47:
     dependencies:
       nanoid: 3.3.8
       picocolors: 1.1.0
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   preact@10.19.3: {}
 
@@ -1068,9 +1064,7 @@ snapshots:
     dependencies:
       shikiji-core: 0.10.2
 
-  source-map-js@1.0.2: {}
-
-  source-map-js@1.2.1: {}
+  source-map-js@1.2.2: {}
 
   tabbable@6.2.0: {}
 
