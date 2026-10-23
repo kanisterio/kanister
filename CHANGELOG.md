@@ -1,32 +1,47 @@
 # Release Notes
 
+## 0.120.0
+
+### New Features
+
+<!-- releasenotes/notes/azure-federated-identity-sas-05a2214eadf859c8.yaml @ b'e5f697ef4c2a366bd5c33290dd412ec27a8c65f0' -->
+* Added support for Azure Workload (Federated) Identity when moving backup data to Azure Blob Storage. The controller mints a short-lived, container-scoped, least-privilege user-delegation SAS token and injects it into the data-mover pods, so no static storage account key is needed. The controller's managed identity must be able to fetch a user-delegation key on the storage account (e.g. the  role).
+
+<!-- releasenotes/notes/waitv2-render-timeout-bf427954363813e5.yaml @ b'58c883080158ae7d3ea49400c69f5fbec00c503d' -->
+* Added template support for the `timeout` argument of the `WaitV2` function [https://github.com/kanisterio/kanister/pull/4185](https://github.com/kanisterio/kanister/pull/4185)
+
+### Deprecations
+
+<!-- releasenotes/notes/remove-repository-server-crd-3ff3016890.yaml @ b'f85f1e0526829b6fc89b461341bd3695e943741e' -->
+* Clean up stale code for .
+
 ## 0.119.0
 
 ### New Features
 
-<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'4bfb772d1725355517afad2e8c87a26a3af9dc30' -->
 * Added `DeepCopy` method for `PodOptions` to support safe copying of pod configuration [https://github.com/kanisterio/kanister/pull/3820](https://github.com/kanisterio/kanister/pull/3820)
 
 ### Bug Fixes
 
-<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'4bfb772d1725355517afad2e8c87a26a3af9dc30' -->
 * Fixed AWS STS role assumption to correctly thread the location region through the credential chain [https://github.com/kanisterio/kanister/pull/4050](https://github.com/kanisterio/kanister/pull/4050)
 
-<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'4bfb772d1725355517afad2e8c87a26a3af9dc30' -->
 * Fixed Portworx CSI transient errors to be retried instead of failing the operation immediately [https://github.com/kanisterio/kanister/pull/3962](https://github.com/kanisterio/kanister/pull/3962)
 
-<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'4bfb772d1725355517afad2e8c87a26a3af9dc30' -->
 * Removed unnecessary `EndpointSlice` polling during service readiness checks [https://github.com/kanisterio/kanister/pull/3897](https://github.com/kanisterio/kanister/pull/3897)
 
 ### Upgrade Notes
 
-<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'4bfb772d1725355517afad2e8c87a26a3af9dc30' -->
 * Upgraded Go version to 1.26.1 [https://github.com/kanisterio/kanister/pull/3941](https://github.com/kanisterio/kanister/pull/3941)
 
-<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'4bfb772d1725355517afad2e8c87a26a3af9dc30' -->
 * Upgraded `postgres-kanister-tools` base image to `postgres:18-bookworm` [https://github.com/kanisterio/kanister/pull/4046](https://github.com/kanisterio/kanister/pull/4046)
 
-<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'1794e6a50c63e3b33233dd94ccaac75b6c7f6f34' -->
+<!-- releasenotes/notes/pre-release-0.119.0-c20a35e84b1f1912.yaml @ b'4bfb772d1725355517afad2e8c87a26a3af9dc30' -->
 * Migrated AWS SDK from v1 to v2 in `pkg/aws` [https://github.com/kanisterio/kanister/pull/3945](https://github.com/kanisterio/kanister/pull/3945)
 
 ## 0.118.0
