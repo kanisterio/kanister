@@ -10,10 +10,18 @@
 <!-- releasenotes/notes/waitv2-render-timeout-bf427954363813e5.yaml @ b'58c883080158ae7d3ea49400c69f5fbec00c503d' -->
 * Added template support for the `timeout` argument of the `WaitV2` function [https://github.com/kanisterio/kanister/pull/4185](https://github.com/kanisterio/kanister/pull/4185)
 
+### Upgrade Notes
+
+<!-- releasenotes/notes/pre-release-0.120.0-1b868fe733138f87.yaml @ b'61c9101f3c115c58ff608a7b2a19603061b55386' -->
+* Upgraded Go version to 1.27.3 [https://github.com/kanisterio/kanister/pull/4281](https://github.com/kanisterio/kanister/pull/4281)
+
 ### Deprecations
 
-<!-- releasenotes/notes/remove-repository-server-crd-3ff3016890.yaml @ b'f85f1e0526829b6fc89b461341bd3695e943741e' -->
-* Clean up stale code for .
+<!-- releasenotes/notes/pre-release-0.120.0-1b868fe733138f87.yaml @ b'61c9101f3c115c58ff608a7b2a19603061b55386' -->
+* Remove build support for kafka-adobe-s3 connector image [https://github.com/kanisterio/kanister/pull/4115](https://github.com/kanisterio/kanister/pull/4115)
+
+<!-- releasenotes/notes/remove-repository-server-crd-3ff3016890.yaml @ b'61c9101f3c115c58ff608a7b2a19603061b55386' -->
+* Clean up stale code for `repositoryserver`.
 
 ## 0.119.0
 
