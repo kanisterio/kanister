@@ -28,7 +28,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/kanisterio/blueprints v0.0.0-20251121103612-0e5855fe8223
+	github.com/kanisterio/blueprints v0.0.0-20261023185006-3758e5447d71
 	github.com/kanisterio/errkit v0.0.3
 	github.com/kopia/kopia v0.20.2-0.20250717071305-692c1f465ba3
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
