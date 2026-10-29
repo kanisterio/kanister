@@ -55,7 +55,7 @@ require (
 	//pinned k8s.io to v0.33.x tag
 	k8s.io/api v0.35.9
 	k8s.io/apiextensions-apiserver v0.35.9
-	k8s.io/apimachinery v0.35.9
+	k8s.io/apimachinery v0.35.10
 	k8s.io/cli-runtime v0.35.9
 	k8s.io/client-go v0.35.9
 	k8s.io/code-generator v0.35.9
