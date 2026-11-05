@@ -874,3 +874,54 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *check.C) {
 		c.Check(err, tc.errChecker)
 	}
 }
+
+func (s *ValidateSuite) TestActionSetStatusActionsWithSkippedPhases(c *check.C) {
+	for _, tc := range []struct {
+		phases  []crv1alpha1.State
+		checker check.Checker
+	}{
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StateSkipped},
+			checker: check.IsNil,
+		},
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StateSkipped, crv1alpha1.StatePending},
+			checker: check.IsNil,
+		},
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StateComplete, crv1alpha1.StateSkipped, crv1alpha1.StateRunning},
+			checker: check.IsNil,
+		},
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StateSkipped, crv1alpha1.StateSkipped, crv1alpha1.StateComplete},
+			checker: check.IsNil,
+		},
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StateSkipped, crv1alpha1.StateFailed, crv1alpha1.StatePending},
+			checker: check.IsNil,
+		},
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StatePending, crv1alpha1.StateSkipped},
+			checker: check.NotNil,
+		},
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StateRunning, crv1alpha1.StateSkipped},
+			checker: check.NotNil,
+		},
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StateFailed, crv1alpha1.StateSkipped},
+			checker: check.NotNil,
+		},
+		{
+			phases:  []crv1alpha1.State{crv1alpha1.StateComplete, crv1alpha1.StateSkipped, crv1alpha1.StateFailed},
+			checker: check.IsNil,
+		},
+	} {
+		phases := make([]crv1alpha1.Phase, 0, len(tc.phases))
+		for _, st := range tc.phases {
+			phases = append(phases, crv1alpha1.Phase{State: st})
+		}
+		err := actionSetStatusActions([]crv1alpha1.ActionStatus{{Phases: phases}})
+		c.Check(err, tc.checker, check.Commentf("phases: %v", tc.phases))
+	}
+}
