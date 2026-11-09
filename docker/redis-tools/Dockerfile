@@ -1,4 +1,4 @@
-FROM redis:8.10.1@sha256:8a1efc5f479551822b47424ccae982026b633f28818eab0387348120a61e10e2
+FROM redis:8.10.2@sha256:2c2dff791878316e3b083188be0d578423b24813cdda5de0e80ea4f7b3e6bfd6
 
 RUN apt update
 RUN apt install -y npm bash curl redis-tools

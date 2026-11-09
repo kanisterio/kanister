@@ -140,7 +140,8 @@ func (pdb PostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 
 // Ping makes and tests DB connection
 func (pdb *PostgresDB) Ping(ctx context.Context) error {
-	cmd := "pg_isready -U 'postgres' -h 127.0.0.1 -p 5432"
+	// Require the .initialized marker so we don't succeed against Bitnami's temporary init server.
+	cmd := "pg_isready -U 'postgres' -h 127.0.0.1 -p 5432 && { [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]; }"
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errkit.Wrap(err, "Failed to ping postgresql DB", "stderr", stderr)
