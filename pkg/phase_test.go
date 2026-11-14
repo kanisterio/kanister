@@ -16,6 +16,8 @@ package kanister
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"gopkg.in/check.v1"
 
@@ -39,6 +41,14 @@ type testFunc struct {
 
 type anotherFunc struct {
 	testFunc
+}
+
+type conditionFunc struct {
+	testFunc
+}
+
+func (*conditionFunc) Name() string {
+	return "conditionTestFunc"
 }
 
 func (a *anotherFunc) Name() string {
@@ -218,4 +228,193 @@ func (s *PhaseSuite) TestRegFuncVersion(c *check.C) {
 		c.Assert(err, check.IsNil)
 		c.Assert(semVer.Original(), check.Equals, tc.expectedVersion)
 	}
+}
+
+func (s *PhaseSuite) TestPhaseCondition(c *check.C) {
+	for _, tc := range []struct {
+		artifact        string
+		condition       string
+		phases          map[string]*param.Phase
+		expectedError   error
+		argument        string
+		expected        string
+		expectedSkipped bool
+	}{
+		{
+			// Incorrect phase condition throws error
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{",
+			expectedError: ErrParsePhaseCondition,
+			expected:      "",
+		},
+		{
+			// Phase expression that doesn't result in either `true` or `false` throws error
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{\"test\"}}",
+			expectedError: ErrPhaseExpressionNotConditional,
+			expected:      "",
+		},
+		{
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ .Invalid.Option }}",
+			expectedError: ErrExecutePhaseCondition,
+			expected:      "",
+		},
+		{
+			// Empty phase expression results in running the phase function
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "",
+			expectedError: nil,
+			expected:      "hello world",
+		},
+		{
+			// Phase function is executed when condition evaluates to `true`
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ eq .Options.test \"hello\" }}",
+			expectedError: nil,
+			expected:      "hello world",
+		},
+		{
+			// Phase function isn't executed when condition evaluates to `false`
+			artifact:        "hello",
+			argument:        "{{ .Options.test }} world",
+			condition:       "{{ eq .Options.test \"HELLO\" }}",
+			expectedError:   nil,
+			expected:        "",
+			expectedSkipped: true,
+		},
+		{
+			// Result is case-insensitive and surrounding whitespace is ignored
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "  TRUE\n",
+			expectedError: nil,
+			expected:      "hello world",
+		},
+		{
+			artifact:        "hello",
+			argument:        "{{ .Options.test }} world",
+			condition:       " False ",
+			expectedError:   nil,
+			expected:        "",
+			expectedSkipped: true,
+		},
+		{
+			// Condition can use outputs of previous phases
+			artifact:  "hello",
+			argument:  "{{ .Options.test }} world",
+			condition: "{{ eq .Phases.p1.Output.x \"yes\" }}",
+			phases: map[string]*param.Phase{
+				"p1": {Output: map[string]interface{}{"x": "yes"}},
+			},
+			expectedError: nil,
+			expected:      "hello world",
+		},
+		{
+			artifact:  "hello",
+			argument:  "{{ .Options.test }} world",
+			condition: "{{ eq .Phases.p1.Output.x \"yes\" }}",
+			phases: map[string]*param.Phase{
+				"p1": {Output: map[string]interface{}{"x": "no"}},
+			},
+			expectedError:   nil,
+			expected:        "",
+			expectedSkipped: true,
+		},
+		{
+			// Condition can combine multiple expressions
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ and (eq .Options.test \"hello\") (not (eq .Options.test \"bye\")) }}",
+			expectedError: nil,
+			expected:      "hello world",
+		},
+	} {
+		var output string
+		tf := &testFunc{output: &output}
+		tp := param.TemplateParams{
+			Options: map[string]string{
+				"test": tc.artifact,
+			},
+			Phases: tc.phases,
+		}
+		rawArgs := map[string]interface{}{
+			"testKey": tc.argument,
+		}
+		args, err := param.RenderArgs(rawArgs, tp)
+		c.Assert(err, check.IsNil)
+		p := Phase{args: args, f: tf, condition: tc.condition}
+		_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "", tp)
+		if tc.expectedError != nil {
+			c.Assert(errors.Is(err, tc.expectedError), check.Equals, true)
+			c.Assert(p.PhaseSkipped(), check.Equals, false)
+			continue
+		}
+		c.Assert(err, check.IsNil)
+		c.Assert(output, check.Equals, tc.expected)
+		c.Assert(p.PhaseSkipped(), check.Equals, tc.expectedSkipped)
+
+		progress, err := p.Progress()
+		c.Assert(err, check.IsNil)
+		if tc.expectedSkipped {
+			c.Assert(p.SkipReason(), check.Equals, fmt.Sprintf("if=`%s` evaluated to false.", tc.condition))
+			c.Assert(progress.ProgressPercent, check.Equals, "100")
+			c.Assert(progress.LastTransitionTime, check.NotNil)
+			// The phase function must not have been invoked
+			c.Assert(tf.progressPercent, check.Equals, "")
+		} else {
+			c.Assert(p.SkipReason(), check.Equals, "")
+			// Progress is delegated to the phase function
+			c.Assert(progress.ProgressPercent, check.Equals, tf.progressPercent)
+			c.Assert(tf.progressPercent, check.Equals, "100")
+		}
+	}
+}
+
+func (s *PhaseSuite) TestPhaseValidateCondition(c *check.C) {
+	for _, tc := range []struct {
+		condition string
+		checker   check.Checker
+	}{
+		{condition: "", checker: check.IsNil},
+		{condition: "true", checker: check.IsNil},
+		{condition: "{{ eq .Options.test \"hello\" }}", checker: check.IsNil},
+		{condition: "{{", checker: check.NotNil},
+		{condition: "{{ if }}", checker: check.NotNil},
+		{condition: "{{ unknownFunc }}", checker: check.NotNil},
+	} {
+		var output string
+		p := Phase{f: &testFunc{output: &output}, condition: tc.condition}
+		c.Check(p.Validate(map[string]any{}), tc.checker, check.Commentf("condition: %q", tc.condition))
+		c.Check(validatePhaseCondition(tc.condition), tc.checker, check.Commentf("condition: %q", tc.condition))
+	}
+}
+
+func (s *PhaseSuite) TestGetPhasesCondition(c *check.C) {
+	var output string
+	err := Register(&conditionFunc{testFunc{output: &output}})
+	c.Assert(err, check.IsNil)
+
+	bp := crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{Name: "noCondition", Func: "conditionTestFunc"},
+					{Name: "withCondition", Func: "conditionTestFunc", If: "{{ eq .Options.test \"hello\" }}"},
+				},
+			},
+		},
+	}
+	phases, err := GetPhases(bp, "backup", "v0.0.0", param.TemplateParams{})
+	c.Assert(err, check.IsNil)
+	c.Assert(phases, check.HasLen, 2)
+	c.Assert(phases[0].condition, check.Equals, "")
+	c.Assert(phases[1].condition, check.Equals, "{{ eq .Options.test \"hello\" }}")
+	c.Assert(phases[0].PhaseSkipped(), check.Equals, false)
+	c.Assert(phases[1].PhaseSkipped(), check.Equals, false)
 }
