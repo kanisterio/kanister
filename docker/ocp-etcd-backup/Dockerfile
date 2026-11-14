@@ -15,7 +15,7 @@
 # kubectl is matched to the cluster Kubernetes version (OCP 4.18 = k8s 1.31).
 ARG KUBECTL_VERSION=v1.31.6
 
-FROM quay.io/coreos/etcd:v3.7.2@sha256:e9afa62b1e914f02db62e5c46a7a140d8cdf026f2ed888cab4e5a142ec4d06fd AS etcd-src
+FROM quay.io/coreos/etcd:v3.7.3@sha256:8d1b6c24f08e12ed7623d1df421832b3cafabe221aa6b658b97288d07807582f AS etcd-src
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest@sha256:c4c285d42941ebb2bd4da878479008e1e4536bb599aad1dbe568f89de9053661
 ARG KUBECTL_VERSION
