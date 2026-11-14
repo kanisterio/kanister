@@ -26,7 +26,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
 	github.com/hashicorp/go-version v1.9.0
-	github.com/jpillora/backoff v1.0.0
+	github.com/jpillora/backoff v1.1.0
 	github.com/json-iterator/go v1.1.12
 	github.com/kanisterio/blueprints v0.0.0-20261023185006-3758e5447d71
 	github.com/kanisterio/errkit v0.0.3
