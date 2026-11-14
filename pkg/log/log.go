@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/kanisterio/errkit"
@@ -64,10 +66,16 @@ type logger struct {
 // common logger implementation used in the library
 var log = logrus.New()
 
+// settingsMu guards envVarFields and the fields of log that cloneGlobalLogger
+// reads directly. logrus's own lock does not cover those reads; Level is atomic.
+var settingsMu sync.RWMutex
+
 // SetOutput sets the output destination.
 func SetOutput(sink OutputSink) error {
 	switch sink {
 	case StderrSink:
+		settingsMu.Lock()
+		defer settingsMu.Unlock()
 		log.SetOutput(os.Stderr)
 		return nil
 	case FluentbitSink:
@@ -80,6 +88,8 @@ func SetOutput(sink OutputSink) error {
 			return errkit.New("Unable to find Fluentbit logging port")
 		}
 		hook := NewFluentbitHook(fbitAddr + ":" + fbitPort)
+		settingsMu.Lock()
+		defer settingsMu.Unlock()
 		log.AddHook(hook)
 		return nil
 	default:
@@ -99,6 +109,8 @@ func SetFluentbitOutput(url *url.URL) error {
 		return ErrPathSet
 	}
 	hook := NewFluentbitHook(url.Host)
+	settingsMu.Lock()
+	defer settingsMu.Unlock()
 	log.AddHook(hook)
 	return nil
 }
@@ -123,6 +135,8 @@ func initEnvVarFields() {
 // so that it can be printed with the logs.
 func SetupClusterNameInLogVars() {
 	if clsName, err := config.GetClusterName(nil); err == nil {
+		settingsMu.Lock()
+		defer settingsMu.Unlock()
 		envVarFields = field.Add(envVarFields, "cluster_name", clsName)
 	}
 }
@@ -139,6 +153,8 @@ const (
 
 // SetFormatter sets the output formatter.
 func SetFormatter(format OutputFormat) {
+	settingsMu.Lock()
+	defer settingsMu.Unlock()
 	switch format {
 	case TextFormat:
 		log.SetFormatter(&logrus.TextFormatter{
@@ -220,8 +236,11 @@ func (l *logger) PrintTo(w io.Writer, msg string, fields ...field.M) {
 
 func (l *logger) entry(fields ...field.M) *logrus.Entry {
 	logFields := make(logrus.Fields)
-	if envVarFields != nil {
-		for _, f := range envVarFields.Fields() {
+	settingsMu.RLock()
+	envFields := envVarFields
+	settingsMu.RUnlock()
+	if envFields != nil {
+		for _, f := range envFields.Fields() {
 			logFields[f.Key()] = f.Value()
 		}
 	}
@@ -287,22 +306,16 @@ func entryToJSON(entry *logrus.Entry) []byte {
 
 func cloneGlobalLogger() *logrus.Logger {
 	cloned := logrus.New()
+	cloned.SetLevel(log.GetLevel())
+	settingsMu.RLock()
+	defer settingsMu.RUnlock()
 	cloned.SetFormatter(log.Formatter)
 	cloned.SetReportCaller(log.ReportCaller)
-	cloned.SetLevel(log.Level)
 	cloned.SetOutput(log.Out)
 	cloned.ExitFunc = log.ExitFunc
 
-	globalHooks := make(map[logrus.Hook]bool)
-
-	for _, hooks := range log.Hooks {
-		for _, hook := range hooks {
-			globalHooks[hook] = true
-		}
-	}
-
-	for hook := range globalHooks {
-		cloned.Hooks.Add(hook)
+	for level, hooks := range log.Hooks {
+		cloned.Hooks[level] = slices.Clone(hooks)
 	}
 
 	return cloned
