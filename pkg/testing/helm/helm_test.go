@@ -434,6 +434,71 @@ func (h *HelmTestSuite) TestSecureDefaultsEnvVariable(c *check.C) {
 	}
 }
 
+// TestImagePullSecretsFromHelmChart validates that imagePullSecrets are correctly rendered
+// in the Deployment spec when configured via Helm values.
+func (h *HelmTestSuite) TestImagePullSecretsFromHelmChart(c *check.C) {
+	var testCases = []struct {
+		testName              string
+		helmValues            map[string]string
+		expectedSecretNames   []string
+	}{
+		{
+			testName: "imagePullSecrets is set with a single secret",
+			helmValues: map[string]string{
+				"bpValidatingWebhook.enabled":  "false",
+				"imagePullSecrets[0].name":     "my-registry-secret",
+			},
+			expectedSecretNames: []string{"my-registry-secret"},
+		},
+		{
+			testName: "imagePullSecrets is set with multiple secrets",
+			helmValues: map[string]string{
+				"bpValidatingWebhook.enabled":  "false",
+				"imagePullSecrets[0].name":     "secret-one",
+				"imagePullSecrets[1].name":     "secret-two",
+			},
+			expectedSecretNames: []string{"secret-one", "secret-two"},
+		},
+		{
+			testName: "imagePullSecrets is not set (default empty)",
+			helmValues: map[string]string{
+				"bpValidatingWebhook.enabled": "false",
+			},
+			expectedSecretNames: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		c.Logf("Test name: %s", tc.testName)
+
+		testApp, err := NewHelmApp(tc.helmValues, kanisterName, "../../../helm/kanister-operator", kanisterName, "", true)
+		c.Assert(err, check.IsNil)
+
+		out, err := testApp.Install()
+		c.Assert(err, check.IsNil)
+
+		resources := helm.ResourcesFromRenderedManifest(out, func(kind helm.K8sObjectType) bool {
+			return kind == helm.K8sObjectTypeDeployment
+		})
+		c.Assert(len(resources), check.Equals, 1)
+
+		deployments, err := helm.K8sObjectsFromRenderedResources[*appsv1.Deployment](resources)
+		c.Assert(err, check.IsNil)
+
+		obj := deployments[h.deploymentName]
+		c.Assert(obj, check.NotNil)
+
+		if tc.expectedSecretNames == nil {
+			c.Assert(obj.Spec.Template.Spec.ImagePullSecrets, check.IsNil)
+		} else {
+			c.Assert(len(obj.Spec.Template.Spec.ImagePullSecrets), check.Equals, len(tc.expectedSecretNames))
+			for i, secret := range obj.Spec.Template.Spec.ImagePullSecrets {
+				c.Assert(secret.Name, check.Equals, tc.expectedSecretNames[i])
+			}
+		}
+	}
+}
+
 func boolPtr(b bool) *bool {
 	return &b
 }
