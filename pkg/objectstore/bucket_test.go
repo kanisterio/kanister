@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/check.v1"
 )
@@ -279,4 +280,15 @@ func (s *BucketSuite) TestGetRegionForBucket(c *check.C) {
 			c.Assert(err, check.NotNil, cmt)
 		}
 	}
+}
+
+type SkipSSLVerifySuite struct{}
+
+var _ = check.Suite(&SkipSSLVerifySuite{})
+
+func (s *SkipSSLVerifySuite) TestSkipSSLVerifyHTTPClientKeepsDefaults(c *check.C) {
+	tr := skipSSLVerifyHTTPClient().GetTransport()
+	c.Assert(tr.TLSClientConfig.InsecureSkipVerify, check.Equals, true)
+	c.Assert(tr.Proxy, check.NotNil)
+	c.Assert(tr.TLSHandshakeTimeout, check.Not(check.Equals), time.Duration(0))
 }
