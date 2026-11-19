@@ -97,7 +97,7 @@ We're trying to keep all commits in `master` to follow [conventional commits](ht
 See [conventions](#commit-conventions) for more info on types and scopes.
 We are using squash and merge approach to PRs which means that commit descriptions are generated from PR titles.
 
-It's recommended to use conventional commits when strarting a PR, but follow-up commits in the PR don't have to follow the convention.
+It's recommended to use conventional commits when starting a PR, but follow-up commits in the PR don't have to follow the convention.
 
 ### Release notes
 
