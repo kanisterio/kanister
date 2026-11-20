@@ -76,6 +76,8 @@ func (s *E2ESuite) SetUpSuite(c *check.C) {
 	ctlr := controller.New(cfg, nil)
 	err = ctlr.StartWatch(ctx, s.namespace)
 	c.Assert(err, check.IsNil)
+
+	s.setUpConditionalPhaseTarget(ctx, c)
 }
 
 func (s *E2ESuite) TearDownSuite(c *check.C) {
