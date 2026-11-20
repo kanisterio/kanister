@@ -51,6 +51,8 @@ spec:
                       type: object
                     func:
                       type: string
+                    if:
+                      type: string
                     name:
                       type: string
                     objects:

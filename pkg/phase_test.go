@@ -51,6 +51,14 @@ func (*conditionFunc) Name() string {
 	return "conditionTestFunc"
 }
 
+type deferConditionFunc struct {
+	testFunc
+}
+
+func (*deferConditionFunc) Name() string {
+	return "deferConditionTestFunc"
+}
+
 func (a *anotherFunc) Name() string {
 	return "anotherTestFunc"
 }
@@ -417,4 +425,63 @@ func (s *PhaseSuite) TestGetPhasesCondition(c *check.C) {
 	c.Assert(phases[1].condition, check.Equals, "{{ eq .Options.test \"hello\" }}")
 	c.Assert(phases[0].PhaseSkipped(), check.Equals, false)
 	c.Assert(phases[1].PhaseSkipped(), check.Equals, false)
+}
+
+func (s *PhaseSuite) TestGetDeferPhaseWithCondition(c *check.C) {
+	var output string
+	err := Register(&deferConditionFunc{testFunc{output: &output}})
+	c.Assert(err, check.IsNil)
+
+	for _, tc := range []struct {
+		condition       string
+		expectedSkipped bool
+		expectedOutput  string
+	}{
+		{condition: "", expectedSkipped: false, expectedOutput: "hello world"},
+		{condition: "{{ eq .Options.test \"hello\" }}", expectedSkipped: false, expectedOutput: "hello world"},
+		{condition: "{{ eq .Options.test \"bye\" }}", expectedSkipped: true, expectedOutput: ""},
+	} {
+		output = ""
+		bp := crv1alpha1.Blueprint{
+			Actions: map[string]*crv1alpha1.BlueprintAction{
+				"backup": {
+					DeferPhase: &crv1alpha1.BlueprintPhase{
+						Name: "deferPhase",
+						Func: "deferConditionTestFunc",
+						If:   tc.condition,
+					},
+				},
+			},
+		}
+		tp := param.TemplateParams{Options: map[string]string{"test": "hello"}}
+		p, err := GetDeferPhase(bp, "backup", "v0.0.0", tp)
+		c.Assert(err, check.IsNil)
+		c.Assert(p.condition, check.Equals, tc.condition)
+
+		p.args, err = param.RenderArgs(map[string]interface{}{"testKey": "{{ .Options.test }} world"}, tp)
+		c.Assert(err, check.IsNil)
+
+		_, err = p.Exec(context.Background(), bp, "backup", tp)
+		c.Assert(err, check.IsNil)
+		c.Assert(output, check.Equals, tc.expectedOutput)
+		c.Assert(p.PhaseSkipped(), check.Equals, tc.expectedSkipped)
+		if tc.expectedSkipped {
+			c.Assert(p.SkipReason(), check.Equals, fmt.Sprintf("if=`%s` evaluated to false.", tc.condition))
+		} else {
+			c.Assert(p.SkipReason(), check.Equals, "")
+		}
+	}
+}
+
+func (s *PhaseSuite) TestGetDeferPhaseWithInvalidCondition(c *check.C) {
+	bp := crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				DeferPhase: &crv1alpha1.BlueprintPhase{Name: "deferPhase", Func: "deferConditionTestFunc", If: "{{"},
+			},
+		},
+	}
+	p, err := GetDeferPhase(bp, "backup", "v0.0.0", param.TemplateParams{})
+	c.Assert(err, check.IsNil)
+	c.Assert(p.Validate(map[string]any{}), check.NotNil)
 }

@@ -632,6 +632,10 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 	} else {
 		rf = func(as *crv1alpha1.ActionSet) error {
 			as.Status.Actions[aIDX].DeferPhase.State = crv1alpha1.StateComplete
+			if deferPhase.PhaseSkipped() {
+				as.Status.Actions[aIDX].DeferPhase.State = crv1alpha1.StateSkipped
+				as.Status.Actions[aIDX].DeferPhase.Reason = deferPhase.SkipReason()
+			}
 			as.Status.Actions[aIDX].DeferPhase.Output = output
 			return nil
 		}

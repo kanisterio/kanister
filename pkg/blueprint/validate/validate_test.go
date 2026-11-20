@@ -220,6 +220,55 @@ func (v *ValidateBlueprint) TestValidate(c *check.C) {
 				},
 			},
 		},
+		{
+			backupPhases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "PrepareData",
+					Name: "80",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+			},
+			err: check.IsNil,
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Func: "PrepareData",
+				Name: "81",
+				If:   "{{ eq .Options.test \"hello\" }}",
+				Args: map[string]interface{}{
+					"namespace": "",
+					"image":     "",
+					"command":   "",
+				},
+			},
+		},
+		{
+			backupPhases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "PrepareData",
+					Name: "90",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+			},
+			errContains: "Failed to parse phase's 'if' condition",
+			err:         check.NotNil,
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Func: "PrepareData",
+				Name: "91",
+				If:   "{{",
+				Args: map[string]interface{}{
+					"namespace": "",
+					"image":     "",
+					"command":   "",
+				},
+			},
+		},
 	} {
 		bp := blueprint()
 		bp.Actions["backup"].Phases = tc.backupPhases

@@ -105,7 +105,7 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 	}
 	if !phaseShouldBeExecuted {
 		skipReason := fmt.Sprintf("if=`%s` evaluated to false.", p.condition)
-		log.Print(fmt.Sprintf("SKIP: phase skipped from execution. %s", skipReason))
+		log.WithContext(ctx).Print(fmt.Sprintf("SKIP: phase skipped from execution. %s", skipReason))
 		p.phaseSkipped = true
 		p.skipReason = skipReason
 		return nil, nil
@@ -203,9 +203,10 @@ func GetDeferPhase(bp crv1alpha1.Blueprint, action, version string, tp param.Tem
 	}
 
 	return &Phase{
-		name:    a.DeferPhase.Name,
-		objects: objs,
-		f:       funcs[a.DeferPhase.Func][regVersion],
+		name:      a.DeferPhase.Name,
+		objects:   objs,
+		condition: a.DeferPhase.If,
+		f:         funcs[a.DeferPhase.Func][regVersion],
 	}, nil
 }
 
