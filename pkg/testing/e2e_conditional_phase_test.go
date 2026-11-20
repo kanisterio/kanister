@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
+	"regexp"
 	"time"
 
 	"gopkg.in/check.v1"
@@ -39,42 +39,36 @@ import (
 
 const conditionalPhaseTestTimeout = 2 * time.Minute
 
-// conditionalPhaseTarget holds the objects every conditional phase test needs.
-type conditionalPhaseTarget struct {
-	deployment string
-	profile    string
-}
+const (
+	conditionalPhaseDeployment = "conditional-phase-deployment"
+	conditionalPhaseSecret     = "conditional-phase-secret"
+	conditionalPhaseProfile    = "conditional-phase-profile"
+)
 
-// setUpConditionalPhaseTarget creates a ready Deployment, and a Secret and
-// Profile for ActionSets to reference.
-func (s *E2ESuite) setUpConditionalPhaseTarget(ctx context.Context, c *check.C) conditionalPhaseTarget {
-	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, testutil.NewTestDeployment(1), metav1.CreateOptions{})
+func (s *E2ESuite) setUpConditionalPhaseTarget(ctx context.Context, c *check.C) {
+	d := testutil.NewTestDeployment(1)
+	d.GenerateName = ""
+	d.Name = conditionalPhaseDeployment
+	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, d, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, d.GetName())
 	c.Assert(err, check.IsNil)
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
+	sec.GenerateName = ""
+	sec.Name = conditionalPhaseSecret
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	// NewTestProfile uses a fixed name, which would clash with the Profile
-	// created by other tests in this suite's shared namespace.
-	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	p.Name = ""
-	p.GenerateName = "test-profile-"
-	p, err = s.crCli.Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
+	p := testutil.NewTestProfile(s.namespace, conditionalPhaseSecret)
+	p.Name = conditionalPhaseProfile
+	_, err = s.crCli.Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
-
-	return conditionalPhaseTarget{deployment: d.GetName(), profile: p.GetName()}
 }
 
-// runConditionalActionSet creates a Blueprint with the given phases, runs its
-// only action and waits for the ActionSet to reach a terminal state, either
-// complete or failed. It returns the final ActionSet.
 func (s *E2ESuite) runConditionalActionSet(
 	ctx context.Context,
 	c *check.C,
-	t conditionalPhaseTarget,
 	phases []crv1alpha1.BlueprintPhase,
 	options map[string]string,
 ) *crv1alpha1.ActionSet {
@@ -84,11 +78,9 @@ func (s *E2ESuite) runConditionalActionSet(
 			Phases: phases,
 		},
 	})
-	return s.runConditionalAction(ctx, c, t, bpName, "test", options)
+	return s.runConditionalAction(ctx, c, bpName, "test", options)
 }
 
-// createConditionalBlueprint creates a Blueprint with the given actions and
-// returns its name.
 func (s *E2ESuite) createConditionalBlueprint(
 	ctx context.Context,
 	c *check.C,
@@ -105,43 +97,61 @@ func (s *E2ESuite) createConditionalBlueprint(
 	return bp.GetName()
 }
 
-// runConditionalAction runs the named action of an existing Blueprint against
-// the test Deployment and waits for it to reach a terminal state.
 func (s *E2ESuite) runConditionalAction(
 	ctx context.Context,
 	c *check.C,
-	t conditionalPhaseTarget,
 	blueprint, action string,
 	options map[string]string,
+) *crv1alpha1.ActionSet {
+	return s.runConditionalActionSpecs(ctx, c, s.conditionalActionSpec(blueprint, action, options))
+}
+
+func (s *E2ESuite) runConditionalActions(
+	ctx context.Context,
+	c *check.C,
+	blueprint string,
+	actions ...string,
+) *crv1alpha1.ActionSet {
+	specs := make([]crv1alpha1.ActionSpec, 0, len(actions))
+	for _, action := range actions {
+		specs = append(specs, s.conditionalActionSpec(blueprint, action, nil))
+	}
+	return s.runConditionalActionSpecs(ctx, c, specs...)
+}
+
+func (s *E2ESuite) conditionalActionSpec(blueprint, action string, options map[string]string) crv1alpha1.ActionSpec {
+	return crv1alpha1.ActionSpec{
+		Name: action,
+		Object: crv1alpha1.ObjectReference{
+			Kind:      "Deployment",
+			Name:      conditionalPhaseDeployment,
+			Namespace: s.namespace,
+		},
+		Blueprint: blueprint,
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      conditionalPhaseProfile,
+			Namespace: s.namespace,
+		},
+		Options: options,
+	}
+}
+
+func (s *E2ESuite) runConditionalActionSpecs(
+	ctx context.Context,
+	c *check.C,
+	specs ...crv1alpha1.ActionSpec,
 ) *crv1alpha1.ActionSet {
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-actionset-",
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
-			Actions: []crv1alpha1.ActionSpec{
-				{
-					Name: action,
-					Object: crv1alpha1.ObjectReference{
-						Kind:      "Deployment",
-						Name:      t.deployment,
-						Namespace: s.namespace,
-					},
-					Blueprint: blueprint,
-					Profile: &crv1alpha1.ObjectReference{
-						Name:      t.profile,
-						Namespace: s.namespace,
-					},
-					Options: options,
-				},
-			},
+			Actions: specs,
 		},
 	}
 	return s.createAndWaitForActionSet(ctx, c, as)
 }
 
-// runChildActionSet derives a child of parent for the named action, applies
-// the option overrides, and waits for it to reach a terminal state.
 func (s *E2ESuite) runChildActionSet(
 	ctx context.Context,
 	c *check.C,
@@ -158,8 +168,6 @@ func (s *E2ESuite) runChildActionSet(
 	return s.createAndWaitForActionSet(ctx, c, child)
 }
 
-// createAndWaitForActionSet creates the ActionSet and waits for it to reach a
-// terminal state, either complete or failed. It returns the final ActionSet.
 func (s *E2ESuite) createAndWaitForActionSet(
 	ctx context.Context,
 	c *check.C,
@@ -182,7 +190,6 @@ func (s *E2ESuite) createAndWaitForActionSet(
 	return as
 }
 
-// execPhase returns a KubeExec phase that runs cmd in the test Deployment's pod.
 func execPhase(name, condition string, cmd ...string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Func: function.KubeExecFuncName,
@@ -197,7 +204,6 @@ func execPhase(name, condition string, cmd ...string) crv1alpha1.BlueprintPhase 
 	}
 }
 
-// outputPhase returns a KubeTask phase that publishes key=value as phase output.
 func outputPhase(name, condition, key, value string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Func: function.KubeTaskFuncName,
@@ -220,10 +226,12 @@ func outputPhase(name, condition, key, value string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-// skipReason is the reason recorded for a phase skipped because condition
-// evaluated to false.
 func skipReason(condition string) string {
 	return fmt.Sprintf("if=`%s` evaluated to false.", condition)
+}
+
+func containing(msg string) string {
+	return "(?s).*" + regexp.QuoteMeta(msg) + ".*"
 }
 
 func assertPhase(c *check.C, p crv1alpha1.Phase, name string, state crv1alpha1.State, reason string) {
@@ -234,20 +242,22 @@ func assertPhase(c *check.C, p crv1alpha1.Phase, name string, state crv1alpha1.S
 
 func phasesOf(c *check.C, as *crv1alpha1.ActionSet, n int) []crv1alpha1.Phase {
 	c.Assert(as.Status.Actions, check.HasLen, 1)
-	phases := as.Status.Actions[0].Phases
-	c.Assert(phases, check.HasLen, n)
+	return actionPhases(c, as, 0, n)
+}
+
+func actionPhases(c *check.C, as *crv1alpha1.ActionSet, idx, n int) []crv1alpha1.Phase {
+	c.Assert(len(as.Status.Actions) > idx, check.Equals, true, check.Commentf("action %d", idx))
+	phases := as.Status.Actions[idx].Phases
+	c.Assert(phases, check.HasLen, n, check.Commentf("action %d", idx))
 	return phases
 }
 
-// TestConditionalPhaseExecution runs one phase whose condition is true and
-// one whose condition is false. The skipped phase would fail if it were run.
 func (s *E2ESuite) TestConditionalPhaseExecution(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const skipCondition = `{{ eq .Deployment.Namespace "no-such-namespace" }}`
-	as := s.runConditionalActionSet(ctx, c, t, []crv1alpha1.BlueprintPhase{
+	as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
 		execPhase("executed-phase", `{{ gt (len .Deployment.Pods) 0 }}`, "echo", "hello"),
 		execPhase("skipped-phase", skipCondition, "false"),
 	}, nil)
@@ -260,12 +270,9 @@ func (s *E2ESuite) TestConditionalPhaseExecution(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseExecution")
 }
 
-// TestConditionalPhaseOnOptions evaluates the same condition against different
-// ActionSet options.
 func (s *E2ESuite) TestConditionalPhaseOnOptions(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const condition = `{{ eq .Options.mode "full" }}`
 	for _, tc := range []struct {
@@ -276,7 +283,7 @@ func (s *E2ESuite) TestConditionalPhaseOnOptions(c *check.C) {
 		{mode: "full", state: crv1alpha1.StateComplete, reason: ""},
 		{mode: "incremental", state: crv1alpha1.StateSkipped, reason: skipReason(condition)},
 	} {
-		as := s.runConditionalActionSet(ctx, c, t, []crv1alpha1.BlueprintPhase{
+		as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
 			execPhase("full-only", condition, "echo", "full backup"),
 		}, map[string]string{"mode": tc.mode})
 
@@ -287,18 +294,15 @@ func (s *E2ESuite) TestConditionalPhaseOnOptions(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseOnOptions")
 }
 
-// TestConditionalPhaseAllSkipped checks that an ActionSet whose phases are
-// all skipped still completes.
 func (s *E2ESuite) TestConditionalPhaseAllSkipped(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const (
 		firstCondition  = `{{ eq 1 2 }}`
 		secondCondition = `{{ eq .Deployment.Namespace "no-such-namespace" }}`
 	)
-	as := s.runConditionalActionSet(ctx, c, t, []crv1alpha1.BlueprintPhase{
+	as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
 		execPhase("first", firstCondition, "false"),
 		execPhase("second", secondCondition, "false"),
 	}, nil)
@@ -311,15 +315,12 @@ func (s *E2ESuite) TestConditionalPhaseAllSkipped(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseAllSkipped")
 }
 
-// TestConditionalPhaseSkippedInMiddle checks that phases after a skipped
-// phase still run.
 func (s *E2ESuite) TestConditionalPhaseSkippedInMiddle(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const skipCondition = `{{ eq .Deployment.Namespace "no-such-namespace" }}`
-	as := s.runConditionalActionSet(ctx, c, t, []crv1alpha1.BlueprintPhase{
+	as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
 		execPhase("before", "", "echo", "before"),
 		execPhase("skipped", skipCondition, "false"),
 		execPhase("after", "", "echo", "after"),
@@ -334,12 +335,9 @@ func (s *E2ESuite) TestConditionalPhaseSkippedInMiddle(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseSkippedInMiddle")
 }
 
-// TestConditionalPhaseOnPreviousPhaseOutput evaluates a condition against the
-// output of an earlier phase.
 func (s *E2ESuite) TestConditionalPhaseOnPreviousPhaseOutput(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const condition = `{{ eq .Phases.setFlag.Output.flag "true" }}`
 	for _, tc := range []struct {
@@ -350,7 +348,7 @@ func (s *E2ESuite) TestConditionalPhaseOnPreviousPhaseOutput(c *check.C) {
 		{flag: "true", state: crv1alpha1.StateComplete, reason: ""},
 		{flag: "false", state: crv1alpha1.StateSkipped, reason: skipReason(condition)},
 	} {
-		as := s.runConditionalActionSet(ctx, c, t, []crv1alpha1.BlueprintPhase{
+		as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
 			outputPhase("setFlag", "", "flag", tc.flag),
 			execPhase("dependent", condition, "echo", "flag was true"),
 		}, nil)
@@ -364,15 +362,12 @@ func (s *E2ESuite) TestConditionalPhaseOnPreviousPhaseOutput(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseOnPreviousPhaseOutput")
 }
 
-// TestConditionalPhaseProgress checks that skipped phases count as done
-// when computing progress.
 func (s *E2ESuite) TestConditionalPhaseProgress(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const skipCondition = `{{ eq .Deployment.Namespace "no-such-namespace" }}`
-	as := s.runConditionalActionSet(ctx, c, t, []crv1alpha1.BlueprintPhase{
+	as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
 		execPhase("run-1", "", "echo", "one"),
 		execPhase("skip-1", skipCondition, "false"),
 		execPhase("run-2", "", "echo", "two"),
@@ -390,13 +385,9 @@ func (s *E2ESuite) TestConditionalPhaseProgress(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseProgress")
 }
 
-// TestConditionalPhaseInvalidCondition checks that a condition that can't be
-// evaluated to true or false fails the phase and the ActionSet, instead of
-// skipping the phase.
 func (s *E2ESuite) TestConditionalPhaseInvalidCondition(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	for _, tc := range []struct {
 		name          string
@@ -414,19 +405,24 @@ func (s *E2ESuite) TestConditionalPhaseInvalidCondition(c *check.C) {
 			expectedError: kanister.ErrExecutePhaseCondition,
 		},
 		{
-			name:          "syntax error",
-			condition:     `{{`,
-			expectedError: kanister.ErrParsePhaseCondition,
+			// the ActionSet is created without options
+			name:          "option not passed",
+			condition:     `{{ eq .Options.mode "full" }}`,
+			expectedError: kanister.ErrExecutePhaseCondition,
+		},
+		{
+			name:          "unknown phase",
+			condition:     `{{ eq .Phases.typoName.Output.flag "true" }}`,
+			expectedError: kanister.ErrExecutePhaseCondition,
 		},
 	} {
-		as := s.runConditionalActionSet(ctx, c, t, []crv1alpha1.BlueprintPhase{
+		as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
 			execPhase("invalid", tc.condition, "echo", "hello"),
 			execPhase("not-reached", "", "echo", "hello"),
 		}, nil)
 
 		c.Assert(as.Status.State, check.Equals, crv1alpha1.StateFailed, check.Commentf(tc.name))
-		c.Assert(strings.Contains(as.Status.Error.Message, tc.expectedError.Error()), check.Equals, true,
-			check.Commentf("%s: error message %q does not contain %q", tc.name, as.Status.Error.Message, tc.expectedError.Error()))
+		c.Assert(as.Status.Error.Message, check.Matches, containing(tc.expectedError.Error()), check.Commentf(tc.name))
 		phases := phasesOf(c, as, 2)
 		assertPhase(c, phases[0], "invalid", crv1alpha1.StateFailed, "")
 		assertPhase(c, phases[1], "not-reached", crv1alpha1.StatePending, "")
@@ -435,15 +431,36 @@ func (s *E2ESuite) TestConditionalPhaseInvalidCondition(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseInvalidCondition")
 }
 
-// TestConditionalPhaseSkippedThenFailed checks that a skipped phase keeps its
-// state when a later phase fails.
+func (s *E2ESuite) TestConditionalPhaseSyntaxErrorRejected(c *check.C) {
+	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
+	defer can()
+
+	bp := &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"test": {
+				Kind: "Deployment",
+				Phases: []crv1alpha1.BlueprintPhase{
+					execPhase("invalid", `{{`, "echo", "hello"),
+				},
+			},
+		},
+	}
+	_, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Matches, containing("Failed to parse phase's 'if' condition"))
+
+	log.Print("Completed E2E TestConditionalPhaseSyntaxErrorRejected")
+}
+
 func (s *E2ESuite) TestConditionalPhaseSkippedThenFailed(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const skipCondition = `{{ eq .Deployment.Namespace "no-such-namespace" }}`
-	as := s.runConditionalActionSet(ctx, c, t, []crv1alpha1.BlueprintPhase{
+	as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
 		execPhase("skipped", skipCondition, "false"),
 		execPhase("failing", "", "false"),
 	}, nil)
@@ -456,13 +473,9 @@ func (s *E2ESuite) TestConditionalPhaseSkippedThenFailed(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseSkippedThenFailed")
 }
 
-// TestConditionalPhaseChildArtifactInheritance checks that a skipped phase in
-// the parent ActionSet doesn't stop a child ActionSet from consuming the
-// artifact the parent produced.
 func (s *E2ESuite) TestConditionalPhaseChildArtifactInheritance(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const (
 		skipCondition = `{{ eq .Options.mode "full" }}`
@@ -492,7 +505,7 @@ func (s *E2ESuite) TestConditionalPhaseChildArtifactInheritance(c *check.C) {
 		},
 	})
 
-	parent := s.runConditionalAction(ctx, c, t, bpName, "backup", map[string]string{"mode": "incremental"})
+	parent := s.runConditionalAction(ctx, c, bpName, "backup", map[string]string{"mode": "incremental"})
 	c.Assert(parent.Status.State, check.Equals, crv1alpha1.StateComplete)
 	parentPhases := phasesOf(c, parent, 2)
 	assertPhase(c, parentPhases[0], "skipped", crv1alpha1.StateSkipped, skipReason(skipCondition))
@@ -507,13 +520,9 @@ func (s *E2ESuite) TestConditionalPhaseChildArtifactInheritance(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseChildArtifactInheritance")
 }
 
-// TestConditionalPhaseChildReevaluation checks that a child ActionSet doesn't
-// inherit the parent's skip decisions: it evaluates every condition again with
-// the options it inherits or overrides.
 func (s *E2ESuite) TestConditionalPhaseChildReevaluation(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
-	t := s.setUpConditionalPhaseTarget(ctx, c)
 
 	const condition = `{{ eq .Options.mode "full" }}`
 	bpName := s.createConditionalBlueprint(ctx, c, map[string]*crv1alpha1.BlueprintAction{
@@ -525,7 +534,7 @@ func (s *E2ESuite) TestConditionalPhaseChildReevaluation(c *check.C) {
 		},
 	})
 
-	parent := s.runConditionalAction(ctx, c, t, bpName, "run", map[string]string{"mode": "incremental"})
+	parent := s.runConditionalAction(ctx, c, bpName, "run", map[string]string{"mode": "incremental"})
 	c.Assert(parent.Status.State, check.Equals, crv1alpha1.StateComplete)
 	assertPhase(c, phasesOf(c, parent, 1)[0], "optional", crv1alpha1.StateSkipped, skipReason(condition))
 
@@ -542,4 +551,272 @@ func (s *E2ESuite) TestConditionalPhaseChildReevaluation(c *check.C) {
 	assertPhase(c, phasesOf(c, overridden, 1)[0], "optional", crv1alpha1.StateComplete, "")
 
 	log.Print("Completed E2E TestConditionalPhaseChildReevaluation")
+}
+
+func (s *E2ESuite) TestConditionalPhaseOptionNotPassed(c *check.C) {
+	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
+	defer can()
+
+	const condition = `{{ eq (index .Options "mode") "full" }}`
+	for _, tc := range []struct {
+		options map[string]string
+		state   crv1alpha1.State
+		reason  string
+	}{
+		{options: nil, state: crv1alpha1.StateSkipped, reason: skipReason(condition)},
+		{options: map[string]string{"mode": "full"}, state: crv1alpha1.StateComplete, reason: ""},
+	} {
+		as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
+			execPhase("full-only", condition, "echo", "full backup"),
+		}, tc.options)
+
+		c.Assert(as.Status.State, check.Equals, crv1alpha1.StateComplete, check.Commentf("options %v", tc.options))
+		assertPhase(c, phasesOf(c, as, 1)[0], "full-only", tc.state, tc.reason)
+	}
+
+	log.Print("Completed E2E TestConditionalPhaseOptionNotPassed")
+}
+
+func (s *E2ESuite) TestConditionalPhaseOnSkippedPhaseOutput(c *check.C) {
+	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
+	defer can()
+
+	const skipCondition = `{{ eq 1 2 }}`
+	for _, tc := range []struct {
+		name          string
+		condition     string
+		actionSet     crv1alpha1.State
+		dependent     crv1alpha1.State
+		dependentWhy  string
+		last          crv1alpha1.State
+		expectedError error
+	}{
+		{
+			name:          "unguarded",
+			condition:     `{{ eq .Phases.first.Output.flag "true" }}`,
+			actionSet:     crv1alpha1.StateFailed,
+			dependent:     crv1alpha1.StateFailed,
+			last:          crv1alpha1.StatePending,
+			expectedError: kanister.ErrExecutePhaseCondition,
+		},
+		{
+			name:         "guarded",
+			condition:    `{{ and (hasKey .Phases.first.Output "flag") (eq .Phases.first.Output.flag "true") }}`,
+			actionSet:    crv1alpha1.StateComplete,
+			dependent:    crv1alpha1.StateSkipped,
+			dependentWhy: skipReason(`{{ and (hasKey .Phases.first.Output "flag") (eq .Phases.first.Output.flag "true") }}`),
+			last:         crv1alpha1.StateComplete,
+		},
+	} {
+		as := s.runConditionalActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
+			execPhase("first", skipCondition, "false"),
+			execPhase("dependent", tc.condition, "echo", "flag was true"),
+			execPhase("last", "", "echo", "last"),
+		}, nil)
+
+		c.Assert(as.Status.State, check.Equals, tc.actionSet, check.Commentf(tc.name))
+		if tc.expectedError != nil {
+			c.Assert(as.Status.Error.Message, check.Matches, containing(tc.expectedError.Error()), check.Commentf(tc.name))
+		}
+		phases := phasesOf(c, as, 3)
+		assertPhase(c, phases[0], "first", crv1alpha1.StateSkipped, skipReason(skipCondition))
+		assertPhase(c, phases[1], "dependent", tc.dependent, tc.dependentWhy)
+		assertPhase(c, phases[2], "last", tc.last, "")
+	}
+
+	log.Print("Completed E2E TestConditionalPhaseOnSkippedPhaseOutput")
+}
+
+func (s *E2ESuite) runConditionalDeferActionSet(
+	ctx context.Context,
+	c *check.C,
+	phases []crv1alpha1.BlueprintPhase,
+	deferPhase crv1alpha1.BlueprintPhase,
+	options map[string]string,
+) *crv1alpha1.ActionSet {
+	bpName := s.createConditionalBlueprint(ctx, c, map[string]*crv1alpha1.BlueprintAction{
+		"test": {
+			Kind:       "Deployment",
+			Phases:     phases,
+			DeferPhase: &deferPhase,
+		},
+	})
+	as := s.runConditionalAction(ctx, c, bpName, "test", options)
+
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		var err error
+		as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
+		if err != nil || as.Status == nil || len(as.Status.Actions) == 0 {
+			return false, err
+		}
+		switch as.Status.Actions[0].DeferPhase.State {
+		case crv1alpha1.StateComplete, crv1alpha1.StateFailed, crv1alpha1.StateSkipped:
+			return true, nil
+		}
+		return false, nil
+	})
+	c.Assert(err, check.IsNil)
+	return as
+}
+
+func (s *E2ESuite) TestConditionalDeferPhase(c *check.C) {
+	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
+	defer can()
+
+	for _, tc := range []struct {
+		condition string
+		command   string
+		state     crv1alpha1.State
+		reason    string
+	}{
+		{condition: `{{ eq 1 1 }}`, command: "echo", state: crv1alpha1.StateComplete, reason: ""},
+		{condition: `{{ eq 1 2 }}`, command: "false", state: crv1alpha1.StateSkipped, reason: skipReason(`{{ eq 1 2 }}`)},
+	} {
+		as := s.runConditionalDeferActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
+			execPhase("main", "", "echo", "hello"),
+		}, execPhase("cleanup", tc.condition, tc.command), nil)
+
+		c.Assert(as.Status.State, check.Equals, crv1alpha1.StateComplete, check.Commentf("condition %s", tc.condition))
+		assertPhase(c, phasesOf(c, as, 1)[0], "main", crv1alpha1.StateComplete, "")
+		assertPhase(c, as.Status.Actions[0].DeferPhase, "cleanup", tc.state, tc.reason)
+	}
+
+	log.Print("Completed E2E TestConditionalDeferPhase")
+}
+
+func (s *E2ESuite) TestConditionalDeferPhaseAfterMainFailure(c *check.C) {
+	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
+	defer can()
+
+	for _, tc := range []struct {
+		condition string
+		command   string
+		state     crv1alpha1.State
+		reason    string
+	}{
+		{condition: `{{ eq 1 1 }}`, command: "echo", state: crv1alpha1.StateComplete, reason: ""},
+		{condition: `{{ eq 1 2 }}`, command: "false", state: crv1alpha1.StateSkipped, reason: skipReason(`{{ eq 1 2 }}`)},
+	} {
+		as := s.runConditionalDeferActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
+			execPhase("failing", "", "false"),
+		}, execPhase("cleanup", tc.condition, tc.command), nil)
+
+		c.Assert(as.Status.State, check.Equals, crv1alpha1.StateFailed, check.Commentf("condition %s", tc.condition))
+		assertPhase(c, phasesOf(c, as, 1)[0], "failing", crv1alpha1.StateFailed, "")
+		assertPhase(c, as.Status.Actions[0].DeferPhase, "cleanup", tc.state, tc.reason)
+	}
+
+	log.Print("Completed E2E TestConditionalDeferPhaseAfterMainFailure")
+}
+
+func (s *E2ESuite) TestConditionalDeferPhaseOptionNotPassed(c *check.C) {
+	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
+	defer can()
+
+	const guarded = `{{ eq (index .Options "mode") "full" }}`
+	for _, tc := range []struct {
+		name          string
+		condition     string
+		actionSet     crv1alpha1.State
+		deferPhase    crv1alpha1.State
+		reason        string
+		expectedError error
+	}{
+		{
+			name:          "unguarded",
+			condition:     `{{ eq .Options.mode "full" }}`,
+			actionSet:     crv1alpha1.StateFailed,
+			deferPhase:    crv1alpha1.StateFailed,
+			expectedError: kanister.ErrExecutePhaseCondition,
+		},
+		{
+			name:       "guarded",
+			condition:  guarded,
+			actionSet:  crv1alpha1.StateComplete,
+			deferPhase: crv1alpha1.StateSkipped,
+			reason:     skipReason(guarded),
+		},
+	} {
+		as := s.runConditionalDeferActionSet(ctx, c, []crv1alpha1.BlueprintPhase{
+			execPhase("main", "", "echo", "hello"),
+		}, execPhase("cleanup", tc.condition, "echo", "cleanup"), nil)
+
+		c.Assert(as.Status.State, check.Equals, tc.actionSet, check.Commentf(tc.name))
+		if tc.expectedError != nil {
+			c.Assert(as.Status.Error.Message, check.Matches, containing(tc.expectedError.Error()), check.Commentf(tc.name))
+		}
+		assertPhase(c, phasesOf(c, as, 1)[0], "main", crv1alpha1.StateComplete, "")
+		assertPhase(c, as.Status.Actions[0].DeferPhase, "cleanup", tc.deferPhase, tc.reason)
+	}
+
+	log.Print("Completed E2E TestConditionalDeferPhaseOptionNotPassed")
+}
+
+func (s *E2ESuite) TestConditionalPhaseMultipleActions(c *check.C) {
+	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
+	defer can()
+
+	const skipCondition = `{{ eq 1 2 }}`
+	bpName := s.createConditionalBlueprint(ctx, c, map[string]*crv1alpha1.BlueprintAction{
+		"first": {
+			Kind: "Deployment",
+			Phases: []crv1alpha1.BlueprintPhase{
+				execPhase("first-run", "", "echo", "first"),
+				execPhase("first-skipped", skipCondition, "false"),
+			},
+		},
+		"second": {
+			Kind: "Deployment",
+			Phases: []crv1alpha1.BlueprintPhase{
+				execPhase("second-skipped", skipCondition, "false"),
+				execPhase("second-run", "", "echo", "second"),
+			},
+		},
+	})
+
+	as := s.runConditionalActions(ctx, c, bpName, "first", "second")
+
+	c.Assert(as.Status.State, check.Equals, crv1alpha1.StateComplete)
+	first := actionPhases(c, as, 0, 2)
+	assertPhase(c, first[0], "first-run", crv1alpha1.StateComplete, "")
+	assertPhase(c, first[1], "first-skipped", crv1alpha1.StateSkipped, skipReason(skipCondition))
+	second := actionPhases(c, as, 1, 2)
+	assertPhase(c, second[0], "second-skipped", crv1alpha1.StateSkipped, skipReason(skipCondition))
+	assertPhase(c, second[1], "second-run", crv1alpha1.StateComplete, "")
+
+	log.Print("Completed E2E TestConditionalPhaseMultipleActions")
+}
+
+func (s *E2ESuite) TestConditionalPhaseMultipleActionsSkipFinishesFirst(c *check.C) {
+	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
+	defer can()
+
+	const skipCondition = `{{ eq 1 2 }}`
+	bpName := s.createConditionalBlueprint(ctx, c, map[string]*crv1alpha1.BlueprintAction{
+		"skip-all": {
+			Kind: "Deployment",
+			Phases: []crv1alpha1.BlueprintPhase{
+				execPhase("skip-1", skipCondition, "false"),
+				execPhase("skip-2", skipCondition, "false"),
+			},
+		},
+		"slow": {
+			Kind: "Deployment",
+			Phases: []crv1alpha1.BlueprintPhase{
+				execPhase("slow-run", "", "sleep", "5"),
+			},
+		},
+	})
+
+	as := s.runConditionalActions(ctx, c, bpName, "skip-all", "slow")
+
+	// The wait returns at the first terminal state. If the skipped action had
+	// completed the ActionSet, the slow phase would still be running here.
+	c.Assert(as.Status.State, check.Equals, crv1alpha1.StateComplete)
+	skipped := actionPhases(c, as, 0, 2)
+	assertPhase(c, skipped[0], "skip-1", crv1alpha1.StateSkipped, skipReason(skipCondition))
+	assertPhase(c, skipped[1], "skip-2", crv1alpha1.StateSkipped, skipReason(skipCondition))
+	assertPhase(c, actionPhases(c, as, 1, 1)[0], "slow-run", crv1alpha1.StateComplete, "")
+
+	log.Print("Completed E2E TestConditionalPhaseMultipleActionsSkipFinishesFirst")
 }
