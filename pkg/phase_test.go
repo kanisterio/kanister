@@ -58,7 +58,6 @@ type deferConditionFunc struct {
 func (*deferConditionFunc) Name() string {
 	return "deferConditionTestFunc"
 }
-
 func (a *anotherFunc) Name() string {
 	return "anotherTestFunc"
 }
@@ -342,6 +341,69 @@ func (s *PhaseSuite) TestPhaseCondition(c *check.C) {
 			expectedError: nil,
 			expected:      "hello world",
 		},
+		{
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ hasPrefix \"he\" .Options.test }}",
+			expectedError: nil,
+			expected:      "hello world",
+		},
+		{
+			artifact:        "hello",
+			argument:        "{{ .Options.test }} world",
+			condition:       "{{ hasPrefix \"bye\" .Options.test }}",
+			expectedError:   nil,
+			expected:        "",
+			expectedSkipped: true,
+		},
+		{
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ eq .Options.mode \"full\" }}",
+			expectedError: ErrExecutePhaseCondition,
+		},
+		{
+			// Reference to an unknown phase (e.g. a typo in the name) is an error
+			artifact:  "hello",
+			argument:  "{{ .Options.test }} world",
+			condition: "{{ eq .Phases.typoName.Output.flag \"true\" }}",
+			phases: map[string]*param.Phase{
+				"p1": {Output: map[string]interface{}{"flag": "true"}},
+			},
+			expectedError: ErrExecutePhaseCondition,
+		},
+		{
+			// Output of a skipped phase is nil, reading a key from it is an error
+			artifact:  "hello",
+			argument:  "{{ .Options.test }} world",
+			condition: "{{ eq .Phases.p1.Output.flag \"true\" }}",
+			phases: map[string]*param.Phase{
+				"p1": {Output: nil},
+			},
+			expectedError: ErrExecutePhaseCondition,
+		},
+		{
+			// `index` doesn't fail on a missing key, which allows guarding optional options.
+			// sprig's `hasKey` can't be used for options, it only accepts map[string]interface{}
+			// and Options is a map[string]string.
+			artifact:      "hello",
+			argument:      "{{ .Options.test }} world",
+			condition:     "{{ eq (index .Options \"mode\") \"\" }}",
+			expectedError: nil,
+			expected:      "hello world",
+		},
+		{
+			// Guarded access to the output of a skipped phase
+			artifact:  "hello",
+			argument:  "{{ .Options.test }} world",
+			condition: "{{ and (hasKey .Phases.p1.Output \"flag\") (eq .Phases.p1.Output.flag \"true\") }}",
+			phases: map[string]*param.Phase{
+				"p1": {Output: nil},
+			},
+			expectedError:   nil,
+			expected:        "",
+			expectedSkipped: true,
+		},
 	} {
 		var output string
 		tf := &testFunc{output: &output}
@@ -392,6 +454,7 @@ func (s *PhaseSuite) TestPhaseValidateCondition(c *check.C) {
 		{condition: "", checker: check.IsNil},
 		{condition: "true", checker: check.IsNil},
 		{condition: "{{ eq .Options.test \"hello\" }}", checker: check.IsNil},
+		{condition: "{{ hasPrefix \"a\" \"ab\" }}", checker: check.IsNil},
 		{condition: "{{", checker: check.NotNil},
 		{condition: "{{ if }}", checker: check.NotNil},
 		{condition: "{{ unknownFunc }}", checker: check.NotNil},
@@ -440,6 +503,7 @@ func (s *PhaseSuite) TestGetDeferPhaseWithCondition(c *check.C) {
 		{condition: "", expectedSkipped: false, expectedOutput: "hello world"},
 		{condition: "{{ eq .Options.test \"hello\" }}", expectedSkipped: false, expectedOutput: "hello world"},
 		{condition: "{{ eq .Options.test \"bye\" }}", expectedSkipped: true, expectedOutput: ""},
+		{condition: "{{ hasPrefix \"he\" .Options.test }}", expectedSkipped: false, expectedOutput: "hello world"},
 	} {
 		output = ""
 		bp := crv1alpha1.Blueprint{
@@ -471,6 +535,24 @@ func (s *PhaseSuite) TestGetDeferPhaseWithCondition(c *check.C) {
 			c.Assert(p.SkipReason(), check.Equals, "")
 		}
 	}
+}
+
+func (s *PhaseSuite) TestDeferPhaseWithMissingOption(c *check.C) {
+	var output string
+	tp := param.TemplateParams{Options: map[string]string{"test": "hello"}}
+	args, err := param.RenderArgs(map[string]interface{}{"testKey": "{{ .Options.test }} world"}, tp)
+	c.Assert(err, check.IsNil)
+	p := Phase{
+		name:      "deferPhase",
+		args:      args,
+		f:         &deferConditionFunc{testFunc{output: &output}},
+		condition: "{{ eq .Options.mode \"full\" }}",
+	}
+
+	_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "backup", tp)
+	c.Assert(errors.Is(err, ErrExecutePhaseCondition), check.Equals, true)
+	c.Assert(p.PhaseSkipped(), check.Equals, false)
+	c.Assert(output, check.Equals, "")
 }
 
 func (s *PhaseSuite) TestGetDeferPhaseWithInvalidCondition(c *check.C) {

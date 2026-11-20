@@ -244,6 +244,32 @@ func (v *ValidateBlueprint) TestValidate(c *check.C) {
 				},
 			},
 		},
+		// sprig function in the conditions of a phase and deferPhase
+		{
+			backupPhases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "PrepareData",
+					Name: "100",
+					If:   "{{ hasPrefix \"a\" \"ab\" }}",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+			},
+			err: check.IsNil,
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Func: "PrepareData",
+				Name: "101",
+				If:   "{{ hasPrefix \"a\" \"ab\" }}",
+				Args: map[string]interface{}{
+					"namespace": "",
+					"image":     "",
+					"command":   "",
+				},
+			},
+		},
 		{
 			backupPhases: []crv1alpha1.BlueprintPhase{
 				{

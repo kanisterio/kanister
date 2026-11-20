@@ -28,6 +28,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/ksprig"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/utils"
@@ -151,7 +152,7 @@ func (p *Phase) shouldBeExecuted(tp param.TemplateParams) (bool, error) {
 	if p.condition == "" {
 		return true, nil
 	}
-	t, parseErr := template.New("config").Parse(p.condition)
+	t, parseErr := template.New("config").Option("missingkey=error").Funcs(ksprig.TxtFuncMap()).Parse(p.condition)
 	if parseErr != nil {
 		return false, errkit.WithCause(parseErr, ErrParsePhaseCondition)
 	}
@@ -298,7 +299,7 @@ func validatePhaseCondition(condition string) error {
 		return nil
 	}
 
-	_, parseErr := template.New("condition").Parse(condition)
+	_, parseErr := template.New("condition").Funcs(ksprig.TxtFuncMap()).Parse(condition)
 	if parseErr != nil {
 		return errkit.Wrap(parseErr, "Failed to parse phase's 'if' condition")
 	}
