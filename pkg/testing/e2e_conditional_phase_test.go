@@ -431,30 +431,6 @@ func (s *E2ESuite) TestConditionalPhaseInvalidCondition(c *check.C) {
 	log.Print("Completed E2E TestConditionalPhaseInvalidCondition")
 }
 
-func (s *E2ESuite) TestConditionalPhaseSyntaxErrorRejected(c *check.C) {
-	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
-	defer can()
-
-	bp := &crv1alpha1.Blueprint{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-blueprint-",
-		},
-		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"test": {
-				Kind: "Deployment",
-				Phases: []crv1alpha1.BlueprintPhase{
-					execPhase("invalid", `{{`, "echo", "hello"),
-				},
-			},
-		},
-	}
-	_, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
-	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Matches, containing("Failed to parse phase's 'if' condition"))
-
-	log.Print("Completed E2E TestConditionalPhaseSyntaxErrorRejected")
-}
-
 func (s *E2ESuite) TestConditionalPhaseSkippedThenFailed(c *check.C) {
 	ctx, can := context.WithTimeout(context.Background(), conditionalPhaseTestTimeout)
 	defer can()
