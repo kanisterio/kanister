@@ -54,15 +54,19 @@ func (pg Client) ListDatabases(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close() //nolint:errcheck
 
 	var dbList []string
 	for rows.Next() {
 		var db string
 		err = rows.Scan(&db)
 		if err != nil {
-			break
+			return nil, err
 		}
 		dbList = append(dbList, db)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return dbList, nil
 }
