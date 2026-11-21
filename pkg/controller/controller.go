@@ -536,6 +536,10 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 				coreErr = nil
 				rf = func(ras *crv1alpha1.ActionSet) error {
 					ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateComplete
+					if p.PhaseSkipped() {
+						ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateSkipped
+						ras.Status.Actions[aIDX].Phases[i].Reason = p.SkipReason()
+					}
 					pp, err := p.Progress()
 					if err != nil {
 						log.Error().WithError(err)
@@ -628,6 +632,10 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 	} else {
 		rf = func(as *crv1alpha1.ActionSet) error {
 			as.Status.Actions[aIDX].DeferPhase.State = crv1alpha1.StateComplete
+			if deferPhase.PhaseSkipped() {
+				as.Status.Actions[aIDX].DeferPhase.State = crv1alpha1.StateSkipped
+				as.Status.Actions[aIDX].DeferPhase.Reason = deferPhase.SkipReason()
+			}
 			as.Status.Actions[aIDX].DeferPhase.Output = output
 			return nil
 		}
@@ -726,7 +734,7 @@ func (c *Controller) maybeSetActionSetStateComplete(ctx context.Context,
 
 		for _, as := range ras.Status.Actions {
 			for _, p := range as.Phases {
-				if p.State != crv1alpha1.StateComplete {
+				if p.State != crv1alpha1.StateComplete && p.State != crv1alpha1.StateSkipped {
 					log.WithContext(ctx).Print(
 						"Finished action, but other action's phase is still running. Not setting state to complete.",
 						field.M{

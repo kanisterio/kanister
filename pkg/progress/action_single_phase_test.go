@@ -251,3 +251,27 @@ func assertActionProgress(
 		c.Assert(*actual.Status.Actions[indexAction].Phases[indexPhase].Progress.LastTransitionTime, check.Equals, now, check.Commentf("test case #: %d", testCaseID))
 	}
 }
+
+func (s *TestSuiteSinglePhase) TestCompletedOrFailed(c *check.C) {
+	for _, tc := range []struct {
+		state     crv1alpha1.State
+		phaseName string
+		expected  bool
+	}{
+		{state: crv1alpha1.StateSkipped, phaseName: "p1", expected: true},
+		{state: crv1alpha1.StateComplete, phaseName: "p1", expected: true},
+		{state: crv1alpha1.StateFailed, phaseName: "p1", expected: true},
+		{state: crv1alpha1.StateRunning, phaseName: "p1", expected: false},
+		{state: crv1alpha1.StatePending, phaseName: "p1", expected: false},
+		{state: crv1alpha1.StateSkipped, phaseName: "unknown", expected: false},
+	} {
+		as := &crv1alpha1.ActionSet{
+			Status: &crv1alpha1.ActionSetStatus{
+				Actions: []crv1alpha1.ActionStatus{
+					{Phases: []crv1alpha1.Phase{{Name: "p1", State: tc.state}}},
+				},
+			},
+		}
+		c.Check(completedOrFailed(0, as, tc.phaseName), check.Equals, tc.expected, check.Commentf("state: %s, phase: %s", tc.state, tc.phaseName))
+	}
+}

@@ -307,3 +307,59 @@ func (s *TestSuiteMultiPhases) TestUpdateActionsProgressWithFailures(c *check.C)
 			id)
 	}
 }
+
+func (s *TestSuiteMultiPhases) TestUpdateActionsProgressWithSkippedPhase(c *check.C) {
+	var testCases = []struct {
+		indexPhase            int
+		phaseState            crv1alpha1.State
+		phaseProgress         crv1alpha1.PhaseProgress
+		expectedPhasePercent  string
+		expectedActionPercent string
+	}{
+		{
+			// First phase is skipped; its progress is reported as 100%
+			indexPhase: 0,
+			phaseState: crv1alpha1.StateSkipped,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent: CompletedPercent,
+			},
+			expectedPhasePercent:  CompletedPercent,
+			expectedActionPercent: "50",
+		},
+		{
+			indexPhase: 1,
+			phaseState: crv1alpha1.StateRunning,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent: "40",
+			},
+			expectedPhasePercent:  "40",
+			expectedActionPercent: "70",
+		},
+		{
+			indexPhase: 1,
+			phaseState: crv1alpha1.StateComplete,
+			phaseProgress: crv1alpha1.PhaseProgress{
+				ProgressPercent: CompletedPercent,
+			},
+			expectedPhasePercent:  CompletedPercent,
+			expectedActionPercent: CompletedPercent,
+		},
+	}
+
+	for id, tc := range testCases {
+		as, err := s.clientset.CrV1alpha1().ActionSets(s.actionSet.GetNamespace()).Get(context.Background(), s.actionSet.GetName(), metav1.GetOptions{})
+		c.Assert(err, check.IsNil)
+		assertActionProgress(
+			c,
+			s.clientset,
+			as,
+			0,
+			tc.indexPhase,
+			tc.phaseState,
+			tc.phaseProgress,
+			tc.expectedPhasePercent,
+			tc.expectedActionPercent,
+			0, 0, 0, 0,
+			id)
+	}
+}

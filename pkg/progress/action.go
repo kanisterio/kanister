@@ -141,7 +141,8 @@ func completedOrFailed(aIDX int, actionSet *crv1alpha1.ActionSet, phaseName stri
 			continue
 		}
 		return phase.State == crv1alpha1.StateFailed ||
-			phase.State == crv1alpha1.StateComplete
+			phase.State == crv1alpha1.StateComplete ||
+			phase.State == crv1alpha1.StateSkipped
 	}
 	return false
 }

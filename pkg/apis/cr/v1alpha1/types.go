@@ -190,6 +190,8 @@ const (
 	StateFailed State = "failed"
 	// StateComplete means this action or phase finished successfully.
 	StateComplete State = "complete"
+	// StateSkipped means this action or phase was skipped due to condition not met
+	StateSkipped State = "skipped"
 )
 
 // Error represents an error that occurred when executing an actionset.
@@ -208,6 +210,8 @@ type Phase struct {
 	Output map[string]interface{} `json:"output,omitempty"`
 	// Progress represents the phase execution progress.
 	Progress PhaseProgress `json:"progress,omitempty"`
+	// Reason shows why a phase skipped. It doesn't have significance in other phase states yet.
+	Reason string `json:"reason,omitempty"`
 }
 
 // PhaseProgress represents the execution state of the phase.
@@ -294,10 +298,14 @@ type BlueprintAction struct {
 	DeferPhase *BlueprintPhase `json:"deferPhase,omitempty"`
 }
 
-// BlueprintPhase is a an individual unit of execution.
+// BlueprintPhase is an individual unit of execution.
 type BlueprintPhase struct {
 	// Func is the name of a registered Kanister function.
 	Func string `json:"func"`
+	// If contains conditional expression in go template format. The phase function will be executed only if
+	// the expression evaluates to `true`. To maintain backwards compatibility, the function will be executed
+	// if this field is absent in the phase.
+	If string `json:"if,omitempty"`
 	// Name contains name of the phase.
 	Name string `json:"name"`
 	// ObjectRefs represents a map of references to the Kubernetes objects that
