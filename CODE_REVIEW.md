@@ -1,4 +1,4 @@
-# Code review requiements
+# Code review requirements
 
 This document describes responsibilities of code reviewers when reviewing PRs.
 
