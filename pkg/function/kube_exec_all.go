@@ -118,18 +118,33 @@ func (kef *kubeExecAllFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error
 	}, nil
 }
 
+// execFunc runs a command in a single pod/container and returns its stdout,
+// stderr and any execution error. It is a seam that defaults to KubeExecAndLog
+// so execAllWith can be unit-tested without a live cluster.
+type execFunc func(ctx context.Context, cli kubernetes.Interface, namespace, pod, container string, cmd []string) (stdout, stderr string, err error)
+
 func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) (map[string]interface{}, error) {
+	return execAllWith(ctx, cli, namespace, ps, cs, cmd, func(ctx context.Context, cli kubernetes.Interface, namespace, pod, container string, cmd []string) (string, string, error) {
+		return KubeExecAndLog(ctx, cli, namespace, pod, container, cmd, nil)
+	})
+}
+
+func execAllWith(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string, exec execFunc) (map[string]interface{}, error) {
 	numContainers := len(ps) * len(cs)
 	errChan := make(chan error, numContainers)
-	output := ""
+	// Each goroutine writes into its own slot, so the shared slice is accessed
+	// race-free; the results are joined only after every goroutine has finished.
+	outputs := make([]string, numContainers)
 	// Run the command
+	i := 0
 	for _, p := range ps {
 		for _, c := range cs {
-			go func(p string, c string) {
-				stdout, _, err := KubeExecAndLog(ctx, cli, namespace, p, c, cmd, nil)
+			go func(idx int, p string, c string) {
+				stdout, _, err := exec(ctx, cli, namespace, p, c, cmd)
+				outputs[idx] = stdout
 				errChan <- err
-				output = output + "\n" + stdout
-			}(p, c)
+			}(i, p, c)
+			i++
 		}
 	}
 	errs := make([]string, 0, numContainers)
@@ -141,6 +156,10 @@ func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps
 	}
 	if len(errs) != 0 {
 		return nil, errkit.New(strings.Join(errs, "\n"))
+	}
+	output := ""
+	for _, o := range outputs {
+		output = output + "\n" + o
 	}
 	out, err := parseLogAndCreateOutput(output)
 	if err != nil {
