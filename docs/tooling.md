@@ -305,7 +305,10 @@ deleteFromBlobStore in action delete\' check.. ✅ Passed the
 ```
 
 `kanctl validate blueprint` currently verifies the Kanister function
-names and presence of the mandatory arguments to those functions.
+names and presence of the mandatory arguments to those functions. It
+also verifies that the `if` condition of each phase, if specified, is a
+valid template. See
+[Conditional Phase Execution](templates.md#conditional-phase-execution).
 
 ## Kando
 

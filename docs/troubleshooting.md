@@ -45,6 +45,32 @@ or file an issue on
 list](https://groups.google.com/forum/#!forum/kanisterio) is also
 available if needed.
 
+## Phase condition errors
+
+A phase with an `if` condition fails if its condition can't be
+evaluated. The failure message of the ActionSet tells you why. See
+[Conditional Phase Execution](templates.md#conditional-phase-execution)
+for how conditions are evaluated.
+
+- `Failed to execute phase condition`: the condition references
+  something that doesn't exist, for example an option that wasn't
+  passed in the ActionSet, a phase that doesn't exist, or an output key
+  that wasn't produced. Reading the output of a skipped phase also
+  causes this error, because a skipped phase has no output. Pass the
+  missing value, or guard the condition with `index .Options "key"` or
+  `hasKey` on the phase output.
+- `Phase condition is not conditional expression`: the condition
+  rendered to something other than `true` or `false`. Make sure the
+  template produces a boolean, for example by using `eq`, `and` or `not`.
+- `Failed to parse phase's 'if' condition`: the condition isn't a valid
+  template. This is rejected when the Blueprint is created if the
+  [validating webhook](#validating-webhook-for-blueprints) is installed.
+  You can also check a Blueprint with `kanctl validate blueprint`.
+
+A phase that was skipped because its condition evaluated to `false`
+isn't a failure. Its state is `skipped` and the `reason` field shows
+the condition.
+
 ## Validating webhook for Blueprints
 
 For the validating webhook to work, the Kubernetes API Server needs to

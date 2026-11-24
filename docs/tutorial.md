@@ -638,6 +638,151 @@ outputArtifacts:
 
 For more on using the time template parameter, see [Templates](templates.md).
 
+## Conditional Phase Execution
+
+Sometimes a phase is needed to be run only in certain cases, for example an
+optional verification step or a cleanup that is only needed on request.
+A phase can have an optional `if` field containing a template that must evaluate
+to `true` or `false`. The phase runs only when the result is `true`;
+otherwise it is skipped. This works for the `deferPhase` as well.
+
+In this example, the `verify` phase and the `deferPhase` run only when
+the ActionSet passes the option `verify: "true"`. The condition reads
+the option with `index`, so it evaluates to `false` instead of failing
+when the option isn't passed.
+
+``` yaml
+$ cat <<EOF | kubectl create -f -
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: time-log-conditional-bp
+  namespace: kanister
+actions:
+  backup:
+    phases:
+    - func: KubeExec
+      name: logTime
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: test-container
+        command:
+          - sh
+          - -c
+          - echo /var/log/time.log
+    - func: KubeExec
+      name: verify
+      if: '{{ eq (index .Options "verify") "true" }}'
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: test-container
+        command:
+          - sh
+          - -c
+          - test -s /var/log/time.log
+    deferPhase:
+      func: KubeExec
+      name: cleanup
+      if: '{{ eq (index .Options "verify") "true" }}'
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: test-container
+        command:
+          - sh
+          - -c
+          - echo verification done
+EOF
+```
+
+First, create an ActionSet without any options:
+
+``` yaml
+$ cat <<EOF | kubectl create -f -
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: conditional-
+  namespace: kanister
+spec:
+  actions:
+  - name: backup
+    blueprint: time-log-conditional-bp
+    object:
+      kind: Deployment
+      name: time-logger
+      namespace: default
+EOF
+```
+
+The condition evaluates to `false`, so `verify` and `cleanup` are
+skipped. The status of each phase and the reason can be seen with:
+
+``` bash
+$ kubectl --namespace kanister get actionset <ActionSet Name> \
+    -o jsonpath='{range .status.actions[0].phases[*]}{.name}{"\t"}{.state}{"\t"}{.reason}{"\n"}{end}{.status.actions[0].deferPhase.name}{"\t"}{.status.actions[0].deferPhase.state}{"\t"}{.status.actions[0].deferPhase.reason}{"\n"}'
+logTime   complete
+verify    skipped   if=`{{ eq (index .Options "verify") "true" }}` evaluated to false.
+cleanup   skipped   if=`{{ eq (index .Options "verify") "true" }}` evaluated to false.
+```
+
+The ActionSet still ends in the `complete` state, since skipped phases
+count as finished.
+
+Now create an ActionSet that passes the option:
+
+``` yaml
+$ cat <<EOF | kubectl create -f -
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: conditional-
+  namespace: kanister
+spec:
+  actions:
+  - name: backup
+    blueprint: time-log-conditional-bp
+    object:
+      kind: Deployment
+      name: time-logger
+      namespace: default
+    options:
+      verify: "true"
+EOF
+```
+
+Running the same status command now shows all three phases as
+`complete`:
+
+``` bash
+logTime   complete
+verify    complete
+cleanup   complete
+```
+
+The option can also be passed with `kanctl`:
+
+``` bash
+$ kanctl create actionset --action backup --namespace kanister \
+    --blueprint time-log-conditional-bp \
+    --deployment default/time-logger \
+    --options verify=true
+```
+
+::: tip NOTE
+
+If the condition were written as <code v-pre>{{ eq .Options.verify "true" }}</code>, an
+ActionSet without the `verify` option would fail the phase instead of
+skipping it, because referencing a missing key is an error. Use `index`
+as shown above to treat a missing option as empty. For more on writing
+conditions, including using the output of earlier phases, see
+[Conditional Phase Execution](templates.md#conditional-phase-execution)
+in Templates.
+
+:::
+
 ## Using kanctl to Chain ActionSets
 
 So far in this tutorial, we have shown you how to manually create action

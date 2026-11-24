@@ -544,6 +544,9 @@ The Options can then be used in the Blueprint via templating:
 "{{ .Options.podName }}"
 ```
 
+Options can also be used to decide if a phase can be run. See
+[Conditional Phase Execution](#conditional-phase-execution).
+
 ### Phases
 
 Phases are used to capture information required or returned from
@@ -576,6 +579,9 @@ Similarly, a phase can use Secrets as arguments:
 "{{ .Phases.phase-name.Secrets.secret-name.Namespace }}"
 ```
 
+Phase outputs can also be used to decide if a later phase can be run. See
+[Conditional Phase Execution](#conditional-phase-execution).
+
 ### DeferPhase
 
 `DeferPhase` is used to capture information returned from the
@@ -598,3 +604,100 @@ Output artifact can be set as follows:
 Output artifacts that are set using `DeferPhase` can be consumed by
 other actions\' phases using the same way other output artifacts are
 consumed.
+
+## Conditional Phase Execution
+
+A phase, including the `deferPhase`, can have an optional `if` field.
+The field is a template, and the phase is executed only if the template
+evaluates to `true`. If `if` is not set, the phase is always executed.
+
+``` yaml
+phases:
+- func: KubeExec
+  name: verify
+  if: '{{ eq (index .Options "verify") "true" }}'
+  args:
+    # ...
+```
+
+The same [template parameters](#rendering-templates), available to
+phase args, are available in `if`.
+
+### Condition evaluation and its effect on phase execution { #condition-evaluation }
+
+After surrounding whitespace is trimmed and the case is ignored, the
+rendered result of the template must be exactly either `true` or `false`.
+
+- `true`: the phase is executed.
+- `false`: the phase is skipped. Its state is set to `skipped`, and the
+  `reason` field in the ActionSet status records the condition, for
+  example <code v-pre>if=`{{ eq (index .Options "verify") "true" }}`
+  evaluated to false.</code> Execution continues with the next phase.
+- Any other result: the phase fails with
+  `Phase condition is not conditional expression`.
+
+Skipped phases count as finished. An Action whose phases are all
+`complete` or `skipped` completes successfully.
+
+### Functions and missing values
+
+`if` follows the same rules as phase args:
+
+- [Sprig](https://masterminds.github.io/sprig/) functions are available,
+  for example <code v-pre>{{ hasPrefix "prod-" .Options.env }}</code>.
+- Referencing a key that doesn't exist is an error, not an empty value.
+  The phase then fails with `Failed to execute phase condition`.
+
+This means a condition that reads an option which wasn't passed in the
+ActionSet fails instead of evaluating to `false`. To make a condition
+safe for a missing option, read it with `index`, which returns an empty
+string when the key is absent:
+
+``` go
+{{ eq (index .Options "verify") "true" }}
+```
+
+::: tip NOTE
+
+`hasKey .Options "verify"` doesn't work, because `Options` is a
+`map[string]string` and sprig\'s `hasKey` only accepts
+`map[string]interface{}`. Use `index` for options.
+
+:::
+
+### Using the output of a previous phase
+
+A condition can use the output of an earlier phase:
+
+``` go
+{{ eq .Phases.getFlag.Output.enabled "true" }}
+```
+
+A reference to a phase that doesn't exist, or to an output key the phase
+didn't produce, is an error. A skipped phase has no output, so reading
+its output also fails. To handle these cases, check the existence of key first
+using `hasKey`.
+
+``` go
+{{ and (hasKey .Phases.getFlag.Output "enabled") (eq .Phases.getFlag.Output.enabled "true") }}
+```
+
+### Defer phase
+
+The `deferPhase` is evaluated the same way. Its condition can use the
+template parameters and the outputs of the main phases. If its condition evaluates to
+`false`, the defer phase is skipped from execution and its state is `skipped`.
+
+See [Conditional Phase Execution](tutorial.md#conditional-phase-execution)
+in the tutorial for a complete example.
+
+::: tip NOTE
+
+Due to the way template rendering works in go, even if template doesn't contain
+conditional expression but results in either `true` or `false`, it will treated as
+valid result. The phase execution will take place as explained in
+[Condition evaluation and its effect on phase execution](#condition-evaluation).
+
+An example case could be the value of a key `BackupEnabled` in `Options` is `true`.
+And, `if` template field directly refers the variable like <code v-pre>{{ Options.BackupEnabled }}</code>.
+:::
