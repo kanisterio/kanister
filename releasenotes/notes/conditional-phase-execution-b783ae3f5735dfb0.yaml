@@ -1,0 +1,3 @@
+---
+features:
+  - Introduced optional `if` field in Phase and Defer Phase that enables conditional execution of the Phase using templates.
