@@ -623,10 +623,10 @@ phases:
 The same [template parameters](#rendering-templates), available to
 phase args, are available in `if`.
 
-### Condition evaluation and its effect on phase execution { #condition-evaluation }
+### Condition Evaluation and Phase Execution { #condition-evaluation }
 
-After surrounding whitespace is trimmed and the case is ignored, the
-rendered result of the template must be exactly either `true` or `false`.
+After the rendered result is trimmed of surrounding whitespace and
+lowercased, it must be exactly `true` or `false`.
 
 - `true`: the phase is executed.
 - `false`: the phase is skipped. Its state is set to `skipped`, and the
@@ -639,16 +639,16 @@ rendered result of the template must be exactly either `true` or `false`.
 Skipped phases count as finished. An Action whose phases are all
 `complete` or `skipped` completes successfully.
 
-### Functions and missing values
+### Functions and Missing Values
 
 `if` follows the same rules as phase args:
 
 - [Sprig](https://masterminds.github.io/sprig/) functions are available,
   for example <code v-pre>{{ hasPrefix "prod-" .Options.env }}</code>.
-- Referencing a key that doesn't exist is an error, not an empty value.
-  The phase then fails with `Failed to execute phase condition`.
+- A reference to a key that does not exist is an error, not an empty
+  value. The phase then fails with `Failed to execute phase condition`.
 
-This means a condition that reads an option which wasn't passed in the
+This means a condition that reads an option that was not passed in the
 ActionSet fails instead of evaluating to `false`. To make a condition
 safe for a missing option, read it with `index`, which returns an empty
 string when the key is absent:
@@ -659,13 +659,13 @@ string when the key is absent:
 
 ::: tip NOTE
 
-`hasKey .Options "verify"` doesn't work, because `Options` is a
+`hasKey .Options "verify"` does not work, because `Options` is a
 `map[string]string` and sprig\'s `hasKey` only accepts
 `map[string]interface{}`. Use `index` for options.
 
 :::
 
-### Using the output of a previous phase
+### Using the Output of a Previous Phase
 
 A condition can use the output of an earlier phase:
 
@@ -673,31 +673,32 @@ A condition can use the output of an earlier phase:
 {{ eq .Phases.getFlag.Output.enabled "true" }}
 ```
 
-A reference to a phase that doesn't exist, or to an output key the phase
-didn't produce, is an error. A skipped phase has no output, so reading
-its output also fails. To handle these cases, check the existence of key first
-using `hasKey`.
+A reference to a phase that does not exist, or to an output key the
+phase did not produce, is an error. A skipped phase has no output, so
+reading its output also fails. To handle these cases, check that the key
+exists first using `hasKey`.
 
 ``` go
 {{ and (hasKey .Phases.getFlag.Output "enabled") (eq .Phases.getFlag.Output.enabled "true") }}
 ```
 
-### Defer phase
+### Defer Phase
 
 The `deferPhase` is evaluated the same way. Its condition can use the
-template parameters and the outputs of the main phases. If its condition evaluates to
-`false`, the defer phase is skipped from execution and its state is `skipped`.
+template parameters and the outputs of the main phases. If its condition
+evaluates to `false`, the defer phase is skipped and its state is
+`skipped`.
 
 See [Conditional Phase Execution](tutorial.md#conditional-phase-execution)
 in the tutorial for a complete example.
 
 ::: tip NOTE
 
-Due to the way template rendering works in go, even if template doesn't contain
-conditional expression but results in either `true` or `false`, it will treated as
-valid result. The phase execution will take place as explained in
-[Condition evaluation and its effect on phase execution](#condition-evaluation).
+Due to how Go renders templates, an `if` template that does not
+contain a conditional expression is still valid, as long as it renders
+to `true` or `false`. The phase then executes as described in
+[Condition Evaluation and Phase Execution](#condition-evaluation).
 
-An example case could be the value of a key `BackupEnabled` in `Options` is `true`.
-And, `if` template field directly refers the variable like <code v-pre>{{ Options.BackupEnabled }}</code>.
+For example, if the key `BackupEnabled` in `Options` is `true`, the `if`
+field can reference the variable directly as <code v-pre>{{ .Options.BackupEnabled }}</code>.
 :::

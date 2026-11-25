@@ -228,7 +228,7 @@ type Phase struct {
 ```
 
 `State` is one of `pending`, `running`, `complete`, `failed` or
-`skipped`. A phase is `skipped` when its `if` condition evaluated to
+`skipped`. A phase is `skipped` when its `if` condition evaluates to
 `false`. In that case, `Reason` records the condition that caused the
 phase to be skipped, and `Output` is empty. `Reason` is not set for
 phases in any other state.

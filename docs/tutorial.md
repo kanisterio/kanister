@@ -640,16 +640,17 @@ For more on using the time template parameter, see [Templates](templates.md).
 
 ## Conditional Phase Execution
 
-Sometimes a phase is needed to be run only in certain cases, for example an
-optional verification step or a cleanup that is only needed on request.
-A phase can have an optional `if` field containing a template that must evaluate
-to `true` or `false`. The phase runs only when the result is `true`;
-otherwise it is skipped. This works for the `deferPhase` as well.
+Sometimes a phase should run only in certain cases, for example an
+optional verification step, or a cleanup that is only needed on request.
+A phase can have an optional `if` field that contains a template that
+must evaluate to `true` or `false`. The phase runs only when the result
+is `true`; otherwise it is skipped. This works for the `deferPhase` as
+well.
 
 In this example, the `verify` phase and the `deferPhase` run only when
 the ActionSet passes the option `verify: "true"`. The condition reads
 the option with `index`, so it evaluates to `false` instead of failing
-when the option isn't passed.
+when the option is not passed.
 
 ``` yaml
 $ cat <<EOF | kubectl create -f -
@@ -718,7 +719,7 @@ EOF
 ```
 
 The condition evaluates to `false`, so `verify` and `cleanup` are
-skipped. The status of each phase and the reason can be seen with:
+skipped. To see the status of each phase and the reason, run:
 
 ``` bash
 $ kubectl --namespace kanister get actionset <ActionSet Name> \
@@ -728,7 +729,7 @@ verify    skipped   if=`{{ eq (index .Options "verify") "true" }}` evaluated to 
 cleanup   skipped   if=`{{ eq (index .Options "verify") "true" }}` evaluated to false.
 ```
 
-The ActionSet still ends in the `complete` state, since skipped phases
+The ActionSet still ends in the `complete` state, because skipped phases
 count as finished.
 
 Now create an ActionSet that passes the option:
@@ -762,7 +763,7 @@ verify    complete
 cleanup   complete
 ```
 
-The option can also be passed with `kanctl`:
+You can also pass the option with `kanctl`:
 
 ``` bash
 $ kanctl create actionset --action backup --namespace kanister \
@@ -773,11 +774,12 @@ $ kanctl create actionset --action backup --namespace kanister \
 
 ::: tip NOTE
 
-If the condition were written as <code v-pre>{{ eq .Options.verify "true" }}</code>, an
-ActionSet without the `verify` option would fail the phase instead of
-skipping it, because referencing a missing key is an error. Use `index`
-as shown above to treat a missing option as empty. For more on writing
-conditions, including using the output of earlier phases, see
+If the condition is written as <code v-pre>{{ eq .Options.verify "true" }}</code>, an
+ActionSet without the `verify` option fails the phase instead of
+skipping it, because a reference to a missing key is an error. Use
+`index`, as shown earlier, to treat a missing option as empty. For more
+on writing conditions, including how to use the output of earlier
+phases, see
 [Conditional Phase Execution](templates.md#conditional-phase-execution)
 in Templates.
 
