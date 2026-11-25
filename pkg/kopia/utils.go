@@ -117,7 +117,7 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 	if opt == nil {
 		return defaultDataStoreGeneralMetadataCacheSizeMB
 	}
-	if metadataCacheSize, ok := opt[DataStoreGeneralContentCacheSizeMBKey]; ok {
+	if metadataCacheSize, ok := opt[DataStoreGeneralMetadataCacheSizeMBKey]; ok {
 		return metadataCacheSize
 	}
 	return defaultDataStoreGeneralMetadataCacheSizeMB

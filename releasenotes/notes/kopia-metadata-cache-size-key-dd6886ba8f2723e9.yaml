@@ -1,0 +1,3 @@
+---
+fixes:
+  - Read the Kopia metadata cache size from the ``dataStoreGeneralMetadataCacheSize`` connect option instead of the content cache option.
