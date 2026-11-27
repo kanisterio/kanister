@@ -485,7 +485,8 @@ func getServiceKey(ctx context.Context, filename string) (string, error) {
 		return "", err
 	}
 	// Parse the service key
-	_, err = google.CredentialsFromJSON(ctx, b, compute.ComputeScope)
+	// TODO: Find out credential type
+	_, err = google.CredentialsFromJSONWithType(ctx, b, google.ServiceAccount, compute.ComputeScope)
 	if err != nil {
 		return "", err
 	}
