@@ -630,6 +630,8 @@ func (s *PhaseSuite) TestPhaseConditionBeforeArgsRendering(c *check.C) {
 	} {
 		for _, deferred := range []bool{false, true} {
 			comment := check.Commentf("case: %q, deferPhase: %t", tc.name, deferred)
+			output = ""
+			tf.progressPercent = ""
 
 			bp := phaseTestBlueprint(phaseName, tc.condition, tc.argument, deferred)
 			p := Phase{name: phaseName, f: tf, condition: tc.condition}
