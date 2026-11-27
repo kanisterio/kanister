@@ -51,13 +51,10 @@ func (*conditionFunc) Name() string {
 	return "conditionTestFunc"
 }
 
-type deferConditionFunc struct {
-	testFunc
+func (*conditionFunc) Arguments() []string {
+	return []string{"testKey"}
 }
 
-func (*deferConditionFunc) Name() string {
-	return "deferConditionTestFunc"
-}
 func (a *anotherFunc) Name() string {
 	return "anotherTestFunc"
 }
@@ -92,6 +89,13 @@ func (tf *testFunc) Validate(args map[string]any) error {
 
 func (tf *testFunc) ExecutionProgress() (crv1alpha1.PhaseProgress, error) {
 	return crv1alpha1.PhaseProgress{ProgressPercent: tf.progressPercent}, nil
+}
+
+var conditionFuncOutput string
+
+func (s *PhaseSuite) SetUpSuite(c *check.C) {
+	err := Register(&conditionFunc{testFunc{output: &conditionFuncOutput}})
+	c.Assert(err, check.IsNil)
 }
 
 func (s *PhaseSuite) TestExec(c *check.C) {
@@ -467,9 +471,6 @@ func (s *PhaseSuite) TestPhaseValidateCondition(c *check.C) {
 }
 
 func (s *PhaseSuite) TestGetPhasesCondition(c *check.C) {
-	var output string
-	err := Register(&conditionFunc{testFunc{output: &output}})
-	c.Assert(err, check.IsNil)
 
 	bp := crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
@@ -491,9 +492,6 @@ func (s *PhaseSuite) TestGetPhasesCondition(c *check.C) {
 }
 
 func (s *PhaseSuite) TestGetDeferPhaseWithCondition(c *check.C) {
-	var output string
-	err := Register(&deferConditionFunc{testFunc{output: &output}})
-	c.Assert(err, check.IsNil)
 
 	for _, tc := range []struct {
 		condition       string
@@ -505,13 +503,13 @@ func (s *PhaseSuite) TestGetDeferPhaseWithCondition(c *check.C) {
 		{condition: "{{ eq .Options.test \"bye\" }}", expectedSkipped: true, expectedOutput: ""},
 		{condition: "{{ hasPrefix \"he\" .Options.test }}", expectedSkipped: false, expectedOutput: "hello world"},
 	} {
-		output = ""
+		conditionFuncOutput = ""
 		bp := crv1alpha1.Blueprint{
 			Actions: map[string]*crv1alpha1.BlueprintAction{
 				"backup": {
 					DeferPhase: &crv1alpha1.BlueprintPhase{
 						Name: "deferPhase",
-						Func: "deferConditionTestFunc",
+						Func: "conditionTestFunc",
 						If:   tc.condition,
 					},
 				},
@@ -527,7 +525,7 @@ func (s *PhaseSuite) TestGetDeferPhaseWithCondition(c *check.C) {
 
 		_, err = p.Exec(context.Background(), bp, "backup", tp)
 		c.Assert(err, check.IsNil)
-		c.Assert(output, check.Equals, tc.expectedOutput)
+		c.Assert(conditionFuncOutput, check.Equals, tc.expectedOutput)
 		c.Assert(p.PhaseSkipped(), check.Equals, tc.expectedSkipped)
 		if tc.expectedSkipped {
 			c.Assert(p.SkipReason(), check.Equals, fmt.Sprintf("if=`%s` evaluated to false.", tc.condition))
@@ -545,7 +543,7 @@ func (s *PhaseSuite) TestDeferPhaseWithMissingOption(c *check.C) {
 	p := Phase{
 		name:      "deferPhase",
 		args:      args,
-		f:         &deferConditionFunc{testFunc{output: &output}},
+		f:         &conditionFunc{testFunc{output: &output}},
 		condition: "{{ eq .Options.mode \"full\" }}",
 	}
 
@@ -559,27 +557,13 @@ func (s *PhaseSuite) TestGetDeferPhaseWithInvalidCondition(c *check.C) {
 	bp := crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"backup": {
-				DeferPhase: &crv1alpha1.BlueprintPhase{Name: "deferPhase", Func: "deferConditionTestFunc", If: "{{"},
+				DeferPhase: &crv1alpha1.BlueprintPhase{Name: "deferPhase", Func: "conditionTestFunc", If: "{{"},
 			},
 		},
 	}
 	p, err := GetDeferPhase(bp, "backup", "v0.0.0", param.TemplateParams{})
 	c.Assert(err, check.IsNil)
 	c.Assert(p.Validate(map[string]any{}), check.NotNil)
-}
-
-// renderTestFunc supports the "testKey" argument so that Phase.Exec can render
-// and validate args taken from a blueprint.
-type renderTestFunc struct {
-	testFunc
-}
-
-func (*renderTestFunc) Name() string {
-	return "renderTestFunc"
-}
-
-func (*renderTestFunc) Arguments() []string {
-	return []string{"testKey"}
 }
 
 // TestPhaseConditionBeforeArgsRendering verifies that the phase condition is
@@ -592,9 +576,7 @@ func (s *PhaseSuite) TestPhaseConditionBeforeArgsRendering(c *check.C) {
 	)
 	tp := param.TemplateParams{Options: map[string]string{"test": "hello"}}
 	var output string
-	tf := &renderTestFunc{testFunc{output: &output}}
-	err := Register(tf)
-	c.Assert(err, check.IsNil)
+	tf := &conditionFunc{testFunc{output: &output}}
 
 	for _, tc := range []struct {
 		name            string
@@ -657,7 +639,7 @@ func (s *PhaseSuite) TestPhaseConditionBeforeArgsRendering(c *check.C) {
 func phaseTestBlueprint(name, condition, argument string, deferred bool) crv1alpha1.Blueprint {
 	bpPhase := crv1alpha1.BlueprintPhase{
 		Name: name,
-		Func: "renderTestFunc",
+		Func: "conditionTestFunc",
 		If:   condition,
 		Args: map[string]interface{}{"testKey": argument},
 	}
