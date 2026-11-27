@@ -79,24 +79,6 @@ func (p *Phase) Objects() map[string]crv1alpha1.ObjectReference {
 // Exec renders the argument templates in this Phase's Func and executes with
 // those arguments.
 func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) (map[string]interface{}, error) {
-	if p.args == nil {
-		// Get the action from Blueprint
-		a, ok := bp.Actions[action]
-		if !ok {
-			return nil, errkit.New(fmt.Sprintf("Action {%s} not found in action map", action))
-		}
-		// Render the argument templates for the Phase's function
-		phases := []crv1alpha1.BlueprintPhase{}
-		phases = append(phases, a.Phases...)
-		if a.DeferPhase != nil {
-			phases = append(phases, *a.DeferPhase)
-		}
-
-		err := p.setPhaseArgs(phases, tp)
-		if err != nil {
-			return nil, err
-		}
-	}
 	// To simplify usage of the phase secrets in phase functions
 	tp.CurrentPhase = tp.Phases[p.name]
 
@@ -110,6 +92,25 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 		p.phaseSkipped = true
 		p.skipReason = skipReason
 		return nil, nil
+	}
+
+	if p.args == nil {
+		// Get the action from Blueprint
+		a, ok := bp.Actions[action]
+		if !ok {
+			return nil, errkit.New(fmt.Sprintf("Action {%s} not found in action map", action))
+		}
+		// Render the argument templates for the Phase's function
+		phases := []crv1alpha1.BlueprintPhase{}
+		phases = append(phases, a.Phases...)
+		if a.DeferPhase != nil {
+			phases = append(phases, *a.DeferPhase)
+		}
+
+		err = p.setPhaseArgs(phases, tp)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Execute the function

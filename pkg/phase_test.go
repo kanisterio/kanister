@@ -567,3 +567,103 @@ func (s *PhaseSuite) TestGetDeferPhaseWithInvalidCondition(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(p.Validate(map[string]any{}), check.NotNil)
 }
+
+// renderTestFunc supports the "testKey" argument so that Phase.Exec can render
+// and validate args taken from a blueprint.
+type renderTestFunc struct {
+	testFunc
+}
+
+func (*renderTestFunc) Name() string {
+	return "renderTestFunc"
+}
+
+func (*renderTestFunc) Arguments() []string {
+	return []string{"testKey"}
+}
+
+// TestPhaseConditionBeforeArgsRendering verifies that the phase condition is
+// evaluated before the phase args are rendered, so that a phase meant to be
+// skipped does not fail on args which cannot be rendered.
+func (s *PhaseSuite) TestPhaseConditionBeforeArgsRendering(c *check.C) {
+	const (
+		unrenderableArg = "{{ .Options.doesNotExist }}"
+		phaseName       = "testPhase"
+	)
+	tp := param.TemplateParams{Options: map[string]string{"test": "hello"}}
+	var output string
+	tf := &renderTestFunc{testFunc{output: &output}}
+	err := Register(tf)
+	c.Assert(err, check.IsNil)
+
+	for _, tc := range []struct {
+		name            string
+		condition       string
+		argument        string
+		expectedSkipped bool
+		expectedOutput  string
+		expectedErr     bool
+	}{
+		{
+			name:            "false condition with unrenderable args is skipped",
+			condition:       "{{ eq .Options.test \"bye\" }}",
+			argument:        unrenderableArg,
+			expectedSkipped: true,
+		},
+		{
+			name:        "true condition with unrenderable args fails to render",
+			condition:   "{{ eq .Options.test \"hello\" }}",
+			argument:    unrenderableArg,
+			expectedErr: true,
+		},
+		{
+			name:           "true condition with valid args executes",
+			condition:      "{{ eq .Options.test \"hello\" }}",
+			argument:       "{{ .Options.test }} world",
+			expectedOutput: "hello world",
+		},
+		{
+			name:        "no condition with unrenderable args fails to render",
+			argument:    unrenderableArg,
+			expectedErr: true,
+		},
+	} {
+		for _, deferred := range []bool{false, true} {
+			comment := check.Commentf("case: %q, deferPhase: %t", tc.name, deferred)
+
+			bp := phaseTestBlueprint(phaseName, tc.condition, tc.argument, deferred)
+			p := Phase{name: phaseName, f: tf, condition: tc.condition}
+
+			_, err := p.Exec(context.Background(), bp, "backup", tp)
+			if tc.expectedErr {
+				c.Assert(err, check.NotNil, comment)
+				c.Assert(p.PhaseSkipped(), check.Equals, false, comment)
+				c.Assert(tf.progressPercent, check.Equals, "", comment)
+				continue
+			}
+			c.Assert(err, check.IsNil, comment)
+			c.Assert(p.PhaseSkipped(), check.Equals, tc.expectedSkipped, comment)
+			c.Assert(output, check.Equals, tc.expectedOutput, comment)
+			if tc.expectedSkipped {
+				c.Assert(p.SkipReason(), check.Equals, fmt.Sprintf("if=`%s` evaluated to false.", tc.condition), comment)
+				c.Assert(tf.progressPercent, check.Equals, "", comment)
+			}
+		}
+	}
+}
+
+func phaseTestBlueprint(name, condition, argument string, deferred bool) crv1alpha1.Blueprint {
+	bpPhase := crv1alpha1.BlueprintPhase{
+		Name: name,
+		Func: "renderTestFunc",
+		If:   condition,
+		Args: map[string]interface{}{"testKey": argument},
+	}
+	action := &crv1alpha1.BlueprintAction{}
+	if deferred {
+		action.DeferPhase = &bpPhase
+	} else {
+		action.Phases = []crv1alpha1.BlueprintPhase{bpPhase}
+	}
+	return crv1alpha1.Blueprint{Actions: map[string]*crv1alpha1.BlueprintAction{"backup": action}}
+}
