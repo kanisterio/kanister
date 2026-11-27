@@ -471,7 +471,6 @@ func (s *PhaseSuite) TestPhaseValidateCondition(c *check.C) {
 }
 
 func (s *PhaseSuite) TestGetPhasesCondition(c *check.C) {
-
 	bp := crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"backup": {
@@ -492,7 +491,6 @@ func (s *PhaseSuite) TestGetPhasesCondition(c *check.C) {
 }
 
 func (s *PhaseSuite) TestGetDeferPhaseWithCondition(c *check.C) {
-
 	for _, tc := range []struct {
 		condition       string
 		expectedSkipped bool
