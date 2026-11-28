@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/check.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,9 +15,13 @@ import (
 
 const (
 	// ClusterNameEnvName is a env var name to get cluster name
-	ClusterNameEnvName   = "SERVICE_NAME"
+	ClusterNameEnvName   = "CLUSTER_NAME"
 	defaultNamespaceName = "default"
 )
+
+// clusterNameLookupTimeout bounds the API call used to get the "default"
+// namespace UUID, so that an unresponsive API server can't block the caller.
+var clusterNameLookupTimeout = 10 * time.Second
 
 // GetClusterName checks CLUSTER_NAME
 // if empty gets "default" namespace UUID
@@ -32,8 +37,13 @@ func GetClusterName(cli kubernetes.Interface) (string, error) {
 		cli = tmpcli
 	}
 
-	ns, err := cli.CoreV1().Namespaces().Get(context.TODO(), defaultNamespaceName, metav1.GetOptions{})
-	return string(ns.GetUID()), err
+	ctx, cancel := context.WithTimeout(context.Background(), clusterNameLookupTimeout)
+	defer cancel()
+	ns, err := cli.CoreV1().Namespaces().Get(ctx, defaultNamespaceName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return string(ns.GetUID()), nil
 }
 
 // GetEnvOrSkip test helper to skip test if env var not presented

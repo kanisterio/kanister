@@ -1,0 +1,5 @@
+---
+fixes:
+  - The ``cluster_name`` log field is now read from the ``CLUSTER_NAME`` environment variable instead of ``SERVICE_NAME``, and the fallback lookup of the ``default`` namespace UUID is bounded by a timeout so an unresponsive API server can no longer block startup of the controller or ``kanctl``.
+upgrade:
+  - Deployments that relied on ``SERVICE_NAME`` to set the ``cluster_name`` log field should set ``CLUSTER_NAME`` instead. ``SERVICE_NAME`` keeps populating only the ``service_name`` log field.
