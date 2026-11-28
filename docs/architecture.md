@@ -81,12 +81,13 @@ type BlueprintAction struct {
     `Action`.
 
 ``` go
-// BlueprintPhase is a an individual unit of execution.
+// BlueprintPhase is an individual unit of execution.
 type BlueprintPhase struct {
     Func       string                     `json:"func"`
     Name       string                     `json:"name"`
     ObjectRefs map[string]ObjectReference `json:"objects"`
     Args       map[string]interface{}     `json:"args"`
+    If         string                     `json:"if,omitempty"`
 }
 ```
 
@@ -101,6 +102,11 @@ type BlueprintPhase struct {
     the Kanister function. String argument values can be templates that
     the controller will render using the template parameters. Each
     argument is rendered individually.
+- `If` is an optional template that must evaluate to `true` or `false`.
+    The phase is executed only when the result is `true`. When `If` is
+    not specified, the phase is always executed. See
+    [Conditional Phase Execution](templates.md#conditional-phase-execution)
+    for details.
 
 As a reference, below is an example of a BlueprintAction.
 
@@ -217,8 +223,15 @@ type Phase struct {
     Name   string                 `json:"name"`
     State  State                  `json:"state"`
     Output map[string]interface{} `json:"output"`
+    Reason string                 `json:"reason,omitempty"`
 }
 ```
+
+`State` is one of `pending`, `running`, `complete`, `failed` or
+`skipped`. A phase is `skipped` when its `if` condition evaluates to
+`false`. In that case, `Reason` records the condition that caused the
+phase to be skipped, and `Output` is empty. `Reason` is not set for
+phases in any other state.
 
 Deleting an ActionSet will cause the controller to delete the ActionSet,
 which will stop the execution of the actions.
@@ -379,6 +392,15 @@ passed to [Templates](templates.md) which correspond to
 a single phase. When a phase completes, the status of the phase is
 updated. If any single phase fails, the entire ActionSet is marked as
 failed. Upon failure, the controller ceases execution of the ActionSet.
+
+If a phase has an `if` condition, the controller evaluates it before
+executing the phase. When the condition evaluates to `false`, the phase
+is not executed. It is marked `skipped` with a `reason`, and the
+controller moves on to the next phase. If the condition cannot be
+evaluated, for example because it references a missing value, the phase
+is marked as failed like any other failing phase. Skipped phases count
+as finished, so an Action whose phases are all `complete` or `skipped`
+completes successfully. The `deferPhase` follows the same rules.
 
 Within an ActionSet, individual Actions are run in parallel.
 

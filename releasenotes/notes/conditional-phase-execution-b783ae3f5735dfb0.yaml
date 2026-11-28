@@ -1,0 +1,3 @@
+---
+features:
+  - Added an optional `if` field to phases and the `deferPhase` that runs the phase only when its template evaluates to `true`.
