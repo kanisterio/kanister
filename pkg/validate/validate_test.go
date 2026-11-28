@@ -606,6 +606,34 @@ func (s *ValidateSuite) TestProfileSchema(c *check.C) {
 			},
 			checker: check.NotNil,
 		},
+		// keyPair credential type with no keyPair block
+		{
+			profile: &crv1alpha1.Profile{
+				Location: crv1alpha1.Location{
+					Type:   crv1alpha1.LocationTypeS3Compliant,
+					Bucket: "bucket-name",
+					Region: "region",
+				},
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeKeyPair,
+				},
+			},
+			checker: check.NotNil,
+		},
+		// secret credential type with no secret block
+		{
+			profile: &crv1alpha1.Profile{
+				Location: crv1alpha1.Location{
+					Type:   crv1alpha1.LocationTypeS3Compliant,
+					Bucket: "bucket-name",
+					Region: "region",
+				},
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeSecret,
+				},
+			},
+			checker: check.NotNil,
+		},
 	}
 
 	for _, tc := range tcs {

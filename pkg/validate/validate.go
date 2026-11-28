@@ -163,6 +163,9 @@ func ProfileSchema(p *crv1alpha1.Profile) error {
 func validateCredentialType(creds *crv1alpha1.Credential) error {
 	switch creds.Type {
 	case crv1alpha1.CredentialTypeKeyPair:
+		if creds.KeyPair == nil {
+			return errorf(errValidate, "Key pair for bucket credentials not specified")
+		}
 		if creds.KeyPair.Secret.Name == "" {
 			return errorf(errValidate, "Secret for bucket credentials not specified")
 		}
@@ -171,6 +174,9 @@ func validateCredentialType(creds *crv1alpha1.Credential) error {
 		}
 		return nil
 	case crv1alpha1.CredentialTypeSecret:
+		if creds.Secret == nil {
+			return errorf(errValidate, "Secret for bucket credentials not specified")
+		}
 		if creds.Secret.Name == "" {
 			return errorf(errValidate, "Secret name is empty")
 		}
