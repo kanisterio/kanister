@@ -64,15 +64,15 @@ can use to define data operations for:
 - [Cassandra](https://github.com/kanisterio/blueprints/tree/main/cassandra)
 - [Couchbase](https://github.com/kanisterio/blueprints/tree/main/couchbase)
 - [Elasticsearch](https://github.com/kanisterio/blueprints/tree/main/elasticsearch)
-- [etcd](https://github.com/kanisterio/blueprints/tree/main/etcd/etcd-incluster-ocp)
+- [etcd](https://github.com/kanisterio/blueprints/tree/main/etcd-incluster-ocp)
 - [FoundationDB](https://github.com/kanisterio/blueprints/tree/main/foundationdb)
 - [K8ssandra](https://github.com/kanisterio/blueprints/tree/main/k8ssandra)
 - [MongoDB](https://github.com/kanisterio/blueprints/tree/main/mongodb)
 - [MongoDB on OpenShift using DeploymentConfig](https://github.com/kanisterio/blueprints/tree/main/mongodb-dep-config)
 - [MySQL](https://github.com/kanisterio/blueprints/tree/main/mysql)
 - [MySQL on OpenShift using DeploymentConfig](https://github.com/kanisterio/blueprints/tree/main/mysql-dep-config)
-- [PostgreSQL](https://github.com/kanisterio/blueprints/tree/main/postgresql)
-- [PostgreSQL on OpenShift using DeploymentConfig](https://github.com/kanisterio/blueprints/tree/main/postgresql-dep-config)
+- [PostgreSQL](https://github.com/kanisterio/blueprints/tree/main/postgres)
+- [PostgreSQL on OpenShift using DeploymentConfig](https://github.com/kanisterio/blueprints/tree/main/postgres-dep-config)
 - [Redis](https://github.com/kanisterio/blueprints/tree/main/redis)
 
 The Kanister architecture is documented
