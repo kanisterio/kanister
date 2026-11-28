@@ -109,7 +109,7 @@ completed phases against the total number of phases within the action:
 action_progress_percent = num_completed_phases / total_num_phases * 100
 ```
 
-In subsequent implementation, the computation alogrithm can be updated to assign
+In subsequent implementation, the computation algorithm can be updated to assign
 more weight to phases with long-running operations. It's also possible to post
 periodic progress updates using an exponential backoff mechanism as long as the
 underlying phases are still alive.

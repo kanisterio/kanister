@@ -128,7 +128,7 @@ It's recommended to do that in build image shell, you can run it with `make shel
 The `check` library handles arguments differently from standard `go test`
 - to run specific test, you can use `-check.f <test regex>` to filter test (or suite) names
 - to increase verbosity, you can use `-check.v` or `-check.vv`
-- to controll how many suites from the package run in parallel, you can use `-check.suitep <number>`
+- to control how many suites from the package run in parallel, you can use `-check.suitep <number>`
 
 See https://github.com/kastenhq/check and https://github.com/kastenhq/check/blob/v1/run.go#L30 for more information
 
