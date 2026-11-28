@@ -263,6 +263,24 @@ func newBPWithOutputArtifact() *crv1alpha1.Blueprint {
 	}
 }
 
+func newBPWithSkippedDeferPhase() *crv1alpha1.Blueprint {
+	deferPhase := phaseWithNameAndCMD("deferPhase", []string{"exit", "1"})
+	deferPhase.If = "{{ eq 1 2 }}"
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-defer-skipped-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"kando", "output", "value", "mainValue"}),
+				},
+				DeferPhase: deferPhase,
+			},
+		},
+	}
+}
+
 func newBPWithDeferPhaseAndErrInDeferPhase() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		ObjectMeta: metav1.ObjectMeta{
@@ -878,6 +896,37 @@ func (s *ControllerSuite) TestDeferPhaseDeferErr(c *check.C) {
 	c.Assert(as.Status.Actions[0].Phases[0].State, check.Equals, crv1alpha1.StateComplete)
 	c.Assert(as.Status.Actions[0].Phases[1].State, check.Equals, crv1alpha1.StateComplete)
 	c.Assert(as.Status.Actions[0].DeferPhase.State, check.Equals, crv1alpha1.StateFailed)
+}
+
+// TestDeferPhaseSkipped makes sure a deferPhase whose `if` condition evaluates to false
+// is marked as `skipped` with a reason and doesn't prevent the actionset from completing.
+func (s *ControllerSuite) TestDeferPhaseSkipped(c *check.C) {
+	err := os.Setenv(kube.PodNSEnvVar, "test")
+	c.Assert(err, check.IsNil)
+	ctx := context.Background()
+
+	bp := newBPWithSkippedDeferPhase()
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	err = s.waitOnActionSetState(as, crv1alpha1.StateRunning)
+	c.Assert(err, check.IsNil)
+
+	err = s.waitOnDeferPhaseState(as, crv1alpha1.StateSkipped)
+	c.Assert(err, check.IsNil)
+
+	err = s.waitOnActionSetState(as, crv1alpha1.StateComplete)
+	c.Assert(err, check.IsNil)
+
+	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+	c.Assert(err, check.IsNil)
+	c.Assert(as.Status.Actions[0].Phases[0].State, check.Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].DeferPhase.State, check.Equals, crv1alpha1.StateSkipped)
+	c.Assert(as.Status.Actions[0].DeferPhase.Reason, check.Equals, "if=`{{ eq 1 2 }}` evaluated to false.")
 }
 
 func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *check.C) {

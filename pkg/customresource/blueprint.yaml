@@ -51,6 +51,8 @@ spec:
                       type: object
                     func:
                       type: string
+                    if:
+                      type: string
                     name:
                       type: string
                     objects:
@@ -84,6 +86,8 @@ spec:
                         x-kubernetes-preserve-unknown-fields: true
                         type: object
                       func:
+                        type: string
+                      if:
                         type: string
                       name:
                         type: string
